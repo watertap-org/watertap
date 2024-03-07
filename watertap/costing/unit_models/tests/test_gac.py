@@ -10,28 +10,21 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import pytest
 import pyomo.environ as pyo
-import idaes.core.util.model_statistics as istat
 
 from pyomo.environ import (
-    Block,
     Var,
     units as pyunits,
 )
-from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
-    declare_process_block_class,
-    UnitModelBlockData,
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.testing import initialization_tester
 from watertap.costing import WaterTAPCosting
-from watertap.unit_models.tests.test_gac import build_crittenden
 from watertap.costing.unit_models.tests.unit_costing_test_harness import (
     UnitCostingTestHarness,
+    DummyUnitModel,
 )
 from watertap.costing.unit_models.gac import cost_gac
 
@@ -42,21 +35,13 @@ zero = 1e-8
 relative_tolerance = 1e-3
 
 
-@declare_process_block_class("DummyUnitModel")
-class DummyUnitModelData(UnitModelBlockData):
-    def build(self):
-        super().build()
-
-    @property
-    def default_costing_method(self):
-        return cost_gac
-
-
 def build():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.unit = DummyUnitModel()
+    m.fs.unit.default_costing_method = cost_gac
+
     m.fs.unit.bed_volume = Var(units=pyunits.meter**3)
     m.fs.unit.bed_volume.fix(8.900)
     m.fs.unit.bed_mass_gac = Var(units=pyunits.kg)
@@ -69,28 +54,6 @@ def build():
 
     m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.costing.cost_process()
-
-    # testing gac costing block dof and initialization
-
-    # solve
-    results = solver.solve(m)
-
-    # Check for optimal solution
-    assert pyo.check_optimal_termination(results)
-
-    cost = m.fs.unit.costing
-    # Check for known cost solution of default twin alternating contactors
-    assert pyo.value(m.fs.costing.gac_pressure.num_contactors_op) == 1
-    assert pyo.value(m.fs.costing.gac_pressure.num_contactors_redundant) == 1
-    assert pytest.approx(56900, rel=1e-3) == pyo.value(cost.contactor_cost)
-    assert pytest.approx(4.359, rel=1e-3) == pyo.value(cost.adsorbent_unit_cost)
-    assert pytest.approx(17450, rel=1e-3) == pyo.value(cost.adsorbent_cost)
-    assert pytest.approx(81690, rel=1e-3) == pyo.value(cost.other_process_cost)
-    assert pytest.approx(2.0 * 156000, rel=1e-3) == pyo.value(cost.capital_cost)
-    assert pytest.approx(12680, rel=1e-3) == pyo.value(cost.gac_makeup_cost)
-    assert pytest.approx(27660, rel=1e-3) == pyo.value(cost.gac_regen_cost)
-    assert pytest.approx(0.01631, rel=1e-3) == pyo.value(cost.energy_consumption)
-    assert pytest.approx(40370, rel=1e-3) == pyo.value(cost.fixed_operating_cost)
 
     return m
 

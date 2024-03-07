@@ -15,12 +15,21 @@ import abc
 
 from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
+from idaes.core import (
+    declare_process_block_class,
+    UnitModelBlockData,
+)
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.testing import initialization_tester
-import idaes.core.util.scaling as iscale
+
+
+# -----------------------------------------------------------------------------
+@declare_process_block_class("DummyUnitModel")
+class DummyUnitModelData(UnitModelBlockData):
+    def build(self):
+        super().build()
 
 
 # -----------------------------------------------------------------------------
