@@ -19,6 +19,7 @@ from .MD_channel_base import (
 
 __author__ = "Elmira Shamlou"
 
+
 @declare_process_block_class("MDChannel1DBlock")
 class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
     def _skip_element(self, x):
@@ -26,7 +27,7 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
             return x == self.length_domain.first()
         else:
             return x == self.length_domain.last()
-        
+
     def apply_transformation(self, *args, **kwargs):
         super().apply_transformation(*args, **kwargs)
         self.difference_elements = Set(
@@ -79,37 +80,37 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
         property_package_vapor=None,
         property_package_args_vapor=None,
     ):
-            """
-            This method constructs the state blocks for the
-            control volume.
+        """
+        This method constructs the state blocks for the
+        control volume.
 
-            Args:
-                has_phase_equilibrium: indicates whether equilibrium calculations
-                                        will be required in state blocks
-            Returns:
-                None
-            """
-            super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
-            self._add_interface_stateblock(has_phase_equilibrium)
-            self._add_vapor_stateblock(
+        Args:
+            has_phase_equilibrium: indicates whether equilibrium calculations
+                                    will be required in state blocks
+        Returns:
+            None
+        """
+        super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
+        self._add_interface_stateblock(has_phase_equilibrium)
+        self._add_vapor_stateblock(
             property_package_vapor,
             property_package_args_vapor,
             has_phase_equilibrium=False,
         )
-            
+
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)
-        
+
         units_meta = self.config.property_package.get_metadata().get_derived_units
         self.deltaP_channel = Var(
-                self.flowsheet().config.time,
-                initialize=-1e5,
-                bounds=(-1e6, 0),
-                domain=NegativeReals,
-                units=units_meta("pressure"),
-                doc="total prossure drop across the channel",
-            )
-        
+            self.flowsheet().config.time,
+            initialize=-1e5,
+            bounds=(-1e6, 0),
+            domain=NegativeReals,
+            units=units_meta("pressure"),
+            doc="total prossure drop across the channel",
+        )
+
     def _add_deltaP(self, pressure_change_type=PressureChangeType.calculated):
         if pressure_change_type == PressureChangeType.calculated:
 
@@ -124,7 +125,9 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
         else:
 
             @self.Constraint(
-                self.flowsheet().config.time, self.length_domain, doc="pressure change due to friction"
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="pressure change due to friction",
             )
             def eq_pressure_change(b, t, x):
                 return b.deltaP_channel[t] == b.dP_dx[t, x] * b.length
@@ -180,7 +183,7 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
             solver=solver,
             hold_state=True,
         )
-        
+
         # Differentiate between hot and cold channels for properties_out
         if type == "hot_ch":
             state_args_properties_out = state_args["hot_outlet"]
@@ -191,7 +194,7 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
             raise ConfigurationError(
                 "Either hot_ch or cold_ch must be set in the configuration."
             )
-            
+
         state_args_interface = self._get_state_args_interface(
             state_args_properties_in, state_args_properties_out
         )
@@ -238,5 +241,3 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
         if hasattr(self, "dP_dx"):
             for v in self.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e-5)
-
-        

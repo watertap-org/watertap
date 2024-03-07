@@ -37,7 +37,9 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
     def _skip_element(self, x):
         return False
 
-    def add_geometry(self, length_var=None, width_var=None, flow_direction=FlowDirection.forward):
+    def add_geometry(
+        self, length_var=None, width_var=None, flow_direction=FlowDirection.forward
+    ):
 
         self._flow_direction = flow_direction
 
@@ -63,7 +65,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         self._set_nfe()
 
         # Determine flow direction from the argument or from the configuration
-
 
         if self._flow_direction == FlowDirection.forward:
             properties_dict = {
@@ -115,7 +116,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             )
 
         elif pressure_change_type == PressureChangeType.calculated:
-           
+
             self.dP_dx = Var(
                 self.flowsheet().config.time,
                 self.length_domain,
@@ -125,8 +126,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="Pressure drop per unit length of channel at inlet and outlet",
             )
-            
-        
+
     def _add_deltaP(self, pressure_change_type=PressureChangeType.calculated):
         if pressure_change_type == PressureChangeType.fixed_per_stage:
             return
@@ -142,7 +142,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                 return b.deltaP[t] == b.dP_dx[t] * b.length
 
         elif pressure_change_type == PressureChangeType.calculated:
-            
+
             @self.Constraint(
                 self.flowsheet().config.time, doc="Total Pressure drop across channel"
             )

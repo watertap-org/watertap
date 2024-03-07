@@ -388,7 +388,7 @@ see property package for documentation.}""",
             channel.add_geometry(
                 length_var=self.length,
                 width_var=self.width,
-                flow_direction= config.flow_direction
+                flow_direction=config.flow_direction,
             )
             if not hasattr(self, "eq_area"):
                 add_eq_area = True
@@ -396,9 +396,10 @@ see property package for documentation.}""",
                 add_eq_area = False
             self._add_area(include_constraint=add_eq_area)
         else:
-            channel.add_geometry(length_var=None, width_var=None, flow_direction= config.flow_direction)
+            channel.add_geometry(
+                length_var=None, width_var=None, flow_direction=config.flow_direction
+            )
             self._add_area(include_constraint=False)
-        
 
     def _add_mass_transfer(self):
         @self.Constraint(

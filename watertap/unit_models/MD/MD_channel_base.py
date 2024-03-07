@@ -126,7 +126,7 @@ class MDChannelMixin:
             return b.properties_interface[t, x].pressure == b.properties[t, x].pressure
 
         if has_pressure_change:
-          self._add_pressure_change(pressure_change_type=pressure_change_type)
+            self._add_pressure_change(pressure_change_type=pressure_change_type)
 
         if pressure_change_type == PressureChangeType.calculated:
             self._add_calculated_pressure_change(friction_factor=friction_factor)
@@ -766,7 +766,7 @@ class MDChannelMixin:
         if hasattr(self, "h_conv"):
             for (t, x), v in self.h_conv.items():
                 if iscale.get_scaling_factor(v) is None:
-                        iscale.set_scaling_factor(v, 1e-3)
+                    iscale.set_scaling_factor(v, 1e-3)
 
         if hasattr(self, "velocity"):
             for v in self.velocity.values():

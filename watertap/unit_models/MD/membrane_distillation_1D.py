@@ -49,6 +49,7 @@ __author__ = "Elmira Shamlou"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 @declare_process_block_class("MembraneDistillation1D")
 class MembraneDistillationData(MembraneDistillationBaseData):
     """
@@ -358,8 +359,8 @@ see property package for documentation.}""",
     CONFIG.declare("hot_ch", _CONFIG_Template(doc="hot channel config arguments"))
     CONFIG.declare("cold_ch", _CONFIG_Template(doc="cold channel config arguments"))
 
-     # Common config args for both sides
-    
+    # Common config args for both sides
+
     CONFIG.declare(
         "area_definition",
         ConfigValue(
@@ -413,9 +414,9 @@ see property package for documentation.}""",
         ),
     )
 
-    
-    
-    def _make_MD_channel_control_volume(self, name_ch, common_config, individual_config):
+    def _make_MD_channel_control_volume(
+        self, name_ch, common_config, individual_config
+    ):
 
         if self.config.transformation_method is useDefault:
             _log.warning(
@@ -447,33 +448,31 @@ see property package for documentation.}""",
             name_ch,
             MDChannel1DBlock(
                 dynamic=False,
-                has_holdup=False, 
-                area_definition= common_config.area_definition,
+                has_holdup=False,
+                area_definition=common_config.area_definition,
                 property_package=individual_config.property_package,
                 property_package_args=individual_config.property_package_args,
-                transformation_method= common_config.transformation_method,
-                transformation_scheme= common_config.transformation_scheme,
-                finite_elements= common_config.finite_elements,
-                collocation_points= common_config.collocation_points,
-                
+                transformation_method=common_config.transformation_method,
+                transformation_scheme=common_config.transformation_scheme,
+                finite_elements=common_config.finite_elements,
+                collocation_points=common_config.collocation_points,
             ),
         )
 
         channel = getattr(self, name_ch)
         if not hasattr(self, "length") and not hasattr(self, "width"):
             self._add_length_and_width()
-        channel.add_geometry(flow_direction=individual_config.flow_direction,
-                length_var=self.length,
-                width_var=self.width,
-            )
-        
-        if not hasattr(self, "eq_area"):
-                add_eq_area = True
-        else:
-                add_eq_area = False
-        self._add_area(include_constraint=add_eq_area)
+        channel.add_geometry(
+            flow_direction=individual_config.flow_direction,
+            length_var=self.length,
+            width_var=self.width,
+        )
 
-        
+        if not hasattr(self, "eq_area"):
+            add_eq_area = True
+        else:
+            add_eq_area = False
+        self._add_area(include_constraint=add_eq_area)
 
     def _add_mass_transfer(self):
         @self.Constraint(
@@ -488,22 +487,24 @@ see property package for documentation.}""",
                 b.cold_ch.mass_transfer_term[t, x, p, j]
                 == -b.hot_ch.mass_transfer_term[t, x, p, j]
             )
+
         @self.Constraint(
-                self.flowsheet().config.time,
-                self.difference_elements,
-                self.config.cold_ch.property_package.phase_list,
-                self.config.cold_ch.property_package.component_list,
-                doc="Permeate production",
-            )   
+            self.flowsheet().config.time,
+            self.difference_elements,
+            self.config.cold_ch.property_package.phase_list,
+            self.config.cold_ch.property_package.component_list,
+            doc="Permeate production",
+        )
         def eq_permeate_production(b, t, x, p, j):
-                if j == "H2O":
-                    return (
-                        b.cold_ch.mass_transfer_term[t, x, p, j] == b.width * b.flux_mass[t, x]
-                    )
-                else:
-                    b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
-                    return Constraint.Skip
-                
+            if j == "H2O":
+                return (
+                    b.cold_ch.mass_transfer_term[t, x, p, j]
+                    == b.width * b.flux_mass[t, x]
+                )
+            else:
+                b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
+                return Constraint.Skip
+
     def _add_heat_transfer(self):
         units_meta = (
             self.config.hot_ch.property_package.get_metadata().get_derived_units
@@ -515,9 +516,7 @@ see property package for documentation.}""",
             doc="Conductive heat transfer to cold channel",
         )
         def eq_conductive_heat_transfer_hot(b, t, x):
-            return b.hot_ch.heat[t, x] == -b.width * b.flux_conduction_heat[
-                t, x
-            ]
+            return b.hot_ch.heat[t, x] == -b.width * b.flux_conduction_heat[t, x]
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -542,6 +541,3 @@ see property package for documentation.}""",
         )
         def eq_enthalpy_transfer_cold(b, t, x):
             return b.cold_ch.enthalpy_transfer[t, x] == b.width * b.flux_enth_cold[t, x]
-
-        
-    

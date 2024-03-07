@@ -59,8 +59,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             property_package_args_vapor=self.config.hot_ch.property_package_args_vapor,
         )
 
-        
-
         # self.hot_ch.set_config(self.config.hot_ch)
 
         self.hot_ch.add_material_balances(
@@ -98,17 +96,15 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         except AttributeError:
             pass
 
-        
-
-        self._make_MD_channel_control_volume("cold_ch", self.config, self.config.cold_ch)
+        self._make_MD_channel_control_volume(
+            "cold_ch", self.config, self.config.cold_ch
+        )
 
         self.cold_ch.add_state_blocks(
             has_phase_equilibrium=False,
             property_package_vapor=self.config.cold_ch.property_package_vapor,
             property_package_args_vapor=self.config.cold_ch.property_package_args_vapor,
         )
-
-        
 
         self.cold_ch.add_material_balances(
             balance_type=self.config.cold_ch.material_balance_type,
@@ -147,7 +143,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         except AttributeError:
             pass
 
-        
         add_object_reference(self, "length_domain", self.hot_ch.length_domain)
         add_object_reference(
             self, "difference_elements", self.hot_ch.difference_elements
@@ -165,9 +160,13 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self._add_mass_flux()
 
         if self.config.cold_ch.has_pressure_change:
-            self.cold_ch._add_deltaP(pressure_change_type=self.config.cold_ch.pressure_change_type)
+            self.cold_ch._add_deltaP(
+                pressure_change_type=self.config.cold_ch.pressure_change_type
+            )
         if self.config.hot_ch.has_pressure_change:
-            self.hot_ch._add_deltaP(pressure_change_type=self.config.hot_ch.pressure_change_type)
+            self.hot_ch._add_deltaP(
+                pressure_change_type=self.config.hot_ch.pressure_change_type
+            )
 
         self.recovery_mass = Var(
             self.flowsheet().config.time,
