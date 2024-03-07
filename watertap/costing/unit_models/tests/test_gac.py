@@ -58,7 +58,7 @@ def build():
     return m
 
 
-class TestGACHand(UnitCostingTestHarness):
+class TestGACCosting(UnitCostingTestHarness):
     def configure(self):
         m = build()
 
