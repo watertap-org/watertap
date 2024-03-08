@@ -308,6 +308,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if self.config.is_isothermal:
             self.process_flow.add_isothermal_assumption()
 
+        # inherit flow basis from property package
+        self.flow_basis = self.process_flow.properties_in[
+            self.flowsheet().config.time.first()
+        ].get_material_flow_basis()
+
         # add port for adsorbed contaminant contained in nearly saturated GAC particles
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -1082,11 +1087,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # set solver options
         opt = get_solver(solver, optarg)
 
-        # inherit flow basis from property package
-        flow_basis = self.process_flow.properties_in[
-            self.flowsheet().config.time.first()
-        ].get_material_flow_basis()
-
         # ---------------------------------------------------------------------
         # set state_args from inlet state
 
@@ -1118,7 +1118,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         # all inert species initialized to 0
         for j in self.inert_species:
-            if flow_basis == MaterialFlowBasis.molar:
+            if self.flow_basis == MaterialFlowBasis.molar:
                 state_args["flow_mol_phase_comp"][("Liq", j)] = 0
             else:
                 state_args["flow_mass_phase_comp"][("Liq", j)] = 0

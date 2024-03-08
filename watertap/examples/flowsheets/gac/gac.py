@@ -39,10 +39,11 @@ def main():
 
     # example usage
     m = build(
+        material_flow_basis="molar",
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="calculated",
-        diffusivity_calculation="none",
-        cost_contactor_type="gravity",
+        diffusivity_calculation="HaydukLaudie",
+        cost_contactor_type="pressure",
     )
     initialize(m)
     res = optimize(m)
@@ -52,13 +53,13 @@ def main():
 
 
 def build(
+    material_flow_basis="molar",
     film_transfer_coefficient_type="fixed",
     surface_diffusion_coefficient_type="fixed",
     diffusivity_calculation="none",
     cost_contactor_type="pressure",
 ):
-    # TODO: mass or mole basis
-    #       surrogates to replace empirical parameters
+    # TODO: surrogates to replace empirical parameters
     #       autoscaling, check robustness of solve over sweeps
     #       build only supports string (Option.value.name) and not Option.value from import
 
@@ -68,7 +69,6 @@ def build(
     solute_mw = 0.08
     solute_diffusivtiy = 1e-9
     solute_mv = 1e-4
-    material_flow_basis = "molar"
     if (
         film_transfer_coefficient_type == "calculated"
         or surface_diffusion_coefficient_type == "calculated"
