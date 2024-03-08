@@ -71,14 +71,12 @@ class UnitCostingTestHarness(abc.ABC):
         self.default_relative_tolerance = 1e-6
 
         model = self.configure()
-        if not hasattr(self, "unit_model_block"):
-            self.unit_model_block = model.find_component("fs.unit")
-            if self.unit_model_block is None:
-                raise RuntimeError(
-                    f"The {self.__class__.__name__}.configure method should either "
-                    "set the attribute `unit_model_block` or name it `fs.unit`."
-                )
         if not hasattr(self, "unit_model_costing_block"):
+            if model.find_component("fs.unit") is None:
+                raise RuntimeError(
+                    f"The {self.__class__.__name__}.configure method should name "
+                    f"the unit model `fs.unit`."
+                )
             self.unit_model_costing_block = model.find_component("fs.unit.costing")
             if self.unit_model_costing_block is None:
                 raise RuntimeError(
@@ -155,7 +153,6 @@ class UnitCostingTestHarness(abc.ABC):
         assert_optimal_termination(results)
 
         # check results
-
         for var, val in solutions.items():
             comp_obj = None
             try:
