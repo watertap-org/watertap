@@ -35,19 +35,19 @@ class DummyUnitModelData(UnitModelBlockData):
 # -----------------------------------------------------------------------------
 class UnitAttributeError(AttributeError):
     """
-    WaterTAP exception for generic attribute errors arising from unit model testing.
+    WaterTAP exception for generic attribute errors arising from unit costing testing.
     """
 
 
 class UnitValueError(ValueError):
     """
-    WaterTAP exception for generic value errors arising from unit model testing.
+    WaterTAP exception for generic value errors arising from unit costing testing.
     """
 
 
 class UnitRuntimeError(RuntimeError):
     """
-    WaterTAP exception for generic runtime errors arising from unit model testing.
+    WaterTAP exception for generic runtime errors arising from unit costing testing.
     """
 
 
@@ -71,21 +71,21 @@ class UnitCostingTestHarness(abc.ABC):
         self.default_relative_tolerance = 1e-6
 
         model = self.configure()
-        if not hasattr(self, "unit_model_costing_block"):
+        if not hasattr(self, "unit_costing_block"):
             if model.find_component("fs.unit") is None:
                 raise RuntimeError(
                     f"The {self.__class__.__name__}.configure method should name "
                     f"the unit model `fs.unit`."
                 )
-            self.unit_model_costing_block = model.find_component("fs.unit.costing")
-            if self.unit_model_costing_block is None:
+            self.unit_costing_block = model.find_component("fs.unit.costing")
+            if self.unit_costing_block is None:
                 raise RuntimeError(
                     f"The {self.__class__.__name__}.configure method should either "
-                    "set the attribute `unit_model_costing_block` or name it `fs.unit.costing`."
+                    "set the attribute `unit_costing_block` or name it `fs.unit.costing`."
                 )
         # keep the model so it does not get garbage collected
         self._model = model
-        blk = self.unit_model_costing_block
+        blk = self.unit_costing_block
 
         # attaching objects to model to carry through in pytest frame
         # TODO: Consider removing these objects and directly calling self
@@ -103,8 +103,8 @@ class UnitCostingTestHarness(abc.ABC):
         The configure method must set the attributes:
         cost_solutions: ComponentMap of values for the specified variables
 
-        The costing and unit model tested should be named `fs.unit`, or this method
-        should set the attribute `unit_model_block`.
+        The unit model and costing blocks should be named `fs.unit` and 'fs.unit.costing,
+        respectively, or this method should set the attribute `unit_costing_block`.
 
         Returns:
             model: the top-level Pyomo model
@@ -113,25 +113,25 @@ class UnitCostingTestHarness(abc.ABC):
     @pytest.fixture(scope="class")
     def frame(self):
         self.configure_class()
-        return self._model, self.unit_model_costing_block
+        return self._model, self.unit_costing_block
 
     @pytest.mark.unit
     def test_units_consistent(self, frame):
-        m, unit_model_costing = frame
-        assert_units_consistent(unit_model_costing)
+        m, unit_costing = frame
+        assert_units_consistent(unit_costing)
 
     @pytest.mark.unit
     def test_dof(self, frame):
-        m, unit_model_costing = frame
-        if degrees_of_freedom(unit_model_costing) != 0:
+        m, unit_costing = frame
+        if degrees_of_freedom(unit_costing) != 0:
             raise UnitAttributeError(
                 "The unit has {dof} degrees of freedom when 0 is required."
-                "".format(dof=degrees_of_freedom(unit_model_costing))
+                "".format(dof=degrees_of_freedom(unit_costing))
             )
 
     @pytest.mark.component
     def test_initialization(self, frame):
-        m, unit_model_costing = frame
+        m, unit_costing = frame
         m.fs.unit.costing.initialize()
 
     @pytest.mark.component
