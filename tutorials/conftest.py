@@ -10,9 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import os
 from pathlib import Path
+from typing import List
 
 import pytest
+import nbmake
 
 
 class KernelSpecMismatch(ValueError):
@@ -74,5 +77,27 @@ def pytest_collect_file(file_path: Path, parent: pytest.Collector):
         return NotebookMetadata.from_parent(parent, path=file_path)
 
 
-def pytest_collection_modifyitems(items):
+def pytest_collection_modifyitems(items: List[pytest.Item]):
     items.sort(key=lambda item: -1 if isinstance(item, KernelSpec) else 0)
+
+    has_oli_api_key: bool = "OLI_API_KEY" in os.environ
+
+    def needs_oli_credentials(item: nbmake.pytest_items.NotebookItem) -> bool:
+        # TODO this might have false positives, so we should come up with something better
+        # e.g. notebook-level tag
+        return "oli" in str(item.filename).lower()
+
+    runtime_tests = (
+        item for item in items if isinstance(item, nbmake.pytest_items.NotebookItem)
+    )
+
+    for item in runtime_tests:
+        if not needs_oli_credentials(item):
+            continue
+        if not has_oli_api_key:
+            item.add_marker(
+                pytest.mark.xfail(
+                    reason="Notebook needs OLI API credentials, which could not be found in the environment",
+                    run=False,
+                )
+            )
