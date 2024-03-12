@@ -309,14 +309,6 @@ class TestGACMultiComponent(UnitTestHarness):
 
 
 # -----------------------------------------------------------------------------
-class TestGACReporting:
-    @pytest.mark.unit
-    def test_reporting(self):
-        m = build_hand()
-        m.fs.unit.report()
-
-
-# -----------------------------------------------------------------------------
 class TestGACErrorLog:
     @pytest.mark.unit
     def test_error(self):

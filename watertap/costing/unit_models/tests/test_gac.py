@@ -36,13 +36,6 @@ class TestGACCosting:
         initialization_tester(m)
         solver.solve(m)
 
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
-
-        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.costing.cost_process()
-        m.fs.unit.costing.initialize()
-
         return m
 
     @pytest.mark.component
