@@ -14,6 +14,7 @@ GUI configuration for the GAC model.
 """
 
 from pyomo.environ import units as pyunits
+from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import DiffusivityCalculation
 from watertap.unit_models.gac import (
@@ -41,6 +42,14 @@ def export_to_ui():
         requires_idaes_solver=True,
         category=FlowsheetCategory.wastewater,
         build_options={
+            "MaterialFlowBasis": {
+                "name": "MaterialFlowBasis",
+                "display_name": "Material Flow Basis",
+                "values_allowed": [
+                    x.name for x in [MaterialFlowBasis.molar, MaterialFlowBasis.mass]
+                ],
+                "value": MaterialFlowBasis.molar.name,
+            },
             "FilmTransferCoefficientType": {
                 "name": "FilmTransferCoefficientType",
                 "display_name": "Film Transfer Coefficient Type",
@@ -170,6 +179,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category=category,
     )
+    if build_options["MaterialFlowBasis"].value == "molar":
+        fix_molar = True
+        fix_mass = False
+    else:
+        fix_molar = False
+        fix_mass = True
     exports.add(
         obj=fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"],
         name="Molar flow rate water",
@@ -177,7 +192,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="mol/s",
         rounding=rounding,
         description="Feed molar flow rate of water",
-        is_input=True,
+        is_input=fix_molar,
         input_category=category,
         is_output=True,
         output_category=category,
@@ -189,7 +204,31 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="mol/s",
         rounding=rounding,
         description="Feed molar flow rate of solute",
-        is_input=True,
+        is_input=fix_molar,
+        input_category=category,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
+        name="Mass flow rate water",
+        ui_units=pyunits.kg / pyunits.s,
+        display_units="kg/s",
+        rounding=rounding,
+        description="Feed mass flow rate of water",
+        is_input=fix_mass,
+        input_category=category,
+        is_output=True,
+        output_category=category,
+    )
+    exports.add(
+        obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", solute_name],
+        name="Mass flow rate solute",
+        ui_units=pyunits.kg / pyunits.s,
+        display_units="kg/s",
+        rounding=rounding,
+        description="Feed mass flow rate of solute",
+        is_input=fix_mass,
         input_category=category,
         is_output=True,
         output_category=category,
@@ -788,6 +827,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
     if build_options is not None:
         m = gac_fs.build(
+            material_flow_basis=build_options["MaterialFlowBasis"].value,
             film_transfer_coefficient_type=build_options[
                 "FilmTransferCoefficientType"
             ].value,
