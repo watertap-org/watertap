@@ -48,9 +48,8 @@ class IpoptWaterTAP:
     def __init__(self, **kwds):
         kwds["name"] = self.name
         self.options = Bunch()
-        if kwds.get("options") is not None:
-            for key in kwds["options"]:
-                setattr(self.options, key, kwds["options"][key])
+        for opt_key, opt_val in kwds.get("options", {}).items():
+            setattr(self.options, opt_key, opt_val)
 
     def executable(self):
         return self._base_solver().executable()
