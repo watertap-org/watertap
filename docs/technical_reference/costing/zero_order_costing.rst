@@ -6,7 +6,9 @@ Zero Order Costing Package
 .. currentmodule:: watertap.costing.zero_order_costing
 
 The zero order costing module contains the costing package typically used for zero order models, though it can also be used for high-fidelity models. Technoeconomic data used for zero order models is contained in the
-``.yaml`` file for that model located in the data/techno_economic folder.
+``.yaml`` file for that model located in the data/techno_economic folder. The zero order costing module extends functionality of the :ref:`technical_reference/costing/watertap_costing_detailed:Detailed WaterTAP Costing Package`
+to support loading parameters from pre-defined ``.yaml`` files. It has the same technoecnomic factors as the :ref:`technical_reference/costing/watertap_costing_detailed:Detailed WaterTAP Costing Package` but with different
+parameter values.
 
 
 Usage

@@ -218,7 +218,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF OPEX",
     )
     exports.add(
-        obj=fs.costing.factor_maintenance_labor_chemical,
+        obj=fs.costing.maintenance_labor_chemical_factor,
         name="Maintenance-labor-chemical factor",
         ui_units=pyunits.year**-1,
         display_units="fraction of equipment cost/year",

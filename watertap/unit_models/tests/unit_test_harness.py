@@ -21,6 +21,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -123,6 +124,7 @@ class UnitTestHarness(abc.ABC):
             unit=blk,
             solver=blk._test_objs.solver,
             optarg=blk._test_objs.optarg,
+            outlvl=idaeslog.DEBUG,
         )
 
     @pytest.mark.component
@@ -138,7 +140,7 @@ class UnitTestHarness(abc.ABC):
             opt = get_solver(
                 solver=blk._test_objs.solver, options=blk._test_objs.optarg
             )
-        results = opt.solve(blk)
+        results = opt.solve(blk, tee=True)
 
         # check solve
         badly_scaled_vars = list(

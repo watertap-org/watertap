@@ -520,7 +520,7 @@ def initialize_system(m):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 1
+    seq.options.iterLim = 5
     seq.options.tear_set = [m.fs.stream5, m.fs.stream10adm]
 
     G = seq.create_graph(m)
@@ -588,7 +588,7 @@ def initialize_system(m):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
+        unit.initialize(outlvl=idaeslog.INFO)
 
     seq.run(m, function)
 

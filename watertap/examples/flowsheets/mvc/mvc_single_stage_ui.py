@@ -345,7 +345,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_total_investment,
+        obj=fs.costing.total_investment_factor,
         name="Total investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",

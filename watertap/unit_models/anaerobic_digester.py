@@ -1020,13 +1020,15 @@ see reaction package for documentation.}""",
             self.Ch4_Henrys_law.deactivate()
             self.H2_Henrys_law.deactivate()
 
-            results = solverobj.solve(self, tee=slc.tee)
+            results = solverobj.solve(self, tee=slc.tee, options={"ma27_pivtol": 1e-2})
 
             if not check_optimal_termination(results):
                 init_log.warning(
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
-                results = solverobj.solve(self, tee=slc.tee)
+                results = solverobj.solve(
+                    self, tee=slc.tee, options={"ma27_pivtol": 1e-2}
+                )
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(results))
         )
