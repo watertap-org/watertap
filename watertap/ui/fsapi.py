@@ -12,7 +12,6 @@
 """
 Simple flowsheet interface API
 """
-from pydantic import ConfigDict
 
 __author__ = "Dan Gunter"
 
@@ -41,7 +40,7 @@ except ImportError:
 # third-party
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, field_validator, ValidationInfo, ConfigDict
 import pyomo.environ as pyo
 
 #: Forward-reference to a FlowsheetInterface type, used in
