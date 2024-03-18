@@ -41,7 +41,7 @@ except ImportError:
 # third-party
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
-from pydantic import BaseModel, validator, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 import pyomo.environ as pyo
 
 #: Forward-reference to a FlowsheetInterface type, used in
@@ -141,7 +141,6 @@ class ModelExport(BaseModel):
     # (e.g. `None` for a strict (non-`Optional` `bool` field)
 
     # Get value from object
-    # TODO[pydantic]: 
     @field_validator("value")
     @classmethod
     def validate_value(cls, v, info: ValidationInfo):
@@ -151,7 +150,6 @@ class ModelExport(BaseModel):
         return pyo.value(obj)
 
     # Derive display_units from ui_units
-    # TODO[pydantic]: 
     @field_validator("display_units")
     @classmethod
     def validate_units(cls, v, info: ValidationInfo):
@@ -161,7 +159,6 @@ class ModelExport(BaseModel):
         return v
 
     # set name dynamically from object
-    # TODO[pydantic]:
     @field_validator("name")
     @classmethod
     def validate_name(cls, v, info: ValidationInfo):
@@ -173,7 +170,6 @@ class ModelExport(BaseModel):
                 pass
         return v
 
-    # TODO[pydantic]: 
     @field_validator("is_readonly")
     @classmethod
     def set_readonly_default(cls, v, info: ValidationInfo):
@@ -186,7 +182,6 @@ class ModelExport(BaseModel):
                 v = False
         return v
 
-    # TODO[pydantic]: 
     @field_validator("obj_key")
     @classmethod
     def set_obj_key_default(cls, v, info: ValidationInfo):
@@ -201,15 +196,14 @@ class ModelOption(BaseModel):
 
     name: str
     category: str = "Build Options"
-    display_name: Union[None, str] = None
-    description: Union[None, str] = None
+    display_name: Union[None, str] = Field(default=None, validate_default=True)
+    description: Union[None, str] = Field(default=None, validate_default=True)
     display_values: List[Any] = []
     values_allowed: Union[str, List[Any]]
     min_val: Union[None, int, float] = None
     max_val: Union[None, int, float] = None
     value: Any = None
 
-    # TODO[pydantic]: 
     @field_validator("display_name")
     @classmethod
     def validate_display_name(cls, v, info: ValidationInfo):
@@ -217,7 +211,6 @@ class ModelOption(BaseModel):
             v = info.data.get("name")
         return v
 
-    # TODO[pydantic]:
     @field_validator("description")
     @classmethod
     def validate_description(cls, v, info: ValidationInfo):
@@ -225,7 +218,6 @@ class ModelOption(BaseModel):
             v = info.data.get("display_name")
         return v
 
-    # TODO[pydantic]:
     @field_validator("value")
     @classmethod
     def validate_value(cls, v, info: ValidationInfo):
@@ -278,8 +270,8 @@ class FlowsheetExport(BaseModel):
 
     m: object = Field(default=None, exclude=True)
     obj: object = Field(default=None, exclude=True)
-    name: str = ""
-    description: str = ""
+    name: Union[None, str] = Field(default="", validate_default=True)
+    description: Union[None, str] = Field(default="", validate_default=True)
     model_objects: Dict[str, ModelExport] = {}
     version: int = 2
     requires_idaes_solver: bool = False
@@ -288,7 +280,6 @@ class FlowsheetExport(BaseModel):
     build_options: Dict[str, ModelOption] = {}
 
     # set name dynamically from object
-    # TODO[pydantic]:
     @field_validator("name")
     @classmethod
     def validate_name(cls, v, info: ValidationInfo):
@@ -301,7 +292,6 @@ class FlowsheetExport(BaseModel):
                 v = "default"
         return v
 
-    # TODO[pydantic]: 
     @field_validator("description")
     @classmethod
     def validate_description(cls, v, info: ValidationInfo):
