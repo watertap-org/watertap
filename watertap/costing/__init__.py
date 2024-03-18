@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from .watertap_costing_package import WaterTAPCosting
+from .watertap_costing_package import WaterTAPCosting, WaterTAPCostingDetailed
 from .zero_order_costing import ZeroOrderCosting
 from .multiple_choice_costing_block import MultiUnitModelCostingBlock
 
