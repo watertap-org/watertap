@@ -360,6 +360,7 @@ class TestDyewithROFlowsheetwithGAC:
         )
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_solve(self, system_frame):
         m = system_frame
 
@@ -394,6 +395,8 @@ class TestDyewithROFlowsheetwithGAC:
             m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "tds"]
         )
 
+    @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_costing(self, system_frame):
         m = system_frame
 
