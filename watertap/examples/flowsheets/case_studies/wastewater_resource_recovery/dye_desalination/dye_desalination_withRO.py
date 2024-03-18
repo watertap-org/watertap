@@ -9,6 +9,15 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+"""
+[1] Zaharaddeen N. Garba, Zakariyya U. Zango, A. A. Babando and A. Galadima.
+"Competitive adsorption of dyes onto granular activated carbon", 2015,
+Journal of Chemical and Pharmaceutical Research, pp. 710-717
+
+[2] Jong Jib Lee. "Isotherm, Kinetic and Thermodynamic Characteristics for
+Adsorption of Congo Red by Activated Carbon", 2014, Korean Chemical Engineering Research,
+Vol. 53 Iss. 1, pp. 64-70
+"""
 
 import os
 import idaes.logger as idaeslog
@@ -86,7 +95,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main():
-    m = build(include_pretreatment=False, include_dewatering=False, include_gac=True)
+    m = build(include_pretreatment=False, include_dewatering=False, include_gac=False)
     set_operating_conditions(m)
 
     # assert_degrees_of_freedom(m, 0)
@@ -160,7 +169,7 @@ def build(
                 "dye": 0.696665,  # molecular weight of congo red dye
             },
             diffus_calculation=DiffusivityCalculation.none,
-            diffusivity_data={("Liq", "tds"): 1e-09, ("Liq", "dye"): 2e-10},
+            diffusivity_data={("Liq", "tds"): 1e-09, ("Liq", "dye"): 1e-11},
         )
         m.fs.gac = GAC(
             property_package=m.fs.prop_gac,
@@ -380,13 +389,13 @@ def set_operating_conditions(m):
         m.fs.tb_nf_gac.properties_out[0].temperature.fix(298.15)
         m.fs.tb_nf_gac.properties_out[0].pressure.fix(101325)
 
-        m.fs.gac.freund_k.fix(10)
-        m.fs.gac.freund_ninv.fix(0.9)
+        m.fs.gac.freund_k.fix(18.793)  # [1]
+        m.fs.gac.freund_ninv.fix(0.578)  # [1]
         m.fs.gac.shape_correction_factor.fix()
         m.fs.gac.ds.fix(5e-13)
         # gac particle specifications
-        m.fs.gac.particle_dens_app.fix(750)
-        m.fs.gac.particle_dia.fix(0.001)
+        m.fs.gac.particle_dens_app.fix(500)  # [2]
+        m.fs.gac.particle_dia.fix(0.000243)  # [2]
         # adsorber bed specifications
         m.fs.gac.ebct.fix(600)
         m.fs.gac.bed_voidage.fix(0.4)
