@@ -12,6 +12,7 @@
 """
 Simple flowsheet interface API
 """
+from pydantic import ConfigDict
 
 __author__ = "Dan Gunter"
 
@@ -40,7 +41,7 @@ except ImportError:
 # third-party
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, validator, Field, field_validator, ValidationInfo
 import pyomo.environ as pyo
 
 #: Forward-reference to a FlowsheetInterface type, used in
@@ -89,22 +90,20 @@ class ModelExport(BaseModel):
     description: str = ""
     is_input: bool = True
     is_output: bool = True
-    is_readonly: bool = None
-    input_category: Optional[str]
-    output_category: Optional[str]
+    is_readonly: Union[None, bool] = Field(default=None, validate_default=True)
+    input_category: Optional[str] = None
+    output_category: Optional[str] = None
     # computed
-    obj_key: str = None
+    obj_key: Union[None, str] = Field(default=None, validate_default=True)
     fixed: bool = True
     lb: Union[None, float] = 0.0
     ub: Union[None, float] = 0.0
     num_samples: int = 2
     has_bounds: bool = True
     is_sweep: bool = False
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    class Config:
-        arbitrary_types_allowed = True
-
-    @validator("obj", always=True, pre=True)
+    @field_validator("obj")
     @classmethod
     def ensure_obj_is_supported(cls, v):
         if v is not None:
@@ -142,52 +141,57 @@ class ModelExport(BaseModel):
     # (e.g. `None` for a strict (non-`Optional` `bool` field)
 
     # Get value from object
-    @validator("value", always=True)
+    # TODO[pydantic]: 
+    @field_validator("value")
     @classmethod
-    def validate_value(cls, v, values):
-        if values.get("obj", None) is None:
+    def validate_value(cls, v, info: ValidationInfo):
+        if info.data.get("obj", None) is None:
             return v
-        obj = cls._get_supported_obj(values, allow_none=False)
+        obj = cls._get_supported_obj(info.data, allow_none=False)
         return pyo.value(obj)
 
     # Derive display_units from ui_units
-    @validator("display_units", always=True)
+    # TODO[pydantic]: 
+    @field_validator("display_units")
     @classmethod
-    def validate_units(cls, v, values):
+    def validate_units(cls, v, info: ValidationInfo):
         if not v:
-            u = values.get("ui_units", pyo.units.dimensionless)
+            u = info.data.get("ui_units", pyo.units.dimensionless)
             v = str(pyo.units.get_units(u))
         return v
 
     # set name dynamically from object
-    @validator("name", always=True)
+    # TODO[pydantic]:
+    @field_validator("name")
     @classmethod
-    def validate_name(cls, v, values):
+    def validate_name(cls, v, info: ValidationInfo):
         if not v:
-            obj = cls._get_supported_obj(values, allow_none=False)
+            obj = cls._get_supported_obj(info.data, allow_none=False)
             try:
                 v = obj.name
             except AttributeError:
                 pass
         return v
 
-    @validator("is_readonly", always=True, pre=True)
+    # TODO[pydantic]: 
+    @field_validator("is_readonly")
     @classmethod
-    def set_readonly_default(cls, v, values):
+    def set_readonly_default(cls, v, info: ValidationInfo):
         if v is None:
             v = True
-            obj = cls._get_supported_obj(values, allow_none=False)
+            obj = cls._get_supported_obj(info.data, allow_none=False)
             if obj.is_variable_type() or (
                 obj.is_parameter_type() and obj.parent_component().mutable
             ):
                 v = False
         return v
 
-    @validator("obj_key", always=True, pre=True)
+    # TODO[pydantic]: 
+    @field_validator("obj_key")
     @classmethod
-    def set_obj_key_default(cls, v, values):
+    def set_obj_key_default(cls, v, info: ValidationInfo):
         if v is None:
-            obj = cls._get_supported_obj(values, allow_none=False)
+            obj = cls._get_supported_obj(info.data, allow_none=False)
             v = str(obj)
         return v
 
@@ -197,37 +201,40 @@ class ModelOption(BaseModel):
 
     name: str
     category: str = "Build Options"
-    display_name: str = None
-    description: str = None
+    display_name: Union[None, str] = None
+    description: Union[None, str] = None
     display_values: List[Any] = []
     values_allowed: Union[str, List[Any]]
     min_val: Union[None, int, float] = None
     max_val: Union[None, int, float] = None
     value: Any = None
 
-    @validator("display_name", always=True)
+    # TODO[pydantic]: 
+    @field_validator("display_name")
     @classmethod
-    def validate_display_name(cls, v, values):
+    def validate_display_name(cls, v, info: ValidationInfo):
         if v is None:
-            v = values.get("name")
+            v = info.data.get("name")
         return v
 
-    @validator("description", always=True)
+    # TODO[pydantic]:
+    @field_validator("description")
     @classmethod
-    def validate_description(cls, v, values):
+    def validate_description(cls, v, info: ValidationInfo):
         if v is None:
-            v = values.get("display_name")
+            v = info.data.get("display_name")
         return v
 
-    @validator("value")
+    # TODO[pydantic]:
+    @field_validator("value")
     @classmethod
-    def validate_value(cls, v, values):
-        allowed = values.get("values_allowed", None)
+    def validate_value(cls, v, info: ValidationInfo):
+        allowed = info.data.get("values_allowed", None)
         # check if values allowed is int or float and ensure valid value
         if allowed == "int":
             if isinstance(v, int):
-                min_val = values.get("min_val", float("-inf"))
-                max_val = values.get("max_val", float("-inf"))
+                min_val = info.data.get("min_val", float("-inf"))
+                max_val = info.data.get("max_val", float("-inf"))
                 if v >= min_val and v <= max_val:
                     return v
                 else:
@@ -238,8 +245,8 @@ class ModelOption(BaseModel):
                 raise ValueError(f"'value' ({v}) not a valid integer")
         elif allowed == "float":
             if isinstance(v, int) or isinstance(v, float):
-                min_val = values.get("min_val", float("-inf"))
-                max_val = values.get("max_val", float("-inf"))
+                min_val = info.data.get("min_val", float("-inf"))
+                max_val = info.data.get("max_val", float("-inf"))
                 if v >= min_val and v <= max_val:
                     return v
                 else:
@@ -281,26 +288,28 @@ class FlowsheetExport(BaseModel):
     build_options: Dict[str, ModelOption] = {}
 
     # set name dynamically from object
-    @validator("name", always=True)
+    # TODO[pydantic]:
+    @field_validator("name")
     @classmethod
-    def validate_name(cls, v, values):
+    def validate_name(cls, v, info: ValidationInfo):
         if not v:
             try:
-                v = values["obj"].name
+                v = info.data["obj"].name
             except (KeyError, AttributeError):
                 pass
             if not v:
                 v = "default"
         return v
 
-    @validator("description", always=True)
+    # TODO[pydantic]: 
+    @field_validator("description")
     @classmethod
-    def validate_description(cls, v, values):
+    def validate_description(cls, v, info: ValidationInfo):
         if not v:
             try:
-                v = values["obj"].doc
+                v = info.data["obj"].doc
             except (KeyError, AttributeError):
-                v = f"{values['name']} flowsheet"
+                v = f"{info.data['name']} flowsheet"
         return v
 
     def add(self, *args, data: Union[dict, ModelExport] = None, **kwargs) -> object:
