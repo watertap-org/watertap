@@ -41,9 +41,9 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
     # call get_costing for each unit model
     m.fs.costing = costing_package()
     # the full_treatment_train uses a lower than default value
-    # for factor_maintenance_labor_chemical
-    m.fs.costing.factor_maintenance_labor_chemical.fix(0.02)
-    crf = m.fs.costing.factor_capital_annualization
+    # for maintenance_labor_chemical_factor
+    m.fs.costing.maintenance_labor_chemical_factor.fix(0.02)
+    crf = m.fs.costing.capital_recovery_factor
 
     # Nanofiltration
     if hasattr(m.fs, "NF"):
@@ -168,7 +168,7 @@ def scale_costing(self):
 
 
 def display_costing(m):
-    crf = m.fs.costing.factor_capital_annualization
+    crf = m.fs.costing.capital_recovery_factor
     if not hasattr(m.fs, "pump_RO2"):
         m.fs.pump_RO2 = Block()
         m.fs.pump_RO2.costing = Block()
