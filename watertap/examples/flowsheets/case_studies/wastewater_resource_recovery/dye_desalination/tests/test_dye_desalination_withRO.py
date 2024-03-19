@@ -320,6 +320,7 @@ class TestDyewithROFlowsheetwithDewatering:
         assert pytest.approx(-0.151027, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_display(self, system_frame):
         m = system_frame
         display_results(m)
@@ -416,6 +417,7 @@ class TestDyewithROFlowsheetwithGAC:
         assert pytest.approx(-0.765208, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_display(self, system_frame):
         m = system_frame
         display_results(m)
