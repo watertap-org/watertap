@@ -167,7 +167,7 @@ class TestDyeFlowsheet_withGAC:
             m.fs.treated.flow_mass_phase_comp[0, "Liq", "tds"]
         )
 
-        assert pytest.approx(1e-10, rel=1e-3) == value(
+        assert pytest.approx(0, rel=1e-3) == value(
             m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
@@ -175,7 +175,7 @@ class TestDyeFlowsheet_withGAC:
             m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "dye"]
         )
 
-        assert pytest.approx(1e-10, rel=1e-3) == value(
+        assert pytest.approx(0, rel=1e-3) == value(
             m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "tds"]
         )
 
