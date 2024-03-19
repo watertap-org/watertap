@@ -112,17 +112,8 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
         )
 
     def _add_deltaP(self, pressure_change_type=PressureChangeType.calculated):
-        if pressure_change_type == PressureChangeType.calculated:
 
-            @self.Constraint(
-                self.flowsheet().config.time, doc="Total Pressure drop across channel"
-            )
-            def eq_pressure_change(b, t):
-                return b.deltaP_channel[t] == sum(
-                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
-                )
-
-        else:
+        if pressure_change_type == PressureChangeType.fixed_per_stage:
 
             @self.Constraint(
                 self.flowsheet().config.time,
@@ -131,6 +122,16 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
             )
             def eq_pressure_change(b, t, x):
                 return b.deltaP_channel[t] == b.dP_dx[t, x] * b.length
+
+        else:
+
+            @self.Constraint(
+                self.flowsheet().config.time, doc="Total Pressure drop across channel"
+            )
+            def eq_pressure_change(b, t):
+                return b.deltaP_channel[t] == sum(
+                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
+                )
 
     def initialize(
         self,
@@ -225,10 +226,6 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # setting scaling factors for variables
-
-        # will not override if the user provides the scaling factor
-        ## default of 1 set by ControlVolume1D
         if hasattr(self, "area"):
             if iscale.get_scaling_factor(self.area) is None:
                 iscale.set_scaling_factor(self.area, 100)

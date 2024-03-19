@@ -129,10 +129,12 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         # Concentration polarization constraint is not accounted for in the below method; it is
         # written later in the base model (eq_concentration_polarization)
-        self.cold_ch.add_concentration_polarization(
-            concentration_polarization_type=ConcentrationPolarizationType.none,
-            mass_transfer_coefficient=MassTransferCoefficient.none,
-        )
+        if hasattr(self.cold_ch.config.property_package, "solute_set"):
+            # If solute_set is defined, add concentration polarization configuration
+            self.cold_ch.add_concentration_polarization(
+                concentration_polarization_type=ConcentrationPolarizationType.none,
+                mass_transfer_coefficient=MassTransferCoefficient.none,
+            )
 
         self.cold_ch.add_temperature_polarization(
             temperature_polarization_type=self.config.cold_ch.temperature_polarization_type,
@@ -142,6 +144,21 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.cold_ch.apply_transformation()
         except AttributeError:
             pass
+
+        for t in self.flowsheet().config.time:
+            for x in self.cold_ch.length_domain:
+                # Check if 'Vap' phase and 'H2O' component are defined in the property package
+                if (
+                    "Vap" in self.cold_ch.config.property_package.phase_list
+                    and "H2O" in self.cold_ch.config.property_package.component_list
+                ):
+                    # If so, fix the flow of 'H2O' in the 'Vap' phase to 0
+                    self.cold_ch.properties[t, x].flow_mass_phase_comp[
+                        "Vap", "H2O"
+                    ].fix(0)
+                    self.cold_ch.properties_interface[t, x].flow_mass_phase_comp[
+                        "Vap", "H2O"
+                    ].fix(0)
 
         add_object_reference(self, "length_domain", self.hot_ch.length_domain)
         add_object_reference(
@@ -741,6 +758,20 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     self.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
                 )
                 iscale.set_scaling_factor(v, sf_flux_enth)
+            sf = iscale.get_scaling_factor(
+                self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+            )
+            iscale.set_scaling_factor(
+                self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"],
+                sf * 1000,
+            )
+            sf = iscale.get_scaling_factor(
+                self.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+            )
+            iscale.set_scaling_factor(
+                self.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"],
+                sf * 1000,
+            )
 
         for (t, x), v in self.flux_conduction_heat.items():
             if iscale.get_scaling_factor(v) is None:

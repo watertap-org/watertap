@@ -483,26 +483,31 @@ see property package for documentation.}""",
             doc="Mass transfer from feed to permeate",
         )
         def eq_connect_mass_transfer(b, t, x, p, j):
-            return (
-                b.cold_ch.mass_transfer_term[t, x, p, j]
-                == -b.hot_ch.mass_transfer_term[t, x, p, j]
-            )
+
+            if p == "Liq":
+                return (
+                    b.cold_ch.mass_transfer_term[t, x, p, j]
+                    == -b.hot_ch.mass_transfer_term[t, x, p, j]
+                )
+            else:
+                b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
+                return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
-            self.config.cold_ch.property_package.phase_list,
-            self.config.cold_ch.property_package.component_list,
+            self.config.hot_ch.property_package.phase_list,
+            self.config.hot_ch.property_package.component_list,
             doc="Permeate production",
         )
         def eq_permeate_production(b, t, x, p, j):
             if j == "H2O":
                 return (
-                    b.cold_ch.mass_transfer_term[t, x, p, j]
-                    == b.width * b.flux_mass[t, x]
+                    b.hot_ch.mass_transfer_term[t, x, p, j]
+                    == -b.width * b.flux_mass[t, x]
                 )
             else:
-                b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
+                b.hot_ch.mass_transfer_term[t, x, p, j].fix(0)
                 return Constraint.Skip
 
     def _add_heat_transfer(self):
