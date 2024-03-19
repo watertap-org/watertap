@@ -125,7 +125,8 @@ class TestGeneralMethods:
                 "sulfuric_acid",
             ]
 
-        assert number_unfixed_variables(model.fs.frame) == 0
+        # factor capital annualization
+        assert number_unfixed_variables(model.fs.frame) == 1
 
         assert isinstance(model.fs.frame.plant_lifetime, Var)
         assert value(model.fs.frame.plant_lifetime) == 30
@@ -149,7 +150,7 @@ class TestGeneralMethods:
 
         assert isinstance(model.fs.frame.wacc, Var)
         assert value(model.fs.frame.wacc) == 0.05
-        assert isinstance(model.fs.frame.capital_recovery_factor, Expression)
+        assert isinstance(model.fs.frame.capital_recovery_factor, Var)
         assert value(model.fs.frame.capital_recovery_factor) == pytest.approx(
             0.0650514, rel=1e-5
         )
