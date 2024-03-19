@@ -112,6 +112,7 @@ class TestDyewithROFlowsheetwithPretreatment:
             m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
+    @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
 
@@ -279,6 +280,7 @@ class TestDyewithROFlowsheetwithDewatering:
         )
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_solve(self, system_frame):
         m = system_frame
 
@@ -301,6 +303,8 @@ class TestDyewithROFlowsheetwithDewatering:
             m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
+    @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_costing(self, system_frame):
         m = system_frame
 
