@@ -149,6 +149,7 @@ setup(
             "edb = watertap.edb.commands:command_base",
         ],
         "watertap.flowsheets": [
+            "generic desal train = watertap.examples.flowsheets.generic_desalination_train.generic_train_ui",
             "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
             "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",
             "bsm2 = watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_ui",
