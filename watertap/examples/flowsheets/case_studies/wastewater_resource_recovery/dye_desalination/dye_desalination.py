@@ -228,9 +228,6 @@ def set_operating_conditions(m):
         m.fs.gac.b3.fix(0.003206)
         m.fs.gac.b4.fix(0.134987)
 
-        m.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "H2O"] = 1e-10
-        m.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "tds"] = 1e-10
-
         iscale.constraint_scaling_transform(m.fs.gac.eq_mass_adsorbed["dye"], 1e-2)
     else:
         pass
@@ -248,7 +245,7 @@ def initialize_system(m):
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
-    results = solver.solve(blk, tee=True)
+    results = solver.solve(blk, tee=tee)
     check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
