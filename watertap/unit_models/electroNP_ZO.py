@@ -90,21 +90,21 @@ class ElectroNPZOdata(SeparatorData):
         add_object_reference(self, "properties_byproduct", self.byproduct_state)
 
         # Add performance variables
-        self.recovery_frac_mass_H2O = Var(
+        self.frac_mass_H2O_treated = Var(
             self.flowsheet().time,
-            initialize=0.56,
+            initialize=0.8777,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             bounds=(0.0, 1),
             doc="Mass recovery fraction of water in the treated stream",
         )
-        self.recovery_frac_mass_H2O.fix()
+        self.frac_mass_H2O_treated.fix()
 
         # Default solute concentration
         self.P_removal = Param(
             within=NonNegativeReals,
             mutable=True,
-            default=0.95,
+            default=0.98,
             doc="Reference phosphorus removal fraction on a mass basis",
             units=pyunits.dimensionless,
         )
@@ -128,7 +128,7 @@ class ElectroNPZOdata(SeparatorData):
             if i == "H2O":
                 return (
                     blk.removal_frac_mass_comp[t, "byproduct", i]
-                    == 1 - blk.recovery_frac_mass_H2O[t]
+                    == 1 - blk.frac_mass_H2O_treated[t]
                 )
             elif i == "S_PO4":
                 return blk.removal_frac_mass_comp[t, "byproduct", i] == blk.P_removal
@@ -190,7 +190,9 @@ class ElectroNPZOdata(SeparatorData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        var_dict["Water Recovery"] = self.recovery_frac_mass_H2O[time_point]
+        var_dict["Mass fraction of H2O in treated stream"] = self.frac_mass_H2O_treated[
+            time_point
+        ]
         for j in self.config.property_package.solute_set:
             var_dict[f"Solute Removal {j}"] = self.removal_frac_mass_comp[
                 time_point, "byproduct", j
@@ -216,7 +218,7 @@ class ElectroNPZOdata(SeparatorData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        iscale.set_scaling_factor(self.recovery_frac_mass_H2O, 1)
+        iscale.set_scaling_factor(self.frac_mass_H2O_treated, 1)
 
         if iscale.get_scaling_factor(self.energy_electric_flow_mass) is None:
             sf = iscale.get_scaling_factor(
