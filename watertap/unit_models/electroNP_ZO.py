@@ -92,10 +92,10 @@ class ElectroNPZOdata(SeparatorData):
         # Add performance variables
         self.recovery_frac_mass_H2O = Var(
             self.flowsheet().time,
-            initialize=0.99999,
+            initialize=0.56,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            bounds=(0.0, 1.0000001),
+            bounds=(0.0, 1),
             doc="Mass recovery fraction of water in the treated stream",
         )
         self.recovery_frac_mass_H2O.fix()
@@ -104,7 +104,7 @@ class ElectroNPZOdata(SeparatorData):
         self.P_removal = Param(
             within=NonNegativeReals,
             mutable=True,
-            default=0.98,
+            default=0.95,
             doc="Reference phosphorus removal fraction on a mass basis",
             units=pyunits.dimensionless,
         )
@@ -220,13 +220,13 @@ class ElectroNPZOdata(SeparatorData):
 
         if iscale.get_scaling_factor(self.energy_electric_flow_mass) is None:
             sf = iscale.get_scaling_factor(
-                self.energy_electric_flow_mass, default=1e2, warning=True
+                self.energy_electric_flow_mass, default=1e-3, warning=True
             )
             iscale.set_scaling_factor(self.energy_electric_flow_mass, sf)
 
         if iscale.get_scaling_factor(self.magnesium_chloride_dosage) is None:
             sf = iscale.get_scaling_factor(
-                self.magnesium_chloride_dosage, default=1e1, warning=True
+                self.magnesium_chloride_dosage, default=1e0, warning=True
             )
             iscale.set_scaling_factor(self.magnesium_chloride_dosage, sf)
 
@@ -255,16 +255,16 @@ class ElectroNPZOdata(SeparatorData):
         for t, v in self.electricity.items():
             sf = (
                 iscale.get_scaling_factor(self.energy_electric_flow_mass)
-                * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
-                * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
+                * iscale.get_scaling_factor(self.inlet.flow_vol[t])
+                * iscale.get_scaling_factor(self.inlet.conc_mass_comp[t, "S_PO4"])
             )
             iscale.set_scaling_factor(v, sf)
 
         for t, v in self.MgCl2_flowrate.items():
             sf = (
                 iscale.get_scaling_factor(self.magnesium_chloride_dosage)
-                * iscale.get_scaling_factor(self.byproduct.flow_vol[t])
-                * iscale.get_scaling_factor(self.byproduct.conc_mass_comp[t, "S_PO4"])
+                * iscale.get_scaling_factor(self.inlet.flow_vol[t])
+                * iscale.get_scaling_factor(self.inlet.conc_mass_comp[t, "S_PO4"])
             )
             iscale.set_scaling_factor(v, sf)
 
