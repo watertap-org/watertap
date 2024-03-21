@@ -294,7 +294,7 @@ class OLIApi:
 
         _logger.debug(f"Getting chemistry information for {dbs_file_id}")
         req_result = requests.get(
-            f"{self.credential_manager.engine_url}file/{dbs_file_id}/chemistry-info",
+            f"{self.credential_manager.engine_url}/file/{dbs_file_id}/chemistry-info",
             headers=self.credential_manager.update_headers(
                 {"content-type": "application/json"}
             ),
@@ -359,7 +359,7 @@ class OLIApi:
 
         req_result = requests.request(
             "DELETE",
-            f"{self.credential_manager._delete_dbs_url}{dbs_file_id}",
+            f"{self.credential_manager._delete_dbs_url}/{dbs_file_id}",
             headers=self.credential_manager.headers,
             data={},
         )
@@ -405,13 +405,13 @@ class OLIApi:
         if mode == "POST":
             if bool(input_params):
                 req_result = requests.post(
-                    f"{self.credential_manager.engine_url}flash/{dbs_file_id}/{flash_method}",
+                    f"{self.credential_manager.engine_url}/flash/{dbs_file_id}/{flash_method}",
                     headers=self.credential_manager.update_headers(
                         {"content-type": "application/json"}
                     ),
                     data=json.dumps(input_params),
                 )
-                post_result = json.loads(req_result.text)
+                post_result = req_result.json()
             else:
                 raise IOError("Specify flash calculation input to use this function.")
 
