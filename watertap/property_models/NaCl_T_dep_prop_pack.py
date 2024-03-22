@@ -87,6 +87,16 @@ class NaClParameterData(PhysicalParameterBlock):
         # phases
         self.Liq = LiquidPhase()
 
+        """ References
+        This package was developed from the following references:
+        - Pitzer, Kenneth S., J. Christopher Peiper, and R. H. Busey. (1984). 
+        Thermodynamic Properties of Aqueous Sodium Chloride Solutions, Journal of Physical and Chemical Reference Data 13, 
+        no. 1 , 1–102. DOI: 10.1063/1.555709
+        - Sparrow, Benjamin S. (2003). Empirical Equations for the Thermodynamic Properties of Aqueous Sodium Chloride, 
+        Desalination 159, no. 2, 161–70. DOI: 10.1016/S0011-9164(03)90068-3
+        - Zaytsev Ivan Dmitrievich & Aseev G. G. (1992). Properties of aqueous solutions of electrolytes, CRC Press.
+        """
+
         # molecular weight
         mw_comp_data = {"H2O": 18.01528e-3, "NaCl": 58.44e-3}
         self.mw_comp = Param(
