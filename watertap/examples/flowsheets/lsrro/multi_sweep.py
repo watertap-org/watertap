@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -114,7 +114,7 @@ def run_case(number_of_stages, nx, output_filename=None):
     outputs["Total Membrane Area"] = m.fs.total_membrane_area
     outputs["Total Capex LCOW"] = (
         m.fs.costing.total_capital_cost
-        * m.fs.costing.factor_capital_annualization
+        * m.fs.costing.capital_recovery_factor
         / m.fs.costing.annual_water_production
     )
     outputs["Total Opex LCOW"] = (

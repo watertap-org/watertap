@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -221,7 +221,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_total_investment,
+        obj=fs.costing.total_investment_factor,
         name="Total investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -232,7 +232,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_maintenance_labor_chemical,
+        obj=fs.costing.maintenance_labor_chemical_factor,
         name="Maintenance-labor-chemical factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
@@ -243,7 +243,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_capital_annualization,
+        obj=fs.costing.capital_recovery_factor,
         name="Capital annualization factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
@@ -376,6 +376,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwargs):
     # build and solve initial flowsheet
     m = build()
+
+    # the UI sets `capital_recovery_factor`, so unfix `wacc`
+    m.fs.costing.wacc.unfix()
+    m.fs.costing.capital_recovery_factor.fix()
 
     solver = get_solver()
 
