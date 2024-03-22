@@ -193,7 +193,7 @@ def test_actions(add_variant: str):
             exports.add(data=ve1)  # form 3
         elif add_variant == "model_export_dict_data_kwarg":
             ve1 = fsapi.ModelExport(obj=v1)
-            exports.add(data=ve1.dict())  # form 4
+            exports.add(data=dict(ve1))  # form 4
         with pytest.raises(ValueError):
             exports.add(v1, v1)
 
