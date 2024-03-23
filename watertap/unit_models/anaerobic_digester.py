@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -449,7 +449,7 @@ see reaction package for documentation.}""",
             units=pyunits.m**3 / pyunits.day / pyunits.bar,
             doc="friction parameter",
         )
-
+        # TODO: use Henry's law constant for co2 already created in ADM1 rxn model
         self.KH_co2 = Var(
             self.flowsheet().time,
             initialize=0.02715,
@@ -457,6 +457,7 @@ see reaction package for documentation.}""",
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             doc="CO2 Henry's law coefficient",
         )
+        # TODO: move henry's law constants to ADM1 rxn model and/or ADM1 vapor prop model
         self.KH_ch4 = Var(
             self.flowsheet().time,
             initialize=0.00116,
@@ -471,6 +472,7 @@ see reaction package for documentation.}""",
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             doc="H2 Henry's law coefficient",
         )
+        # TODO: consider moving KLA to prop model and make name consistent with name used on cstr_injection/asm1
         self.K_La = Param(
             initialize=200,
             units=pyunits.day**-1,
@@ -1018,13 +1020,15 @@ see reaction package for documentation.}""",
             self.Ch4_Henrys_law.deactivate()
             self.H2_Henrys_law.deactivate()
 
-            results = solverobj.solve(self, tee=slc.tee)
+            results = solverobj.solve(self, tee=slc.tee, options={"ma27_pivtol": 1e-2})
 
             if not check_optimal_termination(results):
                 init_log.warning(
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
-                results = solverobj.solve(self, tee=slc.tee)
+                results = solverobj.solve(
+                    self, tee=slc.tee, options={"ma27_pivtol": 1e-2}
+                )
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(results))
         )

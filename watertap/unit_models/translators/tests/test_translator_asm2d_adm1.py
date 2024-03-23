@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for ASM2d-ADM1 Translator unit model.
 
@@ -44,6 +43,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
+
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -58,7 +58,6 @@ from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import
 
 from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
-    DecaySwitch,
 )
 
 from pyomo.util.check_units import assert_units_consistent
@@ -92,7 +91,7 @@ def test_config():
         outlet_state_defined=True,
     )
 
-    assert len(m.fs.unit.config) == 12
+    assert len(m.fs.unit.config) == 13
 
     assert m.fs.unit.config.outlet_state_defined == True
     assert not m.fs.unit.config.dynamic
@@ -105,7 +104,7 @@ def test_config():
 
 
 # -----------------------------------------------------------------------------
-class TestAsm2dAdm1_decay_on(object):
+class TestAsm2dAdm1_bioP_true(object):
     @pytest.fixture(scope="class")
     def asmadm(self):
         m = ConcreteModel()
@@ -119,7 +118,6 @@ class TestAsm2dAdm1_decay_on(object):
         )
         m.fs.ASM2d_rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props_ASM2d,
-            decay_switch=DecaySwitch.on,
         )
 
         m.fs.unit = Translator_ASM2d_ADM1(
@@ -129,6 +127,7 @@ class TestAsm2dAdm1_decay_on(object):
             outlet_reaction_package=m.fs.ADM1_rxn_props,
             has_phase_equilibrium=False,
             outlet_state_defined=True,
+            bio_P=True,
         )
 
         m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
@@ -392,7 +391,7 @@ class TestAsm2dAdm1_decay_on(object):
 
 
 # -----------------------------------------------------------------------------
-class TestAsm2dAdm1_decay_off(object):
+class TestAsm2dAdm1_bioP_false(object):
     @pytest.fixture(scope="class")
     def asmadm(self):
         m = ConcreteModel()
@@ -406,7 +405,6 @@ class TestAsm2dAdm1_decay_off(object):
         )
         m.fs.ASM2d_rxn_props = ModifiedASM2dReactionParameterBlock(
             property_package=m.fs.props_ASM2d,
-            decay_switch=DecaySwitch.off,
         )
 
         m.fs.unit = Translator_ASM2d_ADM1(
@@ -416,6 +414,7 @@ class TestAsm2dAdm1_decay_off(object):
             outlet_reaction_package=m.fs.ADM1_rxn_props,
             has_phase_equilibrium=False,
             outlet_state_defined=True,
+            bio_P=False,
         )
 
         m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
