@@ -313,6 +313,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
+        obj=fs.costing.capital_recovery_factor,
+        name="Capital annualization factor",
+        ui_units=1 / pyunits.year,
+        display_units="fraction/year",
+        rounding=2,
+        description="Capital annualization factor [fraction of investment cost/year]",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
         obj=fs.costing.electricity_cost,
         name="Electricity cost",
         ui_units=fs.costing.base_currency / pyunits.kWh,
