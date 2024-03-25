@@ -358,10 +358,22 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         # Performance equations
         @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
+        # def eq_pressure_transfer(b, t):
+        #     return (
+        #         b.feed_side.deltaP[t]
+        #         == b.efficiency_pressure_exchanger[t] * -b.brine_side.deltaP[t]
+        #     )
         def eq_pressure_transfer(b, t):
-            return (
-                b.feed_side.deltaP[t]
-                == b.efficiency_pressure_exchanger[t] * -b.brine_side.deltaP[t]
+            return b.efficiency_pressure_exchanger[t] == (
+                b.feed_side.properties_out[t].flow_vol
+                * b.feed_side.properties_out[t].pressure
+                + b.brine_side.properties_out[t].flow_vol
+                * b.brine_side.properties_out[t].pressure
+            ) / (
+                b.feed_side.properties_in[t].flow_vol
+                * b.feed_side.properties_in[t].pressure
+                + b.brine_side.properties_in[t].flow_vol
+                * b.brine_side.properties_in[t].pressure
             )
 
         if (
@@ -633,7 +645,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         # transform constraints
         for t, c in self.eq_pressure_transfer.items():
-            sf = iscale.get_scaling_factor(self.feed_side.deltaP[t])
+            sf = iscale.get_scaling_factor(self.efficiency_pressure_exchanger[t])
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.eq_equal_flow_vol.items():

@@ -760,11 +760,11 @@ class TestPressureExchanger_with_ion_prop_pack:
     def test_solution(self, unit_frame):
         m = unit_frame
 
-        assert pytest.approx(4.755e6, rel=1e-3) == value(
+        assert pytest.approx(4.792e6, rel=1e-3) == value(
             m.fs.unit.feed_outlet.pressure[0]
         )
 
-        assert pytest.approx(4.654e6, rel=1e-3) == value(m.fs.unit.feed_side.deltaP[0])
+        assert pytest.approx(4.691e6, rel=1e-3) == value(m.fs.unit.feed_side.deltaP[0])
         assert pytest.approx(4.654e3, rel=1e-3) == value(m.fs.unit.feed_side.work[0])
         assert pytest.approx(-4.899e6, rel=1e-3) == value(
             m.fs.unit.brine_side.deltaP[0]
