@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -107,7 +107,8 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Molecular weight",
         )
 
-        # Liq mass density parameters, eq. 8 in Sharqawy et al. (2010)
+        # Liq mass density parameters, 0-180 C
+        # eq. 8 in Sharqawy et al. (2010)
         dens_units = pyunits.kg / pyunits.m**3
         t_inv_units = pyunits.K**-1
         s_inv_units = pyunits.kg / pyunits.g
@@ -157,7 +158,8 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Mass density parameter universal gas constant",
         )
 
-        # vapor pressure parameters,  eq. 5 and 6 in Nayar et al.(2016)
+        # vapor pressure parameters,  0-180 C
+        # eq. 5 and 6 in Nayar et al.(2016)
         self.pressure_sat_param_psatw_A1 = Var(
             within=Reals,
             initialize=-5.8002206e3,
@@ -195,7 +197,8 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Vapor pressure of pure water parameter A6",
         )
 
-        # specific enthalpy parameters, Table 9 in Nayar et al. (2016) - ignores salinity-based parameters
+        # specific enthalpy parameters, 0-120 C
+        # Table 9 in Nayar et al. (2016) - ignores salinity-based parameters
         enth_mass_units = pyunits.J / pyunits.kg
         P_inv_units = pyunits.MPa**-1
 
@@ -247,7 +250,8 @@ class WaterParameterData(PhysicalParameterBlock):
             units=enth_mass_units * t_inv_units**3,
             doc="Specific enthalpy parameter C4",
         )
-        # specific heat parameters from eq (9) in Sharqawy et al. (2010)
+        # specific heat parameters, 0-180 C
+        # eq. 9 in Sharqawy et al. (2010)
         cp_units = pyunits.J / (pyunits.kg * pyunits.K)
         self.cp_phase_param_A1 = Var(
             within=Reals,
@@ -307,7 +311,8 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Specific heat of water vapor parameter E",
         )
 
-        # latent heat of pure water parameters from eq. 54 in Sharqawy et al. (2010)
+        # latent heat of pure water parameters, 0-200 C
+        # eq. 54 in Sharqawy et al. (2010)
         self.dh_vap_w_param_0 = Var(
             within=Reals,
             initialize=2.501e6,
@@ -340,7 +345,8 @@ class WaterParameterData(PhysicalParameterBlock):
         )
 
         visc_d_units = pyunits.Pa * pyunits.s
-        # dynamic viscosity parameters, eq. 22 and 23 in Sharqawy
+        # dynamic viscosity parameters, 0-180 C
+        # eq. 22 and 23 in Sharqawy et al. (2010)
         self.visc_d_param_muw_A = Var(
             within=Reals,
             initialize=4.2844e-5,
@@ -366,8 +372,8 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Dynamic viscosity parameter D for pure water",
         )
 
-        # thermal conductivity parameters from eq. 13 in Sharqawy et al. (2010)
-
+        # thermal conductivity parameters, 0-180 C
+        # eq. 13 in Sharqawy et al. (2010)
         self.therm_cond_phase_param_1 = Var(
             within=Reals,
             initialize=240,
@@ -761,10 +767,9 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density of seawater",
         )
-
-        def rule_dens_mass_phase(b, phase):  # density, eq. 8 in Sharqawy
+        # Sharqawy et al. (2010), eq. 8, 0-180 C
+        def rule_dens_mass_phase(b, phase):
             t = b.temperature - 273.15 * pyunits.K
-            # s = b.mass_frac_phase_comp['Liq', 'TDS']
             if phase == "Liq":
                 dens_mass = (
                     b.params.dens_mass_param_A1
@@ -863,13 +868,10 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
-
-        def rule_enth_mass_phase(
-            b, p
-        ):  # specific enthalpy, eq. 25 and 26 in Nayar et al. (2016)
-            t = (
-                b.temperature - 273.15 * pyunits.K
-            )  # temperature in degC, but pyunits in K
+        # Nayar et al. (2016), eq. 25 and 26, 0-120 C
+        def rule_enth_mass_phase(b, p):
+            # temperature in degC, but pyunits in K
+            t = b.temperature - 273.15 * pyunits.K
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
 
@@ -906,7 +908,7 @@ class WaterStateBlockData(StateBlockData):
             doc="Saturation vapor pressure",
         )
 
-        # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+        # Nayar et al.(2016), eq. 5 and 6, 0-180 C
         def rule_pressure_sat(b):
             t = b.temperature
             psatw = (
@@ -955,23 +957,14 @@ class WaterStateBlockData(StateBlockData):
         )
 
         def rule_cp_mass_phase(b, phase):
+            # Sharqawy et al. (2010), eq. 9, 0-180 C
             if phase == "Liq":
-                # specific heat, eq. 9 in Sharqawy et al. (2010)
                 # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
                 t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
-                # s = b.mass_frac_phase_comp['Liq', 'TDS'] * 1000 * pyunits.g / pyunits.kg
-                A = (
-                    b.params.cp_phase_param_A1
-                )  # + b.params.cp_phase_param_A2 * s + b.params.cp_phase_param_A3 * s ** 2
-                B = (
-                    b.params.cp_phase_param_B1
-                )  # + b.params.cp_phase_param_B2 * s + b.params.cp_phase_param_B3 * s ** 2
-                C = (
-                    b.params.cp_phase_param_C1
-                )  # + b.params.cp_phase_param_C2 * s + b.params.cp_phase_param_C3 * s ** 2
-                D = (
-                    b.params.cp_phase_param_D1
-                )  # + b.params.cp_phase_param_D2 * s + b.params.cp_phase_param_D3 * s ** 2
+                A = b.params.cp_phase_param_A1
+                B = b.params.cp_phase_param_B1
+                C = b.params.cp_phase_param_C1
+                D = b.params.cp_phase_param_D1
                 return (
                     b.cp_mass_phase[phase]
                     == (A + B * t + C * t**2 + D * t**3) * 1000
@@ -999,8 +992,7 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization",
         )
-
-        # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
+        # Sharqawy et al. (2010), eq. 54,  0-200 C
         def rule_dh_vap_mass(b):
             t = b.temperature - 273.15 * pyunits.K
             return (
@@ -1020,9 +1012,9 @@ class WaterStateBlockData(StateBlockData):
             initialize=1e-3,
             bounds=(0.0, 1),
             units=pyunits.Pa * pyunits.s,
-            doc="Viscosity",
+            doc="Dynamic viscosity",
         )
-        # dynamic viscosity, eq. 22 and 23 in Sharqawy
+        # Sharqawy et al. (2010), eq. 22 and 23, 0-180 C
         def rule_visc_d_phase(b, p):
             if p == "Liq":
                 t = b.temperature - 273.15 * pyunits.K
@@ -1048,36 +1040,24 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.W / pyunits.m / pyunits.K,
             doc="Thermal conductivity",
         )
-        # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
+        # Sharqawy  et al. (2010), eq. 13, 0-180 C
         def rule_therm_cond_phase(b, p):
             if p == "Liq":
-                # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
                 # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
                 t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
-                s = 0 * 1000 * pyunits.g / pyunits.kg  # pure water
-                log10_ksw = log10(
+                log10_kw = log10(
                     b.params.therm_cond_phase_param_1
-                    + b.params.therm_cond_phase_param_2 * s
                 ) + b.params.therm_cond_phase_param_3 * (
                     b.params.therm_cond_phase_param_4
-                    - (
-                        b.params.therm_cond_phase_param_5
-                        + b.params.therm_cond_phase_param_6 * s
-                    )
-                    / t
+                    - (b.params.therm_cond_phase_param_5) / t
                 ) * (
-                    1
-                    - t
-                    / (
-                        b.params.therm_cond_phase_param_7
-                        + b.params.therm_cond_phase_param_8 * s
-                    )
+                    1 - t / (b.params.therm_cond_phase_param_7)
                 ) ** (
                     1 / 3
                 )
             return (
                 b.therm_cond_phase[p]
-                == 10**log10_ksw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
+                == 10**log10_kw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
             )
 
         self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)
