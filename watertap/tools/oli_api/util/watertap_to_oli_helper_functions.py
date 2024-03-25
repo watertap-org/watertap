@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -8,12 +8,11 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
 #################################################################################
 
 """
 This file contains methods to convert WaterTAP naming conventions to OLI
-and generate molecular weight and charge dictionaries from molecular formulae. 
+and generate molecular weight and charge dictionaries from molecular formulae.
 
 It calculates molecular weights using the periodic_table.csv from:
 https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee.
@@ -72,16 +71,17 @@ def get_oli_name(watertap_name: str) -> str:
     exclude_items = ["temperature", "pressure", "volume"]
     if watertap_name.lower() in exclude_items:
         return watertap_name
-    else:
-        components = watertap_name.split("_")
-        if len(components) == 0:
-            raise IOError(f" Unable to parse solute '{watertap_name}'.")
-        if len(components) == 1:
-            molecule = components[0]
-        elif len(components) == 2:
-            molecule = components[0] + "ION"
-        oli_name = molecule.replace("[", "").replace("]", "").upper()
-        return oli_name
+    if hasattr(watertap_name, "oli_name"):
+        return watertap_name
+    components = watertap_name.split("_")
+    if len(components) == 0:
+        raise IOError(f" Unable to parse solute '{watertap_name}'.")
+    if len(components) == 1:
+        molecule = components[0]
+    elif len(components) == 2:
+        molecule = components[0] + "ION"
+    oli_name = molecule.replace("[", "").replace("]", "").upper()
+    return oli_name
 
 
 def get_charge(watertap_name: str) -> int:
