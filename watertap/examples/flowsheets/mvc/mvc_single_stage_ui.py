@@ -263,8 +263,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Evaporator heat transfer coefficient",
         is_input=True,
         input_category="Evaporator",
-        is_output=True,
-        output_category="Evaporator",
+        is_output=False,
     )
     exports.add(
         obj=fs.compressor.pressure_ratio,
