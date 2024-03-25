@@ -210,6 +210,17 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
+        obj=fs.evaporator.area,
+        name="Evaporator area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="Evaporator area",
+        is_input=True,
+        input_category="Evaporator",
+        is_output=False,
+    )
+    exports.add(
         obj=fs.evaporator.inlet_feed.temperature[0],
         name="Evaporator inlet temperature",
         ui_units=pyunits.K,
