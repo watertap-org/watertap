@@ -313,7 +313,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_capital_annualization,
+        obj=fs.costing.capital_recovery_factor,
         name="Capital annualization factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
