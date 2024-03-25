@@ -117,7 +117,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Feed pump pressure change",
         is_input=True,
         input_category="Feed pump",
-        is_output=False,
+        is_output=True,
     )
 
     exports.add(
@@ -129,7 +129,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger heat transfer coefficient",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.hx_distillate.area,
@@ -140,7 +140,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger area",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.hx_distillate.cold.deltaP[0],
@@ -151,7 +151,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger cold side pressure change",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.hx_distillate.hot.deltaP[0],
@@ -162,7 +162,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger hot side pressure change",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
     )
 
     exports.add(
@@ -174,7 +174,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger heat transfer coefficient",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.hx_brine.area,
@@ -185,7 +185,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger area",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.hx_brine.cold.deltaP[0],
@@ -196,7 +196,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger cold side pressure change",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.hx_brine.hot.deltaP[0],
@@ -207,7 +207,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger hot side pressure change",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.evaporator.area,
@@ -218,7 +218,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Evaporator area",
         is_input=True,
         input_category="Evaporator",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.evaporator.inlet_feed.temperature[0],
@@ -229,7 +229,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Evaporator inlet feed temperature",
         is_input=True,
         input_category="Evaporator",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.evaporator.outlet_brine.temperature[0],
@@ -240,7 +240,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Evaporator outlet brine temperature",
         is_input=True,
         input_category="Evaporator",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.evaporator.U,
@@ -251,7 +251,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Evaporator heat transfer coefficient",
         is_input=True,
         input_category="Evaporator",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.compressor.pressure_ratio,
@@ -262,7 +262,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Compressor pressure ratio",
         is_input=True,
         input_category="Compressor",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.compressor.efficiency,
@@ -295,7 +295,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine pump pressure change",
         is_input=True,
         input_category="Brine pump",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.pump_distillate.efficiency_pump[0],
@@ -317,7 +317,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate pump pressure change",
         is_input=True,
         input_category="Distillate pump",
-        is_output=False,
+        is_output=True,
     )
 
     # System costing
