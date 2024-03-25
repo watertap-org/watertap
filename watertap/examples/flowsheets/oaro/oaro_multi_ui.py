@@ -291,7 +291,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_total_investment,
+        obj=fs.costing.total_investment_factor,
         name="Total investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -302,23 +302,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_maintenance_labor_chemical,
+        obj=fs.costing.maintenance_labor_chemical_factor,
         name="Maintenance-labor-chemical factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
         rounding=2,
         description="Maintenance-labor-chemical factor [fraction of investment cost/year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.factor_capital_annualization,
-        name="Capital annualization factor",
-        ui_units=1 / pyunits.year,
-        display_units="fraction/year",
-        rounding=2,
-        description="Capital annualization factor [fraction of investment cost/year]",
         is_input=True,
         input_category="System costing",
         is_output=False,
