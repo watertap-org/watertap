@@ -157,7 +157,7 @@ def build(
         )
         m.fs.centrate = Product(property_package=m.fs.prop_nf)
         m.fs.precipitant = Product(property_package=m.fs.prop_nf)
-    elif include_gac == True:
+    elif include_gac:
         m.fs.prop_gac = MCASParameterBlock(
             material_flow_basis="mass",
             ignore_neutral_charge=True,
