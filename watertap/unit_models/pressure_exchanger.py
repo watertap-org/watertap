@@ -358,22 +358,10 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         # Performance equations
         @self.Constraint(self.flowsheet().config.time, doc="Pressure transfer")
-        # def eq_pressure_transfer(b, t):
-        #     return (
-        #         b.feed_side.deltaP[t]
-        #         == b.efficiency_pressure_exchanger[t] * -b.brine_side.deltaP[t]
-        #     )
         def eq_pressure_transfer(b, t):
-            return b.efficiency_pressure_exchanger[t] == (
-                b.feed_side.properties_out[t].flow_vol
-                * b.feed_side.properties_out[t].pressure
-                + b.brine_side.properties_out[t].flow_vol
-                * b.brine_side.properties_out[t].pressure
-            ) / (
-                b.feed_side.properties_in[t].flow_vol
-                * b.feed_side.properties_in[t].pressure
-                + b.brine_side.properties_in[t].flow_vol
-                * b.brine_side.properties_in[t].pressure
+            return (
+                b.feed_side.deltaP[t]
+                == b.efficiency_pressure_exchanger[t] * -b.brine_side.deltaP[t]
             )
 
         if (
@@ -544,6 +532,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             / value(self.brine_side.properties_in[0].flow_vol)
             > 1e-4
             and not self.config.has_mixing
+            and not self.config.has_leakage
         ):  # flow_vol values are not within 0.1%
             raise ConfigurationError(
                 "Initializing pressure exchanger failed because "
