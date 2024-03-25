@@ -98,7 +98,6 @@ def main():
     m = build(include_pretreatment=False, include_dewatering=False, include_gac=False)
     set_operating_conditions(m)
 
-    # assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
     initialize_system(m)
