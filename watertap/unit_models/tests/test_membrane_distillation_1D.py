@@ -704,10 +704,10 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     m.fs.unit.cold_ch_inlet.temperature[0].fix(273.15 + 25)
 
     length = 8
-    m.fs.unit.length.fix(lenght)
+    m.fs.unit.length.fix(length)
 
-    m.fs.unit.hot_ch.dP_dx.fix(membrane_pressure_drop / lenght)
-    m.fs.unit.cold_ch.dP_dx.fix(membrane_pressure_drop / lenght)
+    m.fs.unit.hot_ch.dP_dx.fix(membrane_pressure_drop / length)
+    m.fs.unit.cold_ch.dP_dx.fix(membrane_pressure_drop / length)
 
     m.fs.unit.hot_ch.channel_height.fix(0.0019)
     m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
@@ -802,8 +802,8 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     m.fs.unit.cold_ch_inlet.pressure[0].fix(7e5)
     m.fs.unit.cold_ch_inlet.temperature[0].fix(273.15 + 25)
 
-    lenght = 8
-    m.fs.unit.length.fix(lenght)
+    length = 8
+    m.fs.unit.length.fix(length)
 
     m.fs.unit.hot_ch.channel_height.fix(0.0019)
     m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
