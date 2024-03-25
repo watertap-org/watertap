@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -554,7 +554,7 @@ def initialize_system(m, solver=None):
 
     seq = SequentialDecomposition(tear_solver="cbc")
     seq.options.log_info = False
-    seq.options.iterLim = 1
+    seq.options.iterLim = 5
 
     def func_initialize(unit):
         if unit.local_name == "feed":
