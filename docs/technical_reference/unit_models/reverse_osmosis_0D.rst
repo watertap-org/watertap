@@ -178,6 +178,7 @@ Equations
    "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
    "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
    "Observed solute rejection", ":math:`r_j = 1 - \frac{C_{p,mix}}{C_{f,in}}`" 
+   "Alpha", ":math:`\alpha = \frac{1 - \sigma}{B}`" 
 
 Class Documentation
 -------------------
