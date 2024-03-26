@@ -1523,7 +1523,10 @@ class MCASStateBlockData(StateBlockData):
                         * pyunits.second**-1
                     )
             else:
-                if (p, j) not in self.params.config.diffusivity_data.keys():
+                if (
+                    self.params.config.diffus_calculation == DiffusivityCalculation.none
+                    and (p, j) not in self.params.config.diffusivity_data.keys()
+                ):
                     raise ConfigurationError(
                         """
                         Missing a valid diffusivity_data configuration to use EinsteinRelation 
