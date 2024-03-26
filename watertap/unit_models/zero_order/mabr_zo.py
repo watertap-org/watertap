@@ -119,9 +119,9 @@ class MABRZOData(ZeroOrderBaseData):
             )
 
         self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
-        self._perf_var_dict["Electricity Intensity"] = (
-            self.energy_electric_flow_vol_inlet
-        )
+        self._perf_var_dict[
+            "Electricity Intensity"
+        ] = self.energy_electric_flow_vol_inlet
 
     @property
     def default_costing_method(self):

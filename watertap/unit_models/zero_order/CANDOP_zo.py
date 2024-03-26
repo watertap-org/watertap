@@ -89,9 +89,9 @@ class CANDOPData(ZeroOrderBaseData):
             doc="Oxygen consumed - nitrogen reacted ratio",
         )
         self._fixed_perf_vars.append(self.oxygen_nitrogen_ratio)
-        self._perf_var_dict["Oxygen consumed / nitrogen reacted ratio (mass basis)"] = (
-            self.oxygen_nitrogen_ratio
-        )
+        self._perf_var_dict[
+            "Oxygen consumed / nitrogen reacted ratio (mass basis)"
+        ] = self.oxygen_nitrogen_ratio
 
         @self.Constraint(
             self.flowsheet().time, doc="Constraint for oxygen consumption."

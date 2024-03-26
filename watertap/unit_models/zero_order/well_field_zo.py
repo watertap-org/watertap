@@ -90,7 +90,8 @@ class WellFieldZOData(ZeroOrderBaseData):
         )
 
         Q = pyo.units.convert(
-            blk.unit_model.properties[t0].flow_vol / (pyo.units.m**3 / pyo.units.hour),
+            blk.unit_model.properties[t0].flow_vol
+            / (pyo.units.m**3 / pyo.units.hour),
             to_units=pyo.units.dimensionless,
         )
         expr = pyo.units.convert(

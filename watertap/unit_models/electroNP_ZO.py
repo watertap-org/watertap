@@ -197,9 +197,9 @@ class ElectroNPZOdata(SeparatorData):
             ]
         var_dict["Electricity Demand"] = self.electricity[time_point]
         var_dict["Electricity Intensity"] = self.energy_electric_flow_mass
-        var_dict["Dosage of magnesium chloride per treated phosphorus"] = (
-            self.magnesium_chloride_dosage
-        )
+        var_dict[
+            "Dosage of magnesium chloride per treated phosphorus"
+        ] = self.magnesium_chloride_dosage
         var_dict["Magnesium Chloride Demand"] = self.MgCl2_flowrate[time_point]
         return {"vars": var_dict}
 

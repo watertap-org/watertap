@@ -133,9 +133,9 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._perf_var_dict[
             "Mass of gas extracted per mass flow of influent(kg/d/(kg/d)"
         ] = self.gas_mass_influent_ratio
-        self._perf_var_dict["Mass flow of gas extracted (kg/s))"] = (
-            self.flow_mass_gas_extraction
-        )
+        self._perf_var_dict[
+            "Mass flow of gas extracted (kg/s))"
+        ] = self.flow_mass_gas_extraction
 
         # Add performance constraints
         # Water recovery

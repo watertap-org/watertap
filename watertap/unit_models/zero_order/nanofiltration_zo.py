@@ -92,9 +92,9 @@ class NanofiltrationZOData(ZeroOrderBaseData):
 
             self._perf_var_dict["Membrane Area (m^2)"] = self.area
             self._perf_var_dict["Net Driving Pressure (bar)"] = self.applied_pressure
-            self._perf_var_dict["Water Permeability Coefficient (LMH/bar)"] = (
-                self.water_permeability_coefficient
-            )
+            self._perf_var_dict[
+                "Water Permeability Coefficient (LMH/bar)"
+            ] = self.water_permeability_coefficient
             self._perf_var_dict[f"Rejection"] = self.rejection_comp
 
     @property
@@ -164,7 +164,8 @@ class NanofiltrationZOData(ZeroOrderBaseData):
         )
 
         capex_expr = pyo.units.convert(
-            mem_cost * pyo.units.convert(blk.unit_model.area, to_units=pyo.units.m**2),
+            mem_cost
+            * pyo.units.convert(blk.unit_model.area, to_units=pyo.units.m**2),
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 

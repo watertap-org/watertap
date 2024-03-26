@@ -90,6 +90,6 @@ class ElectrodialysisReversalZOData(ZeroOrderBaseData):
             return b.electricity[t] == b.electricity_intensity[t] * q_in
 
         self._perf_var_dict["Power Consumption (kW)"] = self.electricity
-        self._perf_var_dict["Electricity intensity per Inlet Flowrate  (kWh/m3)"] = (
-            self.electricity_intensity
-        )
+        self._perf_var_dict[
+            "Electricity intensity per Inlet Flowrate  (kWh/m3)"
+        ] = self.electricity_intensity

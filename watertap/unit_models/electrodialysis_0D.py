@@ -1867,7 +1867,9 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         )
         def eq_Sc(self):
 
-            return self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
+            return (
+                self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
+            )
 
         @self.Constraint(
             doc="To calculate Sh",
@@ -1934,7 +1936,10 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     ):
                         return (
                             self.friction_factor
-                            == 4 * 50.6 * self.spacer_porosity**-7.06 * self.N_Re**-1
+                            == 4
+                            * 50.6
+                            * self.spacer_porosity**-7.06
+                            * self.N_Re**-1
                         )
                     elif (
                         self.config.friction_factor_method
@@ -1991,12 +1996,10 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 self[k].diluate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
                     self[k].diluate.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
-                self[k].concentrate.properties_out[0].flow_mol_phase_comp["Liq", j] = (
-                    value(
-                        self[k]
-                        .concentrate.properties_in[0]
-                        .flow_mol_phase_comp["Liq", j]
-                    )
+                self[k].concentrate.properties_out[0].flow_mol_phase_comp[
+                    "Liq", j
+                ] = value(
+                    self[k].concentrate.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
         if hasattr(self[k], "conc_mem_surf_mol_ioa"):
             for mem in self[k].membrane_set:

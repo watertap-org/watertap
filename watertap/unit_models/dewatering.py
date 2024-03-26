@@ -229,9 +229,9 @@ class DewateringData(SeparatorData):
             if k[0] == time_point:
                 var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
         var_dict["Electricity consumption"] = self.electricity_consumption[time_point]
-        param_dict["Specific electricity consumption"] = (
-            self.energy_electric_flow_vol_inlet[time_point]
-        )
+        param_dict[
+            "Specific electricity consumption"
+        ] = self.energy_electric_flow_vol_inlet[time_point]
         var_dict["Unit Volume"] = self.volume[time_point]
         var_dict["Hydraulic Retention Time"] = self.hydraulic_retention_time[time_point]
         return {"vars": var_dict, "params": param_dict}

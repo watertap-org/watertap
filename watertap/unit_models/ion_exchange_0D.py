@@ -1467,9 +1467,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             var_dict["Dimensionless Time"] = self.dimensionless_time
             var_dict["Partition Ratio"] = self.partition_ratio
             var_dict[f"Langmuir Coeff. [{target_ion}]"] = self.langmuir[target_ion]
-            var_dict[f"Fluid Mass Transfer Coeff. [{target_ion}]"] = (
-                self.fluid_mass_transfer_coeff[target_ion]
-            )
+            var_dict[
+                f"Fluid Mass Transfer Coeff. [{target_ion}]"
+            ] = self.fluid_mass_transfer_coeff[target_ion]
         elif self.config.isotherm == IsothermType.freundlich:
             var_dict[f"BV at Breakthrough"] = self.bv
             var_dict[f"BV at 50% Breakthrough"] = self.bv_50

@@ -41,7 +41,9 @@ def test_is_constant_up_to_units():
     m.fixed_param_2 = Param(initialize=6.28)
 
     # test expression of fixed params with units
-    assert is_constant_up_to_units((m.fixed_param**2) * m.fixed_param_2 * units.m**2)
+    assert is_constant_up_to_units(
+        (m.fixed_param**2) * m.fixed_param_2 * units.m**2
+    )
 
     m.mutable_param = Param(initialize=42, mutable=True)
 
@@ -70,7 +72,9 @@ def test_is_constant_up_to_units():
     assert not is_constant_up_to_units(m.fixed_variable * m.fixed_param * units.m**2)
     assert not is_constant_up_to_units(m.fixed_variable * 42.0 * units.m**2)
 
-    assert not is_constant_up_to_units(m.unfixed_variable * m.fixed_param * units.m**2)
+    assert not is_constant_up_to_units(
+        m.unfixed_variable * m.fixed_param * units.m**2
+    )
     assert not is_constant_up_to_units(m.unfixed_variable * 42.0 * units.m**2)
 
     assert not is_constant_up_to_units(

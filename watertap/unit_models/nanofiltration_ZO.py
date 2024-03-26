@@ -612,9 +612,9 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             obj_dict[f"{j} Molar Concentration @Inlet"] = self.feed_side.properties_in[
                 time_point
             ].conc_mol_phase_comp["Liq", j]
-            obj_dict[f"{j} Molar Concentration @Outlet"] = (
-                self.feed_side.properties_out[time_point].conc_mol_phase_comp["Liq", j]
-            )
+            obj_dict[
+                f"{j} Molar Concentration @Outlet"
+            ] = self.feed_side.properties_out[time_point].conc_mol_phase_comp["Liq", j]
             obj_dict[f"{j} Molar Concentration @Permeate"] = self.properties_permeate[
                 time_point
             ].conc_mol_phase_comp["Liq", j]

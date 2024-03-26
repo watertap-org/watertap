@@ -126,9 +126,9 @@ class OzoneZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Ozone Contact Time (min)"] = self.contact_time
         self._perf_var_dict["Ozone CT Value ((mg*min)/L)"] = self.concentration_time
-        self._perf_var_dict["Ozone Mass Transfer Efficiency"] = (
-            self.mass_transfer_efficiency
-        )
+        self._perf_var_dict[
+            "Ozone Mass Transfer Efficiency"
+        ] = self.mass_transfer_efficiency
         self._perf_var_dict["Ozone Mass Flow (lb/hr)"] = self.ozone_flow_mass
         self._perf_var_dict["Ozone Unit Power Demand (kW)"] = self.electricity
 

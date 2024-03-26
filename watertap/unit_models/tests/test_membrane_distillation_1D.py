@@ -543,9 +543,9 @@ class TestMembraneDisillation1D_temperature_polarization_calculated_concentratio
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
         self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 304.3676091577648
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = (
-            350.44794988928794
-        )
+        self.unit_solutions[
+            m.fs.unit.cold_ch_outlet.temperature[0]
+        ] = 350.44794988928794
         self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.003438533289232888
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.4639450335411154
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8045838444505841
@@ -832,9 +832,9 @@ class TestMembraneDisillation1D_temperature_polarization_calculated_concentratio
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
         self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 304.40094664041476
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = (
-            350.52705264537326
-        )
+        self.unit_solutions[
+            m.fs.unit.cold_ch_outlet.temperature[0]
+        ] = 350.52705264537326
         self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0034633728163433928
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.4669795564991426
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8058008099288198

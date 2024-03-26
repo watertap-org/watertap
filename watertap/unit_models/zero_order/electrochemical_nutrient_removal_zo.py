@@ -76,9 +76,9 @@ class ElectroNPZOData(ZeroOrderBaseData):
 
         self._fixed_perf_vars.append(self.magnesium_chloride_dosage)
 
-        self._perf_var_dict["Dosage of magnesium chloride per phosphorus removal"] = (
-            self.magnesium_chloride_dosage
-        )
+        self._perf_var_dict[
+            "Dosage of magnesium chloride per phosphorus removal"
+        ] = self.magnesium_chloride_dosage
 
         self.MgCl2_flowrate = Var(
             self.flowsheet().time,

@@ -38,6 +38,7 @@ from watertap.unit_models.reverse_osmosis_1D import (
 solver = get_solver()
 # -----------------------------------------------------------------------------
 
+
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -107,18 +108,18 @@ class TestReverseOsmosis1D(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 2.113811e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.00248645
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            2.593074e-6
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]] = (
-            0.005036466
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]] = (
-            2.372961e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.00248645
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 2.593074e-6
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+        ] = 0.005036466
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
+        ] = 2.372961e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.1341274
@@ -197,12 +198,12 @@ class TestReverseOsmosis1D_basic(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.628559e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.001019483
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            1.99996e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.001019483
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 1.99996e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.3895746
@@ -287,18 +288,18 @@ class TestReverseOsmosis1D_SKK(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 7.4932174e-5
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.006690554
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            5.422075e-5
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]] = (
-            0.0094392
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]] = (
-            6.5286415e-5
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.006690554
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 5.422075e-5
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+        ] = 0.0094392
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
+        ] = 6.5286415e-5
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.1341274
@@ -378,12 +379,12 @@ class TestReverseOsmosis1D_cp_mod_fixed(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.863938e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.000359974
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            2.051563e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.000359974
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 2.051563e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.3894809
@@ -462,12 +463,12 @@ class TestReverseOsmosis1D_cp_calculated_kf_fixed(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.83061e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.0007081512
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            2.027294e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.0007081512
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 2.027294e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.3895265
@@ -545,12 +546,12 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.8703962e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.000626977
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            2.0339201e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.000626977
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 2.0339201e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.3895066
@@ -630,12 +631,12 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.494063e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.00474506
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            1.559319e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.00474506
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 1.559319e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.1010762
@@ -717,12 +718,12 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_dx(
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.872372e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.000551092
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            2.0075516e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.000551092
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 2.0075516e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.3894964
@@ -805,12 +806,12 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         ] = 1.871967e-6
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]] = (
-            0.000566998
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]] = (
-            2.0134278e-6
-        )
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        ] = 0.000566998
+        self.unit_solutions[
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        ] = 2.0134278e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         ] = 0.3894987

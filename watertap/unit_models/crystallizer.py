@@ -775,12 +775,12 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         var_dict["Slurry density (Kg/m3)"] = self.dens_mass_slurry
         var_dict["Heat requirement"] = self.work_mechanical[time_point]
         var_dict["Crystallizer diameter (m)"] = self.diameter_crystallizer
-        var_dict["Magma circulation flow rate (m**3/s)"] = (
-            self.magma_circulation_flow_vol
-        )
-        var_dict["Vol. frac. of solids in suspension, 1-E"] = (
-            self.product_volumetric_solids_fraction
-        )
+        var_dict[
+            "Magma circulation flow rate (m**3/s)"
+        ] = self.magma_circulation_flow_vol
+        var_dict[
+            "Vol. frac. of solids in suspension, 1-E"
+        ] = self.product_volumetric_solids_fraction
         var_dict["Residence time"] = self.t_res
         var_dict["Crystallizer minimum active volume (m**3)"] = self.volume_suspension
         var_dict["Suspension height in crystallizer (m)"] = self.height_slurry

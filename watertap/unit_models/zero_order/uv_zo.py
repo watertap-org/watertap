@@ -54,9 +54,9 @@ class UVZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.uv_reduced_equivalent_dose)
         self._fixed_perf_vars.append(self.uv_transmittance_in)
 
-        self._perf_var_dict["UV Reduced Equivalent Dosage (mJ/cm^2)"] = (
-            self.uv_reduced_equivalent_dose
-        )
+        self._perf_var_dict[
+            "UV Reduced Equivalent Dosage (mJ/cm^2)"
+        ] = self.uv_reduced_equivalent_dose
         self._perf_var_dict["UV Transmittance of Feed"] = self.uv_transmittance_in
 
     @property
