@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -58,7 +58,7 @@ def cost_cstr_injection(blk, cost_electricity_flow=True):
 
 def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     """
-    Generic function for costing an CSTR injection system.
+    Generic function for costing a CSTR injection system.
     """
     make_capital_cost_var(blk)
     blk.costing_package.add_cost_factor(blk, "TIC")
@@ -66,7 +66,6 @@ def cost_cstr_injection_capital(blk, capital_a_parameter, capital_b_parameter):
     blk.capital_a_parameter = pyo.Expression(expr=capital_a_parameter)
     blk.capital_b_parameter = pyo.Expression(expr=capital_b_parameter)
 
-    print(f"base_currency: {blk.costing_package.base_currency}")
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == blk.cost_factor

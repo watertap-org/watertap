@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -8,12 +8,11 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
 #################################################################################
 
 """
 This file contains methods to convert WaterTAP naming conventions to OLI
-and generate molecular weight and charge dictionaries from molecular formulae. 
+and generate molecular weight and charge dictionaries from molecular formulae.
 
 It calculates molecular weights using the periodic_table.csv from:
 https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee.
@@ -28,7 +27,7 @@ from os.path import join
 from pandas import read_csv
 from pyomo.environ import units as pyunits
 
-# TODO: maybe replace some functionality with molmass: https://pypi.org/project/molmass
+# TODO: consider replacing some functionality with molmass: https://pypi.org/project/molmass
 
 OLIName = namedtuple(
     "OLIName", ["oli_name", "watertap_name", "charge", "charge_group", "molar_mass"]
@@ -59,7 +58,6 @@ def watertap_to_oli(watertap_name: str) -> OLIName:
     return OLIName(oli_name, watertap_name, charge, charge_group, molar_mass)
 
 
-# TODO: merge with other helper functions in this file
 def get_oli_name(watertap_name: str) -> str:
     """
     Converts an WaterTAP formatted name, i.e., "Na_+"
@@ -70,6 +68,11 @@ def get_oli_name(watertap_name: str) -> str:
     :return oli_name: string name of a solute in OLI format
     """
 
+    exclude_items = ["temperature", "pressure", "volume"]
+    if watertap_name.lower() in exclude_items:
+        return watertap_name
+    if hasattr(watertap_name, "oli_name"):
+        return watertap_name
     components = watertap_name.split("_")
     if len(components) == 0:
         raise IOError(f" Unable to parse solute '{watertap_name}'.")

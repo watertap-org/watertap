@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -10,11 +10,10 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from .anaerobic_digestor import AD
+from .anaerobic_digester import AD
 from .reverse_osmosis_0D import ReverseOsmosis0D
 from .reverse_osmosis_1D import ReverseOsmosis1D
 from .osmotically_assisted_reverse_osmosis_0D import OsmoticallyAssistedReverseOsmosis0D
-from .nanofiltration_0D import NanoFiltration0D
 from .nanofiltration_ZO import NanofiltrationZO
 from .nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
 from .pressure_exchanger import PressureExchanger
@@ -32,3 +31,4 @@ from .electroNP_ZO import ElectroNPZO
 from .cstr import CSTR
 from .clarifier import Clarifier
 from .cstr_injection import CSTR_Injection
+from .aeration_tank import AerationTank

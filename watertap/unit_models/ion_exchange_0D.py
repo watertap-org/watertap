@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -790,6 +790,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def t_waste(b):
             return b.t_regen + b.t_bw + b.t_rinse
 
+        @self.Expression(doc="Cycle time")
+        def t_cycle(b):
+            return b.t_breakthru + b.t_waste
+
         if self.config.regenerant == RegenerantChem.single_use:
             self.t_regen.set_value(0)
             self.service_to_regen_flow_ratio.set_value(0)
@@ -810,7 +814,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     )
                     / b.pump_efficiency,
                     to_units=pyunits.kilowatts,
-                )
+                ) * (b.t_regen / b.t_cycle)
 
             @self.Expression(doc="Regen tank volume")
             def regen_tank_vol(b):
@@ -838,23 +842,19 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def rinse_flow(b):
             return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
 
-        @self.Expression(doc="Cycle time")
-        def t_cycle(b):
-            return b.t_breakthru + b.t_waste
-
         @self.Expression(doc="Backwash pump power")
         def bw_pump_power(b):
             return pyunits.convert(
                 (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
-            )
+            ) * (b.t_bw / b.t_cycle)
 
         @self.Expression(doc="Rinse pump power")
         def rinse_pump_power(b):
             return pyunits.convert(
                 (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
-            )
+            ) * (b.t_rinse / b.t_cycle)
 
         @self.Constraint(
             self.target_ion_set, doc="Mass transfer for regeneration stream"
@@ -886,7 +886,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             return pyunits.convert(
                 (b.pressure_drop * prop_in.flow_vol_phase["Liq"]) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
-            )
+            ) * (b.t_breakthru / b.t_cycle)
 
         @self.Expression(doc="Volume per column")
         def col_vol_per(b):
@@ -1467,9 +1467,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             var_dict["Dimensionless Time"] = self.dimensionless_time
             var_dict["Partition Ratio"] = self.partition_ratio
             var_dict[f"Langmuir Coeff. [{target_ion}]"] = self.langmuir[target_ion]
-            var_dict[
-                f"Fluid Mass Transfer Coeff. [{target_ion}]"
-            ] = self.fluid_mass_transfer_coeff[target_ion]
+            var_dict[f"Fluid Mass Transfer Coeff. [{target_ion}]"] = (
+                self.fluid_mass_transfer_coeff[target_ion]
+            )
         elif self.config.isotherm == IsothermType.freundlich:
             var_dict[f"BV at Breakthrough"] = self.bv
             var_dict[f"BV at 50% Breakthrough"] = self.bv_50

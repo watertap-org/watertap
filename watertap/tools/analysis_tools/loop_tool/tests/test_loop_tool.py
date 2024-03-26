@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -204,13 +204,12 @@ def test_sweep_run(loop_sweep_setup):
         h5file = h5py.File(
             lp.h5_file_location_default + "_analysisType_ro_analysis.h5", "r"
         )
-
         try:
             data = h5file[
                 "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
             ]
 
-            true_vals = [0.37203417, 0.39167574, 0.41117995]
+            true_vals = [0.38265415, 0.39908421, 0.415514275]
             d = data[()]
             # print(true_vals, d)
             for i, tv in enumerate(true_vals):
@@ -219,7 +218,7 @@ def test_sweep_run(loop_sweep_setup):
                 "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
             ]
 
-            true_vals = [0.50886109, 0.52850266, 0.54814424]
+            true_vals = [0.51923901, 0.53566907, 0.54814424]
             d = data[()]
             # print(true_vals, d)
             for i, tv in enumerate(true_vals):
@@ -229,10 +228,10 @@ def test_sweep_run(loop_sweep_setup):
             ]
 
             true_vals = [
-                0.3810009713006634,
-                0.3916757385992817,
-                0.3985075912766517,
-                0.4111799488092862,
+                0.3901548266020976,
+                0.39908420912714665,
+                0.4047990139431831,
+                0.41551427457321816,
             ]
             d = data[()]
             # print(true_vals, d)
@@ -243,9 +242,9 @@ def test_sweep_run(loop_sweep_setup):
             ]
 
             true_vals = [
-                0.5178278972844322,
-                0.5285026645830471,
-                0.5353345156541605,
+                0.5267396909076865,
+                0.535669073432733,
+                0.5413838782487631,
                 0.5481442364124981,
             ]
             d = data[()]
@@ -278,14 +277,14 @@ def test_sweep_backup(loop_sweep_setup):
                 "ro_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/LCOW/value"
             ]
 
-            true_vals = [0.37203417, 0.39167574, 0.41117995]
+            true_vals = [0.38265415, 0.39908421, 0.415514275]
             d = data[()]
             for i, tv in enumerate(true_vals):
                 assert d[i] == pytest.approx(tv, rel=1e-2)
             data = h5file[
                 "ro_analysis/erd_type/pump_as_turbine/membrane_cost/outputs/LCOW/value"
             ]
-            true_vals = [0.50886109, 0.52850266, 0.54814424]
+            true_vals = [0.51923901, 0.53566907, 0.54814424]
             d = data[()]
 
             for i, tv in enumerate(true_vals):

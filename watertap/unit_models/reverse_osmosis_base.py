@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -204,9 +204,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, p, j: 0.4037 if j in solvent_set else 0.0033,
-            bounds=lambda b, t, p, j: (1e-2, 1 - 1e-6)
-            if j in solvent_set
-            else (1e-5, 1 - 1e-6),
+            bounds=lambda b, t, p, j: (
+                (1e-2, 1 - 1e-6) if j in solvent_set else (1e-5, 1 - 1e-6)
+            ),
             units=pyunits.dimensionless,
             doc="Mass-based component recovery",
         )
@@ -363,9 +363,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, x, p, j: 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b, t, x, p, j: (1e-4, 3e-2)
-            if j in solvent_set
-            else (1e-8, 1e-3),
+            bounds=lambda b, t, x, p, j: (
+                (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3)
+            ),
             units=units_meta("mass")
             * units_meta("length") ** -2
             * units_meta("time") ** -1,
@@ -698,30 +698,30 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 interface_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Inlet,Membrane-Interface "
-                ] = interface_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Inlet,Membrane-Interface "] = (
+                    interface_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 interface_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Outlet,Membrane-Interface "
-                ] = interface_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Outlet,Membrane-Interface "] = (
+                    interface_outlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 feed_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Inlet,Bulk"
-                ] = feed_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Inlet,Bulk"] = (
+                    feed_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 feed_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Outlet,Bulk"
-                ] = feed_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Outlet,Bulk"] = (
+                    feed_outlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 permeate.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
@@ -733,9 +733,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             interface_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Osmotic Pressure @Outlet,Membrane-Interface "
-            ] = interface_outlet.pressure_osm_phase["Liq"]
+            var_dict["Osmotic Pressure @Outlet,Membrane-Interface "] = (
+                interface_outlet.pressure_osm_phase["Liq"]
+            )
         if (
             feed_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
@@ -747,9 +747,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             interface_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Osmotic Pressure @Inlet,Membrane-Interface"
-            ] = interface_inlet.pressure_osm_phase["Liq"]
+            var_dict["Osmotic Pressure @Inlet,Membrane-Interface"] = (
+                interface_inlet.pressure_osm_phase["Liq"]
+            )
         if (
             feed_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -47,9 +47,9 @@ class MagprexZOData(ZeroOrderBaseData):
 
         self._fixed_perf_vars.append(self.magnesium_chloride_dosage)
 
-        self._perf_var_dict[
-            "Dosage of magnesium chloride per phosphates"
-        ] = self.magnesium_chloride_dosage
+        self._perf_var_dict["Dosage of magnesium chloride per phosphates"] = (
+            self.magnesium_chloride_dosage
+        )
 
         self.MgCl2_flowrate = Var(
             self.flowsheet().time,

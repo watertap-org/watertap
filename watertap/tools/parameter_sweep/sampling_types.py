@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -24,6 +24,13 @@ class SamplingType(Enum):
     RANDOM_LHS = auto()
 
 
+class SetMode(Enum):
+    FIX_VALUE = auto()
+    SET_LB = auto()
+    SET_UB = auto()
+    SET_FIXED_STATE = auto()
+
+
 class _Sample(ABC):
     def __init__(self, pyomo_object, *args, **kwargs):
         # Check for indexed with single value
@@ -40,7 +47,11 @@ class _Sample(ABC):
             raise ValueError(
                 f"Parameter {pyomo_object} is not mutable, and so cannot be set by parameter_sweep"
             )
+        # default is always FIX_VALUE MODE
+        self.set_mode = SetMode.FIX_VALUE
+
         self.pyomo_object = pyomo_object
+
         self.setup(*args, **kwargs)
 
     @abstractmethod
@@ -50,6 +61,17 @@ class _Sample(ABC):
     @abstractmethod
     def setup(self, *args, **kwargs):
         pass
+
+    def set_variable_update_mode(self, set_mode_type=None, default_fixed_value=None):
+        if set_mode_type is None:
+            self.set_mode = SetMode.FIX_VALUE
+        else:
+            self.set_mode = set_mode_type
+        self.default_fixed_value = default_fixed_value
+        if self.pyomo_object.is_parameter_type() and self.set_mode != SetMode.FIX_VALUE:
+            raise ValueError(
+                f"Set fixed state for {self.pyomo_object} is not supported, SET_FIXED_STATE is only supported by pyomo Var"
+            )
 
 
 class RandomSample(_Sample):

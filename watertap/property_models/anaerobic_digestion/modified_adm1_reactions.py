@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -1937,9 +1937,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rule_pH(self):
-            return self.pH == -pyo.log10(
-                self.S_H / (pyo.units.kmole / pyo.units.m**3)
-            )
+            return self.pH == -pyo.log10(self.S_H / (pyo.units.kmole / pyo.units.m**3))
 
         self.pH_calc = pyo.Constraint(rule=rule_pH, doc="pH of solution")
 

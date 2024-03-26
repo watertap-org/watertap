@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -117,7 +117,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Feed pump pressure change",
         is_input=True,
         input_category="Feed pump",
-        is_output=False,
+        is_output=True,
+        output_category="Feed pump",
     )
 
     exports.add(
@@ -129,7 +130,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger heat transfer coefficient",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Distillate heat exchanger",
     )
     exports.add(
         obj=fs.hx_distillate.area,
@@ -140,7 +142,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger area",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Distillate heat exchanger",
     )
     exports.add(
         obj=fs.hx_distillate.cold.deltaP[0],
@@ -151,7 +154,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger cold side pressure change",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Distillate heat exchanger",
     )
     exports.add(
         obj=fs.hx_distillate.hot.deltaP[0],
@@ -162,7 +166,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate heat exchanger hot side pressure change",
         is_input=True,
         input_category="Distillate heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Distillate heat exchanger",
     )
 
     exports.add(
@@ -174,7 +179,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger heat transfer coefficient",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Brine heat exchanger",
     )
     exports.add(
         obj=fs.hx_brine.area,
@@ -185,7 +191,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger area",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Brine heat exchanger",
     )
     exports.add(
         obj=fs.hx_brine.cold.deltaP[0],
@@ -196,7 +203,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger cold side pressure change",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Brine heat exchanger",
     )
     exports.add(
         obj=fs.hx_brine.hot.deltaP[0],
@@ -207,7 +215,20 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine heat exchanger hot side pressure change",
         is_input=True,
         input_category="Brine heat exchanger",
-        is_output=False,
+        is_output=True,
+        output_category="Brine heat exchanger",
+    )
+    exports.add(
+        obj=fs.evaporator.area,
+        name="Evaporator area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="Evaporator area",
+        is_input=True,
+        input_category="Evaporator",
+        is_output=True,
+        output_category="Evaporator",
     )
     exports.add(
         obj=fs.evaporator.inlet_feed.temperature[0],
@@ -218,7 +239,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Evaporator inlet feed temperature",
         is_input=True,
         input_category="Evaporator",
-        is_output=False,
+        is_output=True,
+        output_category="Evaporator",
     )
     exports.add(
         obj=fs.evaporator.outlet_brine.temperature[0],
@@ -229,7 +251,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Evaporator outlet brine temperature",
         is_input=True,
         input_category="Evaporator",
-        is_output=False,
+        is_output=True,
+        output_category="Evaporator",
     )
     exports.add(
         obj=fs.evaporator.U,
@@ -251,7 +274,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Compressor pressure ratio",
         is_input=True,
         input_category="Compressor",
-        is_output=False,
+        is_output=True,
+        output_category="Compressor",
     )
     exports.add(
         obj=fs.compressor.efficiency,
@@ -284,7 +308,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Brine pump pressure change",
         is_input=True,
         input_category="Brine pump",
-        is_output=False,
+        is_output=True,
+        output_category="Brine pump",
     )
     exports.add(
         obj=fs.pump_distillate.efficiency_pump[0],
@@ -306,7 +331,8 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         description="Distillate pump pressure change",
         is_input=True,
         input_category="Distillate pump",
-        is_output=False,
+        is_output=True,
+        output_category="Distillate pump",
     )
 
     # System costing
@@ -345,7 +371,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.factor_total_investment,
+        obj=fs.costing.total_investment_factor,
         name="Total investment factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",

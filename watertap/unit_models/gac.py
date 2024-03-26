@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -29,6 +29,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
+    MaterialFlowBasis,
     useDefault,
 )
 from idaes.core.solvers import get_solver
@@ -306,6 +307,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
         if self.config.is_isothermal:
             self.process_flow.add_isothermal_assumption()
+
+        # inherit flow basis from property package
+        self.flow_basis = self.process_flow.properties_in[
+            self.flowsheet().config.time.first()
+        ].get_material_flow_basis()
 
         # add port for adsorbed contaminant contained in nearly saturated GAC particles
         tmp_dict = dict(**self.config.property_package_args)
@@ -1112,7 +1118,10 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         # all inert species initialized to 0
         for j in self.inert_species:
-            state_args["flow_mol_phase_comp"][("Liq", j)] = 0
+            if self.flow_basis == MaterialFlowBasis.molar:
+                state_args["flow_mol_phase_comp"][("Liq", j)] = 0
+            else:
+                state_args["flow_mass_phase_comp"][("Liq", j)] = 0
 
         self.gac_removed.initialize(
             outlvl=outlvl,

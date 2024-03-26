@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -310,16 +310,16 @@ class TestIonExchangeLangmuir:
             "bed_vol": 15.0,
             "t_rinse": 1200.0,
             "t_waste": 3600.0,
-            "regen_pump_power": 13.574,
+            "regen_pump_power": 0.43662,
             "regen_tank_vol": 300.0,
             "bw_flow": 0.09803,
             "bed_expansion_frac": 0.46395,
             "rinse_flow": 0.5,
             "t_cycle": 55960.6441,
-            "bw_pump_power": 7.984,
-            "rinse_pump_power": 40.722,
+            "bw_pump_power": 0.08561221,
+            "rinse_pump_power": 0.873244,
             "bed_expansion_h": 0.788,
-            "main_pump_power": 40.722,
+            "main_pump_power": 38.103,
             "col_vol_per": 30.7827,
             "col_vol_tot": 246.2622,
             "t_contact": 120.0,
@@ -352,6 +352,8 @@ class TestIonExchangeLangmuir:
             ix.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
         )
 
+        check_dof(m, fail_flag=True)
+
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
@@ -359,16 +361,16 @@ class TestIonExchangeLangmuir:
             "aggregate_capital_cost": 3993072.469,
             "aggregate_fixed_operating_cost": 36893.314,
             "aggregate_variable_operating_cost": 0.0,
-            "aggregate_flow_electricity": 103.00,
+            "aggregate_flow_electricity": 39.4985,
             "aggregate_flow_NaCl": 22838957.969,
             "aggregate_flow_costs": {
-                "electricity": 63205.718,
+                "electricity": 24237.080,
                 "NaCl": 2079295.202,
             },
             "total_capital_cost": 3993072.4698,
-            "total_operating_cost": 2084936.317,
-            "LCOW": 0.17495,
-            "SEC": 0.0572,
+            "total_operating_cost": 2049864.542,
+            "LCOW": 0.1724829,
+            "SEC": 0.021945,
         }
 
         for v, r in sys_cost_results.items():
@@ -388,7 +390,7 @@ class TestIonExchangeLangmuir:
             "capital_cost_backwash_tank": 132704.7555,
             "operating_cost_hazardous": 0,
             "flow_mass_regen_soln": 22838957.969,
-            "total_pumping_power": 103.00465,
+            "total_pumping_power": 39.4985,
             "backwash_tank_vol": 174042.7639,
             "regeneration_tank_vol": 79251.61570,
             "direct_capital_cost": 1996536.234,
@@ -649,21 +651,21 @@ class TestIonExchangeFreundlich:
             "aggregate_capital_cost": 5116213.693,
             "aggregate_fixed_operating_cost": 323306.067,
             "aggregate_variable_operating_cost": 0.0,
-            "aggregate_flow_electricity": 78.865,
+            "aggregate_flow_electricity": 30.805,
             "aggregate_flow_NaOH": 279183.597,
             "aggregate_flow_costs": {
-                "electricity": 48393.3348,
+                "electricity": 18902.5053,
                 "NaOH": 555415.521,
             },
             "total_capital_cost": 5116213.693,
-            "total_operating_cost": 1020220.449,
+            "total_operating_cost": 993678.703,
             "aggregate_direct_capital_cost": 2558106.846,
             "maintenance_labor_chemical_operating_cost": 153486.410,
             "total_fixed_operating_cost": 476792.478,
-            "total_variable_operating_cost": 543427.970,
-            "total_annualized_cost": 1531841.818,
-            "LCOW": 0.1078691,
-            "SEC": 0.043814,
+            "total_variable_operating_cost": 516886.223,
+            "total_annualized_cost": 1505300.072,
+            "LCOW": 0.1060001,
+            "SEC": 0.017113,
         }
 
         for v, r in sys_cost_results.items():
@@ -683,7 +685,7 @@ class TestIonExchangeFreundlich:
             "capital_cost_backwash_tank": 133603.4529,
             "operating_cost_hazardous": 276620.0837,
             "flow_mass_regen_soln": 279183.597,
-            "total_pumping_power": 78.865,
+            "total_pumping_power": 30.8049,
             "backwash_tank_vol": 176401.0669,
             "regeneration_tank_vol": 79251.615,
             "direct_capital_cost": 2558106.846,
@@ -989,8 +991,8 @@ class TestIonExchangeInert:
             "bed_expansion_frac": 0.4639,
             "rinse_flow": 0.5,
             "t_cycle": 4321800.0,
-            "bw_pump_power": 6.9595,
-            "rinse_pump_power": 30.816,
+            "bw_pump_power": 0.0009661,
+            "rinse_pump_power": 0.0085566,
             "bed_expansion_h": 0.68479,
             "main_pump_power": 30.816,
             "col_vol_per": 16.060,
@@ -1021,26 +1023,28 @@ class TestIonExchangeInert:
         m.fs.costing.add_specific_energy_consumption(
             ix.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
         )
+        check_dof(m, fail_flag=True)
+
         ix.initialize()
 
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
         sys_cost_results = {
-            "aggregate_capital_cost": 4485122.81,
+            "aggregate_capital_cost": 4684657.16,
             "aggregate_fixed_operating_cost": 6419597.45,
             "aggregate_variable_operating_cost": 0.0,
-            "aggregate_flow_electricity": 30.82,
-            "aggregate_flow_costs": {"electricity": 18909.78},
-            "total_capital_cost": 4485122.81,
-            "total_operating_cost": 6571169.94,
-            "aggregate_direct_capital_cost": 2242561.40,
-            "maintenance_labor_chemical_operating_cost": 134553.68,
-            "total_fixed_operating_cost": 6554151.13,
-            "total_variable_operating_cost": 17018.80,
-            "total_annualized_cost": 7019682.22,
-            "LCOW": 0.49431179,
-            "SEC": 0.017120,
+            "aggregate_flow_electricity": 30.813,
+            "aggregate_flow_costs": {"electricity": 18907.75},
+            "total_capital_cost": 4684657.16,
+            "total_operating_cost": 6577154.15,
+            "aggregate_direct_capital_cost": 2342328.58,
+            "maintenance_labor_chemical_operating_cost": 140539.72,
+            "total_fixed_operating_cost": 6560137.16,
+            "total_variable_operating_cost": 17016.98,
+            "total_annualized_cost": 7045619.86,
+            "LCOW": 0.49613827,
+            "SEC": 0.017118,
         }
 
         for v, r in sys_cost_results.items():
@@ -1052,18 +1056,18 @@ class TestIonExchangeInert:
                 assert pytest.approx(r, rel=1e-3) == value(mv)
 
         ix_cost_results = {
-            "capital_cost": 4485122.81,
+            "capital_cost": 4684657.16,
             "fixed_operating_cost": 6419597.45,
             "capital_cost_vessel": 75000.32,
             "capital_cost_resin": 54924.68,
             "capital_cost_regen_tank": 0,
-            "capital_cost_backwash_tank": 33836.27,
+            "capital_cost_backwash_tank": 133603.45,
             "operating_cost_hazardous": 0,
             "flow_mass_regen_soln": 0,
-            "total_pumping_power": 30.81,
+            "total_pumping_power": 30.813,
             "flow_vol_resin": 876.599,
             "single_use_resin_replacement_cost": 6419597.454,
-            "direct_capital_cost": 2242561.40,
+            "direct_capital_cost": 2342328.58,
         }
 
         for v, r in ix_cost_results.items():

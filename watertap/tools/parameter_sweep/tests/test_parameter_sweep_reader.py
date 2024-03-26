@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -95,7 +95,7 @@ class TestInputParser:
                 "upper_limit": 10,
                 "num_samples": 3,
             },
-            "g_ val": {
+            "g_val": {
                 "type": "PredeterminedFixedSample",
                 "param": "fs.a",
                 "array": [1, 2, 3, 4, 5],
@@ -104,6 +104,27 @@ class TestInputParser:
                 "type": "PredeterminedRandomSample",
                 "param": "fs.a",
                 "array": [1, 2, 3, 4, 5],
+            },
+            "x_val_fix_state": {
+                "type": "ReverseGeomSample",
+                "param": "fs.x",
+                "lower_limit": 1,
+                "upper_limit": 10,
+                "num_samples": 3,
+                "set_mode": "set_fixed_state",
+                "default_value": 3,
+            },
+            "g_val_ub_state": {
+                "type": "PredeterminedFixedSample",
+                "param": "fs.x",
+                "array": [1, 2, 3, 4, 5],
+                "set_mode": "set_ub",
+            },
+            "h_val_lb_state": {
+                "type": "PredeterminedRandomSample",
+                "param": "fs.x",
+                "array": [1, 2, 3, 4, 5],
+                "set_mode": "set_lb",
             },
         }
 

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -9,6 +9,16 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+"""
+[1] Zaharaddeen N. Garba, Zakariyya U. Zango, A. A. Babando and A. Galadima.
+"Competitive adsorption of dyes onto granular activated carbon", 2015,
+Journal of Chemical and Pharmaceutical Research, pp. 710-717
+
+[2] Jong Jib Lee. "Isotherm, Kinetic and Thermodynamic Characteristics for
+Adsorption of Congo Red by Activated Carbon", 2014, Korean Chemical Engineering Research,
+Vol. 53 Iss. 1, pp. 64-70
+"""
+
 import os
 import idaes.logger as idaeslog
 from pyomo.environ import (
@@ -23,7 +33,11 @@ from pyomo.environ import (
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock
+from idaes.core import (
+    FlowsheetBlock,
+    MomentumBalanceType,
+)
+
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 
@@ -35,6 +49,11 @@ from idaes.models.unit_models import (
     Translator,
     MomentumMixingType,
 )
+from idaes.models.unit_models.separator import (
+    SplittingType,
+    EnergySplittingType,
+)
+
 from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
@@ -48,7 +67,16 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-
+from watertap.costing.unit_models.dewatering import (
+    cost_centrifuge,
+    cost_filter_belt_press,
+    cost_filter_plate_press,
+)
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    DiffusivityCalculation,
+)
+from watertap.costing import MultiUnitModelCostingBlock
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
@@ -57,6 +85,8 @@ from watertap.unit_models.zero_order import (
     NanofiltrationZO,
     SecondaryTreatmentWWTPZO,
 )
+from watertap.unit_models.gac import GAC
+
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
@@ -65,10 +95,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main():
-    m = build(include_pretreatment=False)
+    m = build(include_pretreatment=False, include_dewatering=False, include_gac=False)
     set_operating_conditions(m)
 
-    assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
     initialize_system(m)
@@ -83,13 +112,18 @@ def main():
     optimize_operation(m)  # unfixes specific variables for cost optimization
 
     solve(m, checkpoint="solve flowsheet after costing")
+
     display_results(m)
     display_costing(m)
 
     return m, results
 
 
-def build(include_pretreatment=False):
+def build(
+    include_pretreatment=False,
+    include_dewatering=False,
+    include_gac=False,
+):
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()
@@ -97,7 +131,7 @@ def build(include_pretreatment=False):
     m.fs = FlowsheetBlock(dynamic=False)
 
     # define property packages
-    m.fs.prop_nf = prop_ZO.WaterParameterBlock(solute_list=["dye", "tds"])
+    m.fs.prop_nf = prop_ZO.WaterParameterBlock(solute_list=["tds", "dye"])
     m.fs.prop_ro = prop_SW.SeawaterParameterBlock()
 
     # define blocks
@@ -112,7 +146,66 @@ def build(include_pretreatment=False):
 
     # define flowsheet inlets and outlets
     m.fs.feed = FeedZO(property_package=m.fs.prop_nf)
-    m.fs.dye_retentate = Product(property_package=m.fs.prop_nf)
+
+    if include_dewatering == True:
+        m.fs.dewaterer = Separator(
+            property_package=m.fs.prop_nf,
+            outlet_list=["centrate", "precipitant"],
+            split_basis=SplittingType.componentFlow,
+            energy_split_basis=EnergySplittingType.none,
+            momentum_balance_type=MomentumBalanceType.none,
+        )
+        m.fs.centrate = Product(property_package=m.fs.prop_nf)
+        m.fs.precipitant = Product(property_package=m.fs.prop_nf)
+    elif include_gac:
+        m.fs.prop_gac = MCASParameterBlock(
+            material_flow_basis="mass",
+            ignore_neutral_charge=True,
+            solute_list=["tds", "dye"],
+            mw_data={
+                "H2O": 0.018,
+                "tds": 0.05844,
+                "dye": 0.696665,  # molecular weight of congo red dye
+            },
+            diffus_calculation=DiffusivityCalculation.none,
+            diffusivity_data={("Liq", "tds"): 1e-09, ("Liq", "dye"): 1e-11},
+        )
+        m.fs.gac = GAC(
+            property_package=m.fs.prop_gac,
+            film_transfer_coefficient_type="calculated",
+            surface_diffusion_coefficient_type="fixed",
+            target_species={"dye"},
+        )
+        m.fs.adsorbed_dye = Product(property_package=m.fs.prop_gac)
+        m.fs.treated = Product(property_package=m.fs.prop_gac)
+
+        m.fs.tb_nf_gac = Translator(
+            inlet_property_package=m.fs.prop_nf, outlet_property_package=m.fs.prop_gac
+        )
+
+        @m.fs.tb_nf_gac.Constraint(["H2O", "dye", "tds"])
+        def eq_flow_mass_comp_gac(blk, j):
+            if j == "dye":
+                return (
+                    blk.properties_in[0].flow_mass_comp["dye"]
+                    == blk.properties_out[0].flow_mass_phase_comp["Liq", "dye"]
+                )
+            elif j == "tds":
+                return (
+                    blk.properties_in[0].flow_mass_comp["tds"]
+                    == blk.properties_out[0].flow_mass_phase_comp["Liq", "tds"]
+                )
+            else:
+                return (
+                    blk.properties_in[0].flow_mass_comp["H2O"]
+                    == blk.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+                )
+
+    elif include_dewatering and include_gac:
+        raise TypeError("This system cannot have both dewatering and GAC units.")
+    else:
+        m.fs.dye_retentate = Product(property_package=m.fs.prop_nf)
+
     m.fs.permeate = Product(property_package=m.fs.prop_ro)
     m.fs.brine = Product(property_package=m.fs.prop_ro)
 
@@ -191,9 +284,28 @@ def build(include_pretreatment=False):
     dye_sep.s01 = Arc(
         source=dye_sep.P1.outlet, destination=dye_sep.nanofiltration.inlet
     )
-    dye_sep.s02 = Arc(
-        source=dye_sep.nanofiltration.byproduct, destination=m.fs.dye_retentate.inlet
-    )
+    if hasattr(m.fs, "dewaterer"):
+        m.fs.s01 = Arc(
+            source=dye_sep.nanofiltration.byproduct, destination=m.fs.dewaterer.inlet
+        )
+        # TODO: Recycle centrate stream back to the feed via a mixer
+        m.fs.s02 = Arc(source=m.fs.dewaterer.centrate, destination=m.fs.centrate.inlet)
+        m.fs.s03 = Arc(
+            source=m.fs.dewaterer.precipitant, destination=m.fs.precipitant.inlet
+        )
+    elif hasattr(m.fs, "gac"):
+        m.fs.s01 = Arc(
+            source=dye_sep.nanofiltration.byproduct, destination=m.fs.tb_nf_gac.inlet
+        )
+        m.fs.s02 = Arc(source=m.fs.tb_nf_gac.outlet, destination=m.fs.gac.inlet)
+        # TODO: Recycle treated stream back to the feed via a mixer
+        m.fs.s03 = Arc(source=m.fs.gac.outlet, destination=m.fs.treated.inlet)
+        m.fs.s04 = Arc(source=m.fs.gac.adsorbed, destination=m.fs.adsorbed_dye.inlet)
+    else:
+        dye_sep.s02 = Arc(
+            source=dye_sep.nanofiltration.byproduct,
+            destination=m.fs.dye_retentate.inlet,
+        )
     m.fs.s_nf = Arc(
         source=dye_sep.nanofiltration.treated, destination=m.fs.tb_nf_ro.inlet
     )
@@ -202,15 +314,11 @@ def build(include_pretreatment=False):
     desal.s01 = Arc(source=desal.S1.P2, destination=desal.P2.inlet)
     desal.s02 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
     desal.s03 = Arc(source=desal.M1.outlet, destination=desal.RO.inlet)
-    desal.s04 = Arc(
-        source=desal.RO.retentate, destination=desal.PXR.high_pressure_inlet
-    )
-    desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
-    desal.s06 = Arc(source=desal.PXR.low_pressure_outlet, destination=desal.P3.inlet)
+    desal.s04 = Arc(source=desal.RO.retentate, destination=desal.PXR.brine_inlet)
+    desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.feed_inlet)
+    desal.s06 = Arc(source=desal.PXR.feed_outlet, destination=desal.P3.inlet)
     desal.s07 = Arc(source=desal.P3.outlet, destination=desal.M1.P3)
-    m.fs.s_disposal = Arc(
-        source=desal.PXR.high_pressure_outlet, destination=m.fs.brine.inlet
-    )
+    m.fs.s_disposal = Arc(source=desal.PXR.brine_outlet, destination=m.fs.brine.inlet)
 
     m.fs.s_permeate = Arc(source=desal.RO.permeate, destination=m.fs.permeate.inlet)
 
@@ -229,8 +337,8 @@ def build(include_pretreatment=False):
     )
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
     iscale.set_scaling_factor(desal.P3.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
-    iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.feed_side.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.brine_side.work, 1e-5)
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -266,6 +374,44 @@ def set_operating_conditions(m):
 
     # nanofiltration
     dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)
+
+    if hasattr(m.fs, "dewaterer"):
+        m.fs.dewaterer.split_fraction[0, "precipitant", "H2O"].fix(0.01)
+        m.fs.dewaterer.split_fraction[0, "precipitant", "tds"].fix(0.01)
+        m.fs.dewaterer.split_fraction[0, "precipitant", "dye"].fix(0.99)
+    elif hasattr(m.fs, "gac"):
+
+        m.fs.tb_nf_gac.properties_out[0].temperature.fix(298.15)
+        m.fs.tb_nf_gac.properties_out[0].pressure.fix(101325)
+
+        m.fs.gac.freund_k.fix(18.793)  # [1]
+        m.fs.gac.freund_ninv.fix(0.578)  # [1]
+        m.fs.gac.shape_correction_factor.fix()
+        m.fs.gac.ds.fix(5e-13)
+        # gac particle specifications
+        m.fs.gac.particle_dens_app.fix(500)  # [2]
+        m.fs.gac.particle_dia.fix(0.000243)  # [2]
+        # adsorber bed specifications
+        m.fs.gac.ebct.fix(600)
+        m.fs.gac.bed_voidage.fix(0.4)
+        m.fs.gac.bed_length.fix(6)
+        # design spec
+        m.fs.gac.conc_ratio_replace.fix(0.50)
+        # parameters
+        m.fs.gac.a0.fix(3.68421)
+        m.fs.gac.a1.fix(13.1579)
+        m.fs.gac.b0.fix(0.784576)
+        m.fs.gac.b1.fix(0.239663)
+        m.fs.gac.b2.fix(0.484422)
+        m.fs.gac.b3.fix(0.003206)
+        m.fs.gac.b4.fix(0.134987)
+
+        m.fs.gac.ele_conc_ratio_replace[0] = 1e-10
+        m.fs.gac.ele_operational_time[0] = 1e-10
+
+        iscale.constraint_scaling_transform(m.fs.gac.eq_mass_adsorbed["dye"], 1e-2)
+    else:
+        pass
 
     # nf pump
     dye_sep.P1.load_parameters_from_database(use_default_removal=True)
@@ -304,6 +450,7 @@ def initialize_system(m):
         prtrt = m.fs.pretreatment
     else:
         pass
+
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
@@ -324,6 +471,25 @@ def initialize_system(m):
 
     # initialize nf
     seq.run(dye_sep, lambda u: u.initialize())
+
+    if hasattr(m.fs, "dewater"):
+        seq.run(m.fs.dewaterer, lambda u: u.initialize())
+        propagate_state(m.fs.s01)
+    elif hasattr(m.fs, "gac"):
+        m.fs.tb_nf_gac.properties_out[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+            m.fs.tb_nf_gac.properties_in[0].flow_mass_comp["H2O"]
+        )
+        m.fs.tb_nf_gac.properties_out[0].flow_mass_phase_comp["Liq", "tds"] = value(
+            m.fs.tb_nf_gac.properties_in[0].flow_mass_comp["tds"]
+        )
+        m.fs.tb_nf_gac.properties_out[0].flow_mass_phase_comp["Liq", "dye"] = value(
+            m.fs.tb_nf_gac.properties_in[0].flow_mass_comp["dye"]
+        )
+
+        propagate_state(m.fs.s01)
+        m.fs.gac.initialize()
+    else:
+        pass
 
     # initialize ro
     propagate_state(m.fs.s_nf)
@@ -405,6 +571,7 @@ def add_costing(m):
         prtrt = m.fs.pretreatment
     else:
         pass
+
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
@@ -428,6 +595,37 @@ def add_costing(m):
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.zo_costing
     )
+
+    if hasattr(m.fs, "dewaterer"):
+        m.fs.dewaterer.costing = MultiUnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.ro_costing,
+            costing_blocks={
+                "centrifuge": {
+                    "costing_method": cost_centrifuge,
+                    "costing_method_arguments": {"cost_electricity_flow": False},
+                },
+                "filter_belt_press": {
+                    "costing_method": cost_filter_belt_press,
+                    "costing_method_arguments": {"cost_electricity_flow": False},
+                },
+                "filter_plate_press": {
+                    "costing_method": cost_filter_plate_press,
+                    "costing_method_arguments": {"cost_electricity_flow": False},
+                },
+            },
+            initial_costing_block="centrifuge",
+        )
+    elif hasattr(m.fs, "gac"):
+        m.fs.gac.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.ro_costing,
+            costing_method_arguments={"contactor_type": "gravity"},
+        )
+        m.fs.ro_costing.gac_gravity.regen_frac.fix(0.7)
+        m.fs.ro_costing.gac_gravity.num_contactors_op.fix(1)
+        m.fs.ro_costing.gac_gravity.num_contactors_redundant.fix(1)
+    else:
+        pass
+
     dye_sep.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
     m.fs.zo_costing.pump_electricity.pump_cost["default"].fix(76)
 
@@ -497,29 +695,81 @@ def add_costing(m):
     else:
         pass
 
-    m.fs.dye_disposal_cost = Expression(
-        expr=(
-            m.fs.zo_costing.utilization_factor
-            * m.fs.zo_costing.dye_disposal_cost
-            * pyunits.convert(
-                m.fs.dye_retentate.properties[0].flow_vol,
-                to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
-            )
-        ),
-        doc="Cost of disposing of dye waste",
-    )
+    if hasattr(m.fs, "dewaterer"):
+        m.fs.dye_disposal_cost = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.dewatered_dye_disposal_cost
+                * pyunits.convert(
+                    m.fs.precipitant.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Cost of disposing of dye waste",
+        )
+    elif hasattr(m.fs, "gac"):
+        m.fs.dye_disposal_cost = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.dewatered_dye_disposal_cost
+                * pyunits.convert(
+                    m.fs.adsorbed_dye.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Cost of disposing of dye waste",
+        )
+    else:
+        m.fs.dye_disposal_cost = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.dye_disposal_cost
+                * pyunits.convert(
+                    m.fs.dye_retentate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Cost of disposing of dye waste",
+        )
 
-    m.fs.water_recovery_revenue = Expression(
-        expr=(
-            m.fs.zo_costing.utilization_factor
-            * m.fs.zo_costing.recovered_water_cost
-            * pyunits.convert(
-                m.fs.permeate.properties[0].flow_vol,
-                to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
-            )
-        ),
-        doc="Savings from water recovered back to the plant",
-    )
+    if hasattr(m.fs, "dewaterer"):
+        m.fs.water_recovery_revenue = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.recovered_water_cost
+                * pyunits.convert(
+                    m.fs.permeate.properties[0].flow_vol
+                    + m.fs.centrate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Savings from water recovered back to the plant",
+        )
+    elif hasattr(m.fs, "gac"):
+        m.fs.water_recovery_revenue = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.recovered_water_cost
+                * pyunits.convert(
+                    m.fs.permeate.properties[0].flow_vol
+                    + m.fs.treated.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Savings from water recovered back to the plant",
+        )
+    else:
+        m.fs.water_recovery_revenue = Expression(
+            expr=(
+                m.fs.zo_costing.utilization_factor
+                * m.fs.zo_costing.recovered_water_cost
+                * pyunits.convert(
+                    m.fs.permeate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            ),
+            doc="Savings from water recovered back to the plant",
+        )
 
     # Combine results from costing packages and calculate overall metrics
     @m.fs.Expression(doc="Total capital cost of the treatment train")
@@ -617,6 +867,38 @@ def add_costing(m):
                 )
                 * b.zo_costing.utilization_factor
             )
+        elif hasattr(m.fs, "dewaterer"):
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+                - pyunits.convert(
+                    -m.fs.dye_disposal_cost - m.fs.brine_disposal_cost,
+                    to_units=pyunits.USD_2020 / pyunits.year,
+                )
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol
+                    + b.centrate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
+            )
+        elif hasattr(m.fs, "gac"):
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+                - pyunits.convert(
+                    -m.fs.dye_disposal_cost - m.fs.brine_disposal_cost,
+                    to_units=pyunits.USD_2020 / pyunits.year,
+                )
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol
+                    + b.treated.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
+            )
         else:
             return (
                 b.total_capital_cost * b.zo_costing.capital_recovery_factor
@@ -637,16 +919,41 @@ def add_costing(m):
         doc="Levelized cost of water with respect to volumetric permeate flow"
     )
     def LCOW_wo_revenue(b):
-        return (
-            b.total_capital_cost * b.zo_costing.capital_recovery_factor
-            + b.total_operating_cost
-        ) / (
-            pyunits.convert(
-                b.permeate.properties[0].flow_vol,
-                to_units=pyunits.m**3 / pyunits.year,
+        if hasattr(m.fs, "dewaterer"):
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol
+                    + b.centrate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
             )
-            * b.zo_costing.utilization_factor
-        )
+        elif hasattr(m.fs, "gac"):
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol
+                    + b.treated.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
+            )
+        else:
+            return (
+                b.total_capital_cost * b.zo_costing.capital_recovery_factor
+                + b.total_operating_cost
+            ) / (
+                pyunits.convert(
+                    b.permeate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.year,
+                )
+                * b.zo_costing.utilization_factor
+            )
 
     assert_units_consistent(m)
     return
@@ -665,25 +972,125 @@ def display_results(m):
     else:
         pass
 
+    if hasattr(m.fs, "dewaterer"):
+        m.fs.dewaterer.report()
+    elif hasattr(m.fs, "gac"):
+        m.fs.gac.report()
+    else:
+        pass
+
     m.fs.dye_separation.P1.report()
     m.fs.dye_separation.nanofiltration.report()
     m.fs.desalination.RO.report()
 
     print("\nStreams:")
-    if hasattr(m.fs, "pretreatment"):
+    if hasattr(m.fs, "pretreatment") and hasattr(m.fs, "dewater"):
+        flow_list = ["feed", "wwt_retentate", "precipitant", "centrate"]
+    elif hasattr(m.fs, "pretreatment") and hasattr(m.fs, "gac"):
+        flow_list = ["feed", "wwt_retentate", "adsorbed_dye", "treated"]
+    elif hasattr(m.fs, "pretreatment"):
         flow_list = ["feed", "wwt_retentate", "dye_retentate"]
+    elif hasattr(m.fs, "dewaterer"):
+        flow_list = ["feed", "precipitant", "centrate"]
+    elif hasattr(m.fs, "gac"):
+        flow_list = ["feed", "adsorbed_dye", "treated"]
     else:
         flow_list = ["feed", "dye_retentate"]
 
     for f in flow_list:
         m.fs.component(f).report()
 
-    dye_retentate_vol_flowrate = value(
-        pyunits.convert(
-            m.fs.dye_retentate.properties[0].flow_vol,
-            to_units=pyunits.m**3 / pyunits.hr,
+    if hasattr(m.fs, "dewaterer"):
+        precipitant_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.precipitant.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
         )
-    )
+        precipitant_tds_concentration = m.fs.precipitant.flow_mass_comp[0, "tds"].value
+        precipitant_dye_concentration = m.fs.precipitant.flow_mass_comp[0, "dye"].value
+
+        centrate_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.centrate.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        centrate_tds_concentration = m.fs.centrate.flow_mass_comp[0, "tds"].value
+        centrate_dye_concentration = m.fs.centrate.flow_mass_comp[0, "dye"].value
+
+        print(
+            f"\nPrecipitant volumetric flowrate: {precipitant_vol_flowrate : .3f} m3/hr"
+        )
+        print(
+            f"Precipitant tds concentration: {precipitant_tds_concentration : .3f} g/l"
+        )
+        print(
+            f"Precipitant dye concentration: {precipitant_dye_concentration : .3f} g/l"
+        )
+
+        print(f"\nCentrate volumetric flowrate: {centrate_vol_flowrate : .3f} m3/hr")
+        print(f"Centrate tds concentration: {centrate_tds_concentration : .3f} g/l")
+        print(f"Centrate dye concentration: {centrate_dye_concentration : .3f} g/l")
+    elif hasattr(m.fs, "gac"):
+        adsorbed_dye_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.adsorbed_dye.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        adsorbed_dye_mass_flow = m.fs.adsorbed_dye.flow_mass_phase_comp[
+            0, "Liq", "dye"
+        ].value
+        adsorbed_tds_mass_flow = m.fs.adsorbed_dye.flow_mass_phase_comp[
+            0, "Liq", "tds"
+        ].value
+
+        treated_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.treated.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        treated_tds_concentration = m.fs.treated.flow_mass_phase_comp[
+            0, "Liq", "tds"
+        ].value
+        treated_dye_concentration = m.fs.treated.flow_mass_phase_comp[
+            0, "Liq", "dye"
+        ].value
+
+        print(
+            f"\nAdsorbed dye volumetric flowrate: {adsorbed_dye_vol_flowrate : .3f} m3/hr"
+        )
+        print(f"Adsorbed tds concentration: {adsorbed_tds_mass_flow : .3f} g/l")
+        print(f"Adsorbed dye concentration: {adsorbed_dye_mass_flow : .3f} g/l")
+
+        print(f"\nTreated volumetric flowrate: {treated_vol_flowrate : .3f} m3/hr")
+        print(f"Treated tds concentration: {treated_tds_concentration : .3f} g/l")
+        print(f"Treated dye concentration: {treated_dye_concentration : .3f} g/l")
+    else:
+        dye_retentate_vol_flowrate = value(
+            pyunits.convert(
+                m.fs.dye_retentate.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        dye_retentate_tds_concentration = m.fs.dye_retentate.flow_mass_comp[
+            0, "tds"
+        ].value
+        dye_retentate_dye_concentration = m.fs.dye_retentate.flow_mass_comp[
+            0, "dye"
+        ].value
+
+        print(
+            f"\nDye retentate volumetric flowrate: {dye_retentate_vol_flowrate : .3f} m3/hr"
+        )
+        print(
+            f"Dye retentate tds concentration: {dye_retentate_tds_concentration : .3f} g/l"
+        )
+        print(
+            f"Dye retentate dye concentration: {dye_retentate_dye_concentration : .3f} g/l"
+        )
 
     if hasattr(m.fs, "pretreatment"):
         wwt_retentate_vol_flowrate = value(
@@ -724,15 +1131,22 @@ def display_results(m):
     else:
         pass
 
-    print(
-        f"\nRecovered dye volumetric flowrate: {dye_retentate_vol_flowrate : .3f} m3/hr"
-    )
-
     print("\nSystem Recovery:")
-    sys_dye_recovery = (
-        m.fs.dye_retentate.flow_mass_comp[0, "dye"]()
-        / m.fs.feed.flow_mass_comp[0, "dye"]()
-    )
+    if hasattr(m.fs, "dewaterer"):
+        sys_dye_recovery = (
+            m.fs.precipitant.flow_mass_comp[0, "dye"]()
+            / m.fs.feed.flow_mass_comp[0, "dye"]()
+        )
+    elif hasattr(m.fs, "gac"):
+        sys_dye_recovery = (
+            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "dye"]()
+            / m.fs.feed.flow_mass_comp[0, "dye"]()
+        )
+    else:
+        sys_dye_recovery = (
+            m.fs.dye_retentate.flow_mass_comp[0, "dye"]()
+            / m.fs.feed.flow_mass_comp[0, "dye"]()
+        )
     sys_water_recovery = (
         m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]()
         / m.fs.feed.flow_mass_comp[0, "H2O"]()
@@ -866,16 +1280,12 @@ def display_costing(m):
 
     lcot = value(pyunits.convert(m.fs.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcot_wo_rev = value(
-        pyunits.convert(
-            m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
-        )
+        pyunits.convert(m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
 
     lcow = value(pyunits.convert(m.fs.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcow_wo_rev = value(
-        pyunits.convert(
-            m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
-        )
+        pyunits.convert(m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
 
     sec = m.fs.specific_energy_intensity()
@@ -886,8 +1296,8 @@ def display_costing(m):
         print(f"Wastewater Treatment Capital Cost: {wwtp_capex:.4f} $")
     else:
         pass
-    print(f"Nanofiltration (r-HGO) Capital Cost: {nf_capex:.4f} $")
-    print(f"Reverse Osmosis Capital Cost: {ro_capex:.4f} $")
+    print(f"Nanofiltration (r-HGO) Costing Capital Cost: {nf_capex:.4f} $")
+    print(f"Reverse Osmosis Costing Capital Cost: {ro_capex:.4f} $")
 
     print("\n----------Unit Capital Costs----------\n")
     for u in m.fs.zo_costing._registered_unit_costing:
@@ -915,7 +1325,7 @@ def display_costing(m):
 
     print(f"\nTotal Externalities: {externalities:.4f} M$/year")
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
-    print(f"Dye disposal cost: {ddc: .4f} USD/year")
+    print(f"Dye disposal cost: {-1*ddc: .4f} USD/year")
     print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
     if hasattr(m.fs, "pretreatment"):
         print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")
