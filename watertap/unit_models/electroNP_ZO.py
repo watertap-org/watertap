@@ -90,6 +90,7 @@ class ElectroNPZOdata(SeparatorData):
         add_object_reference(self, "properties_byproduct", self.byproduct_state)
 
         # Add performance variables
+        # NOTE: the mass fraction of H2O to treated stream is estimated from P recovered in the byproduct (struvite)
         self.frac_mass_H2O_treated = Var(
             self.flowsheet().time,
             initialize=0.8777,

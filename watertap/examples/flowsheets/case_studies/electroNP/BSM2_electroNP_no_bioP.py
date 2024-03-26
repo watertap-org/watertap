@@ -552,58 +552,6 @@ def initialize_system(m):
 
     # Initial guesses for flow into first reactor
     tear_guesses = {
-        "flow_vol": {0: 1.23},
-        "conc_mass_comp": {
-            (0, "S_A"): 0.0007,
-            (0, "S_F"): 0.0004,
-            (0, "S_I"): 0.0577,
-            (0, "S_N2"): 0.05,
-            (0, "S_NH4"): 0.007,
-            (0, "S_NO3"): 0.0035,
-            (0, "S_O2"): 0.00192,
-            (0, "S_PO4"): 0.02,
-            (0, "S_K"): 0.37,
-            (0, "S_Mg"): 0.02,
-            (0, "S_IC"): 0.11,
-            (0, "X_AUT"): 0.12,
-            (0, "X_H"): 3.3,
-            (0, "X_I"): 3.0,
-            (0, "X_PAO"): 2.3,
-            (0, "X_PHA"): 0.06,
-            (0, "X_PP"): 0.75,
-            (0, "X_S"): 0.050,
-        },
-        "temperature": {0: 308.15},
-        "pressure": {0: 101325},
-    }
-
-    tear_guesses2 = {
-        "flow_vol": {0: 0.0027},
-        "conc_mass_comp": {
-            (0, "S_A"): 0.044,
-            (0, "S_F"): 0.15,
-            (0, "S_I"): 0.0577,
-            (0, "S_N2"): 0.035,
-            (0, "S_NH4"): 0.03,
-            (0, "S_NO3"): 0.002,
-            (0, "S_O2"): 0.0012,
-            (0, "S_PO4"): 0.02,
-            (0, "S_K"): 0.38,
-            (0, "S_Mg"): 0.023,
-            (0, "S_IC"): 0.063,
-            (0, "X_AUT"): 0.31,
-            (0, "X_H"): 24.8,
-            (0, "X_I"): 11.8,
-            (0, "X_PAO"): 8.5,
-            (0, "X_PHA"): 0.086,
-            (0, "X_PP"): 2.1,
-            (0, "X_S"): 4.2,
-        },
-        "temperature": {0: 308.15},
-        "pressure": {0: 101325},
-    }
-
-    tear_guesses = {
         "flow_vol": {0: 1.235},
         "conc_mass_comp": {
             (0, "S_A"): 0.0007,
@@ -710,6 +658,8 @@ if __name__ == "__main__":
                 "thickener outlet": m.fs.thickener.underflow,
                 "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
                 "dewater outlet": m.fs.dewater.overflow,
+                "electroNP treated": m.fs.electroNP.treated,
+                "electroNP byproduct": m.fs.electroNP.byproduct,
                 "Treated water": m.fs.Treated.inlet,
                 "Sludge": m.fs.Sludge.inlet,
             },
