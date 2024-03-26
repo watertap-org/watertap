@@ -651,7 +651,7 @@ if __name__ == "__main__":
                 "R3": m.fs.R3.outlet,
                 "R4": m.fs.R4.outlet,
                 "R5": m.fs.R5.outlet,
-                "R6": m.fs.R6.outle,
+                "R6": m.fs.R6.outlet,
                 "R7": m.fs.R7.outlet,
                 "thickener outlet": m.fs.thickener.underflow,
                 "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
