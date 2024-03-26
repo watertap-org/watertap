@@ -17,14 +17,11 @@ from idaes.core import FlowsheetBlock
 
 import idaes.core.util.scaling as iscale
 
-from watertap.unit_models.reverse_osmosis_base import TransportModel
+from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
 
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-
-from watertap.core import FrictionFactor
-
 
 from watertap.unit_models.reverse_osmosis_1D import (
     ReverseOsmosis1D,
@@ -574,7 +571,7 @@ def build_friction_factor_spiral_wound():
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
-        friction_factor=FrictionFactor.spiral_wound,
+        module_type=ModuleType.spiral_wound,
         transformation_scheme="BACKWARD",
         transformation_method="dae.finite_difference",
         finite_elements=3,
@@ -627,22 +624,22 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
 
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
-        ] = 0.00590823
+        ] = 0.00593246
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
-        ] = 1.494063e-6
+        ] = 1.4481768e-6
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
-        ] = 0.00474506
+        ] = 0.0041822435
         self.unit_solutions[
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
-        ] = 1.559319e-6
+        ] = 1.491610924e-6
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-        ] = 0.1010762
+        ] = 0.095819393
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
-        ] = 2.9015866e-5
+        ] = 2.794556261e-5
 
         return m
 
