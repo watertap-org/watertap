@@ -388,13 +388,15 @@ class TestSchema:
     @pytest.fixture(
         scope="function",
         params=[
-            fmt
-            if is_available
-            else pytest.param(
-                fmt,
-                marks=pytest.mark.xfail(
-                    reason=f"Schema output format '{fmt}' not yet supported"
-                ),
+            (
+                fmt
+                if is_available
+                else pytest.param(
+                    fmt,
+                    marks=pytest.mark.xfail(
+                        reason=f"Schema output format '{fmt}' not yet supported"
+                    ),
+                )
             )
             for fmt, is_available in format_available.items()
         ],

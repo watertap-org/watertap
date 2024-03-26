@@ -29,6 +29,7 @@ import watertap.property_models.seawater_prop_pack as props
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component

@@ -382,7 +382,6 @@ class Flash:
         use_scaling_rigorous=True,
         file_name=None,
     ):
-
         """
         Configure Flash Analysis JSON input.
 

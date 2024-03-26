@@ -21,6 +21,7 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyCalculateStateTest,
 )
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 class TestNaClProperty_idaes(PropertyTestHarness_idaes):

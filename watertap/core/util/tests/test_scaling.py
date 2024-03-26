@@ -34,6 +34,7 @@ _log = idaeslog.getLogger(__name__)
 # Set up solver
 solver = get_solver()
 
+
 # Start test class
 # TODO: Consider using dummy metadata rather than importing property package
 class TestScaling:

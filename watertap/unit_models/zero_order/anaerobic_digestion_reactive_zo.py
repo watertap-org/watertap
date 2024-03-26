@@ -51,9 +51,9 @@ class AnaerobicDigestionReactiveZOData(ZeroOrderBaseData):
                 bounds=(0, None),
                 doc="Ratio of m^3 biogas produced / kg TSS in influent",
             )
-            self._perf_var_dict[
-                "Ratio of m^3 biogas produced / kg TSS in influent"
-            ] = self.biogas_tss_ratio
+            self._perf_var_dict["Ratio of m^3 biogas produced / kg TSS in influent"] = (
+                self.biogas_tss_ratio
+            )
             self._fixed_perf_vars.append(self.biogas_tss_ratio)
 
             self.biogas_production = Var(

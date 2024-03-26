@@ -1280,16 +1280,12 @@ def display_costing(m):
 
     lcot = value(pyunits.convert(m.fs.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcot_wo_rev = value(
-        pyunits.convert(
-            m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
-        )
+        pyunits.convert(m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
 
     lcow = value(pyunits.convert(m.fs.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcow_wo_rev = value(
-        pyunits.convert(
-            m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
-        )
+        pyunits.convert(m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
 
     sec = m.fs.specific_energy_intensity()
