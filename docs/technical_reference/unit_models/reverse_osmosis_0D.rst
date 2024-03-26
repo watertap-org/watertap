@@ -138,6 +138,14 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Friction factor", ":math:`f`", "feed_side.friction_factor_darcy", "[t, x]", ":math:`\text{dimensionless}`"
    "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "feed_side.dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
 
+if ``transport_model`` is set to ``TransportModel.SKK``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Reflection coefficient", ":math:`sigma`", "reflect_coeff", "None", ":math:`\text{dimensionless}`"
+   "Alpha", ":math:`alpha`", "alpha", "None", ":math:`\text{s/m}`"
+
 .. _0dro_equations:
 
 Equations
@@ -146,7 +154,8 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
+   "Solvent flux across membrane (solution-diffusion)", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
+   "Solvent flux across membrane (SKK)", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - \alpha(\pi_{f}-\pi_{p}))`"
    "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
    "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
    "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
