@@ -272,8 +272,8 @@ CONFIG_Template.declare(
 
         **default** - ``ModuleType.flat_sheet``
 
-        "``ModuleType.flat_sheet``", ""
-        "``ModuleType.spiral_wound``", ""
+        "``ModuleType.flat_sheet``", "Module type option for flat-sheet membrane modules"
+        "``ModuleType.spiral_wound``", "Module type option for spiral-wound membrane modules, this option accounts for how membranes in spiral-wound modules are folded which reduces the channel width by half"
 
         """,
     ),
