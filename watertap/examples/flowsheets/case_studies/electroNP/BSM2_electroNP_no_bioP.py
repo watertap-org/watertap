@@ -406,9 +406,7 @@ def set_operating_conditions(m):
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(5.652 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(
-        374.6925 * pyo.units.g / pyo.units.m**3
-    )
+    m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(374.6925 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(20 * pyo.units.g / pyo.units.m**3)
 
     # Primary Clarifier
@@ -653,7 +651,7 @@ if __name__ == "__main__":
                 "R3": m.fs.R3.outlet,
                 "R4": m.fs.R4.outlet,
                 "R5": m.fs.R5.outlet,
-                "R6": m.fs.R6.outlet,
+                "R6": m.fs.R6.outle,
                 "R7": m.fs.R7.outlet,
                 "thickener outlet": m.fs.thickener.underflow,
                 "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
