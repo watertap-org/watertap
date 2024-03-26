@@ -4,7 +4,8 @@ This reverse osmosis (RO) unit model
    * is 1-dimensional
    * supports a single liquid phase only
    * supports steady-state only
-   * is based on the solution-diffusion model and film theory
+   * supports both solution-diffusion (SD) and Spiegler-Kedem-Katchalsky (SKK) models
+   * supports flat-sheet and spiral-wound module designs
    * assumes isothermal conditions
 
 .. index::
