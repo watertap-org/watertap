@@ -1937,9 +1937,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rule_pH(self):
-            return self.pH == -pyo.log10(
-                self.S_H / (pyo.units.kmole / pyo.units.m**3)
-            )
+            return self.pH == -pyo.log10(self.S_H / (pyo.units.kmole / pyo.units.m**3))
 
         self.pH_calc = pyo.Constraint(rule=rule_pH, doc="pH of solution")
 

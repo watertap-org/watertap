@@ -415,9 +415,9 @@ def set_operating_conditions(m):
     m.fs.chiller.control_volume.properties_out[0].flow_mass_phase_comp[
         "Liq", "TDS"
     ].value = 0
-    m.fs.chiller.control_volume.properties_out[0].flow_mass_phase_comp[
-        "Liq", "H2O"
-    ] = m.fs.heater.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+    m.fs.chiller.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"] = (
+        m.fs.heater.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+    )
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:

@@ -71,6 +71,7 @@ handler.setFormatter(formatter)
 _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
 
+
 # TODO: consider letting user set logging level instead of using interactive mode
 class CredentialManager:
     """

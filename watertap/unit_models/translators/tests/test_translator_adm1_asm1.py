@@ -60,6 +60,7 @@ from pyomo.util.check_units import assert_units_consistent
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():

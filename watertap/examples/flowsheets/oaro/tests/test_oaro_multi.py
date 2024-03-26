@@ -32,6 +32,7 @@ from watertap.examples.flowsheets.oaro.oaro_multi import (
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")

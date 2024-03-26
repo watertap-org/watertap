@@ -247,31 +247,19 @@ recarbonation_thermo_config = {
                     "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         6.832514,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-1,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
                     ),
                     "C": (
                         6.793435,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
                     ),
                     "D": (
                         -2.534480,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-3,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
                     ),
                     "E": (
                         0.082139,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
                     "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
@@ -311,31 +299,19 @@ recarbonation_thermo_config = {
                     "A": (24.99735, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         55.18696,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-1,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
                     ),
                     "C": (
                         -33.69137,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
                     ),
                     "D": (
                         7.948387,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-3,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
                     ),
                     "E": (
                         -0.136638,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
                     ),
                     "F": (-403.6075, pyunits.kJ / pyunits.mol),
                     "G": (228.2431, pyunits.J / pyunits.mol / pyunits.K),
@@ -572,7 +548,7 @@ recarbonation_reaction_config = {
                     ("Liq", "H_+"): 1,
                     ("Liq", "OH_-"): 1,
                 },
-            }
+            },
             # End parameter_data
         },
         # End R1
@@ -597,7 +573,7 @@ recarbonation_reaction_config = {
                     ("Liq", "CO2"): -1,
                     ("Liq", "H2O"): 0,
                 },
-            }
+            },
             # End parameter_data
         },
         # End R2
@@ -622,7 +598,7 @@ recarbonation_reaction_config = {
                     ("Liq", "H_+"): 1,
                     ("Liq", "HCO3_-"): 1,
                 },
-            }
+            },
             # End parameter_data
         },
         # End R3
@@ -647,10 +623,10 @@ recarbonation_reaction_config = {
                     ("Liq", "H_+"): 1,
                     ("Liq", "CO3_2-"): 1,
                 },
-            }
+            },
             # End parameter_data
-        }
+        },
         # End R4
-    }
+    },
     # End equilibrium_reactions
 }

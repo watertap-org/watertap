@@ -39,6 +39,7 @@ from watertap.examples.flowsheets.MD.MD_single_stage_continuous_recirculation im
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 class TestMDContinuousRecirculation:
     @pytest.fixture(scope="class")

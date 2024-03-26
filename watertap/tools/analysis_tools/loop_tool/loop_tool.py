@@ -620,9 +620,9 @@ class loopTool:
         ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
         ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
 
-        ps_kwargs[
-            "update_sweep_params_before_init"
-        ] = self.update_sweep_params_before_init
+        ps_kwargs["update_sweep_params_before_init"] = (
+            self.update_sweep_params_before_init
+        )
 
         ps_kwargs["custom_do_param_sweep"] = self.custom_do_param_sweep
         ps_kwargs["custom_do_param_sweep_kwargs"] = self.custom_do_param_sweep_kwargs
@@ -681,9 +681,9 @@ class loopTool:
         ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
         ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
 
-        ps_kwargs[
-            "update_sweep_params_before_init"
-        ] = self.update_sweep_params_before_init
+        ps_kwargs["update_sweep_params_before_init"] = (
+            self.update_sweep_params_before_init
+        )
 
         ps_kwargs["custom_do_param_sweep"] = self.custom_do_param_sweep
         ps_kwargs["custom_do_param_sweep_kwargs"] = self.custom_do_param_sweep_kwargs
@@ -702,9 +702,9 @@ class loopTool:
             ps_kwargs["build_outputs"] = self.build_outputs
             ps_kwargs["build_outputs_kwargs"] = self.build_outputs_kwargs
 
-        ps_kwargs[
-            "build_differential_sweep_specs"
-        ] = ParameterSweepReader()._dict_to_diff_spec
+        ps_kwargs["build_differential_sweep_specs"] = (
+            ParameterSweepReader()._dict_to_diff_spec
+        )
         ps_kwargs["build_differential_sweep_specs_kwargs"] = {
             "input_dict": self.differential_sweep_specs
         }

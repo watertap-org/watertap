@@ -246,9 +246,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, p, j: 0.4037 if j in solvent_set else 0.0033,
-            bounds=lambda b, t, p, j: (0, 1 - 1e-6)
-            if j in solvent_set
-            else (1e-5, 1 - 1e-6),
+            bounds=lambda b, t, p, j: (
+                (0, 1 - 1e-6) if j in solvent_set else (1e-5, 1 - 1e-6)
+            ),
             units=pyunits.dimensionless,
             doc="Mass-based component recovery",
         )
@@ -732,88 +732,88 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                 feed_interface_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Feed Concentration @Inlet,Membrane-Interface "
-                ] = feed_interface_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Feed Concentration @Inlet,Membrane-Interface "] = (
+                    feed_interface_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 feed_interface_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Feed Concentration @Outlet,Membrane-Interface "
-                ] = feed_interface_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Feed Concentration @Outlet,Membrane-Interface "] = (
+                    feed_interface_outlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 feed_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Feed Concentration @Inlet,Bulk"
-                ] = feed_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Feed Concentration @Inlet,Bulk"] = (
+                    feed_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 feed_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Feed Concentration @Outlet,Bulk"
-                ] = feed_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Feed Concentration @Outlet,Bulk"] = (
+                    feed_outlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 permeate_interface_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Permeate Concentration @Inlet,Membrane-Interface "
-                ] = permeate_interface_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Permeate Concentration @Inlet,Membrane-Interface "] = (
+                    permeate_interface_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 permeate_interface_outlet.is_property_constructed(
                     "conc_mass_phase_comp"
                 )
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Permeate Concentration @Outlet,Membrane-Interface "
-                ] = permeate_interface_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Permeate Concentration @Outlet,Membrane-Interface "] = (
+                    permeate_interface_outlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 permeate_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Permeate Concentration @Inlet,Bulk"
-                ] = permeate_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Permeate Concentration @Inlet,Bulk"] = (
+                    permeate_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 permeate_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Permeate Concentration @Outlet,Bulk"
-                ] = permeate_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Permeate Concentration @Outlet,Bulk"] = (
+                    permeate_outlet.conc_mass_phase_comp["Liq", j]
+                )
         if (
             feed_interface_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Feed Osmotic Pressure @Outlet,Membrane-Interface "
-            ] = feed_interface_outlet.pressure_osm_phase["Liq"]
+            var_dict["Feed Osmotic Pressure @Outlet,Membrane-Interface "] = (
+                feed_interface_outlet.pressure_osm_phase["Liq"]
+            )
         if (
             permeate_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Feed Osmotic Pressure @Outlet,Bulk"
-            ] = feed_outlet.pressure_osm_phase["Liq"]
+            var_dict["Feed Osmotic Pressure @Outlet,Bulk"] = (
+                feed_outlet.pressure_osm_phase["Liq"]
+            )
         if (
             feed_interface_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Feed Osmotic Pressure @Inlet,Membrane-Interface"
-            ] = feed_interface_inlet.pressure_osm_phase["Liq"]
+            var_dict["Feed Osmotic Pressure @Inlet,Membrane-Interface"] = (
+                feed_interface_inlet.pressure_osm_phase["Liq"]
+            )
         if (
             feed_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Feed Osmotic Pressure @Inlet,Bulk"
-            ] = feed_inlet.pressure_osm_phase["Liq"]
+            var_dict["Feed Osmotic Pressure @Inlet,Bulk"] = (
+                feed_inlet.pressure_osm_phase["Liq"]
+            )
         # TODO: add all corresponding values for permeate side for relevant
         #  vars/expressions from osmotic pressure and whatever is below
         if (
@@ -838,9 +838,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                 self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
             )
             if hasattr(self.feed_side, "N_Re_avg"):
-                expr_dict[
-                    "Average Feed-side Reynolds Number"
-                ] = self.feed_side.N_Re_avg[time_point]
+                expr_dict["Average Feed-side Reynolds Number"] = (
+                    self.feed_side.N_Re_avg[time_point]
+                )
             for j in self.config.property_package.solute_set:
                 expr_dict[f"{j} Average Solute Flux (GMH)"] = (
                     self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6

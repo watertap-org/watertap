@@ -76,6 +76,7 @@ __author__ = "Alejandro Garciadiego, Adam Atia"
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():

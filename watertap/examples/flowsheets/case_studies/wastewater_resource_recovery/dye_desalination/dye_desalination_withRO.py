@@ -314,15 +314,11 @@ def build(
     desal.s01 = Arc(source=desal.S1.P2, destination=desal.P2.inlet)
     desal.s02 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
     desal.s03 = Arc(source=desal.M1.outlet, destination=desal.RO.inlet)
-    desal.s04 = Arc(
-        source=desal.RO.retentate, destination=desal.PXR.high_pressure_inlet
-    )
-    desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
-    desal.s06 = Arc(source=desal.PXR.low_pressure_outlet, destination=desal.P3.inlet)
+    desal.s04 = Arc(source=desal.RO.retentate, destination=desal.PXR.brine_inlet)
+    desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.feed_inlet)
+    desal.s06 = Arc(source=desal.PXR.feed_outlet, destination=desal.P3.inlet)
     desal.s07 = Arc(source=desal.P3.outlet, destination=desal.M1.P3)
-    m.fs.s_disposal = Arc(
-        source=desal.PXR.high_pressure_outlet, destination=m.fs.brine.inlet
-    )
+    m.fs.s_disposal = Arc(source=desal.PXR.brine_outlet, destination=m.fs.brine.inlet)
 
     m.fs.s_permeate = Arc(source=desal.RO.permeate, destination=m.fs.permeate.inlet)
 
@@ -341,8 +337,8 @@ def build(
     )
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
     iscale.set_scaling_factor(desal.P3.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
-    iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.feed_side.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.brine_side.work, 1e-5)
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -1284,16 +1280,12 @@ def display_costing(m):
 
     lcot = value(pyunits.convert(m.fs.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcot_wo_rev = value(
-        pyunits.convert(
-            m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
-        )
+        pyunits.convert(m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
 
     lcow = value(pyunits.convert(m.fs.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcow_wo_rev = value(
-        pyunits.convert(
-            m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
-        )
+        pyunits.convert(m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
 
     sec = m.fs.specific_energy_intensity()

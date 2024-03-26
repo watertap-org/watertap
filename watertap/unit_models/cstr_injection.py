@@ -430,6 +430,7 @@ see reaction package for documentation.}""",
                     mutable=True,
                     doc="Electricity intensity with respect to inlet flow",
                 )
+
                 # Electricity constraint
                 @self.Constraint(
                     self.flowsheet().time,
