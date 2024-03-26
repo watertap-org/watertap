@@ -79,7 +79,7 @@ setup(
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
-        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        *SPECIAL_DEPENDENCIES_FOR_RELEASE,
         "pyomo>=6.6.1",  # (also needed for units in electrolyte database (edb))
         "pyyaml",  # watertap.core.wt_database
         # the following requirements are for the electrolyte database (edb)
