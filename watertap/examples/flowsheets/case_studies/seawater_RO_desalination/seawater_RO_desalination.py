@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -288,16 +288,12 @@ def build(erd_type=None):
         desal.s01 = Arc(source=desal.S1.P1, destination=desal.P1.inlet)
         desal.s02 = Arc(source=desal.P1.outlet, destination=desal.M1.P1)
         desal.s03 = Arc(source=desal.M1.outlet, destination=desal.RO.inlet)
-        desal.s04 = Arc(
-            source=desal.RO.retentate, destination=desal.PXR.high_pressure_inlet
-        )
-        desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
-        desal.s06 = Arc(
-            source=desal.PXR.low_pressure_outlet, destination=desal.P2.inlet
-        )
+        desal.s04 = Arc(source=desal.RO.retentate, destination=desal.PXR.brine_inlet)
+        desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.feed_inlet)
+        desal.s06 = Arc(source=desal.PXR.feed_outlet, destination=desal.P2.inlet)
         desal.s07 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
         m.fs.s_disposal = Arc(
-            source=desal.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet
+            source=desal.PXR.brine_outlet, destination=m.fs.disposal.inlet
         )
     elif erd_type == "pump_as_turbine":
         m.fs.s_tb_desal = Arc(
@@ -343,8 +339,8 @@ def build(erd_type=None):
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
     if erd_type == "pressure_exchanger":
         iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
-        iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
-        iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
+        iscale.set_scaling_factor(desal.PXR.feed_side.work, 1e-5)
+        iscale.set_scaling_factor(desal.PXR.brine_side.work, 1e-5)
     elif erd_type == "pump_as_turbine":
         iscale.set_scaling_factor(desal.ERD.control_volume.work, 1e-5)
     # calculate and propagate scaling factors

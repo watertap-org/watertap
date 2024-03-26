@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -37,7 +37,11 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
     def _skip_element(self, x):
         return False
 
-    def add_geometry(self, length_var=None, width_var=None):
+    def add_geometry(
+        self, length_var=None, width_var=None, flow_direction=FlowDirection.forward
+    ):
+
+        self._flow_direction = flow_direction
 
         # If the length_var and width_var are provided, create references to them
         if length_var is not None:
@@ -49,7 +53,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
     def add_state_blocks(
         self,
         has_phase_equilibrium=None,
-        flow_direction=None,
         property_package_vapor=None,
         property_package_args_vapor=None,
     ):
@@ -63,9 +66,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
 
         # Determine flow direction from the argument or from the configuration
 
-        self.flow_direction = flow_direction
-
-        if self.flow_direction == FlowDirection.forward:
+        if self._flow_direction == FlowDirection.forward:
             properties_dict = {
                 **{
                     (t, 0.0): self.properties_in[t]
@@ -76,7 +77,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                     for t in self.flowsheet().config.time
                 },
             }
-        elif self.flow_direction == FlowDirection.backward:
+        elif self._flow_direction == FlowDirection.backward:
             properties_dict = {
                 **{
                     (t, 0): self.properties_out[t] for t in self.flowsheet().config.time
@@ -114,13 +115,8 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                 doc="pressure drop per unit length across channel",
             )
 
-            @self.Constraint(
-                self.flowsheet().config.time, doc="pressure change due to friction"
-            )
-            def eq_pressure_change(b, t):
-                return b.deltaP[t] == b.dP_dx[t] * b.length
-
         elif pressure_change_type == PressureChangeType.calculated:
+
             self.dP_dx = Var(
                 self.flowsheet().config.time,
                 self.length_domain,
@@ -130,6 +126,22 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="Pressure drop per unit length of channel at inlet and outlet",
             )
+
+    def _add_deltaP(self, pressure_change_type=PressureChangeType.calculated):
+        if pressure_change_type == PressureChangeType.fixed_per_stage:
+            return
+
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        if pressure_change_type == PressureChangeType.fixed_per_unit_length:
+
+            @self.Constraint(
+                self.flowsheet().config.time, doc="pressure change due to friction"
+            )
+            def eq_pressure_change(b, t):
+                return b.deltaP[t] == b.dP_dx[t] * b.length
+
+        elif pressure_change_type == PressureChangeType.calculated:
 
             @self.Constraint(
                 self.flowsheet().config.time, doc="Total Pressure drop across channel"

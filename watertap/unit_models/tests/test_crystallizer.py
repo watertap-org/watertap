@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -176,15 +176,15 @@ class TestCrystallizer(UnitTestHarness):
         m.fs.costing.cost_process()
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-5)
 
-        self.unit_solutions[
-            m.fs.unit.solids.flow_mass_phase_comp[0, "Sol", "NaCl"]
-        ] = 0.08504096
-        self.unit_solutions[
-            m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
-        ] = 0.12756
-        self.unit_solutions[
-            m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.34570767
+        self.unit_solutions[m.fs.unit.solids.flow_mass_phase_comp[0, "Sol", "NaCl"]] = (
+            0.08504096
+        )
+        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]] = (
+            0.12756
+        )
+        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]] = (
+            0.34570767
+        )
         self.unit_solutions[
             m.fs.unit.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]
         ] = 0.26953035

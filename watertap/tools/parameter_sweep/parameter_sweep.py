@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -515,9 +515,9 @@ class _ParameterSweepBase(ABC):
         # Store the inputs
         for param_name, sampling_obj in sweep_params.items():
             var = sampling_obj.pyomo_object
-            output_dict["sweep_params"][
-                param_name
-            ] = self._create_component_output_skeleton(var, num_samples)
+            output_dict["sweep_params"][param_name] = (
+                self._create_component_output_skeleton(var, num_samples)
+            )
 
         if outputs is None:
             # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
@@ -527,21 +527,21 @@ class _ParameterSweepBase(ABC):
                 # We do however need to make sure that the short name for the inputs is used here
                 for param_name, sampling_obj in sweep_params.items():
                     if pyo_obj.name == sampling_obj.pyomo_object.name:
-                        output_dict["outputs"][
-                            param_name
-                        ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                        output_dict["outputs"][param_name] = (
+                            self._create_component_output_skeleton(pyo_obj, num_samples)
+                        )
                     else:
-                        output_dict["outputs"][
-                            pyo_obj.name
-                        ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                        output_dict["outputs"][pyo_obj.name] = (
+                            self._create_component_output_skeleton(pyo_obj, num_samples)
+                        )
 
         else:
             # Save only the outputs specified in the outputs dictionary
             for short_name, pyo_obj in outputs.items():
-                output_dict["outputs"][
-                    short_name
-                ] = self._create_component_output_skeleton(
-                    self._get_object(model, pyo_obj), num_samples
+                output_dict["outputs"][short_name] = (
+                    self._create_component_output_skeleton(
+                        self._get_object(model, pyo_obj), num_samples
+                    )
                 )
         return output_dict
 
@@ -905,9 +905,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             for key, item in content.items():
                 if key != "solve_successful":
                     for subkey, subitem in item.items():
-                        local_filtered_dict[key][subkey]["value"][
-                            offset:stop
-                        ] = subitem["value"][optimal_indices]
+                        local_filtered_dict[key][subkey]["value"][offset:stop] = (
+                            subitem["value"][optimal_indices]
+                        )
 
             # Place the solve status
             local_filtered_dict["solve_successful"].extend(
@@ -1053,13 +1053,13 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                     local_values,
                 )
             else:
-                local_output_collection[
-                    loop_ctr
-                ] = self.self.config.custom_do_param_sweep(
-                    sweep_params,
-                    outputs,
-                    local_values,
-                    **self.config.custom_do_param_sweep_kwargs,
+                local_output_collection[loop_ctr] = (
+                    self.self.config.custom_do_param_sweep(
+                        sweep_params,
+                        outputs,
+                        local_values,
+                        **self.config.custom_do_param_sweep_kwargs,
+                    )
                 )
 
             # Get the number of successful solves on this proc (sum of boolean flags)

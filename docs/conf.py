@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -35,9 +35,9 @@ copyright = "2020-2023, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "0.12.dev0"
+release = "1.0.dev0"
 # The short X.Y version
-version = "0.12.dev0"
+version = "1.0.dev0"
 # -- General configuration ---------------------------------------------------
 
 

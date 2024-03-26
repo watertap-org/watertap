@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -612,9 +612,9 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             obj_dict[f"{j} Molar Concentration @Inlet"] = self.feed_side.properties_in[
                 time_point
             ].conc_mol_phase_comp["Liq", j]
-            obj_dict[
-                f"{j} Molar Concentration @Outlet"
-            ] = self.feed_side.properties_out[time_point].conc_mol_phase_comp["Liq", j]
+            obj_dict[f"{j} Molar Concentration @Outlet"] = (
+                self.feed_side.properties_out[time_point].conc_mol_phase_comp["Liq", j]
+            )
             obj_dict[f"{j} Molar Concentration @Permeate"] = self.properties_permeate[
                 time_point
             ].conc_mol_phase_comp["Liq", j]

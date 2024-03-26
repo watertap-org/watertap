@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -89,9 +89,9 @@ class CANDOPData(ZeroOrderBaseData):
             doc="Oxygen consumed - nitrogen reacted ratio",
         )
         self._fixed_perf_vars.append(self.oxygen_nitrogen_ratio)
-        self._perf_var_dict[
-            "Oxygen consumed / nitrogen reacted ratio (mass basis)"
-        ] = self.oxygen_nitrogen_ratio
+        self._perf_var_dict["Oxygen consumed / nitrogen reacted ratio (mass basis)"] = (
+            self.oxygen_nitrogen_ratio
+        )
 
         @self.Constraint(
             self.flowsheet().time, doc="Constraint for oxygen consumption."
