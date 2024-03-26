@@ -18,6 +18,7 @@ from watertap.examples.custom_model_demo.demo_simple_filter import main
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.component
 def test_demo_simple_prop_pack():

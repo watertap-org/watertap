@@ -44,6 +44,7 @@ from watertap.costing.unit_models.pressure_exchanger import cost_pressure_exchan
 
 _log = idaeslog.getLogger(__name__)
 
+
 # ---------------------------------------------------------------------
 class PressureExchangeType(Enum):
     efficiency = auto()

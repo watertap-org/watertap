@@ -36,6 +36,7 @@ __author__ = "Austin Ladshaw"
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 # Start test class
 class TestCoagulation_withChemicals:

@@ -88,9 +88,9 @@ class GACZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.electricity_intensity_parameter)
 
         self._perf_var_dict["Electricity Demand"] = self.electricity
-        self._perf_var_dict[
-            "Electricity Intensity"
-        ] = self.energy_electric_flow_vol_inlet
+        self._perf_var_dict["Electricity Intensity"] = (
+            self.energy_electric_flow_vol_inlet
+        )
 
         # Demand for activated carbon
         self.activated_carbon_replacement = Var(

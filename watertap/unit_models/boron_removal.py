@@ -47,6 +47,7 @@ __author__ = "Austin Ladshaw"
 
 _log = idaeslog.getLogger(__name__)
 
+
 # Name of the unit model
 @declare_process_block_class("BoronRemoval")
 class BoronRemovalData(InitializationMixin, UnitModelBlockData):

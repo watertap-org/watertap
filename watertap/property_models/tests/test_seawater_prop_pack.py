@@ -20,6 +20,7 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyCalculateStateTest,
 )
 
+
 # -----------------------------------------------------------------------------
 class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):

@@ -45,6 +45,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 class TestROwithPX:
     @pytest.fixture(scope="class")
