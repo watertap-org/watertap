@@ -96,21 +96,22 @@ class ZeroOrderBaseData(UnitModelBlockData):
     CONFIG.declare(
         "isothermal",
         ConfigValue(
-
-        default=True,
-        domain=Bool,
-        description="Isothermal flag for constraint construction.",
-        doc="Isothermal assumption, or ignore temperature variables in unit. Default=True",
-    ))
+            default=True,
+            domain=Bool,
+            description="Isothermal flag for constraint construction.",
+            doc="Isothermal assumption, or ignore temperature variables in unit. Default=True",
+        ),
+    )
 
     CONFIG.declare(
         "isobaric",
         ConfigValue(
-        default=True,
-        domain=Bool,
-        description="Isobaric flag for constraint construction",
-        doc="Isobaric assumption, or ignore pressure variables in unit. Default=True",
-    ))
+            default=True,
+            domain=Bool,
+            description="Isobaric flag for constraint construction",
+            doc="Isobaric assumption, or ignore pressure variables in unit. Default=True",
+        ),
+    )
 
     def build(self):
         super().build()
@@ -170,7 +171,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
     # used to provide inlet volumetric flow
     def _get_Q(self, t):
         raise NotImplementedError()
-       
+
     def initialize_build(
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):

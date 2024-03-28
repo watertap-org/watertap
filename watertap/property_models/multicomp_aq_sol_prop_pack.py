@@ -505,7 +505,7 @@ class MCASParameterData(PhysicalParameterBlock):
         )
 
         if self.config.diffus_calculation == DiffusivityCalculation.none:
-            #TODO: revisit this and revise case where diffusivity_data is empty
+            # TODO: revisit this and revise case where diffusivity_data is empty
             self.diffus_phase_comp = Var(
                 self.phase_list,
                 self.solute_set,

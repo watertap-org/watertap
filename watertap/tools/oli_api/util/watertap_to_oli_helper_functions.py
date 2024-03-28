@@ -195,13 +195,15 @@ def get_molar_mass(watertap_name: str) -> float:
     for element in element_counts:
         try:
             atomic_mass = float(
-                periodic_table["AtomicMass"][(periodic_table["Symbol"] == element)].values[
-                    0
-                ]
+                periodic_table["AtomicMass"][
+                    (periodic_table["Symbol"] == element)
+                ].values[0]
             )
         except IndexError:
-            raise IOError(f"The symbol '{element}' from the component name '{components[0]}' could not be found in the periodic table.")
-        
+            raise IOError(
+                f"The symbol '{element}' from the component name '{components[0]}' could not be found in the periodic table."
+            )
+
         molar_mass += element_counts[element] * atomic_mass
 
     if not molar_mass:

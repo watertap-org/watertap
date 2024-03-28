@@ -29,7 +29,8 @@ from idaes.core import (
 from watertap.unit_models.uv_aop import Ultraviolet0D, UVDoseType
 import watertap.property_models.NDMA_prop_pack as props
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock, MaterialFlowBasis,
+    MCASParameterBlock,
+    MaterialFlowBasis,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
@@ -483,7 +484,8 @@ class TestUV_standard:
         m = UV_frame
         m.fs.unit.report()
 
-#TODO: add test for single target species, and improve error message when list not provided.
+
+# TODO: add test for single target species, and improve error message when list not provided.
 class TestUV_with_multiple_comps:
     @pytest.fixture(scope="class")
     def UV_frame(self):
@@ -1188,7 +1190,7 @@ class TestUV_with_MCAS_mass_basis:
             solute_list=["NDMA", "DCE"],
             mw_data={"NDMA": 0.0740819, "DCE": 0.09896},
             ignore_neutral_charge=True,
-            material_flow_basis=MaterialFlowBasis.mass
+            material_flow_basis=MaterialFlowBasis.mass,
         )
 
         m.fs.unit = Ultraviolet0D(
@@ -1213,21 +1215,28 @@ class TestUV_with_MCAS_mass_basis:
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA - feed_mass_frac_DCE
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
-            feed_flow_mass * feed_mass_frac_NDMA) 
+            feed_flow_mass * feed_mass_frac_NDMA
+        )
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "DCE"].fix(
-            feed_flow_mass * feed_mass_frac_DCE 
+            feed_flow_mass * feed_mass_frac_DCE
         )
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             feed_flow_mass * feed_mass_frac_H2O
         )
         m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e-5/value(m.fs.properties.mw_comp["H2O"]), index=("Liq", "H2O")
+            "flow_mass_phase_comp",
+            1e-5 / value(m.fs.properties.mw_comp["H2O"]),
+            index=("Liq", "H2O"),
         )
         m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e3/value(m.fs.properties.mw_comp["NDMA"]), index=("Liq", "NDMA")
+            "flow_mass_phase_comp",
+            1e3 / value(m.fs.properties.mw_comp["NDMA"]),
+            index=("Liq", "NDMA"),
         )
         m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e3/value(m.fs.properties.mw_comp["DCE"]), index=("Liq", "DCE")
+            "flow_mass_phase_comp",
+            1e3 / value(m.fs.properties.mw_comp["DCE"]),
+            index=("Liq", "DCE"),
         )
 
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
@@ -1313,6 +1322,7 @@ class TestUV_with_MCAS_mass_basis:
         # test unit consistency
         assert_units_consistent(m.fs.unit)
         assert degrees_of_freedom(m) == 0
+
     @pytest.mark.unit
     def test_dof(self, UV_frame):
         m = UV_frame
@@ -1355,7 +1365,9 @@ class TestUV_with_MCAS_mass_basis:
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
         assert pytest.approx(0.000151922, rel=1e-3) == value(
-            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "NDMA"]
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                "Liq", "NDMA"
+            ]
         )
         assert pytest.approx(0.000151922, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "DCE"]
@@ -1364,7 +1376,9 @@ class TestUV_with_MCAS_mass_basis:
             m.fs.unit.control_volume.properties_in[0].flow_vol
         )
         assert pytest.approx(2052.999696, rel=1e-3) == value(
-            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
         )
         assert pytest.approx(4.8104091277604546e-05, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
@@ -1372,7 +1386,9 @@ class TestUV_with_MCAS_mass_basis:
             ]
         )
         assert pytest.approx(5.057044077757962e-05, rel=1e-3) == value(
-            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "DCE"]
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "DCE"
+            ]
         )
         assert pytest.approx(500, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.uv_dose, to_units=pyunits.mJ / pyunits.cm**2)

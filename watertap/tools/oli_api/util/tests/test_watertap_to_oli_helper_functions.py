@@ -109,7 +109,8 @@ def test_get_mw_exceptions():
         get_molar_mass("foo")
 
     with pytest.raises(
-        IOError, match="The symbol 'T' from the component name 'TDS' could not be found in the periodic table."
+        IOError,
+        match="The symbol 'T' from the component name 'TDS' could not be found in the periodic table.",
     ):
         get_molar_mass_quantity("TDS")
 
