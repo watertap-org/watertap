@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -64,7 +64,7 @@ from watertap.unit_models.translators.translator_adm1_asm2d import (
 )
 from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
-from watertap.unit_models.anaerobic_digestor import AD
+from watertap.unit_models.anaerobic_digester import AD
 from watertap.unit_models.dewatering import (
     DewateringUnit,
     ActivatedSludgeModelType as dewater_type,
@@ -235,7 +235,7 @@ def build_flowsheet():
         outlet_state_defined=True,
     )
 
-    # Anaerobic digestor
+    # Anaerobic digester
     m.fs.AD = AD(
         liquid_property_package=m.fs.props_ADM1,
         vapor_property_package=m.fs.props_vap_ADM1,
@@ -520,7 +520,7 @@ def initialize_system(m):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 1
+    seq.options.iterLim = 5
     seq.options.tear_set = [m.fs.stream5, m.fs.stream10adm]
 
     G = seq.create_graph(m)
@@ -588,7 +588,7 @@ def initialize_system(m):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
+        unit.initialize(outlvl=idaeslog.INFO)
 
     seq.run(m, function)
 

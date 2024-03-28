@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -26,7 +26,7 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from watertap.unit_models.anaerobic_digestor import AD
+from watertap.unit_models.anaerobic_digester import AD
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )

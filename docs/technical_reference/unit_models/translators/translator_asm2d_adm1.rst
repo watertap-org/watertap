@@ -6,7 +6,7 @@ Introduction
 
 A link is required to translate between biological based and physical or chemical mediated processes
 to develop plant-wide modeling of wastewater treatment. This model mediates the interaction between
-the Modified Activated Sludge Model 2d (ASM2d) and the Modified Anaerobic Digestor Model 1 (ADM1).
+the Modified Activated Sludge Model 2d (ASM2d) and the Modified Anaerobic Digester Model 1 (ADM1).
 
 The model relies on the following key assumptions:
 
@@ -111,8 +111,8 @@ Equations and Relationships
    "S_PO4 concentration", ":math:`S_{PO4, 3} = S_{PO4, 2} + (S_{F, in} * i_{PSF})`"
    "S_IC concentration", ":math:`S_{IC, 3} = S_{IC, 2} + (S_{F, in} * i_{CSF}) - (S_{su} * Ci[S_{su}] * 1000 * 12) - (S_{aa} * Ci[S_{aa}] * 1000 * 12)`"
 
-Equations and Relationships (With Decay)
-----------------------------------------
+Equations and Relationships (with biological phosphorus removal)
+----------------------------------------------------------------
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -150,8 +150,8 @@ Equations and Relationships (With Decay)
    "S_K concentration", ":math:`S_{K, 6} = S_{K, in} + (K_{XPP} * X_{PP, in})`"
    "S_Mg concentration", ":math:`S_{Mg, 6} = S_{Mg, in} + (Mg_{XPP} * X_{PP, in})`"
 
-Equations and Relationships (Without Decay)
--------------------------------------------
+Equations and Relationships (without biological phosphorus removal)
+-------------------------------------------------------------------
 
 .. csv-table::
    :header: "Description", "Equation"

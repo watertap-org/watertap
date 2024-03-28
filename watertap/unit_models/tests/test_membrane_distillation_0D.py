@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import pytest
 import idaes.logger as idaeslog
 from pyomo.environ import (
@@ -523,7 +534,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         # m.fs.unit.hot_ch.cp_modulus.fix(1)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -677,7 +688,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         # m.fs.unit.hot_ch.cp_modulus.fix(1)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -789,7 +800,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         # m.fs.unit.hot_ch.cp_modulus.fix(1)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -899,7 +910,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         # m.fs.unit.hot_ch.cp_modulus.fix(1)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -1020,7 +1031,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         m.fs.unit.hot_ch.cp_modulus.fix(1.1)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -1145,7 +1156,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         m.fs.unit.hot_ch.K.fix(3.15e-5)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -1266,7 +1277,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         # m.fs.unit.hot_ch.K.fix(3.15e-5)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -1389,7 +1400,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         # m.fs.unit.hot_ch.K.fix(3.15e-5)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
@@ -1522,7 +1533,7 @@ class TestMembraneDistillation:
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.permeability_coef.fix(1e-10)
         m.fs.unit.membrane_thickness.fix(1e-4)
-        m.fs.unit.membrane_tc.fix(0.2)
+        m.fs.unit.membrane_thermal_conductivity.fix(0.2)
         # m.fs.unit.hot_ch.K.fix(3.15e-5)
 
         m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
