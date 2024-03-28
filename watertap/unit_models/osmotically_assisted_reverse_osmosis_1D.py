@@ -209,7 +209,7 @@ class OsmoticallyAssistedReverseOsmosis1DData(
         def eq_permeate_production(b, t, x, p, j):
             return (
                 -b.feed_side.mass_transfer_term[t, x, p, j]
-                == b.width * b.flux_mass_phase_comp[t, x, p, j]
+                == (b.area / b.length) * b.flux_mass_phase_comp[t, x, p, j]
             )
 
     def calculate_scaling_factors(self):

@@ -36,6 +36,7 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
     TransportModel,
+    ModuleType,
 )
 from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
@@ -100,7 +101,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
-            friction_factor=self.config.friction_factor,
         )
 
         self.feed_side.add_control_volume_isothermal_conditions()
@@ -287,10 +287,24 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         if include_constraint:
-            # Membrane area equation
-            @self.Constraint(doc="Total Membrane area")
-            def eq_area(b):
-                return b.area == b.length * b.width
+            if self.config.module_type == ModuleType.flat_sheet:
+                # Membrane area equation for flat plate membranes
+                @self.Constraint(doc="Total Membrane area")
+                def eq_area(b):
+                    return b.area == b.length * b.width
+
+            elif self.config.module_type == ModuleType.spiral_wound:
+                # Membrane area equation
+                @self.Constraint(doc="Total Membrane area")
+                def eq_area(b):
+                    return b.area == b.length * 2 * b.width
+
+            else:
+                raise ConfigurationError(
+                    "Unsupported membrane module type: {}".format(
+                        self.config.module_type
+                    )
+                )
 
     def _add_flux_balance(self):
 

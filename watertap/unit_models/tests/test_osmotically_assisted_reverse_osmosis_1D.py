@@ -30,7 +30,7 @@ from idaes.core import (
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_1D import (
     OsmoticallyAssistedReverseOsmosis1D,
 )
-from watertap.unit_models.reverse_osmosis_base import TransportModel
+from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
 import watertap.property_models.NaCl_prop_pack as props
 
 from idaes.core.solvers import get_solver
@@ -52,7 +52,6 @@ from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
-    FrictionFactor,
 )
 
 # -----------------------------------------------------------------------------
@@ -87,7 +86,7 @@ def test_config():
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.fixed_per_stage
     assert m.fs.unit.feed_side._flow_direction == FlowDirection.forward
     assert m.fs.unit.permeate_side._flow_direction == FlowDirection.backward
-    assert m.fs.unit.config.friction_factor == FrictionFactor.flat_sheet
+    assert m.fs.unit.config.module_type == ModuleType.flat_sheet
     assert not m.fs.unit.config.has_full_reporting
 
 
