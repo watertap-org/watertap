@@ -123,7 +123,7 @@ Or, for multiple code reference types in the same paragraph::
 
     - :mod:`watertap.unit_models.reverse_osmosis_0D`
     - :class:`watertap.unit_models.reverse_osmosis_0D.ReverseOsmosis0D`
-    - :func:`watertap.util.examples.flowsheets.full_treatment_train.check_build`
+    - :func:`watertap.core.util.scaling.transform_property_constraints`
 
 Linking to the reference documentation pages for the relevant module/class/function(s) in this way is usually enough for the majority of cases.
 

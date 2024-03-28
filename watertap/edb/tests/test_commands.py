@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -388,13 +388,15 @@ class TestSchema:
     @pytest.fixture(
         scope="function",
         params=[
-            fmt
-            if is_available
-            else pytest.param(
-                fmt,
-                marks=pytest.mark.xfail(
-                    reason=f"Schema output format '{fmt}' not yet supported"
-                ),
+            (
+                fmt
+                if is_available
+                else pytest.param(
+                    fmt,
+                    marks=pytest.mark.xfail(
+                        reason=f"Schema output format '{fmt}' not yet supported"
+                    ),
+                )
             )
             for fmt, is_available in format_available.items()
         ],

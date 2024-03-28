@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Thickener unit model for BSM2 and plant-wide wastewater treatment modeling. 
 This unit inherits from the IDAES separator unit.
@@ -253,9 +252,9 @@ class ThickenerData(SeparatorData):
                 if k[0] == time_point:
                     var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
         var_dict["Electricity consumption"] = self.electricity_consumption[time_point]
-        param_dict[
-            "Specific electricity consumption"
-        ] = self.energy_electric_flow_vol_inlet[time_point]
+        param_dict["Specific electricity consumption"] = (
+            self.energy_electric_flow_vol_inlet[time_point]
+        )
         var_dict["Unit Volume"] = self.volume[time_point]
         var_dict["Hydraulic Retention Time"] = self.hydraulic_retention_time[time_point]
         var_dict["Unit Height"] = self.height

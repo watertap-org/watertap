@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -29,9 +29,9 @@ def set_up_sensitivity(m):
         m.fs.costing.aggregate_flow_costs["electricity"] / m.fs.AD.inlet.flow_vol[0],
         to_units=pyunits.USD_2018 / pyunits.m**3,
     )
-    outputs[
-        "S_PO4 Concentration, treated effluent stream"
-    ] = m.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
+    outputs["S_PO4 Concentration, treated effluent stream"] = (
+        m.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
+    )
 
     return outputs, optimize_kwargs, opt_function
 

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -78,14 +78,14 @@ class ChlorinationZOData(ZeroOrderBaseData):
             )
 
         self._perf_var_dict["Chlorine Dose (mg/L)"] = self.chlorine_dose
-        self._perf_var_dict[
-            "Initial Chlorine Demand (mg/L)"
-        ] = self.initial_chlorine_demand
+        self._perf_var_dict["Initial Chlorine Demand (mg/L)"] = (
+            self.initial_chlorine_demand
+        )
         self._perf_var_dict["Contact Time (hr)"] = self.contact_time
         self._perf_var_dict["CT Value ((mg*min)/L)"] = self.concentration_time
-        self._perf_var_dict[
-            "Chlorine Decay Rate (mg/(L*hr))"
-        ] = self.chlorine_decay_rate
+        self._perf_var_dict["Chlorine Decay Rate (mg/(L*hr))"] = (
+            self.chlorine_decay_rate
+        )
 
     @property
     def default_costing_method(self):

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -53,6 +53,7 @@ from idaes.core.util.scaling import (
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -123,9 +124,9 @@ class TestNanofiltration:
         m.fs.unit.rejection_phase_comp[0, "Liq", "Ca"].fix(0.79)
         m.fs.unit.rejection_phase_comp[0, "Liq", "Mg"].fix(0.94)
         m.fs.unit.rejection_phase_comp[0, "Liq", "SO4"].fix(0.87)
-        m.fs.unit.rejection_phase_comp[
-            0, "Liq", "Cl"
-        ] = 0.15  # guess, but electroneutrality enforced below
+        m.fs.unit.rejection_phase_comp[0, "Liq", "Cl"] = (
+            0.15  # guess, but electroneutrality enforced below
+        )
         charge_comp = {"Na": 1, "Ca": 2, "Mg": 2, "SO4": -2, "Cl": -1}
         m.fs.unit.eq_electroneutrality = Constraint(
             expr=0
@@ -291,9 +292,9 @@ class TestNanofiltration:
         m.fs.unit.rejection_phase_comp[0, "Liq", "Ca_2+"].fix(0.79)
         m.fs.unit.rejection_phase_comp[0, "Liq", "Mg_2+"].fix(0.94)
         m.fs.unit.rejection_phase_comp[0, "Liq", "SO4_2-"].fix(0.87)
-        m.fs.unit.rejection_phase_comp[
-            0, "Liq", "Cl_-"
-        ] = 0.15  # guess, but electroneutrality enforced below
+        m.fs.unit.rejection_phase_comp[0, "Liq", "Cl_-"] = (
+            0.15  # guess, but electroneutrality enforced below
+        )
         charge_comp = {"Na_+": 1, "Ca_2+": 2, "Mg_2+": 2, "SO4_2-": -2, "Cl_-": -1}
         m.fs.unit.eq_electroneutrality = Constraint(
             expr=0

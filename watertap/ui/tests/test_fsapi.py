@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -193,7 +193,7 @@ def test_actions(add_variant: str):
             exports.add(data=ve1)  # form 3
         elif add_variant == "model_export_dict_data_kwarg":
             ve1 = fsapi.ModelExport(obj=v1)
-            exports.add(data=ve1.dict())  # form 4
+            exports.add(data=dict(ve1))  # form 4
         with pytest.raises(ValueError):
             exports.add(v1, v1)
 

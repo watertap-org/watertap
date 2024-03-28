@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -91,6 +91,7 @@ from idaes.core import FlowsheetBlock
 from watertap.edb import ElectrolyteDB
 
 __author__ = "Austin Ladshaw"
+
 
 # ========================== (4) ================================
 # By default, invoking the 'ElectrolyteDB' object (with no args)

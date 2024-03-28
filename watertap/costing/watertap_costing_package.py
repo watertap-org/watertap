@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -94,9 +94,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name,
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
-                / pyo.units.convert(
-                    flow_rate, to_units=pyo.units.m**3 / pyo.units.hr
-                ),
+                / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr),
                 doc=f"Specific energy consumption based on flow {flow_rate.name}",
             ),
         )
@@ -151,9 +149,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
                 * self.electrical_carbon_intensity
-                / pyo.units.convert(
-                    flow_rate, to_units=pyo.units.m**3 / pyo.units.hr
-                ),
+                / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr),
                 doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
@@ -195,12 +191,14 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.total_variable_operating_cost = pyo.Expression(
             expr=(
-                self.aggregate_variable_operating_cost
-                + sum(self.aggregate_flow_costs[f] for f in self.used_flows)
-                * self.utilization_factor
-            )
-            if self.used_flows
-            else self.aggregate_variable_operating_cost,
+                (
+                    self.aggregate_variable_operating_cost
+                    + sum(self.aggregate_flow_costs[f] for f in self.used_flows)
+                    * self.utilization_factor
+                )
+                if self.used_flows
+                else self.aggregate_variable_operating_cost
+            ),
             doc="Total variable operating cost of process per operating period",
         )
 

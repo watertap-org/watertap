@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -34,7 +34,7 @@ solver = get_solver()
 class TestDyeFlowsheet:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build()
+        m = build(include_gac=False)
         return m
 
     @pytest.mark.unit
@@ -72,15 +72,6 @@ class TestDyeFlowsheet:
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
-        # check each product
-        assert pytest.approx(64.4135, rel=1e-6) == value(
-            m.fs.permeate.flow_mass_comp[0, "H2O"]
-        )
-
-        assert pytest.approx(0.015426, rel=1e-3) == value(
-            m.fs.dye_retentate.flow_mass_comp[0, "dye"]
-        )
-
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
@@ -105,6 +96,99 @@ class TestDyeFlowsheet:
 
         # check values
         assert pytest.approx(19.626110, rel=1e-3) == value(m.fs.LCOT)
+
+    @pytest.mark.component
+    def test_display(self, system_frame):
+        m = system_frame
+        display_results(m)
+        display_costing(m)
+
+
+class TestDyeFlowsheet_withGAC:
+    @pytest.fixture(scope="class")
+    def system_frame(self):
+        m = build(include_gac=True)
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, system_frame):
+        m = system_frame
+        assert_degrees_of_freedom(m, 30)
+
+    @pytest.mark.component
+    def test_set_operating_conditions(self, system_frame):
+        m = system_frame
+        set_operating_conditions(m)
+        assert_units_consistent(m)
+        initialize_system(m)
+
+        # test feed conditions
+        assert pytest.approx(77.607, rel=1e-3) == value(
+            m.fs.feed.flow_mass_comp[0, "H2O"]
+        )
+
+        assert pytest.approx(0.015556, rel=1e-3) == value(
+            m.fs.feed.flow_mass_comp[0, "dye"]
+        )
+
+        assert pytest.approx(0.155556, rel=1e-3) == value(
+            m.fs.feed.flow_mass_comp[0, "tds"]
+        )
+
+        # test nanofiltration block
+        assert pytest.approx(316.219, rel=1e-3) == value(
+            m.fs.dye_separation.nanofiltration.area
+        )
+
+        # test pump block
+        assert pytest.approx(7, rel=1e-6) == value(
+            m.fs.dye_separation.P1.applied_pressure[0]
+        )
+
+    @pytest.mark.component
+    def test_solve(self, system_frame):
+        m = system_frame
+        results = solve(m)
+
+        # check each product
+        assert pytest.approx(64.4135, rel=1e-6) == value(
+            m.fs.permeate.flow_mass_comp[0, "H2O"]
+        )
+
+        assert pytest.approx(13.19313, rel=1e-3) == value(
+            m.fs.treated.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+
+        assert pytest.approx(0.00092002, rel=1e-3) == value(
+            m.fs.treated.flow_mass_phase_comp[0, "Liq", "dye"]
+        )
+
+        assert pytest.approx(0.0329367, rel=1e-3) == value(
+            m.fs.treated.flow_mass_phase_comp[0, "Liq", "tds"]
+        )
+
+        assert pytest.approx(0, rel=1e-3) == value(
+            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+
+        assert pytest.approx(0.014506, rel=1e-3) == value(
+            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "dye"]
+        )
+
+        assert pytest.approx(0, rel=1e-3) == value(
+            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "tds"]
+        )
+
+    @pytest.mark.component
+    def test_costing(self, system_frame):
+        m = system_frame
+
+        add_costing(m)
+        results = solve(m)
+        assert_optimal_termination(results)
+
+        # check values
+        assert pytest.approx(-0.781, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):

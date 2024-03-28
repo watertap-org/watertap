@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -121,85 +121,85 @@ class TestAnaerobicDigester(UnitTestHarness):
 
         self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
         self.unit_solutions[m.fs.unit.liquid_outlet.temperature[0]] = 308.15
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"]
-        ] = 0.3287724
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_aa"]
-        ] = 0.00531408
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"]
-        ] = 0.1977833
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"]
-        ] = 0.0132484
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"]
-        ] = 0.0549707
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"]
-        ] = 0.0986058
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_h2"]
-        ] = 2.35916e-07
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_pro"]
-        ] = 0.0157813
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_su"]
-        ] = 0.01195333
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_va"]
-        ] = 0.011622969
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"]] = (
+            0.3287724
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_aa"]] = (
+            0.00531408
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"]] = (
+            0.1977833
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"]] = (
+            0.0132484
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"]] = (
+            0.0549707
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"]] = (
+            0.0986058
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_h2"]] = (
+            2.35916e-07
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_pro"]] = (
+            0.0157813
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_su"]] = (
+            0.01195333
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_va"]] = (
+            0.011622969
+        )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_I"]] = 25.6217
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_aa"]
-        ] = 1.1793147
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"]
-        ] = 0.760653
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_aa"]] = (
+            1.1793147
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"]] = (
+            0.760653
+        )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c"]] = 0.308718
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"]
-        ] = 0.431974
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ch"]
-        ] = 0.027947465
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_fa"]
-        ] = 0.2430681
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_h2"]
-        ] = 0.3170629
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_li"]
-        ] = 0.0294834
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pr"]
-        ] = 0.102574392
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pro"]
-        ] = 0.137323
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_su"]
-        ] = 0.420219
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]
-        ] = 1.8320212
-        self.unit_solutions[
-            m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"]
-        ] = 1.8235307
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"]] = (
+            0.431974
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ch"]] = (
+            0.027947465
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_fa"]] = (
+            0.2430681
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_h2"]] = (
+            0.3170629
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_li"]] = (
+            0.0294834
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pr"]] = (
+            0.102574392
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_pro"]] = (
+            0.137323
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_su"]] = (
+            0.420219
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]] = (
+            1.8320212
+        )
+        self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"]] = (
+            1.8235307
+        )
         self.unit_solutions[m.fs.unit.liquid_outlet.anions[0]] = 0.0200033
         self.unit_solutions[m.fs.unit.liquid_outlet.cations[0]] = 0.0400066
         self.unit_solutions[m.fs.unit.vapor_outlet.pressure[0]] = 106659.5225
         self.unit_solutions[m.fs.unit.vapor_outlet.temperature[0]] = 308.15
         self.unit_solutions[m.fs.unit.vapor_outlet.flow_vol[0]] = 0.03249637
-        self.unit_solutions[
-            m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_ch4"]
-        ] = 1.6216465
-        self.unit_solutions[
-            m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]
-        ] = 0.169417
+        self.unit_solutions[m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_ch4"]] = (
+            1.6216465
+        )
+        self.unit_solutions[m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]] = (
+            0.169417
+        )
         self.unit_solutions[m.fs.unit.KH_co2[0]] = 0.02714666
         self.unit_solutions[m.fs.unit.KH_ch4[0]] = 0.001161902
         self.unit_solutions[m.fs.unit.KH_h2[0]] = 0.0007384652

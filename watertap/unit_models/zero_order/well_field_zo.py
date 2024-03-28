@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -90,8 +90,7 @@ class WellFieldZOData(ZeroOrderBaseData):
         )
 
         Q = pyo.units.convert(
-            blk.unit_model.properties[t0].flow_vol
-            / (pyo.units.m**3 / pyo.units.hour),
+            blk.unit_model.properties[t0].flow_vol / (pyo.units.m**3 / pyo.units.hour),
             to_units=pyo.units.dimensionless,
         )
         expr = pyo.units.convert(

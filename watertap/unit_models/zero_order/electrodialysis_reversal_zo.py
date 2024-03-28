@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -90,6 +90,6 @@ class ElectrodialysisReversalZOData(ZeroOrderBaseData):
             return b.electricity[t] == b.electricity_intensity[t] * q_in
 
         self._perf_var_dict["Power Consumption (kW)"] = self.electricity
-        self._perf_var_dict[
-            "Electricity intensity per Inlet Flowrate  (kWh/m3)"
-        ] = self.electricity_intensity
+        self._perf_var_dict["Electricity intensity per Inlet Flowrate  (kWh/m3)"] = (
+            self.electricity_intensity
+        )

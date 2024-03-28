@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -54,9 +54,9 @@ class UVZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.uv_reduced_equivalent_dose)
         self._fixed_perf_vars.append(self.uv_transmittance_in)
 
-        self._perf_var_dict[
-            "UV Reduced Equivalent Dosage (mJ/cm^2)"
-        ] = self.uv_reduced_equivalent_dose
+        self._perf_var_dict["UV Reduced Equivalent Dosage (mJ/cm^2)"] = (
+            self.uv_reduced_equivalent_dose
+        )
         self._perf_var_dict["UV Transmittance of Feed"] = self.uv_transmittance_in
 
     @property

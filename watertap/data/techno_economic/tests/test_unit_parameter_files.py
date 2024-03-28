@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -136,7 +136,7 @@ def test_unit_parameter_files(tech):
 
         # Check for specific removal fractions
         if "removal_frac_mass_comp" in k.keys():
-            for (j, c_data) in k["removal_frac_mass_comp"].items():
+            for j, c_data in k["removal_frac_mass_comp"].items():
                 assert "units" in c_data.keys()
                 assert_units_equivalent(c_data["units"], units.dimensionless)
                 assert "value" in c_data.keys()

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -240,9 +240,11 @@ def build(
 
     # Add EnergyRecoveryDevices
     m.fs.EnergyRecoveryDeviceSet = Set(
-        initialize=[m.fs.FirstStage, m.fs.LastStage]
-        if m.fs.FirstStage < m.fs.LastStage
-        else [m.fs.LastStage]
+        initialize=(
+            [m.fs.FirstStage, m.fs.LastStage]
+            if m.fs.FirstStage < m.fs.LastStage
+            else [m.fs.LastStage]
+        )
     )
     m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
         m.fs.EnergyRecoveryDeviceSet, property_package=m.fs.properties

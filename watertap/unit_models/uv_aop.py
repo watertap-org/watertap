@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -49,6 +49,7 @@ from watertap.core import InitializationMixin
 from watertap.costing.unit_models.uv_aop import cost_uv_aop
 
 _log = idaeslog.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------
 class UVDoseType(Enum):

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -22,6 +22,7 @@ from watertap.unit_models.mvc.components import Condenser
 import watertap.property_models.water_prop_pack as props
 
 solver = get_solver()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
