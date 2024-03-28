@@ -67,6 +67,12 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.unit_models.reverse_osmosis_1D import (
+    ReverseOsmosis1D,
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
 from watertap.costing.unit_models.dewatering import (
     cost_centrifuge,
     cost_filter_belt_press,
@@ -231,7 +237,7 @@ def build(
     # reverse osmosis components
 
     desal.P2 = Pump(property_package=m.fs.prop_ro)
-    desal.RO = ReverseOsmosis0D(
+    desal.RO = ReverseOsmosis1D(
         property_package=m.fs.prop_ro,
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
@@ -505,13 +511,11 @@ def initialize_system(m):
         m.fs.tb_nf_ro.properties_in[0].flow_mass_comp["tds"]
     ) + value(m.fs.tb_nf_ro.properties_in[0].flow_mass_comp["dye"])
 
-    desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+    desal.RO.inlet.flow_mass_phase_comp[0, "Liq", "H2O"] = value(
         m.fs.tb_nf_ro.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
     )
-    desal.RO.feed_side.properties_in[0].temperature = value(
-        m.fs.tb_nf_ro.properties_out[0].temperature
-    )
-    desal.RO.feed_side.properties_in[0].pressure = value(
+    desal.RO.inlet.temperature[0] = value(m.fs.tb_nf_ro.properties_out[0].temperature)
+    desal.RO.inlet.pressure[0] = value(
         desal.P2.control_volume.properties_out[0].pressure
     )
     desal.RO.initialize()
