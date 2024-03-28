@@ -139,8 +139,8 @@ def test_build():
     fsi.build(erd_type="pressure_exchanger")
     data = fsi.model_dump()
     print(data)
-    assert "model_objects" in data
-    assert len(data["model_objects"]) == 1
+    assert "exports" in data
+    assert len(data["exports"]) == 1
 
 
 @pytest.mark.parametrize(
@@ -267,22 +267,22 @@ def test_load():
     fsi = flowsheet_interface()
     fsi.build(erd_type="pressure_exchanger")
     # get some info
-    var_key = list(fsi.fs_exp.model_objects.keys())[0]
-    var_obj = fsi.fs_exp.model_objects[var_key].obj
+    var_key = list(fsi.fs_exp.exports.keys())[0]
+    var_obj = fsi.fs_exp.exports[var_key].obj
     save_value = var_obj.value
     # serialize
     data = fsi.model_dump()
     # modify
-    data["model_objects"][var_key]["value"] = -1000
+    data["exports"][var_key]["value"] = -1000
     # reload
     fsi.load(data)
     # check
-    assert fsi.fs_exp.model_objects[var_key].value == -1000
+    assert fsi.fs_exp.exports[var_key].value == -1000
 
     # this time with a missing thing
     data = fsi.model_dump()
     # add another (fake) one
-    data["model_objects"]["foobar"] = data["model_objects"][var_key].copy()
+    data["exports"]["foobar"] = data["exports"][var_key].copy()
     # reload (fake one will be 'missing')
     try:
         fsi.load(data)
@@ -322,11 +322,11 @@ def test_export_values():
     d1 = fsi.model_dump()
 
     # change one value
-    key = list(fsi.fs_exp.model_objects.keys())[0]
-    orig_value = value(fsi.fs_exp.model_objects[key].obj)
+    key = list(fsi.fs_exp.exports.keys())[0]
+    orig_value = value(fsi.fs_exp.exports[key].obj)
     new_value = orig_value + 1
     print(f"@@ orig_value = {orig_value}, new value = {new_value}")
-    fsi.fs_exp.model_objects[key].obj.value = new_value
+    fsi.fs_exp.exports[key].obj.value = new_value
 
     # re-export
     fsi.export_values()
@@ -368,10 +368,10 @@ def test_nonoptimal_termination():
     fsi.build()
 
     # pick a crazy value
-    key = list(fsi.fs_exp.model_objects.keys())[0]
-    orig_value = value(fsi.fs_exp.model_objects[key].obj)
+    key = list(fsi.fs_exp.exports.keys())[0]
+    orig_value = value(fsi.fs_exp.exports[key].obj)
     new_value = orig_value + 1e9
-    fsi.fs_exp.model_objects[key].obj.value = new_value
+    fsi.fs_exp.exports[key].obj.value = new_value
     print(f"* orig_value = {orig_value}, new value = {new_value}")
 
     # try to solve (for real)

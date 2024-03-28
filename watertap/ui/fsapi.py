@@ -271,7 +271,7 @@ class FlowsheetExport(BaseModel):
     obj: object = Field(default=None, exclude=True)
     name: Union[None, str] = Field(default="", validate_default=True)
     description: Union[None, str] = Field(default="", validate_default=True)
-    model_objects: Dict[str, ModelExport] = {}
+    exports: Dict[str, ModelExport] = {}
     version: int = 2
     requires_idaes_solver: bool = False
     dof: int = 0
@@ -349,7 +349,7 @@ class FlowsheetExport(BaseModel):
             else:
                 model_export = data
         key = model_export.obj_key
-        if key in self.model_objects:
+        if key in self.exports:
             raise KeyError(
                 f"Adding ModelExport object failed: duplicate key '{key}' (model_export={model_export})"
             )
@@ -357,7 +357,7 @@ class FlowsheetExport(BaseModel):
             _log.debug(
                 f"Adding ModelExport object with key={key}: {model_export.model_dump()}"
             )
-        self.model_objects[key] = model_export
+        self.exports[key] = model_export
         return model_export
 
     def from_csv(self, file: Union[str, Path], flowsheet):
@@ -494,7 +494,7 @@ class FlowsheetExport(BaseModel):
         csv_output_file = writer(output_file)
 
         # write header row
-        obj = next(iter(self.model_objects.values()))
+        obj = next(iter(self.exports.values()))
         values = ["obj", "ui_units"]
         col_idx_map = {}
         for i, field_name in enumerate(obj.model_dump()):
@@ -507,7 +507,7 @@ class FlowsheetExport(BaseModel):
 
         # write a row for each object
         num = 0
-        for key, obj in self.model_objects.items():
+        for key, obj in self.exports.items():
             # initialize values list
             #   first 2 column values are object name and units
             obj_name = self._massage_object_name(key)
@@ -721,10 +721,10 @@ class FlowsheetInterface:
         # Set the value for each input variable
         missing = []
         # 'src' is the data source and 'dst' is this flowsheet (destination)
-        for key, src in fs.model_objects.items():
+        for key, src in fs.exports.items():
             # get corresponding exported variable
             try:
-                dst = self.fs_exp.model_objects[key]
+                dst = self.fs_exp.exports[key]
             except KeyError:
                 missing.append((key, src.name))
                 continue
@@ -845,8 +845,8 @@ class FlowsheetInterface:
                         "constructor or call `add_action(Actions.export, <function>)` "
                         "on FlowsheetInterface instance."
                     )
-                # clear model_objects dict, since duplicates not allowed
-                self.fs_exp.model_objects.clear()
+                # clear exports dict, since duplicates not allowed
+                self.fs_exp.exports.clear()
                 # use get_action() since run_action() will refuse to call it directly
                 self.get_action(Actions.export)(
                     exports=self.fs_exp, build_options=self.fs_exp.build_options
@@ -909,7 +909,7 @@ class FlowsheetInterface:
         _log.info("Exporting values from flowsheet model to UI")
         u = pyo.units
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
-        for key, mo in self.fs_exp.model_objects.items():
+        for key, mo in self.fs_exp.exports.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
             # print(f'{key} is being set to: {mo.value}')
             if hasattr(mo.obj, "bounds"):
