@@ -137,7 +137,7 @@ def test_build_noexport():
 def test_build():
     fsi = flowsheet_interface()
     fsi.build(erd_type="pressure_exchanger")
-    data = fsi.model_dump()
+    data = fsi.dict()
     print(data)
     assert "exports" in data
     assert len(data["exports"]) == 1
@@ -271,7 +271,7 @@ def test_load():
     var_obj = fsi.fs_exp.exports[var_key].obj
     save_value = var_obj.value
     # serialize
-    data = fsi.model_dump()
+    data = fsi.dict()
     # modify
     data["exports"][var_key]["value"] = -1000
     # reload
@@ -280,7 +280,7 @@ def test_load():
     assert fsi.fs_exp.exports[var_key].value == -1000
 
     # this time with a missing thing
-    data = fsi.model_dump()
+    data = fsi.dict()
     # add another (fake) one
     data["exports"]["foobar"] = data["exports"][var_key].copy()
     # reload (fake one will be 'missing')
@@ -319,7 +319,7 @@ def test_export_values():
     # get an interface
     fsi = flowsheet_interface()
     fsi.build()
-    d1 = fsi.model_dump()
+    d1 = fsi.dict()
 
     # change one value
     key = list(fsi.fs_exp.exports.keys())[0]
@@ -330,7 +330,7 @@ def test_export_values():
 
     # re-export
     fsi.export_values()
-    d2 = fsi.model_dump()
+    d2 = fsi.dict()
 
     print("== original")
     print(d1)
@@ -345,10 +345,10 @@ def test_export_values():
 def test_export_values_build():
     # get an interface
     fsi = flowsheet_interface()
-    d1 = fsi.model_dump()
+    d1 = fsi.dict()
     fsi.build()
     # after build, new values should be exported to fsi.fs_exp
-    d2 = fsi.model_dump()
+    d2 = fsi.dict()
     assert d1 != d2
 
 
@@ -384,7 +384,7 @@ def test_nonoptimal_termination():
 @pytest.mark.unit
 def test_has_version():
     fsi = flowsheet_interface()
-    d = fsi.model_dump()
+    d = fsi.dict()
     assert "version" in d
     assert d["version"] > 0
 
