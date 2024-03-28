@@ -1382,8 +1382,8 @@ class TestOsmoticallyAssistedReverseOsmosis:
         )
 
     @pytest.mark.component
-    def test_friction_factor_spiral_wound(self):
-        """Testing 0D-OARO with FrictionFactor.spiral_wound option."""
+    def test_module_type_spiral_wound(self):
+        """Testing 0D-OARO with ModuleType.spiral_wound option."""
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
