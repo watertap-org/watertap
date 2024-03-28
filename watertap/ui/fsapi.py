@@ -355,7 +355,7 @@ class FlowsheetExport(BaseModel):
             )
         if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
             _log.debug(
-                f"Adding ModelExport object with key={key}: {model_export.dict()}"
+                f"Adding ModelExport object with key={key}: {model_export.model_dump()}"
             )
         self.model_objects[key] = model_export
         return model_export
@@ -497,7 +497,7 @@ class FlowsheetExport(BaseModel):
         obj = next(iter(self.model_objects.values()))
         values = ["obj", "ui_units"]
         col_idx_map = {}
-        for i, field_name in enumerate(obj.dict()):
+        for i, field_name in enumerate(obj.model_dump()):
             # add to mapping of field name to column number
             col_idx_map[field_name] = i + 2
             # add column name
@@ -514,7 +514,7 @@ class FlowsheetExport(BaseModel):
             units_str = self._massage_ui_units(str(obj.ui_units))
             values = [obj_name, units_str] + [""] * (ncol - 2)
             # add columns
-            for field_name, field_value in obj.dict().items():
+            for field_name, field_value in obj.model_dump().items():
                 values[col_idx_map[field_name]] = field_value
             # write row
             csv_output_file.writerow(values)
@@ -707,7 +707,7 @@ class FlowsheetInterface:
         Returns:
             Serialized contained FlowsheetExport object
         """
-        return self.fs_exp.dict(exclude={"obj"})
+        return self.fs_exp.model_dump(exclude={"obj"})
 
     def load(self, data: Dict):
         """Load values from the data into corresponding variables in this

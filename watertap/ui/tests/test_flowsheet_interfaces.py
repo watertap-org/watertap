@@ -65,7 +65,7 @@ class TestFlowsheetInterface:
     @pytest.fixture
     def data_post_build(self, fs_interface) -> dict:
         fs_interface.build()
-        return fs_interface.dict()
+        return fs_interface.model_dump()
 
     def test_build(self, data_post_build):
         data = data_post_build
@@ -93,6 +93,6 @@ class TestFlowsheetInterface:
 def test_roundtrip_with_garbage_collection(fs_interface, n_times):
     for attempt in range(n_times):
         fs_interface.build(build_options=fs_interface.fs_exp.build_options)
-        data = fs_interface.dict()
+        data = fs_interface.model_dump()
         fs_interface.load(data)
         gc.collect()
