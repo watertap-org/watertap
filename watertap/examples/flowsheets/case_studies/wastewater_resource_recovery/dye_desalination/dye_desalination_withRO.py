@@ -1011,8 +1011,8 @@ def display_results(m):
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        precipitant_tds_concentration = m.fs.precipitant.flow_mass_comp[0, "tds"].value
-        precipitant_dye_concentration = m.fs.precipitant.flow_mass_comp[0, "dye"].value
+        precipitant_tds_concentration = value(m.fs.precipitant.flow_mass_comp[0, "tds"])
+        precipitant_dye_concentration = value(m.fs.precipitant.flow_mass_comp[0, "dye"])
 
         centrate_vol_flowrate = value(
             pyunits.convert(
@@ -1020,8 +1020,8 @@ def display_results(m):
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        centrate_tds_concentration = m.fs.centrate.flow_mass_comp[0, "tds"].value
-        centrate_dye_concentration = m.fs.centrate.flow_mass_comp[0, "dye"].value
+        centrate_tds_concentration = value(m.fs.centrate.flow_mass_comp[0, "tds"])
+        centrate_dye_concentration = value(m.fs.centrate.flow_mass_comp[0, "dye"])
 
         print(
             f"\nPrecipitant volumetric flowrate: {precipitant_vol_flowrate : .3f} m3/hr"
@@ -1043,12 +1043,12 @@ def display_results(m):
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        adsorbed_dye_mass_flow = m.fs.adsorbed_dye.flow_mass_phase_comp[
-            0, "Liq", "dye"
-        ].value
-        adsorbed_tds_mass_flow = m.fs.adsorbed_dye.flow_mass_phase_comp[
-            0, "Liq", "tds"
-        ].value
+        adsorbed_dye_mass_flow = value(
+            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "dye"]
+        )
+        adsorbed_tds_mass_flow = value(
+            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "tds"]
+        )
 
         treated_vol_flowrate = value(
             pyunits.convert(
@@ -1056,12 +1056,12 @@ def display_results(m):
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        treated_tds_concentration = m.fs.treated.flow_mass_phase_comp[
-            0, "Liq", "tds"
-        ].value
-        treated_dye_concentration = m.fs.treated.flow_mass_phase_comp[
-            0, "Liq", "dye"
-        ].value
+        treated_tds_concentration = value(
+            m.fs.treated.flow_mass_phase_comp[0, "Liq", "tds"]
+        )
+        treated_dye_concentration = value(
+            m.fs.treated.flow_mass_phase_comp[0, "Liq", "dye"]
+        )
 
         print(
             f"\nAdsorbed dye volumetric flowrate: {adsorbed_dye_vol_flowrate : .3f} m3/hr"
@@ -1079,12 +1079,12 @@ def display_results(m):
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        dye_retentate_tds_concentration = m.fs.dye_retentate.flow_mass_comp[
-            0, "tds"
-        ].value
-        dye_retentate_dye_concentration = m.fs.dye_retentate.flow_mass_comp[
-            0, "dye"
-        ].value
+        dye_retentate_tds_concentration = value(
+            m.fs.dye_retentate.flow_mass_comp[0, "tds"]
+        )
+        dye_retentate_dye_concentration = value(
+            m.fs.dye_retentate.flow_mass_comp[0, "dye"]
+        )
 
         print(
             f"\nDye retentate volumetric flowrate: {dye_retentate_vol_flowrate : .3f} m3/hr"
@@ -1106,16 +1106,16 @@ def display_results(m):
     else:
         pass
 
-    permeate_salt_concentration = (
-        m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"].value
+    permeate_salt_concentration = value(
+        m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"]
     )
     permeate_vol_flowrate = value(
         pyunits.convert(
             m.fs.permeate.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.hr
         )
     )
-    brine_salt_concentration = (
-        m.fs.brine.properties[0].conc_mass_phase_comp["Liq", "TDS"].value
+    brine_salt_concentration = value(
+        m.fs.brine.properties[0].conc_mass_phase_comp["Liq", "TDS"]
     )
     brine_vol_flowrate = value(
         pyunits.convert(
