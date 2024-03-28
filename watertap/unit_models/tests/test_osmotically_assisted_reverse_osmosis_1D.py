@@ -1669,7 +1669,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
         return m
 
-    
     @pytest.mark.component
     def test_Pdrop__spiral_wound_calculation(self, RO_spiral_wound_frame):
         """Testing 1D-OARO with PressureChangeType.calculated option."""
@@ -1689,7 +1688,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
         for i in badly_scaled_var_generator(m):
             print(i[0].name, i[1])
-        
+
         assert degrees_of_freedom(m) == 0
         initialization_tester(RO_spiral_wound_frame)
         results = solver.solve(m)
@@ -1760,7 +1759,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         ) / value(
             m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(-77476.0524412, abs=1e-3) == value(m.fs.unit.feed_side.deltaP_stage[0])
+        assert pytest.approx(-77476.0524412, abs=1e-3) == value(
+            m.fs.unit.feed_side.deltaP_stage[0]
+        )
         assert pytest.approx(-24177.6101955, abs=1e-3) == value(
             m.fs.unit.permeate_side.deltaP_stage[0]
         )
