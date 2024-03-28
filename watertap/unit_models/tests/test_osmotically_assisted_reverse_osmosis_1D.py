@@ -1607,6 +1607,164 @@ class TestOsmoticallyAssistedReverseOsmosis:
             ].conc_mass_phase_comp["Liq", "NaCl"]
         )
 
+    @pytest.fixture(scope="class")
+    def RO_spiral_wound_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+            module_type=ModuleType.spiral_wound,
+        )
+
+        # fully specify system
+        feed_flow_mass = 5 / 18
+        feed_mass_frac_NaCl = 0.075
+        feed_pressure = 65e5
+        feed_temperature = 273.15 + 25
+        membrane_area = 70
+        length = 35
+        A = 1e-12
+        B = 7.7e-8
+
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            feed_flow_mass * feed_mass_frac_NaCl
+        )
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+
+        permeate_flow_mass = 0.33 * feed_flow_mass
+        permeate_mass_frac_NaCl = 0.1
+        permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            permeate_flow_mass * permeate_mass_frac_H2O
+        )
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            permeate_flow_mass * permeate_mass_frac_NaCl
+        )
+        m.fs.unit.permeate_inlet.pressure[0].fix(5e5)
+        m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
+
+        m.fs.unit.area.fix(membrane_area)
+        m.fs.unit.length.fix(length)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.structural_parameter.fix(1200e-6)
+
+        m.fs.unit.permeate_side.channel_height.fix(0.002)
+        m.fs.unit.permeate_side.spacer_porosity.fix(0.97)
+        m.fs.unit.feed_side.channel_height.fix(0.002)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.97)
+
+        return m
+
+    
+    @pytest.mark.component
+    def test_Pdrop__spiral_wound_calculation(self, RO_spiral_wound_frame):
+        """Testing 1D-OARO with PressureChangeType.calculated option."""
+        m = RO_spiral_wound_frame
+
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
+        )
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+        for i in badly_scaled_var_generator(m):
+            print(i[0].name, i[1])
+        
+        assert degrees_of_freedom(m) == 0
+        initialization_tester(RO_spiral_wound_frame)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        assert pytest.approx(9.419628912e-04, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+        )
+        assert pytest.approx(4.38572890e-06, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
+        )
+        assert pytest.approx(0.1910, rel=1e-3) == value(
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        )
+        assert pytest.approx(0.02052, rel=1e-3) == value(
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        )
+        assert pytest.approx(
+            value(
+                m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ]
+            ),
+            rel=1e-3,
+        ) == value(
+            m.fs.unit.feed_side.properties_interface[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        ) / value(
+            m.fs.unit.feed_side.properties[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(
+            value(m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]), rel=1e-3
+        ) == value(
+            m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
+                "Liq", "NaCl"
+            ]
+        ) / value(
+            m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+
+        assert pytest.approx(
+            value(
+                m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ]
+            ),
+            rel=1e-3,
+        ) == value(
+            m.fs.unit.permeate_side.properties_interface[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        ) / value(
+            m.fs.unit.permeate_side.properties[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(
+            value(m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"]), rel=1e-3
+        ) == value(
+            m.fs.unit.permeate_side.properties_interface[0, 1.0].conc_mass_phase_comp[
+                "Liq", "NaCl"
+            ]
+        ) / value(
+            m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert pytest.approx(-77476.0524412, abs=1e-3) == value(m.fs.unit.feed_side.deltaP_stage[0])
+        assert pytest.approx(-24177.6101955, abs=1e-3) == value(
+            m.fs.unit.permeate_side.deltaP_stage[0]
+        )
+
     water_recovery_list = [0.15, 0.2, 0.3, 0.4, 0.5, 0.55]
 
     @pytest.mark.parametrize("water_recovery", water_recovery_list)
