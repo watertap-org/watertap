@@ -71,6 +71,7 @@ __author__ = "Austin Ladshaw"
 
 solver = get_solver()
 
+
 # Helper function for multiple test setup
 def model_setup(
     m,
@@ -1300,7 +1301,7 @@ class TestBoronRemoval_BadConfigs_Generic:
                             ("Liq", "H_+"): 1,
                             ("Liq", "OH_-"): 1,
                         },
-                    }
+                    },
                     # End parameter_data
                 }
                 # End R1

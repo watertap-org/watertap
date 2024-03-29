@@ -1363,8 +1363,7 @@ class NaClStateBlockData(StateBlockData):
                 C = b.params.cp_phase_param_C1
                 D = b.params.cp_phase_param_D1
                 return (
-                    b.cp_mass_solvent["Liq"]
-                    == (A + B * t + C * t**2 + D * t**3) * 1000
+                    b.cp_mass_solvent["Liq"] == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
             elif p == "Vap":
                 t = b.temperature / 1000
@@ -1551,9 +1550,7 @@ class NaClStateBlockData(StateBlockData):
                 + (b.params.pressure_sat_param_E5 * x**4)
             )
 
-            p_sat = (
-                ps_a + (ps_b * t) + (ps_c * t**2) + (ps_d * t**3) + (ps_e * t**4)
-            )
+            p_sat = ps_a + (ps_b * t) + (ps_c * t**2) + (ps_d * t**3) + (ps_e * t**4)
             return b.pressure_sat == pyunits.convert(p_sat, to_units=pyunits.Pa)
 
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
@@ -2141,7 +2138,7 @@ class NaClStateBlockData(StateBlockData):
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 c_phase = getattr(self, "eq_" + v_str)
-                for (ind, c) in c_phase.items():
+                for ind, c in c_phase.items():
                     sf = iscale.get_scaling_factor(v[ind], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
 

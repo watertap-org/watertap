@@ -463,9 +463,9 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             self.high_pressure_side.properties_in[0],
             self.high_pressure_side.properties_out[0],
         )
-        self.high_pressure_side.properties_out[
-            0
-        ].pressure.value = self.low_pressure_side.properties_in[0].pressure.value
+        self.high_pressure_side.properties_out[0].pressure.value = (
+            self.low_pressure_side.properties_in[0].pressure.value
+        )
         init_log.info_high("Initialize outlets complete")
 
         # Solve unit

@@ -19,6 +19,7 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyRegressionTest,
 )
 
+
 # -----------------------------------------------------------------------------
 class TestWaterProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):

@@ -49,12 +49,15 @@ from idaes.core.util.scaling import (
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.MCASParameterBlock(solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"])
+    m.fs.properties = props.MCASParameterBlock(
+        solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"]
+    )
     m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
     assert len(m.fs.unit.config) == 9
@@ -72,7 +75,9 @@ def test_config():
 def test_option_has_pressure_change():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.MCASParameterBlock(solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"])
+    m.fs.properties = props.MCASParameterBlock(
+        solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"]
+    )
     m.fs.unit = NanofiltrationZO(
         property_package=m.fs.properties, has_pressure_change=True
     )
@@ -87,8 +92,10 @@ class TestNanofiltration:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties =  props.MCASParameterBlock(solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"],
-                                                    material_flow_basis=props.MaterialFlowBasis.mass)
+        m.fs.properties = props.MCASParameterBlock(
+            solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"],
+            material_flow_basis=props.MaterialFlowBasis.mass,
+        )
 
         m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
@@ -119,9 +126,11 @@ class TestNanofiltration:
         m.fs.unit.rejection_phase_comp[0, "Liq", "Ca_2+"].fix(0.79)
         m.fs.unit.rejection_phase_comp[0, "Liq", "Mg_2+"].fix(0.94)
         m.fs.unit.rejection_phase_comp[0, "Liq", "SO4_2-"].fix(0.87)
-        m.fs.unit.rejection_phase_comp[0, "Liq", "Cl_-"].fix(0.15)  
-       
-        m.fs.unit.feed_side.properties_in[0].assert_electroneutrality(defined_state=True, adjust_by_ion='Cl_-')
+        m.fs.unit.rejection_phase_comp[0, "Liq", "Cl_-"].fix(0.15)
+
+        m.fs.unit.feed_side.properties_in[0].assert_electroneutrality(
+            defined_state=True, adjust_by_ion="Cl_-"
+        )
 
         return m
 

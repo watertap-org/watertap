@@ -45,7 +45,7 @@ class TestFeedZO:
     @pytest.mark.unit
     def test_build(self, model):
         assert isinstance(model.fs.unit.outlet.flow_mass_comp, Var)
-        for (t, j) in model.fs.unit.outlet.flow_mass_comp.keys():
+        for t, j in model.fs.unit.outlet.flow_mass_comp.keys():
             assert t == 0
             assert j in model.db.get_solute_set() or j == "H2O"
 
@@ -53,7 +53,7 @@ class TestFeedZO:
         assert len(model.fs.unit.flow_vol) == 1
 
         assert isinstance(model.fs.unit.conc_mass_comp, Var)
-        for (t, j) in model.fs.unit.conc_mass_comp.keys():
+        for t, j in model.fs.unit.conc_mass_comp.keys():
             assert t == 0
             assert j in model.db.get_solute_set()
 
