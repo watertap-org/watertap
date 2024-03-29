@@ -461,7 +461,7 @@ class MCASParameterData(PhysicalParameterBlock):
         self.mw_comp = Param(
             self.component_list,
             mutable=True,
-            default=None,
+            default=1,
             initialize=mw_temp,
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.mol,
