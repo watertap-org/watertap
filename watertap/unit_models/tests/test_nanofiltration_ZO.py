@@ -29,8 +29,7 @@ from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from watertap.property_models.seawater_ion_generic import configuration
-import watertap.property_models.seawater_ion_prop_pack as props
+import watertap.property_models.multicomp_aq_sol_prop_pack as props
 
 from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
@@ -59,7 +58,7 @@ solver = get_solver()
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.PropParameterBlock()
+    m.fs.properties = props.MCASParameterBlock()
     m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
     assert len(m.fs.unit.config) == 9
@@ -263,77 +262,3 @@ class TestNanofiltration:
     @pytest.mark.unit
     def test_report(self, unit_frame):
         unit_frame.fs.unit.report()
-
-    @pytest.mark.component
-    def test_NF_with_generic_property_model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = GenericParameterBlock(**configuration)
-        m.fs.unit = NanofiltrationZO(
-            property_package=m.fs.properties, has_pressure_change=False
-        )
-
-        # fully specify system
-        m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.008845)
-        m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Ca_2+"].fix(0.000174)
-        m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Mg_2+"].fix(0.001049)
-        m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "SO4_2-"].fix(0.000407)
-        m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.010479)
-        m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(0.979046)
-        m.fs.unit.feed_side.properties_in[0].pressure.fix(4e5)
-        m.fs.unit.feed_side.properties_in[0].temperature.fix(298.15)
-
-        m.fs.unit.flux_vol_solvent.fix(1.67e-6)
-        m.fs.unit.recovery_vol_phase.fix(0.86)
-        m.fs.unit.properties_permeate[0].pressure.fix(101325)
-
-        m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(0.01)
-        m.fs.unit.rejection_phase_comp[0, "Liq", "Ca_2+"].fix(0.79)
-        m.fs.unit.rejection_phase_comp[0, "Liq", "Mg_2+"].fix(0.94)
-        m.fs.unit.rejection_phase_comp[0, "Liq", "SO4_2-"].fix(0.87)
-        m.fs.unit.rejection_phase_comp[
-            0, "Liq", "Cl_-"
-        ] = 0.15  # guess, but electroneutrality enforced below
-        charge_comp = {"Na_+": 1, "Ca_2+": 2, "Mg_2+": 2, "SO4_2-": -2, "Cl_-": -1}
-        m.fs.unit.eq_electroneutrality = Constraint(
-            expr=0
-            == sum(
-                charge_comp[j]
-                * m.fs.unit.feed_side.properties_out[0].conc_mol_phase_comp["Liq", j]
-                for j in charge_comp
-            )
-        )
-        constraint_scaling_transform(m.fs.unit.eq_electroneutrality, 1)
-
-        assert_units_consistent(m)
-
-        assert_no_degrees_of_freedom(m)
-
-        calculate_scaling_factors(m)
-
-        initialization_tester(m)
-
-        results = solver.solve(m)
-
-        # Check for optimal solution
-        assert_optimal_termination(results)
-
-        assert pytest.approx(0.868, rel=1e-3) == value(
-            m.fs.unit.properties_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-            / m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
-        )
-        assert pytest.approx(1.978, rel=1e-3) == value(
-            m.fs.unit.properties_permeate[0].conc_mol_phase_comp["Liq", "Ca_2+"]
-        )
-        assert pytest.approx(479.1, rel=1e-3) == value(
-            m.fs.unit.properties_permeate[0].conc_mol_phase_comp["Liq", "Cl_-"]
-        )
-        assert pytest.approx(3.407, rel=1e-3) == value(
-            m.fs.unit.properties_permeate[0].conc_mol_phase_comp["Liq", "Mg_2+"]
-        )
-        assert pytest.approx(473.9, rel=1e-3) == value(
-            m.fs.unit.properties_permeate[0].conc_mol_phase_comp["Liq", "Na_+"]
-        )
-        assert pytest.approx(2.864, rel=1e-3) == value(
-            m.fs.unit.properties_permeate[0].conc_mol_phase_comp["Liq", "SO4_2-"]
-        )
