@@ -16,6 +16,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biom
     main,
 )
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.component
 def test_biomembrane_filtration():

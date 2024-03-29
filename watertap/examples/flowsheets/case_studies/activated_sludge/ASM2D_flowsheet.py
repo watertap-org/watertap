@@ -212,9 +212,7 @@ def build_flowsheet():
     m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_MeOH"].fix(
-        1e-6 * pyo.units.g / pyo.units.m**3
-    )
+    m.fs.FeedWater.conc_mass_comp[0, "X_MeOH"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_MeP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_TSS"].fix(180 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)

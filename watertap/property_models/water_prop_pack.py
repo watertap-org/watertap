@@ -767,6 +767,7 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density of seawater",
         )
+
         # Sharqawy et al. (2010), eq. 8, 0-180 C
         def rule_dens_mass_phase(b, phase):
             t = b.temperature - 273.15 * pyunits.K
@@ -868,6 +869,7 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
+
         # Nayar et al. (2016), eq. 25 and 26, 0-120 C
         def rule_enth_mass_phase(b, p):
             # temperature in degC, but pyunits in K
@@ -966,8 +968,7 @@ class WaterStateBlockData(StateBlockData):
                 C = b.params.cp_phase_param_C1
                 D = b.params.cp_phase_param_D1
                 return (
-                    b.cp_mass_phase[phase]
-                    == (A + B * t + C * t**2 + D * t**3) * 1000
+                    b.cp_mass_phase[phase] == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
             # phase == 'Vap'
             else:
@@ -992,6 +993,7 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization",
         )
+
         # Sharqawy et al. (2010), eq. 54,  0-200 C
         def rule_dh_vap_mass(b):
             t = b.temperature - 273.15 * pyunits.K
@@ -1014,6 +1016,7 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.Pa * pyunits.s,
             doc="Dynamic viscosity",
         )
+
         # Sharqawy et al. (2010), eq. 22 and 23, 0-180 C
         def rule_visc_d_phase(b, p):
             if p == "Liq":
@@ -1040,6 +1043,7 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.W / pyunits.m / pyunits.K,
             doc="Thermal conductivity",
         )
+
         # Sharqawy  et al. (2010), eq. 13, 0-180 C
         def rule_therm_cond_phase(b, p):
             if p == "Liq":

@@ -1092,6 +1092,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density of seawater",
         )
+
         # Sharqawy et al. (2010), eq. 8, 0-180 C, 0-150 g/kg, 0-12 MPa
         def rule_dens_mass_phase(b, p):
             t = b.temperature - 273.15 * pyunits.K
@@ -1117,6 +1118,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density of pure water",
         )
+
         # Sharqawy et al. (2010), eq. 8, 0-180 C
         def rule_dens_mass_solvent(b):
             t = b.temperature - 273.15 * pyunits.K
@@ -1252,6 +1254,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.Pa * pyunits.s,
             doc="Viscosity",
         )
+
         # Sharqawy et al. (2010), eq. 22 and 23, 0-180 C, 0-150 g/kg
         def rule_visc_d_phase(b, p):
             # temperature in degC, but pyunits are K
@@ -1291,6 +1294,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
+
         # Bartholomew & Mauter (2019), eq. 6 (substituting NaCl w/ TDS), 25 C
         def rule_diffus_phase_comp(b, p, j):
             return b.diffus_phase_comp[p, j] == (
@@ -1312,6 +1316,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
+
         # Sharqawy et al. (2010), eq. 49, 0-200 C, 0-120 g/kg
         def rule_osm_coeff(b):
             s = b.mass_frac_phase_comp["Liq", "TDS"]
@@ -1341,6 +1346,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="Osmotic pressure",
         )
+
         # Nayar et al. (2016), eq. 48, 0-200 C, 0-120 g/kg
         def rule_pressure_osm_phase(b, p):
             i = 2  # number of ionic species
@@ -1366,6 +1372,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
+
         # Nayar et al. (2016), eq. 25 and 26, 10-120 C, 0-120 g/kg, 0-12 MPa
         def rule_enth_mass_phase(b, p):
             # temperature in degC, but pyunits in K
@@ -1427,6 +1434,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.pressure_sat = Var(
             initialize=1e3, bounds=(1, 1e8), units=pyunits.Pa, doc="Vapor pressure"
         )
+
         # Nayar et al.(2016), eq. 5 and 6, 0-180 C, 0-160 g/kg
         def rule_pressure_sat(b):
             t = b.temperature
@@ -1457,6 +1465,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.J / pyunits.kg / pyunits.K,
             doc="Specific heat capacity",
         )
+
         # Sharqawy et al. (2010), eq. 9, 0-180 C, 0-180 g/kg, 0-12 MPa
         def rule_cp_mass_phase(b, p):
             # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
@@ -1496,6 +1505,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.W / pyunits.m / pyunits.K,
             doc="Thermal conductivity",
         )
+
         # Sharqawy  et al. (2010), eq. 13, 0-180 C, 0-160 g/kg
         def rule_therm_cond_phase(b, p):
             # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
@@ -1537,6 +1547,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization",
         )
+
         # Sharqawy et al. (2010), eq. 37 and 54, 0-200 C, 0-240 g/kg
         def rule_dh_vap_mass(b):
             t = b.temperature - 273.15 * pyunits.K
@@ -1560,6 +1571,7 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.K,
             doc="Boiling point elevation",
         )
+
         # Sharqawy et al. (2010), eq. 36, 0-200 C, 0-120 g/kg
         def rule_boiling_point_elevation_phase(b, p):
             t = b.temperature - 273.15 * pyunits.K

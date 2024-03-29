@@ -50,6 +50,7 @@ from watertap.costing.unit_models.uv_aop import cost_uv_aop
 
 _log = idaeslog.getLogger(__name__)
 
+
 # ---------------------------------------------------------------------
 class UVDoseType(Enum):
     fixed = auto()  # uv dose is a user specified value

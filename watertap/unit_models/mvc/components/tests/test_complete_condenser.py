@@ -23,6 +23,7 @@ import watertap.property_models.water_prop_pack as props
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.component
 def test_complete_condense():

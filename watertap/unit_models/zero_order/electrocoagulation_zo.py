@@ -471,10 +471,10 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         )
 
         # Get parameter dict from database
-        blk.parameter_dict = (
-            parameter_dict
-        ) = blk.unit_model.config.database.get_unit_operation_parameters(
-            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        blk.parameter_dict = parameter_dict = (
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+            )
         )
 
         # Get costing parameter sub-block for this technology
