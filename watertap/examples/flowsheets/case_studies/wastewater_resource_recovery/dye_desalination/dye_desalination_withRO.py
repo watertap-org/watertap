@@ -61,12 +61,7 @@ from watertap.unit_models.pressure_changer import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 import watertap.property_models.seawater_prop_pack as prop_SW
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
-    PressureChangeType,
-)
+
 from watertap.unit_models.reverse_osmosis_1D import (
     ReverseOsmosis1D,
     ConcentrationPolarizationType,
@@ -997,12 +992,16 @@ def display_results(m):
     if hasattr(m.fs, "dewaterer"):
         precipitant_vol_flowrate = value(
             pyunits.convert(
-                m.fs.precipitant.properties[0].flow_vol,
+                m.fs.concentrated_dye.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        precipitant_tds_concentration = value(m.fs.precipitant.flow_mass_comp[0, "tds"])
-        precipitant_dye_concentration = value(m.fs.precipitant.flow_mass_comp[0, "dye"])
+        precipitant_tds_concentration = value(
+            m.fs.concentrated_dye.flow_mass_comp[0, "tds"]
+        )
+        precipitant_dye_concentration = value(
+            m.fs.concentrated_dye.flow_mass_comp[0, "dye"]
+        )
 
         centrate_vol_flowrate = value(
             pyunits.convert(
@@ -1029,15 +1028,15 @@ def display_results(m):
     elif hasattr(m.fs, "gac"):
         adsorbed_dye_vol_flowrate = value(
             pyunits.convert(
-                m.fs.adsorbed_dye.properties[0].flow_vol,
+                m.fs.concentrated_dye.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
         adsorbed_dye_mass_flow = value(
-            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "dye"]
+            m.fs.concentrated_dye.flow_mass_phase_comp[0, "Liq", "dye"]
         )
         adsorbed_tds_mass_flow = value(
-            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "tds"]
+            m.fs.concentrated_dye.flow_mass_phase_comp[0, "Liq", "tds"]
         )
 
         treated_vol_flowrate = value(
@@ -1128,12 +1127,12 @@ def display_results(m):
     print("\nSystem Recovery:")
     if hasattr(m.fs, "dewaterer"):
         sys_dye_recovery = (
-            m.fs.precipitant.flow_mass_comp[0, "dye"]()
+            m.fs.concentrated_dye.flow_mass_comp[0, "dye"]()
             / m.fs.feed.flow_mass_comp[0, "dye"]()
         )
     elif hasattr(m.fs, "gac"):
         sys_dye_recovery = (
-            m.fs.adsorbed_dye.flow_mass_phase_comp[0, "Liq", "dye"]()
+            m.fs.concentrated_dye.flow_mass_phase_comp[0, "Liq", "dye"]()
             / m.fs.feed.flow_mass_comp[0, "dye"]()
         )
     else:
