@@ -153,7 +153,7 @@ def build(
     # define flowsheet inlets and outlets
     m.fs.feed = FeedZO(property_package=m.fs.prop_nf)
 
-    if include_dewatering == True:
+    if include_dewatering:
         m.fs.dewaterer = Separator(
             property_package=m.fs.prop_nf,
             outlet_list=["centrate", "precipitant"],
@@ -162,7 +162,7 @@ def build(
             momentum_balance_type=MomentumBalanceType.none,
         )
         m.fs.centrate = Product(property_package=m.fs.prop_nf)
-        m.fs.precipitant = Product(property_package=m.fs.prop_nf)
+        m.fs.concentrated_dye = Product(property_package=m.fs.prop_nf)
     elif include_gac:
         m.fs.prop_gac = MCASParameterBlock(
             material_flow_basis="mass",
@@ -182,8 +182,8 @@ def build(
             surface_diffusion_coefficient_type="fixed",
             target_species={"dye"},
         )
-        m.fs.adsorbed_dye = Product(property_package=m.fs.prop_gac)
         m.fs.treated = Product(property_package=m.fs.prop_gac)
+        m.fs.concentrated_dye = Product(property_package=m.fs.prop_gac)
 
         m.fs.tb_nf_gac = Translator(
             inlet_property_package=m.fs.prop_nf, outlet_property_package=m.fs.prop_gac
@@ -210,7 +210,7 @@ def build(
     elif include_dewatering and include_gac:
         raise TypeError("This system cannot have both dewatering and GAC units.")
     else:
-        m.fs.dye_retentate = Product(property_package=m.fs.prop_nf)
+        m.fs.concentrated_dye = Product(property_package=m.fs.prop_nf)
 
     m.fs.permeate = Product(property_package=m.fs.prop_ro)
     m.fs.brine = Product(property_package=m.fs.prop_ro)
@@ -297,7 +297,7 @@ def build(
         # TODO: Recycle centrate stream back to the feed via a mixer
         m.fs.s02 = Arc(source=m.fs.dewaterer.centrate, destination=m.fs.centrate.inlet)
         m.fs.s03 = Arc(
-            source=m.fs.dewaterer.precipitant, destination=m.fs.precipitant.inlet
+            source=m.fs.dewaterer.precipitant, destination=m.fs.concentrated_dye.inlet
         )
     elif hasattr(m.fs, "gac"):
         m.fs.s01 = Arc(
@@ -306,11 +306,13 @@ def build(
         m.fs.s02 = Arc(source=m.fs.tb_nf_gac.outlet, destination=m.fs.gac.inlet)
         # TODO: Recycle treated stream back to the feed via a mixer
         m.fs.s03 = Arc(source=m.fs.gac.outlet, destination=m.fs.treated.inlet)
-        m.fs.s04 = Arc(source=m.fs.gac.adsorbed, destination=m.fs.adsorbed_dye.inlet)
+        m.fs.s04 = Arc(
+            source=m.fs.gac.adsorbed, destination=m.fs.concentrated_dye.inlet
+        )
     else:
         dye_sep.s02 = Arc(
             source=dye_sep.nanofiltration.byproduct,
-            destination=m.fs.dye_retentate.inlet,
+            destination=m.fs.concentrated_dye.inlet,
         )
     m.fs.s_nf = Arc(
         source=dye_sep.nanofiltration.treated, destination=m.fs.tb_nf_ro.inlet
@@ -699,25 +701,13 @@ def add_costing(m):
     else:
         pass
 
-    if hasattr(m.fs, "dewaterer"):
+    if hasattr(m.fs, "dewaterer") or hasattr(m.fs, "gac"):
         m.fs.dye_disposal_cost = Expression(
             expr=(
                 m.fs.zo_costing.utilization_factor
                 * m.fs.zo_costing.dewatered_dye_disposal_cost
                 * pyunits.convert(
-                    m.fs.precipitant.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
-                )
-            ),
-            doc="Cost of disposing of dye waste",
-        )
-    elif hasattr(m.fs, "gac"):
-        m.fs.dye_disposal_cost = Expression(
-            expr=(
-                m.fs.zo_costing.utilization_factor
-                * m.fs.zo_costing.dewatered_dye_disposal_cost
-                * pyunits.convert(
-                    m.fs.adsorbed_dye.properties[0].flow_vol,
+                    m.fs.concentrated_dye.properties[0].flow_vol,
                     to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
                 )
             ),
@@ -729,7 +719,7 @@ def add_costing(m):
                 m.fs.zo_costing.utilization_factor
                 * m.fs.zo_costing.dye_disposal_cost
                 * pyunits.convert(
-                    m.fs.dye_retentate.properties[0].flow_vol,
+                    m.fs.concentrated_dye.properties[0].flow_vol,
                     to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
                 )
             ),
@@ -989,17 +979,17 @@ def display_results(m):
 
     print("\nStreams:")
     if hasattr(m.fs, "pretreatment") and hasattr(m.fs, "dewater"):
-        flow_list = ["feed", "wwt_retentate", "precipitant", "centrate"]
+        flow_list = ["feed", "wwt_retentate", "concentrated_dye", "centrate"]
     elif hasattr(m.fs, "pretreatment") and hasattr(m.fs, "gac"):
-        flow_list = ["feed", "wwt_retentate", "adsorbed_dye", "treated"]
+        flow_list = ["feed", "wwt_retentate", "concentrated_dye", "treated"]
     elif hasattr(m.fs, "pretreatment"):
-        flow_list = ["feed", "wwt_retentate", "dye_retentate"]
+        flow_list = ["feed", "wwt_retentate", "concentrated_dye"]
     elif hasattr(m.fs, "dewaterer"):
-        flow_list = ["feed", "precipitant", "centrate"]
+        flow_list = ["feed", "concentrated_dye", "centrate"]
     elif hasattr(m.fs, "gac"):
-        flow_list = ["feed", "adsorbed_dye", "treated"]
+        flow_list = ["feed", "concentrated_dye", "treated"]
     else:
-        flow_list = ["feed", "dye_retentate"]
+        flow_list = ["feed", "concentrated_dye"]
 
     for f in flow_list:
         m.fs.component(f).report()
@@ -1075,15 +1065,15 @@ def display_results(m):
     else:
         dye_retentate_vol_flowrate = value(
             pyunits.convert(
-                m.fs.dye_retentate.properties[0].flow_vol,
+                m.fs.concentrated_dye.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
         dye_retentate_tds_concentration = value(
-            m.fs.dye_retentate.flow_mass_comp[0, "tds"]
+            m.fs.concentrated_dye.flow_mass_comp[0, "tds"]
         )
         dye_retentate_dye_concentration = value(
-            m.fs.dye_retentate.flow_mass_comp[0, "dye"]
+            m.fs.concentrated_dye.flow_mass_comp[0, "dye"]
         )
 
         print(
@@ -1148,7 +1138,7 @@ def display_results(m):
         )
     else:
         sys_dye_recovery = (
-            m.fs.dye_retentate.flow_mass_comp[0, "dye"]()
+            m.fs.concentrated_dye.flow_mass_comp[0, "dye"]()
             / m.fs.feed.flow_mass_comp[0, "dye"]()
         )
     sys_water_recovery = (
