@@ -4,6 +4,7 @@ This reverse osmosis (RO) unit model
    * is 0-dimensional
    * supports a single liquid phase only
    * supports steady-state only
+   * supports flat-sheet and spiral-wound module designs
    * is based on the solution-diffusion model and film theory
    * assumes isothermal conditions
 
