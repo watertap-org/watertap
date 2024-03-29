@@ -357,9 +357,6 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.pressure_ratio, 1)
         iscale.set_scaling_factor(self.efficiency, 1)
-        iscale.set_scaling_factor(self.efficiency, 1)
-        # iscale.set_scaling_factor(self.control_volume.properties_in[0].enth_mass_phase, 1)
-        # iscale.set_scaling_factor(self.control_volume.properties_out[0].enth_mass_phase, 1)
 
         for j, c in self.eq_mass_balance_isentropic.items():
             sf = iscale.get_scaling_factor(
