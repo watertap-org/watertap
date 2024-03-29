@@ -124,10 +124,10 @@ class TestROwithPX:
             fs.s03: (fs.P1.outlet, fs.M1.P1),
             fs.s04: (fs.M1.outlet, fs.RO.inlet),
             fs.s05: (fs.RO.permeate, fs.product.inlet),
-            fs.s06: (fs.RO.retentate, fs.PXR.high_pressure_inlet),
-            fs.s07: (fs.PXR.high_pressure_outlet, fs.disposal.inlet),
-            fs.s08: (fs.S1.PXR, fs.PXR.low_pressure_inlet),
-            fs.s09: (fs.PXR.low_pressure_outlet, fs.P2.inlet),
+            fs.s06: (fs.RO.retentate, fs.PXR.brine_inlet),
+            fs.s07: (fs.PXR.brine_outlet, fs.disposal.inlet),
+            fs.s08: (fs.S1.PXR, fs.PXR.feed_inlet),
+            fs.s09: (fs.PXR.feed_outlet, fs.P2.inlet),
             fs.s10: (fs.P2.outlet, fs.M1.P2),
         }
         for arc, port_tpl in arc_dict.items():
@@ -198,32 +198,30 @@ class TestROwithPX:
         # check results across pressure exchanger, proxy for both upstream and downstream of RO
         # high pressure inlet
         assert value(
-            m.fs.PXR.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.PXR.brine_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ) == pytest.approx(0.4928, rel=1e-3)
         assert value(
-            m.fs.PXR.high_pressure_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+            m.fs.PXR.brine_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         ) == pytest.approx(3.561e-2, rel=1e-3)
-        assert value(m.fs.PXR.high_pressure_inlet.temperature[0]) == pytest.approx(
+        assert value(m.fs.PXR.brine_inlet.temperature[0]) == pytest.approx(
             298.15, rel=1e-3
         )
-        assert value(m.fs.PXR.high_pressure_inlet.pressure[0]) == pytest.approx(
+        assert value(m.fs.PXR.brine_inlet.pressure[0]) == pytest.approx(
             7.242e6, rel=1e-3
         )
         # low pressure inlet
         assert value(
-            m.fs.PXR.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+            m.fs.PXR.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ) == pytest.approx(0.4980, rel=1e-3)
         assert value(
-            m.fs.PXR.low_pressure_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+            m.fs.PXR.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         ) == pytest.approx(1.806e-2, rel=1e-3)
-        assert value(m.fs.PXR.low_pressure_inlet.temperature[0]) == pytest.approx(
+        assert value(m.fs.PXR.feed_inlet.temperature[0]) == pytest.approx(
             298.15, rel=1e-3
         )
-        assert value(m.fs.PXR.low_pressure_inlet.pressure[0]) == pytest.approx(
-            101325, rel=1e-3
-        )
+        assert value(m.fs.PXR.feed_inlet.pressure[0]) == pytest.approx(101325, rel=1e-3)
         # low pressure outlet
-        assert value(m.fs.PXR.low_pressure_outlet.pressure[0]) == pytest.approx(
+        assert value(m.fs.PXR.feed_outlet.pressure[0]) == pytest.approx(
             6.885e6, rel=1e-3
         )
 
@@ -311,12 +309,12 @@ Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
 Split 1   : 0.505 kg/s, 35000 ppm, 1.0 bar
 P1 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
 Split 2   : 0.516 kg/s, 35000 ppm, 1.0 bar
-PXR LP out: 0.516 kg/s, 35000 ppm, 68.9 bar
+PXR feed out: 0.516 kg/s, 35000 ppm, 68.9 bar
 P2 out    : 0.516 kg/s, 35000 ppm, 74.9 bar
 Mix out   : 1.021 kg/s, 35000 ppm, 74.9 bar
 RO perm   : 0.493 kg/s, 240 ppm, 1.0 bar
 RO reten  : 0.528 kg/s, 67424 ppm, 72.4 bar
-PXR HP out: 0.528 kg/s, 67424 ppm, 1.0 bar
+PXR brine out: 0.528 kg/s, 67424 ppm, 1.0 bar
 """
         )
 
