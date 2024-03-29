@@ -463,6 +463,7 @@ class MCASParameterData(PhysicalParameterBlock):
             mutable=True,
             default=None,
             initialize=mw_temp,
+            domain=NonNegativeReals,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight",
         )
