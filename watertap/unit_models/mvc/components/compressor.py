@@ -18,7 +18,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from copy import deepcopy, copy
+from copy import copy
 
 # Import IDAES cores
 from idaes.core import (
