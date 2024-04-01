@@ -16,6 +16,7 @@ from pyomo.environ import (
     Suffix,
     check_optimal_termination,
     units as pyunits,
+    value,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from copy import copy
@@ -301,11 +302,11 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        state_args_out = {k: copy(v) for k, v in state_args.items()}
-        state_args_out["pressure"] = (
+        state_args_out_isentropic = copy(state_args)
+        state_args_out_isentropic["pressure"] = (
             state_args["pressure"] * self.pressure_ratio * pyunits.Pa
         )
-        state_args_out["temperature"] = (
+        state_args_out_isentropic["temperature"] = (
             state_args["temperature"] * self.pressure_ratio ** (1 - 1 / 1.3) * pyunits.K
         )
 
@@ -313,20 +314,22 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_out,
+            state_args=state_args_out_isentropic,
         )
         init_log.info_high("Initialization Step 2 Complete.")
 
-        state_args_out2 = copy(state_args_out)
-        state_args_out2["temperature"] = (
-            state_args_out["temperature"] - state_args["temperature"] * pyunits.K
+        state_args_out_actual = copy(state_args_out_isentropic)
+        # assume a constant vapor specific heat for initialization:
+        state_args_out_actual["temperature"] = (
+            state_args_out_isentropic["temperature"]
+            - state_args["temperature"] * pyunits.K
         ) / self.efficiency + state_args["temperature"] * pyunits.K
 
         self.control_volume.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_out2,
+            state_args=state_args_out_actual,
         )
         init_log.info_high("Initialization Step 3 Complete.")
 
