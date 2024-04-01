@@ -16,7 +16,6 @@ from pyomo.environ import (
     Suffix,
     check_optimal_termination,
     units as pyunits,
-    value,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from copy import copy
