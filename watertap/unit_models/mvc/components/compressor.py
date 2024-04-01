@@ -303,10 +303,12 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
 
         state_args_out_isentropic = copy(state_args)
         state_args_out_isentropic["pressure"] = (
-            state_args["pressure"] * self.pressure_ratio * pyunits.Pa
+            state_args["pressure"] * self.pressure_ratio.value * pyunits.Pa
         )
         state_args_out_isentropic["temperature"] = (
-            state_args["temperature"] * self.pressure_ratio ** (1 - 1 / 1.3) * pyunits.K
+            state_args["temperature"]
+            * self.pressure_ratio.value ** (1 - 1 / 1.3)
+            * pyunits.K
         )
 
         self.properties_isentropic_out.initialize(
@@ -322,7 +324,7 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
         state_args_out_actual["temperature"] = (
             state_args_out_isentropic["temperature"]
             - state_args["temperature"] * pyunits.K
-        ) / self.efficiency + state_args["temperature"] * pyunits.K
+        ) / self.efficiency.value + state_args["temperature"] * pyunits.K
 
         self.control_volume.properties_out.initialize(
             outlvl=outlvl,
