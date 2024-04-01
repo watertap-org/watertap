@@ -68,6 +68,8 @@ from watertap.unit_models.reverse_osmosis_1D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+
+from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from watertap.costing.unit_models.dewatering import (
     cost_centrifuge,
     cost_filter_belt_press,
@@ -96,7 +98,12 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main():
-    m = build(include_pretreatment=False, include_dewatering=False, include_gac=False)
+    m = build(
+        RO_1D=True,
+        include_pretreatment=False,
+        include_dewatering=False,
+        include_gac=False,
+    )
     set_operating_conditions(m)
 
     assert_units_consistent(m)
@@ -121,6 +128,7 @@ def main():
 
 
 def build(
+    RO_1D=True,
     include_pretreatment=False,
     include_dewatering=False,
     include_gac=False,
@@ -232,13 +240,22 @@ def build(
     # reverse osmosis components
 
     desal.P2 = Pump(property_package=m.fs.prop_ro)
-    desal.RO = ReverseOsmosis1D(
-        property_package=m.fs.prop_ro,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-    )
+    if RO_1D:
+        desal.RO = ReverseOsmosis1D(
+            property_package=m.fs.prop_ro,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
+    else:
+        desal.RO = ReverseOsmosis0D(
+            property_package=m.fs.prop_ro,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
 
     desal.RO.width.setub(2000)
     desal.RO.area.setub(20000)
