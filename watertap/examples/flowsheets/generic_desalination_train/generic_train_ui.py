@@ -15,6 +15,9 @@ from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 
 
+__author__ = "Alexander V. Dudchenko"
+
+
 def export_to_ui():
     return FlowsheetInterface(
         name="generic_treatment_train",
@@ -101,6 +104,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="Overall process cost",
             is_output=True,
             output_category="Overall process cost",
+            plot_processing_option={"stack_data": {"order_number": 1}},
+            plot_options={
+                "color": x,
+                "hatch": y,
+            },
+            stack_group="Cost breakdown",
         )
     exports.add(
         obj=fs.feed.base_cost,
@@ -258,7 +267,10 @@ def build_flowsheet(build_options=None, **kwargs):
 
 
 def get_diagram(build_options):
-    if build_options["train_type"].value == "Pretreatment>Desal1>Desal2>Crystalizer":
+    if (
+        build_options["train_type"].value
+        == "Pretreatment>Desal1>Desal2>Valorizer>Crystalizer"
+    ):
         return "pd1d2vc.png"
     else:
         return "pd1d2vc.png"
