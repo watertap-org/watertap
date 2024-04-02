@@ -82,7 +82,7 @@ def main():
 
 
 def build(
-    train_type="Pretreatment>Desal1>Desal2>Valorizer>Crystalizer",
+    train_type="Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
     water_source="BGW1",
 ):
     train_orders = {
@@ -182,6 +182,41 @@ def build(
                 "process_type": "desalter",
                 "process_name": "Crystalizer",
                 "default_kwargs": {"base_cost": 10, "recovery_cost": 0.0},
+            },
+        },
+        "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer": {
+            0: {
+                "process_type": "separator",
+                "process_name": "Pretreatment",
+                "default_kwargs": {
+                    "base_cost": 0.1,
+                    "additive_dose": 0,
+                    "additive_cost": 0,
+                },
+            },
+            1: {
+                "process_type": "desalter",
+                "process_name": "Desal_1",
+                "default_kwargs": {"base_cost": 0.3, "recovery_cost": 0},
+            },
+            2: {
+                "process_type": "desalter",
+                "process_name": "Desal_2",
+                "default_kwargs": {"base_cost": 3, "recovery_cost": 0},
+            },
+            3: {
+                "process_type": "desalter",
+                "process_name": "Crystalizer",
+                "default_kwargs": {"base_cost": 10, "recovery_cost": 0.0},
+            },
+            4: {
+                "process_type": "valorizer",
+                "process_name": "Valorizer",
+                "default_kwargs": {
+                    "base_cost": 0,
+                    "additive_dose": 0.0,
+                    "additive_cost": 0.0,
+                },
             },
         },
     }

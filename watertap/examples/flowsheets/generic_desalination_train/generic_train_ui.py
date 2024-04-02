@@ -28,12 +28,6 @@ def export_to_ui():
         requires_idaes_solver=True,
         category=FlowsheetCategory.wastewater,
         build_options={
-            "train_type": {
-                "name": "Type of train layout",
-                "display_name": "Train layout",
-                "values_allowed": ["Pretreatment>Desal1>Desal2>Valorizer>Crystalizer"],
-                "value": "Pretreatment>Desal1>Desal2>Valorizer>Crystalizer",
-            },
             "water_source_type": {
                 "name": "Type of source water",
                 "display_name": "Source water",
@@ -200,30 +194,30 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 is_output=False,
                 output_category=f"{process_name} costing and operation",
             )
-            exports.add(
-                obj=block.separator.additive_cost,
-                name="Additive cost",
-                ui_units=fs.costing.base_currency / pyunits.kg,
-                display_units="$/kg",
-                rounding=2,
-                description=f"{process_name} costing and operation",
-                is_input=True,
-                input_category=f"{process_name} costing and operation",
-                is_output=False,
-                output_category=f"{process_name} costing and operation",
-            )
-            exports.add(
-                obj=block.separator.additive_dose,
-                name="Additive dose",
-                ui_units=pyunits.mg / pyunits.L,
-                display_units="PPM",
-                rounding=2,
-                description=f"{process_name} costing and operation",
-                is_input=True,
-                input_category=f"{process_name} costing and operation",
-                is_output=False,
-                output_category=f"{process_name} costing and operation",
-            )
+            # exports.add(
+            #     obj=block.separator.additive_cost,
+            #     name="Additive cost",
+            #     ui_units=fs.costing.base_currency / pyunits.kg,
+            #     display_units="$/kg",
+            #     rounding=2,
+            #     description=f"{process_name} costing and operation",
+            #     is_input=True,
+            #     input_category=f"{process_name} costing and operation",
+            #     is_output=False,
+            #     output_category=f"{process_name} costing and operation",
+            # )
+            # exports.add(
+            #     obj=block.separator.additive_dose,
+            #     name="Additive dose",
+            #     ui_units=pyunits.mg / pyunits.L,
+            #     display_units="PPM",
+            #     rounding=2,
+            #     description=f"{process_name} costing and operation",
+            #     is_input=True,
+            #     input_category=f"{process_name} costing and operation",
+            #     is_output=False,
+            #     output_category=f"{process_name} costing and operation",
+            # )
             for ion in block.separator.separation_cost.keys():
 
                 exports.add(
@@ -259,7 +253,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
     solver = get_solver()
     m = generic_train.build(
-        train_type=build_options["train_type"].value,
+        train_type="Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
         water_source=build_options["water_source_type"].value,
     )
     generic_train.initialize(m, solver)
@@ -267,13 +261,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
 
 def get_diagram(build_options):
-    if (
-        build_options["train_type"].value
-        == "Pretreatment>Desal1>Desal2>Valorizer>Crystalizer"
-    ):
-        return "pd1d2vc.png"
-    else:
-        return "pd1d2vc.png"
+    return "pd1d2cv.png"
 
 
 def solve_flowsheet(flowsheet):
