@@ -98,12 +98,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="Overall process cost",
             is_output=True,
             output_category="Overall process cost",
-            plot_processing_option={"stack_data": {"order_number": 1}},
-            plot_options={
-                "color": x,
-                "hatch": y,
-            },
-            stack_group="Cost breakdown",
         )
     exports.add(
         obj=fs.feed.base_cost,
