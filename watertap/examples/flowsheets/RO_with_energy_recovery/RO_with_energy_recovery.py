@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -152,14 +152,10 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.s03 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.P1)
         m.fs.s04 = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
         m.fs.s05 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-        m.fs.s06 = Arc(
-            source=m.fs.RO.retentate, destination=m.fs.PXR.high_pressure_inlet
-        )
-        m.fs.s07 = Arc(
-            source=m.fs.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet
-        )
-        m.fs.s08 = Arc(source=m.fs.S1.PXR, destination=m.fs.PXR.low_pressure_inlet)
-        m.fs.s09 = Arc(source=m.fs.PXR.low_pressure_outlet, destination=m.fs.P2.inlet)
+        m.fs.s06 = Arc(source=m.fs.RO.retentate, destination=m.fs.PXR.brine_inlet)
+        m.fs.s07 = Arc(source=m.fs.PXR.brine_outlet, destination=m.fs.disposal.inlet)
+        m.fs.s08 = Arc(source=m.fs.S1.PXR, destination=m.fs.PXR.feed_inlet)
+        m.fs.s09 = Arc(source=m.fs.PXR.feed_outlet, destination=m.fs.P2.inlet)
         m.fs.s10 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.P2)
     elif erd_type == ERDtype.pump_as_turbine:
         m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
@@ -184,8 +180,8 @@ def build(erd_type=ERDtype.pressure_exchanger):
 
     if erd_type == ERDtype.pressure_exchanger:
         iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
-        iscale.set_scaling_factor(m.fs.PXR.low_pressure_side.work, 1e-3)
-        iscale.set_scaling_factor(m.fs.PXR.high_pressure_side.work, 1e-3)
+        iscale.set_scaling_factor(m.fs.PXR.feed_side.work, 1e-3)
+        iscale.set_scaling_factor(m.fs.PXR.brine_side.work, 1e-3)
         # touch properties used in specifying and initializing the model
         m.fs.S1.mixed_state[0].mass_frac_phase_comp
         m.fs.S1.PXR_state[0].flow_vol_phase["Liq"]
@@ -407,7 +403,7 @@ def initialize_pressure_exchanger(m, optarg):
     # ---initialize splitter and pressure exchanger---
     # pressure exchanger high pressure inlet
     propagate_state(m.fs.s06)  # propagate to PXR high pressure inlet from RO retentate
-    m.fs.PXR.high_pressure_side.properties_in.initialize(optarg=optarg)
+    m.fs.PXR.brine_side.properties_in.initialize(optarg=optarg)
 
     # splitter inlet
     propagate_state(m.fs.s01)  # propagate to splitter inlet from feed
@@ -421,7 +417,7 @@ def initialize_pressure_exchanger(m, optarg):
                 "flow_vol_phase",
                 "Liq",
             ): value(  # same volumetric flow rate as PXR high pressure inlet
-                m.fs.PXR.high_pressure_side.properties_in[0].flow_vol_phase["Liq"]
+                m.fs.PXR.brine_side.properties_in[0].flow_vol_phase["Liq"]
             ),
             ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
                 m.fs.S1.mixed_state[0].mass_frac_phase_comp["Liq", "NaCl"]
@@ -627,12 +623,12 @@ def display_state(m):
         print_state("Split 1   ", m.fs.S1.P1)
         print_state("P1 out    ", m.fs.P1.outlet)
         print_state("Split 2   ", m.fs.S1.PXR)
-        print_state("PXR LP out", m.fs.PXR.low_pressure_outlet)
+        print_state("PXR feed out", m.fs.PXR.feed_outlet)
         print_state("P2 out    ", m.fs.P2.outlet)
         print_state("Mix out   ", m.fs.M1.outlet)
         print_state("RO perm   ", m.fs.RO.permeate)
         print_state("RO reten  ", m.fs.RO.retentate)
-        print_state("PXR HP out", m.fs.PXR.high_pressure_outlet)
+        print_state("PXR brine out", m.fs.PXR.brine_outlet)
 
 
 if __name__ == "__main__":

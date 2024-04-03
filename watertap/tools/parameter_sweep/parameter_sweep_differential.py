@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -273,12 +273,14 @@ class DifferentialParameterSweep(_ParameterSweepBase, _ParameterSweepParallelUti
                         # This loop shouldn't run if the above set is empty
                         for subkey in missing_sub_keys:
                             # We are picking the unchanged sweep_params from the outputs. In the ideal world, they would be the same.
-                            local_output_dict["sweep_params"][subkey][
-                                "value"
-                            ] = np.concatenate(
-                                (
-                                    local_output_dict["sweep_params"][subkey]["value"],
-                                    diff_sol["outputs"][subkey]["value"],
+                            local_output_dict["sweep_params"][subkey]["value"] = (
+                                np.concatenate(
+                                    (
+                                        local_output_dict["sweep_params"][subkey][
+                                            "value"
+                                        ],
+                                        diff_sol["outputs"][subkey]["value"],
+                                    )
                                 )
                             )
 

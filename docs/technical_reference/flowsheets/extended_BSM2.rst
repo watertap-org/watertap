@@ -4,7 +4,7 @@ Extended Benchmark Simulation Model No.2
 Introduction
 ------------
 
-Like the conventional Benchmark Simulation Model No.2 (BSM2)`BSM2 <https://watertap.readthedocs.io/en/latest/technical_reference/flowsheets/BSM2.html>`_,
+Like the conventional Benchmark Simulation Model No.2 `(BSM2) <https://watertap.readthedocs.io/en/latest/technical_reference/flowsheets/BSM2.html>`_,
 extended BSM2 is an industry benchmark for modeling a full biological wastewater
 treatment plant that includes a primary clarifier, the activated sludge process, and an anaerobic digester.
 These unit processes are driven by biological reaction models that relate soluble and particulate wastewater

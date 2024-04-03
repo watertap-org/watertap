@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -76,9 +76,9 @@ class SedimentationZOData(ZeroOrderBaseData):
             )
 
             self._fixed_perf_vars.append(self.phosphorus_solids_ratio)
-            self._perf_var_dict[
-                "Phosphorus-Solids Ratio (kg/kg)"
-            ] = self.phosphorus_solids_ratio
+            self._perf_var_dict["Phosphorus-Solids Ratio (kg/kg)"] = (
+                self.phosphorus_solids_ratio
+            )
 
             # This subtype is intended to be used explicitly for phosphorous capture.
             # If the user provides TSS, the amount of settled phosphate would be determined based on
@@ -111,9 +111,9 @@ class SedimentationZOData(ZeroOrderBaseData):
                         / b.phosphorus_solids_ratio[t]
                     )
 
-                self._perf_var_dict[
-                    "Final mass flow of settled solids (kg/s)"
-                ] = self.final_solids_mass
+                self._perf_var_dict["Final mass flow of settled solids (kg/s)"] = (
+                    self.final_solids_mass
+                )
 
             elif "tss" in self.config.property_package.solute_set:
                 self.final_phosphate_mass = Var(
@@ -133,9 +133,9 @@ class SedimentationZOData(ZeroOrderBaseData):
                         * b.phosphorus_solids_ratio[t]
                     )
 
-                self._perf_var_dict[
-                    "Final mass flow of settled phosphate (kg/s)"
-                ] = self.final_phosphate_mass
+                self._perf_var_dict["Final mass flow of settled phosphate (kg/s)"] = (
+                    self.final_phosphate_mass
+                )
 
             else:
                 # Raise this error in case the user is intended to make use of the subtype but entered

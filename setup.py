@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.12.dev0",
+    version="1.0.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -91,7 +91,7 @@ setup(
         "requests",
         "scipy",
         # for watertap.ui.api_model (though may be generally useful)
-        "pydantic < 2",
+        "pydantic >= 2, <3",
         "numpy",
         "importlib-resources",
     ],
@@ -169,6 +169,7 @@ setup(
             "GLSD anaerobic digestion = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.GLSD_anaerobic_digester.GLSD_anaerobic_digestion_ui",
             "mvc = watertap.examples.flowsheets.mvc.mvc_single_stage_ui",
             "RO = watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui",
+            "OARO = watertap.examples.flowsheets.oaro.oaro_multi_ui",
             "GAC = watertap.examples.flowsheets.gac.gac_ui",
         ],
     },

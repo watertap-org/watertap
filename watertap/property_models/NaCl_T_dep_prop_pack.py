@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -86,6 +86,16 @@ class NaClParameterData(PhysicalParameterBlock):
 
         # phases
         self.Liq = LiquidPhase()
+
+        """ References
+        This package was developed from the following references:
+        - Pitzer, Kenneth S., J. Christopher Peiper, and R. H. Busey. (1984). 
+        Thermodynamic Properties of Aqueous Sodium Chloride Solutions, Journal of Physical and Chemical Reference Data 13, 
+        no. 1 , 1–102. DOI: 10.1063/1.555709
+        - Sparrow, Benjamin S. (2003). Empirical Equations for the Thermodynamic Properties of Aqueous Sodium Chloride, 
+        Desalination 159, no. 2, 161–70. DOI: 10.1016/S0011-9164(03)90068-3
+        - Zaytsev Ivan Dmitrievich & Aseev G. G. (1992). Properties of aqueous solutions of electrolytes, CRC Press.
+        """
 
         # molecular weight
         mw_comp_data = {"H2O": 18.01528e-3, "NaCl": 58.44e-3}
@@ -1034,6 +1044,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
+
         # Sparrow 2003, Eq. 7, 0-300 C
         def rule_dens_mass_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1189,6 +1200,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="solubility_comp",
         )
+
         # Sparrow 2003, Eq 5,  0-450 C
         def rule_solubility_comp(b, j):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1208,6 +1220,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="Vapor Pressure",
         )
+
         # Sparrow 2003, Eq. 6, 0-150 C
         def rule_pressure_sat(b):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1252,6 +1265,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.Pa * pyunits.s,
             doc="Viscosity",
         )
+
         # Regressed from Zaytsev & Aseev (1992), 0-200 C
         def rule_visc_d_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1293,6 +1307,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.W / (pyunits.m * pyunits.K),
             doc="Thermal Conductivity",
         )
+
         # Regressed from Zaytsev & Aseev (1992), 0-155 C
         def rule_therm_cond_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1332,6 +1347,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
             doc="specific heat",
         )
+
         # Regressed from Zaytsev & Aseev (1992), 0-200 C
         def rule_cp_mass_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1372,6 +1388,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
+
         # Regressed from Zaytsev & Aseev (1992), 0-60 C
         def rule_diffus_phase_comp(b, p, j):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1412,6 +1429,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
+
         # Regressed from Pitzer et. al. (1984), 0-300 C
         def rule_osm_coeff(b):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
@@ -1483,6 +1501,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
+
         # Sparrow 2003, Eq 8, 0-300 C
         def rule_enth_mass_phase(b, p):
             t = (b.temperature - 273.15 * pyunits.K) / pyunits.K

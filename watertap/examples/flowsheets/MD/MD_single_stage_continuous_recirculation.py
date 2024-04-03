@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -415,9 +415,9 @@ def set_operating_conditions(m):
     m.fs.chiller.control_volume.properties_out[0].flow_mass_phase_comp[
         "Liq", "TDS"
     ].value = 0
-    m.fs.chiller.control_volume.properties_out[0].flow_mass_phase_comp[
-        "Liq", "H2O"
-    ] = m.fs.heater.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+    m.fs.chiller.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"] = (
+        m.fs.heater.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+    )
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
