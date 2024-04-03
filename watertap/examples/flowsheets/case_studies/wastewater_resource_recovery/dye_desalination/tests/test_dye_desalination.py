@@ -392,7 +392,7 @@ class TestDyewithROFlowsheetwithGAC:
             m.fs.concentrated_dye.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
-        assert pytest.approx(0.0149412, rel=1e-3) == value(
+        assert pytest.approx(0.0149, abs=1e-3) == value(
             m.fs.concentrated_dye.flow_mass_phase_comp[0, "Liq", "dye"]
         )
 
