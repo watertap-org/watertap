@@ -124,8 +124,8 @@ class TestDyewithROFlowsheetwithPretreatment:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(27.821289, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(19.835558, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(26.933615, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(19.781864, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -214,8 +214,8 @@ class TestDyewithROFlowsheetDefault:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(27.719244, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(19.774679, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(26.866706, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(19.722369, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
@@ -316,8 +316,8 @@ class TestDyewithROFlowsheetwithDewatering:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(1.08502, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(-0.151027, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(1.03220, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(-0.2043484, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
@@ -413,8 +413,8 @@ class TestDyewithROFlowsheetwithGAC:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.415656, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(-0.765208, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.3791855, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(-0.8185295, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
