@@ -149,7 +149,7 @@ def build(
                 "default_kwargs": {"base_cost": 10, "recovery_cost": 0},
             },
         },
-        "Pretreatment>Desal1>Desal2>Valorizer>Crystalizer": {
+        "Pretreatment>Desal1>Desal2>Valorizer": {
             0: {
                 "process_type": "separator",
                 "process_name": "Pretreatment",
@@ -177,11 +177,6 @@ def build(
                     "additive_dose": 0.0,
                     "additive_cost": 0.0,
                 },
-            },
-            4: {
-                "process_type": "desalter",
-                "process_name": "Crystalizer",
-                "default_kwargs": {"base_cost": 10, "recovery_cost": 0.0},
             },
         },
         "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer": {
@@ -415,6 +410,10 @@ def initialize(m, solver=None, **kwargs):
     if m.fs.find_component("product_mixer") is not None:
         m.fs.product_mixer.initialize(optarg=solver.options)
     m.fs.product.initialize(optarg=solver.options)
+    update_feed(m.fs, solver)
+    fix_conc_feed(
+        m.fs,
+    )
     # setup_optimization(m)
     solve(m, solver)
 
@@ -507,37 +506,43 @@ def setup_optimization(m):
         if process_dict.get("unfix_opt_vars") != None:
             process_dict["unfix_opt_vars"](m, process_dict["process_block"])
     """ enable objective function """
-    m.fs.water_recovery.fix(95)
+    # m.fs.water_recovery.fix(95)
     m.fs.cost_objective.activate()
 
 
 def solve(m, solver=None, tee=None):
-    # update_feed(m, solver)
+    if m.find_component("fs") is None:
+        update_feed(m, solver)
+    else:
+        update_feed(m.fs, solver)
     _logger.info(f"DOFS:{degrees_of_freedom(m)}")
     if solver is None:
         solver = get_solver()
 
     result = solver.solve(m)
-    # fix_conc_feed(m)
+    if m.find_component("fs") is None:
+        fix_conc_feed(m)
+    else:
+        fix_conc_feed(m.fs)
     return result
 
 
-def fix_conc_feed(m):
-    m.fs.feed.properties[0].flow_mass_phase_comp.unfix()
-    m.fs.feed.properties[0].conc_mass_phase_comp.fix()
-    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
-    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix()
+def fix_conc_feed(blk):
+    blk.feed.properties[0].flow_mass_phase_comp.unfix()
+    blk.feed.properties[0].conc_mass_phase_comp.fix()
+    blk.feed.properties[0].conc_mass_phase_comp["Liq", "H2O"].unfix()
+    blk.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix()
 
 
-def update_feed(m, solver):
+def update_feed(blk, solver):
     if solver == None:
         solver = get_solver()
     _logger.info("solved feed")
-    solver.solve(m.fs.feed.properties[0])
-    m.fs.feed.properties[0].conc_mass_phase_comp.unfix()
-    m.fs.feed.properties[0].flow_mass_phase_comp.fix()
+    solver.solve(blk.feed.properties[0])
+    blk.feed.properties[0].conc_mass_phase_comp.unfix()
+    blk.feed.properties[0].flow_mass_phase_comp.fix()
 
-    m.fs.feed.properties[0].assert_electroneutrality(
+    blk.feed.properties[0].assert_electroneutrality(
         defined_state=True,
         adjust_by_ion="Cl",
         get_property="flow_mass_phase_comp",

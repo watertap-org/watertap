@@ -23,7 +23,8 @@ __author__ = "Alexander V. Dudchenko"
 def cost_unit(
     costing_block,
     separator_unit,
-    base_cost=1,
+    base_cost=0,
+    mass_base_cost=0,
     additive_cost=0,
     species_cost=0,
     opt_name=None,
@@ -34,7 +35,9 @@ def cost_unit(
     separator_unit.additive_cost = Var(
         initialize=additive_cost, units=costing_block.base_currency / pyunits.kg
     )
-
+    separator_unit.mass_base_cost = Var(
+        initialize=mass_base_cost, units=costing_block.base_currency / pyunits.kg
+    )
     separator_unit.separation_cost = Var(
         list(separator_unit.component_removal_percent.keys()),
         initialize=species_cost,
@@ -44,9 +47,16 @@ def cost_unit(
     separator_unit.base_cost.fix()
     separator_unit.separation_cost.fix()
     separator_unit.additive_cost.fix()
+    separator_unit.mass_base_cost.fix()
     separator_unit.annual_cost = Var(
         initialize=1, units=costing_block.base_currency / pyunits.year
     )
+    separator_unit.feed_LCOW = Var(
+        initialize=1, units=costing_block.base_currency / pyunits.m**3
+    )
+    # separator_unit.mass_LCOW = Var(
+    #     initialize=1, units=costing_block.base_currency / pyunits.kg
+    # )
     separator_unit.absolute_cost_eq = Constraint(
         expr=separator_unit.annual_cost
         == separator_unit.base_cost
@@ -71,7 +81,43 @@ def cost_unit(
                 for ion in separator_unit.separation_cost.keys()
             ]
         )
+        + separator_unit.mass_base_cost
+        * sum(
+            [
+                pyunits.convert(
+                    separator_unit.product_properties[0].flow_mass_phase_comp[
+                        "Liq", ion
+                    ],
+                    to_units=pyunits.kg / pyunits.year,
+                )
+                for ion in separator_unit.separation_cost.keys()
+            ]
+        )
     )
+    separator_unit.feed_LCOW_eq = Constraint(
+        expr=separator_unit.feed_LCOW
+        == separator_unit.annual_cost
+        / pyunits.convert(
+            separator_unit.separator_unit.properties_in[0].flow_vol_phase["Liq"],
+            to_units=pyunits.m**3 / pyunits.year,
+        )
+    )
+    # separator_unit.mass_LCOW_eq = Constraint(
+    #     expr=separator_unit.mass_LCOW
+    #     == separator_unit.annual_cost
+    #     / (
+    #         [
+    #             pyunits.convert(
+    #                 separator_unit.product_properties[0].flow_mass_phase_comp[
+    #                     "Liq", ion
+    #                 ],
+    #                 to_units=pyunits.kg / pyunits.year,
+    #             )
+    #             for ion in separator_unit.separation_cost.keys()
+    #         ]
+    #     )
+    # )
+
     costing_block.annual_costs.append(
         {"name": opt_name, "annual_cost": separator_unit.annual_cost}
     )

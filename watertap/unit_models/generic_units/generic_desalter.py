@@ -172,7 +172,7 @@ class GenericDesalterData(UnitModelBlockData):
 
         self.water_recovery = Var(
             initialize=80,
-            bounds=(25, 99.9),
+            bounds=(None, 99.9999),
             domain=Reals,
             units=pyunits.dimensionless,
             doc="water recovery",

@@ -20,7 +20,7 @@ __author__ = "Alexander V. Dudchenko"
 
 def export_to_ui():
     return FlowsheetInterface(
-        name="generic_treatment_train",
+        name="Generic treatment train",
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
@@ -28,6 +28,15 @@ def export_to_ui():
         requires_idaes_solver=True,
         category=FlowsheetCategory.wastewater,
         build_options={
+            "train_type": {
+                "name": "Treatment train type",
+                "display_name": "Treatment train type",
+                "values_allowed": [
+                    "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
+                    "Pretreatment>Desal1>Desal2>Valorizer",
+                ],
+                "value": "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
+            },
             "water_source_type": {
                 "name": "Type of source water",
                 "display_name": "Source water",
@@ -44,22 +53,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     fs = flowsheet  # model.fs
     # --- Input data ---
     # Feed conditions
-
-    # for (phase, ion), obj in fs.feed.properties[0].conc_mass_phase_comp.items():
-    #     if ion != "H2O":
-    #         exports.add(
-    #             obj=obj,
-    #             name="{} concentration".format(ion),
-    #             ui_units=pyunits.mg / pyunits.L,
-    #             display_units="mg/L",
-    #             rounding=2,
-    #             description="{} concentration".format(ion),
-    #             is_input=True,
-    #             input_category="Feed",
-    #             is_output=True,
-    #             output_category="Feed",
-    #         )
-
     exports.add(
         obj=fs.water_recovery,
         name="system water recovery",
@@ -98,6 +91,85 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="Overall process cost",
             is_output=True,
             output_category="Overall process cost",
+        )
+
+    exports.add(
+        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
+        name="Flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m**3/day",
+        rounding=2,
+        description="Feed flow rate",
+        is_input=False,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.product.properties[0].flow_vol_phase["Liq"],
+        name="Flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m**3/day",
+        rounding=2,
+        description="Feed flow rate",
+        is_input=False,
+        input_category="Product",
+        is_output=True,
+        output_category="Product",
+    )
+    exports.add(
+        obj=fs.disposal.properties[0].flow_vol_phase["Liq"],
+        name="Flow rate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m**3/day",
+        rounding=2,
+        description="Feed flow rate",
+        is_input=False,
+        input_category="Waste",
+        is_output=True,
+        output_category="Waste",
+    )
+    for (phase, ion), obj in fs.feed.properties[0].conc_mass_phase_comp.items():
+        if ion != "H2O":
+            exports.add(
+                obj=obj,
+                name="{} concentration".format(ion),
+                ui_units=pyunits.mg / pyunits.L,
+                display_units="mg/L",
+                rounding=2,
+                description="{} concentration".format(ion),
+                is_input=True,
+                input_category="Feed",
+                is_output=True,
+                output_category="Feed",
+            )
+
+    for (phase, ion), obj in fs.disposal.properties[0].conc_mass_phase_comp.items():
+        if ion != "H2O":
+            exports.add(
+                obj=obj,
+                name="{} concentration".format(ion),
+                ui_units=pyunits.g / pyunits.L,
+                display_units="g/L",
+                rounding=2,
+                description="{} concentration".format(ion),
+                is_input=False,
+                input_category="Waste",
+                is_output=True,
+                output_category="Waste",
+            )
+    for (phase, ion), obj in fs.disposal.properties[0].flow_mass_phase_comp.items():
+        exports.add(
+            obj=obj,
+            name="{} mass flow".format(ion),
+            ui_units=pyunits.kg / pyunits.day,
+            display_units="kg/day",
+            rounding=2,
+            description="{} mass flow".format(ion),
+            is_input=False,
+            input_category="Waste",
+            is_output=True,
+            output_category="Waste",
         )
     exports.add(
         obj=fs.feed.base_cost,
@@ -175,19 +247,45 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 is_output=True,
                 output_category=f"{process_name} costing and operation",
             )
-        if proc["process_type"] == "separator" or proc["process_type"] == "valorizer":
             exports.add(
-                obj=block.separator.base_cost,
-                name="Base cost",
+                obj=block.desalter.LCOW,
+                name=f"LCOW ({process_name})",
                 ui_units=fs.costing.base_currency / pyunits.m**3,
                 display_units="$/m^3",
                 rounding=2,
                 description=f"{process_name} costing and operation",
-                is_input=True,
+                is_input=False,
                 input_category=f"{process_name} costing and operation",
-                is_output=False,
+                is_output=True,
                 output_category=f"{process_name} costing and operation",
             )
+        if proc["process_type"] == "separator" or proc["process_type"] == "valorizer":
+            if proc["process_type"] == "separator":
+                exports.add(
+                    obj=block.separator.base_cost,
+                    name="Base cost",
+                    ui_units=fs.costing.base_currency / pyunits.m**3,
+                    display_units="$/m^3",
+                    rounding=2,
+                    description=f"{process_name} costing and operation",
+                    is_input=True,
+                    input_category=f"{process_name} costing and operation",
+                    is_output=False,
+                    output_category=f"{process_name} costing and operation",
+                )
+            else:
+                exports.add(
+                    obj=block.separator.mass_base_cost,
+                    name="Mass product base cost",
+                    ui_units=fs.costing.base_currency / pyunits.kg,
+                    display_units="$/kg",
+                    rounding=2,
+                    description=f"{process_name} costing and operation",
+                    is_input=True,
+                    input_category=f"{process_name} costing and operation",
+                    is_output=False,
+                    output_category=f"{process_name} costing and operation",
+                )
             # exports.add(
             #     obj=block.separator.additive_cost,
             #     name="Additive cost",
@@ -238,6 +336,23 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                     is_output=False,
                     output_category=f"{process_name} detailed costing and operation",
                 )
+            if proc["process_type"] == "valorizer":
+                for (phase, ion), obj in block.separator.product_properties[
+                    0
+                ].flow_mass_phase_comp.items():
+                    if ion != "H2O":
+                        exports.add(
+                            obj=obj,
+                            name="{} concentration".format(ion),
+                            ui_units=pyunits.kg / pyunits.day,
+                            display_units="kg/day",
+                            rounding=2,
+                            description="{} mass flow".format(ion),
+                            is_input=False,
+                            input_category=f"{process_name} detailed costing and operation",
+                            is_output=True,
+                            output_category=f"{process_name} detailed costing and operation",
+                        )
 
 
 def build_flowsheet(build_options=None, **kwargs):
@@ -247,7 +362,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
     solver = get_solver()
     m = generic_train.build(
-        train_type="Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
+        train_type=build_options["train_type"].value,
         water_source=build_options["water_source_type"].value,
     )
     generic_train.initialize(m, solver)
@@ -255,7 +370,15 @@ def build_flowsheet(build_options=None, **kwargs):
 
 
 def get_diagram(build_options):
-    return "pd1d2cv.png"
+    if (
+        build_options["train_type"].value
+        == "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer"
+    ):
+        return "pd1d2cv.png"
+    elif build_options["train_type"].value == "Pretreatment>Desal1>Desal2>Valorizer":
+        return "pd1d2v.png"
+    else:
+        return "pd1d2cv.png"
 
 
 def solve_flowsheet(flowsheet):

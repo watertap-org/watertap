@@ -31,10 +31,19 @@ def cost_desalter(costing_block, desalter, base_cost=1, recovery_cost=0, opt_nam
     desalter.annual_cost = Var(
         initialize=1, units=costing_block.base_currency / pyunits.year
     )
+    desalter.LCOW = Var(initialize=1, units=costing_block.base_currency / pyunits.m**3)
     desalter.absolute_cost_eq = Constraint(
         expr=desalter.annual_cost
         == (desalter.base_cost + desalter.recovery_cost * desalter.water_recovery)
         * pyunits.convert(
+            desalter.product_properties[0].flow_vol_phase["Liq"],
+            to_units=pyunits.m**3 / pyunits.year,
+        )
+    )
+    desalter.LCOW_eq = Constraint(
+        expr=desalter.LCOW
+        == desalter.annual_cost
+        / pyunits.convert(
             desalter.product_properties[0].flow_vol_phase["Liq"],
             to_units=pyunits.m**3 / pyunits.year,
         )
