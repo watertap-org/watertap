@@ -71,7 +71,6 @@ _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
 
 
-
 class CredentialManager:
     """
     A class to handle credentials for OLI Cloud using cryptography.

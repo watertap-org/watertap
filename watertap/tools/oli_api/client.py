@@ -277,7 +277,6 @@ class OLIApi:
         _logger.info(f"{len(user_dbs_file_ids)} DBS files found for user")
         return user_dbs_file_ids
 
-
     def dbs_file_cleanup(self, dbs_file_ids=None):
         """
         Delete all (or specified) DBS files on OLI Cloud.
