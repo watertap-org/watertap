@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -133,9 +133,9 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._perf_var_dict[
             "Mass of gas extracted per mass flow of influent(kg/d/(kg/d)"
         ] = self.gas_mass_influent_ratio
-        self._perf_var_dict[
-            "Mass flow of gas extracted (kg/s))"
-        ] = self.flow_mass_gas_extraction
+        self._perf_var_dict["Mass flow of gas extracted (kg/s))"] = (
+            self.flow_mass_gas_extraction
+        )
 
         # Add performance constraints
         # Water recovery

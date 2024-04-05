@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -218,7 +218,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="NF OPEX",
     )
     exports.add(
-        obj=fs.costing.factor_maintenance_labor_chemical,
+        obj=fs.costing.maintenance_labor_chemical_factor,
         name="Maintenance-labor-chemical factor",
         ui_units=pyunits.year**-1,
         display_units="fraction of equipment cost/year",

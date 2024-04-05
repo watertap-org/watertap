@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -400,7 +400,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Outlets
     exports.add(
-        obj=fs.dye_retentate.properties[0].flow_vol,
+        obj=fs.concentrated_dye.properties[0].flow_vol,
         name="Volumetric NF retentate flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -411,7 +411,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.dye_retentate.properties[0].conc_mass_comp["dye"],
+        obj=fs.concentrated_dye.properties[0].conc_mass_comp["dye"],
         name="NF retentate concentration, dye",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -422,7 +422,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.dye_retentate.properties[0].conc_mass_comp["tds"],
+        obj=fs.concentrated_dye.properties[0].conc_mass_comp["tds"],
         name="NF retentate concentration, tds",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
@@ -575,7 +575,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Normalized performance metrics",
     )
     dye_recovery = (
-        fs.dye_retentate.flow_mass_comp[0, "dye"] / fs.feed.flow_mass_comp[0, "dye"]
+        fs.concentrated_dye.flow_mass_comp[0, "dye"] / fs.feed.flow_mass_comp[0, "dye"]
     )
     exports.add(
         obj=dye_recovery,

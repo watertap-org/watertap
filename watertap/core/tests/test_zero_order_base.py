@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -371,22 +371,22 @@ class TestZOBase:
             use_default_removal=True,
         )
 
-        model.fs.unit._perf_var_dict[
-            "Solute Removal"
-        ] = model.fs.unit.removal_frac_mass_comp
+        model.fs.unit._perf_var_dict["Solute Removal"] = (
+            model.fs.unit.removal_frac_mass_comp
+        )
 
         model.fs.unit.time_indexed_performance_var = Var(
             model.fs.time, doc="test variable"
         )
 
-        model.fs.unit._perf_var_dict[
-            "Test Variable 1"
-        ] = model.fs.unit.time_indexed_performance_var
+        model.fs.unit._perf_var_dict["Test Variable 1"] = (
+            model.fs.unit.time_indexed_performance_var
+        )
 
         model.fs.unit.nonindexed_performance_var = Var(doc="test_variable")
-        model.fs.unit._perf_var_dict[
-            "Test Variable 2"
-        ] = model.fs.unit.nonindexed_performance_var
+        model.fs.unit._perf_var_dict["Test Variable 2"] = (
+            model.fs.unit.nonindexed_performance_var
+        )
 
         perf_dict = model.fs.unit._get_performance_contents()
 

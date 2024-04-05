@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -65,9 +65,9 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
             bounds=(0, 1),
             doc="Weight fraction of PAA in disinfection solution",
         )
-        self._perf_var_dict[
-            "Weight fraction PAA in disinfection solution"
-        ] = self.disinfection_solution_wt_frac_PAA
+        self._perf_var_dict["Weight fraction PAA in disinfection solution"] = (
+            self.disinfection_solution_wt_frac_PAA
+        )
         self._fixed_perf_vars.append(self.disinfection_solution_wt_frac_PAA)
 
         # Create variable for disinfection solution density
@@ -76,9 +76,9 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
             bounds=(0, None),
             doc="Disinfection solution density",
         )
-        self._perf_var_dict[
-            "disinfection solution density"
-        ] = self.disinfection_solution_density
+        self._perf_var_dict["disinfection solution density"] = (
+            self.disinfection_solution_density
+        )
         self._fixed_perf_vars.append(self.disinfection_solution_density)
 
         # Create variable for disinfection solution volumetric flowrate
@@ -88,9 +88,9 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
             bounds=(0, None),
             doc="Volumetric flowrate of disinfection solution",
         )
-        self._perf_var_dict[
-            "Disinfection solution volumetric flowrate"
-        ] = self.disinfection_solution_flow_vol
+        self._perf_var_dict["Disinfection solution volumetric flowrate"] = (
+            self.disinfection_solution_flow_vol
+        )
 
         # Create constraint to calculate disinfection solution flowrate
         @self.Constraint(

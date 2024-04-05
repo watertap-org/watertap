@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -476,6 +476,7 @@ def add_costing(m):
         ),
         doc="Annual food waste tipping fee revenue",
     )
+
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b):

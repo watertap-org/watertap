@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -440,17 +440,16 @@ def initialize_system(m, solver=None):
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Liq", "H2O"] = 0
 
     # Propagate brine salinity and flow rate
-    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp[
-        "Liq", "TDS"
-    ] = m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] / (
-        1 - m.fs.recovery[0]
+    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"] = (
+        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+        / (1 - m.fs.recovery[0])
     )
     m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "H2O"] = (
         1 - m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value
     )
-    m.fs.evaporator.properties_brine[0].flow_mass_phase_comp[
-        "Liq", "TDS"
-    ] = m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+    m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"] = (
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+    )
     m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"] = (
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
         - m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
@@ -476,9 +475,9 @@ def initialize_system(m, solver=None):
 
     # initialize distillate heat exchanger
     propagate_state(m.fs.s03)
-    m.fs.hx_distillate.cold_outlet.temperature[
-        0
-    ] = m.fs.evaporator.inlet_feed.temperature[0].value
+    m.fs.hx_distillate.cold_outlet.temperature[0] = (
+        m.fs.evaporator.inlet_feed.temperature[0].value
+    )
     m.fs.hx_distillate.cold_outlet.pressure[0] = m.fs.evaporator.inlet_feed.pressure[
         0
     ].value
@@ -486,9 +485,9 @@ def initialize_system(m, solver=None):
         m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value
     )
     m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0, "Liq", "TDS"] = 1e-4
-    m.fs.hx_distillate.hot_inlet.temperature[
-        0
-    ] = m.fs.evaporator.outlet_brine.temperature[0].value
+    m.fs.hx_distillate.hot_inlet.temperature[0] = (
+        m.fs.evaporator.outlet_brine.temperature[0].value
+    )
     m.fs.hx_distillate.hot_inlet.pressure[0] = 101325
     m.fs.hx_distillate.initialize()
 
@@ -498,12 +497,12 @@ def initialize_system(m, solver=None):
         0
     ].value
     m.fs.hx_brine.cold_outlet.pressure[0] = m.fs.evaporator.inlet_feed.pressure[0].value
-    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[
-        0, "Liq", "H2O"
-    ] = m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"]
-    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[
-        0, "Liq", "TDS"
-    ] = m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"]
+    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] = (
+        m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"]
+    )
+    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[0, "Liq", "TDS"] = (
+        m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"]
+    )
     m.fs.hx_brine.hot_inlet.temperature[0] = m.fs.evaporator.outlet_brine.temperature[
         0
     ].value
@@ -540,12 +539,12 @@ def initialize_system(m, solver=None):
     # initialize distillate pump
     propagate_state(m.fs.s13)  # to translator block
     propagate_state(m.fs.s14)  # from translator block to pump
-    m.fs.pump_distillate.control_volume.properties_in[
-        0
-    ].temperature = m.fs.condenser.control_volume.properties_out[0].temperature.value
-    m.fs.pump_distillate.control_volume.properties_in[
-        0
-    ].pressure = m.fs.condenser.control_volume.properties_out[0].pressure.value
+    m.fs.pump_distillate.control_volume.properties_in[0].temperature = (
+        m.fs.condenser.control_volume.properties_out[0].temperature.value
+    )
+    m.fs.pump_distillate.control_volume.properties_in[0].pressure = (
+        m.fs.condenser.control_volume.properties_out[0].pressure.value
+    )
     m.fs.pump_distillate.initialize(optarg=optarg)
 
     # propagate brine state
@@ -554,7 +553,7 @@ def initialize_system(m, solver=None):
 
     seq = SequentialDecomposition(tear_solver="cbc")
     seq.options.log_info = False
-    seq.options.iterLim = 1
+    seq.options.iterLim = 5
 
     def func_initialize(unit):
         if unit.local_name == "feed":

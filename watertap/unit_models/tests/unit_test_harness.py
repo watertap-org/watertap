@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -21,6 +21,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -123,6 +124,7 @@ class UnitTestHarness(abc.ABC):
             unit=blk,
             solver=blk._test_objs.solver,
             optarg=blk._test_objs.optarg,
+            outlvl=idaeslog.DEBUG,
         )
 
     @pytest.mark.component
@@ -138,7 +140,7 @@ class UnitTestHarness(abc.ABC):
             opt = get_solver(
                 solver=blk._test_objs.solver, options=blk._test_objs.optarg
             )
-        results = opt.solve(blk)
+        results = opt.solve(blk, tee=True)
 
         # check solve
         badly_scaled_vars = list(
@@ -178,3 +180,8 @@ class UnitTestHarness(abc.ABC):
                 )
             if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
+
+    @pytest.mark.component
+    def test_reporting(self, frame):
+        m, blk = frame
+        blk.report()
