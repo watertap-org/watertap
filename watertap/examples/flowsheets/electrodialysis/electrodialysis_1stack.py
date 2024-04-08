@@ -243,7 +243,7 @@ def initialize_system(m, solver=None):
     # populate intitial properties throughout the system
     m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.s01)
-    m.fs.separator.initialize(optarg=optarg)
+    m.fs.separator.initialize(optarg=optarg, solver="ipopt-watertap")
     propagate_state(m.fs.s02)
     propagate_state(m.fs.s03)
     m.fs.EDstack.initialize(optarg=optarg)
