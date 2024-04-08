@@ -11,7 +11,7 @@
 #################################################################################
 from pyomo.environ import ConcreteModel
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from idaes.core import FlowsheetBlock
 

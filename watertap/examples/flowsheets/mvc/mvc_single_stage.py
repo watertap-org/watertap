@@ -25,7 +25,7 @@ from pyomo.network import Arc, SequentialDecomposition
 
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import Feed, Separator, Mixer, Product

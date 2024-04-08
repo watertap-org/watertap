@@ -29,7 +29,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock, declare_process_block_class
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
