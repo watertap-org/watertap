@@ -124,11 +124,6 @@ Flowsheet Specifications
    "Reactor 6 outlet oxygen (S_O) concentration", "0.00260", ":math:`\text{g/}\text{m}^3`"
    "Reactor 7 outlet oxygen (S_O) concentration", "0.00320", ":math:`\text{g/}\text{m}^3`"
    "Reactor 5 underflow split fraction", "0.6", ":math:`\text{dimensionless}`"
-   "Reactor 5 oxygen mass transfer coefficient", "240", ":math:`\text{hr}^{-1}`"
-   "Reactor 6 oxygen mass transfer coefficient", "240", ":math:`\text{hr}^{-1}`"
-   "Reactor 7 oxygen mass transfer coefficient", "84", ":math:`\text{hr}^{-1}`"
-   "Dissolved oxygen concentration at equilibrium", "8e-3", ":math:`\text{hr}^{-1}`"
-
    "Secondary clarifier H2O split fraction", "0.48956", ":math:`\text{dimensionless}`"
    "Secondary clarifier S_A split fraction", "0.48956", ":math:`\text{dimensionless}`"
    "Secondary clarifier S_F split fraction", "0.48956", ":math:`\text{dimensionless}`"
