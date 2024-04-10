@@ -436,40 +436,103 @@ class FlowsheetExport(BaseModel):
                 continue
             # build raw dict from values and header
             data = {k: v for k, v in zip(header, row)}
-            # evaluate the object in the flowsheet
-            try:
-                data["obj"] = eval(data["obj"], {"fs": flowsheet})
-            except Exception as err:
-                raise ValueError(f"Cannot find object in flowsheet: {data['obj']}")
-            # evaluate the units
-            norm_units = data["ui_units"].strip()
-            if norm_units in ("", "none", "-"):
-                data["ui_units"] = pyo.units.dimensionless
-            else:
-                try:
-                    data["ui_units"] = eval(norm_units, {"units": pyo.units})
-                except Exception as err:
-                    raise ValueError(f"Bad units '{norm_units}': {err}")
-            # process boolean values (starting with 'is_')
+            # get object in the flowsheet (ValueError on fail)
+            text = data["obj"]
+            data["obj"] = self._parse_object_text(text, flowsheet)
+            # get units object (ValueError on fail)
+            text = data["ui_units"]
+            data["ui_units"] = self._parse_units_text(text)
+            # process boolean values (ValueError on fail)
             for k in data:
                 if k.startswith("is_"):
-                    v = data[k].lower()
-                    if v == "true":
-                        data[k] = True
-                    elif v == "false":
-                        data[k] = False
-                    else:
-                        raise ValueError(
-                            f"Bad value '{data[k]}' "
-                            f"for boolean argument '{k}': "
-                            f"must be 'true' or 'false' "
-                            f"(case-insensitive)"
-                        )
+                    data[k] = self._parse_boolean_text(data[k], flowsheet)
             # add parsed export
             self.add(data=data)
             num += 1
 
         return num
+
+    @staticmethod
+    def _parse_object_text(text: str, flowsheet: pyo.Block) -> Any:
+        """Evaluate the object represented by 'text' in the context of the flowsheet.
+        Args:
+            str: object to parse
+            flowsheet: Pyomo block containing object
+
+        Raises:
+            ValueError, if the object named by 'text' could not be found
+        """
+        _log.debug(f"begin:_parse_object_text text={text}")
+        obj = flowsheet.find_component(text)
+        if obj is None:
+            raise ValueError(f"Cannot find object in flowsheet: {text}")
+        _log.debug(f"end:_parse_object_text text={text}")
+        return obj
+
+    @staticmethod
+    def _parse_units_text(text: str) -> Any:
+        """Parse Pyomo units provided as text.
+
+        Whitespace is stripped before processing.
+
+        Three special values are allowed to mean 'dimensionless':
+        "" (empty string), "none", and "-".
+
+        Args:
+            text: Units as an expression
+
+        Returns:
+            Pyomo units object.
+
+        Raises:
+            ValueError, if bad units are provided
+        """
+        # evaluate the units
+        norm_units = text.strip()
+
+        if norm_units in ("", "none", "-"):
+            return pyo.units.dimensionless
+
+        units_expr_text = re.sub(r"([a-zA-Z]+)", r"units.\1", text)
+        if units_expr_text == norm_units:
+            raise ValueError(f"No units found in input: {norm_units}")
+
+        _log.debug(f"start:parse units. input={norm_units}")
+        if units_expr_text in ("", "none", "-"):
+            parsed_units = pyo.units.dimensionless
+        else:
+            units_expr = eval(units_expr_text, {"units": pyo.units})
+            try:
+                parsed_units = pyo.units.get_units(units_expr)
+            except Exception as err:
+                raise ValueError(f"Bad units '{units_expr_text}': {err}")
+        _log.debug(f"end:parse units. units={parsed_units} input={norm_units}")
+
+        return parsed_units
+
+    @staticmethod
+    def _parse_boolean_text(value: str, name: str = "unknown") -> bool:
+        """Parse boolean value provided as text for a given key.
+
+        Args:
+            value: Value to parse
+            name: Name of value (for error message)
+
+        Returns:
+            The value
+
+        Raises:
+            ValueError, if value is not 'true' or 'false' (case-insensitive)
+        """
+        v = value.lower()
+        if v == "true":
+            return True
+        if v == "false":
+            return False
+        raise ValueError(
+            f"Bad boolean value '{value}' for '{name} ({v})': "
+            f"must be 'true' or 'false' (case-insensitive)"
+        )
 
     def to_csv(self, output: Union[TextIOBase, Path, str] = None) -> int:
         """Write wrapped objects as CSV.
