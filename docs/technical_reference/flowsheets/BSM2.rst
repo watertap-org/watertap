@@ -82,7 +82,7 @@ Flowsheet Specifications
 .. csv-table::
    :header: "Description", "Value", "Units"
 
-   "**Feed Water**"
+   "**Feed Water**:math:`^1`"
    "Volumetric flow","20648", ":math:`\text{m}^3\text{/day}`"
    "Temperature", "308.15", ":math:`\text{K}`"
    "Pressure", "1", ":math:`\text{atm}`"
@@ -194,3 +194,9 @@ The following modifications to BSM2 are planned for development:
     * Accounting for temperature-dependence in the oxygen mass transfer coefficient (KLa) and oxygen concentration at saturation
     * Adding thermal energy requirements to the anaerobic digester and refining energy consumption estimates for units collectively
     * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
+
+References
+----------
+[1] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
+C. Rosen, J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 2 (BSM2)", 2018
+http://iwa-mia.org/wp-content/uploads/2018/01/BSM_TG_Tech_Report_no_3_BSM2_General_Description.pdf

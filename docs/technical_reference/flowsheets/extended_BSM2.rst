@@ -86,7 +86,7 @@ Flowsheet Specifications
 .. csv-table::
    :header: "Description", "Value", "Units"
 
-   "**Feed Water**"
+   "**Feed Water**:math:`^1`"
    "Volumetric flow","20935.15", ":math:`\text{m}^3\text{/day}`"
    "Temperature", "308.15", ":math:`\text{K}`"
    "Pressure", "1", ":math:`\text{atm}`"
@@ -214,3 +214,9 @@ The following modifications to extended BSM2 are planned for development:
     * Accounting for sulfur components
     * Accounting for iron components
     * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
+
+References
+----------
+[1] X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
+Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
