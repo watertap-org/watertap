@@ -41,6 +41,15 @@ The flowsheet relies on the following key assumptions:
 
     Figure 1. BSM2 flowsheet
 
+The objective function is to minimize the levelized cost of water, which can be represented by the following equation
+where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
+:math:`C_{ca,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
+:math:`f_{util}` represents the utilization factor:
+
+    .. math::
+
+        LCOW_{Q} = \frac{f_{crf}   C_{ca,tot} + C_{op,tot}}{f_{util} Q}
+
 Documentation for each of the unit models can be found here:
     * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
     * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
@@ -55,6 +64,148 @@ Documentation for each of the unit models can be found here:
 Documentation for each of the property models can be found here:
     * `Modified ASM2d <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ASM2D.html>`_
     * `Modified ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ADM1.html>`_
+
+Degrees of Freedom
+------------------
+The following variables must be specified by the user to run the BSM2 flowsheet:
+    * feed water conditions (flow, temperature, pressure, component concentrations, and alkalinity)
+    * volume of activated sludge reactors
+    * component injection rates for aerobic reactors
+    * split fraction(s) for the recycle loop after the activated sludge reactors
+    * secondary clarifier surface area and split fraction(s)
+    * primary clarifier split fraction(s)
+    * split fraction(s) for the separator following the secondary clarifier
+    * pressure changer outlet pressure (feeds into the activated sludge process)
+    * anaerobic digester liquid volume, vapor volume, and liquid outlet temperature
+    * dewatering unit hydraulic retention time and specific energy consumption
+    * thickener hydraulic retention time and diameter
+
+Flowsheet Specifications
+------------------------
+
+.. csv-table::
+   :header: "Description", "Value", "Units"
+
+   "**Feed Water**"
+   "Volumetric flow","20935.15", ":math:`\text{m}^3\text{/day}`"
+   "Temperature", "308.15", ":math:`\text{K}`"
+   "Pressure", "1", ":math:`\text{atm}`"
+   "Dissolved oxygen (S_O2) concentration", "1e-6", ":math:`\text{g/}\text{m}^3`"
+   "Fermentable, readily bio-degradable organic substrate (S_F) concentration", "1e-6", ":math:`\text{g/}\text{m}^3`"
+   "Fermentation products, considered to be acetate (S_A) concentration", "70", ":math:`\text{g/}\text{m}^3`"
+   "Ammonium plus ammonia nitrogen (S_NH4) concentration", "26.6", ":math:`\text{g/}\text{m}^3`"
+   "Nitrate plus nitrite nitrogen (S_NO3) concentration", "1e-6", ":math:`\text{g/}\text{m}^3`"
+   "Inorganic soluble phosphorus (S_PO4) concentration", "1e-6", ":math:`\text{g/}\text{m}^3`"
+   "Inert soluble organic material (S_I) concentration", "57.45", ":math:`\text{g/}\text{m}^3`"
+   "Dinitrogen concentration (S_N2)", "25.19", ":math:`\text{g/}\text{m}^3`"
+   "Inert particulate organic material (X_I) concentration", "84", ":math:`\text{g/}\text{m}^3`"
+   "Slowly biodegradable substrate (X_S) concentration", "94.1", ":math:`\text{g/}\text{m}^3`"
+   "Heterotrophic organism (X_H) concentration", "370", ":math:`\text{g/}\text{m}^3`"
+   "Phosphate-accumulating organism (X_PAO) concentration", "51.5262", ":math:`\text{g/}\text{m}^3`"
+   "Poly-phosphate (X_PP) concentration", "1e-6", ":math:`\text{g/}\text{m}^3`"
+   "Poly-hydroxy-alkanoates (X_PHA) concentration", "1e-6", ":math:`\text{g/}\text{m}^3`"
+   "Autotrophic nitrifying organism (X_AUT) concentration", "1e-6", ":math:`\text{g/}\text{m}^3`"
+   "Inorganic carbon (S_IC) concentration", "5.652", ":math:`\text{g/}\text{m}^3`"
+   "Potassium (S_K) concentration", "374.6925", ":math:`\text{g/}\text{m}^3`"
+   "Magnesium (S_Mg) concentration", "20", ":math:`\text{g/}\text{m}^3`"
+
+   "**Activated Sludge Process**"
+   "Reactor 1 volume", "1000", ":math:`\text{m}^3`"
+   "Reactor 2 volume", "1000", ":math:`\text{m}^3`"
+   "Reactor 3 volume", "1500", ":math:`\text{m}^3`"
+   "Reactor 4 volume", "1500", ":math:`\text{m}^3`"
+   "Reactor 5 volume", "3000", ":math:`\text{m}^3`"
+   "Reactor 6 volume", "3000", ":math:`\text{m}^3`"
+   "Reactor 7 volume", "3000", ":math:`\text{m}^3`"
+   "Reactor 5 injection rate for component j", "0", ":math:`\text{g/}\text{s}`"
+   "Reactor 6 injection rate for component j", "0", ":math:`\text{g/}\text{s}`"
+   "Reactor 7 injection rate for component j", "0", ":math:`\text{g/}\text{s}`"
+   "Reactor 5 outlet oxygen (S_O) concentration", "0.00191", ":math:`\text{g/}\text{m}^3`"
+   "Reactor 6 outlet oxygen (S_O) concentration", "0.00260", ":math:`\text{g/}\text{m}^3`"
+   "Reactor 7 outlet oxygen (S_O) concentration", "0.00320", ":math:`\text{g/}\text{m}^3`"
+   "Reactor 5 underflow split fraction", "0.6", ":math:`\text{dimensionless}`"
+   "Reactor 5 oxygen mass transfer coefficient", "240", ":math:`\text{hr}^{-1}`"
+   "Reactor 6 oxygen mass transfer coefficient", "240", ":math:`\text{hr}^{-1}`"
+   "Reactor 7 oxygen mass transfer coefficient", "84", ":math:`\text{hr}^{-1}`"
+   "Dissolved oxygen concentration at equilibrium", "8e-3", ":math:`\text{hr}^{-1}`"
+
+   "Secondary clarifier H2O split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_A split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_F split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_I split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_N2 split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_NH4 split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_NO3 split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_O2 split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_PO4 split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_IC split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_K split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier S_Mg split fraction", "0.48956", ":math:`\text{dimensionless}`"
+   "Secondary clarifier X_AUT split fraction", "0.00187", ":math:`\text{dimensionless}`"
+   "Secondary clarifier X_H split fraction", "0.00187", ":math:`\text{dimensionless}`"
+   "Secondary clarifier X_I split fraction", "0.00187", ":math:`\text{dimensionless}`"
+   "Secondary clarifier X_PAO split fraction", "0.00187", ":math:`\text{dimensionless}`"
+   "Secondary clarifier X_PHA split fraction", "0.00187", ":math:`\text{dimensionless}`"
+   "Secondary clarifier X_PP split fraction", "0.00187", ":math:`\text{dimensionless}`"
+   "Secondary clarifier X_S split fraction", "0.00187", ":math:`\text{dimensionless}`"
+   "Separator recycle split fraction", "0.985", ":math:`\text{dimensionless}`"
+   "Recycle pump outlet pressure", "101325", ":math:`\text{Pa}`"
+
+   "**Primary Clarifier**"
+   "Primary clarifier H2O split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_A split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_F split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_I split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_N2 split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_NH4 split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_NO3 split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_O2 split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_PO4 split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_IC split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_K split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier S_Mg split fraction", "0.993", ":math:`\text{dimensionless}`"
+   "Primary clarifier X_AUT split fraction", "0.5192", ":math:`\text{dimensionless}`"
+   "Primary clarifier X_H split fraction", "0.5192", ":math:`\text{dimensionless}`"
+   "Primary clarifier X_I split fraction", "0.5192", ":math:`\text{dimensionless}`"
+   "Primary clarifier X_PAO split fraction", "0.5192", ":math:`\text{dimensionless}`"
+   "Primary clarifier X_PHA split fraction", "0.5192", ":math:`\text{dimensionless}`"
+   "Primary clarifier X_PP split fraction", "0.5192", ":math:`\text{dimensionless}`"
+   "Primary clarifier X_S split fraction", "0.5192", ":math:`\text{dimensionless}`"
+
+   "**Anaerobic Digester**"
+   "Anaerobic digester liquid volume", "3400", ":math:`\text{m}^3`"
+   "Anaerobic digester vapor volume", "300", ":math:`\text{m}^3`"
+   "Anaerobic digester liquid outlet temperature", "308.15", ":math:`\text{m}^3`"
+
+   "**Dewatering Unit**"
+   "Dewatering unit hydraulic retention time", "1800", ":math:`\text{s}`"
+
+   "**Thickener**"
+   "Thickener hydraulic retention time", "86400", ":math:`\text{s}`"
+   "Thickener diameter", "10", ":math:`\text{kWh/}\text{m}`"
+
+Additional Variables
+--------------------
+
+.. csv-table::
+   :header: "Description", "Symbol", "Value", "Units"
+
+   "Reactor 5 oxygen mass transfer coefficient",":math:`KLa_{R5}`", "240", ":math:`\text{hr}^{-1}`"
+   "Reactor 6 oxygen mass transfer coefficient",":math:`KLa_{R6}`", "240", ":math:`\text{hr}^{-1}`"
+   "Reactor 7 oxygen mass transfer coefficient",":math:`KLa_{R7}`", "240", ":math:`\text{hr}^{-1}`"
+   "Dissolved oxygen concentration at equilibrium",":math:`S_{O, eq}`", "8e-3", ":math:`\text{hr}^{-1}`"
+
+
+
+Additional Constraints
+----------------------
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Reactor 5 mass transfer", ":math:`injection_{R5, S_{O2}} = KLa_{R5} * V_{R5} * (S_{O, eq} - S_{O, out})`"
+   "Reactor 6 mass transfer", ":math:`injection_{R6, S_{O2}} = KLa_{R6} * V_{R6} * (S_{O, eq} - S_{O, out})`"
+   "Reactor 7 mass transfer", ":math:`injection_{R7, S_{O2}} = KLa_{R7} * V_{R7} * (S_{O, eq} - S_{O, out})`"
 
 Future Refinements
 ------------------

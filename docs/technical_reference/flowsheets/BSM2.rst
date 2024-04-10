@@ -152,7 +152,7 @@ Flowsheet Specifications
    "**Anaerobic Digester**"
    "Anaerobic digester liquid volume", "3400", ":math:`\text{m}^3`"
    "Anaerobic digester vapor volume", "300", ":math:`\text{m}^3`"
-   "Anaerobic digester liquid outlet temperature", "3400", ":math:`\text{m}^3`"
+   "Anaerobic digester liquid outlet temperature", "308.15", ":math:`\text{m}^3`"
 
    "**Dewatering Unit**"
    "Dewatering unit hydraulic retention time", "1800", ":math:`\text{s}`"
