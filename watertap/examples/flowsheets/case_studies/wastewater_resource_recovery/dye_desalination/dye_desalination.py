@@ -91,8 +91,6 @@ from watertap.unit_models.gac import GAC
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
-from idaes.core.util import DiagnosticsToolbox
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -108,10 +106,6 @@ def main():
     set_operating_conditions(m)
 
     assert_units_consistent(m)
-
-    dt = DiagnosticsToolbox(m)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
 
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
