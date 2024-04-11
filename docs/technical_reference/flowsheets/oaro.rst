@@ -29,7 +29,7 @@ Costing relationships for each of the unit models is described in the
 The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
-   * supports optimization minimizes levelized cost of water (LCOW) with constraints
+   * supports optimization and minimizes levelized cost of water (LCOW) with constraints
    * `NaCl Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/NaCl.html>`_ is utilized
    * number of stages and system recovery should be specified for optimization
 
