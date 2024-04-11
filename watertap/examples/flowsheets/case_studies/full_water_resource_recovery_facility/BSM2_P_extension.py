@@ -80,7 +80,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main():
-    m = build_flowsheet()
+    m = build()
     set_operating_conditions(m)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -118,7 +118,7 @@ def main():
     return m, results
 
 
-def build_flowsheet():
+def build():
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
