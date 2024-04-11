@@ -5,7 +5,7 @@ Introduction
 ------------
 
 Osmotically assisted reverse osmosis (OARO) is a nonevaporative membrane-based desalination technology that can treat
-high-salinity brines. Compared to conventional reverse osmosis (RO), a saline sweep is added to reduce the pressure
+high-salinity brines. Compared to conventional reverse osmosis (RO), a saline sweep is added to reduce the osmotic pressure
 difference across the membrane as well as enhance water transport. This OARO flowsheet include numbers of
 `OARO <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/osmotically_assisted_reverse_osmosis_0D.html>`_ units,
 pumps, energy recovery devices (ERDs) and a
