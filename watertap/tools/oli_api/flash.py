@@ -326,7 +326,7 @@ class Flash:
                 },
             ]
         )
-        conc_unit = self.input_unit_set["molecularConcentration"]["oli_unit"]
+        conc_unit = self.input_unit_set["components"]["oli_unit"]
         _logger.info(f"Using {conc_unit} for inflows input")
         for k, v in inflows.items():
             charge = get_charge(k)
@@ -334,7 +334,7 @@ class Flash:
                 {
                     "group": get_charge_group(charge),
                     "name": get_oli_name(k),
-                    "unit": self.input_unit_set["molecularConcentration"]["oli_unit"],
+                    "unit": conc_unit,
                     "value": v,
                     "charge": charge,
                 }

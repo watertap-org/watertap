@@ -46,7 +46,10 @@ class FixedKeysDict(UserDict):
 
 
 input_unit_set = FixedKeysDict(
-    {
+    {   "components": {
+            "oli_unit": "mg/L",
+            "pyomo_unit": pyunits.mg / pyunits.L,
+        },
         "molecularConcentration": {
             "oli_unit": "mg/L",
             "pyomo_unit": pyunits.mg / pyunits.L,
