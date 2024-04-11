@@ -22,6 +22,7 @@ Vol. 53 Iss. 1, pp. 64-70
 import os
 import idaes.logger as idaeslog
 from pyomo.environ import (
+    assert_optimal_termination,
     ConcreteModel,
     Block,
     Expression,
@@ -58,7 +59,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.util.initialization import assert_degrees_of_freedom
 
 import watertap.property_models.seawater_prop_pack as prop_SW
 from watertap.unit_models.reverse_osmosis_0D import (
@@ -111,6 +112,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m, checkpoint="solve flowsheet after initializing system")
+    assert_optimal_termination(results)
 
     add_costing(m)
     initialize_costing(m)
@@ -121,7 +123,8 @@ def main():
     else:
         pass
 
-    solve(m, checkpoint="solve flowsheet after costing")
+    results = solve(m, checkpoint="solve flowsheet after costing")
+    assert_optimal_termination(results)
 
     display_results(m)
     display_costing(m)
@@ -603,7 +606,6 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 
