@@ -240,9 +240,11 @@ def build(
 
     # Add EnergyRecoveryDevices
     m.fs.EnergyRecoveryDeviceSet = Set(
-        initialize=[m.fs.FirstStage, m.fs.LastStage]
-        if m.fs.FirstStage < m.fs.LastStage
-        else [m.fs.LastStage]
+        initialize=(
+            [m.fs.FirstStage, m.fs.LastStage]
+            if m.fs.FirstStage < m.fs.LastStage
+            else [m.fs.LastStage]
+        )
     )
     m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
         m.fs.EnergyRecoveryDeviceSet, property_package=m.fs.properties

@@ -71,9 +71,7 @@ def test_ASM1_reactor():
     m.fs.R1.inlet.conc_mass_comp[0, "S_S"].fix(14.6112 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1149 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(89.324 * pyo.units.g / pyo.units.m**3)
-    m.fs.R1.inlet.conc_mass_comp[0, "X_BH"].fix(
-        2542.03 * pyo.units.g / pyo.units.m**3
-    )
+    m.fs.R1.inlet.conc_mass_comp[0, "X_BH"].fix(2542.03 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_BA"].fix(148.6 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_P"].fix(448 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "S_O"].fix(0.3928 * pyo.units.g / pyo.units.m**3)
