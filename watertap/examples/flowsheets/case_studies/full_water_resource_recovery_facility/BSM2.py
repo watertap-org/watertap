@@ -175,6 +175,7 @@ def build():
 
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props_ASM1)
+    m.fs.Sludge = Product(property_package=m.fs.props_ASM1)
     # Recycle pressure changer - use a simple isothermal unit for now
     m.fs.P1 = PressureChanger(property_package=m.fs.props_ASM1)
 
@@ -263,6 +264,7 @@ def build():
     m.fs.stream9adm = Arc(source=m.fs.CL.underflow, destination=m.fs.MX4.clarifier)
     m.fs.stream4adm = Arc(source=m.fs.adm_asm.outlet, destination=m.fs.DU.inlet)
     m.fs.stream5adm = Arc(source=m.fs.DU.overflow, destination=m.fs.MX2.recycle1)
+    m.fs.stream11adm = Arc(source=m.fs.DU.underflow, destination=m.fs.Sludge.inlet)
     m.fs.stream01 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX2.feed_water1)
     m.fs.stream02 = Arc(source=m.fs.MX2.outlet, destination=m.fs.MX3.feed_water2)
     m.fs.stream03 = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
@@ -592,6 +594,7 @@ def display_results(m):
         "SP6",
         "MX6",
         "Treated",
+        "Sludge",
         "P1",
         "asm_adm",
         "RADM",
