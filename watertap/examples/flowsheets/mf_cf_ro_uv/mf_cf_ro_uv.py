@@ -32,8 +32,9 @@ from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
 # TODO: bring costing in subsequent PR
-#from idaes.core import UnitModelCostingBlock
+# from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
@@ -63,13 +64,14 @@ from watertap.unit_models.zero_order import (
     CartridgeFiltrationZO,
     UVZO,
     UVAOPZO,
-    #TODO: consider addition of some of the following units in subsequent PR
+    # TODO: consider addition of some of the following units in subsequent PR
     # ChemicalAdditionZO,
     # StaticMixerZO,
     # StorageTankZO,
     # MediaFiltrationZO,
     # BackwashSolidsHandlingZO,
 )
+
 # TODO: handle costing in subsequent PR
 # from watertap.costing.zero_order_costing import ZeroOrderCosting
 # from watertap.costing import WaterTAPCosting
@@ -79,27 +81,30 @@ __author__ = "Adam Atia"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-'''
+"""
 This flowsheet represents a typical configuration for advanced treatment of treated wastewater effluent; i.e., MF/UF-RO-UV.
 The flowsheet currently includes microfiltration to cartridge filtration, followed by reverse osmosis and an ultraviolet reactor.
 The flowsheet is setup to be configured in a flexible manner:
 - choose between NaCl and seawater (TDS) property models
 - choose level of modeling detail for RO model
 - choose whether to include UV or UV/AOP after RO, and if so, choose level of modeling detail
-'''
+"""
 
 
 class rodimension(StrEnum):
-    '''
+    """
     Options for dimensionality of RO unit model: 0d, 1d
-    '''
+    """
+
     zero_d = "0d"
     one_d = "1d"
 
+
 class uvdimension(StrEnum):
-    '''
+    """
     Options for dimensionality of UV unit model: none, zo, 0d
-    '''
+    """
+
     none = "none"
     zo = "zo"
     zero_d = "0d"
@@ -615,7 +620,7 @@ def add_costing(m):
 
 if __name__ == "__main__":
     diagnostics_flag = True
-    
+
     if diagnostics_flag is True:
         m, results, dt = main(
             ro_props="seawater",
@@ -634,5 +639,5 @@ if __name__ == "__main__":
             has_aop=True,
             diagnostics_active=diagnostics_flag,
         )
-    else: 
+    else:
         raise TypeError("diagnostics_flag should be set to True or False.")
