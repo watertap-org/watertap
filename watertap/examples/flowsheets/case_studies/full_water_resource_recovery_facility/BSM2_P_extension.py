@@ -443,7 +443,7 @@ def set_operating_conditions(m):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
 
-    # Set fraction of outflow from reactor 5 that goes to recycle
+    # Set fraction of outflow from reactor 7 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
     # Secondary Clarifier
