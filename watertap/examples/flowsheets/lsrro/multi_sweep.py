@@ -129,9 +129,9 @@ def run_case(number_of_stages, nx, output_filename=None):
     outputs["Indirect Capex LCOW"] = m.fs.costing.indirect_capex_lcow
     outputs["Electricity LCOW"] = m.fs.costing.electricity_lcow
     outputs["Membrane Replacement LCOW"] = m.fs.costing.membrane_replacement_lcow
-    outputs[
-        "Chem-labor-maintenance LCOW"
-    ] = m.fs.costing.chemical_labor_maintenance_lcow
+    outputs["Chem-labor-maintenance LCOW"] = (
+        m.fs.costing.chemical_labor_maintenance_lcow
+    )
 
     outputs["Pumping Energy Agg LCOW"] = m.fs.costing.pumping_energy_aggregate_lcow
     outputs["Membrane Agg LCOW"] = m.fs.costing.membrane_aggregate_lcow

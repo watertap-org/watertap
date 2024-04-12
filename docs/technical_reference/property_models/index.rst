@@ -8,7 +8,6 @@ Property Models
    NaCl
    NaCl_T_dep
    seawater
-   seawater_ion_generic
    coagulation
    ASM1
    ASM2D

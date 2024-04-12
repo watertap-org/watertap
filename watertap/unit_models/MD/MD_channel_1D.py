@@ -1,15 +1,3 @@
-#################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
-# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
-# of Energy). All rights reserved.
-#
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
-# information, respectively. These files are also available online at the URL
-# "https://github.com/watertap-org/watertap/"
-#################################################################################
-
 from pyomo.environ import (
     NegativeReals,
     Set,
@@ -22,7 +10,7 @@ from idaes.core import (
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.control_volume0d import ControlVolume0DBlockData
+from idaes.core.base.control_volume1d import ControlVolume1DBlockData
 import idaes.logger as idaeslog
 from .MD_channel_base import (
     MDChannelMixin,
@@ -32,23 +20,59 @@ from .MD_channel_base import (
 __author__ = "Elmira Shamlou"
 
 
-@declare_process_block_class("MDChannel0DBlock")
-class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
+@declare_process_block_class("MDChannel1DBlock")
+class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
     def _skip_element(self, x):
-        return False
+        if self.config.transformation_scheme != "FORWARD":
+            return x == self.length_domain.first()
+        else:
+            return x == self.length_domain.last()
+
+    def apply_transformation(self, *args, **kwargs):
+        super().apply_transformation(*args, **kwargs)
+        self.difference_elements = Set(
+            ordered=True,
+            initialize=(x for x in self.length_domain if not self._skip_element(x)),
+        )
+        self._set_nfe()
 
     def add_geometry(
-        self, length_var=None, width_var=None, flow_direction=FlowDirection.forward
+        self, length_var, width_var, flow_direction=FlowDirection.forward, **kwargs
     ):
+        """
+        Method to create spatial domain and volume Var in ControlVolume.
 
-        self._flow_direction = flow_direction
+        Args:
+            length_var - An external variable to use for the length of
+                         the channel. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
 
-        # If the length_var and width_var are provided, create references to them
-        if length_var is not None:
-            add_object_reference(self, "length", length_var)
+            width_var - An external variable to use for the width of
+                         the channel. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
+            flow_direction - argument indicating direction of material flow
+                            relative to length domain. Valid values:
+                                - FlowDirection.forward (default), flow goes
+                                  from 0 to 1.
+                                - FlowDirection.backward, flow goes from 1 to 0
+            length_domain - (optional) a ContinuousSet to use as the length
+                            domain for the ControlVolume. If not provided, a
+                            new ContinuousSet will be created (default=None).
+                            ContinuousSet should be normalized to run between
+                            0 and 1.
+            length_domain_set - (optional) list of point to use to initialize
+                            a new ContinuousSet if length_domain is not
+                            provided (default = [0.0, 1.0]).
 
-        if width_var is not None:
-            add_object_reference(self, "width", width_var)
+        Returns:
+            None
+        """
+        super().add_geometry(
+            length_var=length_var, flow_direction=flow_direction, **kwargs
+        )
+        add_object_reference(self, "width", width_var)
 
     def add_state_blocks(
         self,
@@ -56,41 +80,17 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         property_package_vapor=None,
         property_package_args_vapor=None,
     ):
+        """
+        This method constructs the state blocks for the
+        control volume.
+
+        Args:
+            has_phase_equilibrium: indicates whether equilibrium calculations
+                                    will be required in state blocks
+        Returns:
+            None
+        """
         super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
-
-        # quack like a 1D model
-        self.length_domain = Set(ordered=True, initialize=(0.0, 1.0))
-        add_object_reference(self, "difference_elements", self.length_domain)
-
-        self._set_nfe()
-
-        # Determine flow direction from the argument or from the configuration
-
-        if self._flow_direction == FlowDirection.forward:
-            properties_dict = {
-                **{
-                    (t, 0.0): self.properties_in[t]
-                    for t in self.flowsheet().config.time
-                },
-                **{
-                    (t, 1.0): self.properties_out[t]
-                    for t in self.flowsheet().config.time
-                },
-            }
-        elif self._flow_direction == FlowDirection.backward:
-            properties_dict = {
-                **{
-                    (t, 0): self.properties_out[t] for t in self.flowsheet().config.time
-                },
-                **{(t, 1): self.properties_in[t] for t in self.flowsheet().config.time},
-            }
-        else:
-            raise ConfigurationError(
-                "FlowDirection must be set to FlowDirection.forward or FlowDirection.backward."
-            )
-
-        add_object_reference(self, "properties", properties_dict)
-
         self._add_interface_stateblock(has_phase_equilibrium)
         self._add_vapor_stateblock(
             property_package_vapor,
@@ -99,62 +99,39 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         )
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
-        if pressure_change_type == PressureChangeType.fixed_per_stage:
-            return
+        add_object_reference(self, "dP_dx", self.deltaP)
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        if pressure_change_type == PressureChangeType.fixed_per_unit_length:
-            # Pressure change equation when dP/dx = user-specified constant,
-            self.dP_dx = Var(
-                self.flowsheet().config.time,
-                initialize=-5e4,
-                bounds=(-2e5, None),
-                domain=NegativeReals,
-                units=units_meta("pressure") * units_meta("length") ** -1,
-                doc="pressure drop per unit length across channel",
-            )
-
-        elif pressure_change_type == PressureChangeType.calculated:
-
-            self.dP_dx = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=-5e4,
-                bounds=(-2e5, -1e3),
-                domain=NegativeReals,
-                units=units_meta("pressure") * units_meta("length") ** -1,
-                doc="Pressure drop per unit length of channel at inlet and outlet",
-            )
+        self.deltaP_channel = Var(
+            self.flowsheet().config.time,
+            initialize=-1e5,
+            bounds=(-1e6, 0),
+            domain=NegativeReals,
+            units=units_meta("pressure"),
+            doc="total prossure drop across the channel",
+        )
 
     def _add_deltaP(self, pressure_change_type=PressureChangeType.calculated):
+
         if pressure_change_type == PressureChangeType.fixed_per_stage:
-            return
-
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        if pressure_change_type == PressureChangeType.fixed_per_unit_length:
 
             @self.Constraint(
-                self.flowsheet().config.time, doc="pressure change due to friction"
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="pressure change due to friction",
             )
-            def eq_pressure_change(b, t):
-                return b.deltaP[t] == b.dP_dx[t] * b.length
+            def eq_pressure_change(b, t, x):
+                return b.deltaP_channel[t] == b.dP_dx[t, x] * b.length
 
-        elif pressure_change_type == PressureChangeType.calculated:
+        else:
 
             @self.Constraint(
                 self.flowsheet().config.time, doc="Total Pressure drop across channel"
             )
             def eq_pressure_change(b, t):
-                return b.deltaP[t] == sum(
-                    b.dP_dx[t, x] * b.length / b.nfe for x in b.length_domain
+                return b.deltaP_channel[t] == sum(
+                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
                 )
-
-        else:
-            raise ConfigurationError(
-                f"Unrecognized pressure_change_type {pressure_change_type}"
-            )
 
     def initialize(
         self,
@@ -200,7 +177,7 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         state_args = self._get_state_args(initialize_guess, state_args)
         state_args_properties_in = state_args["inlet"]
 
-        source_flags = self.properties_in.initialize(
+        source_flags = super().initialize(
             state_args=state_args_properties_in,
             outlvl=outlvl,
             optarg=optarg,
@@ -212,25 +189,13 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
         if type == "hot_ch":
             state_args_properties_out = state_args["hot_outlet"]
 
-            self.properties_out.initialize(
-                state_args=state_args_properties_out,
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-            )
         elif type == "cold_ch":
             state_args_properties_out = state_args["cold_outlet"]
-
-            self.properties_out.initialize(
-                state_args=state_args_properties_out,
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-            )
         else:
             raise ConfigurationError(
                 "Either hot_ch or cold_ch must be set in the configuration."
             )
+
         state_args_interface = self._get_state_args_interface(
             state_args_properties_in, state_args_properties_out
         )
@@ -265,7 +230,11 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             if iscale.get_scaling_factor(self.area) is None:
                 iscale.set_scaling_factor(self.area, 100)
 
-        if hasattr(self, "dP_dx"):
-            for v in self.dP_dx.values():
+        if hasattr(self, "deltaP_channel"):
+            for v in self.deltaP_channel.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)
+
+        if hasattr(self, "dP_dx"):
+            for v in self.pressure_dx.values():
+                iscale.set_scaling_factor(v, 1e-5)

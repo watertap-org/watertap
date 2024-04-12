@@ -94,9 +94,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
             doc="Floc Retention Time",
         )
 
-        self.rapid_mix_basin_vol = Var(
-            units=pyunits.m**3, doc="Rapid Mix Basin Volume"
-        )
+        self.rapid_mix_basin_vol = Var(units=pyunits.m**3, doc="Rapid Mix Basin Volume")
 
         self.floc_basin_vol = Var(units=pyunits.m**3, doc="Floc Basin Volume")
 
@@ -174,16 +172,16 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         ]
         self._perf_var_dict["Rapid Mix Basin Volume (m^3)"] = self.rapid_mix_basin_vol
         self._perf_var_dict["Floc Basin Volume (m^3)"] = self.floc_basin_vol
-        self._perf_var_dict[
-            "Rapid Mix Retention Time (s)"
-        ] = self.rapid_mix_retention_time
+        self._perf_var_dict["Rapid Mix Retention Time (s)"] = (
+            self.rapid_mix_retention_time
+        )
         self._perf_var_dict["Floc Retention Time (min)"] = self.floc_retention_time
-        self._perf_var_dict[
-            "Rapid Mix Velocity Gradient (1/s)"
-        ] = self.velocity_gradient_rapid_mix
-        self._perf_var_dict[
-            "Floc Velocity Gradient (1/s)"
-        ] = self.velocity_gradient_floc
+        self._perf_var_dict["Rapid Mix Velocity Gradient (1/s)"] = (
+            self.velocity_gradient_rapid_mix
+        )
+        self._perf_var_dict["Floc Velocity Gradient (1/s)"] = (
+            self.velocity_gradient_floc
+        )
         self._perf_var_dict["Rapid Mix Power (kW)"] = self.power_rapid_mix
         self._perf_var_dict["Floc Power (kW)"] = self.power_floc
         self._perf_var_dict["Total Power Consumption (kW)"] = self.electricity

@@ -37,7 +37,7 @@ def cost_pressure_exchanger(blk):
         blk,
         blk.costing_package.pressure_exchanger.cost,
         pyo.units.convert(
-            blk.unit_model.low_pressure_side.properties_in[0].flow_vol,
+            blk.unit_model.feed_side.properties_in[0].flow_vol,
             (pyo.units.meter**3 / pyo.units.hours),
         ),
     )

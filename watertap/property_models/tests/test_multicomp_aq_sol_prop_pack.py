@@ -80,6 +80,8 @@ import idaes.logger as idaeslog
 
 
 solver = get_solver()
+
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():

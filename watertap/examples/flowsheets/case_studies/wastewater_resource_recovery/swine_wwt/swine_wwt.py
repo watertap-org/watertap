@@ -476,6 +476,7 @@ def add_costing(m):
         ),
         doc="Annual food waste tipping fee revenue",
     )
+
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b):

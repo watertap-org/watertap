@@ -49,6 +49,7 @@ __author__ = "Xiangyu Bi, Kejia Hu"
 
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 # Start test class
 class TestElectrodialysisVoltageConst:

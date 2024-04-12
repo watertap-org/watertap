@@ -640,7 +640,7 @@ class MDChannelMixin:
         Temp_change = initialize_guess.get("Temp_change", 40)
 
         # Getting source state
-        if self.flow_direction == FlowDirection.forward:
+        if self._flow_direction == FlowDirection.forward:
             source_idx = self.length_domain.first()
         else:
             source_idx = self.length_domain.last()
@@ -766,17 +766,7 @@ class MDChannelMixin:
         if hasattr(self, "h_conv"):
             for (t, x), v in self.h_conv.items():
                 if iscale.get_scaling_factor(v) is None:
-                    if hasattr(self, "N_Nu"):
-                        sf_hconv = (
-                            iscale.get_scaling_factor(
-                                self.properties[t, x].therm_cond_phase["Liq"]
-                            )
-                            * iscale.get_scaling_factor(self.N_Nu[t, x])
-                            / iscale.get_scaling_factor(self.dh)
-                        )
-                        iscale.set_scaling_factor(v, sf_hconv)
-                    else:
-                        iscale.set_scaling_factor(v, 1e3)
+                    iscale.set_scaling_factor(v, 1e-3)
 
         if hasattr(self, "velocity"):
             for v in self.velocity.values():

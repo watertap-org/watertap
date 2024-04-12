@@ -225,7 +225,7 @@ class TestGasSpargedMembraneZO:
 
     @pytest.mark.component
     def test_conservation(self, model):
-        for (t, j) in model.fs.unit.inlet.flow_mass_comp.keys():
+        for t, j in model.fs.unit.inlet.flow_mass_comp.keys():
             if j != "H2O":
                 assert (
                     abs(
