@@ -132,11 +132,11 @@ def set_feed(blk, feed_mass_frac, flow_basis=1):
     for ion, x in feed_mass_frac.items():
         mass_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in
         blk.feed.properties[0].flow_mass_phase_comp["Liq", ion].fix(mass_comp_flow)
-
-    blk.feed.properties[0].assert_electroneutrality(
-        defined_state=True,
-        adjust_by_ion="Cl",
-        get_property="flow_mass_phase_comp",
-    )
+    if ("Liq", "Cl") in blk.feed.properties[0].flow_mass_phase_comp.keys():
+        blk.feed.properties[0].assert_electroneutrality(
+            defined_state=True,
+            adjust_by_ion="Cl",
+            get_property="flow_mass_phase_comp",
+        )
     blk.feed.properties[0].temperature.fix(298.15)
     blk.feed.properties[0].pressure.fix(101325)

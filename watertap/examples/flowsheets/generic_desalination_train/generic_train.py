@@ -83,7 +83,7 @@ def main():
 
 def build(
     train_type="Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
-    water_source="BGW1",
+    water_source="generic",
 ):
     train_orders = {
         "Pretreatment>Desal1": {
@@ -541,12 +541,12 @@ def update_feed(blk, solver):
     solver.solve(blk.feed.properties[0])
     blk.feed.properties[0].conc_mass_phase_comp.unfix()
     blk.feed.properties[0].flow_mass_phase_comp.fix()
-
-    blk.feed.properties[0].assert_electroneutrality(
-        defined_state=True,
-        adjust_by_ion="Cl",
-        get_property="flow_mass_phase_comp",
-    )
+    if ("Liq", "Cl") in blk.feed.properties[0].flow_mass_phase_comp.keys():
+        blk.feed.properties[0].assert_electroneutrality(
+            defined_state=True,
+            adjust_by_ion="Cl",
+            get_property="flow_mass_phase_comp",
+        )
     total_charge = 0
     print("total_charge", total_charge)
 

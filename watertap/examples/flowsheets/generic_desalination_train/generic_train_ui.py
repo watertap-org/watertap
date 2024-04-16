@@ -40,8 +40,8 @@ def export_to_ui():
             "water_source_type": {
                 "name": "Type of source water",
                 "display_name": "Source water",
-                "values_allowed": ["BGW1", "BGW5", "Seawater"],
-                "value": "BGW1",
+                "values_allowed": ["generic", "BGW1", "BGW5", "Seawater"],
+                "value": "generic",
             },
         },
     )
