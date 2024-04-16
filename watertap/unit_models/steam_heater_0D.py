@@ -29,6 +29,14 @@ _log = idaeslog.getLogger(__name__)
 
 __author__ = "Elmira Shamlou"
 
+"""
+This unit model uses some code from the IDAES `feedwater_heater_0D` model.
+However, the constraints and properties defined in the IDAES unit model do not align with those in the available WaterTAP property packages.
+To address this, alternative constraints have been replaced to ensure full condensation based on the WaterTAP properties.
+Note that additional components like desuperheaters, drain mixers, and coolers are not included. If necessary, these can be modeled separately by adding heat exchangers and mixers to the flowsheet.
+To do: Consider incorporating as a modification to IDAES' FeedWaterHeater model directly in the IDAES repo"
+"""
+
 
 @declare_process_block_class(
     "SteamHeater0D",
@@ -61,7 +69,10 @@ class SteamHeater0DData(HeatExchangerData):
         )
 
         self.pressure_diff = Var(
-            self.flowsheet().time, initialize=0, units=units_meta("pressure")
+            self.flowsheet().time,
+            initialize=0,
+            units=units_meta("pressure"),
+            doc="Divergence of the condensed steam outlet pressure from the saturation pressure",
         )
 
         self.pressure_diff.fix()
@@ -88,14 +99,17 @@ class SteamHeater0DData(HeatExchangerData):
         self.outlet_pressure_sat.deactivate()
         self.hot_side_inlet.fix()
         self.cold_side_inlet.fix()
-        self.area.fix()
         self.hot_side_outlet.unfix()
         self.cold_side_outlet.unfix()
 
         # Do regular heat exchanger initialization
         super().initialize_build(*args, **kwargs)
+        for j in self.hot_side.config.property_package.component_list:
+            self.hot_side.properties_out[0].flow_mass_phase_comp["Vap", j].fix(0)
+
         self.outlet_liquid_mass_balance.activate()
         self.outlet_pressure_sat.activate()
+        self.hot_side_inlet.pressure[0].unfix()
 
         for j in self.hot_side.config.property_package.component_list:
             self.hot_side_inlet.flow_mass_phase_comp[0, "Vap", j].unfix()

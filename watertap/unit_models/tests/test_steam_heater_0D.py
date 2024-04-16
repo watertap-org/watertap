@@ -34,7 +34,7 @@ solver = get_solver()
 
 
 @pytest.mark.requires_idaes_solver
-@pytest.mark.unit
+@pytest.mark.component
 def test_unit_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -59,9 +59,10 @@ def test_unit_model():
     m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].set_value(6)
     m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0)
     m.fs.unit.hot_side_inlet.temperature.fix(273.15 + 140)
+    m.fs.unit.hot_side_inlet.pressure[0].set_value(201325)
     m.fs.unit.cold_side_inlet.pressure.fix(101325)
     m.fs.unit.cold_side_inlet.temperature.fix(273.15 + 70)
-    m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.035 * 6)
+    m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.035 * 6)
     m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(6)
     m.fs.unit.area.fix(50)
     m.fs.unit.overall_heat_transfer_coefficient.fix(2e3)
@@ -70,6 +71,10 @@ def test_unit_model():
 
     m.fs.unit.initialize()
 
-    assert pytest.approx(0.68008401096, rel=1e-5) == value(
+    assert pytest.approx(42602.827308226, rel=1e-5) == value(
+        m.fs.unit.hot_side_inlet.pressure[0]
+    )
+
+    assert pytest.approx(2.92718893136, rel=1e-5) == value(
         m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
     )
