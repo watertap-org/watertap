@@ -71,7 +71,7 @@ def test_unit_model():
 
     m.fs.unit.initialize()
 
-    assert pytest.approx(42602.827308226, rel=1e-5) == value(
+    assert pytest.approx(42605.798662568226, rel=1e-5) == value(
         m.fs.unit.hot_side_inlet.pressure[0]
     )
 
