@@ -22,7 +22,7 @@ import idaes.logger as idaeslog
 from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
 )
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue
 
 
 _log = idaeslog.getLogger(__name__)
