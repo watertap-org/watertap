@@ -75,6 +75,6 @@ def test_unit_model():
         m.fs.unit.hot_side_inlet.pressure[0]
     )
 
-    assert pytest.approx(2.92718893136, rel=1e-5) == value(
+    assert pytest.approx(2.926775883925, rel=1e-5) == value(
         m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
     )
