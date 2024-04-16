@@ -22,7 +22,6 @@ import idaes.logger as idaeslog
 from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
 )
-from pyomo.environ import Var, Constraint, value
 from pyomo.common.config import ConfigValue, In
 
 
@@ -48,13 +47,12 @@ model with an added constraint to calculate the steam flow such that the outlet
 of shell is a saturated liquid.""",
 )
 class SteamHeater0DData(HeatExchangerData):
-    config = HeatExchangerData.CONFIG()
-
-    config.declare(
+    CONFIG = HeatExchangerData.CONFIG()
+    CONFIG.declare(
         "has_saturation_pressure_deviation",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=bool,
             description="Flag to indicate if saturation pressure deviation should be considered",
             doc="""Indicates whether the saturation pressure deviation at the outlet of the steam heater should be
                modeled. If True, 'saturation_pressure_deviation' needs to be specified by the user.""",
@@ -96,7 +94,8 @@ class SteamHeater0DData(HeatExchangerData):
         @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
         def outlet_pressure_sat(b, t):
             return (
-                b.hot_side.properties_out[t].pressure + b.pressure_diff[t]
+                b.hot_side.properties_out[t].pressure
+                + b.saturation_pressure_deviation[t]
                 == b.hot_side.properties_out[t].pressure_sat
             )
 
