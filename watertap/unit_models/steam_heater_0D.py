@@ -22,6 +22,8 @@ import idaes.logger as idaeslog
 from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
 )
+from pyomo.environ import Var, Constraint, value
+from pyomo.common.config import ConfigValue, In
 
 
 _log = idaeslog.getLogger(__name__)
@@ -30,7 +32,7 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "Elmira Shamlou"
 
 """
-This unit model uses some code from the IDAES `feedwater_heater_0D` model.
+This unit model uses is based on the IDAES `feedwater_heater_0D` model.
 However, the constraints and properties defined in the IDAES unit model do not align with those in the available WaterTAP property packages.
 To address this, alternative constraints have been replaced to ensure full condensation based on the WaterTAP properties.
 Note that additional components like desuperheaters, drain mixers, and coolers are not included. If necessary, these can be modeled separately by adding heat exchangers and mixers to the flowsheet.
@@ -47,6 +49,17 @@ of shell is a saturated liquid.""",
 )
 class SteamHeater0DData(HeatExchangerData):
     config = HeatExchangerData.CONFIG()
+
+    config.declare(
+        "has_saturation_pressure_deviation",
+        ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="Flag to indicate if saturation pressure deviation should be considered",
+            doc="""Indicates whether the saturation pressure deviation at the outlet of the steam heater should be
+               modeled. If True, 'saturation_pressure_deviation' needs to be specified by the user.""",
+        ),
+    )
 
     def build(self):
         super().build()
@@ -68,14 +81,17 @@ class SteamHeater0DData(HeatExchangerData):
             self.config.hot_side.property_package.get_metadata().get_derived_units
         )
 
-        self.pressure_diff = Var(
+        self.saturation_pressure_deviation = Var(
             self.flowsheet().time,
             initialize=0,
             units=units_meta("pressure"),
-            doc="Divergence of the condensed steam outlet pressure from the saturation pressure",
+            doc="Difference between the outlet pressure and the saturation pressure of the condensed steam",
         )
 
-        self.pressure_diff.fix()
+        if self.config.has_saturation_pressure_deviation:
+            self.saturation_pressure_deviation.unfix()
+        else:
+            self.saturation_pressure_deviation.fix()
 
         @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
         def outlet_pressure_sat(b, t):
