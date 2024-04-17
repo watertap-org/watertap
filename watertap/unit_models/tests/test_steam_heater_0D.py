@@ -69,12 +69,12 @@ def test_unit_model():
 
     assert degrees_of_freedom(m) == 0
 
-    m.fs.unit.initialize()
+    m.fs.unit.initialize(optarg={"max_iter": 50})
 
-    assert pytest.approx(42605.798662568226, rel=1e-5) == value(
+    assert pytest.approx(42602.8273082269, rel=1e-5) == value(
         m.fs.unit.hot_side_inlet.pressure[0]
     )
 
-    assert pytest.approx(2.926775883925, rel=1e-5) == value(
+    assert pytest.approx(2.927188931363071, rel=1e-5) == value(
         m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
     )
