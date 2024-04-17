@@ -13,14 +13,12 @@
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    value,
 )
 
 from idaes.core import FlowsheetBlock
 import watertap.property_models.water_prop_pack as props_w
 import watertap.property_models.seawater_prop_pack as props_sw
 from watertap.unit_models.steam_heater_0D import SteamHeater0D
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
@@ -28,6 +26,8 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from idaes.models.unit_models.heat_exchanger import (
     HeatExchangerFlowPattern,
 )
+import idaes.core.util.scaling as iscale
+from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 # Set up solver
 solver = get_solver()
@@ -35,7 +35,7 @@ solver = get_solver()
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
-def test_unit_model():
+def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.steam_properties = props_w.WaterParameterBlock()
@@ -46,11 +46,9 @@ def test_unit_model():
         cold_side_name="cold",
         hot={
             "property_package": m.fs.steam_properties,
-            "has_pressure_change": False,
         },
         cold={
             "property_package": m.fs.cold_side_properties,
-            "has_pressure_change": False,
         },
         delta_temperature_callback=delta_temperature_chen_callback,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
@@ -67,14 +65,16 @@ def test_unit_model():
     m.fs.unit.area.fix(50)
     m.fs.unit.overall_heat_transfer_coefficient.fix(2e3)
 
-    assert degrees_of_freedom(m) == 0
+    iscale.calculate_scaling_factors(m.fs.unit)
 
-    m.fs.unit.initialize(optarg={"max_iter": 50})
+    return m
 
-    assert pytest.approx(42602.8273082269, rel=1e-5) == value(
-        m.fs.unit.hot_side_inlet.pressure[0]
-    )
 
-    assert pytest.approx(2.927188931363071, rel=1e-5) == value(
-        m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-    )
+class TestSteamHeater0D(UnitTestHarness):
+    def configure(self):
+        m = build()
+
+        self.unit_solutions[
+            m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+        ] = 2.92784431885
+        return m
