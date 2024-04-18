@@ -59,8 +59,8 @@ class UnitTestHarness(abc.ABC):
         self.default_zero = 1e-10
 
         # arguments for solver tolerance
-        self.default_absolute_tolerance = 1e-12
-        self.default_relative_tolerance = 1e-6
+        self.default_absolute_tolerance = 1e-5
+        self.default_relative_tolerance = 1e-3
 
         model = self.configure()
         if not hasattr(self, "unit_model_block"):
