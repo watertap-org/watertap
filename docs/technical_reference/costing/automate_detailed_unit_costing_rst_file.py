@@ -65,32 +65,38 @@ if __name__ == "__main__":
             if unit_name_list[i] in title_exceptions:
                 f.write(f"{title_exceptions[unit_name_list[i]]} Costing Method")
                 f.write("\n")
-                f.write("=" * len(f"{title_exceptions[unit_name_list[i]]} Costing Method"))
+                f.write(
+                    "=" * len(f"{title_exceptions[unit_name_list[i]]} Costing Method")
+                )
             else:
                 f.write(f"{unit_title_list[i]} Costing Method")
                 f.write("\n")
                 f.write("=" * len(f"{unit_title_list[i]} Costing Method"))
             f.write("\n")
 
-            #TODO: add parameter tables
+            # TODO: add parameter tables
             f.write("\nCosting Method Parameters\n")
             f.write("+" * len("Costing Method Parameters"))
-            f.write(f"\n\nThe following parameters are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n")
-            
-            #TODO: add var tables
+            f.write(
+                f"\n\nThe following parameters are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
+            )
+
+            # TODO: add var tables
             f.write("\n\nCosting Method Variables\n")
             f.write("+" * len("Costing Method Variables"))
-            f.write(f"\n\nThe following variables are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n")
+            f.write(
+                f"\n\nThe following variables are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
+            )
 
-            #TODO: add capex eqs
+            # TODO: add capex eqs
             f.write("\n\nCapital Cost Calculations\n")
             f.write("+" * len("Capital Cost Calculations"))
 
-            #TODO: add opex eqs
+            # TODO: add opex eqs
             f.write("\n\nOperating Cost Calculations\n")
             f.write("+" * len("Operating Cost Calculations"))
 
-            #TODO: add module directives to unit and cost method 
+            # TODO: add module directives to unit and cost method
             f.write("\n\nCode Documentation\n")
             f.write("-" * len("Code Documentation"))
 
