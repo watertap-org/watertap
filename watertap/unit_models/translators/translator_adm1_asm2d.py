@@ -33,7 +33,7 @@ from idaes.core.util.config import (
     is_reaction_parameter_block,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 

@@ -16,7 +16,7 @@ from pyomo.environ import (
     value,
 )
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import watertap.property_models.NaCl_prop_pack as props

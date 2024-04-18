@@ -12,7 +12,7 @@
 import pytest
 from pyomo.environ import Block, Var, SolverFactory
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.core.util.model_diagnostics.ipopt_initialization import (
     generate_initialization_perturbation,
     print_initialization_perturbation,
