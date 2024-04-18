@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.environ import Var
 
 from idaes.core import (
     declare_process_block_class,
@@ -22,7 +21,6 @@ import idaes.logger as idaeslog
 from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
 )
-from pyomo.common.config import ConfigValue
 
 
 _log = idaeslog.getLogger(__name__)
@@ -48,16 +46,6 @@ of shell is a saturated liquid.""",
 )
 class SteamHeater0DData(HeatExchangerData):
     CONFIG = HeatExchangerData.CONFIG()
-    CONFIG.declare(
-        "has_saturation_pressure_deviation",
-        ConfigValue(
-            default=False,
-            domain=bool,
-            description="Flag to indicate if saturation pressure deviation should be considered",
-            doc="""Indicates whether the saturation pressure deviation at the outlet of the steam heater should be
-               modeled. If True, 'saturation_pressure_deviation' needs to be specified by the user.""",
-        ),
-    )
 
     def build(self):
         super().build()
@@ -68,35 +56,19 @@ class SteamHeater0DData(HeatExchangerData):
             doc="Mass balance",
         )
         def outlet_liquid_mass_balance(b, t, j):
-            b.hot_side.properties_out[t].flow_mass_phase_comp["Vap", j].fix(0)
+            lb = b.hot_side.properties_out[t].flow_mass_phase_comp["Vap", j].lb
+            b.hot_side.properties_out[t].flow_mass_phase_comp["Vap", j].fix(lb)
             return (
                 b.hot_side.properties_in[t].flow_mass_phase_comp["Vap", j]
                 + b.hot_side.properties_in[t].flow_mass_phase_comp["Liq", j]
                 == b.hot_side.properties_out[t].flow_mass_phase_comp["Liq", j]
             )
 
-        units_meta = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
-        )
-
-        self.saturation_pressure_deviation = Var(
-            self.flowsheet().time,
-            initialize=0,
-            units=units_meta("pressure"),
-            doc="Difference between the outlet pressure and the saturation pressure of the condensed steam",
-        )
-
-        if self.config.has_saturation_pressure_deviation:
-            self.saturation_pressure_deviation.unfix()
-        else:
-            self.saturation_pressure_deviation.fix()
-
         @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
         def outlet_pressure_sat(b, t):
             return (
                 b.hot_side.properties_out[t].pressure
-                + b.saturation_pressure_deviation[t]
-                == b.hot_side.properties_out[t].pressure_sat
+                >= b.hot_side.properties_out[t].pressure_sat
             )
 
     def initialize_build(self, *args, **kwargs):
@@ -124,7 +96,6 @@ class SteamHeater0DData(HeatExchangerData):
 
         self.outlet_liquid_mass_balance.activate()
         self.outlet_pressure_sat.activate()
-        self.hot_side_inlet.pressure[0].unfix()
 
         for j in self.hot_side.config.property_package.component_list:
             self.hot_side_inlet.flow_mass_phase_comp[0, "Vap", j].unfix()

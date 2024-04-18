@@ -29,12 +29,11 @@ from idaes.models.unit_models.heat_exchanger import (
 import idaes.core.util.scaling as iscale
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
+
 # Set up solver
 solver = get_solver()
 
 
-@pytest.mark.requires_idaes_solver
-@pytest.mark.component
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -57,7 +56,7 @@ def build():
     m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].set_value(6)
     m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0)
     m.fs.unit.hot_side_inlet.temperature.fix(273.15 + 140)
-    m.fs.unit.hot_side_inlet.pressure[0].set_value(201325)
+    m.fs.unit.hot_side_inlet.pressure[0].fix(201325)
     m.fs.unit.cold_side_inlet.pressure.fix(101325)
     m.fs.unit.cold_side_inlet.temperature.fix(273.15 + 70)
     m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.035 * 6)
@@ -76,5 +75,6 @@ class TestSteamHeater0D(UnitTestHarness):
 
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-        ] = 2.92784431885
+        ] = 3.044918783049
+        self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = 349.976261897
         return m
