@@ -216,7 +216,9 @@ def build(
                 )
 
     elif include_dewatering and include_gac:
-        raise TypeError("This system cannot have both dewatering and GAC units.")
+        raise TypeError(
+            "This system is not designed to have both dewatering and GAC units."
+        )
     else:
         m.fs.concentrated_dye = Product(property_package=m.fs.prop_nf)
 
