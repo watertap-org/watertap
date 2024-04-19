@@ -12,7 +12,7 @@
 import pytest
 
 from pyomo.environ import value
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.examples.custom_model_demo.demo_simple_filter import main
 

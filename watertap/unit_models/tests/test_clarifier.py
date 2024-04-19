@@ -22,7 +22,7 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale

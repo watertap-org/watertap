@@ -25,7 +25,7 @@ from pyomo.environ import (
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.model_statistics as mstat
 from idaes.models.unit_models import Feed, Product, Separator, Mixer
