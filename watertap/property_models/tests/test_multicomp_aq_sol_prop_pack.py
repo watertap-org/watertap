@@ -57,7 +57,7 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 # Imports from idaes core
 from idaes.core.base.components import Solvent, Solute, Cation, Anion
