@@ -27,7 +27,7 @@ from pyomo.common.config import Bool, ConfigBlock, ConfigValue
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
-from idaes.core.util.math import smooth_max
+from idaes.core.util.math import smooth_max, smooth_min
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_reaction_parameter_block,
@@ -402,18 +402,18 @@ see reaction package for documentation.}""",
 
         @self.Expression(self.flowsheet().time, doc="Monosaccharides mapping")
         def Ssu_mapping(blk, t):
-            return Expr_if(
-                blk.SN_org[t] >= blk.properties_in[t].conc_mass_comp["S_F"],
-                eps * pyunits.kg / pyunits.m**3,
+            return smooth_max(
+                0 * pyunits.kg / pyunits.m**3,
                 blk.properties_in[t].conc_mass_comp["S_F"] - blk.SN_org[t],
+                blk.eps,
             )
 
         @self.Expression(self.flowsheet().time, doc="Amino acids mapping")
         def Saa_mapping(blk, t):
-            return Expr_if(
-                blk.SN_org[t] >= blk.properties_in[t].conc_mass_comp["S_F"],
-                blk.properties_in[t].conc_mass_comp["S_F"],
+            return smooth_min(
                 blk.SN_org[t],
+                blk.properties_in[t].conc_mass_comp["S_F"],
+                blk.eps,
             )
 
         @self.Constraint(
@@ -629,12 +629,13 @@ see reaction package for documentation.}""",
 
             @self.Expression(self.flowsheet().time, doc="Carbohydrates mapping")
             def Xch_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    eps * pyunits.kg / pyunits.m**3,
+                return smooth_max(
+                    0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.4,
+                    blk.eps,
                 )
 
+            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
                 return Expr_if(
@@ -645,10 +646,10 @@ see reaction package for documentation.}""",
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    eps * pyunits.kg / pyunits.m**3,
+                return smooth_max(
+                    0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.6,
+                    blk.eps,
                 )
 
             @self.Constraint(
@@ -1027,12 +1028,13 @@ see reaction package for documentation.}""",
 
             @self.Expression(self.flowsheet().time, doc="Carbohydrates mapping")
             def Xch_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    eps * pyunits.kg / pyunits.m**3,
+                return smooth_max(
+                    0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.4,
+                    blk.eps,
                 )
 
+            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
                 return Expr_if(
@@ -1043,10 +1045,10 @@ see reaction package for documentation.}""",
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    eps * pyunits.kg / pyunits.m**3,
+                return smooth_max(
+                    0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.6,
+                    blk.eps,
                 )
 
             @self.Constraint(
