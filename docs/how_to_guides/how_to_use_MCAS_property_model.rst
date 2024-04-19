@@ -20,7 +20,7 @@ users to model the chemical and physical properties of simple systems without th
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import solver from IDAES core
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     # Import MCAS property model
     import watertap.property_models.multicomp_aq_sol_prop_pack as props
     # Import utility tool for calculating scaling factors
@@ -92,13 +92,13 @@ A portion of the displayed output is shown below.
            Key  : Lower    : Value     : Upper : Fixed : Stale : Domain
            None : 100000.0 : 5000000.0 :  None :  True :  True : NonNegativeReals
        flow_mol_phase_comp : Component molar flow rate
-           Size=3, Index=fs.state_block[0].flow_mol_phase_comp_index, Units=mol/s
+           Size=3, Index=fs.properties.phase_list*fs.properties.component_list, Units=mol/s
            Key             : Lower : Value : Upper : Fixed : Stale : Domain
            ('Liq', 'Cl_-') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
             ('Liq', 'H2O') :     0 :  53.8 :  None :  True :  True : NonNegativeReals
            ('Liq', 'Na_+') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
        flow_mass_phase_comp : Component Mass flowrate
-           Size=3, Index=fs.state_block[0].flow_mass_phase_comp_index, Units=kg/s
+           Size=3, Index=fs.properties.phase_list*fs.properties.component_list, Units=kg/s
            Key             : Lower : Value                : Upper : Fixed : Stale : Domain
            ('Liq', 'Cl_-') :     0 :             0.016905 :  None : False : False :  Reals
             ('Liq', 'H2O') :     0 :   0.9683999999999999 :  None : False : False :  Reals

@@ -1,17 +1,16 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.tools.parameter_sweep import ParameterSweep, DifferentialParameterSweep
 from watertap.tools.parameter_sweep import ParameterSweepReader
@@ -621,9 +620,9 @@ class loopTool:
         ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
         ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
 
-        ps_kwargs[
-            "update_sweep_params_before_init"
-        ] = self.update_sweep_params_before_init
+        ps_kwargs["update_sweep_params_before_init"] = (
+            self.update_sweep_params_before_init
+        )
 
         ps_kwargs["custom_do_param_sweep"] = self.custom_do_param_sweep
         ps_kwargs["custom_do_param_sweep_kwargs"] = self.custom_do_param_sweep_kwargs
@@ -682,9 +681,9 @@ class loopTool:
         ps_kwargs["initialize_kwargs"] = self.combined_init_defaults
         ps_kwargs["initialize_before_sweep"] = self.initialize_before_sweep
 
-        ps_kwargs[
-            "update_sweep_params_before_init"
-        ] = self.update_sweep_params_before_init
+        ps_kwargs["update_sweep_params_before_init"] = (
+            self.update_sweep_params_before_init
+        )
 
         ps_kwargs["custom_do_param_sweep"] = self.custom_do_param_sweep
         ps_kwargs["custom_do_param_sweep_kwargs"] = self.custom_do_param_sweep_kwargs
@@ -703,9 +702,9 @@ class loopTool:
             ps_kwargs["build_outputs"] = self.build_outputs
             ps_kwargs["build_outputs_kwargs"] = self.build_outputs_kwargs
 
-        ps_kwargs[
-            "build_differential_sweep_specs"
-        ] = ParameterSweepReader()._dict_to_diff_spec
+        ps_kwargs["build_differential_sweep_specs"] = (
+            ParameterSweepReader()._dict_to_diff_spec
+        )
         ps_kwargs["build_differential_sweep_specs_kwargs"] = {
             "input_dict": self.differential_sweep_specs
         }

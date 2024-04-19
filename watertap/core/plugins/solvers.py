@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -67,6 +67,8 @@ class IpoptWaterTAP(IPOPT):
             self.options["tol"] = 1e-08
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
+        if "acceptable_constr_viol_tol" not in self.options:
+            self.options["acceptable_constr_viol_tol"] = 1e-08
         if "bound_relax_factor" not in self.options:
             self.options["bound_relax_factor"] = 0.0
         if "honor_original_bounds" not in self.options:
@@ -200,14 +202,3 @@ class IpoptWaterTAP(IPOPT):
                 )
             return False
         return True
-
-
-## reconfigure IDAES to use the ipopt-watertap solver
-import idaes
-
-_default_solver_config_value = idaes.cfg.get("default_solver")
-_idaes_default_solver = _default_solver_config_value._default
-
-_default_solver_config_value.set_default_value("ipopt-watertap")
-if not _default_solver_config_value._userSet:
-    _default_solver_config_value.reset()

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -193,7 +193,7 @@ def test_actions(add_variant: str):
             exports.add(data=ve1)  # form 3
         elif add_variant == "model_export_dict_data_kwarg":
             ve1 = fsapi.ModelExport(obj=v1)
-            exports.add(data=ve1.dict())  # form 4
+            exports.add(data=dict(ve1))  # form 4
         with pytest.raises(ValueError):
             exports.add(v1, v1)
 
@@ -401,3 +401,84 @@ def test_to_csv(tmpdir):
     for o in outputs:
         num = fsi.fs_exp.to_csv(o)
         assert num > 0
+
+
+@pytest.mark.unit
+def test_add_option(tmpdir):
+    fsi = flowsheet_interface()
+    fsi.build()
+    fsi.fs_exp.add_option(
+        name="TestStrOptionValid",
+        category="String Options",
+        display_name="String Option",
+        values_allowed="string",
+        value="test option",
+    )
+
+    fsi.fs_exp.add_option(
+        name="TestIntOptionValid",
+        category="Int Options",
+        display_name="Int Option",
+        values_allowed="int",
+        max_val=16,
+        min_val=0,
+        value=10,
+    )
+
+    fsi.fs_exp.add_option(
+        name="TestFloatOptionValid",
+        category="Float Options",
+        display_name="Float Option",
+        values_allowed="float",
+        max_val=16,
+        min_val=0,
+        value=10.1,
+    )
+
+    fsi.fs_exp.add_option(
+        name="TestListOptionValid",
+        category="List Options",
+        display_name="List Option",
+        values_allowed=["valid option a", "valid option b"],
+        value="valid option a",
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestStrOptionInvalid",
+            category="String Options",
+            display_name="String Option",
+            values_allowed="string",
+            value=1,
+        )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestIntOptionInvalid",
+            category="Int Options",
+            display_name="Int Option",
+            values_allowed="int",
+            max_val=16,
+            min_val=0,
+            value=20,
+        )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestFloatOptionInvalid",
+            category="Float Options",
+            display_name="Float Option",
+            values_allowed="float",
+            max_val=16,
+            min_val=0,
+            value=-1,
+        )
+
+    with pytest.raises(ValueError) as excinfo:
+        fsi.fs_exp.add_option(
+            name="TestListOptionInvalid",
+            category="List Options",
+            display_name="List Option",
+            values_allowed=["valid option a", "valid option b"],
+            value="invalid option",
+        )

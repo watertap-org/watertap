@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -33,7 +33,7 @@ from idaes.models.unit_models import (
     Product,
 )
 from idaes.models.unit_models.separator import SplittingType
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -74,7 +74,7 @@ def build_flowsheet():
     )
     # First reactor (anaerobic) - standard CSTR
     m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-    # First reactor (anaerobic) - standard CSTR
+    # Second reactor (anaerobic) - standard CSTR
     m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Third reactor (anoxic) - standard CSTR
     m.fs.R3 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
@@ -392,7 +392,6 @@ if __name__ == "__main__":
             "Mix": m.fs.R1.inlet,
             "R1": m.fs.R1.outlet,
             "R2": m.fs.R2.outlet,
-            "R3 inlet": m.fs.R3.inlet,
             "R3": m.fs.R3.outlet,
             "R4": m.fs.R4.outlet,
             "R5": m.fs.R5.outlet,

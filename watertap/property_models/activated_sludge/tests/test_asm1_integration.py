@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -29,7 +29,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import CSTR
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
 
@@ -71,9 +71,7 @@ def test_ASM1_reactor():
     m.fs.R1.inlet.conc_mass_comp[0, "S_S"].fix(14.6112 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1149 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(89.324 * pyo.units.g / pyo.units.m**3)
-    m.fs.R1.inlet.conc_mass_comp[0, "X_BH"].fix(
-        2542.03 * pyo.units.g / pyo.units.m**3
-    )
+    m.fs.R1.inlet.conc_mass_comp[0, "X_BH"].fix(2542.03 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_BA"].fix(148.6 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "X_P"].fix(448 * pyo.units.g / pyo.units.m**3)
     m.fs.R1.inlet.conc_mass_comp[0, "S_O"].fix(0.3928 * pyo.units.g / pyo.units.m**3)

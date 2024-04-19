@@ -1,5 +1,5 @@
-###############################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -8,6 +8,9 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
+#################################################################################
+
+###############################################################################
 #
 # OLI Systems, Inc. Copyright © 2022, all rights reserved.
 #
@@ -41,7 +44,6 @@
 # derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
-
 import contextlib
 import os
 from pathlib import Path
@@ -49,6 +51,7 @@ from pathlib import Path
 import pytest
 
 from watertap.tools.oli_api.client import OLIApi
+from watertap.tools.oli_api.flash import Flash
 from watertap.tools.oli_api.credentials import (
     CredentialManager,
     cryptography_available,
@@ -76,7 +79,10 @@ def auth_credentials() -> dict:
 
 @pytest.fixture(scope="function")
 def oliapi_instance(
-    tmp_path: Path, auth_credentials: dict, local_dbs_file: Path
+    tmp_path: Path,
+    auth_credentials: dict,
+    local_dbs_file: Path,
+    source_water: dict,
 ) -> OLIApi:
 
     if not cryptography_available:
@@ -88,9 +94,20 @@ def oliapi_instance(
         "config_file": cred_file_path,
     }
     credential_manager = CredentialManager(**credentials, test=True)
-    credential_manager.login()
-    with OLIApi(credential_manager, test=True) as oliapi:
-        oliapi.get_dbs_file_id(str(local_dbs_file))
+    with OLIApi(credential_manager, interactive_mode=False) as oliapi:
+        oliapi.upload_dbs_file(str(local_dbs_file))
+        oliapi.generate_dbs_file(source_water)
         yield oliapi
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
+
+
+@pytest.fixture
+def flash_instance(scope="session"):
+    flash = Flash()
+    yield flash
+
+
+@pytest.fixture
+def source_water(scope="session"):
+    return {"Cl_-": 1000, "Na_+": 1000}

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -133,9 +133,15 @@ def cost_low_pressure_pump(blk, cost_electricity_flow=True):
         ),
     )
     if cost_electricity_flow:
+        # grab lower bound of mechanical work
+        lb = blk.unit_model.work_mechanical[t0].lb
+        # set lower bound to 0 to avoid negative defined flow warning when lb is not >= 0
+        blk.unit_model.work_mechanical.setlb(0)
         blk.costing_package.cost_flow(
             pyo.units.convert(
                 blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
             ),
             "electricity",
         )
+        # set lower bound back to its original value that was assigned to lb
+        blk.unit_model.work_mechanical.setlb(lb)

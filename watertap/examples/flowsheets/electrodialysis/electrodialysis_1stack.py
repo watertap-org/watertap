@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -23,7 +23,7 @@ import idaes.logger as idaeslog
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import report_statistics
 from idaes.models.unit_models import Feed, Product, Separator
@@ -243,7 +243,7 @@ def initialize_system(m, solver=None):
     # populate intitial properties throughout the system
     m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.s01)
-    m.fs.separator.initialize(optarg=optarg)
+    m.fs.separator.initialize(optarg=optarg, solver="ipopt-watertap")
     propagate_state(m.fs.s02)
     propagate_state(m.fs.s03)
     m.fs.EDstack.initialize(optarg=optarg)

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -29,7 +29,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
@@ -45,6 +45,7 @@ from watertap.costing.unit_models.crystallizer import cost_crystallizer
 _log = idaeslog.getLogger(__name__)
 
 __author__ = "Oluwamayowa Amusat"
+
 
 # when using this file the name "Filtration" is what is imported
 @declare_process_block_class("Crystallization")
@@ -774,12 +775,12 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         var_dict["Slurry density (Kg/m3)"] = self.dens_mass_slurry
         var_dict["Heat requirement"] = self.work_mechanical[time_point]
         var_dict["Crystallizer diameter (m)"] = self.diameter_crystallizer
-        var_dict[
-            "Magma circulation flow rate (m**3/s)"
-        ] = self.magma_circulation_flow_vol
-        var_dict[
-            "Vol. frac. of solids in suspension, 1-E"
-        ] = self.product_volumetric_solids_fraction
+        var_dict["Magma circulation flow rate (m**3/s)"] = (
+            self.magma_circulation_flow_vol
+        )
+        var_dict["Vol. frac. of solids in suspension, 1-E"] = (
+            self.product_volumetric_solids_fraction
+        )
         var_dict["Residence time"] = self.t_res
         var_dict["Crystallizer minimum active volume (m**3)"] = self.volume_suspension
         var_dict["Suspension height in crystallizer (m)"] = self.height_slurry

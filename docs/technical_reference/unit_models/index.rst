@@ -7,7 +7,6 @@ Unit Models
    reverse_osmosis_0D
    reverse_osmosis_1D
    nanofiltration_ZO
-   nanofiltration_0D
    nanofiltration_dspmde_0D
    pressure_exchanger
    coag_floc_model
@@ -20,7 +19,7 @@ Unit Models
    gac
    osmotically_assisted_reverse_osmosis_0D
    osmotically_assisted_reverse_osmosis_1D
-   anaerobic_digestor
+   anaerobic_digester
    ion_exchange_0D
    membrane_distillation_0D
    mvc
@@ -29,3 +28,4 @@ Unit Models
    electroNP_ZO
    translators/index
    zero_order_unit_models/index
+   stoichiometric_reactor

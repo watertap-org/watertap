@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -40,7 +40,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.solvers.get_solver import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -1847,9 +1847,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
         def eq_Sc(self):
 
-            return (
-                self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
-            )
+            return self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
 
         @self.Constraint(
             doc="To calculate Sc",
@@ -1919,10 +1917,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     ):
                         return (
                             self.friction_factor
-                            == 4
-                            * 50.6
-                            * self.spacer_porosity**-7.06
-                            * self.N_Re**-1
+                            == 4 * 50.6 * self.spacer_porosity**-7.06 * self.N_Re**-1
                         )
                     elif (
                         self.config.friction_factor_method
@@ -1997,24 +1992,24 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     in self[k].diluate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].diluate.properties[set].flow_mol_phase_comp:
-                        self[k].diluate.properties[set].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self[k]
-                            .diluate.properties[(0.0, 0.0)]
-                            .flow_mol_phase_comp[ind]
+                        self[k].diluate.properties[set].flow_mol_phase_comp[ind] = (
+                            value(
+                                self[k]
+                                .diluate.properties[(0.0, 0.0)]
+                                .flow_mol_phase_comp[ind]
+                            )
                         )
                 if (
                     "flow_mass_phase_comp"
                     in self[k].diluate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].diluate.properties[set].flow_mass_phase_comp:
-                        self[k].diluate.properties[set].flow_mass_phase_comp[
-                            ind
-                        ] = value(
-                            self[k]
-                            .diluate.properties[(0.0, 0.0)]
-                            .flow_mass_phase_comp[ind]
+                        self[k].diluate.properties[set].flow_mass_phase_comp[ind] = (
+                            value(
+                                self[k]
+                                .diluate.properties[(0.0, 0.0)]
+                                .flow_mass_phase_comp[ind]
+                            )
                         )
                 if hasattr(self[k], "conc_mem_surf_mol_x"):
                     for mem in self[k].membrane_set:
@@ -2056,12 +2051,12 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     in self[k].concentrate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].concentrate.properties[set].flow_mol_phase_comp:
-                        self[k].concentrate.properties[set].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self[k]
-                            .concentrate.properties[(0.0, 0.0)]
-                            .flow_mol_phase_comp[ind]
+                        self[k].concentrate.properties[set].flow_mol_phase_comp[ind] = (
+                            value(
+                                self[k]
+                                .concentrate.properties[(0.0, 0.0)]
+                                .flow_mol_phase_comp[ind]
+                            )
                         )
                 if (
                     "flow_mass_phase_comp"

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -20,7 +20,7 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
     constraints_with_scale_factor_generator,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP, _pyomo_nl_writer_log
 
 

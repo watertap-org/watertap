@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -18,6 +18,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from copy import copy
 
 # Import IDAES cores
 from idaes.core import (
@@ -29,7 +30,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
@@ -300,19 +301,44 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
+        state_args_out_isentropic = copy(state_args)
+        state_args_out_isentropic["pressure"] = (
+            state_args["pressure"] * self.pressure_ratio.value * pyunits.Pa
+        )
+        state_args_out_isentropic["temperature"] = (
+            state_args["temperature"]
+            * self.pressure_ratio.value ** (1 - 1 / 1.3)
+            * pyunits.K
+        )
+
         self.properties_isentropic_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
+            state_args=state_args_out_isentropic,
         )
         init_log.info_high("Initialization Step 2 Complete.")
+
+        state_args_out_actual = copy(state_args_out_isentropic)
+        # assume a constant vapor specific heat for initialization:
+        state_args_out_actual["temperature"] = (
+            state_args_out_isentropic["temperature"]
+            - state_args["temperature"] * pyunits.K
+        ) / self.efficiency.value + state_args["temperature"] * pyunits.K
+
+        self.control_volume.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_out_actual,
+        )
+        init_log.info_high("Initialization Step 3 Complete.")
 
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state

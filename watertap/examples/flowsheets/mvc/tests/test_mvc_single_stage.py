@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -21,7 +21,7 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.models.unit_models import Feed, Product, Mixer, Separator
 from idaes.models.unit_models.heat_exchanger import HeatExchanger
 from idaes.models.unit_models.translator import Translator
@@ -37,6 +37,7 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     fix_outlet_pressures,
     solve,
     set_up_optimization,
+    main,
 )
 
 import watertap.property_models.seawater_prop_pack as props_seawater
@@ -335,3 +336,8 @@ class TestMVC:
             22.36, rel=1e-2
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.unit
+    def test_main_fun(self):
+        main()

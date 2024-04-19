@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -57,7 +57,7 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 # Imports from idaes core
 from idaes.core.base.components import Solvent, Solute, Cation, Anion
@@ -80,6 +80,8 @@ import idaes.logger as idaeslog
 
 
 solver = get_solver()
+
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():

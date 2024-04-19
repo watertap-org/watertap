@@ -22,7 +22,7 @@ Local (developer) installation
 
    .. code-block:: shell
 
-      python -m ipykernel --user --name "watertap-dev"
+      python -m ipykernel install --user --name "watertap-dev"
 
 #. Then, start the Jupyter server from the current directory, navigate to the desired notebook using the file browser, and launch it
 

@@ -18,7 +18,7 @@ users to model the chemical and physical properties of simple systems without th
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import solver from IDAES core
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     # Import NaCl property model
     import watertap.property_models.NaCl_prop_pack as props
     # Import utility tool for calculating scaling factors
@@ -74,7 +74,7 @@ A portion of the displayed output is shown below.
 
      Variables:
        flow_mass_phase_comp : Mass flow rate
-           Size=2, Index=fs.state_block[0].flow_mass_phase_comp_index, Units=kg/s
+           Size=2, Index=fs.properties.phase_list*fs.properties.component_list, Units=kg/s
            Key             : Lower : Value : Upper : Fixed : Stale : Domain
             ('Liq', 'H2O') :   0.0 : 0.965 :  None :  True :  True : NonNegativeReals
            ('Liq', 'NaCl') :   0.0 : 0.035 :  None :  True :  True : NonNegativeReals

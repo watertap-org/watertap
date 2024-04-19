@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -16,7 +16,7 @@ import idaes.core as idc
 import idaes.core.util.model_statistics as istat
 
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 from watertap.costing.util import (
     cost_rectifier,

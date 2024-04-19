@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -34,7 +34,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
@@ -45,6 +45,7 @@ from watertap.core import ControlVolume0DBlock, InitializationMixin
 __author__ = "Austin Ladshaw"
 
 _log = idaeslog.getLogger(__name__)
+
 
 # Name of the unit model
 @declare_process_block_class("CoagulationFlocculation")

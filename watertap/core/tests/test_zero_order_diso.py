@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -18,7 +18,7 @@ from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from pyomo.environ import (
     check_optimal_termination,

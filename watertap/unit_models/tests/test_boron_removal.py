@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -64,12 +64,13 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import re
 
 __author__ = "Austin Ladshaw"
 
 solver = get_solver()
+
 
 # Helper function for multiple test setup
 def model_setup(
@@ -1300,7 +1301,7 @@ class TestBoronRemoval_BadConfigs_Generic:
                             ("Liq", "H_+"): 1,
                             ("Liq", "OH_-"): 1,
                         },
-                    }
+                    },
                     # End parameter_data
                 }
                 # End R1

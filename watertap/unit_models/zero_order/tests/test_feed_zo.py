@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -18,7 +18,7 @@ from pyomo.environ import ConcreteModel, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 
@@ -45,7 +45,7 @@ class TestFeedZO:
     @pytest.mark.unit
     def test_build(self, model):
         assert isinstance(model.fs.unit.outlet.flow_mass_comp, Var)
-        for (t, j) in model.fs.unit.outlet.flow_mass_comp.keys():
+        for t, j in model.fs.unit.outlet.flow_mass_comp.keys():
             assert t == 0
             assert j in model.db.get_solute_set() or j == "H2O"
 
@@ -53,7 +53,7 @@ class TestFeedZO:
         assert len(model.fs.unit.flow_vol) == 1
 
         assert isinstance(model.fs.unit.conc_mass_comp, Var)
-        for (t, j) in model.fs.unit.conc_mass_comp.keys():
+        for t, j in model.fs.unit.conc_mass_comp.keys():
             assert t == 0
             assert j in model.db.get_solute_set()
 

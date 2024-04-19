@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -12,7 +12,7 @@
 
 import pyomo.environ as pyo
 from idaes.core.util.scaling import get_scaling_factor, __none_left_mult
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 
 def assert_no_initialization_perturbation(blk, optarg=None, solver=None):

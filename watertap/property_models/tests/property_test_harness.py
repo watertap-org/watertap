@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -37,7 +37,7 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import fix_state_vars
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------
@@ -335,7 +335,7 @@ class PropertyTestHarness:
         )
         if len(badly_scaled_var_list) != 0:
             lst = []
-            for (var, val) in badly_scaled_var_list:
+            for var, val in badly_scaled_var_list:
                 lst.append((var.name, val))
             raise PropertyValueError(
                 "The following variable(s) are poorly scaled: {lst}".format(lst=lst)
@@ -530,9 +530,7 @@ class PropertyRegressionTest:
 
         # check if any variables are badly scaled
         lst = []
-        for (var, val) in badly_scaled_var_generator(
-            m, large=1e2, small=1e-2, zero=1e-8
-        ):
+        for var, val in badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8):
             lst.append((var.name, val))
             print(var.name, var.value)
         if lst:
@@ -626,9 +624,7 @@ class PropertyCalculateStateTest:
 
         # check if any variables are badly scaled
         lst = []
-        for (var, val) in badly_scaled_var_generator(
-            m, large=1e2, small=1e-2, zero=1e-8
-        ):
+        for var, val in badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8):
             lst.append((var.name, val))
             print(var.name, var.value)
         if lst:

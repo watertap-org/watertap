@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -23,7 +23,7 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
@@ -476,6 +476,7 @@ def add_costing(m):
         ),
         doc="Annual food waste tipping fee revenue",
     )
+
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b):

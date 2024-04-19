@@ -165,7 +165,7 @@ The scaling factors are automatically passed-in when using the default WaterTAP 
 
 .. testcode:: [scaling_factor]
 
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     # Create default WaterTAP solver object
     opt = get_solver()
     # Solve model m

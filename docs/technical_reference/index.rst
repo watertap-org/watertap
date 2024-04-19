@@ -14,6 +14,7 @@ Technical Reference
    costing/index
    tools/index
    core/index
+   flowsheets/index
 
 .. toctree::
     :maxdepth: 1

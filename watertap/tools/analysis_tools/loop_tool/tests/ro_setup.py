@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -20,7 +20,7 @@ from watertap.tools.parameter_sweep.parameter_sweep_reader import ParameterSweep
 from watertap.tools.parameter_sweep.parameter_sweep_differential import (
     DifferentialParameterSweep,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import os
 
 __author__ = "Alexander V. Dudchenko (SLAC)"

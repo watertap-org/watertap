@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -47,12 +47,12 @@ def create_parallel_manager(parallel_manager_class=None, **kwargs):
 
     number_of_subprocesses = kwargs.get("number_of_subprocesses", 1)
     if should_fan_out(number_of_subprocesses):
-        parallel_backend = kwargs.get("parallel_back_end", "ConcurrentFutures")
-        if parallel_backend == "ConcurrentFutures":
+        parallel_backend = kwargs.get("parallel_back_end", "multiprocessing")
+        if parallel_backend.lower() in ("concurrentfutures", "concurrent.futures"):
             return ConcurrentFuturesParallelManager(number_of_subprocesses)
-        elif parallel_backend == "MultiProcessing":
+        elif parallel_backend.lower() in ("multiprocessing",):
             return MultiprocessingParallelManager(number_of_subprocesses)
-        elif parallel_backend == "RayIo":
+        elif parallel_backend.lower() in ("rayio", "ray"):
             if ray_avaialble:
                 return RayIoParallelManager(number_of_subprocesses)
             else:

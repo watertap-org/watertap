@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -35,7 +35,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 
@@ -1867,9 +1867,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         )
         def eq_Sc(self):
 
-            return (
-                self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
-            )
+            return self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
 
         @self.Constraint(
             doc="To calculate Sh",
@@ -1936,10 +1934,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     ):
                         return (
                             self.friction_factor
-                            == 4
-                            * 50.6
-                            * self.spacer_porosity**-7.06
-                            * self.N_Re**-1
+                            == 4 * 50.6 * self.spacer_porosity**-7.06 * self.N_Re**-1
                         )
                     elif (
                         self.config.friction_factor_method
@@ -1996,10 +1991,12 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 self[k].diluate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
                     self[k].diluate.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
-                self[k].concentrate.properties_out[0].flow_mol_phase_comp[
-                    "Liq", j
-                ] = value(
-                    self[k].concentrate.properties_in[0].flow_mol_phase_comp["Liq", j]
+                self[k].concentrate.properties_out[0].flow_mol_phase_comp["Liq", j] = (
+                    value(
+                        self[k]
+                        .concentrate.properties_in[0]
+                        .flow_mol_phase_comp["Liq", j]
+                    )
                 )
         if hasattr(self[k], "conc_mem_surf_mol_ioa"):
             for mem in self[k].membrane_set:

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -21,7 +21,7 @@ from pyomo.environ import (
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
@@ -47,12 +47,13 @@ from watertap.costing import WaterTAPCosting
 class ERDtype(StrEnum):
     pressure_exchanger = "pressure_exchanger"
     pump_as_turbine = "pump_as_turbine"
+    no_ERD = "no_ERD"
 
 
 def erd_type_not_found(erd_type):
     raise NotImplementedError(
         "erd_type was {}, but can only "
-        "be pressure_exchanger or pump_as_turbine"
+        "be pressure_exchanger, pump_as_turbine, or no_ERD"
         "".format(erd_type.value)
     )
 
@@ -66,11 +67,12 @@ def main(erd_type=ERDtype.pressure_exchanger):
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
+    assert_optimal_termination(solve(m, solver=solver))
+
     # optimize and display
     optimize_set_up(m)
     solve(m, solver=solver)
 
-    print("\n***---Simulation results---***")
     display_system(m)
     display_design(m)
     if erd_type == ERDtype.pressure_exchanger:
@@ -129,6 +131,8 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
         # add costing for ERD config
         m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    elif erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(erd_type)
 
@@ -148,14 +152,10 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.s03 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.P1)
         m.fs.s04 = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
         m.fs.s05 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-        m.fs.s06 = Arc(
-            source=m.fs.RO.retentate, destination=m.fs.PXR.high_pressure_inlet
-        )
-        m.fs.s07 = Arc(
-            source=m.fs.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet
-        )
-        m.fs.s08 = Arc(source=m.fs.S1.PXR, destination=m.fs.PXR.low_pressure_inlet)
-        m.fs.s09 = Arc(source=m.fs.PXR.low_pressure_outlet, destination=m.fs.P2.inlet)
+        m.fs.s06 = Arc(source=m.fs.RO.retentate, destination=m.fs.PXR.brine_inlet)
+        m.fs.s07 = Arc(source=m.fs.PXR.brine_outlet, destination=m.fs.disposal.inlet)
+        m.fs.s08 = Arc(source=m.fs.S1.PXR, destination=m.fs.PXR.feed_inlet)
+        m.fs.s09 = Arc(source=m.fs.PXR.feed_outlet, destination=m.fs.P2.inlet)
         m.fs.s10 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.P2)
     elif erd_type == ERDtype.pump_as_turbine:
         m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
@@ -163,37 +163,34 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
         m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD.inlet)
         m.fs.s05 = Arc(source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet)
+    elif erd_type == ERDtype.no_ERD:
+        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+        m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO.inlet)
+        m.fs.s03 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+        m.fs.s04 = Arc(source=m.fs.RO.retentate, destination=m.fs.disposal.inlet)
     else:
         # this case should be caught in the previous conditional
         erd_type_not_found(erd_type)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # scaling
-    # set default property values
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
-    )
     # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
-    m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+
     if erd_type == ERDtype.pressure_exchanger:
         iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
-        iscale.set_scaling_factor(m.fs.PXR.low_pressure_side.work, 1e-3)
-        iscale.set_scaling_factor(m.fs.PXR.high_pressure_side.work, 1e-3)
+        iscale.set_scaling_factor(m.fs.PXR.feed_side.work, 1e-3)
+        iscale.set_scaling_factor(m.fs.PXR.brine_side.work, 1e-3)
         # touch properties used in specifying and initializing the model
         m.fs.S1.mixed_state[0].mass_frac_phase_comp
         m.fs.S1.PXR_state[0].flow_vol_phase["Liq"]
     elif erd_type == ERDtype.pump_as_turbine:
         iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
+    elif erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(erd_type)
-    # unused scaling factors needed by IDAES base costing module
-    # calculate and propagate scaling factors
-    iscale.calculate_scaling_factors(m)
 
     return m
 
@@ -202,6 +199,8 @@ def set_operating_conditions(
     m,
     water_recovery=0.5,
     over_pressure=0.3,
+    flow_vol=1e-3,
+    salt_mass_conc=35e-3,
     solver=None,
 ):
 
@@ -212,11 +211,38 @@ def set_operating_conditions(
     # state variables
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
+
+    # scaling
+    # set default property values
+
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e-3 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
+    )
+
+    m.fs.feed.properties[0].flow_vol_phase["Liq"]
+    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+
+    # set scaling factors
+    iscale.set_scaling_factor(
+        m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1
+    )
+    iscale.set_scaling_factor(m.fs.P1.work_fluid[0], 1)
+    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e4)
+    iscale.set_scaling_factor(
+        m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4
+    )
+
+    # calculate and propagate scaling factors
+    iscale.calculate_scaling_factors(m)
+
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("flow_vol_phase", "Liq"): 1e-3,  # feed volumetric flow rate [m3/s]
-            ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.035,
+            ("flow_vol_phase", "Liq"): flow_vol,  # feed volumetric flow rate [m3/s]
+            ("mass_frac_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
         },  # feed NaCl mass fraction [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
@@ -236,7 +262,7 @@ def set_operating_conditions(
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
     m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
+    m.fs.RO.feed_side.spacer_porosity.fix(0.85)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
     # initialize RO
@@ -267,6 +293,8 @@ def set_operating_conditions(
         # energy recovery turbine - efficiency and outlet pressure
         m.fs.ERD.efficiency_pump.fix(0.95)
         m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
+    elif m.fs.erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -295,7 +323,7 @@ def calculate_operating_pressure(
     solver=None,
 ):
     """
-    estimate operating pressure for RO unit model given the following arguments:
+    Estimate operating pressure for RO unit model given the following arguments:
 
     Arguments:
         feed_state_block:   the state block of the RO feed that has the non-pressure state
@@ -362,6 +390,9 @@ def initialize_system(m, solver=None):
     elif m.fs.erd_type == ERDtype.pump_as_turbine:
         initialize_pump_as_turbine(m, optarg)
 
+    elif m.fs.erd_type == ERDtype.no_ERD:
+        initialize_no_erd(m, optarg)
+
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -372,7 +403,7 @@ def initialize_pressure_exchanger(m, optarg):
     # ---initialize splitter and pressure exchanger---
     # pressure exchanger high pressure inlet
     propagate_state(m.fs.s06)  # propagate to PXR high pressure inlet from RO retentate
-    m.fs.PXR.high_pressure_side.properties_in.initialize(optarg=optarg)
+    m.fs.PXR.brine_side.properties_in.initialize(optarg=optarg)
 
     # splitter inlet
     propagate_state(m.fs.s01)  # propagate to splitter inlet from feed
@@ -386,7 +417,7 @@ def initialize_pressure_exchanger(m, optarg):
                 "flow_vol_phase",
                 "Liq",
             ): value(  # same volumetric flow rate as PXR high pressure inlet
-                m.fs.PXR.high_pressure_side.properties_in[0].flow_vol_phase["Liq"]
+                m.fs.PXR.brine_side.properties_in[0].flow_vol_phase["Liq"]
             ),
             ("mass_frac_phase_comp", ("Liq", "NaCl")): value(
                 m.fs.S1.mixed_state[0].mass_frac_phase_comp["Liq", "NaCl"]
@@ -438,6 +469,12 @@ def initialize_pump_as_turbine(m, optarg):
     propagate_state(m.fs.s02)
 
 
+def initialize_no_erd(m, optarg):
+    propagate_state(m.fs.s01)
+    m.fs.P1.initialize(optarg=optarg)
+    propagate_state(m.fs.s02)
+
+
 def optimize_set_up(m):
     # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
@@ -459,8 +496,8 @@ def optimize_set_up(m):
     # RO
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
-    m.fs.RO.area.setub(150)
-
+    m.fs.RO.area.setub(1500)
+    m.fs.RO.feed_side.friction_factor_darcy[...].setub(None)
     # additional specifications
     m.fs.product_salinity = Param(
         initialize=500e-6, mutable=True
@@ -554,6 +591,8 @@ def display_design(m):
                 -1 * m.fs.ERD.work_mechanical[0].value / 1e3,
             )
         )
+    elif m.fs.erd_type == ERDtype.no_ERD:
+        pass
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -573,18 +612,24 @@ def display_state(m):
             % (flow_mass, mass_frac_ppm, pressure_bar)
         )
 
-    print_state("Feed      ", m.fs.feed.outlet)
-    print_state("Split 1   ", m.fs.S1.P1)
-    print_state("P1 out    ", m.fs.P1.outlet)
-    print_state("Split 2   ", m.fs.S1.PXR)
-    print_state("PXR LP out", m.fs.PXR.low_pressure_outlet)
-    print_state("P2 out    ", m.fs.P2.outlet)
-    print_state("Mix out   ", m.fs.M1.outlet)
-    print_state("RO perm   ", m.fs.RO.permeate)
-    print_state("RO reten  ", m.fs.RO.retentate)
-    print_state("PXR HP out", m.fs.PXR.high_pressure_outlet)
+    if m.fs.erd_type == ERDtype.no_ERD:
+        print_state("Feed      ", m.fs.feed.outlet)
+        print_state("P1 out    ", m.fs.P1.outlet)
+        print_state("RO perm   ", m.fs.RO.permeate)
+        print_state("RO reten  ", m.fs.RO.retentate)
+
+    else:
+        print_state("Feed      ", m.fs.feed.outlet)
+        print_state("Split 1   ", m.fs.S1.P1)
+        print_state("P1 out    ", m.fs.P1.outlet)
+        print_state("Split 2   ", m.fs.S1.PXR)
+        print_state("PXR feed out", m.fs.PXR.feed_outlet)
+        print_state("P2 out    ", m.fs.P2.outlet)
+        print_state("Mix out   ", m.fs.M1.outlet)
+        print_state("RO perm   ", m.fs.RO.permeate)
+        print_state("RO reten  ", m.fs.RO.retentate)
+        print_state("PXR brine out", m.fs.PXR.brine_outlet)
 
 
 if __name__ == "__main__":
-    # m = main(erd_type=ERDtype.pressure_exchanger)
     m = main(erd_type=ERDtype.pump_as_turbine)
