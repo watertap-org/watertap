@@ -27,6 +27,7 @@ from pyomo.common.config import Bool, ConfigBlock, ConfigValue
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
+from idaes.core.util.math import smooth_max
 from idaes.models.unit_models.translator import TranslatorData
 from idaes.core.util.config import (
     is_reaction_parameter_block,
@@ -213,6 +214,12 @@ see reaction package for documentation.}""",
             units=pyunits.dimensionless,
             mutable=True,
             doc="P content of inert soluble COD S_I, [kg P/kg COD]",
+        )
+        self.eps = Param(
+            initialize=1e-10,
+            units=pyunits.kg / pyunits.m**3,
+            mutable=True,
+            doc="Smoothing factor",
         )
 
         @self.Constraint(
