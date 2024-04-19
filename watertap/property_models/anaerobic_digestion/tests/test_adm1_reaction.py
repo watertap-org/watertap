@@ -36,7 +36,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.anaerobic_digester import AD
 from idaes.core import MaterialFlowBasis
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
