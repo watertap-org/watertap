@@ -38,7 +38,7 @@ from idaes.core.util.testing import (
     initialization_tester,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from watertap.unit_models.aeration_tank import AerationTank, ElectricityConsumption

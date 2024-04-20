@@ -21,7 +21,7 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.models.unit_models import Feed, Product, Mixer, Separator
 from idaes.models.unit_models.heat_exchanger import HeatExchanger
 from idaes.models.unit_models.translator import Translator

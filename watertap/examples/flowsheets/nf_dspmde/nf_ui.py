@@ -14,7 +14,7 @@ from watertap.examples.flowsheets.nf_dspmde import nf
 from watertap.examples.flowsheets.nf_dspmde import nf_with_bypass
 from watertap.unit_models.nanofiltration_DSPMDE_0D import ConcentrationPolarizationType
 from pyomo.environ import units as pyunits
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 
 def export_to_ui():
