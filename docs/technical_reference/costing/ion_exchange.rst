@@ -32,7 +32,7 @@ Describe capital costs..keep it concise where possible
 
     .. math::
 
-        & C_{cap,example1} = fill in equation for each component in total capex equation
+        C_{cap,example1} = fill in equation for each component in total capex equation
 
  
 Operating Cost Calculations
@@ -46,7 +46,7 @@ Describe operating/maintenance costs..keep it concise where possible
 
     .. math::
 
-        & C_{op,example1} = fill in equation for each component in total opex equation
+        C_{op,example1} = fill in equation for each component in total opex equation
 
  
 Code Documentation

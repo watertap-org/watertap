@@ -101,7 +101,7 @@ if __name__ == "__main__":
             )
             f.write("\n\n    .. math::\n\n")
             f.write(
-                "        & C_{cap,example1} = fill in equation for each component in total capex equation\n\n "
+                "        C_{cap,example1} = fill in equation for each component in total capex equation\n\n "
             )
 
             # TODO: add opex eqs
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             f.write("        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}")
             f.write("\n\n    .. math::\n\n")
             f.write(
-                "        & C_{op,example1} = fill in equation for each component in total opex equation\n\n "
+                "        C_{op,example1} = fill in equation for each component in total opex equation\n\n "
             )
 
             # TODO: add module directives to unit and cost method
