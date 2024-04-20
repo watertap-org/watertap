@@ -46,15 +46,6 @@ if __name__ == "__main__":
 
     for i, u in enumerate(unit_title_list):
 
-        # list = [
-        #     f"This unit model is formulated as a **{model_type_list[i]}** model form.",
-        #     f"See documentation for :ref:`{model_type_list[i]} Helper Methods<{model_type_ref_list[i]}>`.",
-        #     f"Electricity consumption is calculated using the **{elect_func_list[i]}** helper function.",
-        #     None,  # created on the fly now
-        #     f"   pair: watertap.unit_models.zero_order.{unit_name_list[i]};{unit_name_list[i]}",
-        #     f".. currentmodule:: watertap.unit_models.zero_order.{unit_name_list[i]}",
-        #     f".. automodule:: watertap.unit_models.zero_order.{unit_name_list[i]}",
-        # ]
 
         # append unit doc to index
         with open("detailed_unit_model_costing.rst", "a") as f:
@@ -66,40 +57,57 @@ if __name__ == "__main__":
                 f.write(f"{title_exceptions[unit_name_list[i]]} Costing Method")
                 f.write("\n")
                 f.write(
-                    "=" * len(f"{title_exceptions[unit_name_list[i]]} Costing Method")
+                    "=" * len(f"{title_exceptions[unit_name_list[i]]} Costing Method\n")
                 )
             else:
                 f.write(f"{unit_title_list[i]} Costing Method")
                 f.write("\n")
-                f.write("=" * len(f"{unit_title_list[i]} Costing Method"))
-            f.write("\n")
+                f.write("=" * len(f"{unit_title_list[i]} Costing Method\n"))
 
             # TODO: add parameter tables
-            f.write("\nCosting Method Parameters\n")
+            f.write("\n\nCosting Method Parameters\n")
             f.write("+" * len("Costing Method Parameters"))
             f.write(
                 f"\n\nThe following parameters are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
             )
+            f.write(".. csv-table::\n")
+            f.write('   :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"\n\n')
+            f.write('   "description", ":math:`Symbol_{example}`", "parameter_name", "1", ":math:`\\text{dimensionless}`"\n')
 
             # TODO: add var tables
-            f.write("\n\nCosting Method Variables\n")
+            f.write("\nCosting Method Variables\n")
             f.write("+" * len("Costing Method Variables"))
             f.write(
                 f"\n\nThe following variables are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
             )
+            f.write(".. csv-table::\n")
+            f.write('   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"\n\n')
+            f.write('   "description", ":math:`Symbol_{example}`", "variable_name", "1", ":math:`\\text{dimensionless}`"\n')
 
             # TODO: add capex eqs
-            f.write("\n\nCapital Cost Calculations\n")
+            f.write("\nCapital Cost Calculations\n")
             f.write("+" * len("Capital Cost Calculations"))
-
+            f.write("\n\nDescribe capital costs..keep it concise where possible\n\n")
+            f.write("    .. math::\n\n")
+            f.write("        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}")
+            f.write("\n\n    .. math::\n\n")
+            f.write("        & C_{cap,example1} = fill in equation for each component in total capex equation\n\n ")
+           
             # TODO: add opex eqs
-            f.write("\n\nOperating Cost Calculations\n")
+            f.write("\nOperating Cost Calculations\n")
             f.write("+" * len("Operating Cost Calculations"))
-
+            f.write("\n\nDescribe operating/maintenance costs..keep it concise where possible\n\n")
+            f.write("    .. math::\n\n")
+            f.write("        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}")
+            f.write("\n\n    .. math::\n\n")
+            f.write("        & C_{op,example1} = fill in equation for each component in total opex equation\n\n ")
+           
             # TODO: add module directives to unit and cost method
-            f.write("\n\nCode Documentation\n")
+            f.write("\nCode Documentation\n")
             f.write("-" * len("Code Documentation"))
+            f.write(f"\n\n* :mod:`watertap.unit_models.{unit_name_list[i]}`")
+            f.write(f"\n* :mod:`watertap.costing.unit_models.{unit_name_list[i]}`")
 
             f.write("\n\nReferences\n")
             f.write("-" * len("References"))
-            f.write("\n")
+            f.write("\nAim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values")
