@@ -25,7 +25,7 @@ from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import Product, Mixer, MomentumMixingType, MixingType
 import idaes.core.util.scaling as iscale

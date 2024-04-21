@@ -39,7 +39,7 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
