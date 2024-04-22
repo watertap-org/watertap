@@ -16,6 +16,7 @@ import pandas as pd
 
 df = pd.read_csv("WT_unit_costing_for_docs.csv")
 
+
 unit_title_list = [i.title() for i in df["name"]]
 
 unit_name_list = list(df["unit"])
@@ -55,8 +56,7 @@ if __name__ == "__main__":
         with open("detailed_unit_model_costing.rst", "r") as f:
             lines = f.readlines()
 
-    # count_on_list= 0
-    # count_not_on_list=0
+
     for i, unit_title in enumerate(unit_title_list):
         for l, line in enumerate(lines):
             # set on_list flag to False in unit name not found in landing page list
@@ -67,14 +67,6 @@ if __name__ == "__main__":
                 on_list=True
                 line_index=l
                 break
-        # if on_list:
-        #     print("inner loop BROKEN")
-
-        #     count_on_list=count_on_list+1
-            
-        # else:
-        #     count_not_on_list=count_not_on_list+1
-
 
         # if new entry or if overwriting existing entry
         if (not on_list) or (OVERWRITE and (on_list)): 
@@ -178,5 +170,3 @@ if __name__ == "__main__":
                     f.write(
                         "\nAim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values"
                     )
-    # print("number on the list=", count_on_list)
-    # print("number not on the list=", count_not_on_list)
