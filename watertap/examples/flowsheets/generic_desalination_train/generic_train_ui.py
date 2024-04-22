@@ -207,45 +207,49 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
         output_category="Overall system costing",
     )
+
     for proc in fs.process_order:
         block = proc["process_block"]
         process_name = proc["process_name"]
+        generic_costing_options = f"Generic process costing"
+        generic_process_operation = "Generic process operation"
+        advanced_costing_options = f"Advanced process costing"
         if proc["process_type"] == "desalter":
             exports.add(
                 obj=block.desalter.base_cost,
-                name="Base cost",
+                name=f"{process} base cost",
                 ui_units=fs.costing.base_currency / pyunits.m**3,
                 display_units="$/m^3",
                 rounding=2,
-                description=f"{process_name} costing and operation",
+                description=generic_costing_options,
                 is_input=True,
-                input_category=f"{process_name} costing and operation",
+                input_category=generic_costing_options,
                 is_output=False,
-                output_category=f"{process_name} costing and operation",
+                output_category=generic_costing_options,
             )
             exports.add(
                 obj=block.desalter.recovery_cost,
-                name="WR rate cost LCOW/WR",
+                name=f"{process} rate cost LCOW/WR",
                 ui_units=fs.costing.base_currency / pyunits.m**3,
                 display_units="$/m^3/%",
                 rounding=2,
-                description=f"{process_name} costing and operation",
+                description=advanced_costing_options,
                 is_input=True,
-                input_category=f"{process_name} costing and operation",
+                input_category=advanced_costing_options,
                 is_output=False,
-                output_category=f"{process_name} costing and operation",
+                output_category=advanced_costing_options,
             )
             exports.add(
                 obj=block.desalter.water_recovery,
-                name=f"Water recovery ({process_name})",
+                name=f"{process_name} water recovery",
                 ui_units=pyunits.dimensionless,
                 display_units="%",
                 rounding=2,
-                description=f"{process_name} costing and operation",
+                description=generic_process_operation,
                 is_input=True,
-                input_category=f"{process_name} costing and operation",
+                input_category=generic_process_operation,
                 is_output=True,
-                output_category=f"{process_name} costing and operation",
+                output_category=generic_process_operation,
             )
             exports.add(
                 obj=block.desalter.LCOW,
@@ -253,38 +257,38 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 ui_units=fs.costing.base_currency / pyunits.m**3,
                 display_units="$/m^3",
                 rounding=2,
-                description=f"{process_name} costing and operation",
+                description=generic_costing_options,
                 is_input=False,
-                input_category=f"{process_name} costing and operation",
+                input_category=generic_costing_options,
                 is_output=True,
-                output_category=f"{process_name} costing and operation",
+                output_category=generic_costing_options,
             )
         if proc["process_type"] == "separator" or proc["process_type"] == "valorizer":
             if proc["process_type"] == "separator":
                 exports.add(
                     obj=block.separator.base_cost,
-                    name="Base cost",
+                    name=f"{process_name} base cost",
                     ui_units=fs.costing.base_currency / pyunits.m**3,
                     display_units="$/m^3",
                     rounding=2,
-                    description=f"{process_name} costing and operation",
+                    description=generic_costing_options,
                     is_input=True,
-                    input_category=f"{process_name} costing and operation",
+                    input_category=generic_costing_options,
                     is_output=False,
-                    output_category=f"{process_name} costing and operation",
+                    output_category=generic_costing_options,
                 )
             else:
                 exports.add(
                     obj=block.separator.mass_base_cost,
-                    name="Mass product base cost",
+                    name=f"{process_name} base cost",
                     ui_units=fs.costing.base_currency / pyunits.kg,
                     display_units="$/kg",
                     rounding=2,
-                    description=f"{process_name} costing and operation",
+                    description=generic_costing_options,
                     is_input=True,
-                    input_category=f"{process_name} costing and operation",
+                    input_category=generic_costing_options,
                     is_output=False,
-                    output_category=f"{process_name} costing and operation",
+                    output_category=generic_costing_options,
                 )
             # exports.add(
             #     obj=block.separator.additive_cost,
@@ -310,33 +314,33 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             #     is_output=False,
             #     output_category=f"{process_name} costing and operation",
             # )
-            for ion in block.separator.separation_cost.keys():
-
-                exports.add(
-                    obj=block.separator.component_removal_percent[ion],
-                    name=f"{ion} removal %",
-                    ui_units=pyunits.dimensionless,
-                    display_units="%",
-                    rounding=2,
-                    description=f"{process_name} detailed costing and operation",
-                    is_input=True,
-                    input_category=f"{process_name} detailed costing and operation",
-                    is_output=False,
-                    output_category=f"{process_name} detailed costing and operation",
-                )
-                exports.add(
-                    obj=block.separator.separation_cost[ion],
-                    name=f"{ion} removal cost",
-                    ui_units=fs.costing.base_currency / pyunits.kg,
-                    display_units="$/kg",
-                    rounding=2,
-                    description=f"{process_name} detailed costing and operation",
-                    is_input=True,
-                    input_category=f"{process_name} detailed costing and operation",
-                    is_output=False,
-                    output_category=f"{process_name} detailed costing and operation",
-                )
             if proc["process_type"] == "valorizer":
+                for ion in block.separator.separation_cost.keys():
+                    if ion != "TDS":
+                        exports.add(
+                            obj=block.separator.component_removal_percent[ion],
+                            name=f"{ion} removal %",
+                            ui_units=pyunits.dimensionless,
+                            display_units="%",
+                            rounding=2,
+                            description=generic_costing_options,
+                            is_input=True,
+                            input_category=generic_costing_options,
+                            is_output=False,
+                            output_category=generic_costing_options,
+                        )
+                        exports.add(
+                            obj=block.separator.separation_cost[ion],
+                            name=f"{ion} removal cost",
+                            ui_units=fs.costing.base_currency / pyunits.kg,
+                            display_units="$/kg",
+                            rounding=2,
+                            description=generic_costing_options,
+                            is_input=True,
+                            input_category=generic_costing_options,
+                            is_output=False,
+                            output_category=generic_costing_options,
+                        )
                 for (phase, ion), obj in block.separator.product_properties[
                     0
                 ].flow_mass_phase_comp.items():
@@ -349,9 +353,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                             rounding=2,
                             description="{} mass flow".format(ion),
                             is_input=False,
-                            input_category=f"{process_name} detailed costing and operation",
+                            input_category=generic_process_operation,
                             is_output=True,
-                            output_category=f"{process_name} detailed costing and operation",
+                            output_category=generic_process_operation,
                         )
 
 

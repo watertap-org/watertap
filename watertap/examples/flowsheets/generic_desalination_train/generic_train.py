@@ -28,7 +28,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
@@ -75,8 +75,10 @@ __author__ = "Alexander V. Dudchenko"
 
 def main():
     m = build()
+
+    m.fs.Valorizer.separator.separation_cost["X"].fix(-1)
+    m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)
     initialize(m)
-    generic_costing.display_total_costs(m.fs.costing)
     solve(m)
     display_processes(m)
 
@@ -86,105 +88,12 @@ def build(
     water_source="generic",
 ):
     train_orders = {
-        "Pretreatment>Desal1": {
-            0: {
-                "process_type": "separator",
-                "process_name": "Pretreatment",
-                "default_kwargs": {
-                    "base_cost": 0.1,
-                    "additive_dose": 0,
-                    "additive_cost": 0,
-                },
-            },
-            1: {
-                "process_type": "desalter",
-                "process_name": "Desal_1",
-                "default_kwargs": {"base_cost": 0.3, "recovery_cost": 0},
-            },
-        },
-        "Pretreatment>Desal1>Desal2": {
-            0: {
-                "process_type": "separator",
-                "process_name": "Pretreatment",
-                "default_kwargs": {
-                    "base_cost": 0.1,
-                    "additive_dose": 0,
-                    "additive_cost": 0,
-                },
-            },
-            1: {
-                "process_type": "desalter",
-                "process_name": "Desal_1",
-                "default_kwargs": {"base_cost": 0.3, "recovery_cost": 0},
-            },
-            2: {
-                "process_type": "desalter",
-                "process_name": "Desal_2",
-                "default_kwargs": {"base_cost": 3, "recovery_cost": 0},
-            },
-        },
-        "Pretreatment>Desal1>Desal2>Crystalizer": {
-            0: {
-                "process_type": "separator",
-                "process_name": "Pretreatment",
-                "default_kwargs": {
-                    "base_cost": 0.1,
-                    "additive_dose": 0,
-                    "additive_cost": 0,
-                },
-            },
-            1: {
-                "process_type": "desalter",
-                "process_name": "Desal_1",
-                "default_kwargs": {"base_cost": 0.3, "recovery_cost": 0.01},
-            },
-            2: {
-                "process_type": "desalter",
-                "process_name": "Desal_2",
-                "default_kwargs": {"base_cost": 3, "recovery_cost": 0.02},
-            },
-            3: {
-                "process_type": "desalter",
-                "process_name": "Crystalizer",
-                "default_kwargs": {"base_cost": 10, "recovery_cost": 0},
-            },
-        },
-        "Pretreatment>Desal1>Desal2>Valorizer": {
-            0: {
-                "process_type": "separator",
-                "process_name": "Pretreatment",
-                "default_kwargs": {
-                    "base_cost": 0.1,
-                    "additive_dose": 0,
-                    "additive_cost": 0,
-                },
-            },
-            1: {
-                "process_type": "desalter",
-                "process_name": "Desal_1",
-                "default_kwargs": {"base_cost": 0.3, "recovery_cost": 0},
-            },
-            2: {
-                "process_type": "desalter",
-                "process_name": "Desal_2",
-                "default_kwargs": {"base_cost": 3, "recovery_cost": 0},
-            },
-            3: {
-                "process_type": "valorizer",
-                "process_name": "Valorizer",
-                "default_kwargs": {
-                    "base_cost": 0,
-                    "additive_dose": 0.0,
-                    "additive_cost": 0.0,
-                },
-            },
-        },
         "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer": {
             0: {
                 "process_type": "separator",
                 "process_name": "Pretreatment",
                 "default_kwargs": {
-                    "base_cost": 0.1,
+                    "base_cost": 0.3,
                     "additive_dose": 0,
                     "additive_cost": 0,
                 },
@@ -197,7 +106,7 @@ def build(
             2: {
                 "process_type": "desalter",
                 "process_name": "Desal_2",
-                "default_kwargs": {"base_cost": 3, "recovery_cost": 0},
+                "default_kwargs": {"base_cost": 0.5, "recovery_cost": 0},
             },
             3: {
                 "process_type": "desalter",
