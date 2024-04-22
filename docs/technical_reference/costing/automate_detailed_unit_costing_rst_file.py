@@ -34,7 +34,7 @@ title_exceptions = {
 
 if __name__ == "__main__":
     # Toggle OVERWRITE to True to overwrite unit model costing rst files
-    OVERWRITE = True
+    OVERWRITE = False
     # Specify unit model costing filenames (e.g., "ion_exchange") that you want to overwrite
     # Otherwise, if list left empty, the default is to overwrite all files
     OVERWRITE_LIST = []
