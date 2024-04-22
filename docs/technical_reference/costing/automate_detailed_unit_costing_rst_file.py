@@ -41,7 +41,7 @@ if __name__ == "__main__":
     try:
         with open("detailed_unit_model_costing.rst", "r") as f:
             lines = f.readlines()
-    except:    
+    except:
 
         # Create index file for all unit model costing docs
         with open("detailed_unit_model_costing.rst", "w") as f:
@@ -56,25 +56,29 @@ if __name__ == "__main__":
         with open("detailed_unit_model_costing.rst", "r") as f:
             lines = f.readlines()
 
-
     for i, unit_title in enumerate(unit_title_list):
         for l, line in enumerate(lines):
             # set on_list flag to False in unit name not found in landing page list
-            if (unit_name_list[i] != line.strip()):
-                on_list=False
+            if unit_name_list[i] != line.strip():
+                on_list = False
             # set on_list flag to True if unit name is on landing page list and break inner loop
             else:
-                on_list=True
-                line_index=l
+                on_list = True
+                line_index = l
                 break
 
         # if new entry or if overwriting existing entry
-        if (not on_list) or (OVERWRITE and (on_list)): 
-            
+        if (not on_list) or (OVERWRITE and (on_list)):
+
             # check that entries in OVERWRITE_LIST are valid
             if OVERWRITE and len(OVERWRITE_LIST):
-                if all(overwrite_item not in unit_name_list for overwrite_item in OVERWRITE_LIST):
-                    raise ValueError("Entries provided in OVERWRITE_LIST are invalid.\nOVERWRITE_LIST should be empty or contain a list of valid unit names (e.g., 'ion_exchange')")         
+                if all(
+                    overwrite_item not in unit_name_list
+                    for overwrite_item in OVERWRITE_LIST
+                ):
+                    raise ValueError(
+                        "Entries provided in OVERWRITE_LIST are invalid.\nOVERWRITE_LIST should be empty or contain a list of valid unit names (e.g., 'ion_exchange')"
+                    )
 
             # if this is a new entry, append the unit name to the landing page for all unit costing
             if not on_list:
@@ -83,14 +87,20 @@ if __name__ == "__main__":
                     f.write(f"   {unit_name_list[i]}\n")
             else:
                 # either overwrite all units in the landing page OR overwrite specific units specified on OVERWRITE_LIST
-                if (not len(OVERWRITE_LIST)) or (any(item==unit_name_list[i] for item in OVERWRITE_LIST)):
+                if (not len(OVERWRITE_LIST)) or (
+                    any(item == unit_name_list[i] for item in OVERWRITE_LIST)
+                ):
                     lines[line_index] = f"   {unit_name_list[i]}\n"
                     with open("detailed_unit_model_costing.rst", "w") as f:
                         f.writelines(lines)
                 else:
                     pass
-            
-            if (not on_list) or (not len(OVERWRITE_LIST)) or (any(item==unit_name_list[i] for item in OVERWRITE_LIST)):
+
+            if (
+                (not on_list)
+                or (not len(OVERWRITE_LIST))
+                or (any(item == unit_name_list[i] for item in OVERWRITE_LIST))
+            ):
                 with open(f"{unit_name_list[i]}.rst", "w") as f:
 
                     # write doc title based on unit name
@@ -98,7 +108,10 @@ if __name__ == "__main__":
                         f.write(f"{title_exceptions[unit_name_list[i]]} Costing Method")
                         f.write("\n")
                         f.write(
-                            "=" * len(f"{title_exceptions[unit_name_list[i]]} Costing Method\n")
+                            "="
+                            * len(
+                                f"{title_exceptions[unit_name_list[i]]} Costing Method\n"
+                            )
                         )
                     else:
                         f.write(f"{unit_title} Costing Method")
@@ -136,7 +149,9 @@ if __name__ == "__main__":
                     # TODO: add capex eqs
                     f.write("\nCapital Cost Calculations\n")
                     f.write("+" * len("Capital Cost Calculations"))
-                    f.write("\n\nDescribe capital costs..keep it concise where possible\n\n")
+                    f.write(
+                        "\n\nDescribe capital costs..keep it concise where possible\n\n"
+                    )
                     f.write("    .. math::\n\n")
                     f.write(
                         "        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}"
@@ -153,7 +168,9 @@ if __name__ == "__main__":
                         "\n\nDescribe operating/maintenance costs..keep it concise where possible\n\n"
                     )
                     f.write("    .. math::\n\n")
-                    f.write("        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}")
+                    f.write(
+                        "        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}"
+                    )
                     f.write("\n\n    .. math::\n\n")
                     f.write(
                         "        C_{op,example1} = fill in equation for each component in total opex equation\n\n "
@@ -163,7 +180,9 @@ if __name__ == "__main__":
                     f.write("\nCode Documentation\n")
                     f.write("-" * len("Code Documentation"))
                     f.write(f"\n\n* :mod:`watertap.unit_models.{unit_name_list[i]}`")
-                    f.write(f"\n* :mod:`watertap.costing.unit_models.{unit_name_list[i]}`")
+                    f.write(
+                        f"\n* :mod:`watertap.costing.unit_models.{unit_name_list[i]}`"
+                    )
 
                     f.write("\n\nReferences\n")
                     f.write("-" * len("References"))
