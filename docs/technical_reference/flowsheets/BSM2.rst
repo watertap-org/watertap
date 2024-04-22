@@ -176,7 +176,8 @@ Additional Variables
 
 Additional Constraints
 ----------------------
-The subscript "out" represents the effluent from the secondary clarifier
+The following constraints represent concentration limits on treated water (secondary effluent) discharged into the environment.
+The subscript "out" represents the effluent from the secondary clarifier.
 
 .. csv-table::
    :header: "Description", "Equation"

@@ -35,7 +35,7 @@ The flowsheet relies on the following key assumptions:
    * property and reaction package are provided for the anaerobic digester model (ADM)
    * interfaces are provided to convert between the properties of ASM and ADM
 
-.. figure:: ../../_static/flowsheets/BSM2.png
+.. figure:: ../../_static/flowsheets/extended_BSM2.png
     :width: 800
     :align: center
 
