@@ -18,8 +18,8 @@ Implementation
 
 Figure 1 shows the process flow diagram for BSM2 where influent wastewater is fed
 to a primary clarifier (primary treatment); the effluent is then passed to a series of activated sludge
-reactors and a secondary clarifier (secondary treatment). CSTRs are used to model the anoxic reactors in the activated
-sludge process and CSTRs with injection (which accounts for aeration tanks) are used to model the aerobic reactors.
+reactors and a secondary clarifier (secondary treatment). CSTRs are used to model the two anoxic reactors in the activated
+sludge process and CSTRs with injection (which accounts for aeration tanks) are used to model the three aerobic reactors.
 Finally, the sludge is passed through a thickener and sent to the anaerobic digester. The anaerobic digester processes
 the sludge to produce a biogas stream and residual sludge stream that passes through a dewatering unit which recycles
 liquid to the headworks of the plant while sludge is released for disposal. Costing relationships for each of the unit
