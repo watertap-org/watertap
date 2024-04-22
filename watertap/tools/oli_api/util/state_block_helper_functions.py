@@ -20,7 +20,7 @@ from pyomo.environ import (
 
 from idaes.core import FlowsheetBlock, MaterialFlowBasis
 from idaes.core.util.scaling import calculate_scaling_factors
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 

@@ -64,7 +64,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import re
 
 __author__ = "Austin Ladshaw"

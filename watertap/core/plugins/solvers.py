@@ -202,14 +202,3 @@ class IpoptWaterTAP(IPOPT):
                 )
             return False
         return True
-
-
-## reconfigure IDAES to use the ipopt-watertap solver
-import idaes
-
-_default_solver_config_value = idaes.cfg.get("default_solver")
-_idaes_default_solver = _default_solver_config_value._default
-
-_default_solver_config_value.set_default_value("ipopt-watertap")
-if not _default_solver_config_value._userSet:
-    _default_solver_config_value.reset()

@@ -19,10 +19,10 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from pyomo.environ import *
 from pyomo.network import Port
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,

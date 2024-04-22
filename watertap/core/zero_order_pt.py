@@ -18,7 +18,7 @@ from types import MethodType
 from pyomo.environ import check_optimal_termination
 
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import number_activated_constraints
 from idaes.core.util.exceptions import InitializationError
 

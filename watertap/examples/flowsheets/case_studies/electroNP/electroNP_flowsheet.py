@@ -23,7 +23,7 @@ from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from watertap.unit_models.anaerobic_digester import AD
