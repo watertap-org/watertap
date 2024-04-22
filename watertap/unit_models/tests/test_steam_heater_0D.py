@@ -19,7 +19,7 @@ from idaes.core import FlowsheetBlock
 import watertap.property_models.water_prop_pack as props_w
 import watertap.property_models.seawater_prop_pack as props_sw
 from watertap.unit_models.steam_heater_0D import SteamHeater0D
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
 )

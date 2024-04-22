@@ -15,7 +15,7 @@ from idaes.core import (
     declare_process_block_class,
 )
 from idaes.models.unit_models.heat_exchanger import HeatExchangerData
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 from watertap.costing.unit_models.heat_exchanger import (
