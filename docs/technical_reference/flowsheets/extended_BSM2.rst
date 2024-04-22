@@ -43,12 +43,12 @@ The flowsheet relies on the following key assumptions:
 
 The objective function is to minimize the levelized cost of water, which can be represented by the following equation
 where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
-:math:`C_{ca,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
+:math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
 :math:`f_{util}` represents the utilization factor:
 
     .. math::
 
-        LCOW_{Q} = \frac{f_{crf}   C_{ca,tot} + C_{op,tot}}{f_{util} Q}
+        LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
 
 Documentation for each of the unit models can be found here:
     * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
@@ -67,7 +67,7 @@ Documentation for each of the property models can be found here:
 
 Degrees of Freedom
 ------------------
-The following variables must be specified by the user to run the BSM2 flowsheet:
+The following variables are initially specified for simulating the Extended BSM2 flowsheet (i.e., degrees of freedom = 0):
     * feed water conditions (flow, temperature, pressure, component concentrations, and alkalinity)
     * volume of activated sludge reactors
     * component injection rates for aerobic reactors
