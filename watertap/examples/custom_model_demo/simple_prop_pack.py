@@ -49,7 +49,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

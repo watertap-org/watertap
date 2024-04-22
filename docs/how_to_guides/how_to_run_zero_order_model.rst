@@ -8,7 +8,7 @@ The example script shown below is for the dual media filtration zero-order model
    from pyomo.environ import ConcreteModel
 
    from idaes.core import FlowsheetBlock
-   from idaes.core.solvers import get_solver
+   from watertap.core.solvers import get_solver
 
    from watertap.core.wt_database import Database
    from watertap.core.zero_order_properties import WaterParameterBlock

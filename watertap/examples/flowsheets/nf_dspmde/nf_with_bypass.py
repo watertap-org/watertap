@@ -23,7 +23,7 @@ from pyomo.environ import (
 )
 
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import (
