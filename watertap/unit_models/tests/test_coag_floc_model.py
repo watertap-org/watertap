@@ -94,24 +94,6 @@ def build():
     return m
 
 
-class TestCoagFloc(UnitTestHarness):
-    def configure(self):
-        m = build()
-
-        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]] = 1
-        self.unit_solutions[
-            m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "Sludge"]
-        ] = 0.009990636
-        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]] = (
-            0.01001510
-        )
-        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]] = (
-            9.36352627e-6
-        )
-
-        return m
-
-
 def build_no_chemicals():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -158,6 +140,24 @@ def build_no_chemicals():
 
 
 class TestCoagFloc(UnitTestHarness):
+    def configure(self):
+        m = build()
+
+        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]] = 1
+        self.unit_solutions[
+            m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "Sludge"]
+        ] = 0.009990636
+        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]] = (
+            0.01001510
+        )
+        self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]] = (
+            9.36352627e-6
+        )
+
+        return m
+
+
+class TestCoagFlocNoChemicals(UnitTestHarness):
     def configure(self):
         m = build_no_chemicals()
 
