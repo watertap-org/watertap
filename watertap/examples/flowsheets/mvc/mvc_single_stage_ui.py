@@ -21,7 +21,7 @@ from watertap.examples.flowsheets.mvc.mvc_single_stage import (
     set_up_optimization,
 )
 from pyomo.environ import units as pyunits, assert_optimal_termination, Objective
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 
 def export_to_ui():
