@@ -48,9 +48,9 @@ jobs:
           #   os-version: macos-10.15
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
@@ -70,4 +70,12 @@ jobs:
         # convert to XML
         coverage xml
     - name: Upload coverage report to Codecov
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v4
+      with:
+        fail_ci_if_error: true
+        verbose: true
+        # NOTE: secrets are not available for pull_request workflows
+        # However, as of 2024-02-10, Codecov is still allowing tokenless upload from PRs
+        # but does require token for other workflows e.g. merge to `main`
+        # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
+        token: ${{ secrets.CODECOV_TOKEN }}
