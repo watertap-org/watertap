@@ -38,8 +38,8 @@ jobs:
     # OS and/or Python version don't make a difference, so we choose ubuntu and 3.8 as defaults
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.8'
       - name: Install Black
@@ -58,8 +58,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [code-formatting]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.8'
       - name: Install dev dependencies
@@ -97,7 +97,7 @@ jobs:
             # limit uploading coverage report for a single Python version in the matrix
             coverage: true
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -241,7 +241,7 @@ jobs:
           - os: win64
             os-version: windows-2019
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -283,7 +283,7 @@ jobs:
         python-version:
           - '3.8'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
       with:
