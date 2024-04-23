@@ -216,7 +216,7 @@ see reaction package for documentation.}""",
             doc="P content of inert soluble COD S_I, [kg P/kg COD]",
         )
         self.eps_smooth = Param(
-            initialize=1e-10,
+            initialize=1e-4,
             units=pyunits.kg / pyunits.m**3,
             mutable=True,
             doc="Smoothing factor",
