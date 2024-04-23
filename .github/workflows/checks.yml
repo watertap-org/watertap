@@ -149,7 +149,7 @@ jobs:
 
   upload-coverage:
     name: Upload coverage report (Codecov)
-    needs: [pytest]
+    needs: [tests]
     runs-on: ubuntu-latest
     steps:
       # the checkout step is needed to have access to codecov.yml
