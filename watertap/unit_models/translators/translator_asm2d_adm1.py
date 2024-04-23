@@ -215,7 +215,7 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="P content of inert soluble COD S_I, [kg P/kg COD]",
         )
-        self.eps = Param(
+        self.eps_smooth = Param(
             initialize=1e-10,
             units=pyunits.kg / pyunits.m**3,
             mutable=True,
@@ -405,7 +405,7 @@ see reaction package for documentation.}""",
             return smooth_max(
                 0 * pyunits.kg / pyunits.m**3,
                 blk.properties_in[t].conc_mass_comp["S_F"] - blk.SN_org[t],
-                blk.eps,
+                blk.eps_smooth,
             )
 
         @self.Expression(self.flowsheet().time, doc="Amino acids mapping")
@@ -413,7 +413,7 @@ see reaction package for documentation.}""",
             return smooth_min(
                 blk.SN_org[t],
                 blk.properties_in[t].conc_mass_comp["S_F"],
-                blk.eps,
+                blk.eps_smooth,
             )
 
         @self.Constraint(
@@ -632,7 +632,7 @@ see reaction package for documentation.}""",
                 return smooth_max(
                     0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.4,
-                    blk.eps,
+                    blk.eps_smooth,
                 )
 
             # TODO: Can this be replaced with smooth_max or smooth_min?
@@ -649,7 +649,7 @@ see reaction package for documentation.}""",
                 return smooth_max(
                     0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.6,
-                    blk.eps,
+                    blk.eps_smooth,
                 )
 
             @self.Constraint(
@@ -1031,7 +1031,7 @@ see reaction package for documentation.}""",
                 return smooth_max(
                     0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.4,
-                    blk.eps,
+                    blk.eps_smooth,
                 )
 
             # TODO: Can this be replaced with smooth_max or smooth_min?
@@ -1048,7 +1048,7 @@ see reaction package for documentation.}""",
                 return smooth_max(
                     0 * pyunits.kg / pyunits.m**3,
                     (blk.properties_in[t].conc_mass_comp["X_S"] - blk.XN_org[t]) * 0.6,
-                    blk.eps,
+                    blk.eps_smooth,
                 )
 
             @self.Constraint(
