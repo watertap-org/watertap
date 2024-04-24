@@ -75,6 +75,14 @@ from watertap.unit_models.thickener import (
 )
 from watertap.core.util.initialization import check_solve
 
+from idaes.core.util import DiagnosticsToolbox
+
+from idaes.core.util.scaling import (
+    unscaled_constraints_generator,
+    unscaled_variables_generator,
+    badly_scaled_var_generator,
+)
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -82,11 +90,22 @@ _log = idaeslog.getLogger(__name__)
 def main():
     m = build_flowsheet()
     set_operating_conditions(m)
+
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
+
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+    dt.display_potential_evaluation_errors()
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     initialize_system(m)
     for mx in m.fs.mixers:
@@ -97,6 +116,9 @@ def main():
 
     results = solve(m)
 
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)
     m.fs.R6.KLa.fix(240)
@@ -106,6 +128,9 @@ def main():
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
     # Resolve with controls in place
     results = solve(m)
+
+    print("---Numerical Issues 2nd Solve---")
+    dt.report_numerical_issues()
 
     pyo.assert_optimal_termination(results)
     check_solve(
@@ -489,6 +514,57 @@ def set_operating_conditions(m):
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
     def scale_variables(m):
+        # iscale.set_scaling_factor(m.fs.R5.hydraulic_retention_time[0], 1e-3)
+        # iscale.set_scaling_factor(m.fs.R5.KLa, 1e-2)
+        # iscale.set_scaling_factor(m.fs.R6.hydraulic_retention_time[0], 1e-3)
+        # iscale.set_scaling_factor(m.fs.R6.KLa, 1e-2)
+        # iscale.set_scaling_factor(m.fs.R7.hydraulic_retention_time[0], 1e-3)
+        # iscale.set_scaling_factor(m.fs.thickener.volume[0], 1e-3)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_su"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_fa"], 1e-1)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_ch4"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_IC"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_IN"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_IP"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_su"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_fa"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_c4"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_pro"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_ac"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_I"], 1e-1)
+        # iscale.set_scaling_factor(m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_PHA"], 1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["S_su"], 1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["S_fa"], 1e-1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["S_ch4"], 1e9)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["S_IC"], 1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["S_IN"], 1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["S_IP"], 1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["X_su"], 1e9)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["X_fa"], 1e9)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["X_c4"], 1e9)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["X_pro"], 1e9)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["X_ac"], 1e9)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["X_I"], 1e-1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0].conc_mass_comp["X_PHA"], 1)
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e8)
+        # iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].conc_mass_comp["S_h2"], 1e5)
+        # iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].conc_mass_comp["S_ch4"], 1)
+        # iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].pressure_sat["S_h2"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["S_su"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["S_fa"], 1e-1)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["S_ch4"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["S_IC"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["S_IN"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["S_IP"], 1)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["X_su"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["X_fa"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["X_c4"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["X_pro"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["X_ac"], 1e9)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["X_I"], 1e-1)
+        # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0].conc_mass_comp["X_PHA"], 1)
+        # iscale.set_scaling_factor(m.fs.dewater.volume[0], 1e-3)
+
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
