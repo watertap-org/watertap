@@ -100,7 +100,6 @@ class FrictionFactor(Enum):
     """
 
     default_by_module_type = auto()
-    custom = auto()
 
 
 CONFIG_Template = ConfigDict()
