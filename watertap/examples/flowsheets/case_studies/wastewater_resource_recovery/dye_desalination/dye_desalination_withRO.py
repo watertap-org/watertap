@@ -38,7 +38,7 @@ from idaes.core import (
     MomentumBalanceType,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 
 import idaes.core.util.scaling as iscale

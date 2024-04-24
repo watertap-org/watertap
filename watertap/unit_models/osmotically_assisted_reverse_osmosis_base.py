@@ -24,7 +24,7 @@ from pyomo.environ import (
     value,
 )
 from idaes.core import UnitModelBlockData
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.misc import add_object_reference

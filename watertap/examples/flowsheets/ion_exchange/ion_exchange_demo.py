@@ -19,7 +19,7 @@ from pyomo.environ import (
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from idaes.core.solvers.get_solver import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.initialization import propagate_state

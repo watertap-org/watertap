@@ -16,7 +16,7 @@ import copy
 import time
 
 from abc import abstractmethod, ABC
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.deprecation import deprecation_warning
