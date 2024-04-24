@@ -91,6 +91,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="Overall process cost",
             is_output=True,
             output_category="Overall process cost",
+            chart_tye="stacked_bar_with_net",
+            chart_group="process_cost",
         )
 
     exports.add(
@@ -217,7 +219,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         if proc["process_type"] == "desalter":
             exports.add(
                 obj=block.desalter.base_cost,
-                name=f"{process} base cost",
+                name=f"{process_name} base cost",
                 ui_units=fs.costing.base_currency / pyunits.m**3,
                 display_units="$/m^3",
                 rounding=2,
@@ -229,7 +231,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             )
             exports.add(
                 obj=block.desalter.recovery_cost,
-                name=f"{process} rate cost LCOW/WR",
+                name=f"{process_name} rate cost LCOW/WR",
                 ui_units=fs.costing.base_currency / pyunits.m**3,
                 display_units="$/m^3/%",
                 rounding=2,

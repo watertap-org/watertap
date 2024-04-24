@@ -92,6 +92,8 @@ class ModelExport(BaseModel):
     is_readonly: Union[None, bool] = Field(default=None, validate_default=True)
     input_category: Optional[str] = None
     output_category: Optional[str] = None
+    chart_type: Optional[str] = None
+    chart_group: Optional[str] = None
     # computed
     obj_key: Union[None, str] = Field(default=None, validate_default=True)
     fixed: bool = True
