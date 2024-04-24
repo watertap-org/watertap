@@ -18,7 +18,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
     UnitModelCostingBlock,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 from watertap.costing import WaterTAPCosting
 from watertap.unit_models.tests.test_gac import build_crittenden

@@ -17,7 +17,7 @@ import pytest
 from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from pyomo.environ import ConcreteModel, value
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
