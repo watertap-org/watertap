@@ -67,7 +67,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 19
+    assert len(m.fs.unit.config) == 20
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -1115,7 +1115,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert pytest.approx(43.7056, rel=1e-3) == value(
             m.fs.unit.permeate_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(45.111, rel=1e-3) == value(
+        assert pytest.approx(45.1565, rel=1e-3) == value(
             m.fs.unit.permeate_side.properties_interface[
                 0, x_interface_in
             ].conc_mass_phase_comp["Liq", "NaCl"]

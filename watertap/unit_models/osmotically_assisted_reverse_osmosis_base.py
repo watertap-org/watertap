@@ -118,6 +118,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
             module_type=self.config.module_type,
+            friction_factor=self.config.friction_factor,
         )
 
         # Add constraint for equal temperature between bulk and interface
@@ -155,6 +156,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
             module_type=self.config.module_type,
+            friction_factor=self.config.friction_factor,
         )
 
         # Add constraint for equal temperature between bulk and interface
