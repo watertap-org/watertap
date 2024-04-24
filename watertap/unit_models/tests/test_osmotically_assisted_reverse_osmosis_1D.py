@@ -14,18 +14,10 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Var,
-    Constraint,
     assert_optimal_termination,
 )
-from pyomo.util.check_units import assert_units_consistent
-from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    FlowDirection,
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_1D import (
     OsmoticallyAssistedReverseOsmosis1D,
@@ -36,15 +28,10 @@ import watertap.property_models.NaCl_prop_pack as props
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
-    unscaled_variables_generator,
-    badly_scaled_var_generator,
 )
 
 from watertap.core import (
@@ -52,7 +39,6 @@ from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
-    FrictionFactor,
 )
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
