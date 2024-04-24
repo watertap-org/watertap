@@ -102,6 +102,7 @@ class FrictionFactor(Enum):
     default_by_module_type = auto()
     custom = auto()
 
+
 CONFIG_Template = ConfigDict()
 
 CONFIG_Template.declare(
@@ -386,7 +387,7 @@ class MembraneChannelMixin:
         pressure_change_type=PressureChangeType.calculated,
         custom_term=None,
         module_type=ModuleType.flat_sheet,
-        friction_factor=FrictionFactor.default_by_module_type
+        friction_factor=FrictionFactor.default_by_module_type,
     ):
         super().add_total_pressure_balances(
             has_pressure_change=has_pressure_change, custom_term=custom_term
@@ -406,7 +407,9 @@ class MembraneChannelMixin:
             self._add_pressure_change(pressure_change_type=pressure_change_type)
 
         if pressure_change_type == PressureChangeType.calculated:
-            self._add_calculated_pressure_change(module_type=module_type, friction_factor=friction_factor)
+            self._add_calculated_pressure_change(
+                module_type=module_type, friction_factor=friction_factor
+            )
 
     def add_interface_isothermal_conditions(self):
 
@@ -737,7 +740,11 @@ class MembraneChannelMixin:
             **tmp_dict,
         )
 
-    def _add_calculated_pressure_change(self, module_type=ModuleType.flat_sheet, friction_factor=FrictionFactor.default_by_module_type):
+    def _add_calculated_pressure_change(
+        self,
+        module_type=ModuleType.flat_sheet,
+        friction_factor=FrictionFactor.default_by_module_type,
+    ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
@@ -785,7 +792,9 @@ class MembraneChannelMixin:
                     doc="Darcy friction factor constraint for flat sheet membranes",
                 )
                 def eq_friction_factor(b, t, x):
-                    return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+                    return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[
+                        t, x
+                    ] == 189.3
 
             # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
             elif module_type == ModuleType.spiral_wound:
@@ -803,7 +812,9 @@ class MembraneChannelMixin:
         elif friction_factor == FrictionFactor.custom:
             raise NotImplementedError()
         else:
-            raise ConfigurationError(f"Unrecognized friction_factor type {friction_factor}")
+            raise ConfigurationError(
+                f"Unrecognized friction_factor type {friction_factor}"
+            )
 
         ## ==========================================================================
         # Pressure change per unit length due to friction
