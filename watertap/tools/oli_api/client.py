@@ -188,9 +188,9 @@ class OLIApi:
             dbs_file_inputs["modelName"] = "OLI_analysis"
 
         # TODO: unknown bug where only "liquid1" phase is found in Flash analysis
-        valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
+        self.valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
         if phases is not None:
-            invalid_phases = [p for p in phases if p not in valid_phases]
+            invalid_phases = [p for p in phases if p not in self.valid_phases]
             if invalid_phases:
                 raise RuntimeError(
                     "Failed DBS file generation. "
@@ -333,7 +333,22 @@ class OLIApi:
         headers = self.credential_manager.headers
         base_url = self.credential_manager.engine_url
         valid_get_flashes = ["corrosion-contact-surface", "chemistry-info"]
-        valid_post_flashes = ["isothermal", "corrosion-rates", "wateranalysis"]
+        valid_post_flashes = ["isothermal", "corrosion-rates", "wateranalysis", "bubblepoint"]
+        
+        if flash_method in [
+            "bubblepoint",
+            #TODO: uncomment the methods below only after trying and testing
+            # "dewpoint",
+            # "vapor-amount",
+            # "vapor-fraction",
+            # "isochoric",
+        ]:
+            dbs_summary = self.get_dbs_file_summary(dbs_file_id)
+            phase_list = dbs_summary['chemistry_info']['result']['phases']
+
+            if "vapor" not in phase_list:
+                raise RuntimeError("A vapor function ('{flash_method}') was called without included 'vapor' as a phase in the model")
+
         if flash_method in valid_get_flashes:
             mode = "GET"
             url = f"{base_url}/file/{dbs_file_id}/{flash_method}"
