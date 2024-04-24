@@ -30,7 +30,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
