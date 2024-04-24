@@ -809,12 +809,8 @@ class MembraneChannelMixin:
 
             else:
                 raise ConfigurationError(f"Unrecognized module_type type {module_type}")
-        elif friction_factor == FrictionFactor.custom:
-            raise NotImplementedError()
         else:
-            raise ConfigurationError(
-                f"Unrecognized friction_factor type {friction_factor}"
-            )
+            pass
 
         ## ==========================================================================
         # Pressure change per unit length due to friction
