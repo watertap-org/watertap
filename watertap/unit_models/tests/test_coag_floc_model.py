@@ -9,7 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import pytest
 from watertap.property_models.coagulation_prop_pack import CoagulationParameterBlock
+from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
+from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 from watertap.unit_models.coag_floc_model import CoagulationFlocculation
 from pyomo.environ import (
     ConcreteModel,
@@ -17,9 +20,11 @@ from pyomo.environ import (
     units as pyunits,
 )
 from idaes.core import FlowsheetBlock
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 from watertap.core.solvers import get_solver
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+import re
 
 __author__ = "Austin Ladshaw"
 
@@ -173,3 +178,136 @@ class TestCoagFlocNoChemicals(UnitTestHarness):
         )
 
         return m
+
+
+class TestCoagFlocErrorLog:
+    @pytest.mark.unit
+    def test_dictionary_error(self):
+
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = CoagulationParameterBlock()
+
+        bad_dict1 = {
+            "Alum": {
+                "foo_bar": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Did not provide a 'parameter_data' for chemical",
+        ):
+            m.fs.unit = CoagulationFlocculation(
+                property_package=m.fs.properties, chemical_additives=bad_dict1
+            )
+
+        bad_dict2 = {
+            "Alum": {
+                "parameter_data": {
+                    "foo_bar": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError, match="Did not provide a 'mw_additive' for chemical"
+        ):
+            m.fs.unit = CoagulationFlocculation(
+                property_package=m.fs.properties, chemical_additives=bad_dict2
+            )
+
+        bad_dict3 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": "foo-bar",
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError,
+            match="Did not provide a number for 'moles_salt_per_mole_additive'",
+        ):
+            m.fs.unit = CoagulationFlocculation(
+                property_package=m.fs.properties, chemical_additives=bad_dict3
+            )
+
+        bad_dict4 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "foo-bar": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError,
+            match="Did not provide a 'moles_salt_per_mole_additive' for chemical",
+        ):
+            m.fs.unit = CoagulationFlocculation(
+                property_package=m.fs.properties, chemical_additives=bad_dict4
+            )
+
+        bad_dict5 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 3,
+                    "foo-bar": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError, match="Did not provide a 'mw_salt' for chemical"
+        ):
+            m.fs.unit = CoagulationFlocculation(
+                property_package=m.fs.properties, chemical_additives=bad_dict5
+            )
+
+        bad_dict6 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": "not a tuple",
+                    "moles_salt_per_mole_additive": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError, match="Did not provide a tuple for 'mw_additive'"
+        ):
+            m.fs.unit = CoagulationFlocculation(
+                property_package=m.fs.properties, chemical_additives=bad_dict6
+            )
+
+    @pytest.mark.unit
+    def test_property_error(self):
+
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        error_msg = (
+            "Coagulation-Flocculation model MUST contain ('Liq','TDS') "
+            "as a component, but the property package has only specified "
+            "the following components [('Liq', 'H2O'), ('Liq', 'NaCl')]"
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.properties = NaClParameterBlock()
+            m.fs.unit = CoagulationFlocculation(property_package=m.fs.properties)
+
+        error_msg = (
+            "Coagulation-Flocculation model MUST contain ('Liq','Sludge') "
+            "as a component, but the property package has only specified "
+            "the following components [('Liq', 'H2O'), ('Liq', 'TDS')]"
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.properties = SeawaterParameterBlock()
+            m.fs.unit = CoagulationFlocculation(property_package=m.fs.properties)
