@@ -342,7 +342,6 @@ CONFIG_Template.declare(
         :header: "Configuration Options", "Description"
 
         "``FrictionFactor.default_by_module_type``", "Friction factor correlation that is specific to the supported membrane modules type"
-        "``FrictionFactor.custom``", "Custom user-defined friction factor correlations"
     """,
     ),
 )
