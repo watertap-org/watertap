@@ -20,7 +20,7 @@ users to model the chemical and physical properties of simple systems without th
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import solver from IDAES core
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     # Import MCAS property model
     import watertap.property_models.multicomp_aq_sol_prop_pack as props
     # Import utility tool for calculating scaling factors

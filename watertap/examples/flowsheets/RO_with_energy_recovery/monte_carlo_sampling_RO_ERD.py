@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.tools.parameter_sweep import (
     UniformSample,
     NormalSample,

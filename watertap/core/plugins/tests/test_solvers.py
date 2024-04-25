@@ -20,7 +20,7 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
     constraints_with_scale_factor_generator,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP, _pyomo_nl_writer_log
 
 

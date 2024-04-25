@@ -12,7 +12,7 @@
 
 import pyomo.environ as pyo
 from idaes.core.util.scaling import get_scaling_factor, __none_left_mult
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 
 def assert_no_initialization_perturbation(blk, optarg=None, solver=None):

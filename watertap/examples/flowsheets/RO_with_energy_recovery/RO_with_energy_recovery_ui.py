@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     build,

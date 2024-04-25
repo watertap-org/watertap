@@ -16,7 +16,7 @@ from pyomo.environ import (
     value,
 )
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Product, Feed
 from pyomo.util.check_units import assert_units_consistent
