@@ -28,7 +28,6 @@ from idaes.core.util.scaling import (
 )
 
 from watertap.core import (
-    MembraneChannel0DBlock,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
