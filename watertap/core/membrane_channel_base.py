@@ -95,8 +95,8 @@ class PressureChangeType(Enum):
 
 class FrictionFactor(Enum):
     """
-    flat_sheet: Darcy's friction factor correlation by Guillen & Hoek
-    spiral_wound: Darcy's friction factor correlation by Schock & Miquel, 1987
+    default_by_module_type: Will revert FrictionFactor to either the Darcy's friction factor correlation
+    by Guillen & Hoek (flat-plate) or by Schock & Miquel (spiral-wound)
     """
 
     default_by_module_type = auto()
