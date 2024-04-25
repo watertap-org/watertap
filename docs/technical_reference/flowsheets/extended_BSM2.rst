@@ -26,8 +26,7 @@ reactors and a secondary clarifier (secondary treatment). CSTRs are used to mode
 sludge process and CSTRs with injection (which accounts for aeration tanks) are used to model the three aerobic reactors.
 Finally, the sludge is passed through a thickener and sent to the anaerobic digester. The anaerobic digester processes
 the sludge to produce a biogas stream and residual sludge stream that passes through a dewatering unit which recycles
-liquid to the headworks of the plant while sludge is released for disposal. Costing relationships for each of the unit
-models is described in the `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+liquid to the headworks of the plant while sludge is released for disposal.
 The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
@@ -41,6 +40,24 @@ The flowsheet relies on the following key assumptions:
 
     Figure 1. BSM2 flowsheet
 
+Documentation for each of the unit models can be found below.
+    * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
+    * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
+    * `Dewatering unit <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/dewatering_unit.html>`_
+    * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
+    * `ADM1 to ASM2d Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_adm1_asm2d.html>`_
+    * `ASM2d to ADM1 Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_asm2d_adm1.html>`_
+    * Aeration tank
+    * Primary clarifier
+    * Secondary clarifier
+
+Documentation for each of the property models can be found below. All unit models were set up with their default configuration arguments.
+    * `Modified ASM2d <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ASM2D.html>`_
+    * `Modified ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ADM1.html>`_
+
+Documentation for the costing relationships can be found below.
+    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+
 The objective function is to minimize the levelized cost of water, which can be represented by the following equation
 where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
 :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
@@ -50,20 +67,6 @@ where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital r
 
         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
 
-Documentation for each of the unit models can be found here:
-    * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
-    * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
-    * `Dewatering unit <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/dewatering_unit.html>`_
-    * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
-    * `ADM1 to ASM2d Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_adm1_asm2d.html>`_
-    * `ASM2d to ADM1 Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_asm2d_adm1.html>`_
-    * CSTR with injection
-    * Primary clarifier
-    * Secondary clarifier
-
-Documentation for each of the property models can be found here:
-    * `Modified ASM2d <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ASM2D.html>`_
-    * `Modified ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ADM1.html>`_
 
 Degrees of Freedom
 ------------------
