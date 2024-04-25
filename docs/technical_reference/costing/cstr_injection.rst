@@ -4,7 +4,7 @@ Completely Stirred Tank Reactor w/Injection Stream Costing Method
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed when applying the `cost_cstr_injection` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.cstr_injection`) when applying the `cost_cstr_injection` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -14,7 +14,7 @@ The following parameters are constructed when applying the `cost_cstr_injection`
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed when applying the `cost_cstr_injection` costing method in the ``watertap_costing_package``:
+The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_cstr_injection` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
@@ -52,7 +52,6 @@ Describe operating/maintenance costs..keep it concise where possible
 Code Documentation
 ------------------
 
-* :mod:`watertap.unit_models.cstr_injection`
 * :mod:`watertap.costing.unit_models.cstr_injection`
 
 References

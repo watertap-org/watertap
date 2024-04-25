@@ -122,7 +122,7 @@ if __name__ == "__main__":
                     f.write("\n\nCosting Method Parameters\n")
                     f.write("+" * len("Costing Method Parameters"))
                     f.write(
-                        f"\n\nThe following parameters are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
+                        f"\n\nThe following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.{unit_name_list[i]}`) when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
                     )
                     f.write(".. csv-table::\n")
                     f.write(
@@ -136,7 +136,7 @@ if __name__ == "__main__":
                     f.write("\nCosting Method Variables\n")
                     f.write("+" * len("Costing Method Variables"))
                     f.write(
-                        f"\n\nThe following variables are constructed when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
+                        f"\n\nThe following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_{unit_name_list[i]}` costing method in the ``watertap_costing_package``:\n\n"
                     )
                     f.write(".. csv-table::\n")
                     f.write(

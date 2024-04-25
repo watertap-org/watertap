@@ -4,7 +4,7 @@ Thickener Costing Method
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed when applying the `cost_thickener` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.thickener`) when applying the `cost_thickener` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -14,7 +14,7 @@ The following parameters are constructed when applying the `cost_thickener` cost
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed when applying the `cost_thickener` costing method in the ``watertap_costing_package``:
+The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_thickener` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
@@ -52,7 +52,6 @@ Describe operating/maintenance costs..keep it concise where possible
 Code Documentation
 ------------------
 
-* :mod:`watertap.unit_models.thickener`
 * :mod:`watertap.costing.unit_models.thickener`
 
 References
