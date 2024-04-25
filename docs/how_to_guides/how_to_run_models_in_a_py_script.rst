@@ -69,7 +69,7 @@ Example: Python file with recommended structure
    # Import RO model
    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
    # import the solver
-   from idaes.core.solvers import get_solver
+   from watertap.core.solvers import get_solver
 
 
    # Put all the model constructors, initialization, and solver in a separate function
@@ -128,7 +128,7 @@ Example: the same code without recommended structure (may cause errors on Window
    # Import RO model
    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
    # import the solver
-   from idaes.core.solvers import get_solver
+   from watertap.core.solvers import get_solver
 
    # Create a concrete model, flowsheet, and NaCl property parameter block.
    m = ConcreteModel()

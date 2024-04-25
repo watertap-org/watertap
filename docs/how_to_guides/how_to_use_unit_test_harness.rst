@@ -30,7 +30,7 @@ assumes a test file is being created for an anaerobic digester.
     from pyomo.environ import ConcreteModel
 
     from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     import idaes.core.util.scaling as iscale
 
     from watertap.costing import WaterTAPCosting

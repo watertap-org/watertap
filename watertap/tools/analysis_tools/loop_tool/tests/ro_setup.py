@@ -20,7 +20,7 @@ from watertap.tools.parameter_sweep.parameter_sweep_reader import ParameterSweep
 from watertap.tools.parameter_sweep.parameter_sweep_differential import (
     DifferentialParameterSweep,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import os
 
 __author__ = "Alexander V. Dudchenko (SLAC)"

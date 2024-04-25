@@ -12,7 +12,7 @@
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.examples.flowsheets.nf_dspmde import nf_with_bypass
 from watertap.examples.flowsheets.nf_dspmde import nf
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from pyomo.environ import (
     units as pyunits,
