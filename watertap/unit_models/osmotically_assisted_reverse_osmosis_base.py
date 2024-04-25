@@ -343,24 +343,25 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             )
 
         if include_constraint:
-            if self.config.module_type == ModuleType.flat_sheet:
-                # Membrane area equation for flat plate membranes
-                @self.Constraint(doc="Total Membrane area")
-                def eq_area(b):
-                    return b.area == b.length * b.width
+            if not hasattr(self, "eq_area"):
+                if self.config.module_type == ModuleType.flat_sheet:
+                    # Membrane area equation for flat plate membranes
+                    @self.Constraint(doc="Total Membrane area")
+                    def eq_area(b):
+                        return b.area == b.length * b.width
 
-            elif self.config.module_type == ModuleType.spiral_wound:
-                # Membrane area equation
-                @self.Constraint(doc="Total Membrane area")
-                def eq_area(b):
-                    return b.area == b.length * 2 * b.width
+                elif self.config.module_type == ModuleType.spiral_wound:
+                    # Membrane area equation
+                    @self.Constraint(doc="Total Membrane area")
+                    def eq_area(b):
+                        return b.area == b.length * 2 * b.width
 
-            else:
-                raise ConfigurationError(
-                    "Unsupported membrane module type: {}".format(
-                        self.config.module_type
+                else:
+                    raise ConfigurationError(
+                        "Unsupported membrane module type: {}".format(
+                            self.config.module_type
+                        )
                     )
-                )
 
     def _add_flux_balance(self):
 
