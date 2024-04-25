@@ -97,7 +97,7 @@ For OARO units, typically there are 7 DOF that require to be fixed:
 
    "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`", "1E-12"
    "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`", "8E-8"
-   "Membrane structural parameter", ":math:`S`", "structural_parameter", "[None]", ":math:`\text{\mu m}`", "1200"
+   "Membrane structural parameter", ":math:`S`", "structural_parameter", "[None]", ":math:`\text{\mu} \text{m}`", "1200"
    "Feed-channel height", ":math:`h_{ch,f}`", "feed_side.channel_height", "None", ":math:`\text{m}`", "2E-3"
    "Feed-side spacer porosity", ":math:`\epsilon_{sp,f}`", "feed_side.spacer_porosity", "None", ":math:`\text{dimensionless}`", "0.75"
    "Permeate-channel height", ":math:`h_{ch,p}`", "permeate_side.channel_height", "None", ":math:`\text{m}`", "2E-3"
