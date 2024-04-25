@@ -40,7 +40,7 @@ The flowsheet relies on the following key assumptions:
 
     Figure 1. BSM2 flowsheet
 
-Documentation for each of the unit models can be found below.
+Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
     * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
     * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
     * `Dewatering unit <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/dewatering_unit.html>`_
@@ -51,7 +51,7 @@ Documentation for each of the unit models can be found below.
     * Primary clarifier
     * Secondary clarifier
 
-Documentation for each of the property models can be found below. All unit models were set up with their default configuration arguments.
+Documentation for each of the property models can be found below.
     * `Modified ASM2d <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ASM2D.html>`_
     * `Modified ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ADM1.html>`_
 
