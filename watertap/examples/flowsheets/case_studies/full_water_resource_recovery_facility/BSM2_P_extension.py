@@ -683,48 +683,9 @@ def initialize_system(m):
         "pressure": {0: 101325},
     }
 
-    tear_guesses3 = {
-        "flow_vol": {0: 0.003},
-        "conc_mass_comp": {
-            (0, "S_I"): 0.057,
-            (0, "S_IC"): 1.186,
-            (0, "S_IN"): 1.72,
-            (0, "S_IP"): 3.125,
-            (0, "S_K"): 1.217,
-            (0, "S_Mg"): 0.0028,
-            (0, "S_aa"): 0.00136,
-            (0, "S_ac"): 0.0254,
-            (0, "S_bu"): 0.379,
-            (0, "S_ch4"): 0.0267,
-            (0, "S_fa"): 0.078,
-            (0, "S_h2"): 0.342,
-            (0, "S_pro"): 23.4,
-            (0, "S_su"): 11.5,
-            (0, "S_va"): 10.3,
-            (0, "X_I"): 0.0044,
-            (0, "X_PAO"): 2.76,
-            (0, "X_PHA"): 3.83,
-            (0, "X_PP"): 2.76,
-            (0, "X_aa"): 3.83,
-            (0, "X_ac"): 2.76,
-            (0, "X_c4"): 3.83,
-            (0, "X_ch"): 2.76,
-            (0, "X_fa"): 3.83,
-            (0, "X_h2"): 2.76,
-            (0, "X_li"): 3.83,
-            (0, "X_pr"): 2.76,
-            (0, "X_pro"): 3.83,
-            (0, "X_su"): 2.76,
-        },
-        "temperature": {0: 308.15},
-        "pressure": {0: 101325},
-    }
-
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
-    seq.set_guesses_for(m.fs.AD.inlet, tear_guesses3)
-    seq.set_guesses_for(m.fs.AD.outlet, tear_guesses4)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO)
@@ -764,5 +725,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-
-    m.fs.AD.display()
