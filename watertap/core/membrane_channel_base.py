@@ -73,8 +73,8 @@ class TransportModel(Enum):
 
 class ModuleType(Enum):
     """
-    flat_sheet:
-    spiral_wound:
+    flat_sheet: flat-sheet module configuration
+    spiral_wound: spiral-wound module configuration
     """
 
     flat_sheet = auto()
