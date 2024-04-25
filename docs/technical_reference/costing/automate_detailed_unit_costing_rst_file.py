@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     for i, unit_title in enumerate(unit_title_list):
         for l, line in enumerate(lines):
-            # set on_list flag to False in unit name not found in landing page list
+            # set on_list flag to False if unit name not found in landing page list
             if unit_name_list[i] != line.strip():
                 on_list = False
             # set on_list flag to True if unit name is on landing page list and break inner loop
