@@ -69,7 +69,6 @@ def build():
     hot_ch_flow_mass = 1
     hot_ch_mass_frac_TDS = 0.035
     hot_ch_pressure = 7e5
-    membrane_pressure_drop = -0.5e5
     membrane_area = 12
     hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
     m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
@@ -153,7 +152,6 @@ def build_temperature_polarization_none():
     hot_ch_flow_mass = 1
     hot_ch_mass_frac_TDS = 0.035
     hot_ch_pressure = 7e5
-    membrane_pressure_drop = -0.5e5
     membrane_area = 5
     hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
     m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
@@ -233,7 +231,6 @@ def build_temperature_polarization_fixed():
     hot_ch_flow_mass = 1
     hot_ch_mass_frac_TDS = 0.035
     hot_ch_pressure = 7e5
-    membrane_pressure_drop = -0.5e5
     membrane_area = 12
     hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
     m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
@@ -318,7 +315,6 @@ def build_temperature_polarization_calculated():
     hot_ch_flow_mass = 1
     hot_ch_mass_frac_TDS = 0.035
     hot_ch_pressure = 7e5
-    membrane_pressure_drop = -0.5e5
     membrane_area = 12
     hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
     m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
@@ -406,7 +402,6 @@ def build_temperature_polarization_calculated_concentration_polarization_fixed()
     hot_ch_flow_mass = 1
     hot_ch_mass_frac_TDS = 0.035
     hot_ch_pressure = 7e5
-    membrane_pressure_drop = -0.5e5
     membrane_area = 12
     hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
     m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
@@ -497,7 +492,6 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     hot_ch_flow_mass = 1
     hot_ch_mass_frac_TDS = 0.035
     hot_ch_pressure = 7e5
-    membrane_pressure_drop = -0.5e5
     membrane_area = 12
     hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
     m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
@@ -781,7 +775,6 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
     hot_ch_flow_mass = 1
     hot_ch_mass_frac_TDS = 0.035
     hot_ch_pressure = 7e5
-    membrane_pressure_drop = -5e5
     membrane_area = 12
     hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
     m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
