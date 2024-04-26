@@ -67,7 +67,7 @@ class TranslatorDataASM2dADM1(TranslatorData):
     CONFIG.declare(
         "bio_P",
         ConfigValue(
-            default=True,
+            default=False,
             domain=Bool,
             description="Switching function for phosphorus biomass",
             doc="""Switching function for handling the transformation of phosphorus biomass,
