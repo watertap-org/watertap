@@ -13,8 +13,7 @@
 import logging
 
 import pyomo.environ as pyo
-from pyomo.core.base.block import _BlockData
-from pyomo.core.kernel.block import IBlock
+from pyomo.common.collections import Bunch
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 
 import idaes.core.util.scaling as iscale
@@ -41,26 +40,30 @@ def _pyomo_nl_writer_logger_filter(record):
     "ipopt-watertap",
     doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
 )
-class IpoptWaterTAP(IPOPT):
+class IpoptWaterTAP:
+
+    name = "ipopt-watertap"
+    _base_solver = IPOPT
+
     def __init__(self, **kwds):
-        kwds["name"] = "ipopt-watertap"
-        self._cleanup_needed = False
-        super().__init__(**kwds)
+        kwds["name"] = self.name
+        self.options = Bunch()
+        for opt_key, opt_val in kwds.get("options", {}).items():
+            setattr(self.options, opt_key, opt_val)
 
-    def _presolve(self, *args, **kwds):
-        if len(args) > 1 or len(args) == 0:
-            raise TypeError(
-                f"IpoptWaterTAP.solve takes 1 positional argument but {len(args)} were given"
-            )
-        if not isinstance(args[0], (_BlockData, IBlock)):
-            raise TypeError(
-                "IpoptWaterTAP.solve takes 1 positional argument: a Pyomo ConcreteModel or Block"
-            )
+    def executable(self):
+        return self._base_solver().executable()
 
-        # until proven otherwise
-        self._cleanup_needed = False
+    def solve(self, blk, *args, **kwds):
 
+        solver = self._base_solver()
         self._tee = kwds.get("tee", False)
+
+        self._original_options = self.options
+
+        self.options = Bunch()
+        self.options.update(self._original_options)
+        self.options.update(kwds.pop("options", {}))
 
         # Set the default watertap options
         if "tol" not in self.options:
@@ -75,15 +78,39 @@ class IpoptWaterTAP(IPOPT):
             self.options["honor_original_bounds"] = "no"
 
         if not self._is_user_scaling():
-            super()._presolve(*args, **kwds)
-            self._cleanup()
-            return
+            for k, v in self.options.items():
+                solver.options[k] = v
+            try:
+                return solver.solve(blk, *args, **kwds)
+            finally:
+                self._options_cleanup()
 
         if self._tee:
             print(
                 "ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling"
             )
 
+        _pyomo_nl_writer_log.addFilter(_pyomo_nl_writer_logger_filter)
+        nlp = self._scale_constraints(blk)
+
+        # set different default for `alpha_for_y` if this is an LP
+        # see: https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_alpha_for_y
+        if nlp is not None:
+            if nlp.nnz_hessian_lag() == 0:
+                if "alpha_for_y" not in self.options:
+                    self.options["alpha_for_y"] = "bound-mult"
+
+        # Now set the options to be used by Ipopt
+        # as we've popped off the above in _get_option
+        for k, v in self.options.items():
+            solver.options[k] = v
+
+        try:
+            return solver.solve(blk, *args, **kwds)
+        finally:
+            self._cleanup()
+
+    def _scale_constraints(self, blk):
         # These options are typically available with gradient-scaling, and they
         # have corresponding options in the IDAES constraint_autoscale_large_jac
         # function. Here we use their Ipopt names and default values, see
@@ -97,10 +124,7 @@ class IpoptWaterTAP(IPOPT):
         ignore_variable_scaling = self._get_option("ignore_variable_scaling", False)
         ignore_constraint_scaling = self._get_option("ignore_constraint_scaling", False)
 
-        self._model = args[0]
-        self._cache_scaling_factors()
-        self._cleanup_needed = True
-        _pyomo_nl_writer_log.addFilter(_pyomo_nl_writer_logger_filter)
+        self._cache_scaling_factors(blk)
 
         # NOTE: This function sets the scaling factors on the
         #       constraints. Hence we cache the constraint scaling
@@ -109,7 +133,7 @@ class IpoptWaterTAP(IPOPT):
         #       each time based on the initial values, just like in Ipopt.
         try:
             _, _, nlp = iscale.constraint_autoscale_large_jac(
-                self._model,
+                blk,
                 ignore_constraint_scaling=ignore_constraint_scaling,
                 ignore_variable_scaling=ignore_variable_scaling,
                 max_grad=max_grad,
@@ -137,35 +161,21 @@ class IpoptWaterTAP(IPOPT):
                 self._cleanup()
                 raise
 
-        # set different default for `alpha_for_y` if this is an LP
-        # see: https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_alpha_for_y
-        if nlp is not None:
-            if nlp.nnz_hessian_lag() == 0:
-                if "alpha_for_y" not in self.options:
-                    self.options["alpha_for_y"] = "bound-mult"
+        return nlp
 
-        try:
-            # this creates the NL file, among other things
-            return super()._presolve(*args, **kwds)
-        except:
-            self._cleanup()
-            raise
+    def _options_cleanup(self):
+        self.options = self._original_options
+        del self._original_options
 
     def _cleanup(self):
-        if self._cleanup_needed:
-            self._reset_scaling_factors()
-            # remove our reference to the model
-            del self._model
-            _pyomo_nl_writer_log.removeFilter(_pyomo_nl_writer_logger_filter)
+        self._options_cleanup()
+        self._reset_scaling_factors()
+        _pyomo_nl_writer_log.removeFilter(_pyomo_nl_writer_logger_filter)
 
-    def _postsolve(self):
-        self._cleanup()
-        return super()._postsolve()
-
-    def _cache_scaling_factors(self):
+    def _cache_scaling_factors(self, blk):
         self._scaling_cache = [
             (c, get_scaling_factor(c))
-            for c in self._model.component_data_objects(
+            for c in blk.component_data_objects(
                 pyo.Constraint, active=True, descend_into=True
             )
         ]
@@ -179,10 +189,8 @@ class IpoptWaterTAP(IPOPT):
         del self._scaling_cache
 
     def _get_option(self, option_name, default_value):
-        # NOTE: options get reset to their original value at the end of the
-        #       OptSolver.solve. The options in _presolve (where this is called)
-        #       are already copies of the original, so it is safe to pop them so
-        #       they don't get sent to Ipopt.
+        # NOTE: The options are already copies of the original,
+        #       so it is safe to pop them so they don't get sent to Ipopt.
         option_value = self.options.pop(option_name, None)
         if option_value is None:
             option_value = default_value
