@@ -35,7 +35,7 @@ from idaes.models.unit_models import (
     PressureChanger,
 )
 from idaes.models.unit_models.separator import SplittingType
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
