@@ -44,6 +44,7 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 from watertap.unit_models.cstr_injection import CSTR_Injection
+from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -139,7 +140,7 @@ def build_flowsheet():
 
     # ====================================================================
     # Primary Clarifier
-    m.fs.CL = Separator(
+    m.fs.CL = Clarifier(
         property_package=m.fs.props_ASM2D,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
@@ -186,7 +187,7 @@ def build_flowsheet():
     )
     # Secondary Clarifier
     # TODO: Replace with more detailed model when available
-    m.fs.CL2 = Separator(
+    m.fs.CL2 = Clarifier(
         property_package=m.fs.props_ASM2D,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
@@ -532,52 +533,52 @@ def initialize_system(m):
 
     # Initial guesses for flow into first reactor
     tear_guesses = {
-        "flow_vol": {0: 1.2368},
+        "flow_vol": {0: 1.235},
         "conc_mass_comp": {
             (0, "S_A"): 0.0007,
-            (0, "S_F"): 0.000429,
-            (0, "S_I"): 0.05745,
-            (0, "S_N2"): 0.0534,
-            (0, "S_NH4"): 0.0092,
-            (0, "S_NO3"): 0.00403,
+            (0, "S_F"): 0.0004,
+            (0, "S_I"): 0.0575,
+            (0, "S_N2"): 0.05,
+            (0, "S_NH4"): 0.007,
+            (0, "S_NO3"): 0.0035,
             (0, "S_O2"): 0.00192,
-            (0, "S_PO4"): 0.0123,
-            (0, "S_K"): 0.373,
-            (0, "S_Mg"): 0.023,
-            (0, "S_IC"): 0.135,
-            (0, "X_AUT"): 0.1382,
-            (0, "X_H"): 3.6356,
-            (0, "X_I"): 3.2611,
-            (0, "X_PAO"): 3.3542,
-            (0, "X_PHA"): 0.089416,
-            (0, "X_PP"): 1.1127,
-            (0, "X_S"): 0.059073,
+            (0, "S_PO4"): 0.02,
+            (0, "S_K"): 0.37,
+            (0, "S_Mg"): 0.02,
+            (0, "S_IC"): 0.11,
+            (0, "X_AUT"): 0.12,
+            (0, "X_H"): 3.3,
+            (0, "X_I"): 3.0,
+            (0, "X_PAO"): 2.3,
+            (0, "X_PHA"): 0.06,
+            (0, "X_PP"): 0.75,
+            (0, "X_S"): 0.050,
         },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
     }
 
     tear_guesses2 = {
-        "flow_vol": {0: 0.003},
+        "flow_vol": {0: 0.0027},
         "conc_mass_comp": {
-            (0, "S_A"): 0.10,
-            (0, "S_F"): 0.16,
-            (0, "S_I"): 0.05745,
-            (0, "S_N2"): 0.039,
-            (0, "S_NH4"): 0.034,
-            (0, "S_NO3"): 0.0028,
-            (0, "S_O2"): 0.00136,
-            (0, "S_PO4"): 0.0254,
-            (0, "S_K"): 0.379,
-            (0, "S_Mg"): 0.0267,
-            (0, "S_IC"): 0.078,
-            (0, "X_AUT"): 0.342,
-            (0, "X_H"): 23.4,
-            (0, "X_I"): 11.5,
-            (0, "X_PAO"): 10.3,
-            (0, "X_PHA"): 0.0044,
-            (0, "X_PP"): 2.76,
-            (0, "X_S"): 3.83,
+            (0, "S_A"): 0.044,
+            (0, "S_F"): 0.15,
+            (0, "S_I"): 0.0575,
+            (0, "S_N2"): 0.035,
+            (0, "S_NH4"): 0.03,
+            (0, "S_NO3"): 0.002,
+            (0, "S_O2"): 0.0012,
+            (0, "S_PO4"): 0.02,
+            (0, "S_K"): 0.38,
+            (0, "S_Mg"): 0.023,
+            (0, "S_IC"): 0.063,
+            (0, "X_AUT"): 0.31,
+            (0, "X_H"): 24.8,
+            (0, "X_I"): 11.8,
+            (0, "X_PAO"): 8.5,
+            (0, "X_PHA"): 0.086,
+            (0, "X_PP"): 2.1,
+            (0, "X_S"): 4.2,
         },
         "temperature": {0: 308.15},
         "pressure": {0: 101325},
