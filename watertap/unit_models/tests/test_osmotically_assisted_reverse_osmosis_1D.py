@@ -1073,7 +1073,9 @@ def build_Pdrop_spiral_wound_calculation():
     return m
 
 
-class TestOsmoticallyAssistedReverseOsmosis_Pdrop_spiral_wound_calculation(UnitTestHarness):
+class TestOsmoticallyAssistedReverseOsmosis_Pdrop_spiral_wound_calculation(
+    UnitTestHarness
+):
     def configure(self):
         m = build_Pdrop_spiral_wound_calculation()
 
@@ -1095,12 +1097,12 @@ class TestOsmoticallyAssistedReverseOsmosis_Pdrop_spiral_wound_calculation(UnitT
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]] = (
             4.38572890e-06
         )
-        self.unit_solutions[m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]] = (
-            0.1910
-        )
-        self.unit_solutions[m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]] = (
-            0.02052
-        )
+        self.unit_solutions[
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.1910
+        self.unit_solutions[
+            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        ] = 0.02052
 
         self.unit_solutions[
             m.fs.unit.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
@@ -1138,7 +1140,6 @@ class TestOsmoticallyAssistedReverseOsmosis_Pdrop_spiral_wound_calculation(UnitT
         ] = 28.036
 
         return m
-
 
 
 class TestOsmoticallyAssistedReverseOsmosis_water_recovery:
