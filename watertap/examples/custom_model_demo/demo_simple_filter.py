@@ -15,7 +15,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 import watertap.examples.custom_model_demo.simple_prop_pack as props
 from watertap.examples.custom_model_demo.simple_filter import Filtration

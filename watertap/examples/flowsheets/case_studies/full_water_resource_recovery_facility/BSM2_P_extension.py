@@ -35,7 +35,7 @@ from idaes.models.unit_models import (
     PressureChanger,
 )
 from idaes.models.unit_models.separator import SplittingType
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -282,9 +282,8 @@ def build_flowsheet():
     m.fs.stream12 = Arc(source=m.fs.SP1.underflow, destination=m.fs.MX2.clarifier)
     m.fs.stream13 = Arc(source=m.fs.CL2.effluent, destination=m.fs.Treated.inlet)
     m.fs.stream14 = Arc(source=m.fs.CL2.underflow, destination=m.fs.SP2.inlet)
-    m.fs.stream15 = Arc(source=m.fs.SP2.waste, destination=m.fs.Sludge.inlet)
-    m.fs.stream16 = Arc(source=m.fs.SP2.recycle, destination=m.fs.P1.inlet)
-    m.fs.stream17 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
+    m.fs.stream15 = Arc(source=m.fs.SP2.recycle, destination=m.fs.P1.inlet)
+    m.fs.stream16 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
 
     # Link units related to AD section
     m.fs.stream_AD_translator = Arc(
@@ -304,6 +303,9 @@ def build_flowsheet():
     m.fs.stream1a = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX3.feed_water)
     m.fs.stream1b = Arc(source=m.fs.MX3.outlet, destination=m.fs.CL.inlet)
     m.fs.stream1c = Arc(source=m.fs.CL.effluent, destination=m.fs.MX1.feed_water)
+    m.fs.stream_dewater_sludge = Arc(
+        source=m.fs.dewater.underflow, destination=m.fs.Sludge.inlet
+    )
     m.fs.stream_dewater_mixer = Arc(
         source=m.fs.dewater.overflow, destination=m.fs.MX3.recycle1
     )
@@ -340,7 +342,7 @@ def build_flowsheet():
         doc="Dissolved oxygen concentration at equilibrium",
     )
 
-    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
+    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R5")
     def mass_transfer_R5(self, t):
         return pyo.units.convert(
             m.fs.R5.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -350,7 +352,7 @@ def build_flowsheet():
             * (m.fs.S_O_eq - m.fs.R5.outlet.conc_mass_comp[t, "S_O2"])
         )
 
-    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R6")
     def mass_transfer_R6(self, t):
         return pyo.units.convert(
             m.fs.R6.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -360,7 +362,7 @@ def build_flowsheet():
             * (m.fs.S_O_eq - m.fs.R6.outlet.conc_mass_comp[t, "S_O2"])
         )
 
-    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R7")
     def mass_transfer_R7(self, t):
         return pyo.units.convert(
             m.fs.R7.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour

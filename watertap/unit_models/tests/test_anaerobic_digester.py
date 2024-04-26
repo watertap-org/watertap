@@ -27,7 +27,7 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.unit_models.anaerobic_digester import AD
 from watertap.property_models.anaerobic_digestion.adm1_properties import (

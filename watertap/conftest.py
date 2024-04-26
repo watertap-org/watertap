@@ -46,7 +46,7 @@ class MarkerSpec(enum.Enum):
 def _handle_requires_idaes_solver(
     solver: Optional = None, action: Optional[Callable[[str], None]] = pytest.xfail
 ) -> None:
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     from idaes.config import bin_directory
 
     solver = solver or get_solver()

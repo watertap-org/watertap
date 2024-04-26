@@ -15,6 +15,5 @@ codecov:
   notify:
     wait_for_ci: false
     # after_n_builds should match the number of CI jobs configured to upload reports to Codecov
-    # in WaterTAP there are 4 such jobs:
-    # (1 MPI Workflow + 1 Standard Workflow) * (1 Windows + 1 Linux for a single sample Python version)
-    after_n_builds: 4
+    # as of #1365, there are 2 such jobs, one each for the mpi4py-test.yml and checks.yml workflows
+    after_n_builds: 2
