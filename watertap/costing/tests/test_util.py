@@ -16,7 +16,7 @@ import idaes.core as idc
 import idaes.core.util.model_statistics as istat
 
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 from watertap.costing.util import (
     cost_rectifier,

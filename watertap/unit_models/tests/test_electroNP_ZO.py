@@ -22,7 +22,7 @@ from watertap.unit_models.electroNP_ZO import ElectroNPZO
 from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
     SimpleModifiedASM2dParameterBlock,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import calculate_scaling_factors

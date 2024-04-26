@@ -14,7 +14,7 @@ import pytest
 import pyomo.environ as pyo
 
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
 )

@@ -31,7 +31,7 @@ import watertap.property_models.multicomp_aq_sol_prop_pack as props
 from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,

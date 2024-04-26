@@ -56,7 +56,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
 
 __author__ = "Austin Ladshaw"

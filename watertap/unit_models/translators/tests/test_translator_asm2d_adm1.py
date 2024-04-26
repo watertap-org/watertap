@@ -31,7 +31,7 @@ from idaes.core import FlowsheetBlock
 
 from pyomo.environ import units
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
