@@ -20,7 +20,7 @@ from idaes.core import (
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
 )
-from watertap.unit_models.reverse_osmosis_base import TransportModel
+from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.core.solvers import get_solver
 from idaes.core.util.scaling import (
@@ -31,7 +31,6 @@ from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
-    FrictionFactor,
 )
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
@@ -806,7 +805,7 @@ class TestOsmoticallyAssistedReverseOsmosis_Pdrop_fixed_per_unit_length(
         return m
 
 
-def build_friction_factor_spiral_wound():
+def build_module_type_spiral_wound():
     """Testing 0D-OARO with FrictionFactor.spiral_wound option."""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -819,7 +818,7 @@ def build_friction_factor_spiral_wound():
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
-        friction_factor=FrictionFactor.spiral_wound,
+        module_type=ModuleType.spiral_wound,
     )
 
     # fully specify system
@@ -879,55 +878,55 @@ class TestOsmoticallyAssistedReverseOsmosis_friction_factor_spiral_wound(
     UnitTestHarness
 ):
     def configure(self):
-        m = build_friction_factor_spiral_wound()
+        m = build_module_type_spiral_wound()
 
-        self.unit_solutions[m.fs.unit.feed_side.deltaP[0]] = -0.3019e5
-        self.unit_solutions[m.fs.unit.permeate_side.deltaP[0]] = -2.4123e5
-        self.unit_solutions[m.fs.unit.feed_side.deltaP[0] / m.fs.unit.length] = -3940.35
+        self.unit_solutions[m.fs.unit.feed_side.deltaP[0]] = -0.1516e5
+        self.unit_solutions[m.fs.unit.permeate_side.deltaP[0]] = -1.199e5
+        self.unit_solutions[m.fs.unit.feed_side.deltaP[0] / m.fs.unit.length] = -3958.30
         self.unit_solutions[m.fs.unit.permeate_side.deltaP[0] / m.fs.unit.length] = (
-            -31488.754
+            -31318.596
         )
         self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 0.0]] = 145.197
         self.unit_solutions[m.fs.unit.feed_side.velocity[0, 0.0]] = 0.1
-        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 1.0]] = 110.973
-        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 1.0]] = 0.0774
-        self.unit_solutions[m.fs.unit.permeate_side.N_Re[0, 0.0]] = 154.231
-        self.unit_solutions[m.fs.unit.permeate_side.velocity[0, 0.0]] = 0.2040
+        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 1.0]] = 111.787
+        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 1.0]] = 0.0779
+        self.unit_solutions[m.fs.unit.permeate_side.N_Re[0, 0.0]] = 153.410
+        self.unit_solutions[m.fs.unit.permeate_side.velocity[0, 0.0]] = 0.2029
         self.unit_solutions[m.fs.unit.permeate_side.N_Re[0, 1.0]] = 119.793
         self.unit_solutions[m.fs.unit.permeate_side.velocity[0, 1.0]] = 0.1588
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]] = (
-            4.407e-3
+            4.301e-3
         )
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]] = (
-            5.881e-7
+            5.837e-7
         )
         self.unit_solutions[
             m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 43.978
+        ] = 43.505
         self.unit_solutions[
             m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 46.152
+        ] = 45.833
         self.unit_solutions[
             m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 51.466
+        ] = 51.292
         self.unit_solutions[
             m.fs.unit.permeate_side.properties_interface[0, 1.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 3.520
+        ] = 3.445
         self.unit_solutions[
             m.fs.unit.permeate_side.properties_interface[0, 0.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 1.443
+        ] = 1.547
         self.unit_solutions[
             m.fs.unit.permeate_side.properties_out[0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
-        ] = 5.007
+        ] = 5.033
 
         return m
