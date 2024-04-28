@@ -61,12 +61,14 @@ def build_ASM1():
 
     m.fs.props = ASM1ParameterBlock()
 
-    m.fs.unit = Thickener(property_package=m.fs.props,
+    m.fs.unit = Thickener(
+        property_package=m.fs.props,
         outlet_list=["underflow", "overflow"],
-        split_basis=SplittingType.componentFlow,)
+        split_basis=SplittingType.componentFlow,
+    )
 
     m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
-    
+
     m.fs.unit.inlet.temperature.fix(308.15 * units.K)
     m.fs.unit.inlet.pressure.fix(1 * units.atm)
 
@@ -74,9 +76,7 @@ def build_ASM1():
     m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(0.67336 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(3036.2175 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(63.2392 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(
-        4442.8377 * units.mg / units.liter
-    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(4442.8377 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(332.5958 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(1922.8108 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1.3748 * units.mg / units.liter)
@@ -90,6 +90,7 @@ def build_ASM1():
     m.fs.unit.diameter.fix()
 
     return m
+
 
 def build_ASM2d():
     m = ConcreteModel()
@@ -119,19 +120,13 @@ def build_ASM2d():
     m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
-        214.5319 * units.mg / units.liter
-    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(214.5319 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
-        118.3582 * units.mg / units.liter
-    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(
-        3525.429 * units.mg / units.liter
-    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
     m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
 
     m.fs.unit.hydraulic_retention_time.fix()
@@ -165,6 +160,7 @@ def build_ASM2d():
 
     return m
 
+
 def build_ASM2d_modified():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -196,14 +192,10 @@ def build_ASM2d_modified():
     m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
-        214.5319 * units.mg / units.liter
-    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(214.5319 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
     m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
-        118.3582 * units.mg / units.liter
-    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
 
     iscale.calculate_scaling_factors(m.fs.unit)
 
@@ -224,6 +216,7 @@ def build_ASM2d_modified():
 
     return m
 
+
 class TestThickener_ASM1(UnitTestHarness):
     def configure(self):
         m = build_ASM1()
@@ -233,7 +226,7 @@ class TestThickener_ASM1(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.flow_vol[0]] = 0.003115
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "S_I"]] = 0.02806
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "S_S"]] = 0.000673
-        self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_I"]] = 0.06768        
+        self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_I"]] = 0.06768
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_S"]] = 0.001409
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_P"]] = 0.04286
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_BH"]] = 0.099046
@@ -243,7 +236,7 @@ class TestThickener_ASM1(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "S_NH"]] = 0.0001584
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "S_ND"]] = 0.0005594
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_ND"]] = 0.0001056
-        self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004564    
+        self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004564
 
         return m
 
@@ -266,14 +259,17 @@ class TestThickener_ASM2d(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_MeOH"]] = 0.0
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_MeP"]] = 0.0
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PAO"]] = 0.004513
-        self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PHA"]] = 5.761182e-05
+        self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PHA"]] = (
+            5.761182e-05
+        )
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PP"]] = 0.001336
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_S"]] = 0.001436
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_TSS"]] = 0.074169
-        self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004666 
+        self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004666
 
         return m
-    
+
+
 class TestThickener_ASM2d_modified(UnitTestHarness):
     def configure(self):
         m = build_ASM2d_modified()
@@ -290,11 +286,14 @@ class TestThickener_ASM2d_modified(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_H"]] = 0.038882
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_I"]] = 0.035535
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PAO"]] = 0.0044955
-        self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PHA"]] = 5.761182e-05
+        self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PHA"]] = (
+            5.761182e-05
+        )
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PP"]] = 0.001336
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_S"]] = 0.001436
 
         return m
+
 
 class TestCosting(UnitTestHarness):
     def configure(self):

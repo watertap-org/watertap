@@ -104,23 +104,26 @@ def build():
 
     m.fs.unit.volume.fix(1.5e-03)
     m.fs.unit.heat_duty.fix(0)
-    m.fs.unit.deltaP.fix(0) 
-    
-    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].conc_mol_comp["H2O"], 1e-5)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-6)
+    m.fs.unit.deltaP.fix(0)
+
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.properties_out[0.0].conc_mol_comp["H2O"], 1e-5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-6
+    )
 
     iscale.calculate_scaling_factors(m.fs.unit)
 
-    return m  
+    return m
+
 
 def build_ASM1():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props_ASM1 = ASM1ParameterBlock()
-    m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(
-        property_package=m.fs.props_ASM1
-    )
+    m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props_ASM1)
 
     m.fs.unit = CSTR(
         property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
@@ -128,42 +131,18 @@ def build_ASM1():
 
     m.fs.unit.inlet.flow_vol[0].fix(1.2199 * units.m**3 / units.s)
     m.fs.unit.inlet.alkalinity[0].fix(4.5102 * units.mole / units.m**3)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
-        0.061909 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(
-        0.012366 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
-        1.4258 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
-        0.090508 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(
-        2.8404 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(
-        0.20512 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(
-        0.58681 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(
-        0.00036092 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(
-        0.012424 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
-        0.0076936 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(
-        0.0019068 * units.kg / units.m**3
-    )
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(
-        0.0053166 * units.kg / units.m**3
-    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.061909 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(0.012366 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1.4258 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(0.090508 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(2.8404 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(0.20512 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(0.58681 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(0.00036092 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(0.012424 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(0.0076936 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.0019068 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(0.0053166 * units.kg / units.m**3)
 
     m.fs.unit.inlet.temperature[0].fix(308.15 * units.K)
     m.fs.unit.inlet.pressure[0].fix(84790.0 * units.Pa)
@@ -171,30 +150,67 @@ def build_ASM1():
     m.fs.unit.volume[0].fix(1000 * units.m**3)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","X_BA"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","X_P"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","S_O"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","S_NH"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","S_ND"], 1e5)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","X_ND"], 1e5)
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_BA"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_P"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_O"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_NH"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_ND"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_ND"], 1e5
+    )
 
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,"R1"], 1e5)    
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,"R3"], 1e5)  
-    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,"R5"], 1e5)  
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R1"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R3"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R5"], 1e5
+    )
 
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R1"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R2"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R3"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R4"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R5"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R6"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R7"], 1e7)
-    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R8"], 1e7)
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R1"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R2"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R3"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R4"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R5"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R6"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R7"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R8"], 1e7
+    )
 
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
+
 
 class TestCSTR(UnitTestHarness):
     def configure(self):
@@ -205,6 +221,7 @@ class TestCSTR(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]] = 20.32
 
         return m
+
 
 class TestInitializers:
     @pytest.fixture
@@ -321,6 +338,7 @@ class TestInitializers:
 
         assert not model.fs.unit.inlet.temperature[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
+
 
 class TestCosting(UnitTestHarness):
     def configure(self):
