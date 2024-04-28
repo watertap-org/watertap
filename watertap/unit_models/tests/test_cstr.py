@@ -26,6 +26,9 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
+from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+import idaes.core.util.scaling as iscale
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -71,210 +74,137 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
-@pytest.mark.unit
-def test_config():
+def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.reactions = ReactionParameterTestBlock(property_package=m.fs.properties)
+    m.fs.properties = SaponificationParameterBlock()
+    m.fs.reactions = SaponificationReactionParameterBlock(
+        property_package=m.fs.properties
+    )
 
-    m.fs.unit = CSTR(property_package=m.fs.properties, reaction_package=m.fs.reactions)
+    m.fs.unit = CSTR(
+        property_package=m.fs.properties,
+        reaction_package=m.fs.reactions,
+        has_equilibrium_reactions=False,
+        has_heat_transfer=True,
+        has_heat_of_reaction=True,
+        has_pressure_change=True,
+    )
 
-    # Check unit config arguments
-    assert len(m.fs.unit.config) == 14
+    m.fs.unit.inlet.flow_vol.fix(1.0e-03)
+    m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.has_heat_transfer
-    assert not m.fs.unit.config.has_pressure_change
-    assert not m.fs.unit.config.has_equilibrium_reactions
-    assert not m.fs.unit.config.has_phase_equilibrium
-    assert not m.fs.unit.config.has_heat_of_reaction
-    assert m.fs.unit.config.property_package is m.fs.properties
-    assert m.fs.unit.config.reaction_package is m.fs.reactions
+    m.fs.unit.inlet.temperature.fix(303.15)
+    m.fs.unit.inlet.pressure.fix(101325.0)
 
-    assert m.fs.unit.default_initializer is SingleControlVolumeUnitInitializer
+    m.fs.unit.volume.fix(1.5e-03)
+    m.fs.unit.heat_duty.fix(0)
+    m.fs.unit.deltaP.fix(0) 
+    
+    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].conc_mol_comp["H2O"], 1e-5)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-6)
 
+    iscale.calculate_scaling_factors(m.fs.unit)
 
-# -----------------------------------------------------------------------------
-class TestSaponification(object):
-    @pytest.fixture(scope="class")
-    def sapon(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
+    return m  
 
-        m.fs.properties = SaponificationParameterBlock()
-        m.fs.reactions = SaponificationReactionParameterBlock(
-            property_package=m.fs.properties
-        )
+def build_ASM1():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.unit = CSTR(
-            property_package=m.fs.properties,
-            reaction_package=m.fs.reactions,
-            has_equilibrium_reactions=False,
-            has_heat_transfer=True,
-            has_heat_of_reaction=True,
-            has_pressure_change=True,
-        )
+    m.fs.props_ASM1 = ASM1ParameterBlock()
+    m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(
+        property_package=m.fs.props_ASM1
+    )
 
-        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
-        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+    m.fs.unit = CSTR(
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+    )
 
-        m.fs.unit.inlet.temperature.fix(303.15)
-        m.fs.unit.inlet.pressure.fix(101325.0)
+    m.fs.unit.inlet.flow_vol[0].fix(1.2199 * units.m**3 / units.s)
+    m.fs.unit.inlet.alkalinity[0].fix(4.5102 * units.mole / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
+        0.061909 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(
+        0.012366 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        1.4258 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
+        0.090508 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(
+        2.8404 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(
+        0.20512 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(
+        0.58681 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(
+        0.00036092 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(
+        0.012424 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        0.0076936 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(
+        0.0019068 * units.kg / units.m**3
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(
+        0.0053166 * units.kg / units.m**3
+    )
 
-        m.fs.unit.volume.fix(1.5e-03)
-        m.fs.unit.heat_duty.fix(0)
-        m.fs.unit.deltaP.fix(0)
+    m.fs.unit.inlet.temperature[0].fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure[0].fix(84790.0 * units.Pa)
+
+    m.fs.unit.volume[0].fix(1000 * units.m**3)
+
+    # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e5)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","X_BA"], 1e5)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","X_P"], 1e5)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","S_O"], 1e5)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","S_NH"], 1e5)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","S_ND"], 1e5)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_generation[0.0,"Liq","X_ND"], 1e5)
+
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,"R1"], 1e5)    
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,"R3"], 1e5)  
+    iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,"R5"], 1e5)  
+
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R1"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R2"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R3"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R4"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R5"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R6"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R7"], 1e7)
+    iscale.set_scaling_factor(m.fs.unit.control_volume.reactions[0.0].reaction_rate["R8"], 1e7)
+
+    iscale.calculate_scaling_factors(m.fs.unit)
+
+    return m
+
+class TestCSTR(UnitTestHarness):
+    def configure(self):
+        m = build()
+
+        self.unit_solutions[m.fs.unit.outlet.pressure[0]] = 101325.0
+        self.unit_solutions[m.fs.unit.outlet.temperature[0]] = 304.09
+        self.unit_solutions[m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]] = 20.32
 
         return m
-
-    @pytest.mark.build
-    @pytest.mark.unit
-    def test_build(self, sapon):
-
-        assert hasattr(sapon.fs.unit, "inlet")
-        assert len(sapon.fs.unit.inlet.vars) == 4
-        assert hasattr(sapon.fs.unit.inlet, "flow_vol")
-        assert hasattr(sapon.fs.unit.inlet, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.inlet, "temperature")
-        assert hasattr(sapon.fs.unit.inlet, "pressure")
-
-        assert hasattr(sapon.fs.unit, "outlet")
-        assert len(sapon.fs.unit.outlet.vars) == 4
-        assert hasattr(sapon.fs.unit.outlet, "flow_vol")
-        assert hasattr(sapon.fs.unit.outlet, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.outlet, "temperature")
-        assert hasattr(sapon.fs.unit.outlet, "pressure")
-
-        assert hasattr(sapon.fs.unit, "cstr_performance_eqn")
-        assert hasattr(sapon.fs.unit, "volume")
-        assert hasattr(sapon.fs.unit, "heat_duty")
-        assert hasattr(sapon.fs.unit, "deltaP")
-
-        assert number_variables(sapon) == 28
-        assert number_total_constraints(sapon) == 17
-        assert number_unused_variables(sapon) == 0
-
-    @pytest.mark.component
-    def test_units(self, sapon):
-        assert_units_consistent(sapon)
-        assert_units_equivalent(sapon.fs.unit.volume[0], units.m**3)
-        assert_units_equivalent(sapon.fs.unit.heat_duty[0], units.W)
-        assert_units_equivalent(sapon.fs.unit.deltaP[0], units.Pa)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_initialize(self, sapon):
-        initialization_tester(sapon)
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_solve(self, sapon):
-        results = solver.solve(sapon)
-
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_solution(self, sapon):
-        assert pytest.approx(101325.0, abs=1e-2) == value(
-            sapon.fs.unit.outlet.pressure[0]
-        )
-        assert pytest.approx(304.09, abs=1e-2) == value(
-            sapon.fs.unit.outlet.temperature[0]
-        )
-        assert pytest.approx(20.32, abs=1e-2) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_conservation(self, sapon):
-        assert (
-            abs(
-                value(
-                    sapon.fs.unit.inlet.flow_vol[0] - sapon.fs.unit.outlet.flow_vol[0]
-                )
-            )
-            <= 1e-6
-        )
-        assert (
-            abs(
-                value(
-                    sapon.fs.unit.inlet.flow_vol[0]
-                    * sum(
-                        sapon.fs.unit.inlet.conc_mol_comp[0, j]
-                        for j in sapon.fs.properties.component_list
-                    )
-                    - sapon.fs.unit.outlet.flow_vol[0]
-                    * sum(
-                        sapon.fs.unit.outlet.conc_mol_comp[0, j]
-                        for j in sapon.fs.properties.component_list
-                    )
-                )
-            )
-            <= 1e-6
-        )
-
-        assert pytest.approx(3904.51, abs=1e-2) == value(
-            sapon.fs.unit.control_volume.heat_of_reaction[0]
-        )
-        assert (
-            abs(
-                value(
-                    (
-                        sapon.fs.unit.inlet.flow_vol[0]
-                        * sapon.fs.properties.dens_mol
-                        * sapon.fs.properties.cp_mol
-                        * (
-                            sapon.fs.unit.inlet.temperature[0]
-                            - sapon.fs.properties.temperature_ref
-                        )
-                    )
-                    - (
-                        sapon.fs.unit.outlet.flow_vol[0]
-                        * sapon.fs.properties.dens_mol
-                        * sapon.fs.properties.cp_mol
-                        * (
-                            sapon.fs.unit.outlet.temperature[0]
-                            - sapon.fs.properties.temperature_ref
-                        )
-                    )
-                    + sapon.fs.unit.control_volume.heat_of_reaction[0]
-                )
-            )
-            <= 1e-3
-        )
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_get_performance_contents(self, sapon):
-        perf_dict = sapon.fs.unit._get_performance_contents()
-
-        assert perf_dict == {
-            "vars": {
-                "Volume": sapon.fs.unit.volume[0],
-                "Heat Duty": sapon.fs.unit.heat_duty[0],
-                "Pressure Change": sapon.fs.unit.deltaP[0],
-            }
-        }
-
 
 class TestInitializers:
     @pytest.fixture
@@ -392,85 +322,23 @@ class TestInitializers:
         assert not model.fs.unit.inlet.temperature[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
+class TestCosting(UnitTestHarness):
+    def configure(self):
+        m = build_ASM1()
 
-        m.fs.props_ASM1 = ASM1ParameterBlock()
-        m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(
-            property_package=m.fs.props_ASM1
-        )
-
-        m.fs.unit = CSTR(
-            property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
-        )
-
-        m.fs.unit.inlet.flow_vol[0].set_value(1.2199 * units.m**3 / units.s)
-        m.fs.unit.inlet.alkalinity[0].set_value(4.5102 * units.mole / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].set_value(
-            0.061909 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].set_value(
-            0.012366 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].set_value(
-            1.4258 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].set_value(
-            0.090508 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].set_value(
-            2.8404 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].set_value(
-            0.20512 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].set_value(
-            0.58681 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].set_value(
-            0.00036092 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].set_value(
-            0.012424 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].set_value(
-            0.0076936 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].set_value(
-            0.0019068 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].set_value(
-            0.0053166 * units.kg / units.m**3
-        )
-
-        m.fs.unit.inlet.temperature[0].set_value(308.15 * units.K)
-        m.fs.unit.inlet.pressure[0].set_value(84790.0 * units.Pa)
-
-        m.fs.unit.volume[0].fix(1000 * units.m**3)
-
+        # Add unit model costing
         m.fs.costing = WaterTAPCosting()
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
-        m.fs.costing.initialize()
         m.objective = Objective(expr=m.fs.costing.LCOW)
-        assert_units_consistent(m)
-        results = solver.solve(m, tee=True)
 
-        assert_optimal_termination(results)
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
 
-        # Check solutions
-        assert pytest.approx(566989.10, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(6.64365e-06, rel=1e-5) == value(m.fs.costing.LCOW)
+        iscale.calculate_scaling_factors(m.fs.unit)
 
-    @pytest.mark.unit
-    def test_report(self, model):
-        m = model
-        m.fs.unit.report()
+        self.unit_solutions[m.fs.unit.costing.capital_cost] = 566989.10
+        self.unit_solutions[m.fs.costing.LCOW] = 6.64365e-06
+
+        return m
