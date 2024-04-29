@@ -62,8 +62,7 @@ LCOW can be represented by the following equation where :math:`Q` represents pro
 
 Degrees of Freedom
 ------------------
-Firstly, the number of stages and water mass recovery of the system need to be specified. In addition, the following
-variables needs to be specified based on the default settings:
+Firstly, the number of stages and water mass recovery of the system need to be specified. In addition, the following variables needs to be specified based on the default settings:
    * feed water conditions (flow, temperature, pressure, component concentrations)
    * pump efficiency of primary pumps and recycle pumps
    * ERD pump efficiency and outlet pressure
