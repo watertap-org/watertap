@@ -4,7 +4,7 @@ This reverse osmosis (RO) unit model
    * is 0-dimensional
    * supports a single liquid phase only
    * supports steady-state only
-   * supports both solution-diffusion (SD) and Spiegler-Kedem-Katchalsky (SKK) models
+   * supports both solution-diffusion (SD) and Spiegler-Kedem-Katchalsky (SKK) models [1]
    * supports flat-sheet and spiral-wound module designs
    * assumes isothermal conditions
 
@@ -185,3 +185,7 @@ Class Documentation
 -------------------
 
 * :mod:`watertap.unit_models.reverse_osmosis_0D`
+
+References
+----------
+Spiegler, K. S., & Kedem, O. (1966). Thermodynamics of hyperfiltration (reverse osmosis): criteria for efficient membranes. Desalination, 1(4), 311-326.
