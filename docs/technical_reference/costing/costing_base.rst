@@ -392,7 +392,7 @@ While the expectation is that unit models use the self-registration process note
 * Mixer - :py:func:`watertap.costing.unit_models.mixer.cost_mixer`
 * HeatExchanger - :py:func:`watertap.costing.unit_models.heat_exchanger.cost_heat_exchanger`
 * CSTR - :py:func:`watertap.costing.unit_models.cstr.cost_cstr`
-* Heater - :py:func:`watertap.costing.unit_models.heater_ciller.cost_heater_ciller`
+* Heater - :py:func:`watertap.costing.unit_models.heater_chiller.cost_heater_chiller`
 
 
 Class Documentation
