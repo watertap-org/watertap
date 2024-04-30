@@ -30,10 +30,10 @@ def get_source_water_data(file_location, use_watertap_convention=True):
     default_dict["mw_data"] = gen_mw_dict(data_dict)
     default_dict["stokes_radius_data"] = gen_stoke_dict(data_dict)
     default_dict["charge"] = gen_charge_dict(data_dict)
-
+    tracked_solids = data_dict.get("tracked_solids")
     mass_comp_dict, pH = get_mole_comp(data_dict)
     # print(mass_comp_dict)
-    return default_dict, mass_comp_dict, pH
+    return default_dict, mass_comp_dict, pH, tracked_solids
 
 
 def key_convert(data_dict):

@@ -15,3 +15,5 @@ solute_list:
     stokes_radius (m): 0.309e-9
     elemental charge: 0
 pH: 7.07
+tracked_solids:
+  - TDS

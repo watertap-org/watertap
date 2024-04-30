@@ -15,11 +15,16 @@ from watertap.unit_models.generic_units.generic_desalter import (
 )
 from pyomo.environ import (
     value,
+    Var,
+    Constraint,
+    Reals,
+    units as pyunits,
 )
 from watertap.examples.flowsheets.generic_desalination_train.costing import (
     desalter_costing,
 )
 import logging
+import idaes.core.util.scaling as iscale
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -34,7 +39,7 @@ _logger.setLevel(logging.DEBUG)
 __author__ = "Alexander V. Dudchenko"
 
 
-def build(m, block, base_cost=1, recovery_cost=0):
+def build(m, block, base_cost=1, recovery_cost=0, tracked_solids=None):
     block.desalter = GenericDesalter(property_package=m.fs.properties)
     desalter_costing.cost_desalter(
         m.fs.costing,
@@ -43,6 +48,60 @@ def build(m, block, base_cost=1, recovery_cost=0):
         recovery_cost,
         opt_name=block.process_name,
     )
+    block.desalter.brine_solids_concentration = Var(
+        initialize=80,
+        bounds=(None, None),
+        domain=Reals,
+        units=pyunits.kg / pyunits.m**3,
+        doc="water recovery",
+    )
+    iscale.set_scaling_factor(block.desalter.brine_solids_concentration, 1)
+    block.desalter.brine_solids_concentration.unfix()
+    block.desalter.brine_water_percent = Var(
+        initialize=80,
+        bounds=(None, None),
+        domain=Reals,
+        units=pyunits.dimensionless,
+        doc="water recovery",
+    )
+    iscale.set_scaling_factor(block.desalter.brine_water_percent, 1)
+    block.desalter.brine_water_percent.unfix()
+    block.desalter.brine_unit.properties_out[0].flow_vol_phase[...]
+
+    block.desalter.solids_concentration_eq = Constraint(
+        expr=block.desalter.brine_solids_concentration
+        * block.desalter.brine_unit.properties_out[0].flow_vol_phase["Liq"]
+        == sum(
+            [
+                block.desalter.brine_unit.properties_out[0].flow_mass_phase_comp[
+                    "Liq", tds
+                ]
+                for tds in tracked_solids
+            ]
+        )
+    )
+    iscale.constraint_scaling_transform(block.desalter.solids_concentration_eq, 1)
+    block.desalter.water_percent_eq = Constraint(
+        expr=block.desalter.brine_water_percent
+        * (
+            sum(
+                [
+                    block.desalter.brine_unit.properties_out[0].flow_mass_phase_comp[
+                        "Liq", tds
+                    ]
+                    for tds in tracked_solids
+                ]
+            )
+            + block.desalter.brine_unit.properties_out[0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
+        )
+        == block.desalter.brine_unit.properties_out[0].flow_mass_phase_comp[
+            "Liq", "H2O"
+        ]
+        * 100
+    )
+    iscale.constraint_scaling_transform(block.desalter.water_percent_eq, 1)
 
 
 def initialize(m, blk, solver):
@@ -50,7 +109,9 @@ def initialize(m, blk, solver):
 
 
 def unfix_opt_vars(m, blk):
-    blk.desalter.water_recovery.unfix()
+    # blk.desalter.water_recovery.unfix()
+    blk.desalter.water_recovery.setlb(0)
+    blk.desalter.water_recovery.setub(99.9)
 
 
 def display(m, blk):

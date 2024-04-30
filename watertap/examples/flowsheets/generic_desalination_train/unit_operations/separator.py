@@ -34,7 +34,15 @@ _logger.setLevel(logging.DEBUG)
 __author__ = "Alexander V. Dudchenko"
 
 
-def build(m, block, base_cost=1, additive_cost=0, additive_dose=0):
+def build(
+    m,
+    block,
+    base_cost=1,
+    additive_cost=0,
+    additive_dose=0,
+    valorizer_costing=False,
+    **kwargs,
+):
     block.separator = GenericSeparation(property_package=m.fs.properties)
     separator_costing.cost_unit(
         m.fs.costing,
@@ -42,6 +50,7 @@ def build(m, block, base_cost=1, additive_cost=0, additive_dose=0):
         base_cost=base_cost,
         additive_cost=additive_cost,
         opt_name=block.process_name,
+        valorizer_costing=valorizer_costing,
     )
     block.separator.additive_dose.fix(additive_dose)
 
@@ -55,23 +64,51 @@ def display(m, blk):
         0
     ].flow_mass_phase_comp.items():
         _logger.info(f"{ion} mass flow= {value(var)} kg/s")
-    for (phase, ion), var in blk.separator.product_properties[
-        0
-    ].flow_mass_phase_comp.items():
-        annual_ion_cost = value(
-            blk.separator.separation_cost[ion]
+    if blk.find_component("separator.separation_cost") is not None:
+        for (phase, ion), var in blk.separator.product_properties[
+            0
+        ].flow_mass_phase_comp.items():
+            annual_ion_cost = value(
+                blk.separator.separation_cost[ion]
+                * pyunits.convert(
+                    blk.separator.product_properties[0].flow_mass_phase_comp[
+                        "Liq", ion
+                    ],
+                    to_units=pyunits.kg / pyunits.year,
+                )
+            )
+            _logger.info(f"{ion} annual removal cost= {annual_ion_cost} $/year")
+        annual_chem_cost = value(
+            blk.separator.additive_cost
             * pyunits.convert(
-                blk.separator.product_properties[0].flow_mass_phase_comp["Liq", ion],
+                blk.separator.additive_mass_flow,
                 to_units=pyunits.kg / pyunits.year,
             )
         )
-        _logger.info(f"{ion} annual removal cost= {annual_ion_cost} $/year")
-    annual_chem_cost = value(
-        blk.separator.additive_cost
-        * pyunits.convert(
-            blk.separator.additive_mass_flow,
-            to_units=pyunits.kg / pyunits.year,
+    else:
+        for (phase, ion), var in blk.separator.product_properties[
+            0
+        ].flow_mass_phase_comp.items():
+            annual_ion_cost = value(
+                blk.separator.product_value[ion]
+                * pyunits.convert(
+                    blk.separator.product_properties[0].flow_mass_phase_comp[
+                        "Liq", ion
+                    ],
+                    to_units=pyunits.kg / pyunits.year,
+                )
+            )
+            _logger.info(f"{ion} annual profit = {annual_ion_cost} $/year")
+        _logger.info(
+            f"{ion} annual profit = {blk.separator.ion_removal_LCOW.value} $/m3"
         )
-    )
+        annual_chem_cost = value(
+            blk.separator.additive_cost
+            * pyunits.convert(
+                blk.separator.additive_mass_flow,
+                to_units=pyunits.kg / pyunits.year,
+            )
+        )
+
     _logger.info(f"Annual chemical cost= {annual_chem_cost} $/year")
     _logger.info(f"Total annual cost= {value(blk.separator.annual_cost)} $/year")

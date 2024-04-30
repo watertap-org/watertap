@@ -20,7 +20,7 @@ from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
 __author__ = "Alexander V. Dudchenko"
 
 
-def build_mixer(m, mixer_name, inlet_streams):
+def build_mixer(m, mixer_name, inlet_streams, **kwargs):
     m.fs.add_component(
         mixer_name,
         Mixer(

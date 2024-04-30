@@ -71,16 +71,30 @@ _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
 
 __author__ = "Alexander V. Dudchenko"
+import analysisWaterTAP.utils.flowsheet_utils as fsTools
 
 
 def main():
     m = build()
 
-    m.fs.Valorizer.separator.separation_cost["X"].fix(-1)
+    m.fs.Valorizer.separator.product_value["X"].fix(1)
     m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)
+
     initialize(m)
-    solve(m)
+    m.fs.Desal_1.desalter.water_recovery.unfix()
+    m.fs.Desal_1.desalter.brine_solids_concentration.fix(10)
+    m.fs.Desal_2.desalter.water_recovery.fix(50)
+    m.fs.Desal_3.desalter.water_recovery.unfix()
+    m.fs.Desal_3.desalter.brine_water_percent.fix(80)
+    fsTools.standard_solve(m, tee=True, check_close_to_bounds=True)
+    # solve(m)
     display_processes(m)
+    m.fs.Desal_1.desalter.brine_solids_concentration.display()
+    m.fs.Desal_1.desalter.brine_water_percent.display()
+    m.fs.Desal_3.desalter.brine_solids_concentration.display()
+    m.fs.Desal_3.desalter.brine_water_percent.display()
+    m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_mass_phase_comp.display()
+    m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_vol_phase.display()
 
 
 def build(
@@ -110,7 +124,7 @@ def build(
             },
             3: {
                 "process_type": "desalter",
-                "process_name": "Crystalizer",
+                "process_name": "Desal_3",
                 "default_kwargs": {"base_cost": 10, "recovery_cost": 0.0},
             },
             4: {
@@ -133,6 +147,7 @@ def build(
         source_details,
         source_mass_comp_dict,
         source_pH,
+        tracked_solids,
     ) = waterImporter.get_source_water_data(
         working_location + "/source_water/{}.yaml".format(water_source),
         use_watertap_convention=False,
@@ -179,6 +194,13 @@ def build(
     m.end_point_order = []
     for item_number in range(len(train_order.keys())):
         process_name = train_order[item_number]["process_type"]
+        if train_order[item_number].get("default_kwargs") is None:
+            train_order[item_number]["default_kwargs"] = {}
+        else:
+            train_order[item_number]["default_kwargs"].update(
+                {"tracked_solids": tracked_solids}
+            )
+        print(train_order[item_number])
         build_selected_processes(m, **train_order[item_number])
         if item_number == 0:
             arc_name = "Feed_to_{}".format(process_name)
@@ -283,7 +305,7 @@ def build(
 def add_flowsheet_level_constraints(m, blk):
     blk.water_recovery = Var(
         initialize=50,
-        bounds=(0, 100),
+        bounds=(0, None),
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
         doc="System Water Recovery",
@@ -323,7 +345,7 @@ def initialize(m, solver=None, **kwargs):
     fix_conc_feed(
         m.fs,
     )
-    # setup_optimization(m)
+    setup_optimization(m)
     solve(m, solver)
 
 
@@ -382,6 +404,7 @@ def build_selected_processes(m, process_name, process_type, default_kwargs=None)
             }
         )
     elif "valorizer" in process_type:
+        default_kwargs.update({"valorizer_costing": True})
         separator.build(m, block, **default_kwargs)
         m.fs.process_order.append(
             {
