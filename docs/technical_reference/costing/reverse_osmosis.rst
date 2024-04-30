@@ -1,10 +1,10 @@
-Anaerobic Digester Costing Method
-==================================
+Reverse Osmosis Costing Method
+===============================
 
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.anaerobic_digester`) when applying the `cost_anaerobic_digester` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.reverse_osmosis`) when applying the `cost_reverse_osmosis` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -14,7 +14,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_anaerobic_digester` costing method in the ``watertap_costing_package``:
+The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_reverse_osmosis` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
@@ -34,7 +34,7 @@ Describe capital costs..keep it concise where possible
 
         C_{cap,example1} = fill in equation for each component in total capex equation
 
-
+ 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
@@ -52,7 +52,7 @@ Describe operating/maintenance costs..keep it concise where possible
 Code Documentation
 ------------------
 
-* :mod:`watertap.costing.unit_models.anaerobic_digester`
+* :mod:`watertap.costing.unit_models.reverse_osmosis`
 
 References
 ----------
