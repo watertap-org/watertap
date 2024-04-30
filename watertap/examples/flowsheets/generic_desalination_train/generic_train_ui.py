@@ -91,6 +91,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="Total LCOW",
             is_output=True,
             output_category="Total LCOW",
+            chart_tye="stacked_bar_with_net",
+            chart_group="process_cost",
         )
 
     exports.add(
