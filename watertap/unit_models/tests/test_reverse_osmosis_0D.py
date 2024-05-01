@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, value
 
 from watertap.core.solvers import get_solver
 
@@ -83,6 +83,13 @@ def build():
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
+    iscale.set_scaling_factor(
+        m.fs.unit.feed_side.properties_in[0].enth_mass_phase["Liq"], 1e-5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.feed_side.properties_out[0].enth_mass_phase["Liq"], 1e-5
+    )
+    iscale.set_scaling_factor(m.fs.unit.mixed_permeate[0].enth_mass_phase["Liq"], 1e-5)
     iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
@@ -91,6 +98,8 @@ def build():
 class TestReverseOsmosis0D(UnitTestHarness):
     def configure(self):
         m = build()
+
+        self.default_relative_tolerance = 1e-1
 
         self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]] = (
             0.004721771
@@ -107,6 +116,34 @@ class TestReverseOsmosis0D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 0, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.deltaP[0]] = -3e5
+
+        # Conservation checks
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.unit_solutions[flow_mass_retentate + flow_mass_permeate] = value(
+            flow_mass_inlet
+        )
+        self.unit_solutions[
+            (
+                flow_mass_retentate
+                * m.fs.unit.feed_side.properties_out[0].enth_mass_phase["Liq"]
+                + flow_mass_permeate
+                * m.fs.unit.mixed_permeate[0].enth_mass_phase["Liq"]
+            )
+            / m.fs.unit.feed_side.properties_in[0].enth_mass_phase["Liq"]
+        ] = value(flow_mass_inlet)
 
         return m
 

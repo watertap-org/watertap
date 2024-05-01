@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, value
 
 from watertap.core.solvers import get_solver
 
@@ -126,6 +126,25 @@ class TestReverseOsmosis1D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.N_Re_avg[0]] = 371.01255
         self.unit_solutions[m.fs.unit.feed_side.K_avg[0, "NaCl"]] = 2.985544e-5
         self.unit_solutions[m.fs.unit.area] = 26.63124
+
+        # Conservation checks
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties[0, 1].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.unit_solutions[flow_mass_retentate + flow_mass_permeate] = value(
+            flow_mass_inlet
+        )
 
         return m
 
