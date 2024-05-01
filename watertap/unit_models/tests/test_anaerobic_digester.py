@@ -19,8 +19,10 @@ Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 
 """
+import pytest
 from pyomo.environ import (
     ConcreteModel,
+    value,
 )
 
 from idaes.core import (
@@ -121,6 +123,7 @@ class TestAnaerobicDigester(UnitTestHarness):
 
         self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
         self.unit_solutions[m.fs.unit.liquid_outlet.temperature[0]] = 308.15
+        self.unit_solutions[m.fs.unit.liquid_outlet.flow_vol[0]] = 0.001967
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_I"]] = (
             0.3287724
         )
@@ -206,4 +209,28 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
 
+        # Conservation checks
+        self.unit_solutions[
+            (
+                m.fs.unit.liquid_outlet.flow_vol[0] * m.fs.props.dens_mass
+                + m.fs.unit.vapor_outlet.flow_vol[0] * m.fs.props_vap.dens_mass
+            )
+            / m.fs.props.dens_mass
+        ] = value(m.fs.unit.inlet.flow_vol[0])
+
+        self.unit_solutions[m.fs.unit.liquid_phase.enthalpy_transfer[0]] = -13.5835
+        self.unit_solutions[
+            (
+                m.fs.unit.inlet.flow_vol[0]
+                * m.fs.props.dens_mass
+                * m.fs.props.cp_mass
+                * (m.fs.unit.inlet.temperature[0] - m.fs.props.temperature_ref)
+            )
+            - (
+                m.fs.unit.liquid_outlet.flow_vol[0]
+                * m.fs.props.dens_mass
+                * m.fs.props.cp_mass
+                * (m.fs.unit.liquid_outlet.temperature[0] - m.fs.props.temperature_ref)
+            )
+        ] = (-1 * self.unit_solutions[m.fs.unit.liquid_phase.enthalpy_transfer[0]])
         return m
