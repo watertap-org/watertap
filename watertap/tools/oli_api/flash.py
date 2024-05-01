@@ -1063,6 +1063,9 @@ def flatten_results(processed_requests):
             raise RuntimeError(f"Unexpected type for data: {type(data)}")
 
     def _get_nested_data(data, keys):
+        print("data:", data)
+        print("keys:", keys)
+
         for key in keys:
             data = data[key]
         return data
@@ -1081,6 +1084,7 @@ def flatten_results(processed_requests):
                 if "unit" in values:
                     unit = values["unit"] if values["unit"] else "dimensionless"
                     extracted_values.update({"units": unit})
+
             elif all(k in values for k in ["found", "phase"]):
                 extracted_values = values
             else:
@@ -1090,7 +1094,9 @@ def flatten_results(processed_requests):
                         "units": unit,
                         "values": values["value"],
                     }
-                else:
+                # elif "values" not in values.keys()
+                #     extracted_values = 
+                elif "values" in values:
                     extracted_values = {
                         k: {
                             "units": unit,
@@ -1098,6 +1104,14 @@ def flatten_results(processed_requests):
                         }
                         for k, v in values["values"].items()
                     }
+                elif "data" in values:
+                    print(values)
+                    # extracted_values = values
+                    # data = values["data"]
+                    # extracted_values.update({"data": data})
+                else:
+                    print(values)
+                    raise NotImplementedError("results structure not accounted for. results:\n{values}")
         else:
             raise RuntimeError(f"Unexpected type for data: {type(values)}")
         return extracted_values

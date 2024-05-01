@@ -13,7 +13,9 @@
 __author__ = "Paul Vecchiarelli, Ben Knueven"
 
 from collections import UserDict
-from pyomo.environ import units as pyunits
+from pyomo.environ import units as pyunits, Expression
+from pyomo.core.base.units_container import _PyomoUnit
+from collections.abc import Iterable
 
 
 class FixedKeysDict(UserDict):
@@ -25,8 +27,46 @@ class FixedKeysDict(UserDict):
             raise RuntimeError(f" Key {k} not in dictionary.")
         # also check for valid value if a list of values is given in the default dictionary
         else:
-            self.data[k] = v
-
+            # if user setting value in pyomo units
+            if hasattr(v, "is_expression_type"):
+                if isinstance(v, _PyomoUnit) or v.is_expression_type():
+                    # if user assigns pyomo units as value to oli_unit, save the str to oli_unit and update pyomo_unit with pyomo units
+                    if "oli_unit" in k:
+                        self.data[k] = str(v)
+                        self.data["pyomo_unit"] = v
+                    # if user assigns pyomo units to pyomo_unit, update oli_unit with str representation of units
+                    if "pyomo_unit" in k:
+                        self.data[k] = v
+                        self.data["oli_unit"] = str(v)
+                    if ("oli_unit" in self.data[k]) or ("pyomo_unit" in self.data[k]):
+                        self.data["pyomo_unit"] = v
+                        self.data["oli_unit"] = str(v)
+            # check if data[k] is iterable first, otherwise checking if oli_unit in data[k] throws exception
+            elif isinstance(self.data[k], Iterable):
+                # check if user provides str and that assignment wouldn't overwrite the oli_unit key:value pair
+                if isinstance(v, str) and ("oli_unit" not in self.data[k]):
+                    # if user assigns str to oli_unit, update pyomo_units with PyomoUnits representation of str
+                    if "oli_unit" in k:
+                        self.data[k] = v
+                        self.data["pyomo_unit"] = getattr(pyunits, v)
+                    else:
+                        pass
+                elif isinstance(v, str) and ("oli_unit" in self.data[k]):
+                    self.data["oli_unit"] = v
+                    self.data["pyomo_unit"] = getattr(pyunits, v)
+                # else:
+                #     RuntimeError(f"{v} should not be set to {self.data[k]}")
+            elif not isinstance(self.data[k], Iterable):
+                if isinstance(v, str) and "pyomo_unit" in k:
+                    self.data[k] = getattr(pyunits, v)
+                    self.data["oli_unit"] = v
+                elif ("oli_unit" in self.data[k]) or ("pyomo_unit" in self.data[k]):
+                    raise RuntimeError(f"Setting {v} as the value for {k} will overwrite oli and pyomo units, and that is not permitted.")
+                else:
+                    pass
+            else:
+                self.data[k] = v
+                
     def __delitem__(self, k):
         raise Exception(" Deleting keys not supported for this object.")
 
@@ -47,10 +87,10 @@ class FixedKeysDict(UserDict):
 
 input_unit_set = FixedKeysDict(
     {
-        "molecularConcentration": {
+        "molecularConcentration": FixedKeysDict({
             "oli_unit": "mg/L",
             "pyomo_unit": pyunits.mg / pyunits.L,
-        },
+        }),
         "mass": {"oli_unit": "mg", "pyomo_unit": pyunits.mg},
         "temperature": {"oli_unit": "K", "pyomo_unit": pyunits.K},
         "pressure": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
@@ -149,3 +189,6 @@ output_unit_set = FixedKeysDict(
         "molecularConcentration": input_unit_set["molecularConcentration"]["oli_unit"],
     }
 )
+
+if __name__ == "__main__":
+    unitset= input_unit_set
