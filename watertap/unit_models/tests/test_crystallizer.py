@@ -196,6 +196,58 @@ class TestCrystallizer(UnitTestHarness):
         self.unit_solutions[m.fs.unit.t_res] = 1.022821
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.827
 
+        # Conservation checks
+        comp_lst = ["NaCl", "H2O"]
+        phase_lst = ["Sol", "Liq", "Vap"]
+        phase_comp_list = [
+            (p, j)
+            for j in comp_lst
+            for p in phase_lst
+            if (p, j) in m.fs.unit.properties_in[0].phase_component_set
+        ]
+
+        flow_mass_in = sum(
+            m.fs.unit.properties_in[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_out = sum(
+            m.fs.unit.properties_out[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_solids = sum(
+            m.fs.unit.properties_solids[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_vapor = sum(
+            m.fs.unit.properties_vapor[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+
+        self.unit_solutions[flow_mass_out + flow_mass_solids + flow_mass_vapor] = value(
+            flow_mass_in
+        )
+        self.unit_solutions[
+            (
+                flow_mass_out * m.fs.unit.properties_out[0].enth_mass_phase["Liq"]
+                + flow_mass_vapor
+                * m.fs.unit.properties_vapor[0].enth_mass_solvent["Vap"]
+                + flow_mass_solids
+                * m.fs.unit.properties_solids[0].enth_mass_solute["Sol"]
+                + flow_mass_solids
+                * m.fs.unit.properties_solids[0].dh_crystallization_mass_comp["NaCl"]
+                - m.fs.unit.work_mechanical[0]
+            )
+            / m.fs.unit.properties_in[0].enth_mass_phase["Liq"]
+        ] = value(flow_mass_in)
+
         return m
 
 
@@ -218,6 +270,58 @@ class TestCrystallizer_costing_by_mass(UnitTestHarness):
         self.unit_solutions[m.fs.unit.diameter_crystallizer] = 1.5427211
         self.unit_solutions[m.fs.unit.volume_suspension] = 0.95871257
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.827
+
+        # Conservation checks
+        comp_lst = ["NaCl", "H2O"]
+        phase_lst = ["Sol", "Liq", "Vap"]
+        phase_comp_list = [
+            (p, j)
+            for j in comp_lst
+            for p in phase_lst
+            if (p, j) in m.fs.unit.properties_in[0].phase_component_set
+        ]
+
+        flow_mass_in = sum(
+            m.fs.unit.properties_in[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_out = sum(
+            m.fs.unit.properties_out[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_solids = sum(
+            m.fs.unit.properties_solids[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_vapor = sum(
+            m.fs.unit.properties_vapor[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+
+        self.unit_solutions[flow_mass_out + flow_mass_solids + flow_mass_vapor] = value(
+            flow_mass_in
+        )
+        self.unit_solutions[
+            (
+                flow_mass_out * m.fs.unit.properties_out[0].enth_mass_phase["Liq"]
+                + flow_mass_vapor
+                * m.fs.unit.properties_vapor[0].enth_mass_solvent["Vap"]
+                + flow_mass_solids
+                * m.fs.unit.properties_solids[0].enth_mass_solute["Sol"]
+                + flow_mass_solids
+                * m.fs.unit.properties_solids[0].dh_crystallization_mass_comp["NaCl"]
+                - m.fs.unit.work_mechanical[0]
+            )
+            / m.fs.unit.properties_in[0].enth_mass_phase["Liq"]
+        ] = value(flow_mass_in)
 
         return m
 

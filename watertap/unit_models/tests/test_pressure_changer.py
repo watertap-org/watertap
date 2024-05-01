@@ -11,6 +11,7 @@
 #################################################################################
 from pyomo.environ import (
     ConcreteModel,
+    value,
 )
 
 from idaes.core import FlowsheetBlock
@@ -209,6 +210,21 @@ class TestPump(UnitTestHarness):
             ]
         ] = 0.035
 
+        # Conservation check
+        comp_lst = ["TDS", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        flow_mass_outlet = sum(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        self.unit_solutions[flow_mass_outlet] = value(flow_mass_inlet)
+
         return m
 
 
@@ -236,6 +252,21 @@ class TestEnergyRecoveryDevice(UnitTestHarness):
                 "Liq", "TDS"
             ]
         ] = 0.035
+
+        # Conservation check
+        comp_lst = ["TDS", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        flow_mass_outlet = sum(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        self.unit_solutions[flow_mass_outlet] = value(flow_mass_inlet)
 
         return m
 
@@ -265,6 +296,21 @@ class TestPumpVariableFlow(UnitTestHarness):
             ]
         ] = 0.035
 
+        # Conservation check
+        comp_lst = ["TDS", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        flow_mass_outlet = sum(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        self.unit_solutions[flow_mass_outlet] = value(flow_mass_inlet)
+
         return m
 
 
@@ -289,5 +335,20 @@ class TestPumpIsothermal(UnitTestHarness):
                 "Liq", "TDS"
             ]
         ] = 0.00203
+
+        # Conservation check
+        comp_lst = ["TDS", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.control_volume.properties_in[0].flow_mol_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        flow_mass_outlet = sum(
+            m.fs.unit.control_volume.properties_out[0].flow_mol_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+
+        self.unit_solutions[flow_mass_outlet] = value(flow_mass_inlet)
 
         return m
