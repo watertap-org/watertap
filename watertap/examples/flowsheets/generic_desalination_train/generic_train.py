@@ -71,7 +71,6 @@ _logger.addHandler(handler)
 _logger.setLevel(logging.DEBUG)
 
 __author__ = "Alexander V. Dudchenko"
-import analysisWaterTAP.utils.flowsheet_utils as fsTools
 
 
 def main():
@@ -86,8 +85,6 @@ def main():
     m.fs.Desal_2.desalter.water_recovery.fix(50)
     m.fs.Desal_3.desalter.water_recovery.unfix()
     m.fs.Desal_3.desalter.brine_water_percent.fix(80)
-    fsTools.standard_solve(m, tee=True, check_close_to_bounds=True)
-    # solve(m)
     display_processes(m)
     m.fs.Desal_1.desalter.brine_solids_concentration.display()
     m.fs.Desal_1.desalter.brine_water_percent.display()
@@ -200,7 +197,6 @@ def build(
             train_order[item_number]["default_kwargs"].update(
                 {"tracked_solids": tracked_solids}
             )
-        print(train_order[item_number])
         build_selected_processes(m, **train_order[item_number])
         if item_number == 0:
             arc_name = "Feed_to_{}".format(process_name)

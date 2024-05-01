@@ -53,18 +53,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     fs = flowsheet  # model.fs
     # --- Input data ---
     # Feed conditions
-    exports.add(
-        obj=fs.water_recovery,
-        name="System water recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="%",
-        rounding=3,
-        description="Overall process design",
-        is_input=True,
-        input_category="Overall process design",
-        is_output=True,
-        output_category="Overall process design",
-    )
+    treatment_train_specifications = "Process specification"
+    generic_costing_options = f"Generic process costing"
+    advanced_costing_options = f"Advanced process costing"
+    advanced_operation_option = f"Advanced process specification"
 
     exports.add(
         obj=fs.costing.LCOW,
@@ -91,7 +83,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="Total LCOW",
             is_output=True,
             output_category="Total LCOW",
-            chart_tye="stacked_bar_with_net",
+            chart_type="stacked_bar_with_net",
             chart_group="process_cost",
         )
 
@@ -100,7 +92,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         name="Feed flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m^3/day",
-        rounding=3,
+        rounding=2,
         description="Feed flow rate",
         is_input=False,
         input_category="Feed",
@@ -112,7 +104,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         name="Product flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m^3/day",
-        rounding=3,
+        rounding=2,
         description="Feed flow rate",
         is_input=False,
         input_category="Product",
@@ -124,7 +116,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         name="Waste flow rate",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m^3/day",
-        rounding=3,
+        rounding=2,
         description="Feed flow rate",
         is_input=False,
         input_category="Waste",
@@ -138,7 +130,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 name="Feed {} concentration".format(ion),
                 ui_units=pyunits.mg / pyunits.L,
                 display_units="mg/L",
-                rounding=3,
+                rounding=2,
                 description="{} concentration".format(ion),
                 is_input=True,
                 input_category="Feed",
@@ -179,11 +171,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m^3",
         rounding=3,
-        description="Overall system costing",
+        description=generic_costing_options,
         is_input=True,
-        input_category="Overall system costing",
-        is_output=False,
-        output_category="Overall system costing",
+        input_category=generic_costing_options,
+        is_output=True,
+        output_category=generic_costing_options,
     )
     exports.add(
         obj=fs.disposal.base_cost,
@@ -191,11 +183,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m^3",
         rounding=3,
-        description="Overall system costing",
+        description=generic_costing_options,
         is_input=True,
-        input_category="Overall system costing",
-        is_output=False,
-        output_category="Overall system costing",
+        input_category=generic_costing_options,
+        is_output=True,
+        output_category=generic_costing_options,
     )
     exports.add(
         obj=fs.product.base_cost,
@@ -203,21 +195,28 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m^3",
         rounding=3,
-        description="Overall system costing",
+        description=generic_costing_options,
         is_input=True,
-        input_category="Overall system costing",
-        is_output=False,
-        output_category="Overall system costing",
+        input_category=generic_costing_options,
+        is_output=True,
+        output_category=generic_costing_options,
     )
-
+    exports.add(
+        obj=fs.water_recovery,
+        name="System water recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="%",
+        rounding=3,
+        description=treatment_train_specifications,
+        is_input=True,
+        input_category=treatment_train_specifications,
+        is_output=True,
+        output_category=treatment_train_specifications,
+    )
     for proc in fs.process_order:
         block = proc["process_block"]
         process_name = proc["process_name"]
         process_name_nice = proc["process_name"].replace("_", " ")
-        generic_costing_options = f"Generic process costing"
-        generic_process_operation = "Generic process operation"
-        advanced_costing_options = f"Advanced process costing"
-        advanced_operation_option = f"Advanced operation options"
 
         if proc["process_type"] == "desalter":
             exports.add(
@@ -229,7 +228,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 description=generic_costing_options,
                 is_input=True,
                 input_category=generic_costing_options,
-                is_output=False,
+                is_output=True,
                 output_category=generic_costing_options,
             )
             exports.add(
@@ -241,7 +240,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 description=advanced_costing_options,
                 is_input=True,
                 input_category=advanced_costing_options,
-                is_output=False,
+                is_output=True,
                 output_category=advanced_costing_options,
             )
             exports.add(
@@ -250,11 +249,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 ui_units=pyunits.dimensionless,
                 display_units="%",
                 rounding=3,
-                description=generic_process_operation,
+                description=treatment_train_specifications,
                 is_input=True,
-                input_category=generic_process_operation,
+                input_category=treatment_train_specifications,
                 is_output=True,
-                output_category=generic_process_operation,
+                output_category=treatment_train_specifications,
             )
             exports.add(
                 obj=block.desalter.LCOW,
@@ -277,9 +276,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                     rounding=3,
                     description=advanced_operation_option,
                     is_input=True,
-                    input_category=generic_process_operation,
+                    input_category=advanced_operation_option,
                     is_output=True,
-                    output_category=generic_process_operation,
+                    output_category=advanced_operation_option,
                 )
             else:
                 exports.add(
@@ -290,9 +289,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                     rounding=3,
                     description=advanced_operation_option,
                     is_input=False,
-                    input_category=generic_process_operation,
+                    input_category=advanced_operation_option,
                     is_output=True,
-                    output_category=generic_process_operation,
+                    output_category=advanced_operation_option,
                 )
                 exports.add(
                     obj=block.desalter.brine_water_percent,
@@ -302,9 +301,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                     rounding=2,
                     description=advanced_operation_option,
                     is_input=True,
-                    input_category=generic_process_operation,
+                    input_category=advanced_operation_option,
                     is_output=True,
-                    output_category=generic_process_operation,
+                    output_category=advanced_operation_option,
                 )
         if proc["process_type"] == "separator" or proc["process_type"] == "valorizer":
             if proc["process_type"] == "separator":
@@ -317,7 +316,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                     description=generic_costing_options,
                     is_input=True,
                     input_category=generic_costing_options,
-                    is_output=False,
+                    is_output=True,
                     output_category=generic_costing_options,
                 )
             else:
@@ -330,7 +329,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                     description=generic_costing_options,
                     is_input=True,
                     input_category=generic_costing_options,
-                    is_output=False,
+                    is_output=True,
                     output_category=generic_costing_options,
                 )
             # exports.add(
@@ -369,7 +368,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                             description=generic_costing_options,
                             is_input=True,
                             input_category=generic_costing_options,
-                            is_output=False,
+                            is_output=True,
                             output_category=generic_costing_options,
                         )
                         exports.add(
