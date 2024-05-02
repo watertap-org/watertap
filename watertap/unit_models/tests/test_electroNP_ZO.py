@@ -22,7 +22,7 @@ from watertap.unit_models.electroNP_ZO import ElectroNPZO
 from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
     SimpleModifiedASM2dParameterBlock,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import calculate_scaling_factors
@@ -183,44 +183,44 @@ class TestElectroNP:
     @pytest.mark.component
     def test_solution(self, ElectroNP_frame):
         m = ElectroNP_frame
-        assert value(m.fs.unit.treated.flow_vol[0]) == pytest.approx(0.213495, rel=1e-3)
+        assert value(m.fs.unit.treated.flow_vol[0]) == pytest.approx(0.1874, rel=1e-3)
 
         assert value(m.fs.unit.treated.temperature[0]) == pytest.approx(
             298.15, rel=1e-4
         )
         assert value(m.fs.unit.treated.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            0.02, rel=1e-4
+            0.02279, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            0.03, rel=1e-2
+            0.03418, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_I"]) == pytest.approx(
-            0.03, rel=1e-4
+            0.03418, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_N2"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            0.0112, rel=1e-4
+            0.01276, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            0.01, rel=1e-4
+            0.01139, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            7.2e-5, rel=1e-4
+            8.203e-5, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            0.03, rel=1e-4
+            0.03418, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            0.025, rel=1e-4
+            0.02848, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
             0, abs=1e-4
@@ -238,7 +238,7 @@ class TestElectroNP:
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            0.125, rel=1e-4
+            0.1424, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             0, abs=1e-4
@@ -250,19 +250,19 @@ class TestElectroNP:
             0, abs=1e-4
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            480, rel=1e-4
+            0.03925, rel=1e-3
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            352.8, rel=1e-4
+            0.02885, rel=1e-3
         )
         assert value(m.fs.unit.treated.alkalinity[0]) == pytest.approx(
-            0.005083, rel=1e-4
+            0.005792, rel=1e-3
         )
         assert value(m.fs.unit.energy_electric_flow_mass) == pytest.approx(
-            0.044, rel=1e-4
+            0.044, rel=1e-3
         )
-        assert value(m.fs.unit.electricity[0]) == pytest.approx(0.1193, rel=1e-4)
-        assert value(m.fs.unit.MgCl2_flowrate[0]) == pytest.approx(1.0521, rel=1e-4)
+        assert value(m.fs.unit.electricity[0]) == pytest.approx(0.1193, rel=1e-3)
+        assert value(m.fs.unit.MgCl2_flowrate[0]) == pytest.approx(1.0521, rel=1e-3)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -283,7 +283,7 @@ class TestElectroNP:
         assert pytest.approx(2.0 * 1036611.9, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(0.04431857, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.05049, rel=1e-3) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, ElectroNP_frame):

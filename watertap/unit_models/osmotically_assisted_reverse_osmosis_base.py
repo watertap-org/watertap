@@ -24,7 +24,7 @@ from pyomo.environ import (
     value,
 )
 from idaes.core import UnitModelBlockData
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.misc import add_object_reference
@@ -36,6 +36,7 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
     TransportModel,
+    ModuleType,
 )
 
 from watertap.core import InitializationMixin
@@ -116,6 +117,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
+            module_type=self.config.module_type,
             friction_factor=self.config.friction_factor,
         )
 
@@ -153,6 +155,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
+            module_type=self.config.module_type,
             friction_factor=self.config.friction_factor,
         )
 
@@ -341,15 +344,24 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         if include_constraint:
             if not hasattr(self, "eq_area"):
-                # Membrane area equation
-                @self.Constraint(doc="Total Membrane area")
-                def eq_area(b):
-                    return b.area == b.length * b.width
+                if self.config.module_type == ModuleType.flat_sheet:
+                    # Membrane area equation for flat plate membranes
+                    @self.Constraint(doc="Total Membrane area")
+                    def eq_area(b):
+                        return b.area == b.length * b.width
 
-            else:
-                raise ValueError(
-                    "include_constraint was set to True inside of _add_area(), but area constraint already exists."
-                )
+                elif self.config.module_type == ModuleType.spiral_wound:
+                    # Membrane area equation
+                    @self.Constraint(doc="Total Membrane area")
+                    def eq_area(b):
+                        return b.area == b.length * 2 * b.width
+
+                else:
+                    raise ConfigurationError(
+                        "Unsupported membrane module type: {}".format(
+                            self.config.module_type
+                        )
+                    )
 
     def _add_flux_balance(self):
 

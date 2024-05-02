@@ -21,7 +21,7 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 import watertap.property_models.NaCl_prop_pack as props
 

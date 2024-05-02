@@ -32,7 +32,7 @@ from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM
 from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM1_ASM1
 
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,

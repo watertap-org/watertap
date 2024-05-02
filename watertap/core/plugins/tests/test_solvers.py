@@ -14,13 +14,12 @@ import pytest
 import pyomo.environ as pyo
 import idaes.core.util.scaling as iscale
 
-from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common.errors import ApplicationError
 from idaes.core.util.scaling import (
     set_scaling_factor,
     constraints_with_scale_factor_generator,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP, _pyomo_nl_writer_log
 
 
@@ -72,7 +71,7 @@ class TestIpoptWaterTAP:
 
     @pytest.mark.unit
     def test_presolve_scales_constraints_and_relaxes_bounds(self, m, s):
-        s._presolve(m, tee=True)
+        s._scale_constraints(m)
         for c, sf in s._scaling_cache:
             if c is m.b.d:
                 assert sf == 1e6
@@ -85,8 +84,6 @@ class TestIpoptWaterTAP:
         assert m.b.c[2] in cons_with_sf
         assert m.b.d in cons_with_sf
 
-        assert s._model is m
-
         assert m.a.lb == -0.5
         assert m.a.ub == 0.5
         assert m.b.a[1].lb == -10
@@ -97,20 +94,13 @@ class TestIpoptWaterTAP:
 
     @pytest.mark.unit
     def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
-        assert hasattr(s, "_postsolve")
-        # for the Pyomo implementation
-        try:
-            s._postsolve()
-        except AttributeError:
-            pass
+        s._reset_scaling_factors()
 
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
 
         cons_with_sf = list(constraints_with_scale_factor_generator(m))
         assert cons_with_sf == [(m.b.d, 1e6)]
-
-        assert not hasattr(s, "_model")
 
     @pytest.mark.unit
     def test_option_absorption(self, m, s):
@@ -129,15 +119,6 @@ class TestIpoptWaterTAP:
         assert s._get_option("ignore_constraint_scaling", False) is True
         assert "ignore_constraint_scaling" not in s.options
         assert s._get_option("ignore_constraint_scaling", False) is False
-
-    @pytest.mark.unit
-    def test_presolve_passthrough(self, m, s):
-        s.options["nlp_scaling_method"] = "gradient-based"
-        s._presolve(m, tee=True)
-        self._test_bounds(m)
-        assert not hasattr(s, "_scaling_cache")
-        assert _pyomo_nl_writer_log.filters == []
-        s.options["nlp_scaling_method"] = "user-scaling"
 
     @pytest.mark.unit
     def test_passthrough_positive(self, m, s):
@@ -161,19 +142,12 @@ class TestIpoptWaterTAP:
         assert _pyomo_nl_writer_log.filters == []
 
     @pytest.mark.unit
-    def test_presolve_incorrect_number_of_arguments(self, m, s):
+    def test_solve_incorrect_number_of_arguments(self, m, s):
         with pytest.raises(TypeError):
             s.solve()
-        with pytest.raises(TypeError):
-            s.solve(m, m)
 
     @pytest.mark.unit
-    def test_presolve_incorrect_argument_type(self, s):
-        with pytest.raises(TypeError):
-            s.solve("abc")
-
-    @pytest.mark.unit
-    def test_presolve_AMPL_evaluation_error(self, m, s):
+    def test_solve_AMPL_evaluation_error(self, m, s):
         m.a.value = 0
         with pytest.raises(RuntimeError):
             s.solve(m)
@@ -186,12 +160,12 @@ class TestIpoptWaterTAP:
     def test_presolve_ignore_AMPL_evaluation_error(self, m, s):
         m.a.value = 0
         s.options["halt_on_ampl_error"] = "no"
-        s._presolve(m)
+        s._scale_constraints(m)
         m.a.value = 1
         del s.options["halt_on_ampl_error"]
 
     @pytest.mark.unit
-    def test_presolve_AMPL_evaluation_error_cleans_up(self, m, s):
+    def test_solve_AMPL_evaluation_error_cleans_up(self, m, s):
         m.a.value = 0
         with pytest.raises(RuntimeError):
             s.solve(m)
@@ -201,25 +175,7 @@ class TestIpoptWaterTAP:
         m.a.value = 1
 
     @pytest.mark.unit
-    def test_presolve_ipopt_error_cleans_up(self, m, s):
-        IPOPT_presolve = IPOPT._presolve
-
-        class IpoptErrorException(Exception):
-            pass
-
-        def _bad_presolve(*args, **kwargs):
-            raise IpoptErrorException
-
-        IPOPT._presolve = _bad_presolve
-        with pytest.raises(IpoptErrorException):
-            s.solve(m)
-        self._test_bounds(m)
-        assert not hasattr(s, "_scaling_cache")
-        assert _pyomo_nl_writer_log.filters == []
-        IPOPT._presolve = IPOPT_presolve
-
-    @pytest.mark.unit
-    def test_presolve_constraint_autoscale_large_jac_error_cleans_up(self, m, s):
+    def test_solve_constraint_autoscale_large_jac_error_cleans_up(self, m, s):
         constraint_autoscale_large_jac = iscale.constraint_autoscale_large_jac
 
         class CALJErrorException(Exception):

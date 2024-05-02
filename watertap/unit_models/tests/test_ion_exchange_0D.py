@@ -27,7 +27,7 @@ from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from idaes.core.solvers.get_solver import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
