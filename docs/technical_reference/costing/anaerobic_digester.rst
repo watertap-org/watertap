@@ -34,6 +34,7 @@ Describe capital costs..keep it concise where possible
 
         C_{cap,example1} = fill in equation for each component in total capex equation
 
+
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
