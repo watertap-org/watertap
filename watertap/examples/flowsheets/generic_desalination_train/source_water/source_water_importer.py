@@ -127,7 +127,6 @@ def set_feed(blk, feed_mass_frac, flow_basis=1):
     mass_flow_in = flow_basis * pyunits.kg / pyunits.s
     H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
     H2O_mass_comp_flow = H2O_mass_frac * pyunits.kg / pyunits.kg * mass_flow_in
-    # blk.feed.properties[0].flow_vol_phase["Liq"].fix(mass_flow_in / 1000)
     blk.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(mass_flow_in)
     for ion, x in feed_mass_frac.items():
         mass_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in
@@ -138,5 +137,6 @@ def set_feed(blk, feed_mass_frac, flow_basis=1):
             adjust_by_ion="Cl",
             get_property="flow_mass_phase_comp",
         )
+    blk.feed.display()
     blk.feed.properties[0].temperature.fix(298.15)
     blk.feed.properties[0].pressure.fix(101325)

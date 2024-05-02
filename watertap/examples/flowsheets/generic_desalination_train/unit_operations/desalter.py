@@ -39,7 +39,16 @@ _logger.setLevel(logging.DEBUG)
 __author__ = "Alexander V. Dudchenko"
 
 
-def build(m, block, base_cost=1, recovery_cost=0, tracked_solids=None):
+def build(
+    m,
+    block,
+    base_cost=1,
+    recovery_cost=0,
+    tracked_solids=None,
+    min_recovery=0,
+    max_recovery=99,
+    default_recovery=80,
+):
     block.desalter = GenericDesalter(property_package=m.fs.properties)
     desalter_costing.cost_desalter(
         m.fs.costing,
@@ -48,6 +57,10 @@ def build(m, block, base_cost=1, recovery_cost=0, tracked_solids=None):
         recovery_cost,
         opt_name=block.process_name,
     )
+
+    block.desalter.water_recovery.setub(max_recovery)
+    block.desalter.water_recovery.setlb(min_recovery)
+    block.desalter.water_recovery.fix(default_recovery)
     block.desalter.brine_solids_concentration = Var(
         initialize=80,
         bounds=(None, None),

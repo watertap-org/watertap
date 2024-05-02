@@ -112,17 +112,35 @@ def build(
             1: {
                 "process_type": "desalter",
                 "process_name": "Desal_1",
-                "default_kwargs": {"base_cost": 0.3, "recovery_cost": 0},
+                "default_kwargs": {
+                    "base_cost": 0.3,
+                    "recovery_cost": 0,
+                    "min_recovery": 0,
+                    "max_recovery": 85,
+                    "default_recovery": 85,
+                },
             },
             2: {
                 "process_type": "desalter",
                 "process_name": "Desal_2",
-                "default_kwargs": {"base_cost": 0.5, "recovery_cost": 0},
+                "default_kwargs": {
+                    "base_cost": 0.5,
+                    "recovery_cost": 0,
+                    "min_recovery": 0,
+                    "max_recovery": 50,
+                    "default_recovery": 50,
+                },
             },
             3: {
                 "process_type": "desalter",
                 "process_name": "Desal_3",
-                "default_kwargs": {"base_cost": 10, "recovery_cost": 0.0},
+                "default_kwargs": {
+                    "base_cost": 10,
+                    "recovery_cost": 0.0,
+                    "min_recovery": 0,
+                    "max_recovery": 99,
+                    "default_recovery": 90,
+                },
             },
             4: {
                 "process_type": "valorizer",
@@ -314,6 +332,20 @@ def add_flowsheet_level_constraints(m, blk):
     )
     iscale.set_scaling_factor(blk.water_recovery, 1 / 100)
     iscale.constraint_scaling_transform(blk.eq_water_recovery, 1 / 100)
+
+    blk.disposal_mass_flow_feed_basis = Var(
+        list(blk.feed.properties[0].flow_mass_phase_comp.keys()),
+        units=pyunits.kg / pyunits.m**3,
+        bounds=(None, None),
+    )
+
+    @blk.Constraint(list(blk.feed.properties[0].flow_mass_phase_comp.keys()))
+    def eq_disposal_mass_flow_feed_basis(blk, liq, ion):
+        return (
+            blk.disposal_mass_flow_feed_basis[liq, ion]
+            == blk.disposal.properties[0].flow_mass_phase_comp[liq, ion]
+            / blk.feed.properties[0].flow_vol_phase["Liq"]
+        )
 
 
 def initialize(m, solver=None, **kwargs):

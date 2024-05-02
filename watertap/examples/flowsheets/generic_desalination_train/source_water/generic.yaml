@@ -3,13 +3,13 @@ solvent_list:
     molecular_weight (kg/mol): 18.01528e-3
 solute_list:
   TDS:
-    concetration (mg/kg): 1500
+    concetration (mg/kg): 1503
     diffusivity: 1.33e-9
     molecular_weight (kg/mol): 22.989769e-3
     stokes_radius (m): 0.184e-9
     elemental charge: 0
   X:
-    concetration (mg/kg): 300
+    concetration (mg/kg): 301
     diffusivity: 7.53e-10
     molecular_weight (kg/mol): 40.0e-3
     stokes_radius (m): 0.309e-9

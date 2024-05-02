@@ -15,6 +15,8 @@ from watertap.unit_models.generic_units.generic_separation import (
 )
 from pyomo.environ import (
     value,
+    ConcreteModel,
+    Var,
     units as pyunits,
 )
 from watertap.examples.flowsheets.generic_desalination_train.costing import (
@@ -53,6 +55,22 @@ def build(
         valorizer_costing=valorizer_costing,
     )
     block.separator.additive_dose.fix(additive_dose)
+    if valorizer_costing:
+        block.product_mass_flow_feed_basis = Var(
+            list(m.fs.feed.properties[0].flow_mass_phase_comp.keys()),
+            units=pyunits.kg / pyunits.m**3,
+            bounds=(None, None),
+        )
+
+        @block.Constraint(
+            list(block.separator.product_properties[0].flow_mass_phase_comp.keys())
+        )
+        def eq_disposal_mass_flow_feed_basis(blk, liq, ion):
+            return (
+                blk.product_mass_flow_feed_basis[liq, ion]
+                == blk.separator.product_properties[0].flow_mass_phase_comp[liq, ion]
+                / m.fs.feed.properties[0].flow_vol_phase["Liq"]
+            )
 
 
 def initialize(m, blk, solver):
