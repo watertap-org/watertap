@@ -81,7 +81,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main(bio_P=False):
-    m = build_flowsheet(bio_P=bio_P)
+    m = build(bio_P=bio_P)
     set_operating_conditions(m)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -119,7 +119,7 @@ def main(bio_P=False):
     return m, results
 
 
-def build_flowsheet(bio_P=False):
+def build(bio_P=False):
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -446,7 +446,7 @@ def set_operating_conditions(m):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
 
-    # Set fraction of outflow from reactor 5 that goes to recycle
+    # Set fraction of outflow from reactor 7 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
     # Secondary Clarifier
