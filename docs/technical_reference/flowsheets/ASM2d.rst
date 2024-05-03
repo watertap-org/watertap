@@ -127,6 +127,7 @@ The following modifications to ASM1 are planned for development:
     * Improving costing relationships in terms of detail, completeness, and reasonable validity
     * Accounting for temperature-dependence in the oxygen mass transfer coefficient (KLa) and oxygen concentration at saturation
     * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
+    
 **NOTE: The repository also contains flowsheets for ASM2d modified for phosphorous removal**
 
 References
