@@ -25,7 +25,7 @@ The flowsheet relies on the following key assumptions:
    * property and reaction packages are provided for the anaerobic digester model (ADM)
 
 .. figure:: ../../_static/flowsheets/ADM1.png
-    :width: 800
+    :width: 600
     :align: center
 
     Figure 1. ADM1 flowsheet
