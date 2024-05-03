@@ -12,6 +12,7 @@ of an anaerobic digestion model for industrial wastewater treatment from food an
 `Batstone, D. J. et al. (2002) 
 <https://iwaponline.com/wst/article-abstract/45/10/65/6034/The-IWA-Anaerobic-Digestion-Model-No-1-ADM1?redirectedFrom=fulltext>`_ and `Rosen, C. et al. 
 (2006) <https://pubmed.ncbi.nlm.nih.gov/17037165/>`_
+
 Implementation
 --------------
 
