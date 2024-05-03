@@ -4,9 +4,9 @@ Activated Sludge Model No. 2d
 Introduction
 ------------
 
-The Activated Sludge Model No. 2d represents a variation of the ASM1 model to account for biological phosphorus  with 
-nitrification-denitrification. The property and reaction relationships `ASM2d
-<https://watertap.readthedocs.io/en/stable/technical_reference/property_models/ASM2D.html>`_
+The Activated Sludge Model No. 2d (ASM2d) represents a variation of the ASM1 model to account for biological phosphorus  with 
+nitrification-denitrification. The  `ASM2d
+<https://watertap.readthedocs.io/en/stable/technical_reference/property_models/ASM2D.html>`_ property and reaction relationships 
 of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with 
 biological phosphorus removal as provided in  `Henze, M. et al. (1999) 
 <https://iwaponline.com/wst/article-abstract/39/1/165/4841/Activated-Sludge-Model-No-2d-ASM2D>`_.
