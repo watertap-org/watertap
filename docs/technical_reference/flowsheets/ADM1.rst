@@ -21,7 +21,7 @@ only exist in the liquid phase. The amount of CO2 dissolved in the liquid phase 
 The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
-   * property and reaction packages are provided for the anaerobic digester model (ADM)
+   * property and reaction packages are provided for the anaerobic digester model (ADM)
 
 .. figure:: ../../_static/flowsheets/ADM1.png
     :width: 800
