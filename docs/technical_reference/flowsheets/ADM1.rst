@@ -4,7 +4,7 @@ Anaerobic Digestion Model No. 1
 Introduction
 ------------
 
-The IWA created Anaerobic Digestion Model No. 1 with a mathematical model to predict anaerobic digestion scenarios. 
+The IWA created Anaerobic Digestion Model No. 1 (ADM1) with a mathematical model to predict anaerobic digestion scenarios. 
 The objective of the mathematical model is to simulate biological reactions simultaneously with the disintegration, uptake, and decay of microorganisms
 in anaerobic sludge. The property and reaction relationships `ADM1
 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
