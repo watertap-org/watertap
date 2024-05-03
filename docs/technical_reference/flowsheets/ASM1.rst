@@ -4,10 +4,10 @@ Activated Sludge Model No. 1
 Introduction
 ------------
 
-Activated Sludge Model No. 1 was created by the IWA to create a mathematical model to predict the output of activated sludge 
+Activated Sludge Model No. 1 (ASM1) was created by the International Water Association (IWA) to create a mathematical model to predict the output of activated sludge 
 models. The model aims to incorporate carbon oxidation, nitrification, and denitrification. The model quantifies 
-the kinetics and stoichiometry of each process. The property and reaction relationships `ASM1
-<https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
+the kinetics and stoichiometry of each process. The `ASM1
+<https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_ property and reaction relationships 
 are based on the relationships provided for the activated sludge biological reactor provided in `Henze, M. et al. (1987) 
 <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
 
