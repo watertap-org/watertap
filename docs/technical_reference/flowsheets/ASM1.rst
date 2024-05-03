@@ -8,7 +8,7 @@ Activated Sludge Model No. 1 (ASM1) was created by the International Water Assoc
 models. The model aims to incorporate carbon oxidation, nitrification, and denitrification. The model quantifies 
 the kinetics and stoichiometry of each process. The `ASM1
 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_ property and reaction relationships 
-are based on the relationships provided for the activated sludge biological reactor provided in `Henze, M. et al. (1987) 
+are based on the relationships for the activated sludge biological reactor provided in `Henze, M. et al. (1987) 
 <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
 
 Implementation
