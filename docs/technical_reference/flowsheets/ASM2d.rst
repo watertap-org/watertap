@@ -42,7 +42,7 @@ Documentation for the property model can be found below.
 
 Degrees of Freedom
 ------------------
-The following variables are initially specified for simulating the ASM1 flowsheet (i.e., degrees of freedom = 0):
+The following variables are initially specified for simulating the ASM2d flowsheet (i.e., degrees of freedom = 0):
     * feed water conditions (flow, temperature, pressure, component concentrations, and alkalinity)
     * volume of activated sludge reactors
     * component injection rates for aerobic reactors
