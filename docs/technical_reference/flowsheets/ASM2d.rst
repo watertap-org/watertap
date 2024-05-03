@@ -128,8 +128,8 @@ The following modifications to ASM2d are planned for development:
     * Accounting for temperature-dependence in the oxygen mass transfer coefficient (KLa) and oxygen concentration at saturation
     * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
 
-**NOTE: The repository also contains flowsheets for ASM2d modified for phosphorous removal, for property and reaction reference:
-`modified ASM2d <https://watertap.readthedocs.io/en/stable/technical_reference/property_models/modified_ASM2D.html>`_**
+**NOTE:** The repository also contains flowsheets for ASM2d modified for phosphorous removal, for property and reaction reference:
+`modified ASM2d <https://watertap.readthedocs.io/en/stable/technical_reference/property_models/modified_ASM2D.html>`_
 
 References
 ----------
