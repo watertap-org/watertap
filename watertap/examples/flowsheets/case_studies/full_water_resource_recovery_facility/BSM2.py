@@ -611,7 +611,7 @@ def display_results(m):
 
 
 def display_costing(m):
-    print("Levelized cost of treatment: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
+    print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
 
     print(
         "Total operating cost: %.2f $/yr" % pyo.value(m.fs.costing.total_operating_cost)
