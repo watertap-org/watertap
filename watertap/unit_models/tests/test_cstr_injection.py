@@ -116,6 +116,7 @@ def build():
 
     return m
 
+
 def build_ASM1():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -216,6 +217,7 @@ def build_ASM1():
 
     return m
 
+
 class TestCSTR_injection(UnitTestHarness):
     def configure(self):
         m = build()
@@ -228,44 +230,48 @@ class TestCSTR_injection(UnitTestHarness):
         self.unit_solutions[m.fs.unit.control_volume.heat_of_reaction[0]] = 3904.51
 
         # Conservation checks
-        self.unit_solutions[m.fs.unit.outlet.flow_vol[0]] = value(m.fs.unit.inlet.flow_vol[0])
-
-
-        self.unit_solutions[
-           (
-                    m.fs.unit.outlet.flow_vol[0]
-                    * sum(
-                        m.fs.unit.outlet.conc_mol_comp[0, j]
-                        for j in m.fs.properties.component_list
-                    ))
-        ] = value(m.fs.unit.inlet.flow_vol[0]
-                    * sum(
-                        m.fs.unit.inlet.conc_mol_comp[0, j]
-                        for j in m.fs.properties.component_list
-                    ))
+        self.unit_solutions[m.fs.unit.outlet.flow_vol[0]] = value(
+            m.fs.unit.inlet.flow_vol[0]
+        )
 
         self.unit_solutions[
-           (
-                    (
-                        m.fs.unit.outlet.flow_vol[0]
-                        * m.fs.properties.dens_mol
-                        * m.fs.properties.cp_mol
-                        * (
-                            m.fs.unit.outlet.temperature[0]
-                            - m.fs.properties.temperature_ref
-                        )
-                    )
-                    - m.fs.unit.control_volume.heat_of_reaction[0]
+            (
+                m.fs.unit.outlet.flow_vol[0]
+                * sum(
+                    m.fs.unit.outlet.conc_mol_comp[0, j]
+                    for j in m.fs.properties.component_list
                 )
-        ] = value(m.fs.unit.inlet.flow_vol[0]
-                        * m.fs.properties.dens_mol
-                        * m.fs.properties.cp_mol
-                        * (
-                            m.fs.unit.inlet.temperature[0]
-                            - m.fs.properties.temperature_ref
-                        ))
+            )
+        ] = value(
+            m.fs.unit.inlet.flow_vol[0]
+            * sum(
+                m.fs.unit.inlet.conc_mol_comp[0, j]
+                for j in m.fs.properties.component_list
+            )
+        )
+
+        self.unit_solutions[
+            (
+                (
+                    m.fs.unit.outlet.flow_vol[0]
+                    * m.fs.properties.dens_mol
+                    * m.fs.properties.cp_mol
+                    * (
+                        m.fs.unit.outlet.temperature[0]
+                        - m.fs.properties.temperature_ref
+                    )
+                )
+                - m.fs.unit.control_volume.heat_of_reaction[0]
+            )
+        ] = value(
+            m.fs.unit.inlet.flow_vol[0]
+            * m.fs.properties.dens_mol
+            * m.fs.properties.cp_mol
+            * (m.fs.unit.inlet.temperature[0] - m.fs.properties.temperature_ref)
+        )
 
         return m
+
 
 class TestCosting_Saponification(UnitTestHarness):
     def configure(self):
@@ -288,10 +294,11 @@ class TestCosting_Saponification(UnitTestHarness):
         m.fs.unit.initialize()
 
         results = solver.solve(m)
-        
+
         assert pytest.approx(0.00082698, rel=1e-5) == value(m.fs.costing.LCOW)
 
         return m
+
 
 class TestSaponification(object):
     @pytest.mark.solver
@@ -329,6 +336,7 @@ class TestSaponification(object):
             }
         }
 
+
 class TestCSTR_injection_ASM1(UnitTestHarness):
     def configure(self):
         m = build_ASM1()
@@ -338,30 +346,36 @@ class TestCSTR_injection_ASM1(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet.conc_mass_comp[0, "S_O"]] = 6.258e-3
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 18.3765
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 2092.2123
-        self.unit_solutions[m.fs.unit.KLa] = 8.2694      
+        self.unit_solutions[m.fs.unit.KLa] = 8.2694
 
         # Conservation checks
-        self.unit_solutions[m.fs.unit.outlet.flow_vol[0]] = value(m.fs.unit.inlet.flow_vol[0])
+        self.unit_solutions[m.fs.unit.outlet.flow_vol[0]] = value(
+            m.fs.unit.inlet.flow_vol[0]
+        )
 
         self.default_relative_tolerance = 1e-2
 
         self.unit_solutions[
-           (
-                    m.fs.unit.outlet.flow_vol[0]
-                    * sum(
-                        m.fs.unit.outlet.conc_mass_comp[0, j]
-                        for j in m.fs.properties.solute_set
-                    ) + sum(
+            (
+                m.fs.unit.outlet.flow_vol[0]
+                * sum(
+                    m.fs.unit.outlet.conc_mass_comp[0, j]
+                    for j in m.fs.properties.solute_set
+                )
+                + sum(
                     m.fs.unit.control_volume.rate_reaction_generation[0, "Liq", j]
                     for j in m.fs.properties.solute_set
-                ))
-        ] = value(m.fs.unit.inlet.flow_vol[0]
-                    * sum(
-                        m.fs.unit.inlet.conc_mass_comp[0, j]
-                        for j in m.fs.properties.solute_set
-                    ))
+                )
+            )
+        ] = value(
+            m.fs.unit.inlet.flow_vol[0]
+            * sum(
+                m.fs.unit.inlet.conc_mass_comp[0, j] for j in m.fs.properties.solute_set
+            )
+        )
 
         return m
+
 
 class TestCosting(UnitTestHarness):
     def configure(self):
@@ -388,6 +402,7 @@ class TestCosting(UnitTestHarness):
         assert pytest.approx(0.0132455, rel=1e-5) == value(m.fs.costing.LCOW)
 
         return m
+
 
 @pytest.mark.build
 @pytest.mark.unit

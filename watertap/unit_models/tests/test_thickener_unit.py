@@ -249,12 +249,16 @@ class TestThickener_ASM1(UnitTestHarness):
         ] = value(m.fs.unit.inlet.flow_vol[0])
 
         for i in m.fs.props.solute_set:
-           self.unit_solutions[
-            (
-                m.fs.unit.overflow.flow_vol[0] * m.fs.unit.overflow.conc_mass_comp[0, i]
-                + m.fs.unit.underflow.flow_vol[0] * m.fs.unit.underflow.conc_mass_comp[0, i]
+            self.unit_solutions[
+                (
+                    m.fs.unit.overflow.flow_vol[0]
+                    * m.fs.unit.overflow.conc_mass_comp[0, i]
+                    + m.fs.unit.underflow.flow_vol[0]
+                    * m.fs.unit.underflow.conc_mass_comp[0, i]
+                )
+            ] = value(m.fs.unit.inlet.flow_vol[0]) * value(
+                m.fs.unit.inlet.conc_mass_comp[0, i]
             )
-        ] = value(m.fs.unit.inlet.flow_vol[0]) * value(m.fs.unit.inlet.conc_mass_comp[0, i]   )  
 
         return m
 
@@ -295,12 +299,16 @@ class TestThickener_ASM2d(UnitTestHarness):
         ] = value(m.fs.unit.inlet.flow_vol[0])
 
         for i in m.fs.props.solute_set:
-           self.unit_solutions[
-            (
-                m.fs.unit.overflow.flow_vol[0] * m.fs.unit.overflow.conc_mass_comp[0, i]
-                + m.fs.unit.underflow.flow_vol[0] * m.fs.unit.underflow.conc_mass_comp[0, i]
+            self.unit_solutions[
+                (
+                    m.fs.unit.overflow.flow_vol[0]
+                    * m.fs.unit.overflow.conc_mass_comp[0, i]
+                    + m.fs.unit.underflow.flow_vol[0]
+                    * m.fs.unit.underflow.conc_mass_comp[0, i]
+                )
+            ] = value(m.fs.unit.inlet.flow_vol[0]) * value(
+                m.fs.unit.inlet.conc_mass_comp[0, i]
             )
-        ] = value(m.fs.unit.inlet.flow_vol[0]) * value(m.fs.unit.inlet.conc_mass_comp[0, i]   )  
 
         return m
 
@@ -337,15 +345,18 @@ class TestThickener_ASM2d_modified(UnitTestHarness):
         ] = value(m.fs.unit.inlet.flow_vol[0])
 
         for i in m.fs.props.solute_set:
-           self.unit_solutions[
-            (
-                m.fs.unit.overflow.flow_vol[0] * m.fs.unit.overflow.conc_mass_comp[0, i]
-                + m.fs.unit.underflow.flow_vol[0] * m.fs.unit.underflow.conc_mass_comp[0, i]
+            self.unit_solutions[
+                (
+                    m.fs.unit.overflow.flow_vol[0]
+                    * m.fs.unit.overflow.conc_mass_comp[0, i]
+                    + m.fs.unit.underflow.flow_vol[0]
+                    * m.fs.unit.underflow.conc_mass_comp[0, i]
+                )
+            ] = value(m.fs.unit.inlet.flow_vol[0]) * value(
+                m.fs.unit.inlet.conc_mass_comp[0, i]
             )
-        ] = value(m.fs.unit.inlet.flow_vol[0]) * value(m.fs.unit.inlet.conc_mass_comp[0, i]   )  
 
         return m
-
 
 
 class TestCosting(UnitTestHarness):

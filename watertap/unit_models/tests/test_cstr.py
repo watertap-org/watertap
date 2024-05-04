@@ -204,40 +204,43 @@ class TestCSTR(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]] = 20.32
 
         self.unit_solutions[
-           (
-                    m.fs.unit.outlet.flow_vol[0]
-                    * sum(
-                        m.fs.unit.outlet.conc_mol_comp[0, j]
-                        for j in m.fs.properties.component_list
-                    ))
-        ] = value(m.fs.unit.inlet.flow_vol[0]
-                    * sum(
-                        m.fs.unit.inlet.conc_mol_comp[0, j]
-                        for j in m.fs.properties.component_list
-                    ))
+            (
+                m.fs.unit.outlet.flow_vol[0]
+                * sum(
+                    m.fs.unit.outlet.conc_mol_comp[0, j]
+                    for j in m.fs.properties.component_list
+                )
+            )
+        ] = value(
+            m.fs.unit.inlet.flow_vol[0]
+            * sum(
+                m.fs.unit.inlet.conc_mol_comp[0, j]
+                for j in m.fs.properties.component_list
+            )
+        )
 
         self.unit_solutions[
-           (
-                    (
-                        m.fs.unit.outlet.flow_vol[0]
-                        * m.fs.properties.dens_mol
-                        * m.fs.properties.cp_mol
-                        * (
-                            m.fs.unit.outlet.temperature[0]
-                            - m.fs.properties.temperature_ref
-                        )
+            (
+                (
+                    m.fs.unit.outlet.flow_vol[0]
+                    * m.fs.properties.dens_mol
+                    * m.fs.properties.cp_mol
+                    * (
+                        m.fs.unit.outlet.temperature[0]
+                        - m.fs.properties.temperature_ref
                     )
-                    - m.fs.unit.control_volume.heat_of_reaction[0]
                 )
-        ] = value(m.fs.unit.inlet.flow_vol[0]
-                        * m.fs.properties.dens_mol
-                        * m.fs.properties.cp_mol
-                        * (
-                            m.fs.unit.inlet.temperature[0]
-                            - m.fs.properties.temperature_ref
-                        ))
+                - m.fs.unit.control_volume.heat_of_reaction[0]
+            )
+        ] = value(
+            m.fs.unit.inlet.flow_vol[0]
+            * m.fs.properties.dens_mol
+            * m.fs.properties.cp_mol
+            * (m.fs.unit.inlet.temperature[0] - m.fs.properties.temperature_ref)
+        )
 
         return m
+
 
 class TestInitializers:
     @pytest.fixture
@@ -384,7 +387,7 @@ class TestCosting(UnitTestHarness):
         m.fs.unit.initialize()
 
         results = solver.solve(m)
-        
+
         assert pytest.approx(6.64365e-06, rel=1e-5) == value(m.fs.costing.LCOW)
 
         return m
