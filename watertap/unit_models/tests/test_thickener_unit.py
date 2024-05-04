@@ -19,6 +19,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     units,
+    value,
 )
 
 from idaes.core import FlowsheetBlock
@@ -238,6 +239,23 @@ class TestThickener_ASM1(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_ND"]] = 0.0001056
         self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004564
 
+        # Conservation checks
+        self.unit_solutions[
+            (
+                m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
+                + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
+            )
+            / m.fs.props.dens_mass
+        ] = value(m.fs.unit.inlet.flow_vol[0])
+
+        for i in m.fs.props.solute_set:
+           self.unit_solutions[
+            (
+                m.fs.unit.overflow.flow_vol[0] * m.fs.unit.overflow.conc_mass_comp[0, i]
+                + m.fs.unit.underflow.flow_vol[0] * m.fs.unit.underflow.conc_mass_comp[0, i]
+            )
+        ] = value(m.fs.unit.inlet.flow_vol[0]) * value(m.fs.unit.inlet.conc_mass_comp[0, i]   )  
+
         return m
 
 
@@ -267,6 +285,23 @@ class TestThickener_ASM2d(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_TSS"]] = 0.074169
         self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004666
 
+        # Conservation checks
+        self.unit_solutions[
+            (
+                m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
+                + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
+            )
+            / m.fs.props.dens_mass
+        ] = value(m.fs.unit.inlet.flow_vol[0])
+
+        for i in m.fs.props.solute_set:
+           self.unit_solutions[
+            (
+                m.fs.unit.overflow.flow_vol[0] * m.fs.unit.overflow.conc_mass_comp[0, i]
+                + m.fs.unit.underflow.flow_vol[0] * m.fs.unit.underflow.conc_mass_comp[0, i]
+            )
+        ] = value(m.fs.unit.inlet.flow_vol[0]) * value(m.fs.unit.inlet.conc_mass_comp[0, i]   )  
+
         return m
 
 
@@ -292,7 +327,25 @@ class TestThickener_ASM2d_modified(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PP"]] = 0.001336
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_S"]] = 0.001436
 
+        # Conservation checks
+        self.unit_solutions[
+            (
+                m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
+                + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
+            )
+            / m.fs.props.dens_mass
+        ] = value(m.fs.unit.inlet.flow_vol[0])
+
+        for i in m.fs.props.solute_set:
+           self.unit_solutions[
+            (
+                m.fs.unit.overflow.flow_vol[0] * m.fs.unit.overflow.conc_mass_comp[0, i]
+                + m.fs.unit.underflow.flow_vol[0] * m.fs.unit.underflow.conc_mass_comp[0, i]
+            )
+        ] = value(m.fs.unit.inlet.flow_vol[0]) * value(m.fs.unit.inlet.conc_mass_comp[0, i]   )  
+
         return m
+
 
 
 class TestCosting(UnitTestHarness):

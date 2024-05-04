@@ -17,23 +17,17 @@ Authors: Marcus Holly
 import pytest
 
 from pyomo.environ import (
-    assert_optimal_termination,
-    check_optimal_termination,
     ConcreteModel,
     units,
     value,
     Objective,
 )
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 
 from idaes.core import (
     FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
     UnitModelCostingBlock,
 )
 from watertap.unit_models.cstr import CSTR
@@ -49,17 +43,6 @@ from idaes.models.properties.examples.saponification_thermo import (
 )
 from idaes.models.properties.examples.saponification_reactions import (
     SaponificationReactionParameterBlock,
-)
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
-from idaes.core.util.testing import (
-    PhysicalParameterTestBlock,
-    ReactionParameterTestBlock,
-    initialization_tester,
 )
 from watertap.core.solvers import get_solver
 from idaes.core.initialization import (
@@ -220,12 +203,46 @@ class TestCSTR(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet.temperature[0]] = 304.09
         self.unit_solutions[m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]] = 20.32
 
-        return m
+        self.unit_solutions[
+           (
+                    m.fs.unit.outlet.flow_vol[0]
+                    * sum(
+                        m.fs.unit.outlet.conc_mol_comp[0, j]
+                        for j in m.fs.properties.component_list
+                    ))
+        ] = value(m.fs.unit.inlet.flow_vol[0]
+                    * sum(
+                        m.fs.unit.inlet.conc_mol_comp[0, j]
+                        for j in m.fs.properties.component_list
+                    ))
 
+        self.unit_solutions[
+           (
+                    (
+                        m.fs.unit.outlet.flow_vol[0]
+                        * m.fs.properties.dens_mol
+                        * m.fs.properties.cp_mol
+                        * (
+                            m.fs.unit.outlet.temperature[0]
+                            - m.fs.properties.temperature_ref
+                        )
+                    )
+                    - m.fs.unit.control_volume.heat_of_reaction[0]
+                )
+        ] = value(m.fs.unit.inlet.flow_vol[0]
+                        * m.fs.properties.dens_mol
+                        * m.fs.properties.cp_mol
+                        * (
+                            m.fs.unit.inlet.temperature[0]
+                            - m.fs.properties.temperature_ref
+                        ))
+
+        return m
 
 class TestInitializers:
     @pytest.fixture
     def model(self):
+        m = build()
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -353,10 +370,21 @@ class TestCosting(UnitTestHarness):
         m.objective = Objective(expr=m.fs.costing.LCOW)
 
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
+        iscale.set_scaling_factor(m.fs.costing.LCOW, 1e6)
 
         iscale.calculate_scaling_factors(m.fs.unit)
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_LCOW(self, m):
+
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 566989.10
-        self.unit_solutions[m.fs.costing.LCOW] = 6.64365e-06
+
+        m.fs.unit.initialize()
+
+        results = solver.solve(m)
+        
+        assert pytest.approx(6.64365e-06, rel=1e-5) == value(m.fs.costing.LCOW)
 
         return m
