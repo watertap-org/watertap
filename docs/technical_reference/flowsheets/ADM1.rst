@@ -16,8 +16,8 @@ of an anaerobic digestion model for industrial wastewater treatment from food an
 Implementation
 --------------
 
-Figure 1 shows the process flow diagram for ADM1 where the flowsheet only includes the anaerobic digester ehich processes sludge to produce a 
-biogas stream and residual sludge. S_h2 and S_ch4 exist in both vapor phase and liquid phase, S_co2 exists vapor phase, and the other components 
+Figure 1 shows the process flow diagram for ADM1 where the flowsheet only includes the anaerobic digester which processes sludge to produce a 
+biogas stream and residual sludge. S_h2 and S_ch4 exist in both vapor phase and liquid phase, S_co2 exists in the vapor phase, and the other components 
 only exist in the liquid phase. The amount of CO2 dissolved in the liquid phase is equivalent to S_IC - S_HCO3-.
 The flowsheet relies on the following key assumptions:
 
