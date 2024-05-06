@@ -31,7 +31,7 @@ The following variables are used on the unit block (e.g., m.fs.unit.costing) whe
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Capital cost depends on the unit's inlet flow rate, :math:`Q_in`, as shown in the equation below:
+Capital cost depends on the unit's inlet flow rate, :math:`Q_{in}`, as shown in the equation below:
 
     .. math::
 
