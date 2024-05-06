@@ -681,6 +681,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-
-    m.fs.R3.inlet.display()
-    m.fs.translator_asm2d_adm1.inlet.display()
