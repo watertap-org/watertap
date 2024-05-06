@@ -13,17 +13,17 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Centrifuge"
-   "Capital cost A parameter:math:`^1`", ":math:`A_{centrifuge}`", "capital_a_parameter", "328.03", ":math:`\text{USD_{2007}/}\text{gal/hr}`"
-   "Capital cost B parameter:math:`^1`", ":math:`B_{centrifuge}`", "capital_b_parameter", "751295", ":math:`\text{USD_{2007}}`"
+   "**Centrifuge**"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{centrifuge}`", "capital_a_parameter", "328.03", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{centrifuge}`", "capital_b_parameter", "751295", ":math:`\text{USD}_{2007}`"
 
-   "Filter belt press"
-   "Capital cost A parameter:math:`^1`", ":math:`A_{fbp}`", "capital_a_parameter", "146.29", ":math:`\text{USD_{2007}/}\text{gal/hr}`"
-   "Capital cost B parameter:math:`^1`", ":math:`B_{fbp}`", "capital_b_parameter", "433972", ":math:`\text{USD_{2007}}`"
+   "**Filter belt press**"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{fbp}`", "capital_a_parameter", "146.29", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{fbp}`", "capital_b_parameter", "433972", ":math:`\text{USD}_{2007}`"
 
-   "Filter plate press"
-   "Capital cost A parameter:math:`^1`", ":math:`A_{fpp}`", "capital_a_parameter", "102794", ":math:`\text{USD_{2007}/}\text{gal/hr}`"
-   "Capital cost B parameter:math:`^1`", ":math:`B_{fpp}`", "capital_b_parameter", "0.4216", ":math:`\text{USD_{2007}}`"
+   "**Filter plate press**"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{fpp}`", "capital_a_parameter", "102794", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{fpp}`", "capital_b_parameter", "0.4216", ":math:`\text{USD}_{2007}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++

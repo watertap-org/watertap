@@ -9,8 +9,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Capital cost A parameter:math:`^1`", ":math:`A`", "capital_a_parameter", "1.1141e3", ":math:`\text{USD}_{1997}`"
-   "Capital cost B parameter:math:`^1`", ":math:`B`", "capital_b_parameter", "0.6", ":math:`\text{dimensionless}`"
+   "Capital cost A parameter :math:`^1`", ":math:`A`", "capital_a_parameter", "1.1141e3", ":math:`\text{USD}_{1997}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B`", "capital_b_parameter", "0.6", ":math:`\text{dimensionless}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -24,7 +24,7 @@ Capital cost is dependent upon the unit's volume, :math:`V`, as shown in the equ
 
     .. math::
 
-        C_{cap,tot} = A * V**B
+        C_{cap,tot} = A * V^{B}
 
  
 Operating Cost Calculations

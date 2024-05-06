@@ -13,19 +13,19 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Circular clarifier"
-   "Capital cost A parameter:math:`^1`", ":math:`A_{circular}`", "construction_a_parameter", "-6e-4", ":math:`\text{USD_{2011}/}\text{ft}^4`"
-   "Capital cost B parameter:math:`^1`", ":math:`B_{circular}`", "construction_b_parameter", "98.952", ":math:`\text{USD_{2011}/}\text{ft}^2`"
-   "Capital cost C parameter:math:`^1`", ":math:`C_{circular}`", "construction_c_parameter", "191806", ":math:`\text{USD_{2011}}`"
+   "**Circular clarifier**"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{circular}`", "construction_a_parameter", "-6e-4", ":math:`\text{USD}_{2011}\text{/ft}^4`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{circular}`", "construction_b_parameter", "98.952", ":math:`\text{USD}_{2011}\text{/ft}^2`"
+   "Capital cost C parameter :math:`^1`", ":math:`C_{circular}`", "construction_c_parameter", "191806", ":math:`\text{USD}_{2011}`"
 
-   "Rectangular clarifier"
-   "Capital cost A parameter:math:`^1`", ":math:`A_{rectangular}`", "construction_a_parameter", "-2.9e-3", ":math:`\text{USD_{2011}/}\text{ft}^4`"
-   "Capital cost B parameter:math:`^1`", ":math:`B_{rectangular}`", "construction_b_parameter", "169.19", ":math:`\text{USD_{2011}/}\text{ft}^2`"
-   "Capital cost C parameter:math:`^1`", ":math:`C_{rectangular}`", "construction_c_parameter", "94365", ":math:`\text{USD_{2011}}`"
+   "**Rectangular clarifier**"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{rectangular}`", "construction_a_parameter", "-2.9e-3", ":math:`\text{USD}_{2011}\text{/ft}^4`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{rectangular}`", "construction_b_parameter", "169.19", ":math:`\text{USD}_{2011}\text{/ft}^2`"
+   "Capital cost C parameter :math:`^1`", ":math:`C_{rectangular}`", "construction_c_parameter", "94365", ":math:`\text{USD}_{2011}`"
 
-   "Primary clarifier"
-   "Capital cost A parameter:math:`^2`", ":math:`A_{primary}`", "capital_a_parameter", "-2.9e-3", ":math:`\text{USD_{2021}}`"
-   "Capital cost B parameter:math:`^2`", ":math:`B_{primary}`", "capital_b_parameter", "538746.398", ":math:`\text{dimensionless}`"
+   "**Primary clarifier**"
+   "Capital cost A parameter :math:`^2`", ":math:`A_{primary}`", "capital_a_parameter", "-2.9e-3", ":math:`\text{USD_{2021}}`"
+   "Capital cost B parameter :math:`^2`", ":math:`B_{primary}`", "capital_b_parameter", "538746.398", ":math:`\text{dimensionless}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -35,13 +35,13 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
 
-   "Circular clarifier"
+   "**Circular clarifier**"
    "Surface area", ":math:`A_{s}`", "surface_area", "16145.87", ":math:`\text{ft}^2`"
 
-   "Rectangular clarifier"
+   "**Rectangular clarifier**"
    "Surface area", ":math:`A_{s}`", "surface_area", "16145.87", ":math:`\text{ft}^2`"
 
-   "Primary clarifier"
+   "**Primary clarifier**"
    "Inlet volumetric flow rate", ":math:`Q_{in}`", "flow_in", "N/A", ":math:`\text{gal/day}`"
 
 Capital Cost Calculations

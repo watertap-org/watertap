@@ -9,8 +9,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Capital cost A parameter:math:`^1`", ":math:`A`", "capital_a_parameter", "4729.8", ":math:`\text{USD_{2007}/ft}}`"
-   "Capital cost B parameter:math:`^1`", ":math:`B`", "capital_b_parameter", "37068", ":math:`\text{USD_{2007}}`"
+   "Capital cost A parameter :math:`^1`", ":math:`A`", "capital_a_parameter", "4729.8", ":math:`\text{USD}_{2011}\text{/ft}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B`", "capital_b_parameter", "37068", ":math:`\text{USD}_{2007}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
