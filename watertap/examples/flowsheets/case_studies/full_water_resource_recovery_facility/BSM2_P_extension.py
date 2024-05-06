@@ -80,7 +80,7 @@ from watertap.core.util.initialization import check_solve
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=False):
+def main(bio_P=True):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
     for mx in m.fs.mixers:
@@ -536,24 +536,24 @@ def initialize_system(m, bio_P=False):
         tear_guesses = {
             "flow_vol": {0: 1.2368},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0007,
-                (0, "S_F"): 0.000429,
+                (0, "S_A"): 0.0009,
+                (0, "S_F"): 0.00042,
                 (0, "S_I"): 0.05745,
                 (0, "S_N2"): 0.0534,
-                (0, "S_NH4"): 0.0092,
-                (0, "S_NO3"): 0.00403,
-                (0, "S_O2"): 0.00192,
-                (0, "S_PO4"): 0.0123,
+                (0, "S_NH4"): 0.0089,
+                (0, "S_NO3"): 0.0046,
+                (0, "S_O2"): 0.0046,
+                (0, "S_PO4"): 0.0118,
                 (0, "S_K"): 0.373,
                 (0, "S_Mg"): 0.023,
-                (0, "S_IC"): 0.135,
-                (0, "X_AUT"): 0.1382,
-                (0, "X_H"): 3.6356,
-                (0, "X_I"): 3.2611,
-                (0, "X_PAO"): 3.3542,
-                (0, "X_PHA"): 0.089416,
-                (0, "X_PP"): 1.1127,
-                (0, "X_S"): 0.059073,
+                (0, "S_IC"): 0.1366,
+                (0, "X_AUT"): 0.135,
+                (0, "X_H"): 3.647,
+                (0, "X_I"): 3.314,
+                (0, "X_PAO"): 2.984,
+                (0, "X_PHA"): 0.083,
+                (0, "X_PP"): 0.9907,
+                (0, "X_S"): 0.05823,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -566,20 +566,20 @@ def initialize_system(m, bio_P=False):
                 (0, "S_F"): 0.16,
                 (0, "S_I"): 0.05745,
                 (0, "S_N2"): 0.039,
-                (0, "S_NH4"): 0.034,
-                (0, "S_NO3"): 0.0028,
-                (0, "S_O2"): 0.00136,
-                (0, "S_PO4"): 0.0254,
+                (0, "S_NH4"): 0.035,
+                (0, "S_NO3"): 0.0032,
+                (0, "S_O2"): 0.00314,
+                (0, "S_PO4"): 0.0238,
                 (0, "S_K"): 0.379,
-                (0, "S_Mg"): 0.0267,
+                (0, "S_Mg"): 0.026,
                 (0, "S_IC"): 0.078,
                 (0, "X_AUT"): 0.342,
-                (0, "X_H"): 23.4,
-                (0, "X_I"): 11.5,
-                (0, "X_PAO"): 10.3,
-                (0, "X_PHA"): 0.0044,
-                (0, "X_PP"): 2.76,
-                (0, "X_S"): 3.83,
+                (0, "X_H"): 23.95,
+                (0, "X_I"): 11.9,
+                (0, "X_PAO"): 9.62,
+                (0, "X_PHA"): 0.0033,
+                (0, "X_PP"): 2.51,
+                (0, "X_S"): 3.92,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -681,3 +681,6 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+
+    m.fs.R3.inlet.display()
+    m.fs.translator_asm2d_adm1.inlet.display()
