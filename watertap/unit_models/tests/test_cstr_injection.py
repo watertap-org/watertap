@@ -301,13 +301,6 @@ class TestCosting_Saponification(UnitTestHarness):
 
 
 class TestSaponification(object):
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_conservation(self):
-
-        sapon = build()
-
     @pytest.mark.unit
     def test_get_performance_contents(self):
 
