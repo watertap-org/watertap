@@ -10,9 +10,9 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
    "Hydraulic retention time", ":math:`HRT`", "HRT", "1.3333", ":math:`\text{hr}`"
-   "Reactor sizing cost", ":math:`C_V`", "sizing_cost", "1000", ":math:`\text{$/m^3}`"
-   "Magnesium chloride cost", ":math:`C_{MgCl2}`", "magnesium_chloride_cost", "0.0786", ":math:`\text{$/kg}`"
-   "Phosphorus recovery value*", ":math:`C_{RP}`", "phosphorus_recovery_value", "-0.07", ":math:`\text{$/kg}`"
+   "Reactor sizing cost", ":math:`C_V`", "sizing_cost", "1000", ":math:`\text{USD}_{2020}\text{/m}^3`"
+   "Magnesium chloride cost", ":math:`C_{MgCl2}`", "magnesium_chloride_cost", "0.0786", ":math:`\text{USD}_{2020}\text{/kg}`"
+   "Phosphorus recovery value*", ":math:`C_{RP}`", "phosphorus_recovery_value", "-0.07", ":math:`\text{USD}_{2020}\text{/kg}`"
 
 \* Negative value represents revenue from recovering phosphorus
 
@@ -24,7 +24,7 @@ The following variables are used on the unit block (e.g., m.fs.unit.costing) whe
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Units"
 
-   "Inlet volumetric flow rate", ":math:`Q_{in}`", "mixed_state[0].flow_vol", ":math:`\text{m^3/hr}`"
+   "Inlet volumetric flow rate", ":math:`Q_{in}`", "mixed_state[0].flow_vol", ":math:`\text{m}^3\text{/hr}`"
    "Byproduct phosphate mass flow rate", ":math:`Q_{byproduct, S_{PO4}}`", "byproduct_state[0].conc_mass_comp[0, S_PO4]", ":math:`\text{kg/hr}`"
    "Magnesium chloride flowrate", ":math:`Q_{MgCl2}`", "magnesium_chloride_dosage", ":math:`\text{kg/hr}`"
 

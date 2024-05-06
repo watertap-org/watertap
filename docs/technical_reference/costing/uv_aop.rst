@@ -10,8 +10,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
    "UV replacement factor", ":math:`f`", "factor_lamp_replacement", "0.33278", ":math:`\text{dimensionless}`"
-   "UV reactor cost", ":math:`C_F`", "reactor_cost", "202.346", ":math:`\text{$/(m^3/hr)}`"
-   "UV lamps, sleeves, ballasts and sensors cost", ":math:`C_l`", "lamp_cost", "235.5", ":math:`\text{$/kW}`"
+   "UV reactor cost", ":math:`C_F`", "reactor_cost", "202.346", ":math:`\text{USD}_{2018}\text{/m}^3\text{\hr}`"
+   "UV lamps, sleeves, ballasts and sensors cost", ":math:`C_l`", "lamp_cost", "235.5", ":math:`\text{USD}_{2018}\text{/kW}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
