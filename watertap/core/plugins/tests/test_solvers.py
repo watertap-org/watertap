@@ -70,6 +70,11 @@ class TestIpoptWaterTAP:
         assert get_solver().__class__ is IpoptWaterTAP
 
     @pytest.mark.unit
+    @pytest.mark.requires_idaes_solver
+    def test_attribute_passthrough(self, s):
+        assert s.available()
+
+    @pytest.mark.unit
     def test_presolve_scales_constraints_and_relaxes_bounds(self, m, s):
         s._scale_constraints(m)
         for c, sf in s._scaling_cache:
