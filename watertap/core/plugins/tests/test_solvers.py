@@ -75,6 +75,11 @@ class TestIpoptWaterTAP:
         assert s.available()
 
     @pytest.mark.unit
+    def test_attribute_nonpassthrough(self, s):
+        with pytest.raises(AttributeError, match=".*this_attribute_should_not_exist.*"):
+            s.this_attribute_should_not_exist
+
+    @pytest.mark.unit
     def test_presolve_scales_constraints_and_relaxes_bounds(self, m, s):
         s._scale_constraints(m)
         for c, sf in s._scaling_cache:
