@@ -51,8 +51,12 @@ class IpoptWaterTAP:
         for opt_key, opt_val in kwds.get("options", {}).items():
             setattr(self.options, opt_key, opt_val)
 
-    def executable(self):
-        return self._base_solver().executable()
+    def __getattr__(self, attr):
+        # if not available here, ask the _base_solver
+        try:
+            return getattr(self._base_solver(), attr)
+        except AttributeError:
+            raise
 
     def solve(self, blk, *args, **kwds):
 
