@@ -24,7 +24,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Capital cost C parameter :math:`^1`", ":math:`C_{rectangular}`", "construction_c_parameter", "94365", ":math:`\text{USD}_{2011}`"
 
    "**Primary clarifier**"
-   "Capital cost A parameter :math:`^2`", ":math:`A_{primary}`", "capital_a_parameter", "-2.9e-3", ":math:`\text{USD_{2021}}`"
+   "Capital cost A parameter :math:`^2`", ":math:`A_{primary}`", "capital_a_parameter", "-2.9e-3", ":math:`\text{USD}_{2021}`"
    "Capital cost B parameter :math:`^2`", ":math:`B_{primary}`", "capital_b_parameter", "538746.398", ":math:`\text{dimensionless}`"
 
 Costing Method Variables
