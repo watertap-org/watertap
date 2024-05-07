@@ -18,9 +18,9 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_thickener` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Diameter", ":math:`d`", "diameter", "32.8084", ":math:`\text{ft}`"
+   "Diameter", ":math:`d`", "diameter", "[t]", ":math:`\text{ft}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++

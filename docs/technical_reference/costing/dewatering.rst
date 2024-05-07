@@ -31,9 +31,9 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_dewatering` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Inlet volumetric flow rate", ":math:`Q_{in}`", "flow_in", "N/A", ":math:`\text{gal/hr}`"
+   "Inlet volumetric flow rate", ":math:`Q_{in}`", "flow_in", "[t]", ":math:`\text{gal/hr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++

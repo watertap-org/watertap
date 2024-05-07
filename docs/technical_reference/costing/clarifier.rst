@@ -33,16 +33,16 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_clarifier` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "**Circular clarifier**"
-   "Surface area", ":math:`A_{s}`", "surface_area", "16145.87", ":math:`\text{ft}^2`"
+   "Surface area", ":math:`A_{s}`", "surface_area", "None", ":math:`\text{ft}^2`"
 
    "**Rectangular clarifier**"
-   "Surface area", ":math:`A_{s}`", "surface_area", "16145.87", ":math:`\text{ft}^2`"
+   "Surface area", ":math:`A_{s}`", "surface_area", "None", ":math:`\text{ft}^2`"
 
    "**Primary clarifier**"
-   "Inlet volumetric flow rate", ":math:`Q_{in}`", "flow_in", "N/A", ":math:`\text{gal/day}`"
+   "Inlet volumetric flow rate", ":math:`Q_{in}`", "flow_in", "[t]", ":math:`\text{gal/day}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
