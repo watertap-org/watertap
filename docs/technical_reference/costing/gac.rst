@@ -27,7 +27,7 @@ Additionally, the index is generalized to its position ``([0:len(parameter_data)
 Variables with the (U.S. EPA, 2021) citation are directly taken from previously determined expressions. Other variables are regressed from higher detailed costing methods in (U.S. EPA, 2021).
 
 .. csv-table::
-   :header: "Variable Name", "Contactor Type", "Index 0", "Index 1", "Index 2", "Index 3"
+   :header: "Parameter Name", "Contactor Type", "Index 0", "Index 1", "Index 2", "Index 3"
 
    "adsorbent_unit_cost_coeff (U.S. EPA, 2021)", "n/a", "4.58342", "-1.25311e-5", "", ""
    "contactor_cost_coeff (U.S. EPA, 2021)", "pressure", "10010.9", "2204.95", "-15.9378", "0.110592"
