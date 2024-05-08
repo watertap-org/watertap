@@ -1,34 +1,29 @@
-Thickener
+Clarifier
 =========
 
 .. index::
-   pair: watertap.unit_models.thickener;thickener
+   pair: watertap.unit_models.clarifier;clarifier
 
-The main assumptions of the implemented model are as follows:
+This clarifier unit model is based on the `IDAES separator <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/separator.html>`_
+and makes the following assumptions:
 
-1) Single liquid phase only
-2) Steady state only
-3) Has no volume
-
-Introduction
-------------
-Sludge thickening is a process commonly used in wastewater treatment plants to increase the sludge concentration of a stream
-as well as reduce its volume by removing free water. In doing so, the thickener reduces the load of downstream processes,
-such as digestion and dewatering. This implementation of the thickener unit is based on the `IDAES separator unit <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/separator.html>`_.
+   * supports a single liquid phase only
+   * supports steady-state only
 
 Degrees of Freedom
 ------------------
-The degrees of freedom in a thickener unit model are the inlet feed state variables:
+Clarifier units have a number of degrees of freedom based on the separation type chosen, where the default configuration is `componentFlow`.
 
-    * temperature
-    * pressure
-    * component mass compositions
+* If `split_basis` = 'componentFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. components`
+* If `split_basis` = 'phaseFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. phases`
+* If `split_basis` = 'phaseComponentFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. phases \times no. components`
+* If `split_basis` = 'totalFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. phases \times no. components`
+
 
 Model Structure
 ---------------
-The thickener unit model does not use ControlVolumes, and instead writes a set of material, energy and momentum
-balances to split the inlet stream into two outlet streams. Thickener models have a single inlet Port
-(named inlet) and two outlet Ports (named overflow and underflow).
+The clarifier unit model does not use ControlVolumes, and instead writes a set of material, energy and momentum balances to split the inlet stream into a number of outlet streams.
+There is a single inlet port (named inlet) and a user-defined number of outlet ports.
 
 Sets
 ----
@@ -37,19 +32,17 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
-   "Particulate Components", ":math:`j`", "['X_I', 'X_S', 'X_P', 'X_BH', 'X_BA', 'X_ND']"
-   "Non-particulate Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'S_ALK']"
+   "Components", ":math:`j`", "['H2O', 'NaCl']*"
 
-NOTE: These components are defined in the `ASM1 Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_ documentation.
+\*Solute depends on the imported property model; example shown here is for the NaCl property model.
 
-Parameters
-----------
+Variables
+---------
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Percentage of suspended solids in the underflow", ":math:`p_{thick}`", "p_thick", "None", "0.07", ":math:`\text{dimensionless}`"
-   "Percentage of suspended solids removed", ":math:`TSS_{rem}`", "TSS_rem", "None", "0.98", ":math:`\text{dimensionless}`"
-
+   "Surface area", ":math:`A_{s}`", "surface_area", "None", ":math:`\text{m}^2`"
+   "Electricity intensity", ":math:`E_{I}`", "energy_electric_flow_vol_inlet", "None", ":math:`\text{kWh/}\text{m}^3`"
 
 Equations and Relationships
 ---------------------------
@@ -57,21 +50,12 @@ Equations and Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Suspended solid concentration", ":math:`C_{TSS} = 0.75 (C_{X_{I}} + C_{X_{IP}} + C_{X_{BH}} + C_{X_{BA}} + C_{X_{S}})`"
-   "Thickening factor", ":math:`f_{thick} = p_{thick} (\frac{10}{C_{TSS}})`"
-   "Remove factor", ":math:`f_{q_{du}} = \frac{TSS_{rem}}{100 * f_{thick}}`"
-   "Overflow particulate fraction", ":math:`split_{particulate} = 1 - TSS_{rem}`"
-   "Overflow soluble fraction", ":math:`split_{soluble} = 1 - f_{q_{du}}`"
+   "Electricity consumption", ":math:`E = E_{I} * Q_{in}`"
 
 Class Documentation
 -------------------
-.. currentmodule:: watertap.unit_models.thickener
+.. currentmodule:: watertap.unit_models.clarifier
 
-.. autoclass:: Thickener
+.. autoclass:: Clarifier
     :members:
     :noindex:
-
-References
-----------
-J. Alex, L. Benedetti, J.B. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons, C. Rosen, J.P. Steyer & P. A. Vanrolleghem
-Benchmark Simulation Model no. 2 (BSM2)

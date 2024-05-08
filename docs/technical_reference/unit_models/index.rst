@@ -11,6 +11,7 @@ Unit Models
    coag_floc_model
    crystallizer_0D
    cstr
+   cstr_injection
    dewatering
    electrodialysis_0D
    electrodialysis_1D
