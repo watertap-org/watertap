@@ -10,30 +10,24 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination as dye_desalination
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_withRO as dye_desalination_withRO
+import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination as dye_desalination_withRO
 
 
-def set_up_sensitivity(m, withRO):
+def set_up_sensitivity(m):
     outputs = {}
 
     # LCOT is an output for both flowsheets
     outputs["LCOT"] = m.fs.LCOT
 
     # choose the right flowsheet and if ro is enabled add lcow
-    if withRO:
-        outputs["LCOW"] = m.fs.LCOW
-        opt_function = dye_desalination_withRO.solve
-    else:
-        opt_function = dye_desalination.solve
+    outputs["LCOW"] = m.fs.LCOW
+    opt_function = dye_desalination_withRO.solve
 
     optimize_kwargs = {"fail_flag": False}
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(
-    case_num=8, nx=11, interpolate_nan_outputs=True, withRO=True, output_filename=None
-):
+def run_analysis(case_num=8, nx=11, interpolate_nan_outputs=True, output_filename=None):
 
     if output_filename is None:
         output_filename = "sensitivity_" + str(case_num) + ".csv"
@@ -42,21 +36,12 @@ def run_analysis(
     case_num = int(case_num)
     nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
-    withRO = bool(withRO)
-
-    if not withRO and case_num > 11:
-        raise ValueError(
-            "Case numbers 12 and above are only for dye_desalination_withRO. Please set 'withRO=True'"
-        )
 
     # select flowsheet
-    if withRO:
-        m = dye_desalination_withRO.main()[0]
-    else:
-        m = dye_desalination.main()[0]
+    m = dye_desalination_withRO.main()[0]
 
     # set up sensitivities
-    outputs, optimize_kwargs, opt_function = set_up_sensitivity(m, withRO)
+    outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
 
     # choose parameter sweep from case structure
     sweep_params = {}
