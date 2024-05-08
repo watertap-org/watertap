@@ -54,7 +54,7 @@ Variables
    "Hydraulic retention time", ":math:`HRT`", "hydraulic_retention_time", "[t]", ":math:`\text{s}`"
    "Dissolved oxygen concentration at equilibrium", ":math:`S_{O, eq}`", "S_O_eq", "None", ":math:`\text{kg/}\text{m}^3`"
    "Component injection", ":math:`I`", "injection", "[t, p, j]", ":math:`\text{kg/hr}`"
-   "Electricity intensity", ":math:`E_{I}`", "energy_electric_flow_vol_inlet", "None", ":math:`\text{s}`"
+   "Electricity intensity", ":math:`E_{I}`", "energy_electric_flow_vol_inlet", "None", ":math:`\text{kWh/}\text{m}^3`"
 
 Equations and Relationships
 ---------------------------
