@@ -87,8 +87,7 @@ with respect to the total system contactor volume were regressed using results f
         & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
 
 
-Note that given the the ability to alter the parameters in these correlations, GAC adsorbent unit costs (:math:`C_{carbon}`)
-may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
+Note that given the the ability to alter the parameters in these correlations, GAC adsorbent unit costs (:math:`C_{carbon}`) may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
