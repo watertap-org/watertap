@@ -13,7 +13,7 @@ method in the ``watertap_costing_package``:
    "Number of contactors operating in parallel", ":math:`N_{op}`", "num_contactors_op", "1", ":math:`\text{dimensionless}`"
    "Number of redundant contactors in parallel", ":math:`N_{red}`", "num_contactors_redundant", "1", ":math:`\text{dimensionless}`"
    "Fraction of spent GAC adsorbent to be regenerated and reused", ":math:`f_{regen}`", "regen_frac", "0.70", ":math:`\text{dimensionless}`"
-   "Reference maximum value of GAC initial charge mass where economy of scale no longer discounts the unit price (U.S. EPA, 2021)", ":math:`M_{GAC}^{ref}`", "bed_mass_max_ref", "min", ":math:`kg`"
+   "Reference maximum value of GAC initial charge mass where economy of scale no longer discounts the unit price (U.S. EPA, 2021)", ":math:`M_{GAC}^{ref}`", "bed_mass_max_ref", "18143.7", ":math:`kg`"
    "Contactor polynomial cost coefficients", ":math:`x`", "contactor_cost_coeff", "tabulated", ":math:`\text{dimensionless}`"
    "Adsorbent exponential cost coefficients", ":math:`y`", "adsorbent_unit_cost_coeff", "tabulated", ":math:`\text{dimensionless}`"
    "Other process costs power law coefficients", ":math:`z`", "other_cost_param", "tabulated", ":math:`\text{dimensionless}`"
@@ -55,8 +55,8 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
    "Capital costs of other process supplements", ":math:`C_{cap,other}`", "other_process_cost", "10,000", ":math:`USD\_2020`"
    "Approximate GAC system energy consumption*", ":math:`P`", "energy_consumption", "100", ":math:`kW`"
    "Fixed operating costs", ":math:`C_{op}`", "fixed_operating_cost", "10,000", ":math:`USD\_2020/yr`"
-   "Operating costs to regenerate spent GAC adsorbent", ":math:`C_{op,regen}`", "gac_regen_cost", "10,000", ":math:`USD\_2020/year`"
-   "Operating costs to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", "10,000", ":math:`USD\_2020/year`"
+   "Operating costs to regenerate spent GAC adsorbent", ":math:`C_{op,regen}`", "gac_regen_cost", "10,000", ":math:`USD\_2020/yr`"
+   "Operating costs to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", "10,000", ":math:`USD\_2020/yr`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
@@ -81,7 +81,7 @@ with respect to the total system contactor volume were regressed using results f
     .. math::
 
         & C_{cap,bed} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right) \\\\
-        & M_{GAC}^{min} = \text{min}\left(M_{GAC}^{model}, M_{GAC}^{ref}} \\\\
+        & M_{GAC}^{min} = \text{min}\left(M_{GAC}^{model}, M_{GAC}^{ref}\right) \\\\
         & C_{carbon} = y_0e^{y_1M_{GAC}^{min}} \\\\
         & C_{cap,carbon} = C_{carbon}M_{GAC} \\\\
         & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
