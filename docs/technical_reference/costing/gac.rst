@@ -103,8 +103,8 @@ mass variable, expected to be higher than the initial charge unit cost.
 
     .. math::
 
-        & C_{op,tot} = C_{op,regen}+C_{op,makeup} \\\\
-        & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC} \\\\
+        & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC}^{model} \\\\
+        & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}^{model} \\\\
         & P = \alpha_0+\alpha_1V+\alpha_2V^2
  
 Code Documentation
