@@ -17,8 +17,8 @@ method in the ``watertap_costing_package``:
    "Contactor polynomial cost coefficients", ":math:`x`", "contactor_cost_coeff", "tabulated", ":math:`\text{dimensionless}`"
    "Adsorbent exponential cost coefficients", ":math:`y`", "adsorbent_unit_cost_coeff", "tabulated", ":math:`\text{dimensionless}`"
    "Other process costs power law coefficients", ":math:`z`", "other_cost_param", "tabulated", ":math:`\text{dimensionless}`"
-   "Unit cost to regenerate spent GAC adsorbent", ":math:`C_{regen}`", "regen_unit_cost", "4.28352", ":math:`USD\_2020/kg`"
-   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "makeup_unit_cost", "4.58223", ":math:`USD\_2020/kg`"
+   "Unit cost to regenerate spent GAC adsorbent", ":math:`C_{unit,regen}`", "regen_unit_cost", "4.28352", ":math:`USD\_2020/kg`"
+   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{unit,makeup}`", "makeup_unit_cost", "4.58223", ":math:`USD\_2020/kg`"
    "Energy consumption polynomial coefficients", ":math:`alpha`", "energy_consumption_coeff", "tabulated", ":math:`\text{dimensionless}`"
 
 Parameters which are tabulated have costing methods available for either steel pressure vessel contactors (default) or concrete gravity basin contactors. Given that the form of the costing
@@ -92,18 +92,19 @@ Note that given the the ability to alter the parameters in these correlations, G
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy is costed as a flow term by the WaterTAP costing method. Since the replacement
-adsorbent purchases are expected to be purchased in bulk at smaller quantities than the initial charge, the cost of fresh GAC adsorbent for makeup has an independent cost per unit
-mass variable, expected to be higher than the initial charge unit cost.
+Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy is costed as a flow term by the WaterTAP costing method.
 
     .. math::
 
         C_{op,tot} = C_{op,regen}+C_{op,makeup}
 
+Since the replacement adsorbent purchases are expected to be purchased in bulk at smaller quantities than the initial charge, the cost of fresh GAC adsorbent for makeup has an different
+cost per unit mass, expected to be higher than the initial charge unit cost.
+
     .. math::
 
-        & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC}^{model} \\\\
-        & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}^{model} \\\\
+        & C_{op,regen} = f_{regen}C_{unit,regen}\dot{m}_{GAC}^{model} \\\\
+        & C_{op,makeup} = \left( 1-f_{regen} \right)C_{unit,makeup}\dot{m}_{GAC}^{model} \\\\
         & P = \alpha_0+\alpha_1V+\alpha_2V^2
  
 Code Documentation
