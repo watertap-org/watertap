@@ -16,16 +16,16 @@ with specified number of stages and system water recovery.
 Implementation
 --------------
 
-Figure 1 shows the process flow diagram for n-stage OARO system.
+Figure 1 shows the process flow diagram for an n-stage OARO system.
 After pressurized by the primary pump, the incoming feed water enters the feed-side of the first OARO module,
 then the water permeates across the membrane and the resulting concentrated brine flows out of the system from the feed-side,
 In addition, the permeate water will dilute a saline sweep solution in the permeate-side
 and the diluted sweep solution will flow into the feed-side of the next stage of OARO module.
 Similarly, the resulting concentrate flows out of the feed-side, gets energy recovered by the ERD and
 pressurized by the recycle pump, and flows back into permeate-side of the last stage.
-Meantime, the diluted sweep solution in the permeate-side flows into the next stage until finally into a conventional RO module.
+Meanwhile, the diluted sweep solution in the permeate-side flows into the next stage and finally into a conventional RO module.
 Costing relationships for each of the unit models is described in the
-`WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+`WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_ .
 The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
