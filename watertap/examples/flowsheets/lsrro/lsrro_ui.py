@@ -130,8 +130,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.feed.temperature[0],
         name="Temperature",
-        ui_units=pyunits.Pa,
-        display_units="Pa",
+        ui_units=pyunits.K,
+        display_units="K",
         rounding=3,
         description="Inlet temperature",
         is_input=True,
@@ -177,7 +177,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         )
     for idx, stage in fs.ROUnits.items():
         exports.add(
-            obj=stage.A_comp,
+            obj=stage.A_comp[0, "H2O"],
             name=f"RO {idx} water permeability coefficient",
             ui_units=pyunits.m / pyunits.Pa / pyunits.s,
             display_units="m/Pa/s",
@@ -188,7 +188,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=False,
         )
         exports.add(
-            obj=stage.B_comp,
+            obj=stage.B_comp[0, "NaCl"],
             name=f"RO {idx} salt permeability coefficient",
             ui_units=pyunits.m / pyunits.s,
             display_units="m/s",
@@ -257,9 +257,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 input_category="Reverse Osmosis",
                 is_output=False,
             )
-    for idx, erd in fs.EnergyRecoveryDevices.values():
+    for idx, erd in fs.EnergyRecoveryDevices.items():
         exports.add(
-            obj=erd.efficiency_pump,
+            obj=erd.efficiency_pump[0],
             name=f"ERD {idx} efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
@@ -516,7 +516,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="System metrics",
     )
-    total_area = sum(fs.ROUnits[i].area for i in fs.NonFinalStages) + fs.RO.area
+    total_area = sum(fs.ROUnits[i].area for i in fs.NonFinalStages)
     exports.add(
         obj=total_area,
         name="Total membrane area",
