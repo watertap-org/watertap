@@ -17,8 +17,8 @@ method in the ``watertap_costing_package``:
    "Contactor polynomial cost coefficients", ":math:`x`", "contactor_cost_coeff", "tabulated", ":math:`\text{dimensionless}`"
    "Adsorbent exponential cost coefficients", ":math:`y`", "adsorbent_unit_cost_coeff", "tabulated", ":math:`\text{dimensionless}`"
    "Other process costs power law coefficients", ":math:`z`", "other_cost_param", "tabulated", ":math:`\text{dimensionless}`"
-   "Unit cost to regenerate spent GAC adsorbent", ":math:`C_{unit,regen}`", "regen_unit_cost", "4.28352", ":math:`USD\_2020/kg`"
-   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{unit,makeup}`", "makeup_unit_cost", "4.58223", ":math:`USD\_2020/kg`"
+   "Unit cost to regenerate spent GAC adsorbent", ":math:`C_{unit,regen}`", "regen_unit_cost", "4.28352", ":math:`\text{USD}_{2020}\text{/kg}`"
+   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{unit,makeup}`", "makeup_unit_cost", "4.58223", ":math:`\text{USD}_{2020}\text{/kg}`"
    "Energy consumption polynomial coefficients", ":math:`alpha`", "energy_consumption_coeff", "tabulated", ":math:`\text{dimensionless}`"
 
 Parameters which are tabulated have costing methods available for either steel pressure vessel contactors (default) or concrete gravity basin contactors. Given that the form of the costing
@@ -47,16 +47,16 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
 
-   "Total unit capital cost", ":math:`C_{cap}`", "capital_cost", "10,000", ":math:`USD\_2020`"
-   "Capital cost of contactor(s)", ":math:`C_{cap,bed}`", "contactor_cost", "10,000", ":math:`USD\_2020`"
+   "Total unit capital cost", ":math:`C_{cap}`", "capital_cost", "10,000", ":math:`\text{USD}_{2020}`"
+   "Capital cost of contactor(s)", ":math:`C_{cap,bed}`", "contactor_cost", "10,000", ":math:`\text{USD}_{2020}`"
    "Mass of GAC initial charge used to determine the unit cost", ":math:`M_{GAC}^{min}`", "bed_mass_gac_ref", "4", ":math:`kg`"
-   "Unit cost of GAC adsorbent for initial charge", ":math:`C_{unit,carbon}`", "adsorbent_unit_cost", "2", ":math:`USD\_2020/kg`"
-   "Capital cost of GAC adsorbent", ":math:`C_{cap,carbon}`", "adsorbent_cost", "10,000", ":math:`USD\_2020`"
-   "Capital costs of other process supplements", ":math:`C_{cap,other}`", "other_process_cost", "10,000", ":math:`USD\_2020`"
+   "Unit cost of GAC adsorbent for initial charge", ":math:`C_{unit,carbon}`", "adsorbent_unit_cost", "2", ":math:`\text{USD}_{2020}\text{/kg}`"
+   "Capital cost of GAC adsorbent", ":math:`C_{cap,carbon}`", "adsorbent_cost", "10,000", ":math:`\text{USD}_{2020}`"
+   "Capital costs of other process supplements", ":math:`C_{cap,other}`", "other_process_cost", "10,000", ":math:`\text{USD}_{2020}`"
    "Approximate GAC system energy consumption*", ":math:`P`", "energy_consumption", "100", ":math:`kW`"
-   "Fixed operating costs", ":math:`C_{op}`", "fixed_operating_cost", "10,000", ":math:`USD\_2020/yr`"
-   "Operating costs to regenerate spent GAC adsorbent", ":math:`C_{op,regen}`", "gac_regen_cost", "10,000", ":math:`USD\_2020/yr`"
-   "Operating costs to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", "10,000", ":math:`USD\_2020/yr`"
+   "Fixed operating costs", ":math:`C_{op}`", "fixed_operating_cost", "10,000", ":math:`\text{USD}_{2020}\text{/yr}`"
+   "Operating costs to regenerate spent GAC adsorbent", ":math:`C_{op,regen}`", "gac_regen_cost", "10,000", ":math:`\text{USD}_{2020}\text{/yr}`"
+   "Operating costs to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", "10,000", ":math:`\text{USD}_{2020}\text{/yr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
