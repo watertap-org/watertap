@@ -153,7 +153,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=False,
         )
         exports.add(
-            obj=pump.efficiency_pump,
+            obj=pump.efficiency_pump[0],
             name=f"Pump {idx} efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
@@ -163,9 +163,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="Primary Pumps",
             is_output=False,
         )
-    for idx, pump in fs.BoosterPumps.values():
+    for idx, pump in fs.BoosterPumps.items():
         exports.add(
-            obj=pump.efficiency_pump,
+            obj=pump.efficiency_pump[0],
             name=f"Pump {idx} efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
