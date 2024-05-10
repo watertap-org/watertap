@@ -39,4 +39,7 @@ Code Documentation
 
 References
 ----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
+[1] Eberle, Annika, Irina Tsiryapkina, Steve Peterson, Laura Vimmerstedt, Dylan Hettinger,
+and Daniel Inman. 2020. An Overview of the Waste-to-Energy System Simulation
+(WESyS) Model. Golden, CO: National Renewable Energy Laboratory.
+NREL/TP-6A20-77166. https://www.nrel.gov/docs/fy21osti/77166.pdf.
