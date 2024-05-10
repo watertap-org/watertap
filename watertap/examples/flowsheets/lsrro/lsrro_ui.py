@@ -597,6 +597,7 @@ def build_flowsheet(build_options=None, **kwargs):
             water_recovery=None,
             Cbrine=None,
             A_case=ACase.fixed,
+            A_value=4.2e-12,
             B_case=BCase.optimize,
             AB_tradeoff=ABTradeoff.none,
             permeate_quality_limit=None,
