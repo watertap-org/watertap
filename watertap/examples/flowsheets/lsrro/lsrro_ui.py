@@ -68,26 +68,26 @@ def export_to_ui():
                 "display_name": "RO Finite Elements",
                 "values_allowed": "float",
                 "value": 10,  # default value
-                "max_val": 1,  # optional
-                "min_val": 20,  # optional
+                "max_val": 20,  # optional
+                "min_val": 1,  # optional
             },
             "NaClSolubilityLimit": {
                 "name": "NaClSolubilityLimit",
                 "display_name": "NaCl Solubility Limit",
-                "values_allowed": "bool",
-                "value": True,  # default value
+                "values_allowed": ["False", "True"],
+                "value": "True",  # default value
             },
             "ConcentrationPolarization": {
                 "name": "ConcentrationPolarization",
                 "display_name": "Calculate Concentration Polzarization",
-                "values_allowed": "bool",
-                "value": True,  # default value
+                "values_allowed": ["False", "True"],
+                "value": "True",  # default value
             },
             "ROPressureDrop": {
                 "name": "ROPressureDrop",
                 "display_name": "Calculate Pressure Drop",
-                "values_allowed": "bool",
-                "value": True,  # default value
+                "values_allowed": ["False", "True"],
+                "value": "True",  # default value
             },
             "BMax": {
                 "name": "BMax",
@@ -140,37 +140,37 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Unit model data, OARO
-    for pump in fs.PrimaryPumps.values():
+    for idx, pump in fs.PrimaryPumps.items():
         exports.add(
             obj=pump.control_volume.properties_out[0].pressure,
-            name=f"Pump {pump} outlet pressure",
+            name=f"Pump {idx} outlet pressure",
             ui_units=pyunits.Pa,
             display_units="Pa",
             rounding=2,
-            description=f"Outlet pressure of pump {pump}",
+            description=f"Outlet pressure of pump {idx}",
             is_input=True,
             input_category="Primary Pumps",
             is_output=False,
         )
         exports.add(
             obj=pump.efficiency_pump,
-            name=f"Pump {pump} efficiency",
+            name=f"Pump {idx} efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
             rounding=2,
-            description=f"Efficiency of pump {pump}",
+            description=f"Efficiency of pump {idx}",
             is_input=True,
             input_category="Primary Pumps",
             is_output=False,
         )
-    for pump in fs.BoosterPumps.values():
+    for idx, pump in fs.BoosterPumps.values():
         exports.add(
             obj=pump.efficiency_pump,
-            name=f"Pump {pump} efficiency",
+            name=f"Pump {idx} efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
             rounding=2,
-            description=f"Efficiency of pump {pump}",
+            description=f"Efficiency of pump {idx}",
             is_input=True,
             input_category="Booster Pumps",
             is_output=False,
@@ -257,14 +257,14 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 input_category="Reverse Osmosis",
                 is_output=False,
             )
-    for erd in fs.EnergyRecoveryDevices.values():
+    for idx, erd in fs.EnergyRecoveryDevices.values():
         exports.add(
             obj=erd.efficiency_pump,
-            name=f"ERD {erd} efficiency",
+            name=f"ERD {idx} efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
             rounding=2,
-            description=f"Energy recovery device {erd} efficiency",
+            description=f"Energy recovery device {idx} efficiency",
             is_input=True,
             input_category="Energy Recovery Device",
             is_output=False,
