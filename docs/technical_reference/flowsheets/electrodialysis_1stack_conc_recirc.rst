@@ -22,8 +22,10 @@ Documentation for unit models from WaterTAP:
     * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
     * `Pressure exchanger <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/pressure_exchanger.html>`_
 Documentation for unit models from IDAES: 
+    * `Feed block <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/feed.html>`_
     * `Separator <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/separator.html>`_
     * `Mixer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/mixer.html>`_
+    * `Product block <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/product.html>`_
 Documentation for the property model:
     * `Multi-Component Aqueous Solution (MCAS) Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/mc_aq_sol.html>`_
 
