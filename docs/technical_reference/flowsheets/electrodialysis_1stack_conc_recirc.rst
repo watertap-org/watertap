@@ -37,7 +37,7 @@ The number of degree of freedom (DOF) is associated with the number of fixed var
     * ED cell pair number 
     * ED cell length
 
-The optimization objective function is set to LCOW. 
+In the optimization example, the objective function is set to LCOW and the product water salinity is set to 0.1 :math:`g L^{-1}`.
 
 Flowsheet Specifications
 ------------------------
@@ -52,10 +52,10 @@ Flowsheet Specifications
    "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
    "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
    "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`m^2 s^{-1}`", [4]_
-   "Cell pair number", ":math:`100`", ":math:`1`", "--"
+   "Cell pair number", ":math:`56`", ":math:`1`", "--"
    "Cell length", ":math:`1.68`", ":math:`m`", [2]_
-   "Cell width", ":math:`0.1`", ":math:`m`",[5]_
-   "Channel height", ":math:`5 \times 10^{-4}`", ":math:`m`", "--"
+   "Cell width", ":math:`0.197`", ":math:`m`",[5]_
+   "Channel height", ":math:`7.1 \times 10^{-4}`", ":math:`m`", "--"
    "Water recovery", ":math:`70%`", ":math:`1`", "--"
    "Stack voltage", ":math:`10`", ":math:`V`", "--"
    "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`m`",[5]_
@@ -66,8 +66,8 @@ Flowsheet Specifications
    "Water transport number, aem", ":math:`4.3`", ":math:`1`",[6]_
    "Water transport number, cem", ":math:`5.8`", ":math:`1`", [7]_
    "NaCl mass diffusivity, aem and cem", ":math:`3.28 \times 10^{-11}`", ":math:`m^2 s^{-1}`", [8]_
-   "Porosity", ":math:`0.83`", ":math:`1`", [2]_
-   "Specific surface area", ":math:`10400`", ":math:`m^{-1}`", [9]_
+   "Spacer porosity", ":math:`0.83`", ":math:`1`", [2]_
+   "Spacer specific surface area", ":math:`10400`", ":math:`m^{-1}`", [9]_
    "Pump efficiency", ":math:`0.8`", ":math:`1`", "--"
 
 
