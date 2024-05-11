@@ -39,34 +39,35 @@ The optimization objective function is set to LCOW.
 
 Flowsheet Specifications
 ------------------------
-.. csv-table:: Initial values of parameters in conditioned modeling
+.. csv-table:: Initial values of parameters for a 0-DOF model
    :header: Name, Value, Unit, Reference
    :widths: 30, 20, 20, 10
 
    "Salinity (NaCl)", ":math:`2`", ":math:`g L^{-1}`", "--"
-   "Volume flow rate", ":math:`5.2 \times 10^{-4}`", ":math:`m^3 s^{-1}`", [2]_ ,
+   "Volume flow rate", ":math:`5.2 \times 10^{-4}`", ":math:`m^3 s^{-1}`", [2]_
    "Temperature", ":math:`298.15`", ":math:`K`", "--"
    "Pressure", ":math:`101325`", ":math:`Pa`", "--"
-   "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_,
-   "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_,
-   "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`m^2 s^{-1}`", [4]_,
+   "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
+   "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
+   "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`m^2 s^{-1}`", [4]_
    "Cell pair number", ":math:`100`", ":math:`1`", "--"
-   "Cell length", ":math:`1.68`", ":math:`m`", [2]_,
-   "Cell width", ":math:`0.1`", ":math:`m`",[5]_,
+   "Cell length", ":math:`1.68`", ":math:`m`", [2]_
+   "Cell width", ":math:`0.1`", ":math:`m`",[5]_
    "Channel height", ":math:`5 \times 10^{-4}`", ":math:`m`", "--"
    "Water recovery", ":math:`70%`", ":math:`1`", "--"
    "Stack voltage", ":math:`10`", ":math:`V`", "--"
-   "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`m`",[5]_,
-   "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega m^2`", [5]_,
-   "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega m^2`",[5]_,
-   "Water permeability, aem", ":math:`1.75 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`",[5]_,
-   "Water permeability, cem", ":math:`2.16 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`", [5]_,
-   "Water transport number, aem", ":math:`4.3`", ":math:`1`",[6]_,
-   "Water transport number, cem", ":math:`5.8`", ":math:`1`", [7]_,
-   "NaCl mass diffusivity, aem and cem", ":math:`3.28 \times 10^{-11}`", ":math:`m^2 s^{-1}`", [8]_,
-   "Porosity", ":math:`0.83`", ":math:`1`", [2]_,
-   "Specific surface area", ":math:`10400`", ":math:`m^{-1}`", [9]_,
+   "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`m`",[5]_
+   "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega m^2`", [5]_
+   "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega m^2`",[5]_
+   "Water permeability, aem", ":math:`1.75 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`",[5]_
+   "Water permeability, cem", ":math:`2.16 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`", [5]_
+   "Water transport number, aem", ":math:`4.3`", ":math:`1`",[6]_
+   "Water transport number, cem", ":math:`5.8`", ":math:`1`", [7]_
+   "NaCl mass diffusivity, aem and cem", ":math:`3.28 \times 10^{-11}`", ":math:`m^2 s^{-1}`", [8]_
+   "Porosity", ":math:`0.83`", ":math:`1`", [2]_
+   "Specific surface area", ":math:`10400`", ":math:`m^{-1}`", [9]_
    "Pump efficiency", ":math:`0.8`", ":math:`1`", "--"
+
 
 References
 ----------
