@@ -1,5 +1,5 @@
 One-stack electrodialysis with concentrate stream recirculation (feed-and-bleed mode)
-===============================
+=====================================================================================
 
 Introduction
 ------------
@@ -33,6 +33,7 @@ The number of degree of freedom (DOF) is associated with the number of fixed var
     * stack voltage applied
     * ED cell pair number 
     * ED cell length
+The optimization objective function is set to LCOW. 
 
 Flowsheet Specifications
 ------------------------
