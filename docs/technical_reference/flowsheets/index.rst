@@ -9,3 +9,4 @@ Flowsheets
    ASM1
    ASM2d
    ADM1
+   electrodialysis_1stack_conc_recirc
