@@ -16,7 +16,7 @@ The modeled one-stack ED system is illustrated by Figure 1. The feed solution is
     :width: 500
     :align: center
 
-    Figure 1. Flowsheet diagram: one-stack ED operated in feed-and-bleed mode flowsheet
+    Figure 1. Flowsheet diagram: one-stack ED operated in feed-and-bleed mode
 
 Documentation for unit models from WaterTAP: 
     * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
@@ -30,6 +30,7 @@ Documentation for the property model:
 Degrees of Freedom
 ------------------
 The number of degree of freedom (DOF) is associated with the number of fixed variables (parameters) determined by the purpose of the modeling case. We implemented two modeling cases in the `main()` function: (1) the prediction of desalination outcome (salinity of the product water and saline disposal) and (2) the optimization of key decision variables in system design.  In the first case, DOF is set to zero by fixing all initial conditions of the feed solution fluid and definite ED stack parameters. All fixed values are presented in the section to follow.  In the second case, the values of those chosen to be the decision variables in the optimization are unfixed. The DOF number is therefore the number of decision variables. In this example, the decision variables are
+
     * stack voltage applied
     * ED cell pair number 
     * ED cell length
@@ -40,7 +41,7 @@ Flowsheet Specifications
 ------------------------
 .. csv-table:: Initial values of parameters in conditioned modeling
    :header: Name, Value, Unit, Reference
-   :widths: 30, 10, 10, 10, 10
+   :widths: 30, 20, 20, 10
 
    "Salinity (NaCl)", ":math:`2`", ":math:`g L^{-1}`", "--"
    "Volume flow rate", ":math:`5.2 \times 10^{-4}`", ":math:`m^3 s^{-1}`", [2]_ ,
