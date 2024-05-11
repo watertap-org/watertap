@@ -18,7 +18,7 @@ The modeled one-stack ED system is illustrated by Figure 1. The feed solution is
     :width: 500
     :align: center
 
-    Figure 1. Flowsheet diagram: one-stack ED operated in feed-and-bleed mode
+    Figure 1. Flowsheet diagram: one-stack ED system
 
 Documentation for unit models from WaterTAP: 
     * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
