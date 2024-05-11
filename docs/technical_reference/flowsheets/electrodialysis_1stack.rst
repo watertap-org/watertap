@@ -79,4 +79,3 @@ References
 .. [6] Breslau, B. R., & Miller, I. F. (1971). A hydrodynamic model for electroosmosis. Industrial & Engineering Chemistry Fundamentals, 10(4), 554-565.
 .. [7] Larchet, C., Dammak, L., Auclair, B., Parchikov, S., & Nikonenko, V. (2004). A simplified procedure for ion-exchange membrane characterisation. New Journal of Chemistry, 28(10), 1260-1267.
 .. [8] Kamcev, J., Paul, D. R., Manning, G. S., & Freeman, B. D. (2018). Ion diffusion coefficients in ion exchange membranes: significance of counterion condensation. Macromolecules, 51(15), 5519-5529.
-.. [9] Schock, G., & Miquel, A. (1987). Mass transfer and pressure loss in spiral wound modules. Desalination, 64, 339-352.
