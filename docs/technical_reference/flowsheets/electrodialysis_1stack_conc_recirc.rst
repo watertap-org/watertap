@@ -1,103 +1,78 @@
-One-stack electrodialysis with concnetrate stream reciculation (feed-and-bleed mode)
+One-stack electrodialysis with concentrate stream recirculation (feed-and-bleed mode)
 ===============================
 
 Introduction
 ------------
+Electrodialysis (ED) is a promising technology for desalinating brackish waters and has been deployed at industrial scales [1]_. It utilizes electrical potential to drive ion diffusion through anion and cation exchange membranes, resulting in the dilution of the feed stream while producing a concentrated brine. A single ED stack is an assembly of multiple flow-by cells separated by alternating cation and anion exchange membranes positioned between a pair of electrodes. When a voltage is applied, ions in the cell pair are driven from one channel (forming the diluate channel) to the other (forming the concentrate channel), thereby desalinating water. A one-stack ED desalination system represents a basic ED operation, from which more complicated or larger-scale systems can be derived. Analyzing a one-stack ED system therefore provides valuable information on the technology's performance and cost-effectiveness for a given treatment task.
 
-The IWA created Anaerobic Digestion Model No. 1 (ADM1) with a mathematical model to predict anaerobic digestion scenarios. 
-The objective of the mathematical model is to simulate biological reactions simultaneously with the disintegration, uptake, and decay of microorganisms
-in anaerobic sludge. The property and reaction relationships `ADM1
-<https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
-of an anaerobic digestion model for industrial wastewater treatment from food and beverage production using an anaerobic digester as provided in 
-`Batstone, D. J. et al. (2002) 
-<https://iwaponline.com/wst/article-abstract/45/10/65/6034/The-IWA-Anaerobic-Digestion-Model-No-1-ADM1?redirectedFrom=fulltext>`_ and `Rosen, C. et al. 
-(2006) <https://pubmed.ncbi.nlm.nih.gov/17037165/>`_
+Equal flow conditions through the diluate and concentrate channels would result in a product water recovery of 50%. Larger water recoveries are commonly achieved by operating the system in a feed-and-bleed mode, where a portion of the concentrate outlet is recirculated back to its inlet, thus increasing the portion of product water from the diluate outlet. This flowsheet simulates a one-stack ED system operated in feed-and-bleed mode.
 
 Implementation
 --------------
 
-Figure 1 shows the process flow diagram for ADM1 where the flowsheet only includes the anaerobic digester which processes sludge to produce a 
-biogas stream and residual sludge. S_h2 and S_ch4 exist in both vapor phase and liquid phase, S_co2 exists in the vapor phase, and the other components 
-only exist in the liquid phase. The amount of CO2 dissolved in the liquid phase is equivalent to S_IC - S_HCO3-.
-The flowsheet relies on the following key assumptions:
+The modeled one-stack ED system is illustrated by Figure 1. The feed solution is split into two fluids through a separator unit, entering the diluate and concentrate channels of the ED stack. Two pump units are place respectively on the two channels entering pipelines to counterbalance the pressure drops across ED stack channels.  On the outlet side of the ED stack, all diluate fluids are collected into the total product water, and the concentrate fluids into the total brine stream.  A second separator unit takes a portion of the brine back into the concentrate pump inlet, with the rest being sent to brine disposal. Water recovery in this model is volume-based, i.e., the ratio of product volume to total volume of feed solution. The model simulates the steady state of the ED system.
 
-   * supports steady-state only
-   * property and reaction packages are provided for the anaerobic digester model (ADM)
-
-.. figure:: ../../_static/flowsheets/ADM1.png
+.. figure:: ../../_static/flowsheets/ed_conc_recirc.png
     :width: 500
     :align: center
 
-    Figure 1. ADM1 flowsheet
+    Figure 1. Flowsheet diagram: one-stack ED operated in feed-and-bleed mode flowsheet
 
-Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
-    * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
-
-Documentation for the property model can be found below.
-    * `ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+Documentation for unit models from WaterTAP: 
+    * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
+    * `Pressure exchanger <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/pressure_exchanger.html>`_
+Documentation for unit models from IDAES: 
+    * `Separator <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/separator.html>`_
+    * `Mixer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/mixer.html>`_
+Documentation for the property model:
+    * `Multi-Component Aqueous Solution (MCAS) Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/mc_aq_sol.html>`_
 
 Degrees of Freedom
 ------------------
-The following variables are initially specified for simulating the ADM1 flowsheet (i.e., degrees of freedom = 0):
-    * sludge conditions (flow, temperature, pressure, component concentrations, and alkalinity)
-    * anaerobic digester liquid volume, vapor volume, and liquid outlet temperature
+The number of degree of freedom (DOF) is associated with the number of fixed variables (parameters) determined by the purpose of the modeling case. We implemented two modeling cases in the `main()` function: (1) the prediction of desalination outcome (salinity of the product water and saline disposal) and (2) the optimization of key decision variables in system design.  In the first case, DOF is set to zero by fixing all initial conditions of the feed solution fluid and definite ED stack parameters. All fixed values are presented in the section to follow.  In the second case, the values of those chosen to be the decision variables in the optimization are unfixed. The DOF number is therefore the number of decision variables. In this example, the decision variables are
+    * stack voltage applied
+    * ED cell pair number 
+    * ED cell length
 
 Flowsheet Specifications
 ------------------------
+.. csv-table:: Initial values of parameters in conditioned modeling
+   :header: Name, Value, Unit, Reference
+   :widths: 30, 10, 10, 10, 10
 
-.. csv-table::
-   :header: "Description", "Value", "Units"
-
-   "**Sludge**:math:`^1`"
-   "Volumetric flow","170", ":math:`\text{m}^3\text{/day}`"
-   "Temperature", "308.15", ":math:`\text{K}`"
-   "Pressure", "1", ":math:`\text{atm}`"
-   "Monosaccharides (S_su) concentration", "10", ":math:`\text{mg/}\text{m}^3`"
-   "Amino acids (S_aa) concentration", "1", ":math:`\text{mg/}\text{m}^3`"
-   "Long chain fatty acids (S_fa) concentration", "1", ":math:`\text{mg/}\text{m}^3`"
-   "Total valerate (S_va) concentration", "1", ":math:`\text{mg/}\text{m}^3`"
-   "Total butyrates (S_bu) concentration", "1", ":math:`\text{mg/}\text{m}^3`"
-   "Total propionate (S_pro) concentration", "1", ":math:`\text{mg/}\text{m}^3`"
-   "Total acetate (S_ac) concentration", "1", ":math:`\text{mg/}\text{m}^3`"
-   "Hydrogen gas (S_h2) concentration", "1e-5", ":math:`\text{mg/}\text{m}^3`"
-   "Methane gas (S_ch4) concentration", "1e-2", ":math:`\text{mg/}\text{m}^3`"
-   "Inorganic carbon (S_IC) concentration", "40", ":math:`\text{mmol/}\text{m}^3`"
-   "Inorganic nitrogen (S_IN) concentration", "1", ":math:`\text{mmol/}\text{m}^3`"
-   "Soluble inerts (S_I) concentration", "20", ":math:`\text{mg/}\text{m}^3`"
-   "Composites (X_c) concentration", "2000", ":math:`\text{mg/}\text{m}^3`"
-   "Carbohydrates (X_ch) concentration", "5000", ":math:`\text{mg/}\text{m}^3`"
-   "Proteins (X_pr) concentration", "20000", ":math:`\text{mg/}\text{m}^3`"
-   "Lipids (X_li) concentration", "5000", ":math:`\text{mmol/}\text{m}^3`"
-   "Sugar degraders (X_su) concentration", "0", ":math:`\text{mmol/}\text{m}^3`"
-   "Amino acid degraders (X_aa) concentration", "10", ":math:`\text{mmol/}\text{m}^3`"
-   "Long chain fatty acid (LCFA) degraders (X_fa) concentration", "10", ":math:`\text{mg/}\text{m}^3`"
-   "Valerate and butyrate degraders (X_c4) concentration", "10", ":math:`\text{mg/}\text{m}^3`"
-   "Propionate degraders (X_pro) concentration", "10", ":math:`\text{mg/}\text{m}^3`"
-   "Acetate degraders (X_ac) concentration", "10", ":math:`\text{mg/}\text{m}^3`"
-   "Hydrogen degraders (X_h2) concentration", "10", ":math:`\text{mg/}\text{m}^3`"
-   "Particulate inerts (X_I) concentration", "10", ":math:`\text{mg/}\text{m}^3`"
-   "Total cation equivalents concentration (S_cat) concentration", "40", ":math:`\text{mmol/}\text{m}^3`"
-   "Total anion equivalents concentration (S_an) concentration", "20", ":math:`\text{mmol/}\text{m}^3`"
-
-   "**Anaerobic Digester**"
-   "Anaerobic digester liquid volume", "3400", ":math:`\text{m}^3`"
-   "Anaerobic digester vapor volume", "300", ":math:`\text{m}^3`"
-   "Anaerobic digester liquid outlet temperature", "308.15", ":math:`\text{m}^3`"
-
-Future Refinements
-------------------
-
-The following modifications to ADM1 are planned for development:
-    * Adding thermal energy requirements to the anaerobic digester
+   "Salinity (NaCl)", ":math:`2`", ":math:`g L^{-1}`", "--"
+   "Volume flow rate", ":math:`5.2 \times 10^{-4}`", ":math:`m^3 s^{-1}`", [2]_ ,
+   "Temperature", ":math:`298.15`", ":math:`K`", "--"
+   "Pressure", ":math:`101325`", ":math:`Pa`", "--"
+   "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_,
+   "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_,
+   "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`m^2 s^{-1}`", [4]_,
+   "Cell pair number", ":math:`100`", ":math:`1`", "--"
+   "Cell length", ":math:`1.68`", ":math:`m`", [2]_,
+   "Cell width", ":math:`0.1`", ":math:`m`",[5]_,
+   "Channel height", ":math:`5 \times 10^{-4}`", ":math:`m`", "--"
+   "Water recovery", ":math:`70%`", ":math:`1`", "--"
+   "Stack voltage", ":math:`10`", ":math:`V`", "--"
+   "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`m`",[5]_,
+   "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega m^2`", [5]_,
+   "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega m^2`",[5]_,
+   "Water permeability, aem", ":math:`1.75 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`",[5]_,
+   "Water permeability, cem", ":math:`2.16 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`", [5]_,
+   "Water transport number, aem", ":math:`4.3`", ":math:`1`",[6]_,
+   "Water transport number, cem", ":math:`5.8`", ":math:`1`", [7]_,
+   "NaCl mass diffusivity, aem and cem", ":math:`3.28 \times 10^{-11}`", ":math:`m^2 s^{-1}`", [8]_,
+   "Porosity", ":math:`0.83`", ":math:`1`", [2]_,
+   "Specific surface area", ":math:`10400`", ":math:`m^{-1}`", [9]_,
+   "Pump efficiency", ":math:`0.8`", ":math:`1`", "--"
 
 References
 ----------
-[1] Batstone, D.J., Keller, J., Angelidaki, I., Kalyuzhnyi, S.V., Pavlostathis, S.G., Rozzi, A., Sanders, W.T.M., Siegrist, H.A. and Vavilin, V.A., 2002.
-The IWA anaerobic digestion model no 1 (ADM1).
-Water Science and technology, 45(10), pp.65-73.
-https://iwaponline.com/wst/article-abstract/45/10/65/6034
-
-[2] Rosen, C. and Jeppsson, U., 2006.
-Aspects on ADM1 Implementation within the BSM2 Framework.
-Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
-https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf
+.. [1] Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications. Desalination, 264(3), 268-288.
+.. [2] Wright, N. C., Shah, S. R., & Amrose, S. E. (2018). A robust model of brackish water electrodialysis desalination with experimental comparison at different size scales. Desalination, 443, 27-43.
+.. [3] Vanýsek, P. (1993). Ionic conductivity and diffusion at infinite dilution. CRC handbook of chemistry and physics, 94.
+.. [4] Vitagliano, V., & Lyons, P. A. (1956). Diffusion coefficients for aqueous solutions of sodium chloride and barium chloride. Journal of the American Chemical Society, 78(8), 1549-1552.
+.. [5] Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019). A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
+.. [6] Breslau, B. R., & Miller, I. F. (1971). A hydrodynamic model for electroosmosis. Industrial & Engineering Chemistry Fundamentals, 10(4), 554-565.
+.. [7] Larchet, C., Dammak, L., Auclair, B., Parchikov, S., & Nikonenko, V. (2004). A simplified procedure for ion-exchange membrane characterisation. New Journal of Chemistry, 28(10), 1260-1267.
+.. [8] Amang, D. N., Alexandrova, S., & Schaetzel, P. (2003). The determination of diffusion coefficients of counter ion in an ion exchange membrane using electrical conductivity measurement. Electrochimica acta, 48(18), 2563-2569.
+.. [9] Schock, G., & Miquel, A. (1987). Mass transfer and pressure loss in spiral wound modules. Desalination, 64, 339-352.
