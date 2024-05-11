@@ -1,5 +1,7 @@
-Completely Stirred Tank Reactor w/Injection Stream Costing Method
-==================================================================
+Aeration Tank Costing Method
+============================
+
+.. note:: The aeration tank inherits from the CSTR with injection class and uses the same costing relationships.
 
 Costing Method Parameters
 +++++++++++++++++++++++++
@@ -15,7 +17,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-There are no costing method variables unique to the CSTR with injection
+There are no costing method variables unique to the aeration tank.
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
@@ -30,7 +32,7 @@ Capital cost is dependent upon the unit's volume, :math:`V`, as shown in the equ
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no operating costs unique to the CSTR with injection.
+There are no operating costs unique to the aeration tank.
 
  
 Code Documentation
