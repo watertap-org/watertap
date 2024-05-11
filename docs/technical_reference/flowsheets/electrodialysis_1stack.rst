@@ -53,11 +53,11 @@ Flowsheet Specifications
    "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
    "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`m^2 s^{-1}`", [4]_
    "Cell pair number", ":math:`100`", ":math:`1`", "--"
-   "Cell length", ":math:`1.68`", ":math:`m`", [2]_
+   "Cell length", ":math:`0.79`", ":math:`m`", "--"
    "Cell width", ":math:`0.1`", ":math:`m`",[5]_
-   "Channel height", ":math:`5 \times 10^{-4}`", ":math:`m`", "--"
+   "Channel height", ":math:`2.7 \times 10^{-4}`", ":math:`m`", "--"
    "Water recovery", ":math:`70%`", ":math:`1`", "--"
-   "Stack voltage", ":math:`10`", ":math:`V`", "--"
+   "Stack voltage", ":math:`5`", ":math:`V`", "--"
    "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`m`",[5]_
    "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega m^2`", [5]_
    "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega m^2`",[5]_
