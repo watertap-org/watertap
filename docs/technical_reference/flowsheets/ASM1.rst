@@ -34,8 +34,8 @@ The flowsheet relies on the following key assumptions:
 
 Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
     * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
-    * Aeration tank
-    * Secondary clarifier
+    * `Aeration tank <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/aeration_tank.html>`_
+    * `Secondary clarifier <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/clarifier.html>`_
 
 Documentation for the property model can be found below.
     * `ASM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
