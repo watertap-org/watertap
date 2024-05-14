@@ -10,10 +10,10 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-__author__ = "Paul Vecchiarelli, Ben Knueven"
+__author__ = "Paul Vecchiarelli, Ben Knueven, Adam Atia"
 
 from collections import UserDict
-from pyomo.environ import units as pyunits, Expression
+from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import _PyomoUnit
 from collections.abc import Iterable
 
@@ -38,9 +38,6 @@ class FixedKeysDict(UserDict):
                     if "pyomo_unit" in k:
                         self.data[k] = v
                         self.data["oli_unit"] = str(v)
-                    if ("oli_unit" in self.data[k]) or ("pyomo_unit" in self.data[k]):
-                        self.data["pyomo_unit"] = v
-                        self.data["oli_unit"] = str(v)
             # check if data[k] is iterable first, otherwise checking if oli_unit in data[k] throws exception
             elif isinstance(self.data[k], Iterable):
                 # check if user provides str and that assignment wouldn't overwrite the oli_unit key:value pair
@@ -54,14 +51,16 @@ class FixedKeysDict(UserDict):
                 elif isinstance(v, str) and ("oli_unit" in self.data[k]):
                     self.data["oli_unit"] = v
                     self.data["pyomo_unit"] = getattr(pyunits, v)
-                # else:
-                #     RuntimeError(f"{v} should not be set to {self.data[k]}")
+                elif not isinstance(v, str):
+                    raise RuntimeError(f"Setting {v} as the value for {k} is not permitted as a value for oli and pyomo units. Please enter units as a string type or pint units.")
+                else:
+                    pass
             elif not isinstance(self.data[k], Iterable):
                 if isinstance(v, str) and "pyomo_unit" in k:
                     self.data[k] = getattr(pyunits, v)
                     self.data["oli_unit"] = v
-                elif ("oli_unit" in self.data[k]) or ("pyomo_unit" in self.data[k]):
-                    raise RuntimeError(f"Setting {v} as the value for {k} will overwrite oli and pyomo units, and that is not permitted.")
+                elif not isinstance(v, str):
+                    raise RuntimeError(f"Setting {v} as the value for {k} is not permitted as a value for oli and pyomo units. Please enter units as a string type or pint units.")
                 else:
                     pass
             else:
@@ -85,12 +84,11 @@ class FixedKeysDict(UserDict):
             print(f" {key}\n - {value}\n")
 
 
-input_unit_set = FixedKeysDict(
-    {
-        "molecularConcentration": FixedKeysDict({
+input_unit_set_temp = {
+        "molecularConcentration": {
             "oli_unit": "mg/L",
             "pyomo_unit": pyunits.mg / pyunits.L,
-        }),
+        },
         "mass": {"oli_unit": "mg", "pyomo_unit": pyunits.mg},
         "temperature": {"oli_unit": "K", "pyomo_unit": pyunits.K},
         "pressure": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
@@ -129,7 +127,9 @@ input_unit_set = FixedKeysDict(
             "pyomo_unit": pyunits.mol / pyunits.mol,
         },
     }
-)
+
+input_unit_set = FixedKeysDict({k:FixedKeysDict(v) for k,v in input_unit_set_temp.items()})
+default_unit_set = FixedKeysDict({k:FixedKeysDict(v) for k,v in input_unit_set_temp.items()})
 
 optional_properties = FixedKeysDict(
     {
@@ -177,18 +177,18 @@ optional_properties = FixedKeysDict(
 # and reducing hard-coding by using default_input_unit_set references
 output_unit_set = FixedKeysDict(
     {
-        "enthalpy": input_unit_set["enthalpy"]["oli_unit"],
-        "mass": input_unit_set["mass"]["oli_unit"],
-        "pt": input_unit_set["pressure"]["oli_unit"],
-        "total": input_unit_set["mass"]["oli_unit"],
-        "liq1_phs_comp": input_unit_set["mass"]["oli_unit"],
-        "solid_phs_comp": input_unit_set["mass"]["oli_unit"],
-        "vapor_phs_comp": input_unit_set["mass"]["oli_unit"],
-        "liq2_phs_comp": input_unit_set["mass"]["oli_unit"],
-        "combined_phs_comp": input_unit_set["mass"]["oli_unit"],
-        "molecularConcentration": input_unit_set["molecularConcentration"]["oli_unit"],
+        "enthalpy": default_unit_set["enthalpy"]["oli_unit"],
+        "mass": default_unit_set["mass"]["oli_unit"],
+        "pt": default_unit_set["pressure"]["oli_unit"],
+        "total": default_unit_set["mass"]["oli_unit"],
+        "liq1_phs_comp": default_unit_set["mass"]["oli_unit"],
+        "solid_phs_comp": default_unit_set["mass"]["oli_unit"],
+        "vapor_phs_comp": default_unit_set["mass"]["oli_unit"],
+        "liq2_phs_comp": default_unit_set["mass"]["oli_unit"],
+        "combined_phs_comp": default_unit_set["mass"]["oli_unit"],
+        "molecularConcentration": default_unit_set["molecularConcentration"]["oli_unit"],
     }
 )
 
 if __name__ == "__main__":
-    unitset= input_unit_set
+    unit_set=input_unit_set_temp

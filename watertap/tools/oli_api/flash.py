@@ -44,7 +44,7 @@
 # derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
-__author__ = "Oluwamayowa Amusat, Alexander Dudchenko, Paul Vecchiarelli"
+__author__ = "Oluwamayowa Amusat, Alexander Dudchenko, Paul Vecchiarelli, Adam Atia"
 
 
 import logging
@@ -65,6 +65,8 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     input_unit_set,
     output_unit_set,
 )
+
+from numpy import reshape, sqrt 
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -1063,8 +1065,6 @@ def flatten_results(processed_requests):
             raise RuntimeError(f"Unexpected type for data: {type(data)}")
 
     def _get_nested_data(data, keys):
-        print("data:", data)
-        print("keys:", keys)
 
         for key in keys:
             data = data[key]
@@ -1105,13 +1105,18 @@ def flatten_results(processed_requests):
                         for k, v in values["values"].items()
                     }
                 elif "data" in values:
-                    print(values)
-                    # extracted_values = values
-                    # data = values["data"]
-                    # extracted_values.update({"data": data})
+                    #intended for vaporDiffusivityMatrix
+                    mat_dim = int(sqrt(len(values["data"])))
+                    diffmat = reshape(values["data"], newshape=(mat_dim, mat_dim))
+                    
+                    extracted_values = {f'({values["speciesNames"][i]},{values["speciesNames"][j]})': {
+                                        "units": values['unit'],
+                                        "values": diffmat[i][j]
+                    } 
+                    for i in range(len(diffmat)) for j in range(i,len(diffmat))
+                    }
                 else:
-                    print(values)
-                    raise NotImplementedError("results structure not accounted for. results:\n{values}")
+                    raise NotImplementedError(f"results structure not accounted for. results:\n{values}")
         else:
             raise RuntimeError(f"Unexpected type for data: {type(values)}")
         return extracted_values
