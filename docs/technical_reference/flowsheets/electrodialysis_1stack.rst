@@ -15,7 +15,7 @@ Implementation
 The modeled one-stack ED system is illustrated by Figure 1. The feed solution is split into two fluids through a separator unit, entering the diluate and concentrate channels of the ED stack. On the outlet side of the ED stack, all diluate fluids are collected into the total product water, and the concentrate fluids into the total brine stream. Water recovery in this model is volume-based, i.e., the ratio of product volume to total volume of feed solution. The model simulates the steady state of the ED system. The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
-   * a property pacakge (i.e., MCAS) is provided for all unit models
+   * a property package (i.e., MCAS) is provided for all unit models
 
 .. figure:: ../../_static/flowsheets/edfs.png
     :width: 500
