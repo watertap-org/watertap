@@ -1,4 +1,4 @@
-One-stack electrodialysis 
+One-Stack Electrodialysis 
 =========================
 
 Introduction
