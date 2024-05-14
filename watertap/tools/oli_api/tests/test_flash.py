@@ -143,6 +143,7 @@ def test_isothermal_flash_survey(
         isothermal_input,
     )
 
+
 @pytest.mark.unit
 def test_bubble_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
@@ -155,20 +156,23 @@ def test_bubble_point(
     )
     stream_input = flash_instance.configure_water_analysis(source_water)
     inflows = flash_instance.get_apparent_species_from_true(
-    stream_input,
-    oliapi_instance,
-    dbs_file_id,
-)
+        stream_input,
+        oliapi_instance,
+        dbs_file_id,
+    )
     bubblepoint_input = flash_instance.configure_flash_analysis(
-    inflows=inflows, flash_method="bubblepoint", 
-    calculated_variable="pressure",
-)
-    
-    saturation_pressure = flash_instance.run_flash(
-    "bubblepoint",
-    oliapi,
-    dbs_file_id,
-    bubblepoint_input,
+        inflows=inflows,
+        flash_method="bubblepoint",
+        calculated_variable="pressure",
     )
 
-    pytest.approx(saturation_pressure['result']['calculatedVariables']['values'][0], rel=1e-3) == 32.04094 
+    saturation_pressure = flash_instance.run_flash(
+        "bubblepoint",
+        oliapi,
+        dbs_file_id,
+        bubblepoint_input,
+    )
+
+    pytest.approx(
+        saturation_pressure["result"]["calculatedVariables"]["values"][0], rel=1e-3
+    ) == 32.04094

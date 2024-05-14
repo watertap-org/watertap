@@ -52,7 +52,9 @@ class FixedKeysDict(UserDict):
                     self.data["oli_unit"] = v
                     self.data["pyomo_unit"] = getattr(pyunits, v)
                 elif not isinstance(v, str):
-                    raise RuntimeError(f"Setting {v} as the value for {k} is not permitted as a value for oli and pyomo units. Please enter units as a string type or pint units.")
+                    raise RuntimeError(
+                        f"Setting {v} as the value for {k} is not permitted as a value for oli and pyomo units. Please enter units as a string type or pint units."
+                    )
                 else:
                     pass
             elif not isinstance(self.data[k], Iterable):
@@ -60,12 +62,14 @@ class FixedKeysDict(UserDict):
                     self.data[k] = getattr(pyunits, v)
                     self.data["oli_unit"] = v
                 elif not isinstance(v, str):
-                    raise RuntimeError(f"Setting {v} as the value for {k} is not permitted as a value for oli and pyomo units. Please enter units as a string type or pint units.")
+                    raise RuntimeError(
+                        f"Setting {v} as the value for {k} is not permitted as a value for oli and pyomo units. Please enter units as a string type or pint units."
+                    )
                 else:
                     pass
             else:
                 self.data[k] = v
-                
+
     def __delitem__(self, k):
         raise Exception(" Deleting keys not supported for this object.")
 
@@ -85,51 +89,55 @@ class FixedKeysDict(UserDict):
 
 
 input_unit_set_temp = {
-        "molecularConcentration": {
-            "oli_unit": "mg/L",
-            "pyomo_unit": pyunits.mg / pyunits.L,
-        },
-        "mass": {"oli_unit": "mg", "pyomo_unit": pyunits.mg},
-        "temperature": {"oli_unit": "K", "pyomo_unit": pyunits.K},
-        "pressure": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
-        "enthalpy": {"oli_unit": "J", "pyomo_unit": pyunits.J},
-        "vaporAmountMoles": {"oli_unit": "mol", "pyomo_unit": pyunits.mol},
-        "vaporMolFrac": {
-            "oli_unit": "mol/mol",
-            "pyomo_unit": pyunits.mol / pyunits.mol,
-        },
-        "totalVolume": {"oli_unit": "L", "pyomo_unit": pyunits.L},
-        "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
-        "pipeFlowVelocity": {
-            "oli_unit": "m/s",
-            "pyomo_unit": pyunits.meter / pyunits.second,
-        },
-        "diskDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
-        "diskRotatingSpeed": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
-        "rotorDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
-        "rotorRotation": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
-        "shearStress": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
-        "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
-        "pipeRoughness": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
-        "liquidFlowInPipe": {
-            "oli_unit": "L/s",
-            "pyomo_unit": pyunits.L / pyunits.second,
-        },
-        "gasFlowInPipe": {"oli_unit": "L/s", "pyomo_unit": pyunits.L / pyunits.second},
-        "viscAbs2ndLiq": {
-            "oli_unit": "Pa-s",
-            "pyomo_unit": pyunits.Pa * pyunits.second,
-        },
-        "alkalinity": {"oli_unit": "mg HCO3/L", "pyomo_unit": pyunits.mg / pyunits.L},
-        "TIC": {"oli_unit": "mol C/L", "pyomo_unit": pyunits.mol / pyunits.L},
-        "CO2GasFraction": {
-            "oli_unit": "mol/mol",
-            "pyomo_unit": pyunits.mol / pyunits.mol,
-        },
-    }
+    "molecularConcentration": {
+        "oli_unit": "mg/L",
+        "pyomo_unit": pyunits.mg / pyunits.L,
+    },
+    "mass": {"oli_unit": "mg", "pyomo_unit": pyunits.mg},
+    "temperature": {"oli_unit": "K", "pyomo_unit": pyunits.K},
+    "pressure": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
+    "enthalpy": {"oli_unit": "J", "pyomo_unit": pyunits.J},
+    "vaporAmountMoles": {"oli_unit": "mol", "pyomo_unit": pyunits.mol},
+    "vaporMolFrac": {
+        "oli_unit": "mol/mol",
+        "pyomo_unit": pyunits.mol / pyunits.mol,
+    },
+    "totalVolume": {"oli_unit": "L", "pyomo_unit": pyunits.L},
+    "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "pipeFlowVelocity": {
+        "oli_unit": "m/s",
+        "pyomo_unit": pyunits.meter / pyunits.second,
+    },
+    "diskDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "diskRotatingSpeed": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
+    "rotorDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "rotorRotation": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
+    "shearStress": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
+    "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "pipeRoughness": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "liquidFlowInPipe": {
+        "oli_unit": "L/s",
+        "pyomo_unit": pyunits.L / pyunits.second,
+    },
+    "gasFlowInPipe": {"oli_unit": "L/s", "pyomo_unit": pyunits.L / pyunits.second},
+    "viscAbs2ndLiq": {
+        "oli_unit": "Pa-s",
+        "pyomo_unit": pyunits.Pa * pyunits.second,
+    },
+    "alkalinity": {"oli_unit": "mg HCO3/L", "pyomo_unit": pyunits.mg / pyunits.L},
+    "TIC": {"oli_unit": "mol C/L", "pyomo_unit": pyunits.mol / pyunits.L},
+    "CO2GasFraction": {
+        "oli_unit": "mol/mol",
+        "pyomo_unit": pyunits.mol / pyunits.mol,
+    },
+}
 
-input_unit_set = FixedKeysDict({k:FixedKeysDict(v) for k,v in input_unit_set_temp.items()})
-default_unit_set = FixedKeysDict({k:FixedKeysDict(v) for k,v in input_unit_set_temp.items()})
+input_unit_set = FixedKeysDict(
+    {k: FixedKeysDict(v) for k, v in input_unit_set_temp.items()}
+)
+default_unit_set = FixedKeysDict(
+    {k: FixedKeysDict(v) for k, v in input_unit_set_temp.items()}
+)
 
 optional_properties = FixedKeysDict(
     {
@@ -186,9 +194,11 @@ output_unit_set = FixedKeysDict(
         "vapor_phs_comp": default_unit_set["mass"]["oli_unit"],
         "liq2_phs_comp": default_unit_set["mass"]["oli_unit"],
         "combined_phs_comp": default_unit_set["mass"]["oli_unit"],
-        "molecularConcentration": default_unit_set["molecularConcentration"]["oli_unit"],
+        "molecularConcentration": default_unit_set["molecularConcentration"][
+            "oli_unit"
+        ],
     }
 )
 
 if __name__ == "__main__":
-    unit_set=input_unit_set_temp
+    unit_set = input_unit_set_temp

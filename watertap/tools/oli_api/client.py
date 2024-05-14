@@ -333,21 +333,28 @@ class OLIApi:
         headers = self.credential_manager.headers
         base_url = self.credential_manager.engine_url
         valid_get_flashes = ["corrosion-contact-surface", "chemistry-info"]
-        valid_post_flashes = ["isothermal", "corrosion-rates", "wateranalysis", "bubblepoint"]
-        
+        valid_post_flashes = [
+            "isothermal",
+            "corrosion-rates",
+            "wateranalysis",
+            "bubblepoint",
+        ]
+
         if flash_method in [
             "bubblepoint",
-            #TODO: uncomment the methods below only after trying and testing
+            # TODO: uncomment the methods below only after trying and testing
             # "dewpoint",
             # "vapor-amount",
             # "vapor-fraction",
             # "isochoric",
         ]:
             dbs_summary = self.get_dbs_file_summary(dbs_file_id)
-            phase_list = dbs_summary['chemistry_info']['result']['phases']
+            phase_list = dbs_summary["chemistry_info"]["result"]["phases"]
 
             if "vapor" not in phase_list:
-                raise RuntimeError("A vapor function ('{flash_method}') was called without included 'vapor' as a phase in the model")
+                raise RuntimeError(
+                    "A vapor function ('{flash_method}') was called without included 'vapor' as a phase in the model"
+                )
 
         if flash_method in valid_get_flashes:
             mode = "GET"

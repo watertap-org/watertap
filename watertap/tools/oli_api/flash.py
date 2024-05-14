@@ -66,7 +66,7 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     output_unit_set,
 )
 
-from numpy import reshape, sqrt 
+from numpy import reshape, sqrt
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -471,7 +471,7 @@ class Flash:
             "vapor-fraction",
             "isochoric",
         ]:
-     
+
             if calculated_variable is not None:
                 if calculated_variable not in ["temperature", "pressure"]:
                     raise RuntimeError(
@@ -1103,18 +1103,22 @@ def flatten_results(processed_requests):
                         for k, v in values["values"].items()
                     }
                 elif "data" in values:
-                    #intended for vaporDiffusivityMatrix
+                    # intended for vaporDiffusivityMatrix
                     mat_dim = int(sqrt(len(values["data"])))
                     diffmat = reshape(values["data"], newshape=(mat_dim, mat_dim))
-                    
-                    extracted_values = {f'({values["speciesNames"][i]},{values["speciesNames"][j]})': {
-                                        "units": values['unit'],
-                                        "values": diffmat[i][j]
-                    } 
-                    for i in range(len(diffmat)) for j in range(i,len(diffmat))
+
+                    extracted_values = {
+                        f'({values["speciesNames"][i]},{values["speciesNames"][j]})': {
+                            "units": values["unit"],
+                            "values": diffmat[i][j],
+                        }
+                        for i in range(len(diffmat))
+                        for j in range(i, len(diffmat))
                     }
                 else:
-                    raise NotImplementedError(f"results structure not accounted for. results:\n{values}")
+                    raise NotImplementedError(
+                        f"results structure not accounted for. results:\n{values}"
+                    )
         else:
             raise RuntimeError(f"Unexpected type for data: {type(values)}")
         return extracted_values
@@ -1144,7 +1148,9 @@ def flatten_results(processed_requests):
                     if isinstance(prop[-1], int):
                         prop_tag = _get_nested_data(result, prop)["name"]
             else:
-                _logger.warning(f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict}")
+                _logger.warning(
+                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict}"
+                )
 
             label = f"{prop_tag}_{phase_tag}" if phase_tag else prop_tag
             input_dict[k][label] = _extract_values(result, prop)
