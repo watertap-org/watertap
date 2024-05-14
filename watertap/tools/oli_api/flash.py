@@ -1094,8 +1094,6 @@ def flatten_results(processed_requests):
                         "units": unit,
                         "values": values["value"],
                     }
-                # elif "values" not in values.keys()
-                #     extracted_values = 
                 elif "values" in values:
                     extracted_values = {
                         k: {
