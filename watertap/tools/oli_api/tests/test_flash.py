@@ -149,11 +149,7 @@ def test_bubble_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-    inflows = flash_instance.get_apparent_species_from_true(
-        stream_input,
-        oliapi_instance,
-        dbs_file_id,
-    )
+
     stream_input = flash_instance.configure_water_analysis(source_water)
     inflows = flash_instance.get_apparent_species_from_true(
         stream_input,
@@ -168,7 +164,7 @@ def test_bubble_point(
 
     saturation_pressure = flash_instance.run_flash(
         "bubblepoint",
-        oliapi,
+        oliapi_instance,
         dbs_file_id,
         bubblepoint_input,
     )

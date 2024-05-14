@@ -14,7 +14,6 @@ import pytest
 from pyomo.environ import units as pyunits
 from pyomo.util.check_units import assert_units_equivalent
 from watertap.tools.oli_api.util.fixed_keys_dict import output_unit_set, input_unit_set
-from watertap.tools.oli_api.flash import Flash
 
 
 @pytest.mark.unit
