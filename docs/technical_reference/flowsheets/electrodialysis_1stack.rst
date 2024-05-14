@@ -12,13 +12,29 @@ Equal flow conditions through the diluate and concentrate channels would result 
 Implementation
 --------------
 
-The modeled one-stack ED system is illustrated by Figure 1. The feed solution is split into two fluids through a separator unit, entering the diluate and concentrate channels of the ED stack. On the outlet side of the ED stack, all diluate fluids are collected into the total product water, and the concentrate fluids into the total brine stream. Water recovery in this model is volume-based, i.e., the ratio of product volume to total volume of feed solution. The model simulates the steady state of the ED system.
+The modeled one-stack ED system is illustrated by Figure 1. The feed solution is split into two fluids through a separator unit, entering the diluate and concentrate channels of the ED stack. On the outlet side of the ED stack, all diluate fluids are collected into the total product water, and the concentrate fluids into the total brine stream. Water recovery in this model is volume-based, i.e., the ratio of product volume to total volume of feed solution. The model simulates the steady state of the ED system. The flowsheet relies on the following key assumptions:
+
+   * supports steady-state only
+   * a property pacakge (i.e., MCAS) is provided for all unit models
 
 .. figure:: ../../_static/flowsheets/edfs.png
     :width: 500
     :align: center
 
     Figure 1. Flowsheet diagram: one-stack ED system
+
+The electrodialysis 1D block is set up with the following configuration arguments:
+
+.. code-block::
+
+   m.fs.EDstack = Electrodialysis1D(
+        property_package=m.fs.properties,
+        operation_mode="Constant_Voltage",
+        finite_elements=20,
+    )
+
+These configurations enable the electrodialysis unit to use a flowsheet-unified property package, set a constant stack voltage, and adopt a favorable number of finite elements for 1-dimensional simulation and solving.. 
+
 
 Documentation for unit models from WaterTAP: 
     * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
@@ -40,7 +56,7 @@ In the given optimization case, the objective function is set to LCOW and the pr
 
 Flowsheet Specifications
 ------------------------
-.. csv-table:: Initial values of parameters for a 0-DOF model
+.. csv-table:: 
    :header: Name, Value, Unit, Reference
    :widths: 30, 20, 20, 10
 
