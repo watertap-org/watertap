@@ -44,6 +44,7 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 from watertap.unit_models.cstr_injection import CSTR_Injection
+from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -79,8 +80,8 @@ from watertap.core.util.initialization import check_solve
 _log = idaeslog.getLogger(__name__)
 
 
-def main():
-    m = build_flowsheet()
+def main(bio_P=True):
+    m = build(bio_P=bio_P)
     set_operating_conditions(m)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -88,7 +89,7 @@ def main():
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
-    initialize_system(m)
+    initialize_system(m, bio_P=bio_P)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
@@ -118,7 +119,7 @@ def main():
     return m, results
 
 
-def build_flowsheet():
+def build(bio_P=False):
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -139,7 +140,7 @@ def build_flowsheet():
 
     # ====================================================================
     # Primary Clarifier
-    m.fs.CL = Separator(
+    m.fs.CL = Clarifier(
         property_package=m.fs.props_ASM2D,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
@@ -185,8 +186,7 @@ def build_flowsheet():
         property_package=m.fs.props_ASM2D, outlet_list=["underflow", "overflow"]
     )
     # Secondary Clarifier
-    # TODO: Replace with more detailed model when available
-    m.fs.CL2 = Separator(
+    m.fs.CL2 = Clarifier(
         property_package=m.fs.props_ASM2D,
         outlet_list=["underflow", "effluent"],
         split_basis=SplittingType.componentFlow,
@@ -233,6 +233,7 @@ def build_flowsheet():
         outlet_reaction_package=m.fs.rxn_props_ADM1,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
+        bio_P=bio_P,
     )
 
     # Anaerobic digester
@@ -342,7 +343,7 @@ def build_flowsheet():
         doc="Dissolved oxygen concentration at equilibrium",
     )
 
-    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
+    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R5")
     def mass_transfer_R5(self, t):
         return pyo.units.convert(
             m.fs.R5.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -352,7 +353,7 @@ def build_flowsheet():
             * (m.fs.S_O_eq - m.fs.R5.outlet.conc_mass_comp[t, "S_O2"])
         )
 
-    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R6")
     def mass_transfer_R6(self, t):
         return pyo.units.convert(
             m.fs.R6.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -362,7 +363,7 @@ def build_flowsheet():
             * (m.fs.S_O_eq - m.fs.R6.outlet.conc_mass_comp[t, "S_O2"])
         )
 
-    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R7")
     def mass_transfer_R7(self, t):
         return pyo.units.convert(
             m.fs.R7.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -445,7 +446,7 @@ def set_operating_conditions(m):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
 
-    # Set fraction of outflow from reactor 5 that goes to recycle
+    # Set fraction of outflow from reactor 7 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
     # Secondary Clarifier
@@ -515,7 +516,7 @@ def set_operating_conditions(m):
     iscale.calculate_scaling_factors(m)
 
 
-def initialize_system(m):
+def initialize_system(m, bio_P=False):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
@@ -530,58 +531,113 @@ def initialize_system(m):
     for o in order:
         print(o[0].name)
 
-    # Initial guesses for flow into first reactor
-    tear_guesses = {
-        "flow_vol": {0: 1.2368},
-        "conc_mass_comp": {
-            (0, "S_A"): 0.0007,
-            (0, "S_F"): 0.000429,
-            (0, "S_I"): 0.05745,
-            (0, "S_N2"): 0.0534,
-            (0, "S_NH4"): 0.0092,
-            (0, "S_NO3"): 0.00403,
-            (0, "S_O2"): 0.00192,
-            (0, "S_PO4"): 0.0123,
-            (0, "S_K"): 0.373,
-            (0, "S_Mg"): 0.023,
-            (0, "S_IC"): 0.135,
-            (0, "X_AUT"): 0.1382,
-            (0, "X_H"): 3.6356,
-            (0, "X_I"): 3.2611,
-            (0, "X_PAO"): 3.3542,
-            (0, "X_PHA"): 0.089416,
-            (0, "X_PP"): 1.1127,
-            (0, "X_S"): 0.059073,
-        },
-        "temperature": {0: 308.15},
-        "pressure": {0: 101325},
-    }
+    if bio_P:
+        # Initial guesses for flow into first reactor
+        tear_guesses = {
+            "flow_vol": {0: 1.2368},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.0009,
+                (0, "S_F"): 0.00042,
+                (0, "S_I"): 0.05745,
+                (0, "S_N2"): 0.0534,
+                (0, "S_NH4"): 0.0089,
+                (0, "S_NO3"): 0.0046,
+                (0, "S_O2"): 0.0046,
+                (0, "S_PO4"): 0.0118,
+                (0, "S_K"): 0.373,
+                (0, "S_Mg"): 0.023,
+                (0, "S_IC"): 0.1366,
+                (0, "X_AUT"): 0.135,
+                (0, "X_H"): 3.647,
+                (0, "X_I"): 3.314,
+                (0, "X_PAO"): 2.984,
+                (0, "X_PHA"): 0.083,
+                (0, "X_PP"): 0.9907,
+                (0, "X_S"): 0.05823,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
 
-    tear_guesses2 = {
-        "flow_vol": {0: 0.003},
-        "conc_mass_comp": {
-            (0, "S_A"): 0.10,
-            (0, "S_F"): 0.16,
-            (0, "S_I"): 0.05745,
-            (0, "S_N2"): 0.039,
-            (0, "S_NH4"): 0.034,
-            (0, "S_NO3"): 0.0028,
-            (0, "S_O2"): 0.00136,
-            (0, "S_PO4"): 0.0254,
-            (0, "S_K"): 0.379,
-            (0, "S_Mg"): 0.0267,
-            (0, "S_IC"): 0.078,
-            (0, "X_AUT"): 0.342,
-            (0, "X_H"): 23.4,
-            (0, "X_I"): 11.5,
-            (0, "X_PAO"): 10.3,
-            (0, "X_PHA"): 0.0044,
-            (0, "X_PP"): 2.76,
-            (0, "X_S"): 3.83,
-        },
-        "temperature": {0: 308.15},
-        "pressure": {0: 101325},
-    }
+        tear_guesses2 = {
+            "flow_vol": {0: 0.003},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.10,
+                (0, "S_F"): 0.16,
+                (0, "S_I"): 0.05745,
+                (0, "S_N2"): 0.039,
+                (0, "S_NH4"): 0.035,
+                (0, "S_NO3"): 0.0032,
+                (0, "S_O2"): 0.00314,
+                (0, "S_PO4"): 0.0238,
+                (0, "S_K"): 0.379,
+                (0, "S_Mg"): 0.026,
+                (0, "S_IC"): 0.078,
+                (0, "X_AUT"): 0.342,
+                (0, "X_H"): 23.95,
+                (0, "X_I"): 11.9,
+                (0, "X_PAO"): 9.62,
+                (0, "X_PHA"): 0.0033,
+                (0, "X_PP"): 2.51,
+                (0, "X_S"): 3.92,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+    else:
+        # Initial guesses for flow into first reactor
+        tear_guesses = {
+            "flow_vol": {0: 1.235},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.0007,
+                (0, "S_F"): 0.0004,
+                (0, "S_I"): 0.0575,
+                (0, "S_N2"): 0.05,
+                (0, "S_NH4"): 0.007,
+                (0, "S_NO3"): 0.0035,
+                (0, "S_O2"): 0.00192,
+                (0, "S_PO4"): 0.02,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.02,
+                (0, "S_IC"): 0.11,
+                (0, "X_AUT"): 0.12,
+                (0, "X_H"): 3.3,
+                (0, "X_I"): 3.0,
+                (0, "X_PAO"): 2.3,
+                (0, "X_PHA"): 0.06,
+                (0, "X_PP"): 0.75,
+                (0, "X_S"): 0.050,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses2 = {
+            "flow_vol": {0: 0.0027},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.044,
+                (0, "S_F"): 0.15,
+                (0, "S_I"): 0.0575,
+                (0, "S_N2"): 0.035,
+                (0, "S_NH4"): 0.03,
+                (0, "S_NO3"): 0.002,
+                (0, "S_O2"): 0.0012,
+                (0, "S_PO4"): 0.02,
+                (0, "S_K"): 0.38,
+                (0, "S_Mg"): 0.023,
+                (0, "S_IC"): 0.063,
+                (0, "X_AUT"): 0.31,
+                (0, "X_H"): 24.8,
+                (0, "X_I"): 11.8,
+                (0, "X_PAO"): 8.5,
+                (0, "X_PHA"): 0.086,
+                (0, "X_PP"): 2.1,
+                (0, "X_S"): 4.2,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
 
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
