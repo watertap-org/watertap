@@ -81,7 +81,7 @@ def scaling_setup(
 
 # -----------------------------------------------------------------------------
 # Start test class
-def min_boron_removal_model(self):
+def min_boron_removal_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     # create dict to define ions (the prop pack requires this)
@@ -143,7 +143,11 @@ def min_boron_removal_model(self):
 
 class TestBoronRemoval_IonPropPack_Min(UnitTestHarness):
     def configure(self):
-        m = min_boron_removal_model
+        m = min_boron_removal_model()
+
+        self.default_large = 1e3
+        self.default_small = 1e-3
+        self.default_relative_tolerance = 1e-4
 
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
@@ -157,7 +161,7 @@ class TestBoronRemoval_IonPropPack_Min(UnitTestHarness):
         return m
 
 
-def alk_boron_removal_model(self):
+def alk_boron_removal_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
@@ -198,7 +202,11 @@ def alk_boron_removal_model(self):
 
 class TestBoronRemoval_IonPropPack_with_ResAlk(UnitTestHarness):
     def configure(self):
-        m = alk_boron_removal_model
+        m = alk_boron_removal_model()
+
+        self.default_large = 1e3
+        self.default_small = 1e-3
+        self.default_relative_tolerance = 1e-4
 
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
@@ -212,7 +220,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk(UnitTestHarness):
         return m
 
 
-def base_boron_removal_model(self):
+def base_boron_removal_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
@@ -256,7 +264,11 @@ def base_boron_removal_model(self):
 
 class TestBoronRemoval_IonPropPack_with_ResBase(UnitTestHarness):
     def configure(self):
-        m = base_boron_removal_model
+        m = base_boron_removal_model()
+
+        self.default_large = 1e3
+        self.default_small = 1e-3
+        self.default_relative_tolerance = 1e-4
 
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
