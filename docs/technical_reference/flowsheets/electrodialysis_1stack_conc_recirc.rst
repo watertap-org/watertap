@@ -1,5 +1,5 @@
-One-stack electrodialysis with concentrate stream recirculation (feed-and-bleed mode)
-=====================================================================================
+One-stack electrodialysis with a concentrate fluid recirculation
+================================================================
 
 Introduction
 ------------
@@ -10,13 +10,34 @@ Equal flow conditions through the diluate and concentrate channels would result 
 Implementation
 --------------
 
-The modeled one-stack ED system is illustrated by Figure 1. The feed solution is split into two fluids through a separator unit, entering the diluate and concentrate channels of the ED stack. Two pump units are place respectively on the two channels entering pipelines to counterbalance the pressure drops across ED stack channels.  On the outlet side of the ED stack, all diluate fluids are collected into the total product water, and the concentrate fluids into the total brine stream.  A second separator unit takes a portion of the brine back into the concentrate pump inlet, with the rest being sent to brine disposal. Water recovery in this model is volume-based, i.e., the ratio of product volume to total volume of feed solution. The model simulates the steady state of the ED system.
+The modeled one-stack ED system is illustrated by Figure 1. The feed solution is split into two fluids through a separator unit, entering the diluate and concentrate channels of the ED stack. Two pump units are place respectively on the two channels entering pipelines to counterbalance the pressure drops across ED stack channels.  On the outlet side of the ED stack, all diluate fluids are collected into the total product water, and the concentrate fluids into the total brine stream.  A second separator unit takes a portion of the brine back into the concentrate pump inlet, with the rest being sent to brine disposal. Water recovery in this model is volume-based, i.e., the ratio of product volume to total volume of feed solution. The flowsheet relies on the following key assumptions:
+
+    * supports steady-state only
+    * a property package (i.e., MCAS) is provided for all unit models
 
 .. figure:: ../../_static/flowsheets/ed_conc_recirc.png
     :width: 500
     :align: center
 
     Figure 1. Flowsheet diagram: one-stack ED operated in feed-and-bleed mode
+
+The electrodialysis 1D block is set up with the following configuration arguments:
+
+ .. code-block::
+    m.fs.EDstack = Electrodialysis1D(
+        property_package=m.fs.properties,
+        operation_mode=ElectricalOperationMode.Constant_Voltage,
+        finite_elements=20,
+        has_pressure_change=True,
+        has_nonohmic_potential_membrane=True,
+        has_Nernst_diffusion_layer=True,
+        limiting_current_density_method=LimitingCurrentDensityMethod.Theoretical,
+        pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
+        hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
+        friction_factor_method=FrictionFactorMethod.Gurreri,
+    )
+
+ These configurations enable the electrodialysis unit to use a flowsheet-unified property package, set a constant stack voltage, and adopt a favorable number of finite elements for 1-dimensional simulation and solving. The overall ED configuration represents the most comprehensive modeling that takes into account the pressure change, diffusion layer phenomenon, and non-ohmic potentials in the system. 
 
 Documentation for unit models from WaterTAP: 
     * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
@@ -41,7 +62,7 @@ In the optimization example, the objective function is set to LCOW and the produ
 
 Flowsheet Specifications
 ------------------------
-.. csv-table:: Initial values of parameters for a 0-DOF model
+.. csv-table:: 
    :header: Name, Value, Unit, Reference
    :widths: 30, 20, 20, 10
 
