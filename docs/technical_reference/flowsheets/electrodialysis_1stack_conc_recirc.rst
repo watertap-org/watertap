@@ -5,7 +5,9 @@ Introduction
 ------------
 Electrodialysis (ED) is a promising technology for desalinating brackish waters and has been deployed at industrial scales [1]_. It utilizes electrical potential to drive ion diffusion through anion and cation exchange membranes, resulting in the dilution of the feed stream while producing a concentrated brine. A single ED stack is an assembly of multiple flow-by cells separated by alternating cation and anion exchange membranes positioned between a pair of electrodes. When a voltage is applied, ions in the cell pair are driven from one channel (forming the diluate channel) to the other (forming the concentrate channel), thereby desalinating water. A one-stack ED desalination system represents a basic ED operation from which more complicated or larger-scale systems can be derived. Analyzing a one-stack ED system therefore provides valuable information on the technology's performance and cost-effectiveness for a given treatment task.
 
-Equal flow conditions through the diluate and concentrate channels would result in a product water recovery of 50%. Larger water recoveries are commonly achieved by operating the system in a feed-and-bleed mode, where a portion of the concentrate outlet is recirculated back to its inlet, thus increasing the portion of product water from the diluate outlet. This flowsheet simulates a one-stack ED system operated in feed-and-bleed mode.
+Equal flow conditions through the diluate and concentrate channels would result in a product water recovery of 50%. Larger water recoveries are commonly achieved by operating the system in a feed-and-bleed mode, where a portion of the concentrate outlet is recirculated back to its inlet, thus increasing the portion of product water from the diluate outlet. This flowsheet simulates a one-stack ED system operated in feed-and-bleed mode.  A simpler ED flowsheet without fluid recirculation is presented as 
+
+     * `One-Stack Electrodialysis <https://watertap--1386.org.readthedocs.build/en/1386/technical_reference/flowsheets/electrodialysis_1stack.html>`_.
 
 Implementation
 --------------
@@ -40,6 +42,16 @@ The electrodialysis 1D block is set up with the following configuration argument
 
  These configurations enable the electrodialysis unit to use a flowsheet-unified property package, set a constant stack voltage, and adopt a favorable number of finite elements for 1-dimensional simulation and solving. The overall ED configuration represents the most comprehensive modeling that takes into account the pressure change, diffusion layer phenomenon, and non-ohmic potentials in the system. 
 
+ In the given optimization case, the objective function is to minimize the levelized cost of water, which can be represented by the following equation
+ where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
+ :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
+ :math:`f_{util}` represents the utilization factor:
+
+     .. math::
+         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
+ 
+ The product water salinity is set to 0.1 :math:`g L^{-1}`.
+
 Documentation for unit models from WaterTAP: 
     * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
     * `Pressure exchanger <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/pressure_exchanger.html>`_
@@ -58,15 +70,6 @@ The number of degrees of freedom (DOF) is associated with the number of fixed va
     * stack voltage applied
     * ED cell pair number 
     * ED cell length
-
- In the given optimization case, the objective function is to minimize the levelized cost of water, which can be represented by the following equation
- where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
- :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
- :math:`f_{util}` represents the utilization factor:
-
-     .. math::
-         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
- The product water salinity is set to 0.1 :math:`g L^{-1}`.
 
 Flowsheet Specifications
 ------------------------
