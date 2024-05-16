@@ -321,7 +321,18 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 is_output=True,
                 output_category=optional_costs,
             )
-
+            exports.add(
+                obj=block.desalter.recovery_cost_offset,
+                name=f"{process_name_nice} rate cost offset ",
+                ui_units=pyunits.dimensionless,
+                display_units="%",
+                rounding=2,
+                description=optional_costs,
+                is_input=True,
+                input_category=optional_costs,
+                is_output=False,
+                output_category=optional_costs,
+            )
     exports.add(
         obj=fs.disposal.base_cost,
         name="Disposal cost",

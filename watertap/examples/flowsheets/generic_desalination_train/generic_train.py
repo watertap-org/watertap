@@ -82,9 +82,12 @@ def main():
     initialize(m)
     m.fs.Desal_1.desalter.water_recovery.unfix()
     m.fs.Desal_1.desalter.brine_solids_concentration.fix(10)
-    m.fs.Desal_2.desalter.water_recovery.fix(50)
+    m.fs.Desal_2.desalter.water_recovery.fix(25)
+    m.fs.Desal_2.desalter.recovery_cost.fix(0.01)
+    m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
     m.fs.Desal_3.desalter.water_recovery.unfix()
     m.fs.Desal_3.desalter.brine_water_percent.fix(80)
+    solve(m)
     display_processes(m)
     m.fs.Desal_1.desalter.brine_solids_concentration.display()
     m.fs.Desal_1.desalter.brine_water_percent.display()
@@ -104,7 +107,7 @@ def build(
                 "process_type": "separator",
                 "process_name": "Pretreatment",
                 "default_kwargs": {
-                    "base_cost": 0.3,
+                    "base_cost": 0.1,
                     "additive_dose": 0,
                     "additive_cost": 0,
                 },
@@ -530,7 +533,7 @@ def display_processes(m):
     _logger.info(f"Annual feed cost ($) {value(m.fs.feed.annual_cost)}")
     _logger.info(f"Annual product cost ($) {value(m.fs.product.annual_cost)}")
     _logger.info(f"Annual disposal cost ($) {value(m.fs.disposal.annual_cost)}")
-
+    
     _logger.info("--------------------------------")
     for proc_dict in m.fs.process_order:
         if proc_dict.get("display_func") is not None:

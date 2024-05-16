@@ -15,6 +15,7 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
+import idaes.core.util.math as idaesMath
 
 __author__ = "Alexander V. Dudchenko"
 
@@ -26,20 +27,35 @@ def cost_desalter(costing_block, desalter, base_cost=1, recovery_cost=0, opt_nam
     desalter.recovery_cost = Var(
         initialize=recovery_cost, units=costing_block.base_currency / pyunits.m**3
     )
+    desalter.recovery_cost_offset = Var(
+        initialize=desalter.water_recovery.lb,
+        units=pyunits.dimensionless,
+    )
+    desalter.recovery_cost_offset.fix()
     desalter.recovery_cost.fix()
     desalter.base_cost.fix()
     desalter.annual_cost = Var(
         initialize=1, units=costing_block.base_currency / pyunits.year
     )
     desalter.LCOW = Var(initialize=1, units=costing_block.base_currency / pyunits.m**3)
+
     desalter.absolute_cost_eq = Constraint(
         expr=desalter.annual_cost
-        == (desalter.base_cost + desalter.recovery_cost * desalter.water_recovery)
+        == (
+            desalter.base_cost
+            + desalter.recovery_cost
+            * idaesMath.smooth_max(
+                desalter.water_recovery - desalter.recovery_cost_offset,
+                1e-12,
+                eps=1e-12,
+            )
+        )
         * pyunits.convert(
             desalter.product_properties[0].flow_vol_phase["Liq"],
             to_units=pyunits.m**3 / pyunits.year,
         )
     )
+    desalter.absolute_cost_eq.pprint()
     desalter.LCOW_eq = Constraint(
         expr=desalter.LCOW
         == desalter.annual_cost

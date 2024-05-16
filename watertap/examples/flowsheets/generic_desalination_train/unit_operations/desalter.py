@@ -50,6 +50,11 @@ def build(
     default_recovery=80,
 ):
     block.desalter = GenericDesalter(property_package=m.fs.properties)
+
+    block.desalter.water_recovery.setub(max_recovery)
+    block.desalter.water_recovery.setlb(min_recovery)
+
+    block.desalter.water_recovery.fix(default_recovery)
     desalter_costing.cost_desalter(
         m.fs.costing,
         block.desalter,
@@ -58,9 +63,6 @@ def build(
         opt_name=block.process_name,
     )
 
-    block.desalter.water_recovery.setub(max_recovery)
-    block.desalter.water_recovery.setlb(min_recovery)
-    block.desalter.water_recovery.fix(default_recovery)
     block.desalter.brine_solids_concentration = Var(
         initialize=80,
         bounds=(None, None),
@@ -122,9 +124,9 @@ def initialize(m, blk, solver):
 
 
 def unfix_opt_vars(m, blk):
-    # blk.desalter.water_recovery.unfix()
-    blk.desalter.water_recovery.setlb(0)
-    blk.desalter.water_recovery.setub(99.9)
+    blk.desalter.water_recovery.unfix()
+    # blk.desalter.water_recovery.setlb(0)
+    # blk.desalter.water_recovery.setub(99.9)
 
 
 def display(m, blk):
