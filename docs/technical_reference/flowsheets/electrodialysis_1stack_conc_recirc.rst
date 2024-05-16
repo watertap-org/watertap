@@ -59,7 +59,14 @@ The number of degree of freedom (DOF) is associated with the number of fixed var
     * ED cell pair number 
     * ED cell length
 
-In the optimization example, the objective function is set to LCOW and the product water salinity is set to 0.1 :math:`g L^{-1}`.
+ In the given optimization case, the objective function is to minimize the levelized cost of water, which can be represented by the following equation
+ where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
+ :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
+ :math:`f_{util}` represents the utilization factor:
+
+     .. math::
+         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
+ The product water salinity is set to 0.1 :math:`g L^{-1}`.
 
 Flowsheet Specifications
 ------------------------
