@@ -20,7 +20,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Capital cost B parameter :math:`^3`", "B", "vol_basis_exponent", "0.47", ":math:`\text{dimensionless}`"
 
    "**Operating Costs**"
-   "Heating steam Pressure :math:`^4`", ":math:`P_{steam}`", "steam_pressure", "3", ":math:`\text{bar}`"
+   "Heating steam pressure :math:`^4`", ":math:`P_{steam}`", "steam_pressure", "3", ":math:`\text{bar}`"
    "Heating steam cost parameter :math:`^5`", ":math:`Cost_{steam}`", "steam_cost", "0.004", ":math:`\text{USD}_{2018}\text{/m}^3`"
    "Recirculation pump head height", ":math:`h_{rec}`", "pump_head_height", "1", ":math:`\text{m}`"
    "Recirculation pump efficiency", ":math:`\eta_{pump}`", "efficiency_pump", "0.7", ":math:`\text{dimensionless}`"
