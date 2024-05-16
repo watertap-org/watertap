@@ -24,6 +24,7 @@ The modeled one-stack ED system is illustrated by Figure 1. The feed solution is
 The electrodialysis 1D block is set up with the following configuration arguments:
 
  .. code-block::
+    
     m.fs.EDstack = Electrodialysis1D(
         property_package=m.fs.properties,
         operation_mode=ElectricalOperationMode.Constant_Voltage,
