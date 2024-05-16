@@ -33,8 +33,19 @@ The electrodialysis 1D block is set up with the following configuration argument
         finite_elements=20,
     )
 
-These configurations enable the electrodialysis unit to use a flowsheet-unified property package, set a constant stack voltage, and adopt a favorable number of finite elements for 1-dimensional simulation and solving.. 
+These configurations enable the electrodialysis unit to use a flowsheet-unified property package, set a constant stack voltage, and adopt a favorable number of finite elements for 1-dimensional simulation and solving.
 
+In the given optimization case, the objective function is to minimize the levelized cost of water, which can be represented by the following equation
+where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
+:math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
+:math:`f_{util}` represents the utilization factor:
+
+    .. math::
+
+        LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
+
+
+The product water salinity is set to 1 :math:`g L^{-1}` (from a feed salinity of 9.9 :math:`g L^{-1}`).
 
 Documentation for unit models from WaterTAP: 
     * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
@@ -51,18 +62,6 @@ The number of degrees of freedom (DOF) is associated with the number of fixed va
 
     * stack voltage applied
     * ED cell pair number 
-
-In the given optimization case, the objective function is to minimize the levelized cost of water, which can be represented by the following equation
-where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
-:math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and
-:math:`f_{util}` represents the utilization factor:
-
-    .. math::
-
-        LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
-
-
-The product water salinity is set to 1 :math:`g L^{-1}` (from a feed salinity of 9.9 :math:`g L^{-1}`).
 
 Flowsheet Specifications
 ------------------------
