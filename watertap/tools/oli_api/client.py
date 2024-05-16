@@ -198,7 +198,7 @@ class OLIApi:
                 )
             dbs_file_inputs["phases"] = phases
         else:
-            dbs_file_inputs["phases"] = ["liquid1", "solid"]
+            dbs_file_inputs["phases"] = ["liquid1", "solid", "vapor"]
 
         valid_databanks = ["XSC"]
         if databanks is not None:
