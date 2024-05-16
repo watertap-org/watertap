@@ -75,6 +75,9 @@ def scaling_setup(
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1 / state[j], index=("Liq", j)
             )
+            m.fs.properties.set_default_scaling(
+                "flow_mass_phase_comp", 1 / state[j], index=("Liq", j)
+            )
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -155,8 +158,8 @@ class TestBoronRemoval_IonPropPack_Min(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]4_-"]
         ] = 1.81133e-4
-        self.unit_solutions[m.fs.unit.outlet_pH()] = 10.171
-        self.unit_solutions[m.fs.unit.outlet_pOH()] = 3.8257
+        self.unit_solutions[m.fs.unit.pH[0]] = 10.171
+        self.unit_solutions[m.fs.unit.pOH[0]] = 3.8257
         self.unit_solutions[m.fs.unit.caustic_dose_rate[0]] = 1.8e-5
         return m
 
@@ -214,8 +217,8 @@ class TestBoronRemoval_IonPropPack_with_ResAlk(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]4_-"]
         ] = 1.99642e-4
-        self.unit_solutions[m.fs.unit.outlet_pH()] = 11.375
-        self.unit_solutions[m.fs.unit.outlet_pOH()] = 2.6218
+        self.unit_solutions[m.fs.unit.pH[0]] = 11.375
+        self.unit_solutions[m.fs.unit.pOH[0]] = 2.6218
 
         return m
 
@@ -276,8 +279,8 @@ class TestBoronRemoval_IonPropPack_with_ResBase(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]4_-"]
         ] = 8.03579e-5
-        self.unit_solutions[m.fs.unit.outlet_pH()] = 9.0343
-        self.unit_solutions[m.fs.unit.outlet_pOH()] = 4.9621
+        self.unit_solutions[m.fs.unit.pH[0]] = 9.0343
+        self.unit_solutions[m.fs.unit.pOH[0]] = 4.9621
         return m
 
 

@@ -519,7 +519,23 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of Borate",
         )
+        self.pH = Var(
+            self.flowsheet().config.time,
+            initialize=7,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="pH variable",
+        )
 
+        self.pOH = Var(
+            self.flowsheet().config.time,
+            initialize=7,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="pOH variable",
+        )
         # Variables for volume and retention time
         self.reactor_volume = Var(
             initialize=1,
@@ -583,6 +599,20 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
                 to_units=pyunits.m**3 / pyunits.s,
             )
             return self.reactor_volume == Q * self.reactor_retention_time[t]
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Outlet pH",
+        )
+        def eq_outlet_pH(self, t):
+            return self.pH[t] == -log10(self.conc_mol_H[t].value / 1000)
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Outlet pH",
+        )
+        def eq_outlet_pOH(self, t):
+            return self.pOH[t] == -log10(self.conc_mol_OH[t].value / 1000)
 
         # Constraints for mass transfer terms
         @self.Constraint(
