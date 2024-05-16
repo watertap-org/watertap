@@ -7,7 +7,7 @@ Electrodialysis (ED) is a promising technology for desalinating brackish waters 
 
 Equal flow conditions through the diluate and concentrate channels would result in a product water recovery of 50%. This flowsheet simulates the simplest setup of a one-stack ED system without any fluid recirculation, i.e., the ED stack being operated in an in-and-out single direction flow mode. This flowsheet also does not take account of the frictional pressure drop in the channel so no pump is included.  A more complicated ED flowsheet is presented as 
 
-    * `One-stack electrodialysis with concentrate stream recirculation (feed-and-bleed mode) <https://watertap--1385.org.readthedocs.build/en/1385/technical_reference/flowsheets/electrodialysis_1stack_conc_recirc.html>`_.
+    * `One-stack electrodialysis with a concentrate fluid recirculation <https://watertap--1385.org.readthedocs.build/en/1385/technical_reference/flowsheets/electrodialysis_1stack_conc_recirc.html>`_.
 
 Implementation
 --------------
