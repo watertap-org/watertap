@@ -19,9 +19,9 @@ Costing Method Variables
 The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_osmotically_assisted_reverse_osmosis` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Membrane area", ":math:`A`", "area", ":math:`\text{m}^2`"
+   "Membrane area", ":math:`A`", "area", "None", ":math:`\text{m}^2`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++

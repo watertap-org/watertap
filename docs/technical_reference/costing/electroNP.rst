@@ -22,11 +22,11 @@ Costing Method Variables
 The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_electroNP` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Inlet volumetric flow rate", ":math:`Q_{in}`", "mixed_state[0].flow_vol", ":math:`\text{m}^3\text{/hr}`"
-   "Byproduct phosphate mass flow rate", ":math:`Q_{byproduct, S_{PO4}}`", "byproduct_state[0].conc_mass_comp[0, S_PO4]", ":math:`\text{kg/hr}`"
-   "Magnesium chloride flowrate", ":math:`Q_{MgCl2}`", "magnesium_chloride_dosage", ":math:`\text{kg/hr}`"
+   "Inlet volumetric flow rate", ":math:`Q_{in}`", "mixed_state[0].flow_vol", "[t]", ":math:`\text{m}^3\text{/hr}`"
+   "Byproduct phosphate mass flow rate", ":math:`Q_{byproduct, S_{PO4}}`", "byproduct_state[0].conc_mass_comp[0, S_PO4]", "[t]", ":math:`\text{kg/hr}`"
+   "Magnesium chloride flowrate", ":math:`Q_{MgCl2}`", "magnesium_chloride_dosage", "[t]", ":math:`\text{kg/hr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
