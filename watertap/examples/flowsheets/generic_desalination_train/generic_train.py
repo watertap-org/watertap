@@ -330,6 +330,8 @@ def add_flowsheet_level_constraints(m, blk):
         units=pyunits.dimensionless,
         doc="System Water Recovery",
     )
+    blk.water_recovery.setub(99.5)
+    blk.water_recovery.setlb(0)
     blk.eq_water_recovery = Constraint(
         expr=sum(blk.feed.properties[0].flow_mass_phase_comp["Liq", :])
         * blk.water_recovery
