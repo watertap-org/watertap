@@ -15,7 +15,7 @@ on the WaterTAP GitHub Homepage: `<https://github.com/watertap-org/watertap/tree
 .. note::
     For important details on running tutorial notebooks, refer to :ref:`this guide<notebooks>`.
 
-    **To run WaterTAP tutorials online (no installation required), click on the "launch binder" button below to launch an environment pointing to the current** ``main`` **branch of the WaterTAP repository:**
+**To run WaterTAP tutorials online (no installation required), click on the "launch binder" button below to launch an environment pointing to the current** ``main`` **branch of the WaterTAP repository:**
 
 .. warning::
     **The use of Binder is currently an experimental effort for WaterTAP. Binder may take a long time to launch completely or may not launch successfully at all in some cases. If this happens, please follow the link to tutorials that was provided above.
