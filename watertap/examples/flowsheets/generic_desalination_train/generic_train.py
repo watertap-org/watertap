@@ -76,25 +76,28 @@ __author__ = "Alexander V. Dudchenko"
 def main():
     m = build()
 
-    m.fs.Valorizer.separator.product_value["X"].fix(1)
-    m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)
+    # m.fs.Valorizer.separator.product_value["X"].fix(1)
+    # m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)
 
     initialize(m)
-    m.fs.Desal_1.desalter.water_recovery.unfix()
-    m.fs.Desal_1.desalter.brine_solids_concentration.fix(10)
-    m.fs.Desal_2.desalter.water_recovery.fix(25)
-    m.fs.Desal_2.desalter.recovery_cost.fix(0.01)
-    m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
-    m.fs.Desal_3.desalter.water_recovery.unfix()
-    m.fs.Desal_3.desalter.brine_water_percent.fix(80)
-    solve(m)
-    display_processes(m)
-    m.fs.Desal_1.desalter.brine_solids_concentration.display()
-    m.fs.Desal_1.desalter.brine_water_percent.display()
-    m.fs.Desal_3.desalter.brine_solids_concentration.display()
-    m.fs.Desal_3.desalter.brine_water_percent.display()
-    m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_mass_phase_comp.display()
-    m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_vol_phase.display()
+    # m.fs.Desal_1.desalter.water_recovery.unfix()
+    # m.fs.Desal_1.desalter.brine_solids_concentration.fix(10)
+    # m.fs.Desal_2.desalter.water_recovery.fix(25)
+    # m.fs.Desal_2.desalter.recovery_cost.fix(0.01)
+    # m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
+    # m.fs.Desal_3.desalter.water_recovery.unfix()
+    # m.fs.Desal_3.desalter.brine_water_percent.fix(80)
+    for k in [0.5, 1, 1.5, 2, 2.5, 3.0]:
+
+        solve(m)
+        display_processes(m.fs)
+        # display_processes(m)
+        # m.fs.Desal_1.desalter.brine_solids_concentration.display()
+    # m.fs.Desal_1.desalter.brine_water_percent.display()
+    # m.fs.Desal_3.desalter.brine_solids_concentration.display()
+    # m.fs.Desal_3.desalter.brine_water_percent.display()
+    # m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_mass_phase_comp.display()
+    # m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_vol_phase.display()
 
 
 def build(
@@ -322,7 +325,7 @@ def build(
 def add_flowsheet_level_constraints(m, blk):
     blk.water_recovery = Var(
         initialize=50,
-        bounds=(0, None),
+        bounds=(0, 99.5),
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
         doc="System Water Recovery",
@@ -485,8 +488,10 @@ def solve(m, solver=None, tee=None):
     result = solver.solve(m)
     if m.find_component("fs") is None:
         fix_conc_feed(m)
+        display_processes(m)
     else:
         fix_conc_feed(m.fs)
+        display_processes(m.fs)
     return result
 
 
@@ -514,35 +519,35 @@ def update_feed(blk, solver):
     print("total_charge", total_charge)
 
 
-def display_processes(m):
+def display_processes(blk):
     _logger.info("--------Display results for {}--------".format("Overall process"))
-    _logger.info("LCOW {}  $/m3".format(value(m.fs.costing.LCOW)))
-    for name, var in m.fs.costing.LCOW_unit.items():
+    _logger.info("LCOW {}  $/m3".format(value(blk.costing.LCOW)))
+    for name, var in blk.costing.LCOW_unit.items():
         _logger.info(f"{name} LCOW {value(var)}")
-    _logger.info("Water recovery {}%".format(m.fs.water_recovery.value))
+    _logger.info("Water recovery {}%".format(blk.water_recovery.value))
     _logger.info(
-        f"Feed flow (kg/s) {value(m.fs.feed.properties[0].flow_vol_phase['Liq'])}"
+        f"Feed flow (kg/s) {value(blk.feed.properties[0].flow_vol_phase['Liq'])}"
     )
     _logger.info(
-        f"Product flow (kg/s) {value(m.fs.product.properties[0].flow_vol_phase['Liq'])}"
+        f"Product flow (kg/s) {value(blk.product.properties[0].flow_vol_phase['Liq'])}"
     )
     _logger.info(
-        f"Disposal flow (kg/s) {value(m.fs.disposal.properties[0].flow_vol_phase['Liq'])}"
+        f"Disposal flow (kg/s) {value(blk.disposal.properties[0].flow_vol_phase['Liq'])}"
     )
 
-    _logger.info(f"Annual feed cost ($) {value(m.fs.feed.annual_cost)}")
-    _logger.info(f"Annual product cost ($) {value(m.fs.product.annual_cost)}")
-    _logger.info(f"Annual disposal cost ($) {value(m.fs.disposal.annual_cost)}")
-    
+    _logger.info(f"Annual feed cost ($) {value(blk.feed.annual_cost)}")
+    _logger.info(f"Annual product cost ($) {value(blk.product.annual_cost)}")
+    _logger.info(f"Annual disposal cost ($) {value(blk.disposal.annual_cost)}")
+
     _logger.info("--------------------------------")
-    for proc_dict in m.fs.process_order:
+    for proc_dict in blk.process_order:
         if proc_dict.get("display_func") is not None:
             _logger.info(
                 "--------Display results for {}--------".format(
                     proc_dict["process_name"]
                 )
             )
-            proc_dict.get("display_func")(m, proc_dict["process_block"])
+            proc_dict.get("display_func")(blk, proc_dict["process_block"])
             _logger.info("--------------------------------")
 
 
