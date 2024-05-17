@@ -9,10 +9,10 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "factor_membrane_replacement", "0.33", ":math:`yr^{-1}`"
-   "Membrane unit cost", ":math:`C_{mem}`", "membrane_unit_cost", "25", ":math:`\text{USD}_{2012}\text{m}^2`"
-   "Anode unit cost", ":math:`C_{anode}`", "anode_unit_cost", "300", ":math:`\text{USD}_{2005}\text{m}^2`"
-   "Cathode unit cost", ":math:`C_{cathode}`", "cathode_unit_cost", "600", ":math:`\text{USD}_{2005}\text{m}^2`"
+   "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "factor_membrane_replacement", "0.33", ":math:`\text{yr}^{-1}`"
+   "Membrane unit cost", ":math:`C_{mem}`", "membrane_unit_cost", "25", ":math:`\text{USD}_{2012}\text{/m}^2`"
+   "Anode unit cost", ":math:`C_{anode}`", "anode_unit_cost", "300", ":math:`\text{USD}_{2005}\text{/m}^2`"
+   "Cathode unit cost", ":math:`C_{cathode}`", "cathode_unit_cost", "600", ":math:`\text{USD}_{2005}\text{/m}^2`"
    "Membrane, anode, and cathode fraction of total capital", ":math:`f_{material}`", "fraction_material_cost", "0.65", ":math:`\text{dimensionless}`"
 
 
