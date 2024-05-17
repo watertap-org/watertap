@@ -34,19 +34,19 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Capital costs contribute to the majority of material costs for the anode cathode and membrane. Each material cost is calculated individually then summed (O’Brien, 2005).
+Capital costs contribute to the majority of material costs for the anode, cathode, and membrane. Each material cost is calculated individually then summed and increased by the assumed fractional cost to estimate the total capital cost (O’Brien, 2005).
 
     .. math::
 
         & C_{cap,\, mem} = C_{mem}A_{mem} \\\\
         & C_{cap,\, anode} = C_{anode}A_{anode} \\\\
         & C_{cap,\, cathode} = C_{cathode}A_{cathode} \\\\
-        & C_{cap} = \frac{C_{cap,\, mem}+C_{cap,\, anode}+C_{cap,\, cathode}}{f_{mem,\, replace}}
+        & C_{cap} = \frac{C_{cap,\, mem}+C_{cap,\, anode}+C_{cap,\, cathode}}{f_{material}}
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Operating costs for the electrolyzer are the electricity requirements and membrane replacement costs. Electricity is costed using ``cost_flow`` applied to the ``power`` variable on the unit model. Currently, replacement costs for the anode and cathode are not considered in the costing function.
+The electrolyzer costing model considers electricity as a variable operating costs and membrane replacement as a fixed operating costs. Electricity is costed using ``cost_flow`` function applied to the ``power`` variable on the unit model. Replacement costs for the anode and cathode are not currently considered in the costing function.
 
     .. math::
 
