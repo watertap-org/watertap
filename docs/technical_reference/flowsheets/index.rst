@@ -9,4 +9,5 @@ Flowsheets
    ASM1
    ASM2d
    ADM1
+   crystallization
    electrodialysis_1stack
