@@ -55,7 +55,13 @@ Capital cost is dependent upon the volumetric flow rate, :math:`Q_{in}`, as show
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no operating costs unique to the dewatering unit.
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(electricity consumption for the dewatering unit), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_util`. The annual electricity costs are calculated as:
+
+    .. math::
+
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
  
 Code Documentation

@@ -35,7 +35,13 @@ Capital cost is dependent upon the thickener diameter, :math:`d`, as shown in th
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no operating costs unique to the thickener.
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(electricity consumption for the thickener), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_util`. The annual electricity costs are calculated as:
+
+    .. math::
+
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
  
 Code Documentation

@@ -62,11 +62,16 @@ the primary clarifier is based on the volumetric flow rate :math:`Q_{in}`.
 
         C_{cap,primary} = A_{primary} * Q_{in}^{B_{primary}}
 
- 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no operating costs unique to the clarifier.
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(electricity consumption for the clarifier), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_util`. The annual electricity costs are calculated as:
+
+    .. math::
+
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
  
 Code Documentation

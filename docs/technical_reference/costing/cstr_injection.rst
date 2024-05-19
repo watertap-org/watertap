@@ -15,7 +15,13 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-There are no costing method variables unique to the CSTR with injection
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(electricity consumption for the CSTR with injection), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_util`. The annual electricity costs are calculated as:
+
+    .. math::
+
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
