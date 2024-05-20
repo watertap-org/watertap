@@ -5,14 +5,14 @@ Introduction
 ------------
 
 The simple granular activated carbon (GAC) flowsheet can be simulated to predict the performance of a GAC system to treat residual organics. This flowsheet can
-be useful to expedite the set-up, usage, and costing of of a GAC system for its conventional water treatment applications using the constant pattern homogeneous
+be useful to expedite the set-up, usage, and costing of a GAC system for conventional water treatment applications using the constant pattern homogeneous
 surface diffusion model (CPHSDM) model.
 
 Implementation
 --------------
 
-As a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`GAC unit model documentation <../unit_models/gac>`.
-The code-based naming of modeling objects for the feeds, products, units, and streams are shown in Figure 1.
+Only consisting of a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`GAC unit model documentation <../unit_models/gac>`.
+The code-based naming of modeling objects for the inlets, outlets, units, and streams are shown in Figure 1.
 
 .. figure:: ../../_static/flowsheets/gac.png
     :width: 500
@@ -23,9 +23,8 @@ The code-based naming of modeling objects for the feeds, products, units, and st
 Degrees of Freedom
 ------------------
 
-The degrees of freedom for the provided flowsheet changes depending on the configuration options specified during the build. Excluding those variables which are
+The degrees of freedom for the flowsheet can change depending on the configuration options specified during the build. Excluding those variables which are
 only necessary for specific configuration options, the following variables are initially fixed for simulating the GAC flowsheet (i.e., degrees of freedom = 0):
-
     * feed conditions (component flows, temperature, pressure)
     * Freundlich isotherm parameters :math:`k` and :math:`\frac{1}{n}`
     * liquid phase film transfer coefficient
@@ -70,7 +69,6 @@ Future Refinements
 ------------------
 
 The following modifications to the GAC flowsheet are planned for development:
-
     * Add surrogate models to lessen the need for numerous empirical parameters
     * Improve auto-scaling of model for ease of use
 
