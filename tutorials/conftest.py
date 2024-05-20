@@ -35,7 +35,7 @@ class KernelSpec(pytest.Item):
     def setup(self):
         import nbformat
 
-        self._nb = nbformat.read(self.path, as_version=4)
+        self._nb = nbformat.read(self.path, as_version=5)
         self._metadata = self._nb.metadata
         self._kernelspec = self._metadata.kernelspec
 
