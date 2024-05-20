@@ -48,7 +48,3 @@ Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.reverse_osmosis`
-
-References
-----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
