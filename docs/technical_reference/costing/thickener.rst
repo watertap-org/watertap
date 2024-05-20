@@ -20,7 +20,7 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Diameter", ":math:`d`", "diameter", "[t]", ":math:`\text{ft}`"
+   "Diameter", ":math:`d`", "diameter", "None", ":math:`\text{ft}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
@@ -37,7 +37,7 @@ Operating Cost Calculations
 
 Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
 (electricity consumption for the thickener), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
-utilization factor :math:`f_util`. The annual electricity costs are calculated as:
+utilization factor :math:`f_{util}`. The annual electricity costs are calculated as:
 
     .. math::
 

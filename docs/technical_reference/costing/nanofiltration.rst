@@ -18,7 +18,7 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_nanofiltration` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Membrane area", ":math:`A_{mem}`", "area", "None", ":math:`\text{m}^2`"
 

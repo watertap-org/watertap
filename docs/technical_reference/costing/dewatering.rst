@@ -57,7 +57,7 @@ Operating Cost Calculations
 
 Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
 (electricity consumption for the dewatering unit), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
-utilization factor :math:`f_util`. The annual electricity costs are calculated as:
+utilization factor :math:`f_{util}`. The annual electricity costs are calculated as:
 
     .. math::
 
