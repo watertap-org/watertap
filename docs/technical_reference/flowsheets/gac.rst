@@ -4,15 +4,15 @@ Granular Activated Carbon
 Introduction
 ------------
 
-The granular activated carbon (GAC) is a simple single unit flowsheet option to predict the performance of a GAC system to treat residual organics.
-This flowsheet can be useful to expedite the set-up, usage, and costing of the constant pattern homogeneous surface diffusion model (CPHSDM) model for conventional
-GAC water treatment applications.
+The simple granular activated carbon (GAC) flowsheet can be simulated to predict the performance of a GAC system to treat residual organics. This flowsheet can
+be useful to expedite the set-up, usage, and costing of of a GAC system for its conventional water treatment applications using the constant pattern homogeneous
+surface diffusion model (CPHSDM) model.
 
 Implementation
 --------------
 
 As a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`GAC unit model documentation <../unit_models/gac>`.
-The variable naming within the code for the feeds, products, units, and streams are shown in Figure 1.
+The code-based naming of modeling objects for the feeds, products, units, and streams are shown in Figure 1.
 
 .. figure:: ../../_static/flowsheets/gac.png
     :width: 500
@@ -23,8 +23,8 @@ The variable naming within the code for the feeds, products, units, and streams 
 Degrees of Freedom
 ------------------
 
-The degrees of freedom for the provided flowsheet changes depending on the configuration options specified during the build. Excluding the variables which are specified
-for specific configuration options, the following variables are initially fixed for simulating the GAC flowsheet (i.e., degrees of freedom = 0):
+The degrees of freedom for the provided flowsheet changes depending on the configuration options specified during the build. Excluding those variables which are
+only necessary for specific configuration options, the following variables are initially fixed for simulating the GAC flowsheet (i.e., degrees of freedom = 0):
 
     * feed conditions (component flows, temperature, pressure)
     * Freundlich isotherm parameters :math:`k` and :math:`\frac{1}{n}`
@@ -71,7 +71,7 @@ Future Refinements
 
 The following modifications to the GAC flowsheet are planned for development:
 
-    * Add surrogate models to replace the need for numerous empirical parameters
+    * Add surrogate models to lessen the need for numerous empirical parameters
     * Improve auto-scaling of model for ease of use
 
 Code Documentation
