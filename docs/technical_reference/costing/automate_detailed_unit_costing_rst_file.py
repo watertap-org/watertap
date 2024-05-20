@@ -140,10 +140,10 @@ if __name__ == "__main__":
                     )
                     f.write(".. csv-table::\n")
                     f.write(
-                        '   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"\n\n'
+                        '   :header: "Description", "Symbol", "Variable Name", "Index", "Units"\n\n'
                     )
                     f.write(
-                        '   "description", ":math:`Symbol_{example}`", "variable_name", "1", ":math:`\\text{dimensionless}`"\n'
+                        '   "description", ":math:`Symbol_{example}`", "variable_name", "[t]", ":math:`\\text{dimensionless}`"\n'
                     )
 
                     # TODO: add capex eqs

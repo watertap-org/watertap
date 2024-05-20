@@ -17,9 +17,9 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_membrane_distillation` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "variable_name", "1", ":math:`\text{dimensionless}`"
+   "description", ":math:`Symbol_{example}`", "variable_name", "[t]", ":math:`\text{dimensionless}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
