@@ -103,7 +103,7 @@ setup(
             "pandas",
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
-            "nbconvert",
+            "nbconvert >= 7.16.1",
         ],
         "notebooks": [
             "jupyter",
