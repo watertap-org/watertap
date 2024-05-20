@@ -25,6 +25,7 @@ Degrees of Freedom
 
 The degrees of freedom for the flowsheet can change depending on the configuration options specified during the build. Excluding those variables which are
 only necessary for specific configuration options, the following variables are initially fixed for simulating the GAC flowsheet (i.e., degrees of freedom = 0):
+
     * feed conditions (component flows, temperature, pressure)
     * Freundlich isotherm parameters :math:`k` and :math:`\frac{1}{n}`
     * liquid phase film transfer coefficient
