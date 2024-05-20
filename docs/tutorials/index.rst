@@ -1,8 +1,16 @@
 Tutorials
 =========
 
+Browsing the tutorials
+----------------------
+
 The tutorials included with WaterTAP are available in the "tutorials" directory
-on the WaterTAP GitHub Homepage: `<https://github.com/watertap-org/watertap/tree/main/tutorials/00-index.ipynb>`_.
+of the WaterTAP GitHub repository: `<https://github.com/watertap-org/watertap/tree/main/tutorials/>`_.
+
+To view a static version of the notebooks online, you can use the following link: `<https://nbviewer.org/github/watertap-org/watertap/blob/main/tutorials/00-index.ipynb>`_.
+
+Running the notebooks
+---------------------
 
 .. note::
     For important details on running tutorial notebooks, refer to :ref:`this guide<notebooks>`.
@@ -13,6 +21,9 @@ on the WaterTAP GitHub Homepage: `<https://github.com/watertap-org/watertap/tree
     **The use of Binder is currently an experimental effort for WaterTAP. Binder may take a long time to launch completely or may not launch successfully at all in some cases. If this happens, please follow the link to tutorials that was provided above.**
 
     |Binder launch button|
+
+Additional resources
+--------------------
 
 Since WaterTAP is based on the IDAES platform and follows its conventions,
 the `IDAES tutorials <https://idaes-pse.readthedocs.io/en/stable/tutorials/tutorials_examples.html>`_ are a good starting point for learning how to use WaterTAP.
