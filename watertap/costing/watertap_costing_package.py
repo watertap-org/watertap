@@ -104,7 +104,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 numerator += pyo.units.convert(
                     u.variable_operating_cost, to_units=c_units / t_units
                 )
-            unit_lcows[u.name] = numerator / denominator
+            unit_lcows[u.unit_model.name] = numerator / denominator
 
         flow_lcows = pyo.Expression(
             pyo.Any,
