@@ -61,6 +61,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name (optional) - name for the LCOW variable (default: LCOW)
         """
 
+        denominator = (
+            pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / self.base_period)
+            * self.utilization_factor
+        )
+
         self.add_component(
             name,
             pyo.Expression(
@@ -68,15 +73,49 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     self.total_capital_cost * self.capital_recovery_factor
                     + self.total_operating_cost
                 )
-                / (
-                    pyo.units.convert(
-                        flow_rate, to_units=pyo.units.m**3 / self.base_period
-                    )
-                    * self.utilization_factor
-                ),
+                / denominator,
                 doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
             ),
         )
+
+        c_units = self.base_currency
+        t_units = self.base_period
+        unit_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water per unit based on flow {flow_rate.name}",
+        )
+        self.add_component(name + "_per_unit", unit_lcows)
+        for u in self._registered_unit_costing:
+            numerator = 0
+            if hasattr(u, "capital_cost"):
+                capital_cost = pyo.units.convert(u.capital_cost, to_units=c_units)
+                # total capital costs w/ recovery factor
+                numerator += self.capital_recovery_factor * (
+                    self.total_investment_factor * capital_cost
+                )
+                # maintenance_labor_chemical_operating_cost,
+                # part of total_fixed_operating_cost
+                numerator += self.maintenance_labor_chemical_factor * capital_cost
+            if hasattr(u, "fixed_operating_cost"):
+                numerator += pyo.units.convert(
+                    u.fixed_operating_cost, to_units=c_units / t_units
+                )
+            if hasattr(u, "variable_operating_cost"):
+                numerator += pyo.units.convert(
+                    u.variable_operating_cost, to_units=c_units / t_units
+                )
+            unit_lcows[u.name] = numerator / denominator
+
+        flow_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water per flow based on flow {flow_rate.name}",
+        )
+        self.add_component(name + "_per_flow", flow_lcows)
+        for f in self.used_flows:
+            # part of total_variable_operating_cost
+            flow_lcows[f] = (
+                self.aggregate_flow_costs[f] * self.utilization_factor
+            ) / denominator
 
     def add_specific_energy_consumption(
         self, flow_rate, name="specific_energy_consumption"
