@@ -111,11 +111,12 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             doc=f"Levelized Cost of Water per flow based on flow {flow_rate.name}",
         )
         self.add_component(name + "_per_flow", flow_lcows)
-        for f in self.used_flows:
-            # part of total_variable_operating_cost
-            flow_lcows[f] = (
-                self.aggregate_flow_costs[f] * self.utilization_factor
-            ) / denominator
+        for ftype, flows in self._registered_flows.items():
+            cost_var = getattr(self, f"{ftype}_cost")
+            for f in flows:
+                # part of total_variable_operating_cost
+                flow_cost = pyo.units.convert(f * cost_var, to_units=c_units / t_units)
+                flow_lcows[str(f)] = (flow_cost * self.utilization_factor) / denominator
 
     def add_specific_energy_consumption(
         self, flow_rate, name="specific_energy_consumption"
