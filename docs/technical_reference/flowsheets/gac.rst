@@ -11,7 +11,7 @@ GAC water treatment applications.
 Implementation
 --------------
 
-As a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :ref:`GAC unit model documentation<watertap.unit_model.gac>`.
+As a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`GAC unit model documentation <../unit_models/gac>`.
 The variable naming within the code for the feeds, products, units, and streams are shown in Figure 1.
 
 .. figure:: ../../_static/flowsheets/gac.png
