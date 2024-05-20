@@ -10,3 +10,4 @@ Flowsheets
    ASM2d
    ADM1
    electrodialysis_1stack
+   gac
