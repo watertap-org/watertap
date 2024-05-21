@@ -13,49 +13,18 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Var,
-    Param,
     assert_optimal_termination,
 )
-from pyomo.network import Port
-from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (
-    EnergyBalanceType,
-    MomentumBalanceType,
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from watertap.core.solvers import get_solver
-from idaes.core.util.model_statistics import (
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
+import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-    unscaled_variables_generator,
-)
-import idaes.logger as idaeslog
 
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-)
-from watertap.unit_models.ion_exchange_0D import (
-    IonExchange0D,
-    IonExchangeType,
-    RegenerantChem,
-    IsothermType,
-)
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
-
-from pyomo.environ import ConcreteModel
-
-from idaes.core import FlowsheetBlock
-import idaes.core.util.scaling as iscale
-
 from watertap.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.ion_exchange_0D import IonExchange0D
@@ -197,7 +166,7 @@ class TestIXLangmuir(UnitTestHarness):
         )
 
         check_dof(m, fail_flag=True)
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
@@ -374,7 +343,7 @@ class TestIXFreundlich(UnitTestHarness):
         )
 
         check_dof(m, fail_flag=True)
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
@@ -573,7 +542,7 @@ class TestIXInert(UnitTestHarness):
         )
 
         check_dof(m, fail_flag=True)
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
