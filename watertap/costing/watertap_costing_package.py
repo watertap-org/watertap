@@ -100,6 +100,27 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.add_component(name + "_component_indirect_capex", indirect_capex_lcows)
         self.add_component(name + "_component_fixed_opex", fixed_opex_lcows)
         self.add_component(name + "_component_variable_opex", variable_opex_lcows)
+
+        agg_direct_capex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by unit type",
+        )
+        agg_indirect_capex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by unit type",
+        )
+        agg_fixed_opex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by unit type",
+        )
+        agg_variable_opex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by unit type",
+        )
+        self.add_component(name + "_aggregate_direct_capex", agg_direct_capex_lcows)
+        self.add_component(name + "_aggregate_indirect_capex", agg_indirect_capex_lcows)
+        self.add_component(name + "_aggregate_fixed_opex", agg_fixed_opex_lcows)
+        self.add_component(name + "_aggregate_variable_opex", agg_variable_opex_lcows)
         for u in self._registered_unit_costing:
             direct_capex_numerator = 0
             indirect_capex_numerator = 0
@@ -141,6 +162,26 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 variable_opex_numerator / denominator
             )
 
+            unit_model_class = u.unit_model.parent_component().process_block_class()
+            if unit_model_class not in agg_direct_capex_lcows:
+                agg_direct_capex_lcows[unit_model_class] = 0
+                agg_indirect_capex_lcows[unit_model_class] = 0
+                agg_fixed_opex_lcows[unit_model_class] = 0
+                agg_variable_opex_lcows[unit_model_class] = 0
+
+            agg_direct_capex_lcows[unit_model_class] += direct_capex_lcows[
+                u.unit_model.name
+            ]
+            agg_indirect_capex_lcows[unit_model_class] += indirect_capex_lcows[
+                u.unit_model.name
+            ]
+            agg_fixed_opex_lcows[unit_model_class] += fixed_opex_lcows[
+                u.unit_model.name
+            ]
+            agg_variable_opex_lcows[unit_model_class] += variable_opex_lcows[
+                u.unit_model.name
+            ]
+
         for f in self.used_flows:
             # part of total_variable_operating_cost
             if f in variable_opex_lcows:
@@ -150,6 +191,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             variable_opex_lcows[f] = (
                 self.aggregate_flow_costs[f] * self.utilization_factor / denominator
             )
+            if f in agg_variable_opex_lcows:
+                raise RuntimeError(
+                    f"Found unit model class named {f} but want to name flow {f} for {name+'_opex'}"
+                )
+            agg_variable_opex_lcows[f] = variable_opex_lcows[f]
 
     def add_specific_energy_consumption(
         self, flow_rate, name="specific_energy_consumption"
