@@ -4,14 +4,14 @@ NaCl Crystallization
 Introduction
 ------------
 
-Crystallization is the precipitation and extraction of the crystals from a mother liquor based on solute supersaturation. Crystallization is a potential solution to desalination's environmental brine management problem; brine crystallization systems shown to achieve zero-liquid discharge and salt recovery.
+Crystallization is the precipitation and extraction of the crystals from a mother liquor based on solute supersaturation. Crystallization is a potential solution to desalination's environmental brine management problem; brine crystallization systems have been shown to achieve zero-liquid discharge and salt recovery.
 
 The objective of the mathematical model is to simulate crystallization from a NaCl mother liquor. The example is based on (but does not replicate exactly) Example 11.4 in `Tavare, N.S. (1995). <https://link.springer.com/chapter/10.1007/978-1-4899-0233-7_11>`_ 
 
 Implementation
 --------------
 
-The modeled crystallization proecess is illustrated by Figure 1. Thermal energy for the evaporative crystallizer is added in the suspension heater, with the water vapor product sent off to a condenser (not modeled here). 
+The modeled crystallization process is illustrated by Figure 1. Thermal energy for the evaporative crystallizer is added in the suspension heater, with the water vapor product sent off to a condenser (not modeled here). 
 
 The flowsheet relies on the following key assumptions:
 
@@ -31,8 +31,8 @@ Degrees of Freedom
 ------------------
 For the crystallizer unit model, if the inlet feed condition is fully specified, the user is left with two degrees of freedom. In this example, the following variables are initially specified for simulating the crystallizer (i.e., degrees of freedom = 0):
 
-    * NaCl mother liqour conditions (i.e., flow, temperature, pressure, compositions)
-    * crystallizer operating temperature
+    * NaCl mother liquor conditions (i.e., flow, temperature, pressure, compositions)
+    * Crystallizer operating temperature
     * Solid outlet mass flow
 
 However, it should be noted that any of the following variables could have been fixed as alternatives to the solid outlet mass flow:
@@ -43,11 +43,12 @@ However, it should be noted that any of the following variables could have been 
     * Crystallizer thermal energy input
 
 We demonstrate how this may be done in our flowsheet by updating and re-solving the model. Thus, the example shows five cases:
-#. **Case 1**: fixing the crystallizer operating temperature and solid outlet mass flow
-#. **Case 2**: fixing the crystallizer operating temperature and crystallization yield
-#. **Case 3**: fixing the crystallizer operating temperature and the product slurry solids volumetric fraction
-#. **Case 4**: fixing the crystallizer operating temperature and magma density
-#. **Case 5**: fixing the crystallizer operating temperature and crystallizer thermal energy input
+
+    * **Case 1**: fixing the crystallizer operating temperature and solid outlet mass flow
+    * **Case 2**: fixing the crystallizer operating temperature and crystallization yield
+    * **Case 3**: fixing the crystallizer operating temperature and the product slurry solids volumetric fraction
+    * **Case 4**: fixing the crystallizer operating temperature and magma density
+    * **Case 5**: fixing the crystallizer operating temperature and crystallizer thermal energy input
 
 Flowsheet Specifications
 ------------------------
