@@ -9,44 +9,55 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "parameter_name", "1", ":math:`\text{dimensionless}`"
+   "Membrane replacement factor", ":math:`f`", "factor_membrane_replacement", "0.15", ":math:`\text{dimensionless}`"
+   "Membrane cost", ":math:`C_A`", "membrane_cost", "30", ":math:`\text{USD}_{2018}\text{/m}^2`"
+   "High pressure membrane cost", ":math:`C_hA`", "high_pressure_membrane_cost", "50", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_osmotically_assisted_reverse_osmosis` costing method in the ``watertap_costing_package``:
+The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_osmotically_assisted_reverse_osmosis` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "variable_name", "[t]", ":math:`\text{dimensionless}`"
+   "Membrane area", ":math:`A`", "area", "None", ":math:`\text{m}^2`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Describe capital costs..keep it concise where possible
+There are two classes of OARO costing types (``standard`` and ``high_pressure``), the membrane cost is different with these two
+methods and the default costing method is ``standard``.
+
+For ``standard`` type, the  capital cost is defineds as:
 
     .. math::
 
-        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}
+        C_{cap,tot} = C_A * A
+
+For ``high_pressure`` type, the  capital cost is defineds as:
 
     .. math::
 
-        C_{cap,example1} = fill in equation for each component in total capex equation
+        C_{cap,tot} = C_hA * A
 
  
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Describe operating/maintenance costs..keep it concise where possible
+The fixed operating cost is correlated to OARO costing types (``standard`` and ``high_pressure``) and the default is ``standard``.
+
+For ``standard`` type, the  capital cost is defineds as:
 
     .. math::
 
-        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}
+        C_{op,tot} = f * C_A * A
+
+For ``high_pressure`` type, the  capital cost is defineds as:
 
     .. math::
 
-        C_{op,example1} = fill in equation for each component in total opex equation
+        C_{op,example1} = f * C_A * A
 
  
 Code Documentation
@@ -56,4 +67,5 @@ Code Documentation
 
 References
 ----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
+Bartholomew, T. V., Mey, L., Arena, J. T., Siefert, N. S., & Mauter, M. S. (2017).
+Osmotically assisted reverse osmosis for high salinity brine treatment. Desalination, 421, 3-11.
