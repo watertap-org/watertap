@@ -10,10 +10,10 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
    "**High-pressure pump**"
-   "Pump unit cost", ":math:`C_{pump}`", "cost", "1.908", ":math:`\text{USD}_{2018}\text{/W}`"
+   "Pump unit cost", ":math:`C_{pump}`", "``cost``", "1.908", ":math:`\text{USD}_{2018}\text{/W}`"
 
    "**Low-pressure pump**"
-   "Pump unit cost", ":math:`C_{pump}`", "cost", "889", ":math:`\text{USD}_{2018}\text{/L/s}`"
+   "Pump unit cost", ":math:`C_{pump}`", "``cost``", "889", ":math:`\text{USD}_{2018}\text{/L/s}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -24,10 +24,10 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "**High-pressure pump**"
-   "Mechanical work", ":math:`W_{mech}`", "work_mechanical", "[t]", ":math:`\text{W}`"
+   "Mechanical work", ":math:`W_{mech}`", "``work_mechanical``", "[t]", ":math:`\text{W}`"
 
    "**Low-pressure pump**"
-   "Inlet volumetric flow rate", ":math:`Q_{in}`", "flow_in", "[t]", ":math:`\text{m}^3\text{/s}`"
+   "Inlet volumetric flow rate", ":math:`Q_{in}`", "``flow_in``", "[t]", ":math:`\text{m}^3\text{/s}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++

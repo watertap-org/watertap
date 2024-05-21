@@ -9,8 +9,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "factor_membrane_replacement", "0.2", ":math:`\text{yr}^{-1}`"
-   "Membrane unit cost", ":math:`C_{mem}`", "membrane_unit_cost", "15", ":math:`\text{USD}_{2018}\text{/m}^2`"
+   "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "``factor_membrane_replacement``", "0.2", ":math:`\text{yr}^{-1}`"
+   "Membrane unit cost", ":math:`C_{mem}`", "``membrane_unit_cost``", "15", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -20,7 +20,7 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Membrane area", ":math:`A_{mem}`", "area", "None", ":math:`\text{m}^2`"
+   "Membrane area", ":math:`A_{mem}`", "``area``", "None", ":math:`\text{m}^2`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
