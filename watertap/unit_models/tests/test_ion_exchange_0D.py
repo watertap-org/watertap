@@ -92,28 +92,52 @@ class TestIXLangmuir(UnitTestHarness):
         self.unit_solutions[m.fs.unit.col_diam] = 3.351
         self.unit_solutions[m.fs.unit.col_height_to_diam_ratio] = 1.0408
         self.unit_solutions[m.fs.unit.number_columns] = 8
-        self.unit_solutions[m.fs.unit.t_breakthru] = 52360.644
+        self.unit_solutions[m.fs.unit.t_breakthru] = 52360
         self.unit_solutions[m.fs.unit.vel_bed] = 0.007083
         self.unit_solutions[m.fs.unit.N_Re] = 4.958
-        self.unit_solutions[m.fs.unit.N_Sc["Ca_2+"]] = 1086.9565
+        self.unit_solutions[m.fs.unit.N_Sc["Ca_2+"]] = 1086
         self.unit_solutions[m.fs.unit.N_Sh["Ca_2+"]] = 26.296
         self.unit_solutions[m.fs.unit.N_Pe_particle] = 0.10782
-        self.unit_solutions[m.fs.unit.N_Pe_bed] = 261.8677
+        self.unit_solutions[m.fs.unit.N_Pe_bed] = 261.8
         self.unit_solutions[m.fs.unit.resin_eq_capacity] = 1.554
         self.unit_solutions[m.fs.unit.resin_unused_capacity] = 1.445
         self.unit_solutions[m.fs.unit.langmuir["Ca_2+"]] = 0.9
-        self.unit_solutions[m.fs.unit.mass_removed["Ca_2+"]] = 65300.8052
+        self.unit_solutions[m.fs.unit.mass_removed["Ca_2+"]] = 65300
         self.unit_solutions[m.fs.unit.num_transfer_units] = 35.5483
         self.unit_solutions[m.fs.unit.dimensionless_time] = 1
         self.unit_solutions[m.fs.unit.partition_ratio] = 217.669
-        self.unit_solutions[m.fs.unit.fluid_mass_transfer_coeff["Ca_2+"]] = 3.45609e-05
+        self.unit_solutions[m.fs.unit.fluid_mass_transfer_coeff["Ca_2+"]] = 3.4561e-05
         self.unit_solutions[m.fs.unit.bw_flow] = 0.09803
         self.unit_solutions[m.fs.unit.bed_expansion_frac] = 0.46395
-        self.unit_solutions[m.fs.unit.col_vol_tot] = 246.2622
+        self.unit_solutions[m.fs.unit.col_vol_tot] = 246.26
         self.unit_solutions[m.fs.unit.lh] = 0.0
-        self.unit_solutions[m.fs.unit.separation_factor["Ca_2+"]] = 1.11111
+        self.unit_solutions[m.fs.unit.separation_factor["Ca_2+"]] = 1.111
         self.unit_solutions[m.fs.unit.rate_coeff["Ca_2+"]] = 0.00021159
         self.unit_solutions[m.fs.unit.HTU["Ca_2+"]] = 0.04782
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]
+        ] = 499.95
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "Liq", "Ca_2+"
+            ]
+        ] = 0.05
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
+        ] = 499.95
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                "Liq", "Ca_2+"
+            ]
+        ] = 1.1458e-4
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "Ca_2+"]
+        ] = 0.049885
+        self.unit_solutions[
+            m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Ca_2+"]
+        ] = -1.24713
 
         return m
 
@@ -201,6 +225,30 @@ class TestIXFreundlich(UnitTestHarness):
         self.unit_solutions[m.fs.unit.traps[5]] = 0.0066941563
         self.unit_solutions[m.fs.unit.c_norm_avg["Cl_-"]] = 0.02556
         self.unit_solutions[m.fs.unit.mass_transfer_coeff] = 0.159346
+        self.unit_solutions[
+            m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Cl_-"]
+        ] = -1.3744e-05
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]
+        ] = 500
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
+        ] = 500
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "Liq", "Cl_-"
+            ]
+        ] = 5e-07
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                "Liq", "Cl_-"
+            ]
+        ] = 1.278e-08
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "Cl_-"]
+        ] = 4.872e-07
 
         return m
 
@@ -292,5 +340,42 @@ class TestIXInert(UnitTestHarness):
         self.unit_solutions[m.fs.unit.traps[5]] = 0.0066941563
         self.unit_solutions[m.fs.unit.c_norm_avg["Cl_-"]] = 0.02556
         self.unit_solutions[m.fs.unit.mass_transfer_coeff] = 0.159346
+        self.unit_solutions[
+            m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Cl_-"]
+        ] = -1.37435e-05
+        self.unit_solutions[
+            m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Ca_2+"]
+        ] = 0
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]
+        ] = 500
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
+        ] = 500
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "Liq", "Cl_-"
+            ]
+        ] = 5e-07
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "Liq", "Ca_2+"
+            ]
+        ] = 5e-08
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                "Liq", "Cl_-"
+            ]
+        ] = 1.2781e-08
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                "Liq", "Ca_2+"
+            ]
+        ] = 5e-08
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "Cl_-"]
+        ] = 4.872e-07
 
         return m
