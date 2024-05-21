@@ -43,7 +43,7 @@ import idaes.logger as idaeslog
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
 )
-from watertap.unit_models.ion_exchange_0D import (
+from watertap.unit_models.ion_exchange.ion_exchange_0D import (
     IonExchange0D,
     IonExchangeType,
     RegenerantChem,

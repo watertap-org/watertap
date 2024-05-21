@@ -27,7 +27,7 @@ from idaes.models.unit_models import Product, Feed
 
 from watertap.core.util.initialization import check_dof
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.unit_models.ion_exchange_0D import IonExchange0D
+from watertap.unit_models.ion_exchange.ion_exchange_0D import IonExchange0D
 from watertap.costing import WaterTAPCosting
 
 import math

@@ -26,7 +26,7 @@ from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Feed, Product
-from watertap.unit_models.ion_exchange_0D import (
+from watertap.unit_models.ion_exchange.ion_exchange_0D import (
     IonExchange0D,
     IonExchangeType,
     RegenerantChem,
