@@ -38,6 +38,7 @@ from watertap.core.membrane_channel_base import (
     TransportModel,
     ModuleType,
 )
+from watertap.core.util.initialization import interval_improve_initial
 from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
 
@@ -629,6 +630,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 f"{self.name} degrees of freedom were not 0 at the beginning "
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
+
+        # pre-solve using interval arithmetic
+        interval_improve_initial(self)
 
         # Create solver
         opt = get_solver(solver, optarg)
