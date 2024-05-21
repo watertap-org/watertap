@@ -6,6 +6,7 @@ Flowsheets
 
    BSM2
    extended_BSM2
+   oaro
    ASM1
    ASM2d
    ADM1
