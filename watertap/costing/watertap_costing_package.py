@@ -182,20 +182,31 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 u.unit_model.name
             ]
 
-        for f in self.used_flows:
+        for ftype, flows in self._registered_flows.items():
             # part of total_variable_operating_cost
-            if f in variable_opex_lcows:
+            if ftype in agg_variable_opex_lcows:
                 raise RuntimeError(
-                    f"Found unit model named {f} but want to name flow {f} for {name+'_opex'}"
+                    f"Found unit model named {ftype} but want to name flow {ftype} for {name+'_component_variable_opex'}"
                 )
-            variable_opex_lcows[f] = (
-                self.aggregate_flow_costs[f] * self.utilization_factor / denominator
+            if ftype not in self.used_flows:
+                assert len(flows) == 0
+                continue
+            agg_variable_opex_lcows[ftype] = (
+                self.aggregate_flow_costs[ftype] * self.utilization_factor / denominator
             )
-            if f in agg_variable_opex_lcows:
-                raise RuntimeError(
-                    f"Found unit model class named {f} but want to name flow {f} for {name+'_opex'}"
+            cost_var = getattr(self, f"{ftype}_cost")
+            for flow in flows:
+                # part of total_variable_operating_cost
+                flow_cost = pyo.units.convert(
+                    flow * cost_var, to_units=c_units / t_units
                 )
-            agg_variable_opex_lcows[f] = variable_opex_lcows[f]
+                if str(flow) in variable_opex_lcows:
+                    raise RuntimeError(
+                        f"Found unit model named {str(flow)} but need to name flow {flow} for {name+'_aggregate_variable_opex'}"
+                    )
+                variable_opex_lcows[str(flow)] = (
+                    flow_cost * self.utilization_factor
+                ) / denominator
 
     def add_specific_energy_consumption(
         self, flow_rate, name="specific_energy_consumption"
