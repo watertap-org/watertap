@@ -9,6 +9,47 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import pytest
+from pyomo.environ import (
+    ConcreteModel,
+    value,
+    Var,
+    Param,
+    assert_optimal_termination,
+)
+from pyomo.network import Port
+from pyomo.util.check_units import assert_units_consistent
+
+from idaes.core import (
+    EnergyBalanceType,
+    MomentumBalanceType,
+    FlowsheetBlock,
+    UnitModelCostingBlock,
+)
+from watertap.core.solvers import get_solver
+from idaes.core.util.model_statistics import (
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    unscaled_variables_generator,
+)
+import idaes.logger as idaeslog
+
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+)
+from watertap.unit_models.ion_exchange_0D import (
+    IonExchange0D,
+    IonExchangeType,
+    RegenerantChem,
+    IsothermType,
+)
+from watertap.costing import WaterTAPCosting
+from watertap.core.util.initialization import check_dof
 
 from pyomo.environ import ConcreteModel
 
@@ -44,6 +85,15 @@ def build_langmuir():
         "target_ion": target_ion,
     }
     m.fs.unit = ix = IonExchange0D(**ix_config)
+    
+    m.fs.costing = WaterTAPCosting()
+    ix.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(ix.process_flow.properties_out[0].flow_vol_phase["Liq"])
+    m.fs.costing.add_specific_energy_consumption(
+        ix.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
+    )
+    
     ix.process_flow.properties_in.calculate_state(
         var_args={
             ("flow_vol_phase", "Liq"): 0.5,
@@ -138,8 +188,76 @@ class TestIXLangmuir(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Ca_2+"]
         ] = -1.24713
-
+        
+        self.unit_solutions[m.fs.costing.total_capital_cost] = 3993072.4698084663
         return m
+
+    @pytest.mark.component
+    def test_costing(self):
+        m = build_langmuir()
+        ix = m.fs.ix
+
+        m.fs.costing = WaterTAPCosting()
+        ix.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(ix.process_flow.properties_out[0].flow_vol_phase["Liq"])
+        m.fs.costing.add_specific_energy_consumption(
+            ix.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
+        )
+        
+        
+        check_dof(m, fail_flag=True)
+        initialization_tester(m, unit=m.fs.ix, outlvl=idaeslog.DEBUG)
+        results = solver.solve(m, tee=True)
+        assert_optimal_termination(results)
+
+        sys_cost_results = {
+            "aggregate_capital_cost": 3993072.469,
+            "aggregate_fixed_operating_cost": 36893.314,
+            "aggregate_variable_operating_cost": 0.0,
+            "aggregate_flow_electricity": 39.4985,
+            "aggregate_flow_NaCl": 22838957.969,
+            "aggregate_flow_costs": {
+                "electricity": 24237.080,
+                "NaCl": 2079295.202,
+            },
+            "total_capital_cost": 3993072.4698,
+            "total_operating_cost": 2049864.542,
+            "LCOW": 0.1724829,
+            "SEC": 0.021945,
+        }
+
+        for v, r in sys_cost_results.items():
+            mv = getattr(m.fs.costing, v)
+            if mv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(mv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(mv)
+
+        ix_cost_results = {
+            "capital_cost": 3993072.4698,
+            "fixed_operating_cost": 36893.314,
+            "capital_cost_vessel": 101131.881,
+            "capital_cost_resin": 81985.1430,
+            "capital_cost_regen_tank": 215778.261,
+            "capital_cost_backwash_tank": 132704.7555,
+            "operating_cost_hazardous": 0,
+            "flow_mass_regen_soln": 22838957.969,
+            "total_pumping_power": 39.4985,
+            "backwash_tank_vol": 174042.7639,
+            "regeneration_tank_vol": 79251.61570,
+            "direct_capital_cost": 1996536.234,
+        }
+
+        for v, r in ix_cost_results.items():
+            mv = getattr(m.fs.unit.costing, v)
+            if mv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(mv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(mv)
+
 
 
 def build_freundlich():
