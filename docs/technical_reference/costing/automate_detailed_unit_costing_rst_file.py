@@ -129,7 +129,7 @@ if __name__ == "__main__":
                         '   :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"\n\n'
                     )
                     f.write(
-                        '   "description", ":math:`Symbol_{example}`", "parameter_name", "1", ":math:`\\text{dimensionless}`"\n'
+                        '   "description", ":math:`Symbol_{example}`", "``parameter_name``", "1", ":math:`\\text{dimensionless}`"\n'
                     )
 
                     # TODO: add var tables
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                         '   :header: "Description", "Symbol", "Variable Name", "Index", "Units"\n\n'
                     )
                     f.write(
-                        '   "description", ":math:`Symbol_{example}`", "variable_name", "[t]", ":math:`\\text{dimensionless}`"\n'
+                        '   "description", ":math:`Symbol_{example}`", "``variable_name``", "[t]", ":math:`\\text{dimensionless}`"\n'
                     )
 
                     # TODO: add capex eqs
