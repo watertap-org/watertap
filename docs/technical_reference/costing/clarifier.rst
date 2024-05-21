@@ -19,7 +19,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Capital cost C parameter :math:`^1`", ":math:`C_{circular}`", "``construction_c_parameter``", "191806", ":math:`\text{USD}_{2011}`"
 
    "**Rectangular clarifier**"
-   "Capital cost A parameter :math:`^1`", ":math:`A_{rectangular}`", "``construction_a_parameterv", "-2.9e-3", ":math:`\text{USD}_{2011}\text{/ft}^4`"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{rectangular}`", "``construction_a_parameter``", "-2.9e-3", ":math:`\text{USD}_{2011}\text{/ft}^4`"
    "Capital cost B parameter :math:`^1`", ":math:`B_{rectangular}`", "``construction_b_parameter``", "169.19", ":math:`\text{USD}_{2011}\text{/ft}^2`"
    "Capital cost C parameter :math:`^1`", ":math:`C_{rectangular}`", "``construction_c_parameter``", "94365", ":math:`\text{USD}_{2011}`"
 
