@@ -45,18 +45,18 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_gac` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Total unit capital cost", ":math:`C_{cap}`", "capital_cost", "10,000", ":math:`\text{USD}_{2020}`"
-   "Capital cost of contactor(s)", ":math:`C_{cap,bed}`", "contactor_cost", "10,000", ":math:`\text{USD}_{2020}`"
-   "Mass of GAC initial charge used to determine the unit cost", ":math:`M_{GAC}^{min}`", "bed_mass_gac_ref", "4", ":math:`kg`"
-   "Unit cost of GAC adsorbent for initial charge", ":math:`C_{unit,carbon}`", "adsorbent_unit_cost", "2", ":math:`\text{USD}_{2020}\text{/kg}`"
-   "Capital cost of GAC adsorbent", ":math:`C_{cap,carbon}`", "adsorbent_cost", "10,000", ":math:`\text{USD}_{2020}`"
-   "Capital costs of other process supplements", ":math:`C_{cap,other}`", "other_process_cost", "10,000", ":math:`\text{USD}_{2020}`"
-   "Approximate GAC system energy consumption*", ":math:`P`", "energy_consumption", "100", ":math:`kW`"
-   "Fixed operating costs", ":math:`C_{op}`", "fixed_operating_cost", "10,000", ":math:`\text{USD}_{2020}\text{/yr}`"
-   "Operating costs to regenerate spent GAC adsorbent", ":math:`C_{op,regen}`", "gac_regen_cost", "10,000", ":math:`\text{USD}_{2020}\text{/yr}`"
-   "Operating costs to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", "10,000", ":math:`\text{USD}_{2020}\text{/yr}`"
+   "Total unit capital cost", ":math:`C_{cap}`", "capital_cost", "None", ":math:`\text{USD}_{2020}`"
+   "Capital cost of contactor(s)", ":math:`C_{cap,bed}`", "contactor_cost", "None", ":math:`\text{USD}_{2020}`"
+   "Mass of GAC initial charge used to determine the unit cost", ":math:`M_{GAC}^{min}`", "bed_mass_gac_ref", "None", ":math:`kg`"
+   "Unit cost of GAC adsorbent for initial charge", ":math:`C_{unit,carbon}`", "adsorbent_unit_cost", "None", ":math:`\text{USD}_{2020}\text{/kg}`"
+   "Capital cost of GAC adsorbent", ":math:`C_{cap,carbon}`", "adsorbent_cost", "None", ":math:`\text{USD}_{2020}`"
+   "Capital costs of other process supplements", ":math:`C_{cap,other}`", "other_process_cost", "None", ":math:`\text{USD}_{2020}`"
+   "Approximate GAC system energy consumption*", ":math:`P`", "energy_consumption", "None", ":math:`kW`"
+   "Fixed operating costs", ":math:`C_{op}`", "fixed_operating_cost", "None", ":math:`\text{USD}_{2020}\text{/yr}`"
+   "Operating costs to regenerate spent GAC adsorbent", ":math:`C_{op,regen}`", "gac_regen_cost", "None", ":math:`\text{USD}_{2020}\text{/yr}`"
+   "Operating costs to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{op,makeup}`", "gac_makeup_cost", "None", ":math:`\text{USD}_{2020}\text{/yr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
