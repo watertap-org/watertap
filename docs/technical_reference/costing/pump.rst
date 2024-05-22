@@ -9,7 +9,11 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``parameter_name``", "1", ":math:`\text{dimensionless}`"
+   "**High-pressure pump**"
+   "Pump unit cost", ":math:`C_{pump}`", "``cost``", "1.908", ":math:`\text{USD}_{2018}\text{/W}`"
+
+   "**Low-pressure pump**"
+   "Pump unit cost", ":math:`C_{pump}`", "``cost``", "889", ":math:`\text{USD}_{2018}\text{/L/s}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -19,41 +23,40 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``variable_name``", "[t]", ":math:`\text{dimensionless}`"
+   "**High-pressure pump**"
+   "Mechanical work", ":math:`W_{mech}`", "``work_mechanical``", "[t]", ":math:`\text{W}`"
+
+   "**Low-pressure pump**"
+   "Inlet volumetric flow rate", ":math:`Q_{in}`", "``flow_in``", "[t]", ":math:`\text{m}^3\text{/s}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Describe capital costs..keep it concise where possible
+For the high pressure pump , capital cost is dependent upon the mechanical work, :math:`W_{mech}`, whereas the capital cost of
+the low pressure pump is based on the volumetric flow rate :math:`Q_{in}`.
 
     .. math::
 
-        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}
+        C_{cap,high pressure} = C_{pump} * W_{mech}
 
     .. math::
 
-        C_{cap,example1} = fill in equation for each component in total capex equation
+        C_{cap,low pressure} = C_{pump} * Q_{in}
 
  
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Describe operating/maintenance costs..keep it concise where possible
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(mechanical work for the pump), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_{util}`. The annual electricity costs are calculated as:
 
     .. math::
 
-        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}
-
-    .. math::
-
-        C_{op,example1} = fill in equation for each component in total opex equation
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
  
 Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.pump`
-
-References
-----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values

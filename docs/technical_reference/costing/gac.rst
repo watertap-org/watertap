@@ -45,7 +45,7 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_gac` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Total unit capital cost", ":math:`C_{cap}`", "``capital_cost``", "10,000", ":math:`\text{USD}_{2020}`"
    "Capital cost of contactor(s)", ":math:`C_{cap,bed}`", "``contactor_cost``", "10,000", ":math:`\text{USD}_{2020}`"
