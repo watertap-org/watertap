@@ -53,7 +53,7 @@ class IonExchangeDeminData(IonExchangeBaseData):
         regen = self.regeneration_stream[0]
         target = self.config.target_component
 
-        # typical operating capacity for resin is between 30-60 kg/m3; Wachowski, chap. 3
+        # typical operating capacity for resin is between 30-60 kg/m3; Wachinski, chap. 3
         self.resin_capacity = Var(
             initialize=42,
             bounds=(
@@ -67,11 +67,18 @@ class IonExchangeDeminData(IonExchangeBaseData):
         @self.Expression(doc="Mass of target to be removed per cycle")
         def mass_removed_per_cycle(b):
             return pyunits.convert(
-                (1 - b.c_norm[target])
-                * prop_out.flow_mass_phase_comp["Liq", target]
-                * b.breakthrough_time,
+                prop_out.flow_mass_phase_comp["Liq", target] * b.breakthrough_time,
                 to_units=pyunits.kg,
             )
+
+        @self.Constraint(doc="Effluent concentration")
+        def eq_effluent(b):
+            return (
+                prop_out.conc_mass_phase_comp["Liq", target]
+                == b.c_norm[target] * prop_in.conc_mass_phase_comp["Liq", target]
+            )
+
+        # @self.Constraint(doc="Regeneration stream")
 
         @self.Constraint(doc="Total bed volume required")
         def bed_volume_total_constraint(b):

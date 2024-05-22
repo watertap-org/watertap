@@ -868,7 +868,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Number of redundant columns")
         def eq_number_columns_redundant(b):
             return (
-                b.number_columns_redundant == b.number_columns / b.redundant_column_freq
+                b.number_columns_redundant >= b.number_columns / b.redundant_column_freq
             )
 
     def initialize_build(
