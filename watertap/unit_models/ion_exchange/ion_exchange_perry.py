@@ -66,7 +66,12 @@
         #         doc="Fluid mass transfer coefficient",
         #     )
 
-
+        # self.resin_surf_per_vol = Var(
+        #     initialize=3333.33,
+        #     bounds=(0, 1e5),
+        #     units=pyunits.m**-1,
+        #     doc="Resin surface area per volume",
+        # )
 
         # if self.config.isotherm == IsothermType.langmuir:
 
@@ -191,3 +196,6 @@
         #             / (1 - b.langmuir[j])
         #             + 1
         #         )
+        # @self.Constraint(doc="Resin bead surface area per volume")
+        # def eq_resin_surf_per_vol(b):
+        #     return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam
