@@ -135,6 +135,7 @@ class TestCheckSolve:
 
         m.acon.activate()
 
+
 class TestIntervalImproveInitial:
 
     @pytest.fixture(scope="class")
@@ -155,7 +156,7 @@ class TestIntervalImproveInitial:
         m.c.add(m.x + m.z == 1)
 
         return m
-    
+
     @pytest.mark.unit
     def test_interval_improve_initial(self, m):
 
@@ -163,13 +164,13 @@ class TestIntervalImproveInitial:
         # 1. The what the value is set to within the pyomo model
         # 2. The original bounds have been reset as they were originally
         #    specified in the flowsheet
-        feasibility_tol = 1.e-6
+        feasibility_tol = 1.0e-6
         interval_improve_initial(m, feasibility_tol=feasibility_tol)
 
         # Assert the values
-        assert m.x.value == pytest.approx(-1, abs=1.3-6)
-        assert m.y.value == pytest.approx(0., abs=1.e-6)
-        assert m.z.value == pytest.approx(2.0, abs=1.e-6)
+        assert m.x.value == pytest.approx(-1, abs=1.3 - 6)
+        assert m.y.value == pytest.approx(0.0, abs=1.0e-6)
+        assert m.z.value == pytest.approx(2.0, abs=1.0e-6)
 
         # Assert the restored bounds
         assert m.x.lb == -3.0
