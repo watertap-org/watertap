@@ -40,6 +40,7 @@ from watertap.core.membrane_channel_base import (
 )
 
 from watertap.core import InitializationMixin
+from watertap.core.util.initialization import interval_improve_initial
 from watertap.costing.unit_models.osmotically_assisted_reverse_osmosis import (
     cost_osmotically_assisted_reverse_osmosis,
 )
@@ -666,6 +667,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # Create solver
         opt = get_solver(solver, optarg)
+
+        interval_improve_initial(self)
 
         # Solve unit *without* flux equation
         self.eq_flux_mass.deactivate()
