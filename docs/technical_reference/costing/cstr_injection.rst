@@ -15,7 +15,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-There are no costing method variables unique to the CSTR with injection
+There are no costing method variables unique to the CSTR with injection.
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
@@ -30,7 +30,13 @@ Capital cost is dependent upon the unit's volume, :math:`V`, as shown in the equ
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no operating costs unique to the CSTR with injection.
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(electricity consumption for the CSTR with injection), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_{util}`. The annual electricity costs are calculated as:
+
+    .. math::
+
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
  
 Code Documentation
