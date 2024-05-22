@@ -11,7 +11,6 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 
    "Pressure exchanger unit cost", ":math:`C_{PX}`", "``pressure_exchanger_cost``", "535", ":math:`\text{USD}_{2018}\text{/m}^3\text{/hr}`"
 
-
 Costing Method Variables
 ++++++++++++++++++++++++
 

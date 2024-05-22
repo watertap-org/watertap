@@ -9,11 +9,11 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "factor_membrane_replacement", "0.33", ":math:`\text{yr}^{-1}`"
-   "Membrane unit cost", ":math:`C_{mem}`", "membrane_unit_cost", "25", ":math:`\text{USD}_{2012}\text{/m}^2`"
-   "Anode unit cost", ":math:`C_{anode}`", "anode_unit_cost", "300", ":math:`\text{USD}_{2005}\text{/m}^2`"
-   "Cathode unit cost", ":math:`C_{cathode}`", "cathode_unit_cost", "600", ":math:`\text{USD}_{2005}\text{/m}^2`"
-   "Membrane, anode, and cathode fraction of total capital", ":math:`f_{material}`", "fraction_material_cost", "0.65", ":math:`\text{dimensionless}`"
+   "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "``factor_membrane_replacement``", "0.33", ":math:`\text{yr}^{-1}`"
+   "Membrane unit cost", ":math:`C_{mem}`", "``membrane_unit_cost``", "25", ":math:`\text{USD}_{2012}\text{/m}^2`"
+   "Anode unit cost", ":math:`C_{anode}`", "``anode_unit_cost``", "300", ":math:`\text{USD}_{2005}\text{/m}^2`"
+   "Cathode unit cost", ":math:`C_{cathode}`", "``cathode_unit_cost``", "600", ":math:`\text{USD}_{2005}\text{/m}^2`"
+   "Membrane, anode, and cathode fraction of total capital", ":math:`f_{material}`", "``fraction_material_cost``", "0.65", ":math:`\text{dimensionless}`"
 
 
 Costing Method Variables
@@ -24,12 +24,12 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Total unit capital cost", ":math:`C_{cap}`", "capital_cost", "None", ":math:`\text{USD}_{2020}`"
-   "Fixed operating costs", ":math:`C_{op}`", "fixed_operating_cost", "None", ":math:`\text{USD}_{2020}\text{/yr}`"
-   "Membrane capital cost", ":math:`C_{cap,\, mem}`", "membrane_cost", "None", ":math:`\text{USD}_{2020}`"
-   "Anode capital cost", ":math:`C_{cap,\, anode}`", "anode_cost", "None", ":math:`\text{USD}_{2020}`"
-   "Cathode capital cost", ":math:`C_{cap,\, cathode}`", "cathode_cost", "None", ":math:`\text{USD}_{2020}`"
-   "Membrane replacement cost", ":math:`C_{op,\, mem}`", "membrane_replacement_cost", "None", ":math:`\text{USD}_{2020}\text{/yr}`"
+   "Total unit capital cost", ":math:`C_{cap}`", "``capital_cost``", "None", ":math:`\text{USD}_{2020}`"
+   "Fixed operating costs", ":math:`C_{op}`", "``fixed_operating_cost``", "None", ":math:`\text{USD}_{2020}\text{/yr}`"
+   "Membrane capital cost", ":math:`C_{cap,\, mem}`", "``membrane_cost``", "None", ":math:`\text{USD}_{2020}`"
+   "Anode capital cost", ":math:`C_{cap,\, anode}`", "``anode_cost``", "None", ":math:`\text{USD}_{2020}`"
+   "Cathode capital cost", ":math:`C_{cap,\, cathode}`", "``cathode_cost``", "None", ":math:`\text{USD}_{2020}`"
+   "Membrane replacement cost", ":math:`C_{op,\, mem}`", "``membrane_replacement_cost``", "None", ":math:`\text{USD}_{2020}\text{/yr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
