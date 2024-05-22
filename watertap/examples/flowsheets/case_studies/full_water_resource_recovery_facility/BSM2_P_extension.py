@@ -25,6 +25,7 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import (
     FlowsheetBlock,
+    UnitModelCostingBlock,
 )
 from idaes.models.unit_models import (
     CSTR,
@@ -74,7 +75,14 @@ from watertap.unit_models.thickener import (
     Thickener,
     ActivatedSludgeModelType as thickener_type,
 )
-from watertap.core.util.initialization import check_solve
+
+from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
+from watertap.costing import WaterTAPCosting
+from watertap.costing.unit_models.clarifier import (
+    cost_circular_clarifier,
+    cost_primary_clarifier,
+)
+
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -115,6 +123,16 @@ def main(bio_P=True):
         logger=_log,
         fail_flag=True,
     )
+
+    add_costing(m)
+    m.fs.costing.initialize()
+
+    assert_degrees_of_freedom(m, 0)
+
+    results = solve(m)
+    pyo.assert_optimal_termination(results)
+
+    display_costing(m)
 
     return m, results
 
@@ -471,6 +489,8 @@ def set_operating_conditions(m):
     m.fs.CL2.split_fraction[0, "effluent", "X_PP"].fix(0.00187)
     m.fs.CL2.split_fraction[0, "effluent", "X_S"].fix(0.00187)
 
+    m.fs.CL2.surface_area.fix(1500 * pyo.units.m**2)
+
     # Sludge purge separator
     m.fs.SP2.split_fraction[:, "recycle"].fix(0.985)
 
@@ -656,6 +676,184 @@ def solve(m, solver=None):
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
     return results
+
+
+def add_costing(m):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.costing.base_currency = pyo.units.USD_2020
+
+    # Costing Blocks
+    m.fs.R1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.R7.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.CL.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_primary_clarifier,
+    )
+
+    m.fs.CL2.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_circular_clarifier,
+    )
+
+    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.dewater.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.thickener.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # TODO: Leaving out mixer costs; consider including later
+
+    # process costing and add system level metrics
+    m.fs.costing.cost_process()
+    m.fs.costing.add_electricity_intensity(m.fs.FeedWater.properties[0].flow_vol)
+    m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.FeedWater.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
+
+    m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
+    iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
+    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
+    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
+
+    iscale.calculate_scaling_factors(m.fs)
+
+
+def display_costing(m):
+    print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
+
+    print(
+        "Total operating cost: %.2f $/yr" % pyo.value(m.fs.costing.total_operating_cost)
+    )
+    print("Total capital cost: %.2f $" % pyo.value(m.fs.costing.total_capital_cost))
+
+    print(
+        "Total annualized cost: %.2f $/yr"
+        % pyo.value(m.fs.costing.total_annualized_cost)
+    )
+    print(
+        "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
+        % pyo.value(m.fs.costing.specific_energy_consumption)
+    )
+
+    print(
+        "electricity consumption R5",
+        pyo.value(m.fs.R5.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption R6",
+        pyo.value(m.fs.R6.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R6.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption R7",
+        pyo.value(m.fs.R7.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R7.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption primary clarifier",
+        pyo.value(m.fs.CL.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption secondary clarifier",
+        pyo.value(m.fs.CL2.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL2.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption AD",
+        pyo.value(m.fs.AD.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.AD.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption dewatering Unit",
+        pyo.value(m.fs.dewater.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.dewater.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption thickening Unit",
+        pyo.value(m.fs.thickener.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.thickener.electricity_consumption[0]),
+    )
+    print(
+        "Influent flow",
+        pyo.value(m.fs.FeedWater.flow_vol[0]),
+        pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
+    )
+    print(
+        "flow into R3",
+        pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
+        pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
+    )
+    print(
+        "flow into RADM",
+        pyo.value(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
+        pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
+    )
+
+    print(
+        "capital cost R1",
+        pyo.value(m.fs.R1.costing.capital_cost),
+        pyo.units.get_units(m.fs.R1.costing.capital_cost),
+    )
+    print(
+        "capital cost R2",
+        pyo.value(m.fs.R2.costing.capital_cost),
+        pyo.units.get_units(m.fs.R2.costing.capital_cost),
+    )
+    print(
+        "capital cost R3",
+        pyo.value(m.fs.R3.costing.capital_cost),
+        pyo.units.get_units(m.fs.R3.costing.capital_cost),
+    )
+    print(
+        "capital cost R4",
+        pyo.value(m.fs.R4.costing.capital_cost),
+        pyo.units.get_units(m.fs.R4.costing.capital_cost),
+    )
+    print(
+        "capital cost R5",
+        pyo.value(m.fs.R5.costing.capital_cost),
+        pyo.units.get_units(m.fs.R5.costing.capital_cost),
+    )
+    print(
+        "capital cost R6",
+        pyo.value(m.fs.R6.costing.capital_cost),
+        pyo.units.get_units(m.fs.R6.costing.capital_cost),
+    )
+    print(
+        "capital cost R7",
+        pyo.value(m.fs.R7.costing.capital_cost),
+        pyo.units.get_units(m.fs.R7.costing.capital_cost),
+    )
+    print(
+        "capital cost primary clarifier",
+        pyo.value(m.fs.CL.costing.capital_cost),
+        pyo.units.get_units(m.fs.CL.costing.capital_cost),
+    )
+    print(
+        "capital cost secondary clarifier",
+        pyo.value(m.fs.CL2.costing.capital_cost),
+        pyo.units.get_units(m.fs.CL2.costing.capital_cost),
+    )
+    print(
+        "capital cost AD",
+        pyo.value(m.fs.AD.costing.capital_cost),
+        pyo.units.get_units(m.fs.AD.costing.capital_cost),
+    )
+    print(
+        "capital cost dewatering Unit",
+        pyo.value(m.fs.dewater.costing.capital_cost),
+        pyo.units.get_units(m.fs.dewater.costing.capital_cost),
+    )
+    print(
+        "capital cost thickener unit",
+        pyo.value(m.fs.thickener.costing.capital_cost),
+        pyo.units.get_units(m.fs.thickener.costing.capital_cost),
+    )
 
 
 if __name__ == "__main__":
