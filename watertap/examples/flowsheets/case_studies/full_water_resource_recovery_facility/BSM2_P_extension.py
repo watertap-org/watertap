@@ -133,6 +133,7 @@ def main(bio_P=True):
     pyo.assert_optimal_termination(results)
 
     display_costing(m)
+    display_performance_metrics(m)
 
     return m, results
 
@@ -708,7 +709,6 @@ def add_costing(m):
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
-    m.fs.costing.add_electricity_intensity(m.fs.FeedWater.properties[0].flow_vol)
     m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.FeedWater.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
@@ -732,66 +732,6 @@ def display_costing(m):
     print(
         "Total annualized cost: %.2f $/yr"
         % pyo.value(m.fs.costing.total_annualized_cost)
-    )
-    print(
-        "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
-        % pyo.value(m.fs.costing.specific_energy_consumption)
-    )
-
-    print(
-        "electricity consumption R5",
-        pyo.value(m.fs.R5.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption R6",
-        pyo.value(m.fs.R6.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R6.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption R7",
-        pyo.value(m.fs.R7.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R7.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption primary clarifier",
-        pyo.value(m.fs.CL.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.CL.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption secondary clarifier",
-        pyo.value(m.fs.CL2.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.CL2.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption AD",
-        pyo.value(m.fs.AD.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.AD.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption dewatering Unit",
-        pyo.value(m.fs.dewater.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.dewater.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption thickening Unit",
-        pyo.value(m.fs.thickener.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.thickener.electricity_consumption[0]),
-    )
-    print(
-        "Influent flow",
-        pyo.value(m.fs.FeedWater.flow_vol[0]),
-        pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
-    )
-    print(
-        "flow into R3",
-        pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
-        pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
-    )
-    print(
-        "flow into RADM",
-        pyo.value(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
-        pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
     )
 
     print(
@@ -853,6 +793,69 @@ def display_costing(m):
         "capital cost thickener unit",
         pyo.value(m.fs.thickener.costing.capital_cost),
         pyo.units.get_units(m.fs.thickener.costing.capital_cost),
+    )
+
+
+def display_performance_metrics(m):
+    print(
+        "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
+        % pyo.value(m.fs.costing.specific_energy_consumption)
+    )
+
+    print(
+        "electricity consumption R5",
+        pyo.value(m.fs.R5.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption R6",
+        pyo.value(m.fs.R6.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R6.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption R7",
+        pyo.value(m.fs.R7.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.R7.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption primary clarifier",
+        pyo.value(m.fs.CL.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption secondary clarifier",
+        pyo.value(m.fs.CL2.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.CL2.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption AD",
+        pyo.value(m.fs.AD.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.AD.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption dewatering Unit",
+        pyo.value(m.fs.dewater.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.dewater.electricity_consumption[0]),
+    )
+    print(
+        "electricity consumption thickening Unit",
+        pyo.value(m.fs.thickener.electricity_consumption[0]),
+        pyo.units.get_units(m.fs.thickener.electricity_consumption[0]),
+    )
+    print(
+        "Influent flow",
+        pyo.value(m.fs.FeedWater.flow_vol[0]),
+        pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
+    )
+    print(
+        "flow into R3",
+        pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
+        pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
+    )
+    print(
+        "flow into RADM",
+        pyo.value(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
+        pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
     )
 
 
