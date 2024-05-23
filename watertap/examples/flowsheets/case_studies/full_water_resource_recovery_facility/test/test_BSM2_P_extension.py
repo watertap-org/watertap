@@ -109,6 +109,19 @@ class TestFullFlowsheet:
             0.00018726, rel=1e-3
         )
 
+    @pytest.mark.component
+    def test_costing(self, system_frame):
+        m = system_frame
+
+        # check costing
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.46305, rel=1e-3)
+        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
+            23680432.7545, rel=1e-3
+        )
+        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
+            818641.4051, rel=1e-3
+        )
+
 
 class TestFullFlowsheetBioPTrue:
     @pytest.mark.requires_idaes_solver
@@ -186,4 +199,17 @@ class TestFullFlowsheetBioPTrue:
         ) == pytest.approx(0.0038120, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
             0.00022427, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_costing(self, system_frame):
+        m = system_frame
+
+        # check costing
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.46904, rel=1e-3)
+        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
+            23985398.4909, rel=1e-3
+        )
+        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
+            829390.6781, rel=1e-3
         )
