@@ -22,13 +22,14 @@ The code-based naming of modeling objects for the inlets, outlets, units, and st
 
 The following modeling components are used within the flowsheet:
 
-Property models:
+Documentation for property models:
     * :doc:`/technical_reference/property_models/mc_aq_sol`
-Unit models:
+Documentation for unit models:
     * :doc:`/technical_reference/unit_models/gac`
+Documentation for unit models from IDAES:
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/feed`
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
-Costing models:
+Documentation for costing models:
     * :doc:`/technical_reference/costing/watertap_costing`
     * :doc:`/technical_reference/costing/gac`
 
