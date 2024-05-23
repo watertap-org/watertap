@@ -17,11 +17,11 @@ The model implemented here is for a continuous evaporative crystallization. The 
 6) The temperature in the crystallizer is fixed.
 7) The exit liquid is assumed to lose its supersaturation.
 
-.. figure:: ../../_static/unit_models/crystallizer.jpg
+.. figure:: ../../_static/flowsheets/crystallizer.jpg
     :width: 400
     :align: center
     
-    Figure 1. Schematic representation of the evaporative crystallization configuration system modeled in IDAES, comprising of a crystallization unit (C), a heater (Q) and a separator (S). The broken green box shows the system boundary. 
+    Figure 1. Schematic representation of the evaporative crystallization configuration system modeled in IDAES, comprising of a crystallization unit, a heater, a pump, and a separator. The broken lines show the system boundary. 
 
 Ports
 ---------
