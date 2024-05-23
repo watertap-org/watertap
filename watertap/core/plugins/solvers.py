@@ -14,7 +14,8 @@ import logging
 
 import pyomo.environ as pyo
 from pyomo.common.collections import Bunch
-from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
+from pyomo.contrib.solver.base import LegacySolverWrapper
+from pyomo.contrib.solver.ipopt import Ipopt
 
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
@@ -36,6 +37,10 @@ def _pyomo_nl_writer_logger_filter(record):
     return True
 
 
+class LegacyWrapperIpopt(LegacySolverWrapper, Ipopt):
+    pass
+
+
 @pyo.SolverFactory.register(
     "ipopt-watertap",
     doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
@@ -43,7 +48,7 @@ def _pyomo_nl_writer_logger_filter(record):
 class IpoptWaterTAP:
 
     name = "ipopt-watertap"
-    _base_solver = IPOPT
+    _base_solver = LegacyWrapperIpopt
 
     def __init__(self, **kwds):
         kwds["name"] = self.name
@@ -60,7 +65,7 @@ class IpoptWaterTAP:
 
     def solve(self, blk, *args, **kwds):
 
-        solver = self._base_solver()
+        solver = self._base_solver(options={})
         self._tee = kwds.get("tee", False)
 
         self._original_options = self.options
@@ -80,6 +85,14 @@ class IpoptWaterTAP:
             self.options["bound_relax_factor"] = 0.0
         if "honor_original_bounds" not in self.options:
             self.options["honor_original_bounds"] = "no"
+
+        # Setup writer_config
+        if "writer_config" not in kwds:
+            kwds["writer_config"] = {}
+        if "linear_presolve" not in kwds["writer_config"]:
+            kwds["writer_config"]["linear_presolve"] = False
+        if "scale_model" not in kwds["writer_config"]:
+            kwds["writer_config"]["scale_model"] = False
 
         if not self._is_user_scaling():
             for k, v in self.options.items():
