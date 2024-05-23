@@ -90,7 +90,7 @@ class IpoptWaterTAP:
         if "writer_config" not in kwds:
             kwds["writer_config"] = {}
         if "linear_presolve" not in kwds["writer_config"]:
-            kwds["writer_config"]["linear_presolve"] = False
+            kwds["writer_config"]["linear_presolve"] = True
         if "scale_model" not in kwds["writer_config"]:
             kwds["writer_config"]["scale_model"] = False
 
