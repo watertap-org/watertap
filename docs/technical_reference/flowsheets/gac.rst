@@ -11,7 +11,7 @@ surface diffusion model (CPHSDM) model.
 Implementation
 --------------
 
-Only consisting of a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`GAC unit model documentation <../unit_models/gac>`.
+Only consisting of a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`GAC unit model documentation <../technical_reference/unit_models/gac>`.
 The code-based naming of modeling objects for the inlets, outlets, units, and streams are shown in Figure 1.
 
 .. figure:: ../../_static/flowsheets/gac.png
@@ -19,6 +19,18 @@ The code-based naming of modeling objects for the inlets, outlets, units, and st
     :align: center
 
     Figure 1. GAC flowsheet
+
+The following modeling components are used within the flowsheet.
+
+Property models:
+    * :doc:`../technical_reference/property_models/mc_aq_sol`
+Unit models:
+    * :doc:`../technical_reference/unit_models/gac`
+    * :doc:`idaes:../reference_guides/model_libraries/generic/unit_models/feed`
+    * :doc:`idaes:../reference_guides/model_libraries/generic/unit_models/product`
+Costing models:
+    * :doc:`../technical_reference/costing/watertap_costing`
+    * :doc:`../technical_reference/costing/gac`
 
 Degrees of Freedom
 ------------------
