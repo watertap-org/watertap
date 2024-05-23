@@ -25,7 +25,7 @@ The following modeling components are used within the flowsheet.
 Property models:
     * :doc:`../technical_reference/property_models/mc_aq_sol`
 Unit models:
-    * :doc:`../unit_models/gac`
+    * :doc:`./unit_models/gac`
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/feed`
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
 Costing models:
