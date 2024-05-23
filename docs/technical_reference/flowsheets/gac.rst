@@ -20,7 +20,7 @@ The code-based naming of modeling objects for the inlets, outlets, units, and st
 
     Figure 1. GAC flowsheet
 
-The following modeling components are used within the flowsheet.
+The following modeling components are used within the flowsheet:
 
 Property models:
     * :doc:`/technical_reference/property_models/mc_aq_sol`
