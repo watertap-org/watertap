@@ -1,4 +1,4 @@
-One-stack electrodialysis with a concentrate fluid recirculation
+One-Stack Electrodialysis with a Concentrate Fluid Recirculation
 ================================================================
 
 Introduction
