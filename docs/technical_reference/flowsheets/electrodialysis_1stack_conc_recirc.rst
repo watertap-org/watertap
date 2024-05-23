@@ -65,7 +65,7 @@ Documentation for the property model:
 
 Degrees of Freedom
 ------------------
-The number of degrees of freedom (DOF) is associated with the number of fixed variables (parameters) determined by the purpose of the modeling case. We implemented two modeling cases in the flowsheet: (1) the prediction of desalination outcome (salinity of the product water and saline disposal) and (2) the optimization of key decision variables in system design.  In the first case, DOF is set to zero by fixing all initial conditions of the feed solution fluid and definite ED stack parameters. All fixed values are presented in the section to follow.  In the second case, the values of those chosen to be the decision variables in the optimization are unfixed. The DOF number is therefore the number of decision variables. In this example, the decision variables are
+The number of degrees of freedom (DOF) is associated with the number of fixed variables (parameters) determined by the purpose of the modeling case. There are two implemented modeling cases in the flowsheet: (1) the prediction of desalination outcome (salinity of the product water and saline disposal) and (2) the optimization of key decision variables in system design.  In the first case, DOF is set to zero by fixing all initial conditions of the feed solution fluid and definite ED stack parameters. All fixed values are presented in the section to follow.  In the second case, the values of those chosen to be the decision variables in the optimization are unfixed. The DOF number is therefore the number of decision variables. In this example, the decision variables are:
 
     * stack voltage applied
     * ED cell pair number 
