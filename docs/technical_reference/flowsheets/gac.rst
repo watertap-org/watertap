@@ -26,8 +26,8 @@ Property models:
     * :doc:`/technical_reference/property_models/mc_aq_sol`
 Unit models:
     * :doc:`/technical_reference/unit_models/gac`
-    * :doc:`idaes:/reference_guides/model_libraries/generic/unit_models/feed`
-    * :doc:`idaes:/reference_guides/model_libraries/generic/unit_models/product`
+    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/feed`
+    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
 Costing models:
     * :doc:`/technical_reference/costing/watertap_costing`
     * :doc:`/technical_reference/costing/gac`
