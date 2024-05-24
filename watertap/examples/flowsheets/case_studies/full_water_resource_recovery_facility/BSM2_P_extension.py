@@ -74,6 +74,7 @@ from watertap.unit_models.thickener import (
     Thickener,
     ActivatedSludgeModelType as thickener_type,
 )
+from watertap.core.util.initialization import interval_improve_initial
 from watertap.core.util.initialization import check_solve
 
 # Set up logger
@@ -652,6 +653,7 @@ def initialize_system(m, bio_P=False):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
+    interval_improve_initial(m)
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
