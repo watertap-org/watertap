@@ -67,7 +67,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
-from watertap.core.util.initialization import interval_improve_initial
 
 
 def main(reactor_volume_equalities=False):
@@ -574,7 +573,6 @@ def add_reactor_volume_equalities(m):
 def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver()
-    interval_improve_initial(blk)
     results = solver.solve(blk, tee=tee)
     pyo.assert_optimal_termination(results)
     return results

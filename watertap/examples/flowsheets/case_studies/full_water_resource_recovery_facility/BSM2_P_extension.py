@@ -75,13 +75,14 @@ from watertap.unit_models.thickener import (
     Thickener,
     ActivatedSludgeModelType as thickener_type,
 )
-from watertap.core.util.initialization import interval_improve_initial
+
 from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
+
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -103,7 +104,6 @@ def main(bio_P=True):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    interval_improve_initial(m)
     results = solve(m)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
@@ -114,7 +114,6 @@ def main(bio_P=True):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
     # Resolve with controls in place
-    interval_improve_initial(m)
     results = solve(m)
 
     pyo.assert_optimal_termination(results)
