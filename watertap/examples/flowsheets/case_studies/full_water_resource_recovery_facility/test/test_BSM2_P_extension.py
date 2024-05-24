@@ -110,6 +110,7 @@ class TestFullFlowsheet:
         )
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_costing(self, system_frame):
         m = system_frame
 
@@ -202,6 +203,7 @@ class TestFullFlowsheetBioPTrue:
         )
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_costing(self, system_frame):
         m = system_frame
 
