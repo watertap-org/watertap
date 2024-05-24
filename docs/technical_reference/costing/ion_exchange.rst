@@ -10,8 +10,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units", "Notes"
 
-   "Anion exchange resin cost", ":math:`c_{res}`", "``anion_exchange_resin_cost``", "205", ":math:`\text{USD}_{2020}\text{/ft}^{3}`", "Assumes strong base polystyrenic gel-type Type II. From EPA-WBS cost model."
-   "Cation exchange resin cost", ":math:`c_{res}`", "``cation_exchange_resin_cost``", "153", ":math:`\text{USD}_{2020}\text{/ft}^{3}`", "Assumes strong acid polystyrenic gel-type. From EPA-WBS cost model."
+   "Anion exchange resin cost", ":math:`c_{res,ax}`", "``anion_exchange_resin_cost``", "205", ":math:`\text{USD}_{2020}\text{/ft}^{3}`", "Assumes strong base polystyrenic gel-type Type II. From EPA-WBS cost model."
+   "Cation exchange resin cost", ":math:`c_{res,cx}`", "``cation_exchange_resin_cost``", "153", ":math:`\text{USD}_{2020}\text{/ft}^{3}`", "Assumes strong acid polystyrenic gel-type. From EPA-WBS cost model."
    "Regenerant dose per volume of resin", ":math:`D_{regen}`", "``regen_dose``", "300", ":math:`\text{kg/}\text{m}^{3}`", "Mass of regenerant chemical per cubic meter of resin volume"
    "Ion exchange column cost equation A coeff", ":math:`C_{col,A}`", "``vessel_A_coeff``", "1596.499", ":math:`\text{USD}_{2020}`", "Carbon steel w/ stainless steel internals. From EPA-WBS cost model."
    "Ion exchange column cost equation B coeff", ":math:`C_{col,b}`", "``vessel_b_coeff``", "0.459496", ":math:`\text{dimensionless}`", "Carbon steel w/ stainless steel internals. From EPA-WBS cost model."
@@ -20,20 +20,29 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Regeneration solution tank cost equation A coeff", ":math:`C_{regen,A}`", "``regen_tank_A_coeff``", "57.02158", ":math:`\text{USD}_{2020}`", "Stainless steel tank. From EPA-WBS cost model."
    "Regeneration solution tank cost equation B coeff", ":math:`C_{regen,b}`", "``regen_tank_b_coeff``", "0.729325", ":math:`\text{dimensionless}`", "Stainless steel tank. From EPA-WBS cost model."
    "Fraction of resin replaced per year", ":math:`f_{res}`", "``annual_resin_replacement_factor``", "0.05", ":math:`1/\text{yr}`", "Estimated 4-5% per year. From EPA-WBS cost model."
-   "Minimum hazardous waste disposal cost", ":math:`f_{haz,min}`", "``hazardous_min_cost``", "3240", ":math:`\text{USD}_{2020}\text{/yr}`", "Minimum cost per hazardous waste shipment. From EPA-WBS cost model."
-   "Unit cost for hazardous waste resin disposal", ":math:`f_{haz,res}`", "``hazardous_resin_disposal``", "347.10", ":math:`\text{USD}_{2020}\text{/ton}`", "From EPA-WBS cost model."
-   "Unit cost for hazardous waste regeneration solution disposal", ":math:`f_{haz,regen}`", "``hazardous_regen_disposal``", "3.64", ":math:`\text{USD}_{2020}\text{/gal}`", "From EPA-WBS cost model."
-   "Number of cycles the regenerant can be reused before disposal", ":math:`f_{recycle}`", "``regen_recycle``", "1", ":math:`\text{dimensionless}`", "Can optionally be set by the user to investigate more efficient regen regimes."
+   "Minimum hazardous waste disposal cost", ":math:`c_{haz,min}`", "``hazardous_min_cost``", "3240", ":math:`\text{USD}_{2020}\text{/yr}`", "Minimum cost per hazardous waste shipment. From EPA-WBS cost model."
+   "Unit cost for hazardous waste resin disposal", ":math:`c_{haz,res}`", "``hazardous_resin_disposal``", "347.10", ":math:`\text{USD}_{2020}\text{/ton}`", "From EPA-WBS cost model."
+   "Unit cost for hazardous waste regeneration solution disposal", ":math:`c_{haz,regen}`", "``hazardous_regen_disposal``", "3.64", ":math:`\text{USD}_{2020}\text{/gal}`", "From EPA-WBS cost model."
+   "Number of cycles the regenerant can be reused before disposal", ":math:`n_{recycle}`", "``regen_recycle``", "1", ":math:`\text{dimensionless}`", "Can optionally be set by the user to investigate more efficient regen regimes."
    "Costing factor to account for total installed cost installation of equipment", ":math:`f_{TIC}`", "``total_installed_cost_factor``", "1.65", ":math:`\text{dimensionless}`", "Costing factor to account for total installed cost of equipment"
-   "Unit cost of NaCl", ":math:`c_{regen}`", "``nacl``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
-   "Unit cost of HCl", ":math:`c_{regen}`", "``hcl``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
-   "Unit cost of NaOH", ":math:`c_{regen}`", "``naoh``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
-   "Unit cost of Methanol (MeOH)", ":math:`c_{regen}`", "``meoh``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
+   "Unit cost of regenerant", ":math:`c_{regen}`", "Regenerant dependent; see table below", "Regenerant dependent; see table below", "Regenerant dependent; see table below", "Regenerant dependent; see table below"
+
+
+The unit cost of regenerant is dependent on the type of regenerant used in the unit model configuration. These parameters are created directly on
+``m.fs.costing``.
+
+.. csv-table::
+   :header: "Description", "Parameter Name", "Default Value", "Units", "Notes"
+
+   "Unit cost of NaCl", "``nacl``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
+   "Unit cost of HCl", "``hcl``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
+   "Unit cost of NaOH", "``naoh``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
+   "Unit cost of Methanol (MeOH)", "``meoh``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
 
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the ``cost_ion_exchange`` costing method in the ``watertap_costing_package``:
+The following variables are constructed on the unit block (e.g., ``m.fs.unit.costing``) when applying the ``cost_ion_exchange`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -54,7 +63,7 @@ Capital Cost Calculations
 Capital costs for ion exchange in the ``watertap_costing_package`` are the summation of the 
 total cost of the resin, columns, backwashing tank, and regeneration solution tank:
 
-Resin is costed based on the total volume of resin required for the system, where :math:`c_{res}` is the cost per volume of resin (either cation or anion exchange resin):
+Resin is costed based on the total volume of resin required for the system, where :math:`c_{res}` is the cost per volume of resin (either cation, :math:`c_{res,cx}`, or anion exchange resin, :math:`c_{res,ax}`):
 
 .. math::
     C_{resin} = V_{res,tot} c_{res}
@@ -110,7 +119,7 @@ If the user does not provide a value for this option, the model defaults to a Na
 is set by the parameter ``regen_dose`` in kg regenerant per cubic meter of resin volume. The mass flow of regenerant solution [kg/yr] is:
 
 .. math::
-    \dot{m}_{regen} = \frac{D_{regen} V_{res} (n_{op} + n_{red})}{t_{cycle} f_{recycle}}
+    \dot{m}_{regen} = \frac{D_{regen} V_{res} (n_{op} + n_{red})}{t_{cycle} n_{recycle}}
 
 Annual resin replacement cost is:
 
@@ -121,7 +130,7 @@ If the spent resin and regenerant contains hazardous material, the user designat
 disposal costs are calculated as a function of the annual mass of resin replaced and regenerant consumed:
 
 .. math::
-    C_{op,haz} = f_{haz,min} + \bigg( M_{res} (n_{op} + n_{red}) f_{res} \bigg)  f_{haz,res} + \dot{v}_{regen} f_{haz,regen}
+    C_{op,haz} = c_{haz,min} + \bigg( M_{res} (n_{op} + n_{red}) f_{res} \bigg)  c_{haz,res} + \dot{v}_{regen} c_{haz,regen}
 
 Where :math:`M_{res}` is the resin mass for a single bed and :math:`\dot{v}_{regen}` is the volumetric flow of regenerant solution. If ``hazardous_waste`` is set to ``False``,
 :math:`C_{op,haz} = 0`
@@ -151,7 +160,7 @@ And then operational cost of replacing the entire bed is:
 If ``hazardous_waste`` is set to ``True``, the hazardous waste disposal costs are: 
 
 .. math::
-    C_{op,haz} = f_{haz,min} + ( \dot{v}_{resin} \rho_{b} n_{op})  f_{haz,res}
+    C_{op,haz} = c_{haz,min} + ( \dot{v}_{resin} \rho_{b} n_{op})  c_{haz,res}
 
 Otherwise, :math:`C_{op,haz} = 0` as before. 
 
