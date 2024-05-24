@@ -4,7 +4,7 @@ Ion Exchange Costing Method
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.ion_exchange`) when applying the `cost_ion_exchange` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.ion_exchange``) when applying the ``cost_ion_exchange`` costing method in the ``watertap_costing_package``:
 
 
 .. csv-table::
@@ -25,15 +25,15 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Unit cost for hazardous waste regeneration solution disposal", ":math:`f_{haz,regen}`", "``hazardous_regen_disposal``", "3.64", ":math:`\text{USD}_{2020}\text{/gal}`", "From EPA-WBS cost model."
    "Number of cycles the regenerant can be reused before disposal", ":math:`f_{recycle}`", "``regen_recycle``", "1", ":math:`\text{dimensionless}`", "Can optionally be set by the user to investigate more efficient regen regimes."
    "Costing factor to account for total installed cost installation of equipment", ":math:`f_{TIC}`", "``total_installed_cost_factor``", "1.65", ":math:`\text{dimensionless}`", "Costing factor to account for total installed cost of equipment"
-   "Unit cost of NaCl", ":math:`c_{regen}`", "``costing.nacl``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
-   "Unit cost of HCl", ":math:`c_{regen}`", "``costing.hcl``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
-   "Unit cost of NaOH", ":math:`c_{regen}`", "``costing.naoh``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
-   "Unit cost of Methanol (MeOH)", ":math:`c_{regen}`", "``costing.meoh``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
+   "Unit cost of NaCl", ":math:`c_{regen}`", "``nacl``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
+   "Unit cost of HCl", ":math:`c_{regen}`", "``hcl``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
+   "Unit cost of NaOH", ":math:`c_{regen}`", "``naoh``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
+   "Unit cost of Methanol (MeOH)", ":math:`c_{regen}`", "``meoh``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
 
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_ion_exchange` costing method in the ``watertap_costing_package``:
+The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the ``cost_ion_exchange`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
