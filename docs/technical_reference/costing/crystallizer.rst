@@ -10,20 +10,20 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
    "**Mass-based Capital Costing**"
-   "Reference free-on-board (FOB) capital cost :math:`^1`", ":math:`Cost_{ref}`", "fob_unit_cost", "675000", ":math:`\text{USD}_{2007}`"
-   "Reference crystallizer capacity :math:`^1`", ":math:`size_{ref}`", "ref_capacity", "1", ":math:`\text{kg/s}`"
-   "Crystallizer cost exponent parameter :math:`^1`", ":math:`n`", "ref_exponent", "0.53", ":math:`\text{dimensionless}`"
-   "Installed equipment cost factor :math:`^2`", ":math:`IEC`", "iec_percent", "1.43", ":math:`\text{dimensionless}`"
+   "Reference free-on-board (FOB) capital cost :math:`^1`", ":math:`Cost_{ref}`", "``fob_unit_cost``", "675000", ":math:`\text{USD}_{2007}`"
+   "Reference crystallizer capacity :math:`^1`", ":math:`size_{ref}`", "``ref_capacity``", "1", ":math:`\text{kg/s}`"
+   "Crystallizer cost exponent parameter :math:`^1`", ":math:`n`", "``ref_exponent``", "0.53", ":math:`\text{dimensionless}`"
+   "Installed equipment cost factor :math:`^2`", ":math:`IEC`", "``iec_percent``", "1.43", ":math:`\text{dimensionless}`"
 
    "**Volume-based Capital Costing**"
-   "Capital cost A parameter :math:`^3`", "A", "volume_cost", "16320", ":math:`\text{USD}_{2007}\text{/ft}^3`"
-   "Capital cost B parameter :math:`^3`", "B", "vol_basis_exponent", "0.47", ":math:`\text{dimensionless}`"
+   "Capital cost A parameter :math:`^3`", "A", "``volume_cost``", "16320", ":math:`\text{USD}_{2007}\text{/ft}^3`"
+   "Capital cost B parameter :math:`^3`", "B", "``vol_basis_exponent``", "0.47", ":math:`\text{dimensionless}`"
 
    "**Operating Costs**"
-   "Heating steam pressure :math:`^4`", ":math:`P_{steam}`", "steam_pressure", "3", ":math:`\text{bar}`"
-   "Heating steam cost parameter :math:`^5`", ":math:`Cost_{steam}`", "steam_cost", "0.004", ":math:`\text{USD}_{2018}\text{/m}^3`"
-   "Recirculation pump head height", ":math:`h_{rec}`", "pump_head_height", "1", ":math:`\text{m}`"
-   "Recirculation pump efficiency", ":math:`\eta_{pump}`", "efficiency_pump", "0.7", ":math:`\text{dimensionless}`"
+   "Heating steam pressure :math:`^4`", ":math:`P_{steam}`", "``steam_pressure``", "3", ":math:`\text{bar}`"
+   "Heating steam cost parameter :math:`^5`", ":math:`Cost_{steam}`", "``steam_cost``", "0.004", ":math:`\text{USD}_{2018}\text{/m}^3`"
+   "Recirculation pump head height", ":math:`h_{rec}`", "``pump_head_height``", "1", ":math:`\text{m}`"
+   "Recirculation pump efficiency", ":math:`\eta_{pump}`", "``efficiency_pump``", "0.7", ":math:`\text{dimensionless}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++

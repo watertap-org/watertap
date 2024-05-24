@@ -9,9 +9,9 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Membrane replacement factor", ":math:`f`", "factor_membrane_replacement", "0.15", ":math:`\text{dimensionless}`"
-   "Membrane cost", ":math:`C_A`", "membrane_cost", "30", ":math:`\text{USD}_{2018}\text{/m}^2`"
-   "High pressure membrane cost", ":math:`C_hA`", "high_pressure_membrane_cost", "50", ":math:`\text{USD}_{2018}\text{/m}^2`"
+   "Membrane replacement factor", ":math:`f`", "``factor_membrane_replacement``", "0.15", ":math:`\text{dimensionless}`"
+   "Membrane cost", ":math:`C_A`", "``membrane_cost``", "30", ":math:`\text{USD}_{2018}\text{/m}^2`"
+   "High pressure membrane cost", ":math:`C_hA`", "``high_pressure_membrane_cost``", "50", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -21,7 +21,7 @@ The following variables are used on the unit block (e.g., m.fs.unit.costing) whe
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Membrane area", ":math:`A`", "area", "None", ":math:`\text{m}^2`"
+   "Membrane area", ":math:`A`", "``area``", "None", ":math:`\text{m}^2`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
