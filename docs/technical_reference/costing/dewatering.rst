@@ -14,16 +14,16 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
    "**Centrifuge**"
-   "Capital cost A parameter :math:`^1`", ":math:`A_{centrifuge}`", "capital_a_parameter", "328.03", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
-   "Capital cost B parameter :math:`^1`", ":math:`B_{centrifuge}`", "capital_b_parameter", "751295", ":math:`\text{USD}_{2007}`"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{centrifuge}`", "``capital_a_parameter``", "328.03", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{centrifuge}`", "``capital_b_parameter``", "751295", ":math:`\text{USD}_{2007}`"
 
    "**Filter belt press**"
-   "Capital cost A parameter :math:`^1`", ":math:`A_{fbp}`", "capital_a_parameter", "146.29", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
-   "Capital cost B parameter :math:`^1`", ":math:`B_{fbp}`", "capital_b_parameter", "433972", ":math:`\text{USD}_{2007}`"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{fbp}`", "``capital_a_parameter``", "146.29", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{fbp}`", "``capital_b_parameter``", "433972", ":math:`\text{USD}_{2007}`"
 
    "**Filter plate press**"
-   "Capital cost A parameter :math:`^1`", ":math:`A_{fpp}`", "capital_a_parameter", "102794", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
-   "Capital cost B parameter :math:`^1`", ":math:`B_{fpp}`", "capital_b_parameter", "0.4216", ":math:`\text{USD}_{2007}`"
+   "Capital cost A parameter :math:`^1`", ":math:`A_{fpp}`", "``capital_a_parameter``", "102794", ":math:`\text{USD}_{2007}\text{/gal/hr}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B_{fpp}`", "``capital_b_parameter``", "0.4216", ":math:`\text{USD}_{2007}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -33,7 +33,7 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Inlet volumetric flow rate", ":math:`Q_{in}`", "flow_in", "[t]", ":math:`\text{gal/hr}`"
+   "Inlet volumetric flow rate", ":math:`Q_{in}`", "``flow_in``", "[t]", ":math:`\text{gal/hr}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
@@ -55,7 +55,13 @@ Capital cost is dependent upon the volumetric flow rate, :math:`Q_{in}`, as show
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no operating costs unique to the dewatering unit.
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(electricity consumption for the dewatering unit), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_{util}`. The annual electricity costs are calculated as:
+
+    .. math::
+
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
  
 Code Documentation
