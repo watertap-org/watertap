@@ -99,6 +99,7 @@ def main(reactor_volume_equalities=False):
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # display_results(m)
     display_costing(m)
+    display_performance_metrics(m)
 
     return m, results
 
@@ -486,7 +487,6 @@ def add_costing(m):
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
-    m.fs.costing.add_electricity_intensity(m.fs.FeedWater.properties[0].flow_vol)
     m.fs.costing.add_annual_water_production(m.fs.Treated.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.FeedWater.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
@@ -625,6 +625,59 @@ def display_costing(m):
         % pyo.value(m.fs.costing.total_annualized_cost)
     )
     print(
+        "capital cost R1",
+        pyo.value(m.fs.R1.costing.capital_cost),
+        pyo.units.get_units(m.fs.R1.costing.capital_cost),
+    )
+    print(
+        "capital cost R2",
+        pyo.value(m.fs.R2.costing.capital_cost),
+        pyo.units.get_units(m.fs.R2.costing.capital_cost),
+    )
+    print(
+        "capital cost R3",
+        pyo.value(m.fs.R3.costing.capital_cost),
+        pyo.units.get_units(m.fs.R3.costing.capital_cost),
+    )
+    print(
+        "capital cost R4",
+        pyo.value(m.fs.R4.costing.capital_cost),
+        pyo.units.get_units(m.fs.R4.costing.capital_cost),
+    )
+    print(
+        "capital cost R5",
+        pyo.value(m.fs.R5.costing.capital_cost),
+        pyo.units.get_units(m.fs.R5.costing.capital_cost),
+    )
+    print(
+        "capital cost primary clarifier",
+        pyo.value(m.fs.CL.costing.capital_cost),
+        pyo.units.get_units(m.fs.CL.costing.capital_cost),
+    )
+    print(
+        "capital cost secondary clarifier",
+        pyo.value(m.fs.CL1.costing.capital_cost),
+        pyo.units.get_units(m.fs.CL1.costing.capital_cost),
+    )
+    print(
+        "capital cost AD",
+        pyo.value(m.fs.RADM.costing.capital_cost),
+        pyo.units.get_units(m.fs.RADM.costing.capital_cost),
+    )
+    print(
+        "capital cost dewatering Unit",
+        pyo.value(m.fs.DU.costing.capital_cost),
+        pyo.units.get_units(m.fs.DU.costing.capital_cost),
+    )
+    print(
+        "capital cost thickener unit",
+        pyo.value(m.fs.TU.costing.capital_cost),
+        pyo.units.get_units(m.fs.TU.costing.capital_cost),
+    )
+
+
+def display_performance_metrics(m):
+    print(
         "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
         % pyo.value(m.fs.costing.specific_energy_consumption)
     )
@@ -683,57 +736,6 @@ def display_costing(m):
         "flow into RADM",
         pyo.value(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
         pyo.units.get_units(m.fs.RADM.liquid_phase.properties_in[0].flow_vol),
-    )
-
-    print(
-        "capital cost R1",
-        pyo.value(m.fs.R1.costing.capital_cost),
-        pyo.units.get_units(m.fs.R1.costing.capital_cost),
-    )
-    print(
-        "capital cost R2",
-        pyo.value(m.fs.R2.costing.capital_cost),
-        pyo.units.get_units(m.fs.R2.costing.capital_cost),
-    )
-    print(
-        "capital cost R3",
-        pyo.value(m.fs.R3.costing.capital_cost),
-        pyo.units.get_units(m.fs.R3.costing.capital_cost),
-    )
-    print(
-        "capital cost R4",
-        pyo.value(m.fs.R4.costing.capital_cost),
-        pyo.units.get_units(m.fs.R4.costing.capital_cost),
-    )
-    print(
-        "capital cost R5",
-        pyo.value(m.fs.R5.costing.capital_cost),
-        pyo.units.get_units(m.fs.R5.costing.capital_cost),
-    )
-    print(
-        "capital cost primary clarifier",
-        pyo.value(m.fs.CL.costing.capital_cost),
-        pyo.units.get_units(m.fs.CL.costing.capital_cost),
-    )
-    print(
-        "capital cost secondary clarifier",
-        pyo.value(m.fs.CL1.costing.capital_cost),
-        pyo.units.get_units(m.fs.CL1.costing.capital_cost),
-    )
-    print(
-        "capital cost AD",
-        pyo.value(m.fs.RADM.costing.capital_cost),
-        pyo.units.get_units(m.fs.RADM.costing.capital_cost),
-    )
-    print(
-        "capital cost dewatering Unit",
-        pyo.value(m.fs.DU.costing.capital_cost),
-        pyo.units.get_units(m.fs.DU.costing.capital_cost),
-    )
-    print(
-        "capital cost thickener unit",
-        pyo.value(m.fs.TU.costing.capital_cost),
-        pyo.units.get_units(m.fs.TU.costing.capital_cost),
     )
 
 
