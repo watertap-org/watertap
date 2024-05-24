@@ -28,8 +28,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Unit cost of regenerant", ":math:`c_{regen}`", "Regenerant dependent; see table below", "Regenerant dependent; see table below", "Regenerant dependent; see table below", "Regenerant dependent; see table below"
 
 
-The unit cost of regenerant is dependent on the type of regenerant used in the unit model configuration. These parameters are created directly on
-``m.fs.costing``.
+The unit cost of regenerant is dependent on the type of regenerant used in the unit model configuration. 
+These parameters are created directly on ``m.fs.costing``.
 
 .. csv-table::
    :header: "Description", "Parameter Name", "Default Value", "Units", "Notes"
@@ -45,9 +45,17 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., ``m.fs.unit.costing``) when applying the ``cost_ion_exchange`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "variable_name", "1", ":math:`\text{dimensionless}`"
+   "Density of regenerant solution", ":math:`\rho_{regen}`", "``regen_soln_dens``", "None", ":math:`\text{kg/}\text{m}^{3}`"
+   "Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]", ":math:`D_{regen}`", "``regen_dose``", "None", ":math:`\text{kg/}\text{m}^{3}`"
+   "Capital cost for one vessel", ":math:`C_{col}`", "``capital_cost_vessel``", "None", ":math:`\text{USD}`"
+   "Capital cost for resin for one vessel", ":math:`C_{resin}`", "``capital_cost_resin``", "None", ":math:`\text{USD}`"
+   "Capital cost for regeneration solution tank", ":math:`C_{regen}`", "``capital_cost_regen_tank``", "None", ":math:`\text{USD}`"
+   "Capital cost for backwash + rinse solution tank", ":math:`C_{bw}`", "``capital_cost_backwash_tank``", "None", ":math:`\text{USD}`"
+   "Operating cost for hazardous waste disposal", ":math:`D_{regen}`", "``operating_cost_hazardous``", "None", ":math:`\text{USD/}\text{yr}`"
+   "Regeneration solution flow", ":math:`\dot{v}_{regen}`", "``flow_mass_regen_soln``", "None", ":math:`\text{kg/}\text{yr}`"
+   "Total pumping power required", ":math:`P_{tot}`", "``total_pumping_power``", "None", ":math:`\text{kW}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
