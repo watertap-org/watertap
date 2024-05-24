@@ -223,7 +223,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "target_component",
         ConfigValue(
-            default="Ca_2+",
+            default="",
             domain=str,
             description="Designates targeted species for removal",
         ),
@@ -262,23 +262,24 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         comps = self.config.property_package.component_list
         target_component = self.config.target_component
 
-        self.target_component_set = Set(
-            initialize=[target_component]
-        )  # create set for future development of multi-component model
-        inerts = comps - self.target_component_set
+        # self.target_component_set = Set(
+        #     initialize=[target_component]
+        # )  # create set for future development of multi-component model
+        # inerts = comps - self.target_component_set
 
-        if len(self.target_component_set) > 1:
-            raise ConfigurationError(
-                f"IonExchange0D can only accept a single target ion but {len(self.target_component_set)} were provided."
-            )
-        if self.config.property_package.charge_comp[target_component].value > 0:
-            self.ion_exchange_type = IonExchangeType.cation
-        elif self.config.property_package.charge_comp[target_component].value < 0:
-            self.ion_exchange_type = IonExchangeType.anion
-        else:
-            assert target_component in ["TDS", "Alkalinity"]
-            self.ion_exchange_type = IonExchangeType.demineralize
-            # raise ConfigurationError("Target ion must have non-zero charge.")
+        # if len(self.target_component_set) > 1:
+        #     raise ConfigurationError(
+        #         f"IonExchange0D can only accept a single target ion but {len(self.target_component_set)} were provided."
+        #     )
+        if target_component is not "":
+            if self.config.property_package.charge_comp[target_component].value > 0:
+                self.ion_exchange_type = IonExchangeType.cation
+            elif self.config.property_package.charge_comp[target_component].value < 0:
+                self.ion_exchange_type = IonExchangeType.anion
+            else:
+                assert target_component in ["TDS", "Alkalinity"]
+                self.ion_exchange_type = IonExchangeType.demineralize
+                # raise ConfigurationError("Target ion must have non-zero charge.")
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -322,9 +323,9 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         self.add_outlet_port(name="regen", block=self.regeneration_stream)
 
-        for j in inerts:
-            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
-            regen.get_material_flow_terms("Liq", j).fix(0)
+        # for j in inerts:
+        #     self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
+        #     regen.get_material_flow_terms("Liq", j).fix(0)
 
         # ==========PARAMETERS==========
 
@@ -503,13 +504,13 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             doc="Resin bulk density",
         )
 
-        self.c_norm = Var(
-            self.target_component_set,
-            initialize=0.5,
-            bounds=(0, 1),
-            units=pyunits.dimensionless,
-            doc="Dimensionless (relative) concentration [Ct/C0] of target ion",
-        )
+        # self.c_norm = Var(
+        #     self.target_component_set,
+        #     initialize=0.5,
+        #     bounds=(0, 1),
+        #     units=pyunits.dimensionless,
+        #     doc="Dimensionless (relative) concentration [Ct/C0] of target ion",
+        # )
 
         self.bed_volume = Var(
             initialize=2,
@@ -555,7 +556,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         self.col_height_to_diam_ratio = Var(
             initialize=1,
-            bounds=(1, 100),
+            bounds=(0, 100),
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
@@ -613,19 +614,19 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             doc="Reynolds number",
         )
 
-        self.N_Sc = Var(
-            self.target_component_set,
-            initialize=700,
-            units=pyunits.dimensionless,
-            doc="Schmidt number",
-        )
+        # self.N_Sc = Var(
+        #     self.target_component_set,
+        #     initialize=700,
+        #     units=pyunits.dimensionless,
+        #     doc="Schmidt number",
+        # )
 
-        self.N_Sh = Var(
-            self.target_component_set,
-            initialize=30,
-            units=pyunits.dimensionless,
-            doc="Sherwood number",
-        )
+        # self.N_Sh = Var(
+        #     self.target_component_set,
+        #     initialize=30,
+        #     units=pyunits.dimensionless,
+        #     doc="Sherwood number",
+        # )
 
         self.N_Pe_particle = Var(
             initialize=0.1,
@@ -640,6 +641,10 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         # ==========EXPRESSIONS==========
+
+        @self.Expression(doc="Flow per column")
+        def flow_per_column(b):
+            return prop_in.flow_vol_phase["Liq"] / b.number_columns
 
         @self.Expression(doc="Pressure drop")
         def pressure_drop(b):
@@ -720,7 +725,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Rinse flow rate")
         def rinse_flow(b):
-            return b.loading_rate * (b.bed_volume / b.bed_depth) * b.number_columns
+            return b.loading_rate * b.bed_area * b.number_columns
 
         @self.Expression(doc="Backwash pump power")
         def bw_pump_power(b):
@@ -740,14 +745,14 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         def bed_volume_constraint(b):
             return b.bed_volume == b.bed_area * b.bed_depth
 
-        @self.Constraint(
-            self.target_component_set, doc="Mass transfer for regeneration stream"
-        )
-        def eq_mass_transfer_regen(b, j):
-            return (
-                regen.get_material_flow_terms("Liq", j)
-                == -b.process_flow.mass_transfer_term[0, "Liq", j]
-            )
+        # @self.Constraint(
+        #     self.target_component_set, doc="Mass transfer for regeneration stream"
+        # )
+        # def eq_mass_transfer_regen(b, j):
+        #     return (
+        #         regen.get_material_flow_terms("Liq", j)
+        #         == -b.process_flow.mass_transfer_term[0, "Liq", j]
+        #     )
 
         @self.Constraint(
             doc="Isothermal assumption for regen stream",
@@ -778,7 +783,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Volume per column")
         def column_volume(b):
-            return b.column_height * (b.bed_volume / b.bed_depth)
+            return b.column_height * b.bed_area
 
         @self.Expression(doc="Total column volume required")
         def column_volume_total(b):
@@ -806,22 +811,22 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
                 b.N_Re == (b.loading_rate * b.resin_diam) / prop_in.visc_k_phase["Liq"]
             )
 
-        @self.Constraint(self.target_component_set, doc="Schmidt number")
-        def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
-            return (
-                b.N_Sc[j]
-                == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
-            )
+        # @self.Constraint(self.target_component_set, doc="Schmidt number")
+        # def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
+        #     return (
+        #         b.N_Sc[j]
+        #         == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
+        #     )
 
-        @self.Constraint(self.target_component_set, doc="Sherwood number")
-        def eq_Sh(b, j):  # Eq. 3.346, Inglezakis + Poulopoulos
-            return (
-                b.N_Sh[j]
-                == b.Sh_A
-                * b.bed_porosity**b.Sh_exp_A
-                * b.N_Re**b.Sh_exp_B
-                * b.N_Sc[j] ** b.Sh_exp_C
-            )
+        # @self.Constraint(self.target_component_set, doc="Sherwood number")
+        # def eq_Sh(b, j):  # Eq. 3.346, Inglezakis + Poulopoulos
+        #     return (
+        #         b.N_Sh[j]
+        #         == b.Sh_A
+        #         * b.bed_porosity**b.Sh_exp_A
+        #         * b.N_Re**b.Sh_exp_B
+        #         * b.N_Sc[j] ** b.Sh_exp_C
+        #     )
 
         @self.Constraint(doc="Bed Peclet number")
         def eq_Pe_bed(b):
@@ -833,37 +838,42 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         # =========== RESIN & COLUMN ===========
 
-        @self.Constraint(doc="Empty bed contact time")
-        def eq_ebct(b):
-            return b.ebct * b.loading_rate == b.bed_depth
+        # @self.Constraint(doc="Empty bed contact time")
+        # def eq_ebct(b):
+        #     return b.ebct * b.loading_rate == b.flow_per_column / b.bed_area
+        
+        @self.Constraint()
+        def eq_loading_rate(b):
+            return b.loading_rate == pyunits.convert(b.flow_per_column / b.bed_area, to_units=pyunits.m / pyunits.s)
 
-        @self.Constraint(doc="Service flow rate")
-        def eq_service_flow_rate(b):
-            return b.service_flow_rate * b.bed_volume_total == pyunits.convert(
-                prop_in.flow_vol_phase["Liq"],
-                to_units=pyunits.m**3 / pyunits.hr,
-            )
 
-        @self.Constraint(doc="Flow through bed constraint")
-        def eq_bed_flow(b):
-            return (
-                b.bed_depth * prop_in.flow_vol_phase["Liq"]
-                == b.bed_volume_total * b.loading_rate
-            )
+        # @self.Constraint(doc="Service flow rate")
+        # def eq_service_flow_rate(b):
+        #     return b.service_flow_rate * b.bed_volume_total == pyunits.convert(
+        #         prop_in.flow_vol_phase["Liq"],
+        #         to_units=pyunits.m**3 / pyunits.hr,
+        #     )
+
+        # @self.Constraint(doc="Flow through bed constraint")
+        # def eq_bed_flow(b):
+        #     return (
+        #         b.bed_depth * prop_in.flow_vol_phase["Liq"]
+        #         == b.bed_volume_total * b.loading_rate
+        #     )
 
         @self.Constraint(doc="Column height")
         def eq_col_height(b):
             return b.column_height == b.bed_depth + b.free_board
 
-        @self.Constraint(doc="Bed design")
-        def eq_bed_design(b):
-            return (
-                b.bed_depth * Constants.pi * b.bed_area
-            ) * b.number_columns == b.bed_volume_total
+        # @self.Constraint(doc="Bed design")
+        # def eq_bed_design(b):
+        #     return (
+        #         b.bed_depth * Constants.pi * b.bed_area
+        #     ) * b.number_columns == b.bed_volume_total
 
-        @self.Constraint(doc="Column height to diameter ratio")
-        def eq_col_height_to_diam_ratio(b):
-            return b.col_height_to_diam_ratio * b.bed_diameter == b.column_height
+        # @self.Constraint(doc="Column height to diameter ratio")
+        # def eq_col_height_to_diam_ratio(b):
+        #     return b.col_height_to_diam_ratio * b.bed_diameter == b.column_height
 
         @self.Constraint(doc="Number of redundant columns")
         def eq_number_columns_redundant(b):
@@ -927,11 +937,11 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         state_args_out = deepcopy(state_args)
 
-        for p, j in self.process_flow.properties_out.phase_component_set:
-            if j in self.target_component_set:
-                state_args_out["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
-                )
+        # for p, j in self.process_flow.properties_out.phase_component_set:
+        #     if j in self.target_component_set:
+        #         state_args_out["flow_mol_phase_comp"][(p, j)] = (
+        #             state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
+        #         )
 
         self.process_flow.properties_out.initialize(
             outlvl=outlvl,
