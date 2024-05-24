@@ -119,7 +119,8 @@ class IonExchangeDeminData(IonExchangeBaseData):
         @self.Constraint()
         def eq_bv(b):
             expr = (prop_in.flow_vol_phase["Liq"] * b.resin_capacity_op) / (
-                b.mass_removed_per_day
+                b.flow_equiv_total_in
+                # b.mass_removed_per_day
             )
             return b.bv == pyunits.convert(expr, to_units=pyunits.dimensionless)
 
