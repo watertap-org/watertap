@@ -121,7 +121,7 @@ def min_boron_removal_model():
         "OH_-": 1e-7,
         "B[OH]3": 2e-4,
         "B[OH]4_-": 1e-6,
-        "Na_+": 1e-15,
+        "Na_+": 1e-5,
         "HCO3_-": 1e-4,
     }
 
@@ -145,8 +145,6 @@ def min_boron_removal_model():
 class TestBoronRemoval_IonPropPack_Min(UnitTestHarness):
     def configure(self):
         m = min_boron_removal_model()
-
-        self.default_small = 1e-8
 
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
