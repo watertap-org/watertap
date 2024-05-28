@@ -75,9 +75,6 @@ def scaling_setup(
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1 / state[j], index=("Liq", j)
             )
-            m.fs.properties.set_default_scaling(
-                "flow_mass_phase_comp", 1 / state[j], index=("Liq", j)
-            )
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -127,6 +124,7 @@ def min_boron_removal_model():
         "Na_+": 1e-15,
         "HCO3_-": 1e-4,
     }
+
     # For this test, we don't actually know how much
     #   of the base to add. Instead, we have a target
     #   exit flow of boron (see below). We will initially
@@ -148,9 +146,7 @@ class TestBoronRemoval_IonPropPack_Min(UnitTestHarness):
     def configure(self):
         m = min_boron_removal_model()
 
-        self.default_large = 1e3
-        self.default_small = 1e-3
-        self.default_relative_tolerance = 1e-4
+        self.default_small = 1e-8
 
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
@@ -206,10 +202,6 @@ def alk_boron_removal_model():
 class TestBoronRemoval_IonPropPack_with_ResAlk(UnitTestHarness):
     def configure(self):
         m = alk_boron_removal_model()
-
-        self.default_large = 1e3
-        self.default_small = 1e-3
-        self.default_relative_tolerance = 1e-4
 
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
@@ -267,10 +259,6 @@ def base_boron_removal_model():
 class TestBoronRemoval_IonPropPack_with_ResBase(UnitTestHarness):
     def configure(self):
         m = base_boron_removal_model()
-
-        self.default_large = 1e3
-        self.default_small = 1e-3
-        self.default_relative_tolerance = 1e-4
 
         self.unit_solutions[
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
