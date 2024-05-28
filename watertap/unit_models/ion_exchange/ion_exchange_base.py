@@ -527,10 +527,10 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         self.bed_depth = Var(
-            initialize=1, 
+            initialize=1,
             bounds=(0.75, 2),  # EPA-WBS guidance
-            units=pyunits.m, 
-            doc="Bed depth" 
+            units=pyunits.m,
+            doc="Bed depth",
         )
 
         self.bed_porosity = Var(
@@ -600,7 +600,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         self.service_flow_rate = Var(
             initialize=10,
-            bounds=(1, 40),
+            bounds=(1, None),
             units=pyunits.hr**-1,
             doc="Service flow rate [BV/hr]",
         )
@@ -742,8 +742,12 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             ) * (b.rinse_time / b.cycle_time)
 
         @self.Constraint(doc="Bed volume per operational column")
-        def bed_volume_constraint(b):
+        def eq_bed_volume(b):
             return b.bed_volume == b.bed_area * b.bed_depth
+
+        @self.Constraint(doc="Total bed volume")
+        def eq_bed_volume_total(b):
+            return b.bed_volume_total == b.bed_volume * b.number_columns
 
         # @self.Constraint(
         #     self.target_component_set, doc="Mass transfer for regeneration stream"
@@ -841,18 +845,19 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         # @self.Constraint(doc="Empty bed contact time")
         # def eq_ebct(b):
         #     return b.ebct * b.loading_rate == b.flow_per_column / b.bed_area
-        
+
         @self.Constraint()
         def eq_loading_rate(b):
-            return b.loading_rate == pyunits.convert(b.flow_per_column / b.bed_area, to_units=pyunits.m / pyunits.s)
+            return b.loading_rate == pyunits.convert(
+                b.flow_per_column / b.bed_area, to_units=pyunits.m / pyunits.s
+            )
 
-
-        # @self.Constraint(doc="Service flow rate")
-        # def eq_service_flow_rate(b):
-        #     return b.service_flow_rate * b.bed_volume_total == pyunits.convert(
-        #         prop_in.flow_vol_phase["Liq"],
-        #         to_units=pyunits.m**3 / pyunits.hr,
-        #     )
+        @self.Constraint(doc="Service flow rate")
+        def eq_service_flow_rate(b):
+            return b.service_flow_rate * b.bed_volume_total == pyunits.convert(
+                prop_in.flow_vol_phase["Liq"],
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
 
         # @self.Constraint(doc="Flow through bed constraint")
         # def eq_bed_flow(b):
@@ -983,152 +988,152 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        target_component = self.config.target_component
-        isotherm = self.config.isotherm
+        # target_component = self.config.target_component
+        # isotherm = self.config.isotherm
 
-        if iscale.get_scaling_factor(self.breakthrough_time) is None:
-            iscale.set_scaling_factor(self.breakthrough_time, 1e-6)
+        # if iscale.get_scaling_factor(self.breakthrough_time) is None:
+        #     iscale.set_scaling_factor(self.breakthrough_time, 1e-6)
 
-        if iscale.get_scaling_factor(self.N_Re) is None:
-            iscale.set_scaling_factor(self.N_Re, 1)
+        # if iscale.get_scaling_factor(self.N_Re) is None:
+        #     iscale.set_scaling_factor(self.N_Re, 1)
 
-        if iscale.get_scaling_factor(self.N_Sc) is None:
-            iscale.set_scaling_factor(self.N_Sc, 1e-2)
+        # if iscale.get_scaling_factor(self.N_Sc) is None:
+        #     iscale.set_scaling_factor(self.N_Sc, 1e-2)
 
-        if iscale.get_scaling_factor(self.N_Sh) is None:
-            iscale.set_scaling_factor(self.N_Sh, 0.1)
+        # if iscale.get_scaling_factor(self.N_Sh) is None:
+        #     iscale.set_scaling_factor(self.N_Sh, 0.1)
 
-        if iscale.get_scaling_factor(self.N_Pe_particle) is None:
-            iscale.set_scaling_factor(self.N_Pe_particle, 1e2)
+        # if iscale.get_scaling_factor(self.N_Pe_particle) is None:
+        #     iscale.set_scaling_factor(self.N_Pe_particle, 1e2)
 
-        if iscale.get_scaling_factor(self.N_Pe_bed) is None:
-            iscale.set_scaling_factor(self.N_Pe_bed, 1e-3)
+        # if iscale.get_scaling_factor(self.N_Pe_bed) is None:
+        #     iscale.set_scaling_factor(self.N_Pe_bed, 1e-3)
 
-        if iscale.get_scaling_factor(self.number_columns) is None:
-            iscale.set_scaling_factor(self.number_columns, 1)
+        # if iscale.get_scaling_factor(self.number_columns) is None:
+        #     iscale.set_scaling_factor(self.number_columns, 1)
 
-        if iscale.get_scaling_factor(self.resin_diam) is None:
-            iscale.set_scaling_factor(self.resin_diam, 1e4)
+        # if iscale.get_scaling_factor(self.resin_diam) is None:
+        #     iscale.set_scaling_factor(self.resin_diam, 1e4)
 
-        if iscale.get_scaling_factor(self.resin_density) is None:
-            iscale.set_scaling_factor(self.resin_density, 10)
+        # if iscale.get_scaling_factor(self.resin_density) is None:
+        #     iscale.set_scaling_factor(self.resin_density, 10)
 
-        if iscale.get_scaling_factor(self.resin_surf_per_vol) is None:
-            iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
+        # if iscale.get_scaling_factor(self.resin_surf_per_vol) is None:
+        #     iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
 
-        if iscale.get_scaling_factor(self.bed_volume_total) is None:
-            iscale.set_scaling_factor(self.bed_volume_total, 0.1)
+        # if iscale.get_scaling_factor(self.bed_volume_total) is None:
+        #     iscale.set_scaling_factor(self.bed_volume_total, 0.1)
 
-        if iscale.get_scaling_factor(self.bed_depth) is None:
-            iscale.set_scaling_factor(self.bed_depth, 1)
+        # if iscale.get_scaling_factor(self.bed_depth) is None:
+        #     iscale.set_scaling_factor(self.bed_depth, 1)
 
-        if iscale.get_scaling_factor(self.col_height_to_diam_ratio) is None:
-            iscale.set_scaling_factor(self.col_height_to_diam_ratio, 0.1)
+        # if iscale.get_scaling_factor(self.col_height_to_diam_ratio) is None:
+        #     iscale.set_scaling_factor(self.col_height_to_diam_ratio, 0.1)
 
-        if iscale.get_scaling_factor(self.bed_porosity) is None:
-            iscale.set_scaling_factor(self.bed_porosity, 10)
+        # if iscale.get_scaling_factor(self.bed_porosity) is None:
+        #     iscale.set_scaling_factor(self.bed_porosity, 10)
 
-        if iscale.get_scaling_factor(self.column_height) is None:
-            iscale.set_scaling_factor(self.column_height, 1)
+        # if iscale.get_scaling_factor(self.column_height) is None:
+        #     iscale.set_scaling_factor(self.column_height, 1)
 
-        if iscale.get_scaling_factor(self.bed_diameter) is None:
-            iscale.set_scaling_factor(self.bed_diameter, 1)
+        # if iscale.get_scaling_factor(self.bed_diameter) is None:
+        #     iscale.set_scaling_factor(self.bed_diameter, 1)
 
-        if iscale.get_scaling_factor(self.service_flow_rate) is None:
-            iscale.set_scaling_factor(self.service_flow_rate, 0.1)
+        # if iscale.get_scaling_factor(self.service_flow_rate) is None:
+        #     iscale.set_scaling_factor(self.service_flow_rate, 0.1)
 
-        if iscale.get_scaling_factor(self.c_norm) is None:
-            iscale.set_scaling_factor(self.c_norm, 10)
+        # if iscale.get_scaling_factor(self.c_norm) is None:
+        #     iscale.set_scaling_factor(self.c_norm, 10)
 
-        if iscale.get_scaling_factor(self.ebct) is None:
-            iscale.set_scaling_factor(self.ebct, 1e-2)
+        # if iscale.get_scaling_factor(self.ebct) is None:
+        #     iscale.set_scaling_factor(self.ebct, 1e-2)
 
-        if iscale.get_scaling_factor(self.loading_rate) is None:
-            iscale.set_scaling_factor(self.loading_rate, 1e3)
+        # if iscale.get_scaling_factor(self.loading_rate) is None:
+        #     iscale.set_scaling_factor(self.loading_rate, 1e3)
 
-        # unique scaling for isotherm type
-        if isotherm == IsothermType.langmuir:
-            if iscale.get_scaling_factor(self.resin_max_capacity) is None:
-                iscale.set_scaling_factor(self.resin_max_capacity, 1)
+        # # unique scaling for isotherm type
+        # if isotherm == IsothermType.langmuir:
+        #     if iscale.get_scaling_factor(self.resin_max_capacity) is None:
+        #         iscale.set_scaling_factor(self.resin_max_capacity, 1)
 
-            if iscale.get_scaling_factor(self.resin_eq_capacity) is None:
-                iscale.set_scaling_factor(self.resin_eq_capacity, 1)
+        #     if iscale.get_scaling_factor(self.resin_eq_capacity) is None:
+        #         iscale.set_scaling_factor(self.resin_eq_capacity, 1)
 
-            if iscale.get_scaling_factor(self.resin_unused_capacity) is None:
-                iscale.set_scaling_factor(self.resin_unused_capacity, 1)
+        #     if iscale.get_scaling_factor(self.resin_unused_capacity) is None:
+        #         iscale.set_scaling_factor(self.resin_unused_capacity, 1)
 
-            if iscale.get_scaling_factor(self.langmuir[target_component]) is None:
-                iscale.set_scaling_factor(self.langmuir[target_component], 10)
+        #     if iscale.get_scaling_factor(self.langmuir[target_component]) is None:
+        #         iscale.set_scaling_factor(self.langmuir[target_component], 10)
 
-            if iscale.get_scaling_factor(self.num_transfer_units) is None:
-                iscale.set_scaling_factor(self.num_transfer_units, 1e-3)
+        #     if iscale.get_scaling_factor(self.num_transfer_units) is None:
+        #         iscale.set_scaling_factor(self.num_transfer_units, 1e-3)
 
-            if iscale.get_scaling_factor(self.partition_ratio) is None:
-                iscale.set_scaling_factor(self.partition_ratio, 1e-3)
+        #     if iscale.get_scaling_factor(self.partition_ratio) is None:
+        #         iscale.set_scaling_factor(self.partition_ratio, 1e-3)
 
-            if iscale.get_scaling_factor(self.fluid_mass_transfer_coeff) is None:
-                iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
+        #     if iscale.get_scaling_factor(self.fluid_mass_transfer_coeff) is None:
+        #         iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
 
-            if iscale.get_scaling_factor(self.mass_removed) is None:
-                iscale.set_scaling_factor(self.mass_removed, 1e-6)
+        #     if iscale.get_scaling_factor(self.mass_removed) is None:
+        #         iscale.set_scaling_factor(self.mass_removed, 1e-6)
 
-        if isotherm == IsothermType.freundlich:
+        # if isotherm == IsothermType.freundlich:
 
-            if iscale.get_scaling_factor(self.freundlich_n) is None:
-                iscale.set_scaling_factor(self.freundlich_n, 0.1)
+        #     if iscale.get_scaling_factor(self.freundlich_n) is None:
+        #         iscale.set_scaling_factor(self.freundlich_n, 0.1)
 
-            if iscale.get_scaling_factor(self.mass_transfer_coeff) is None:
-                iscale.set_scaling_factor(self.mass_transfer_coeff, 10)
+        #     if iscale.get_scaling_factor(self.mass_transfer_coeff) is None:
+        #         iscale.set_scaling_factor(self.mass_transfer_coeff, 10)
 
-            if iscale.get_scaling_factor(self.bv_50) is None:
-                iscale.set_scaling_factor(self.bv_50, 1e-5)
+        #     if iscale.get_scaling_factor(self.bv_50) is None:
+        #         iscale.set_scaling_factor(self.bv_50, 1e-5)
 
-            if iscale.get_scaling_factor(self.bv) is None:
-                iscale.set_scaling_factor(self.bv, 1e-5)
+        #     if iscale.get_scaling_factor(self.bv) is None:
+        #         iscale.set_scaling_factor(self.bv, 1e-5)
 
-            if iscale.get_scaling_factor(self.tb_traps) is None:
-                sf = iscale.get_scaling_factor(self.breakthrough_time)
-                iscale.set_scaling_factor(self.tb_traps, sf)
+        #     if iscale.get_scaling_factor(self.tb_traps) is None:
+        #         sf = iscale.get_scaling_factor(self.breakthrough_time)
+        #         iscale.set_scaling_factor(self.tb_traps, sf)
 
-            if iscale.get_scaling_factor(self.c_traps) is None:
-                iscale.set_scaling_factor(self.c_traps, 1)
+        #     if iscale.get_scaling_factor(self.c_traps) is None:
+        #         iscale.set_scaling_factor(self.c_traps, 1)
 
-            if iscale.get_scaling_factor(self.traps) is None:
-                iscale.set_scaling_factor(self.traps, 1e3)
+        #     if iscale.get_scaling_factor(self.traps) is None:
+        #         iscale.set_scaling_factor(self.traps, 1e3)
 
-            if iscale.get_scaling_factor(self.c_norm_avg) is None:
-                iscale.set_scaling_factor(self.c_norm_avg, 1e2)
+        #     if iscale.get_scaling_factor(self.c_norm_avg) is None:
+        #         iscale.set_scaling_factor(self.c_norm_avg, 1e2)
 
-        # transforming constraints
-        if isotherm == IsothermType.langmuir:
-            for ind, c in self.eq_num_transfer_units.items():
-                if iscale.get_scaling_factor(c) is None:
-                    sf = iscale.get_scaling_factor(self.num_transfer_units)
-                    iscale.constraint_scaling_transform(c, sf)
+        # # transforming constraints
+        # if isotherm == IsothermType.langmuir:
+        #     for ind, c in self.eq_num_transfer_units.items():
+        #         if iscale.get_scaling_factor(c) is None:
+        #             sf = iscale.get_scaling_factor(self.num_transfer_units)
+        #             iscale.constraint_scaling_transform(c, sf)
 
-            for _, c in self.eq_partition_ratio.items():
-                if iscale.get_scaling_factor(c) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.process_flow.properties_in[0].conc_mol_phase_comp[
-                            "Liq", target_component
-                        ]
-                    )
-                    iscale.constraint_scaling_transform(c, sf)
+        #     for _, c in self.eq_partition_ratio.items():
+        #         if iscale.get_scaling_factor(c) is None:
+        #             sf = iscale.get_scaling_factor(
+        #                 self.process_flow.properties_in[0].conc_mol_phase_comp[
+        #                     "Liq", target_component
+        #                 ]
+        #             )
+        #             iscale.constraint_scaling_transform(c, sf)
 
-            for ind, c in self.eq_fluid_mass_transfer_coeff.items():
-                if iscale.get_scaling_factor(c) is None:
-                    sf = iscale.get_scaling_factor(self.fluid_mass_transfer_coeff[ind])
-                    iscale.constraint_scaling_transform(c, sf)
+        #     for ind, c in self.eq_fluid_mass_transfer_coeff.items():
+        #         if iscale.get_scaling_factor(c) is None:
+        #             sf = iscale.get_scaling_factor(self.fluid_mass_transfer_coeff[ind])
+        #             iscale.constraint_scaling_transform(c, sf)
 
-        if isotherm == IsothermType.freundlich:
+        # if isotherm == IsothermType.freundlich:
 
-            for ind, c in self.eq_clark.items():
-                if iscale.get_scaling_factor(c) is None:
-                    iscale.constraint_scaling_transform(c, 1e-2)
+        #     for ind, c in self.eq_clark.items():
+        #         if iscale.get_scaling_factor(c) is None:
+        #             iscale.constraint_scaling_transform(c, 1e-2)
 
-            for ind, c in self.eq_traps.items():
-                if iscale.get_scaling_factor(c) is None:
-                    iscale.constraint_scaling_transform(c, 1e2)
+        #     for ind, c in self.eq_traps.items():
+        #         if iscale.get_scaling_factor(c) is None:
+        #             iscale.constraint_scaling_transform(c, 1e2)
 
     def _get_stream_table_contents(self, time_point=0):
 
