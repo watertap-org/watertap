@@ -9,51 +9,46 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "parameter_name", "1", ":math:`\text{dimensionless}`"
+   "UV replacement factor", ":math:`f`", "``factor_lamp_replacement``", "0.33278", ":math:`\text{dimensionless}`"
+   "UV reactor cost", ":math:`C_F`", "``reactor_cost``", "202.346", ":math:`\text{USD}_{2018}\text{/m}^3\text{/hr}`"
+   "UV lamps, sleeves, ballasts and sensors cost", ":math:`C_l`", "``lamp_cost``", "235.5", ":math:`\text{USD}_{2018}\text{/kW}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_uv_aop` costing method in the ``watertap_costing_package``:
+The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_uv_aop` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "variable_name", "1", ":math:`\text{dimensionless}`"
+   "Inlet volumetric flowrate", ":math:`F_{in}`", "``flow_vol``", "[t]", ":math:`\text{m}^3\text{/s}`"
+   "Electricity demand", ":math:`E`", "``electricity_demand``", "[t]", ":math:`\text{W}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Describe capital costs..keep it concise where possible
+Capital cost is the sum of the unit reactor cost and lamp cost:
 
     .. math::
 
-        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}
+        C_{cap,tot} = C_{cap,reactor}+C_{cap,lamp}
 
     .. math::
 
-        C_{cap,example1} = fill in equation for each component in total capex equation
+        C_{cap,reactor} = C_F * F_{in}
+        C_{cap,lamp} = C_l * E
 
  
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Describe operating/maintenance costs..keep it concise where possible
+Fixed operating cost depends on the electricity demand of lamps, :math:`E`, as shown in the equation below:
 
     .. math::
 
-        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}
+        C_{op,tot} = f * C_l * E
 
-    .. math::
-
-        C_{op,example1} = fill in equation for each component in total opex equation
-
- 
 Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.uv_aop`
-
-References
-----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
