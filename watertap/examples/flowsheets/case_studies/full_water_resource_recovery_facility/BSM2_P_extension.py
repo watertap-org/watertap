@@ -677,10 +677,7 @@ def initialize_system(m, bio_P=False):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
-<<<<<<< HEAD
-=======
     # interval_improve_initial(m)
->>>>>>> c8cdd915 (resolve merge conflicts.)
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
