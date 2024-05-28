@@ -131,6 +131,7 @@ class TestFullFlowsheet:
         m = system_frame
         bsm2.display_results(m)
         bsm2.display_costing(m)
+        bsm2.display_performance_metrics(m)
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
