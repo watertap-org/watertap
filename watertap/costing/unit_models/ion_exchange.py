@@ -203,8 +203,12 @@ def cost_ion_exchange(blk):
     make_fixed_operating_cost_var(blk)
     ion_exchange_params = blk.costing_package.ion_exchange
     # Conversions to use units from cost equations in reference
-    tot_num_col = blk.unit_model.number_columns + blk.unit_model.number_columns_redundant
-    col_vol_gal = pyo.units.convert(blk.unit_model.column_volume, to_units=pyo.units.gal)
+    tot_num_col = (
+        blk.unit_model.number_columns + blk.unit_model.number_columns_redundant
+    )
+    col_vol_gal = pyo.units.convert(
+        blk.unit_model.column_volume, to_units=pyo.units.gal
+    )
     bed_vol_ft3 = pyo.units.convert(blk.unit_model.bed_volume, to_units=pyo.units.ft**3)
 
     ix_type = blk.unit_model.ion_exchange_type
@@ -268,6 +272,16 @@ def cost_ion_exchange(blk):
 
     elif ix_type == "anion":
         resin_cost = ion_exchange_params.anion_exchange_resin_cost
+
+    elif ix_type == "demineralize":
+        resin_cost = (
+            ion_exchange_params.cation_exchange_resin_cost
+            * blk.unit_model.charge_ratio_cx
+            + ion_exchange_params.anion_exchange_resin_cost
+            * blk.unit_model.charge_ratio_ax
+        )
+
+    blk.resin_cost = resin_cost
 
     blk.capital_cost_vessel_constraint = pyo.Constraint(
         expr=blk.capital_cost_vessel
