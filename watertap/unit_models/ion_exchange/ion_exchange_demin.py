@@ -35,7 +35,10 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 
-from watertap.unit_models.ion_exchange.ion_exchange_base import IonExchangeBaseData, IonExchangeType
+from watertap.unit_models.ion_exchange.ion_exchange_base import (
+    IonExchangeBaseData,
+    IonExchangeType,
+)
 
 __author__ = "Kurban Sitterley"
 
@@ -50,12 +53,46 @@ class IonExchangeDeminData(IonExchangeBaseData):
         super().build()
 
         prop_in = self.process_flow.properties_in[0]
-        solutes = [x for x in self.config.property_package.config.solute_list if x != "H2O"]
+        solutes = [
+            x for x in self.config.property_package.config.solute_list if x != "H2O"
+        ]
         self.ebct.setlb(60)
         self.ebct.setub(480)
 
+        self.flow_equiv_cation = sum(
+            value(prop_in.flow_equiv_phase_comp["Liq", c])
+            for c in self.config.property_package.cation_set
+        )
+        self.flow_equiv_anion = sum(
+            value(prop_in.flow_equiv_phase_comp["Liq", c])
+            for c in self.config.property_package.anion_set
+        )
+        self.flow_equiv_total = self.flow_equiv_cation + self.flow_equiv_anion
+
+        self.ion_exchange_type = IonExchangeType.demineralize
+        # if self.flow_equiv_cation == self.flow_equiv_total:
+        #     self.charge_ratio_cx = 1
+        #     self.charge_ratio_ax = 0
+        #     # self.ion_exchange_type = IonExchangeType.cation
+
+        # elif self.flow_equiv_anion == self.flow_equiv_total:
+        #     self.charge_ratio_cx = 0
+        #     self.charge_ratio_ax = 1
+        #     # self.ion_exchange_type = IonExchangeType.anion
+
+        # else:
+        assert (
+            self.flow_equiv_cation + self.flow_equiv_anion
+        ) / self.flow_equiv_total == 1
+        self.charge_ratio_cx = (
+            self.flow_equiv_cation / self.flow_equiv_total * pyunits.dimensionless
+        )
+        self.charge_ratio_ax = (
+            self.flow_equiv_anion / self.flow_equiv_total * pyunits.dimensionless
+        )
+
         self.process_flow.mass_transfer_term[:, "Liq", "H2O"].fix(0)
-        
+
         self.removal_efficiency = Param(
             solutes,
             initialize=0.9999,
@@ -64,12 +101,27 @@ class IonExchangeDeminData(IonExchangeBaseData):
             doc="Removal efficiency",
         )
 
+        # typical operating capacity for resin is between 30-60 kg/m3; Wachinski, chap. 3
+        self.resin_capacity_ax = Var(
+            initialize=0.75,
+            bounds=(0.687, 2.1),
+            units=pyunits.mol / pyunits.liter,
+            doc="Operating capacity of the anion exchange resin in equivalents per liter resin",
+        )
+
+        self.resin_capacity_cx = Var(
+            initialize=0.75,
+            bounds=(0.687, 2.1),
+            units=pyunits.mol / pyunits.liter,
+            doc="Operating capacity of the cation exchange resin in equivalents per liter resin",
+        )
+
         self.resin_capacity_op = Var(
             initialize=0.75,
             bounds=(0.687, 2.1),
             units=pyunits.mol / pyunits.liter,
-            doc="Operating (usable) capacity of the resin in equivalents per liter resin",
-        ) # typical operating capacity for resin is between 30-60 kg/m3; Wachinski, chap. 3
+            doc="Operating capacity of the mixed bed resin",
+        )
 
         self.bv = Var(
             initialize=300,
@@ -78,11 +130,22 @@ class IonExchangeDeminData(IonExchangeBaseData):
             doc="Bed volumes per cycle",
         )
 
+        @self.Constraint(doc="Effective resin capacity")
+        def eq_resin_capacity_op(b):
+            return (
+                b.resin_capacity_op
+                == b.resin_capacity_cx * b.charge_ratio_cx
+                + b.resin_capacity_ax * b.charge_ratio_ax
+            )
+
         @self.Constraint(doc="Bed volumes at breakthrough point")
         def eq_bv(b):
             return b.bv == pyunits.convert(
                 (prop_in.flow_vol_phase["Liq"] * b.resin_capacity_op)
-                / sum(prop_in.flow_equiv_phase_comp["Liq", j] * b.removal_efficiency[j] for j in solutes),
+                / sum(
+                    prop_in.flow_equiv_phase_comp["Liq", j] * b.removal_efficiency[j]
+                    for j in solutes
+                ),
                 to_units=pyunits.dimensionless,
             )
 
