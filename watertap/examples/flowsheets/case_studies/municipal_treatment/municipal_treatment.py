@@ -203,7 +203,7 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, checkpoint=None, tee=True, fail_flag=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
