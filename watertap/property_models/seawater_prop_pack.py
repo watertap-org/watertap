@@ -63,9 +63,16 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
+from pyomo.common.config import ConfigBlock, ConfigValue, In
+from enum import Enum, auto
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class DiffusCalculationType(Enum):
+    isothermal = auto()
+    nonisothermal = auto()
 
 
 @declare_process_block_class("SeawaterParameterBlock")
@@ -73,6 +80,20 @@ class SeawaterParameterData(PhysicalParameterBlock):
     """Parameter block for a seawater property package."""
 
     CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare(
+        "diffus_calc_type",
+        ConfigValue(
+            default=DiffusCalculationType.isothermal,
+            domain=In(DiffusCalculationType),
+            description="Diffusivity calculation type construction flag",
+            doc="""Indicates whether the diffusivity will be calculated assuming isothermal or nonisothermal conditions
+        **default** - DiffusCalculationType.isothermal.
+        **Valid values:** {
+        **DiffusCalculationType.isothermal** - Diffusivity is based on: (NaCl, isothermal, 25 C) Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067,
+        **DiffusCalculationType.nonisothermal** - Diffusivity is based on: (NaCl, nonisothermal) regression from Zaytsev & Aseev (1992)}""",
+        ),
+    )
 
     def build(self):
         """
@@ -97,10 +118,10 @@ class SeawaterParameterData(PhysicalParameterBlock):
         - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
-        Diffusivity for NaCl is being used temporarily based on
-        Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
+        Diffusivity for NaCl is being used temporarily based on:
+        - (isothermal, 25 C) Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
+        - (nonisothermal) regression from Zaytsev & Aseev (1992)
         """
-        # TODO: Edit comment above about diffusivity when/if relationship is changed
 
         # parameters
         # molecular weight
@@ -248,23 +269,80 @@ class SeawaterParameterData(PhysicalParameterBlock):
             units=t_inv_units**2,
             doc="Dynamic viscosity parameter 3 for term B",
         )
+        if self.config.diffus_calc_type == DiffusCalculationType.isothermal:
+            # diffusivity parameters, 25 C
+            # eq. 6 in Bartholomew & Mauter (2019)
+            diffus_param_dict = {
+                "0": 1.51e-9,
+                "1": -2.00e-9,
+                "2": 3.01e-8,
+                "3": -1.22e-7,
+                "4": 1.53e-7,
+            }
+            self.diffus_param = Var(
+                diffus_param_dict.keys(),
+                domain=Reals,
+                initialize=diffus_param_dict,
+                units=pyunits.m**2 / pyunits.s,
+                doc="Diffusivity parameters",
+            )
+        else:  # diffusivity calculation type nonisothermal
 
-        # diffusivity parameters, 25 C
-        # eq. 6 in Bartholomew & Mauter (2019)
-        diffus_param_dict = {
-            "0": 1.51e-9,
-            "1": -2.00e-9,
-            "2": 3.01e-8,
-            "3": -1.22e-7,
-            "4": 1.53e-7,
-        }
-        self.diffus_param = Var(
-            diffus_param_dict.keys(),
-            domain=Reals,
-            initialize=diffus_param_dict,
-            units=pyunits.m**2 / pyunits.s,
-            doc="Diffusivity parameters",
-        )
+            # diffusivity parameters, 0-60 C
+            # Regressed from Zaytsev & Aseev (1992):
+            # diffus = A+BT+CT2+DT3, where A = ao + a1X + a2X2 + a3X3
+            diffus_aq_A_param_dict = {
+                "0": 0.4131329195225919,
+                "1": -7.742251927618488,
+                "2": 103.85062756812115,
+                "3": -237.04211192526648,
+            }
+            diffus_aq_B_param_dict = {
+                "0": 0.04632401864393698,
+                "1": 0.8936760261966561,
+                "2": -9.939718876008943,
+                "3": 22.522378774378765,
+            }
+            diffus_aq_C_param_dict = {
+                "0": -7.116300356324601e-06,
+                "1": -0.03354460908477397,
+                "2": 0.33333186888927646,
+                "3": -0.7541027909550477,
+            }
+            diffus_aq_D_param_dict = {
+                "0": -1.1147902601038595e-08,
+                "1": 0.00027118535808978717,
+                "2": -0.0026528149775375542,
+                "3": 0.00603727069050608,
+            }
+            self.diffus_aq_param_A = Var(
+                diffus_aq_A_param_dict.keys(),
+                domain=Reals,
+                initialize=diffus_aq_A_param_dict,
+                units=pyunits.m**2 / pyunits.s,
+                doc="Diffusivity (solution) parameter A",
+            )
+            self.diffus_aq_param_B = Var(
+                diffus_aq_B_param_dict.keys(),
+                domain=Reals,
+                initialize=diffus_aq_B_param_dict,
+                units=pyunits.m**2 / pyunits.s,
+                doc="Diffusivity (solution) parameter B",
+            )
+            self.diffus_aq_param_C = Var(
+                diffus_aq_C_param_dict.keys(),
+                domain=Reals,
+                initialize=diffus_aq_C_param_dict,
+                units=pyunits.m**2 / pyunits.s,
+                doc="Diffusivity (solution) parameter C",
+            )
+            self.diffus_aq_param_D = Var(
+                diffus_aq_D_param_dict.keys(),
+                domain=Reals,
+                initialize=diffus_aq_D_param_dict,
+                units=pyunits.m**2 / pyunits.s,
+                doc="Diffusivity (solution) parameter D",
+            )
 
         # osmotic coefficient parameters, 0-200 C, 0-120 g/kg
         # eq. 49 in Sharqawy et al. (2010)
@@ -1284,7 +1362,6 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list, rule=rule_visc_d_phase
         )
 
-    # TODO: diffusivity from NaCl prop model used temporarily--reconsider this
     def _diffus_phase_comp(self):
         self.diffus_phase_comp = Var(
             self.params.phase_list,
@@ -1294,16 +1371,46 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
+        if self.config.diffus_calc_type == DiffusCalculationType.isothermal:
+            # Bartholomew & Mauter (2019), eq. 6 (substituting NaCl w/ TDS), 25 C
+            def rule_diffus_phase_comp(b, p, j):
+                return b.diffus_phase_comp[p, j] == (
+                    b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, j] ** 4
+                    + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, j] ** 3
+                    + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, j] ** 2
+                    + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, j]
+                    + b.params.diffus_param["0"]
+                )
 
-        # Bartholomew & Mauter (2019), eq. 6 (substituting NaCl w/ TDS), 25 C
-        def rule_diffus_phase_comp(b, p, j):
-            return b.diffus_phase_comp[p, j] == (
-                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, j] ** 4
-                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, j] ** 3
-                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, j] ** 2
-                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, j]
-                + b.params.diffus_param["0"]
-            )
+        else:  # diffusivity calculation type nonisothermal
+            # Regressed from Zaytsev & Aseev (1992), 0-60 C
+            def rule_diffus_phase_comp(b, p, j):
+                t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
+                param_vec = [
+                    b.params.diffus_aq_param_A,
+                    b.params.diffus_aq_param_B,
+                    b.params.diffus_aq_param_C,
+                    b.params.diffus_aq_param_D,
+                ]
+                iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
+                k = 0
+                for key in iter_param:
+                    iter_param[key] = (
+                        param_vec[k]["0"]
+                        + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "TDS"]
+                        + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "TDS"] ** 2
+                        + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "TDS"] ** 3
+                    )
+                    k += 1
+                return b.diffus_phase_comp[p, j] == (
+                    (
+                        iter_param["A"]
+                        + iter_param["B"] * t
+                        + iter_param["C"] * t**2
+                        + iter_param["D"] * t**3
+                    )
+                    * 1e-9
+                )
 
         self.eq_diffus_phase_comp = Constraint(
             self.params.phase_list, ["TDS"], rule=rule_diffus_phase_comp
