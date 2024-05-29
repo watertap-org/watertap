@@ -25,7 +25,7 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve, interval_improve_initial
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -192,13 +192,14 @@ def set_operating_conditions(m):
 
 
 def initialize_system(m):
+    interval_improve_initial(m)
     seq = SequentialDecomposition()
     seq.options.tear_set = []
     seq.options.iterLim = 1
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+def solve(blk, solver=None, checkpoint=None, tee=True, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
