@@ -74,3 +74,7 @@ def test_valid_phases(oliapi_instance: OLIApi):
     valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
     for v in oliapi_instance.valid_phases:
         assert v in valid_phases
+
+@pytest.mark.unit
+def test_invalid_phases(oliapi_instance_with_invalid_phase: OLIApi):
+    oliapi_instance_with_invalid_phase
