@@ -587,7 +587,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="Bed volumes of feed at breakthru concentration",
         )
-        
+
         self.ebct = Var(
             initialize=520,
             bounds=(90, None),
@@ -1017,6 +1017,9 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.loading_rate) is None:
             iscale.set_scaling_factor(self.loading_rate, 1e3)
+
+        if iscale.get_scaling_factor(self.bv) is None:
+            iscale.set_scaling_factor(self.bv, 1e-4)
 
 
     def _get_stream_table_contents(self, time_point=0):

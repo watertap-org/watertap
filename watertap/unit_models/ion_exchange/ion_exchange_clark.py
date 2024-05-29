@@ -269,9 +269,6 @@ class IonExchangeClarkData(IonExchangeBaseData):
         if iscale.get_scaling_factor(self.bv_50) is None:
             iscale.set_scaling_factor(self.bv_50, 1e-5)
 
-        if iscale.get_scaling_factor(self.bv) is None:
-            iscale.set_scaling_factor(self.bv, 1e-5)
-
         if iscale.get_scaling_factor(self.tb_traps) is None:
             sf = iscale.get_scaling_factor(self.breakthrough_time)
             iscale.set_scaling_factor(self.tb_traps, sf)
