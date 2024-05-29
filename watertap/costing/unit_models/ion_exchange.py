@@ -281,8 +281,6 @@ def cost_ion_exchange(blk):
             * blk.unit_model.charge_ratio_ax
         )
 
-    blk.resin_cost = resin_cost
-
     blk.capital_cost_vessel_constraint = pyo.Constraint(
         expr=blk.capital_cost_vessel
         == pyo.units.convert(
