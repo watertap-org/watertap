@@ -101,6 +101,7 @@ def oliapi_instance(
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
 
+
 @pytest.fixture(scope="function")
 def oliapi_instance_with_invalid_phase(
     tmp_path: Path,
@@ -120,11 +121,15 @@ def oliapi_instance_with_invalid_phase(
     credential_manager = CredentialManager(**credentials, test=True)
     with OLIApi(credential_manager, interactive_mode=False) as oliapi:
         oliapi.upload_dbs_file(str(local_dbs_file))
-        with pytest.raises(RuntimeError, match="Failed DBS file generation. Unexpected phase(s): invalid_phase"):
+        with pytest.raises(
+            RuntimeError,
+            match="Failed DBS file generation. Unexpected phase(s): invalid_phase",
+        ):
             oliapi.generate_dbs_file(source_water, phases=["invalid_phase"])
         yield oliapi
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
+
 
 @pytest.fixture
 def flash_instance(scope="session"):
