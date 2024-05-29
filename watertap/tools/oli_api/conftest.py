@@ -123,7 +123,7 @@ def oliapi_instance_with_invalid_phase(
         oliapi.upload_dbs_file(str(local_dbs_file))
         with pytest.raises(
             RuntimeError,
-            match="Failed DBS file generation. Unexpected phase(s): invalid_phase",
+            match="Failed DBS file generation. Unexpected phase(s): ['invalid_phase']",
         ):
             oliapi.generate_dbs_file(source_water, phases=["invalid_phase"])
         yield oliapi
