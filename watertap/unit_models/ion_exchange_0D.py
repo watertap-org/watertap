@@ -382,7 +382,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Sherwood equation exponent C",
         )
 
-        self.number_columns_redund = Param(
+        self.number_columns_redundant = Param(
             initialize=1,
             mutable=True,
             units=pyunits.dimensionless,
@@ -477,7 +477,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             doc="Backwash loading rate [m/hr]",
         )
 
-        self.t_bw = Param(
+        self.backwash_time = Param(
             initialize=600,
             mutable=True,
             units=pyunits.s,
@@ -779,20 +779,20 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             ) * b.bed_depth  # for 20C;
 
         @self.Expression(doc="Total bed volume")
-        def bed_vol(b):
+        def bed_volume(b):
             return b.bed_vol_tot / b.number_columns
 
         @self.Expression(doc="Rinse time")
-        def t_rinse(b):
+        def rinse_time(b):
             return b.ebct * b.rinse_bv
 
         @self.Expression(doc="Waste time")
-        def t_waste(b):
-            return b.t_regen + b.t_bw + b.t_rinse
+        def waste_time(b):
+            return b.t_regen + b.backwash_time + b.rinse_time
 
         @self.Expression(doc="Cycle time")
-        def t_cycle(b):
-            return b.t_breakthru + b.t_waste
+        def cycle_time(b):
+            return b.t_breakthru + b.waste_time
 
         if self.config.regenerant == RegenerantChem.single_use:
             self.t_regen.set_value(0)
@@ -814,7 +814,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                     )
                     / b.pump_efficiency,
                     to_units=pyunits.kilowatts,
-                ) * (b.t_regen / b.t_cycle)
+                ) * (b.t_regen / b.cycle_time)
 
             @self.Expression(doc="Regen tank volume")
             def regen_tank_vol(b):
@@ -826,7 +826,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         def bw_flow(b):
             return (
                 pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
-                * (b.bed_vol / b.bed_depth)
+                * (b.bed_volume / b.bed_depth)
                 * b.number_columns
             )
 
@@ -840,21 +840,21 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Rinse flow rate")
         def rinse_flow(b):
-            return b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
+            return b.vel_bed * (b.bed_volume / b.bed_depth) * b.number_columns
 
         @self.Expression(doc="Backwash pump power")
         def bw_pump_power(b):
             return pyunits.convert(
                 (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
-            ) * (b.t_bw / b.t_cycle)
+            ) * (b.backwash_time / b.cycle_time)
 
         @self.Expression(doc="Rinse pump power")
         def rinse_pump_power(b):
             return pyunits.convert(
                 (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
-            ) * (b.t_rinse / b.t_cycle)
+            ) * (b.rinse_time / b.cycle_time)
 
         @self.Constraint(
             self.target_ion_set, doc="Mass transfer for regeneration stream"
@@ -886,15 +886,15 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             return pyunits.convert(
                 (b.pressure_drop * prop_in.flow_vol_phase["Liq"]) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
-            ) * (b.t_breakthru / b.t_cycle)
+            ) * (b.t_breakthru / b.cycle_time)
 
         @self.Expression(doc="Volume per column")
-        def col_vol_per(b):
-            return b.col_height * (b.bed_vol / b.bed_depth)
+        def column_volume(b):
+            return b.col_height * (b.bed_volume / b.bed_depth)
 
         @self.Expression(doc="Total column volume required")
         def col_vol_tot(b):
-            return b.number_columns * b.col_vol_per
+            return b.number_columns * b.column_volume
 
         @self.Expression(doc="Contact time")
         def t_contact(b):
