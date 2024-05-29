@@ -625,7 +625,7 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
                         state_args[k] = state_dict[k].value
 
         interval_improve_initial(self)
-        
+
         # initialize anolyte control volume
         flags_anolyte = self.anolyte.initialize(
             outlvl=outlvl,

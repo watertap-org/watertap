@@ -499,7 +499,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         interval_improve_initial(self)
-        
+
         # initialize inlets
         flags_low_in = self.feed_side.properties_in.initialize(
             outlvl=outlvl,
