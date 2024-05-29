@@ -152,13 +152,6 @@ class IonExchangeClarkData(IonExchangeBaseData):
             doc="Mass transfer coefficient for Clark model (kT)",
         )
 
-        self.bv = Var(  # BV
-            initialize=1e5,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Bed volumes of feed at breakthru concentration",
-        )
-
         self.bv_50 = Var(  # BV_50
             initialize=2e5,
             bounds=(0, None),

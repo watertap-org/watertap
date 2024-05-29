@@ -581,6 +581,13 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             doc="Breakthrough time",
         )
 
+        self.bv = Var(  # BV
+            initialize=1e5,
+            bounds=(0, None),
+            units=pyunits.dimensionless,
+            doc="Bed volumes of feed at breakthru concentration",
+        )
+        
         self.ebct = Var(
             initialize=520,
             bounds=(90, None),

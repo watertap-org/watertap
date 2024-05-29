@@ -48,7 +48,7 @@ class IonExchangeDeminData(IonExchangeBaseData):
 
         prop_in = self.process_flow.properties_in[0]
         regen = self.regeneration_stream[0]
-        
+
         solutes = self.config.property_package.anion_set | self.config.property_package.cation_set
         for j in self.config.property_package.neutral_set:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
@@ -113,13 +113,6 @@ class IonExchangeDeminData(IonExchangeBaseData):
             bounds=(0.14, 2.3),
             units=pyunits.mol / pyunits.liter,
             doc="Operating capacity of the mixed bed resin",
-        )
-
-        self.bv = Var(
-            initialize=300,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Bed volumes per cycle",
         )
 
         @self.Constraint(doc="Effective resin capacity")
