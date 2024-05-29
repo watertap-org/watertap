@@ -49,6 +49,7 @@ from watertap.unit_models.ion_exchange.util import (
 from watertap.core.solvers import get_solver
 from .ion_exchange_clark import IonExchangeClark
 
+thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -56,7 +57,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 class IXParmest:
     def __init__(
         self,
-        curve_id,
+        curve_id=None,
         df_curve=None,
         ix_model=IonExchangeClark,
         regenerant="single_use",
@@ -68,34 +69,45 @@ class IXParmest:
         c_norm=None,
         initial_guess_dict=dict(),
         initial_guess_theta_dict=dict(),
+        theta_names=None,
         set_bounds_dict=dict(),
         calc_from_constr_dict=dict(),
         autoscale_fixed=True,
         scale_from_value=None,
         parmest_kwargs=dict(),
-        fix_vars=dict(),
         c0_min_thresh=0.01,  # for determining keep_bvs + keep_cbs
         c0_max_thresh=0.9999,  # for determining keep_bvs + keep_cbs
         c_next_thresh=1.0,  # for determining keep_bvs + keep_cbs
         cb50_min_thresh=None,  # all cb > cb50_min_thresh are used to make linear regression estimate bv_50
-        max_zero=1e-3,
-        min_one=0.9999,
+        max_zero=1e-3, # replace all values of c_norm < c0_min_thresh with this value
+        min_one=0.9999, # replace all values of c_norm > c0_max_thresh with this value
+        use_all_data=False, # eliminate filtering data and use all points
+        use_this_data=None, # list of indexes in df_curve corresponding to data points to use
         figsize=(7, 5),
         just_plot_curve=False,
-        use_all_data=False,
-        use_this_data=None,
-        **kwargs,
     ):
-        self.curve_id = curve_id
         if df_curve is None:
             curve_data = pd.read_csv(data_file)
+            if curve_id is None:
+                assert len(curve_data.curve_id.unique()) == 1
+                self.curve_id = curve_data.curve_id.unique()[0]
+            else:
+                self.curve_id = curve_id
             self.df_curve = curve_data[curve_data.curve_id == self.curve_id].copy()
         else:
             # option to provide separate DataFrame with breakthrough curve_id info
             self.df_curve = df_curve
+            # assume the provided DataFrame only contains one curve
+            assert len(df_curve.curve_id.unique()) == 1
+            # override curve_id if provided
+            self.curve_id = df_curve.curve_id.unique()[0]
         self.df_curve.sort_values("bv", inplace=True)
         self.ix_model = ix_model
         self.regenerant = regenerant
+        if theta_names is None:
+            self.theta_names = thetas
+        else:
+            self.theta_names = theta_names
 
         self.figsize = figsize
         self.bv = bv  # need value for initial model build
@@ -151,6 +163,8 @@ class IXParmest:
                 max_zero * self.df_curve.at[max_zero_i, "c0"]
             )
             self.c0_min_thresh = 0.9 * max_zero
+        if 0 in self.df_curve.c_norm.to_list():
+            self.df_curve = self.df_curve.query("c_norm > 0")
 
         if self.c0_max_thresh >= 1:
             self.min_one = min_one
@@ -183,8 +197,6 @@ class IXParmest:
         # self.R_sq = np.nan
         # self.build_results_dict()  # build dict for storing results
 
-        # self.print_curve_conditions()
-
     def run_all_things(self, plot_things=False, save_things=False, overwrite=True):
         """Run all methods to complete parmest run
         1. plot_curve(): Plot extracted data
@@ -206,11 +218,11 @@ class IXParmest:
         #     self.plot_estimate_bv50()
         # self.plot_initial_guess()
         # self.plot_theta()
-        if save_things:
-            if plot_things:
-                self.save_figs(overwrite=overwrite)
-            self.save_output(overwrite=overwrite)
-            self.save_results(overwrite=overwrite)
+        # if save_things:
+        #     if plot_things:
+        #         self.save_figs(overwrite=overwrite)
+        #     self.save_output(overwrite=overwrite)
+        #     self.save_results(overwrite=overwrite)
 
     def rebuild(self):
         self.m = self.build_it()
@@ -282,8 +294,8 @@ class IXParmest:
         Loops through the kept (bv, cb) pairs and runs the model
         with those values using initial_guess_dict
         """
-
-        print("TEST INITIAL GUESS\n")
+        print("\nTesting initial guess\n")
+        
         ix = self.ix
         self._fix_initial_guess()
         self._calc_from_constr()
@@ -458,14 +470,14 @@ class IXParmest:
             tmp = df[df.c_norm != 0].copy()
             self.keep_bvs = tmp.bv.to_list()
             self.keep_cbs = tmp.cb.to_list()
-            assert 0 not in self.keep_cbs
+            # assert 0 not in self.keep_cbs
         elif self.use_this_data is not None:
             print("use this data")
             tmp = df.reset_index(drop=True)
             tmp = tmp.loc[self.use_this_data].copy()
             self.keep_bvs = tmp.bv.to_list()
             self.keep_cbs = tmp.cb.to_list()
-            assert 0 not in self.keep_cbs
+            # assert 0 not in self.keep_cbs
 
         else:
             print("default filtering")
@@ -502,6 +514,7 @@ class IXParmest:
                     else:
                         self.excl_cbs.append(cb)
                         self.excl_bvs.append(self.all_bvs[i])
+        assert 0 not in self.keep_cbs
 
         self.keep_cnorms = [cb / self.c0 for cb in self.keep_cbs]
         self.excl_cnorms = [cb / self.c0 for cb in self.excl_cbs]
@@ -517,16 +530,6 @@ class IXParmest:
         self.ix_config["property_package"] = m.fs.properties
 
         m.fs.ix = ix = self.ix_model(**self.ix_config)
-
-        # remove lower bounds for data fitting
-        # small-scale experimental systems will likely fall outside these bounds
-        ix.service_flow_rate.setlb(0)
-        ix.service_flow_rate.setub(None)
-        ix.bed_depth.setlb(0)
-        ix.bed_diameter.setlb(0)
-        ix.ebct.setlb(0)
-        ix.bv.setlb(0)
-        ix.bv.setub(None)
 
         self._set_bounds(m=m)
 
@@ -626,8 +629,6 @@ class IXParmest:
             for v in self._get_comp_list(ix, skip_list=["traps"]):
                 ixv = getattr(ix, v)
                 if ixv.is_indexed():
-                    # idx = [*ixv.index_set()]
-                    # for i in idx:
                     for i, vv in ixv.items():
                         if vv.is_fixed():
                             if value(vv) == 0:
@@ -684,99 +685,26 @@ class IXParmest:
         except:
             self.tc = "fail"
 
+    def build_parmest_experiment_list(self):
+        self.experiment_list = list()
+        for i in self.df_curve.index:
+            self.experiment_list.append(IXExperiment(self, self.df_curve, i))
+
     def run_parmest(self):
         """
         Run parmest
         """
 
-        self.theta_names = [
-            "fs.ix.mass_transfer_coeff",
-            "fs.ix.freundlich_n",
-            "fs.ix.bv_50",
-        ]
-        self.theta_input = dict(
-            zip(self.theta_names, self.initial_guess_theta_dict.values())
+        print(f"\nRunning parmest...")
+
+        self.build_parmest_experiment_list()
+        self.pestimator = parmest.Estimator(
+            self.experiment_list, obj_function="SSE", **self.parmest_kwargs
         )
-        self.theta_values = pd.DataFrame(
-            data=[[v for v in self.initial_guess_theta_dict.values()]],
-            columns=self.theta_names,
-        )
-        self.df_parmest = self.df_curve[self.df_curve.cb.isin(self.keep_cbs)]
-
-        def parmest_regression(data):
-            """
-            Build function that is passed to parmest
-            """
-
-            cb = pyunits.convert(
-                data.cb.to_list()[0] * self.conc_units,
-                to_units=pyunits.kg / pyunits.m**3,
-            )()
-            cb_p = data.cb.to_list()[0] * self.conc_units
-            c0_p = self.c0 * self.conc_units
-            cx = value(cb_p / c0_p)
-            bv = data.bv.to_list()[0]
-
-            print(
-                f"\nPARMEST FOR:\n\t"
-                f"CURVE = {self.curve_id}\n\t"
-                f"REF = {self.ref}\n\t"
-                f"COMPOUND = {self.compound}\n\t"
-                f"BV = {bv}\n\t"
-                f"C0 = {c0_p}\n\t"
-                f"CB = {cb_p}\n\t"
-                f"CNORM = {cx}\n\t"
-            )
-
-            m_parmest = self.m.clone()
-            m_parmest.fs.ix.c_norm.fix(cx)
-            m_parmest.fs.ix.bv.set_value(bv)
-            self._calc_from_constr(m=m_parmest)
-            self.scale_it(m=m_parmest)
-            try:
-                m_parmest.fs.ix.initialize()
-            except:
-                pass
-            # Stores the instantiated model that is passed to parmest for debugging outside of the class
-            self.m_parmest = m_parmest.clone()
-            return m_parmest
-
-        def SSE(m, data):
-            """
-            Objective function for parmest to minimize
-            We want the SSE of BV observed/predicted to be small
-            """
-            ix = self._get_ix_blk(m=m)
-            expr = (float(data.bv.iloc[0]) - ix.bv) ** 2
-            return expr * self.expr_sf  # expr_sf is the scaling factor for the SSE
-
-        self.pest = parmest.Estimator(
-            parmest_regression,
-            self.df_parmest,
-            self.theta_names,
-            SSE,
-            tee=False,
-            diagnostic_mode=False,
-            solver_options={"max_iter": 10000},
-            **self.parmest_kwargs,
-        )
-
-        self.pest.objective_at_theta(
-            theta_values=self.theta_values, initialize_parmest_model=True
-        )
-
-        self.obj, self.theta = self.pest.theta_est()
-
-        self.theta_dict = dict(zip(self.initial_guess_theta_dict.keys(), [*self.theta]))
-
-        if hasattr(self, "results_dict"):
-            for k, v in self.theta_dict.items():
-                self.results_dict[f"{k}_theta"] = [
-                    v for _ in range(len(self.results_dict["curve_id"]))
-                ]
-            self.results_dict["obj"] = [
-                self.obj for _ in range(len(self.results_dict["curve_id"]))
-            ]
+        self.obj, self.parmest_theta = self.pestimator.theta_est()
+        self.theta_dict = dict()
+        for t in self.theta_names:
+            self.theta_dict[t] = self.parmest_theta[f"fs.ix.{t}"]
 
     def test_theta(
         self,
@@ -826,14 +754,12 @@ class IXParmest:
         self.test_bvs = np.linspace(self.max_test_bvs, self.min_test_bvs, self.num_pts)
 
         # Comparing against fake data
-        self.bv_pred_theta_test = (
-            []
-        )  # bv_pred_theta_test = Predicted BV using theta and regularly spaced test data
+        # bv_pred_theta_test = Predicted BV using theta and regularly spaced test data
+        self.bv_pred_theta_test = []
         self.bv_fail_theta_test = []
 
-        self.cnorm_pred_theta_test = (
-            []
-        )  # cb_pred_theta_test = Predicted Cb using theta and regularly spaced test data
+        # cb_pred_theta_test = Predicted Cb using theta and regularly spaced test data
+        self.cnorm_pred_theta_test = []
         self.cnorm_fail_theta_test = []
 
         self.rebuild()
@@ -925,13 +851,6 @@ class IXParmest:
     def plot_theta(self):
         plot_theta(self)
 
-    def print_curve_conditions(self):
-        print(f"\nCURVE: {self.curve_id}")
-        print(f"  Reference = {self.ref.replace('_', ' ').title()}")
-        print(f"  Compound = {self.compound.upper()}")
-        print(f"  Resin = {self.resin.upper()}")
-        print(f"  EBCT = {self.ebct_min} min \n")
-
     def _get_comp_list(self, blk, comp=Var, skip_list=[]):
         cs = []
         split_name = blk.name + "."
@@ -994,11 +913,6 @@ class IXParmest:
     def _linear_inv(self, cb):
         return (cb - self.bv50_int) / self.bv50_slope
 
-    # def build_experiment_list(self):
-    #     self.experiment_list = list()
-    #     for i in self.df_curve.index:
-    #         self.experiment_list.append(IXExperiment(self, self.df_curve, i))
-
 
 class IXExperiment(Experiment):
     def __init__(self, ix_parmest_obj, data, experiment_number):
@@ -1010,7 +924,8 @@ class IXExperiment(Experiment):
         self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
 
     def create_model(self):
-        self.model = self.ix_parmest_obj.m.clone()
+        # self.model = self.ix_parmest_obj.m.clone()
+        self.model = self.ix_parmest_obj.build_it()
 
     def finalize_model(self):
 
@@ -1030,17 +945,8 @@ class IXExperiment(Experiment):
         )
         bv = self.data_i.bv
         self.c_norm = c_norm = cb / c0
-        # print(cb, c0, c_norm, bv)
-        model.FirstStageCost = Expression(expr=0)
-        model.SecondStageCost = Expression(
-            expr=(model.fs.ix.bv - float(self.data_i.bv)) ** 2
-        )
-        model.obj = Objective(expr=model.SecondStageCost, sense=minimize)
         model.fs.ix.c_norm.fix(c_norm)
         model.fs.ix.bv.set_value(bv)
-        self.ix_parmest_obj._calc_from_constr(m=model)
-        self.ix_parmest_obj.scale_it(m=model)
-        # model.fs.ix.initialize()
         return model
 
     def label_model(self):
@@ -1048,7 +954,13 @@ class IXExperiment(Experiment):
 
         m.experiment_outputs = Suffix(direction=Suffix.LOCAL)
         m.experiment_outputs.update(
-            [(m.fs.ix.c_norm[m.fs.ix.config.target_component], self.data_i["c_norm"])]
+            [
+                (
+                    m.fs.ix.c_norm[m.fs.ix.config.target_component],
+                    self.data_i["c_norm"],
+                ),
+                (m.fs.ix.bv, self.data_i["bv"]),
+            ]
         )
         m.unknown_parameters = Suffix(direction=Suffix.LOCAL)
         m.unknown_parameters.update(
@@ -1133,3 +1045,96 @@ def main():
 # if __name__ == "__main__":
 #     main()
 #     plt.show()
+
+
+### ============ OLD PARMEST ROUTINE
+### Deprecated for Pyomo 6.7.2
+
+# self.theta_names = [
+#     "fs.ix.mass_transfer_coeff",
+#     "fs.ix.freundlich_n",
+#     "fs.ix.bv_50",
+# ]
+# self.theta_input = dict(
+#     zip(self.theta_names, self.initial_guess_theta_dict.values())
+# )
+# self.theta_values = pd.DataFrame(
+#     data=[[v for v in self.initial_guess_theta_dict.values()]],
+#     columns=self.theta_names,
+# )
+# self.df_parmest = self.df_curve[self.df_curve.cb.isin(self.keep_cbs)]
+
+# def parmest_regression(data):
+#     """
+#     Build function that is passed to parmest
+#     """
+
+#     cb = pyunits.convert(
+#         data.cb.to_list()[0] * self.conc_units,
+#         to_units=pyunits.kg / pyunits.m**3,
+#     )()
+#     cb_p = data.cb.to_list()[0] * self.conc_units
+#     c0_p = self.c0 * self.conc_units
+#     cx = value(cb_p / c0_p)
+#     bv = data.bv.to_list()[0]
+
+#     print(
+#         f"\nPARMEST FOR:\n\t"
+#         f"CURVE = {self.curve_id}\n\t"
+#         f"REF = {self.ref}\n\t"
+#         f"COMPOUND = {self.compound}\n\t"
+#         f"BV = {bv}\n\t"
+#         f"C0 = {c0_p}\n\t"
+#         f"CB = {cb_p}\n\t"
+#         f"CNORM = {cx}\n\t"
+#     )
+
+#     m_parmest = self.m.clone()
+#     m_parmest.fs.ix.c_norm.fix(cx)
+#     m_parmest.fs.ix.bv.set_value(bv)
+#     self._calc_from_constr(m=m_parmest)
+#     self.scale_it(m=m_parmest)
+#     try:
+#         m_parmest.fs.ix.initialize()
+#     except:
+#         pass
+#     # Stores the instantiated model that is passed to parmest for debugging outside of the class
+#     self.m_parmest = m_parmest.clone()
+#     return m_parmest
+
+# def SSE(m, data):
+#     """
+#     Objective function for parmest to minimize
+#     We want the SSE of BV observed/predicted to be small
+#     """
+#     ix = self._get_ix_blk(m=m)
+#     expr = (float(data.bv.iloc[0]) - ix.bv) ** 2
+#     return expr * self.expr_sf  # expr_sf is the scaling factor for the SSE
+
+# self.pest = parmest.Estimator(
+#     parmest_regression,
+#     self.df_parmest,
+#     self.theta_names,
+#     SSE,
+#     tee=False,
+#     diagnostic_mode=False,
+#     solver_options={"max_iter": 10000},
+#     **self.parmest_kwargs,
+# )
+
+# self.pest.objective_at_theta(
+#     theta_values=self.theta_values, initialize_parmest_model=True
+# )
+
+# self.obj, self.theta = self.pest.theta_est()
+
+# self.theta_dict = dict(zip(self.initial_guess_theta_dict.keys(), [*self.theta]))
+
+# if hasattr(self, "results_dict"):
+#     for k, v in self.theta_dict.items():
+#         self.results_dict[f"{k}_theta"] = [
+#             v for _ in range(len(self.results_dict["curve_id"]))
+#         ]
+#     self.results_dict["obj"] = [
+#         self.obj for _ in range(len(self.results_dict["curve_id"]))
+#     ]
