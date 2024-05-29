@@ -234,7 +234,7 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
         def eq_clark(b, j):
             left_side = (
                 (b.mass_transfer_coeff[j] * b.bed_depth * (b.freundlich_n[j] - 1))
-                / (b.bv_50[j] * b.vel_bed)
+                / (b.bv_50[j] * b.loading_rate)
             ) * (b.bv_50[j] - b.bv)
 
             right_side = log(
@@ -249,12 +249,12 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
             doc="Evenly spaced c_norm for trapezoids",
         )
         def eq_c_traps(b, j, k):
-            if k == max(b.traps_index):
-                return b.c_traps[j, k] == b.c_norm[j]
-            else:
-                return b.c_traps[j, k] == b.c_trap_min[j] + (b.trap_disc[k] - 1) * (
-                    (b.c_norm[j] - b.c_trap_min[j]) / (b.num_traps - 1)
-                )
+            # if k == max(b.traps_index):
+            #     return b.c_traps[j, k] == b.c_norm[j]
+            # else:
+            return b.c_traps[j, k] == b.c_trap_min[j] + (b.trap_disc[k] - 1) * (
+                (b.c_norm[j] - b.c_trap_min[j]) / (b.num_traps - 1)
+            )
             
         @self.Expression(self.reactive_ion_set, self.trap_disc, doc="BV for trapezoids")
         def bv_traps(b, j, k):
@@ -263,7 +263,7 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
             elif k == max(self.trap_index):
                 return b.bv
             else:
-                return (b.tb_traps[j, k] * b.vel_bed) / b.bed_depth
+                return (b.tb_traps[j, k] * b.loading_rate) / b.bed_depth
             
         @self.Constraint(
             self.reactive_ion_set,
@@ -273,12 +273,12 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
         def eq_tb_traps(b, j, k):
             # if (j, k) == (target_ion, max(self.trap_index)):
             if k == max(self.trap_index):
-                return b.tb_traps[j, k] == b.t_breakthru
+                return b.tb_traps[j, k] == b.breakthrough_time
             else:
-                bv_traps = (b.tb_traps[j, k] * b.vel_bed) / b.bed_depth
+                bv_traps = (b.tb_traps[j, k] * b.loading_rate) / b.bed_depth
                 left_side = (
                     (b.mass_transfer_coeff[j] * b.bed_depth * (b.freundlich_n[j] - 1))
-                    / (b.bv_50[j] * b.vel_bed)
+                    / (b.bv_50[j] * b.loading_rate)
                 ) * (b.bv_50[j] - bv_traps)
 
                 right_side = log(
@@ -307,10 +307,10 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
             self.target_component_set,
             doc="CV mass transfer term",
         )
-        @self.Constraint(
-            self.reactive_ion_set,
-            doc="CV mass transfer term",
-        )
+        # @self.Constraint(
+        #     self.reactive_ion_set,
+        #     doc="CV mass transfer term",
+        # )
         def eq_mass_transfer_reactive_ions(b, j):
             return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
                 "Liq", j
