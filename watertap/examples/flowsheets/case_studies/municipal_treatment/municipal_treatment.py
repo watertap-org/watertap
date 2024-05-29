@@ -25,7 +25,11 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve, interval_improve_initial
+from watertap.core.util.initialization import (
+    assert_degrees_of_freedom,
+    check_solve,
+    interval_improve_initial,
+)
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
