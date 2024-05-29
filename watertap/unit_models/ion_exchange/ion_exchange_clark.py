@@ -251,7 +251,7 @@ class IonExchangeClarkData(IonExchangeBaseData):
             self.target_component_set,
             doc="CV mass transfer term",
         )
-        def eq_mass_transfer_target_fr(b, j):
+        def eq_mass_transfer_term(b, j):
             return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
                 "Liq", j
             ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
