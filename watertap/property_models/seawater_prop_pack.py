@@ -1371,9 +1371,10 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
-        if self.config.diffus_calc_type == DiffusCalculationType.isothermal:
-            # Bartholomew & Mauter (2019), eq. 6 (substituting NaCl w/ TDS), 25 C
-            def rule_diffus_phase_comp(b, p, j):
+
+        def rule_diffus_phase_comp(b, p, j):
+            if b.params.config.diffus_calc_type == DiffusCalculationType.isothermal:
+                # Bartholomew & Mauter (2019), eq. 6 (substituting NaCl w/ TDS), 25 C
                 return b.diffus_phase_comp[p, j] == (
                     b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, j] ** 4
                     + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, j] ** 3
@@ -1381,10 +1382,8 @@ class SeawaterStateBlockData(StateBlockData):
                     + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, j]
                     + b.params.diffus_param["0"]
                 )
-
-        else:  # diffusivity calculation type nonisothermal
-            # Regressed from Zaytsev & Aseev (1992), 0-60 C
-            def rule_diffus_phase_comp(b, p, j):
+            else:  # diffusivity calculation type nonisothermal
+                # Regressed from Zaytsev & Aseev (1992), 0-60 C
                 t = (b.temperature - 273.15 * pyunits.K) / pyunits.K
                 param_vec = [
                     b.params.diffus_aq_param_A,
