@@ -3,7 +3,6 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     assert_optimal_termination,
-    units as pyunits,
 )
 
 from idaes.core import (
@@ -27,7 +26,7 @@ zero = 1e-8
 relative_tolerance = 1e-3
 
 
-def build_freundlich():
+def build_clark():
 
     target_component = "Cl_-"
 
@@ -88,9 +87,9 @@ def build_freundlich():
     return m
 
 
-class TestIXFreundlich(UnitTestHarness):
+class TestIXClark(UnitTestHarness):
     def configure(self):
-        m = build_freundlich()
+        m = build_clark()
 
         self.default_zero = zero
         self.default_relative_tolerance = relative_tolerance
@@ -142,7 +141,7 @@ class TestIXFreundlich(UnitTestHarness):
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self):
-        m = build_freundlich()
+        m = build_clark()
         ix = m.fs.unit
 
         m.fs.costing = WaterTAPCosting()
@@ -273,7 +272,7 @@ def build_inert():
     return m
 
 
-class TestIXInert(UnitTestHarness):
+class TestIXClarkWithInert(UnitTestHarness):
     def configure(self):
         m = build_inert()
 
