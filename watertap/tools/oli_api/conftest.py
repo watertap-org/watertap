@@ -125,7 +125,7 @@ def oliapi_instance_with_invalid_phase(
             RuntimeError,
             match="Failed DBS file generation. Unexpected phase(s): invalid_phase",
         ):
-            oliapi.generate_dbs_file(source_water, phases=["invalid_phase"])
+            oliapi.generate_dbs_file(source_water, phases="invalid_phase")
         yield oliapi
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
