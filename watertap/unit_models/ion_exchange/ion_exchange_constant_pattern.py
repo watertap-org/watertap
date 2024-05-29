@@ -195,7 +195,7 @@ class IonExchangeCPData(IonExchangeBaseData):
             return 1 / b.langmuir[j]
 
         @self.Expression(self.target_component_set, doc="Rate coefficient")
-        def rate_coeff(b, j):
+        def rate_coeff(b, j): # Perry's Table 16-12, External film mechanism
             return (6 * (1 - b.bed_porosity) * b.fluid_mass_transfer_coeff[j]) / (
                 pyunits.convert(
                     b.resin_density, to_units=pyunits.kg / pyunits.m**3
@@ -204,7 +204,7 @@ class IonExchangeCPData(IonExchangeBaseData):
             )
 
         @self.Expression(self.target_component_set, doc="Height of transfer unit - HTU")
-        def HTU(b, j):
+        def HTU(b, j): # Eq 16-92, Perry's
             return b.loading_rate / (
                 pyunits.convert(
                     b.resin_density, to_units=pyunits.kg / pyunits.m**3
