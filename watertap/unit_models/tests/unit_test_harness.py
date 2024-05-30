@@ -138,7 +138,7 @@ class UnitTestHarness(abc.ABC):
 
         conservation = blk._test_objs.conservation_equality
 
-        if blk._test_objs.conservation_equality == {}:
+        if conservation == {}:
             raise NotImplementedError(
                 "An expression must be provided for the inlet and outlet stream(s) in the conservation equality. "
                 "If this conservation check should be ignored, set the inlet and outlet "
