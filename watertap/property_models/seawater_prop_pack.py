@@ -63,7 +63,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 from enum import Enum, auto
 
 # Set up logger
