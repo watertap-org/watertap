@@ -1,4 +1,3 @@
-
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -19,6 +18,7 @@ from copy import deepcopy
 
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+
 
 def plot_theta(blk):
 
@@ -185,8 +185,7 @@ def plot_theta(blk):
 
     fig4, ax4 = plt.subplots(figsize=blk.figsize)
     blk.bv_error = [
-        pred - actual
-        for (pred, actual) in zip(blk.bv_pred_theta, blk.keep_bv_theta)
+        pred - actual for (pred, actual) in zip(blk.bv_pred_theta, blk.keep_bv_theta)
     ]
     blk.bv_rel_error = [
         (pred - actual) / actual
@@ -298,6 +297,7 @@ def build_results_dict(
         for k in blk.results_dict.keys():
             print(k)
 
+
 def results_dict_append(
     blk=None,
     components=[Var, Expression],
@@ -351,6 +351,7 @@ def results_dict_append(
         for k, v in tmp_results_dict.items():
             blk.results_dict[k].append(v)
 
+
 def save_results(blk, overwrite=False, results_filename=None):
 
     blk.results_dict_save = deepcopy(blk.results_dict)
@@ -375,6 +376,7 @@ def save_results(blk, overwrite=False, results_filename=None):
             append += 1
         blk.df_results.to_csv(blk.results_filename, index=False)
 
+
 def save_figs(blk, overwrite=False, extension=None):
 
     # fig_file_base = f"figs/curve_id{blk.curve_id}_"
@@ -392,6 +394,7 @@ def save_figs(blk, overwrite=False, extension=None):
                 fig_file = x + f"_{append}.png"
                 append += 1
             fig.savefig(fig_file, bbox_inches="tight")
+
 
 def save_output(blk, overwrite=False):
 
@@ -470,6 +473,7 @@ def save_output(blk, overwrite=False):
             data_file_base = x + f"_{append}.csv"
             append += 1
         blk.df_data.to_csv(data_file_base, index=False)
+
 
 def plot_initial_guess(blk):
 
@@ -728,12 +732,11 @@ def plot_estimate_bv50(blk):
     blk.bv50_fig = fig
     blk.all_figs["bv_50_est"] = {"fig": fig, "ax": ax}
 
+
 def plot_curve(blk):
 
     fig, ax = plt.subplots(figsize=blk.figsize)
-    ax.scatter(
-        blk.excl_bvs, blk.excl_cbs, marker="x", color="k", label="Excluded data"
-    )
+    ax.scatter(blk.excl_bvs, blk.excl_cbs, marker="x", color="k", label="Excluded data")
     # ax.scatter(keep_bv, keep_cb, color="r", marker=".", label="Fitted data")
     ax.plot(
         blk.keep_bvs,
@@ -781,6 +784,7 @@ def plot_curve(blk):
     blk.curve_fig = fig
 
     blk.all_figs["raw_curve"] = {"fig": fig, "ax": ax}
+
 
 # def _just_plot_curve(self):
 #     tmp = self.df_curve.reset_index()

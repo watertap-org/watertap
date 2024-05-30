@@ -432,5 +432,6 @@ def main():
     plot_traps(m, x_plot="bv", run_curve=True, cmap="turbo")
     plt.show()
 
+
 if __name__ == "__main__":
     main()

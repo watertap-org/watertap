@@ -14,11 +14,11 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Set, 
+    Set,
     Var,
     Param,
     value,
-    log, 
+    log,
     units as pyunits,
 )
 
@@ -50,11 +50,8 @@ class IonExchangeClarkData(IonExchangeBaseData):
         comps = self.config.property_package.component_list
         target_component = self.config.target_component
 
-        self.target_component_set = Set(
-            initialize=[target_component]
-        )  
+        self.target_component_set = Set(initialize=[target_component])
         inerts = comps - self.target_component_set
-
 
         if len(self.target_component_set) > 1:
             raise ConfigurationError(
@@ -66,7 +63,7 @@ class IonExchangeClarkData(IonExchangeBaseData):
             self.ion_exchange_type = IonExchangeType.anion
         else:
             raise ConfigurationError("Target ion must have non-zero charge.")
-        
+
         for j in inerts:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
             regen.get_material_flow_terms("Liq", j).fix(0)
@@ -162,7 +159,7 @@ class IonExchangeClarkData(IonExchangeBaseData):
         @self.Expression(self.target_component_set, doc="Breakthrough concentration")
         def c_breakthru(b, j):
             return b.c_norm[j] * prop_in.conc_mass_phase_comp["Liq", j]
-        
+
         @self.Constraint(self.target_component_set, doc="Schmidt number")
         def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
             return (
@@ -255,7 +252,6 @@ class IonExchangeClarkData(IonExchangeBaseData):
             return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
                 "Liq", j
             ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
-
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

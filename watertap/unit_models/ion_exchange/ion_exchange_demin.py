@@ -38,6 +38,7 @@ class IonExchangeDeminData(IonExchangeBaseData):
     """
     Ion exchange demineralization
     """
+
     # For comparison to EPA-WBS
     # self.bv = BV_regen
     # self.breakthrough_time = regen_days
@@ -49,7 +50,10 @@ class IonExchangeDeminData(IonExchangeBaseData):
         prop_in = self.process_flow.properties_in[0]
         regen = self.regeneration_stream[0]
 
-        solutes = self.config.property_package.anion_set | self.config.property_package.cation_set
+        solutes = (
+            self.config.property_package.anion_set
+            | self.config.property_package.cation_set
+        )
         for j in self.config.property_package.neutral_set:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
             regen.get_material_flow_terms("Liq", j).fix(0)

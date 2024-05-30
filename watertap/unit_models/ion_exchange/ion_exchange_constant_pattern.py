@@ -14,11 +14,11 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Set, 
+    Set,
     Var,
     Param,
     value,
-    log, 
+    log,
     units as pyunits,
 )
 
@@ -50,11 +50,8 @@ class IonExchangeCPData(IonExchangeBaseData):
         comps = self.config.property_package.component_list
         target_component = self.config.target_component
 
-        self.target_component_set = Set(
-            initialize=[target_component]
-        )  
+        self.target_component_set = Set(initialize=[target_component])
         inerts = comps - self.target_component_set
-
 
         if len(self.target_component_set) > 1:
             raise ConfigurationError(
@@ -66,7 +63,7 @@ class IonExchangeCPData(IonExchangeBaseData):
             self.ion_exchange_type = IonExchangeType.anion
         else:
             raise ConfigurationError("Target ion must have non-zero charge.")
-        
+
         for j in inerts:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
             regen.get_material_flow_terms("Liq", j).fix(0)
@@ -116,7 +113,6 @@ class IonExchangeCPData(IonExchangeBaseData):
             units=pyunits.mol / pyunits.kg,
             bounds=(0, None),  # Perry's
             doc="Resin equilibrium capacity",
-
         )
 
         self.resin_unused_capacity = Var(
@@ -195,27 +191,23 @@ class IonExchangeCPData(IonExchangeBaseData):
             return 1 / b.langmuir[j]
 
         @self.Expression(self.target_component_set, doc="Rate coefficient")
-        def rate_coeff(b, j): # Perry's Table 16-12, External film mechanism
+        def rate_coeff(b, j):  # Perry's Table 16-12, External film mechanism
             return (6 * (1 - b.bed_porosity) * b.fluid_mass_transfer_coeff[j]) / (
-                pyunits.convert(
-                    b.resin_density, to_units=pyunits.kg / pyunits.m**3
-                )
+                pyunits.convert(b.resin_density, to_units=pyunits.kg / pyunits.m**3)
                 * b.resin_diam
             )
 
         @self.Expression(self.target_component_set, doc="Height of transfer unit - HTU")
-        def HTU(b, j): # Eq 16-92, Perry's
+        def HTU(b, j):  # Eq 16-92, Perry's
             return b.loading_rate / (
-                pyunits.convert(
-                    b.resin_density, to_units=pyunits.kg / pyunits.m**3
-                )
+                pyunits.convert(b.resin_density, to_units=pyunits.kg / pyunits.m**3)
                 * b.rate_coeff[j]
             )
 
         @self.Expression(self.target_component_set, doc="Breakthrough concentration")
         def c_breakthru(b, j):
             return b.c_norm[j] * prop_in.conc_mass_phase_comp["Liq", j]
-        
+
         @self.Constraint(self.target_component_set, doc="Schmidt number")
         def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
             return (
@@ -248,10 +240,7 @@ class IonExchangeCPData(IonExchangeBaseData):
 
         @self.Constraint(doc="Resin capacity mass balance")
         def eq_resin_cap_balance(b):
-            return (
-                b.resin_max_capacity
-                == b.resin_unused_capacity + b.resin_eq_capacity
-            )
+            return b.resin_max_capacity == b.resin_unused_capacity + b.resin_eq_capacity
 
         @self.Constraint(
             self.target_component_set,
@@ -263,7 +252,9 @@ class IonExchangeCPData(IonExchangeBaseData):
                 == -b.process_flow.mass_transfer_term[0, "Liq", j] * b.breakthrough_time
             )
 
-        @self.Constraint(self.target_component_set, doc="Fluid mass transfer coefficient")
+        @self.Constraint(
+            self.target_component_set, doc="Fluid mass transfer coefficient"
+        )
         def eq_fluid_mass_transfer_coeff(b, j):
             return (
                 b.fluid_mass_transfer_coeff[j] * b.resin_diam
@@ -329,7 +320,7 @@ class IonExchangeCPData(IonExchangeBaseData):
                 / (1 - b.langmuir[j])
                 + 1
             )
-        
+
         @self.Constraint(doc="Resin bead surface area per volume")
         def eq_resin_surf_per_vol(b):
             return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam

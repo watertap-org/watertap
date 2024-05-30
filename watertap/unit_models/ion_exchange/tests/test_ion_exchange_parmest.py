@@ -13,7 +13,7 @@ initial_guess_dict = dict(mass_transfer_coeff=1, freundlich_n=1.1)
 
 set_bounds_dict = {
     "mass_transfer_coeff": [0, None],
-    "freundlich_n": [1.05, 100],  
+    "freundlich_n": [1.05, 100],
     "service_flow_rate": [0, None],
     "loading_rate": [0, None],
     "ebct": [0, None],
@@ -29,7 +29,7 @@ ixp = IXParmest(
     initial_guess_dict=initial_guess_dict,
     resin_data=resin_data,
     compound_data=compound_data,
-    set_bounds_dict=set_bounds_dict
+    set_bounds_dict=set_bounds_dict,
 )
 
 ixp.test_initial_guess()

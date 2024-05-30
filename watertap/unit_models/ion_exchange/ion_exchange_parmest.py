@@ -80,10 +80,10 @@ class IXParmest:
         c0_max_thresh=0.9999,  # for determining keep_bvs + keep_cbs
         c_next_thresh=1.0,  # for determining keep_bvs + keep_cbs
         cb50_min_thresh=None,  # all cb > cb50_min_thresh are used to make linear regression estimate bv_50
-        max_zero=1e-3, # replace all values of c_norm < c0_min_thresh with this value
-        min_one=0.9999, # replace all values of c_norm > c0_max_thresh with this value
-        use_all_data=False, # eliminate filtering data and use all points
-        use_this_data=None, # list of indexes in df_curve corresponding to data points to use
+        max_zero=1e-3,  # replace all values of c_norm < c0_min_thresh with this value
+        min_one=0.9999,  # replace all values of c_norm > c0_max_thresh with this value
+        use_all_data=False,  # eliminate filtering data and use all points
+        use_this_data=None,  # list of indexes in df_curve corresponding to data points to use
         figsize=(7, 5),
         just_plot_curve=False,
     ):
@@ -296,7 +296,7 @@ class IXParmest:
         with those values using initial_guess_dict
         """
         print("\nTesting initial guess\n")
-        
+
         ix = self.ix
         self._fix_initial_guess()
         self._calc_from_constr()
@@ -849,10 +849,10 @@ class IXParmest:
 
     def plot_theta(self):
         plot_theta(self)
-    
+
     def plot_estimate_bv50(self):
         plot_estimate_bv50(self)
-    
+
     def plot_curve(self):
         plot_curve(self)
 

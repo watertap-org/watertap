@@ -14,14 +14,15 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Set, 
+    Set,
     Var,
     Param,
     value,
-    log, 
+    log,
     units as pyunits,
 )
 from pyomo.common.config import ConfigValue, In
+
 # Import IDAES cores
 from idaes.core import declare_process_block_class
 from idaes.core.util.math import smooth_min, smooth_max
@@ -74,9 +75,7 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
         reactive_ions = self.config.reactive_ions
 
         assert target_component in reactive_ions
-        self.target_component_set = Set(
-            initialize=[target_component]
-        )  
+        self.target_component_set = Set(initialize=[target_component])
         inerts = comps - self.target_component_set
         self.reactive_ion_set = Set(initialize=reactive_ions)
         self.inert_set = Set(initialize=comps - self.reactive_ion_set)
@@ -91,7 +90,7 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
             self.ion_exchange_type = IonExchangeType.anion
         else:
             raise ConfigurationError("Target ion must have non-zero charge.")
-        
+
         for j in inerts:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
             regen.get_material_flow_terms("Liq", j).fix(0)
@@ -197,7 +196,7 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
         @self.Expression(self.reactive_ion_set, doc="Breakthrough concentration")
         def c_breakthru(b, j):
             return b.c_norm[j] * prop_in.conc_mass_phase_comp["Liq", j]
-        
+
         @self.Constraint(self.reactive_ion_set, doc="Schmidt number")
         def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
             return (
@@ -249,10 +248,13 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
             doc="Evenly spaced c_norm for trapezoids",
         )
         def eq_c_traps(b, j, k):
-            return b.c_traps[j, k] == smooth_max(1e-5, b.c_trap_min[j] + (b.trap_disc[k] - 1) * (
-                (b.c_norm[j] - b.c_trap_min[j]) / (b.num_traps - 1))
+            return b.c_traps[j, k] == smooth_max(
+                1e-5,
+                b.c_trap_min[j]
+                + (b.trap_disc[k] - 1)
+                * ((b.c_norm[j] - b.c_trap_min[j]) / (b.num_traps - 1)),
             )
-            
+
         @self.Expression(self.reactive_ion_set, self.trap_disc, doc="BV for trapezoids")
         def bv_traps(b, j, k):
             if k == 0:
@@ -261,7 +263,7 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
                 return b.bv
             else:
                 return (b.tb_traps[j, k] * b.loading_rate) / b.bed_depth
-            
+
         @self.Constraint(
             self.reactive_ion_set,
             self.trap_index,
@@ -312,7 +314,6 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
             return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
                 "Liq", j
             ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
-
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
