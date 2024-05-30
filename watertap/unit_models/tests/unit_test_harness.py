@@ -53,7 +53,7 @@ class UnitTestHarness(abc.ABC):
         # solution map from var to value
         self.unit_solutions = ComponentMap()
 
-        # expressions for conservation checks
+        # dictionary of expressions for conservation checks
         self.conservation_equality = {}
 
         # arguments for badly scaled variables
@@ -163,7 +163,8 @@ class UnitTestHarness(abc.ABC):
                         )
                     except:
                         raise AssertionError(
-                            f"The inlet expression, '{key}', is not equal to the outlet expression, '{corresponding_outlet_key}'"
+                            f"The inlet expression, '{key}': {inlet_expression}, is not equal to the outlet expression, "
+                            f"'{corresponding_outlet_key}': {outlet_expression}"
                         )
                 else:
                     raise AssertionError(
