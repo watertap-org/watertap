@@ -53,6 +53,9 @@ class UnitTestHarness(abc.ABC):
         # solution map from var to value
         self.unit_solutions = ComponentMap()
 
+        # expressions for conservation checks
+        self.conservation_equality = {}
+
         # arguments for badly scaled variables
         self.default_large = 1e4
         self.default_small = 1e-3
@@ -81,6 +84,7 @@ class UnitTestHarness(abc.ABC):
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
         blk._test_objs.unit_solutions = self.unit_solutions
+        blk._test_objs.conservation_equality = self.conservation_equality
 
     @abc.abstractmethod
     def configure(self):
@@ -126,6 +130,42 @@ class UnitTestHarness(abc.ABC):
             optarg=blk._test_objs.optarg,
             outlvl=idaeslog.DEBUG,
         )
+
+    @pytest.mark.component
+    def test_conservation(self, frame):
+        self.configure_class()
+        m, blk = frame
+
+        conservation = blk._test_objs.conservation_equality
+
+        if blk._test_objs.conservation_equality == {}:
+            raise NotImplementedError(
+                "An expression must be provided for the inlet and outlet stream(s) in the conservation equality. "
+                "If this conservation check should be ignored, set the inlet and outlet "
+                "expressions to an identical, arbitrary value. "
+            )
+
+        for key, expression in conservation.items():
+            if "Inlet" in key:
+                corresponding_outlet_key = key.replace("Inlet", "Outlet")
+                inlet_expression = conservation[key]
+                outlet_expression = conservation.get(corresponding_outlet_key, None)
+                if outlet_expression is not None:
+                    try:
+                        assert value(inlet_expression) == pytest.approx(
+                            value(outlet_expression),
+                            abs=self.default_absolute_tolerance,
+                            rel=self.default_relative_tolerance,
+                        )
+                    except:
+                        raise AssertionError(
+                            f"The inlet expression, {inlet_expression}, is not equal to the outlet expression, {outlet_expression}"
+                        )
+                else:
+                    raise AssertionError(
+                        "There is no matching expression for the outlet. The name of the outlet "
+                        "expression should be identical to the inlet expression but replace Inlet with Outlet."
+                    )
 
     @pytest.mark.component
     def test_unit_solutions(self, frame):
