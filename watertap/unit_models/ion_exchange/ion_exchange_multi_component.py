@@ -24,7 +24,7 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class
-
+from idaes.core.util.math import smooth_min, smooth_max
 import idaes.core.util.scaling as iscale
 
 from idaes.core.util.exceptions import InitializationError, ConfigurationError
@@ -249,11 +249,8 @@ class IonExchangeMultiCompData(IonExchangeBaseData):
             doc="Evenly spaced c_norm for trapezoids",
         )
         def eq_c_traps(b, j, k):
-            # if k == max(b.traps_index):
-            #     return b.c_traps[j, k] == b.c_norm[j]
-            # else:
-            return b.c_traps[j, k] == b.c_trap_min[j] + (b.trap_disc[k] - 1) * (
-                (b.c_norm[j] - b.c_trap_min[j]) / (b.num_traps - 1)
+            return b.c_traps[j, k] == smooth_max(1e-5, b.c_trap_min[j] + (b.trap_disc[k] - 1) * (
+                (b.c_norm[j] - b.c_trap_min[j]) / (b.num_traps - 1))
             )
             
         @self.Expression(self.reactive_ion_set, self.trap_disc, doc="BV for trapezoids")
