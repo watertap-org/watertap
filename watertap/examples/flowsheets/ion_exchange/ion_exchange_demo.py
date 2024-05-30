@@ -19,7 +19,6 @@ from pyomo.environ import (
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.initialization import propagate_state
@@ -29,6 +28,7 @@ from watertap.core.util.initialization import check_dof
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.ion_exchange_0D import IonExchange0D
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 import math
 
@@ -122,9 +122,10 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
     # Add the ion exchange model to the flowsheet
     m.fs.ion_exchange = ix = IonExchange0D(**ix_config)
 
-    # Touch concentration properties so they are available for reporting.
+    # Touch properties so they are available for scaling, initialization, and reporting.
     ix.process_flow.properties_in[0].conc_mass_phase_comp[...]
     ix.process_flow.properties_out[0].conc_mass_phase_comp[...]
+    m.fs.feed.properties[0].flow_vol_phase[...]
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.product.properties[0].conc_mass_phase_comp[...]
 
