@@ -469,7 +469,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         self,
         state_args=None,
         routine=None,
-        outlvl=idaeslog.DEBUG,
+        outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
     ):
