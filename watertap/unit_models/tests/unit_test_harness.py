@@ -145,8 +145,12 @@ class UnitTestHarness(abc.ABC):
                 "expressions to an identical, arbitrary value. "
             )
 
+        # Flag to check whether there is a key with 'Inlet' in the name
+        inlet_key = False
+
         for key, expression in conservation.items():
             if "Inlet" in key:
+                inlet_key = True
                 corresponding_outlet_key = key.replace("Inlet", "Outlet")
                 inlet_expression = conservation[key]
                 outlet_expression = conservation.get(corresponding_outlet_key, None)
@@ -159,13 +163,19 @@ class UnitTestHarness(abc.ABC):
                         )
                     except:
                         raise AssertionError(
-                            f"The inlet expression, {inlet_expression}, is not equal to the outlet expression, {outlet_expression}"
+                            f"The inlet expression, '{key}', is not equal to the outlet expression, '{corresponding_outlet_key}'"
                         )
                 else:
                     raise AssertionError(
-                        "There is no matching expression for the outlet. The name of the outlet "
-                        "expression should be identical to the inlet expression but replace Inlet with Outlet."
+                        f"There is no matching expression for the outlet. The name of the outlet "
+                        f"expression '{corresponding_outlet_key}' should be identical to the inlet expression."
+                        f"'{key}' but replace 'Inlet' with 'Outlet'"
                     )
+            elif not inlet_key:
+                raise AssertionError(
+                    f"The name of the inlet expression '{key}' should include the word 'Inlet', and the name of the "
+                    f"outlet expression should be identical, but replace 'Inlet' with 'Outlet'."
+                )
 
     @pytest.mark.component
     def test_unit_solutions(self, frame):
