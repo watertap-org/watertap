@@ -58,6 +58,7 @@ from watertap.tools.oli_api.credentials import (
 )
 import re
 
+
 @pytest.fixture(scope="session")
 def local_dbs_file() -> Path:
     test_dir = Path(__file__).parent / "tests"
@@ -123,7 +124,9 @@ def oliapi_instance_with_invalid_phase(
         oliapi.upload_dbs_file(str(local_dbs_file))
         with pytest.raises(
             RuntimeError,
-            match=re.escape("Failed DBS file generation. Unexpected phase(s): ['invalid_phase']"),
+            match=re.escape(
+                "Failed DBS file generation. Unexpected phase(s): ['invalid_phase']"
+            ),
         ):
             oliapi.generate_dbs_file(source_water, phases=["invalid_phase"])
         yield oliapi
