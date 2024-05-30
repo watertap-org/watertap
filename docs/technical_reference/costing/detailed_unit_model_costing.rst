@@ -5,6 +5,7 @@ Default costing methods are provided for the unit models listed below. However, 
 .. toctree::
    :maxdepth: 1
 
+   aeration_tank
    anaerobic_digester
    clarifier
    compressor
