@@ -57,7 +57,10 @@ from watertap.costing.unit_models.pump import (
 from watertap.costing.unit_models.heater_chiller import (
     cost_heater_chiller,
 )
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import (
+    assert_degrees_of_freedom,
+    interval_improve_initial,
+)
 
 __author__ = "Elmira Shamlou"
 
@@ -69,6 +72,8 @@ def main():
     initialize_system(m, solver=solver)
 
     optimize_set_up(m)
+
+    interval_improve_initial(m)
     solve(m, solver=solver)
 
     print("\n***---optimization results---***")

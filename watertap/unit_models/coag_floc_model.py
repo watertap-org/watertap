@@ -41,6 +41,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.core.util.initialization import interval_improve_initial
 
 __author__ = "Austin Ladshaw"
 
@@ -888,6 +889,8 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
+
+        interval_improve_initial(self)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block

@@ -40,6 +40,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.core.util.initialization import interval_improve_initial
 from watertap.costing.unit_models.crystallizer import cost_crystallizer
 
 _log = idaeslog.getLogger(__name__)
@@ -585,6 +586,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
+
+        interval_improve_initial(self)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
