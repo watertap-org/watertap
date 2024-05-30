@@ -206,4 +206,27 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
 
+        # Conservation check
+        self.conservation_equality = {
+            "Inlet expression 1": m.fs.unit.inlet.flow_vol[0],
+            "Outlet expression 1": (
+                m.fs.unit.liquid_outlet.flow_vol[0] * m.fs.props.dens_mass
+                + m.fs.unit.vapor_outlet.flow_vol[0] * m.fs.props_vap.dens_mass
+            )
+            / m.fs.props.dens_mass,
+            "Inlet expression 2": (
+                m.fs.unit.inlet.flow_vol[0]
+                * m.fs.props.dens_mass
+                * m.fs.props.cp_mass
+                * (m.fs.unit.inlet.temperature[0] - m.fs.props.temperature_ref)
+            )
+            - (
+                m.fs.unit.liquid_outlet.flow_vol[0]
+                * m.fs.props.dens_mass
+                * m.fs.props.cp_mass
+                * (m.fs.unit.liquid_outlet.temperature[0] - m.fs.props.temperature_ref)
+            ),
+            "Outlet expression 2": -1 * m.fs.unit.liquid_phase.enthalpy_transfer[0],
+        }
+
         return m
