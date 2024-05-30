@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from copy import deepcopy
 from scipy.optimize import curve_fit
@@ -791,7 +792,6 @@ class IXParmest:
             try:
                 self._calc_from_constr(m=m)
                 ix.initialize()
-                ix.initialize()
             except:
                 # print_infeasible_constraints(m)
                 pass
@@ -825,7 +825,6 @@ class IXParmest:
             # self.scale_it(m=self.m_theta)
             try:
                 ix.initialize()
-                ix.initialize()
             except:
                 # print_infeasible_constraints(m)
                 pass
@@ -850,6 +849,12 @@ class IXParmest:
 
     def plot_theta(self):
         plot_theta(self)
+    
+    def plot_estimate_bv50(self):
+        plot_estimate_bv50(self)
+    
+    def plot_curve(self):
+        plot_curve(self)
 
     def _get_comp_list(self, blk, comp=Var, skip_list=[]):
         cs = []
@@ -977,74 +982,6 @@ class IXExperiment(Experiment):
         m = self.label_model()
 
         return m
-
-
-def main():
-    set_bounds = {
-        "mass_transfer_coeff": [0, None],
-        "freundlich_n": [
-            1.05,
-            50,
-        ],  # recommend keeping at least the lb to help in stable solves
-        "service_flow_rate": [0, None],
-        "loading_rate": [0, None],
-        "ebct": [0, None],
-        "resin_diam": [0, None],
-    }
-
-    calc_from_constr_dict = {
-        "bed_volume_total": "eq_bed_flow",
-        "col_diam": "eq_bed_design",
-        "col_height": "eq_col_height",
-        "resin_surf_per_vol": "eq_resin_surf_per_vol",
-        "service_flow_rate": "eq_service_flow_rate",
-        "ebct": "eq_ebct",
-        "N_Re": "eq_Re",
-        "N_Sc": "eq_Sc",
-        "N_Sh": "eq_Sh",
-        "N_Pe_bed": "eq_Pe_bed",
-        "N_Pe_particle": "eq_Pe_p",
-    }
-    calc_from_constr_dict = dict()
-    initial_guess_dict = {
-        "mass_transfer_coeff": 0.1,
-        "freundlich_n": 3,
-    }
-    scale_from_value = [
-        "bed_volume_total",
-        "col_diam",
-        "col_height",
-        "resin_surf_per_vol",
-        "service_flow_rate",
-        "ebct",
-        "N_Re",
-        "N_Sc",
-        "N_Sh",
-        "N_Pe_bed",
-        "N_Pe_particle",
-        "bv_50",
-        "col_height_to_diam_ratio",
-        "bv",
-    ]
-    curve_id = 2
-    c = IXParmest(
-        curve_id,
-        regenerant="single_use",
-        c0_min_thresh=0,
-        initial_guess_dict=initial_guess_dict,
-        set_bounds=set_bounds,
-        calc_from_constr_dict=calc_from_constr_dict,
-        scale_from_value=scale_from_value,
-    )
-    # c.estimate_bv50()
-    # c.plot_estimate_bv50()
-
-    c.run_all_things(plot_things=True, save_things=False)
-
-
-# if __name__ == "__main__":
-#     main()
-#     plt.show()
 
 
 ### ============ OLD PARMEST ROUTINE
