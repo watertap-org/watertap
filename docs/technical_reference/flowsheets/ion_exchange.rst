@@ -11,6 +11,12 @@ the constant pattern assumption.
 Implementation
 --------------
 
+.. figure:: ../../_static/flowsheets/ion_exchange.png
+    :width: 500
+    :align: center
+
+    Figure 1. IX flowsheet
+
 Consisting of only a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`IX unit model documentation </technical_reference/unit_models/ion_exchange_0D>`.
 The ion exchange flowsheet demonstration proceeds through five steps:
 
