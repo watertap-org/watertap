@@ -5,36 +5,61 @@ Introduction
 ------------
 
 The simple ion exchange (IX) flowsheet can be simulated to predict the performance of an IX system to remove targeted ions and components. This flowsheet can
-be useful to expedite the set-up, usage, and costing of an IX system for conventional water treatment applications using the Langmuir isotherm and
+be useful to expedite the setup, usage, and costing of an IX system for conventional water treatment applications using the Langmuir isotherm and
 the constant pattern assumption.
 
 Implementation
 --------------
 
+Consisting of only a single unit operation, the assumptions for the flowsheet are the same as those outlined in the :doc:`IX unit model documentation </technical_reference/unit_models/ion_exchange_0D>`:
+
+1) Model dimensionality is limited to a 0D control volume
+2) Single liquid phase only
+3) Steady state only
+4) Single solute and single solvent (water) only
+5) Plug flow conditions
+6) Isothermal conditions
+7) Favorable Langmuir isotherm
+
+Figure 1 presents the process flow diagram for the IX model. Blue text represents all of the unit blocks on the flowsheets, and red text
+represents process streams (or more specifically, an ``Arc`` that is connected to a ``Port`` on each unit block).
+
 .. figure:: ../../_static/flowsheets/ion_exchange.png
-    :width: 500
+    :width: 1000
     :align: center
 
-    Figure 1. IX flowsheet
+    Figure 1. IX demonstration flowsheet.
 
-Consisting of only a single unit operation, the assumptions for the flowsheet are aligned with those detailed in the :doc:`IX unit model documentation </technical_reference/unit_models/ion_exchange_0D>`.
+The following modeling components are used within the flowsheet:
+
+    Documentation for property models:
+        * :doc:`/technical_reference/property_models/mc_aq_sol`
+    Documentation for unit models:
+        * :doc:`/technical_reference/unit_models/ion_exchange_0D`
+    Documentation for unit models from IDAES:
+        * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/feed`
+        * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
+    Documentation for costing models:
+        * :doc:`/technical_reference/costing/watertap_costing`
+        * :doc:`/technical_reference/costing/ion_exchange`
+
 The ion exchange flowsheet demonstration proceeds through five steps:
 
 1. Building the model with ``ix_build``: 
     This function builds the flowsheet with a list of ions as input.
     If the keyword argument ``target_ion`` is not used, the first ion in the list of ions provided is used as the ``target_ion`` configuration argument for the ``IonExchange0D`` model.
-    The ion used in the demonstration is calcium (``Ca_2+``), but the local function ``get_ion_config`` can be used to get diffusivity, molecular weight, \
+    The ion used in the demonstration is calcium (``Ca_2+``), but the local function ``get_ion_config`` can be used to get diffusivity, molecular weight,
     and charge data for sodium (``Na_+``), chloride (``Cl_-``), magnesium (``Mg_2+``), and sulfate (``SO4_2-``). This function will also add the flowsheet 
     level and unit model costing packages, set default scaling for molar flow rates of water and the target ion, create ``Arcs`` to connect
-    the feed and product blocks to the IX unit model, and calculate scaling factors for the entire flowsheet. The model is returned from this function.
+    the feed, product, and regen blocks to the IX unit model, and calculate scaling factors for the entire flowsheet. The model is returned from this function.
 
 2. Defining the operating conditions with ``set_operating_conditions``: 
     This function is used to set the flow rate and concentration for the flowsheet via the ``flow_in`` and ``conc_mass_in``
     keywords, respectively. It will also set the operating conditions for the IX unit process simulation. Specific variables fixed are in the sections below.
 
 3. Connecting and initializing individual unit models with ``initialize_system``: 
-    Calling this function will initialize all unit models on the flowsheet (``feed``, ``ion_exchange``, and ``product``), initialize 
-    the ``costing`` block, and propagate the state of the arcs so all the unit models are connected.
+    Calling this function will initialize all unit models on the flowsheet (``feed``, ``ion_exchange``, ``product``, and ``regen``), initialize 
+    the ``costing`` block, and propagate the arcs.
 
 4. Solving the model with ``solver``:
     The solver object is returned by calling the WaterTAP function ``get_solver()``. After the model is built, specified, and initialized, 
@@ -56,20 +81,6 @@ The ion exchange flowsheet demonstration proceeds through five steps:
     the initial optimization solve, fixing ``number_columns`` to that value, and then re-solving the model to obtain the final values for ``bed_depth`` and ``dimensionless_time``.
     This is the approach taken in the demonstration file.
         
-
-The following modeling components are used within the flowsheet:
-
-Documentation for property models:
-    * :doc:`/technical_reference/property_models/mc_aq_sol`
-Documentation for unit models:
-    * :doc:`/technical_reference/unit_models/ion_exchange_0D`
-Documentation for unit models from IDAES:
-    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/feed`
-    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
-Documentation for costing models:
-    * :doc:`/technical_reference/costing/watertap_costing`
-    * :doc:`/technical_reference/costing/ion_exchange`
-
 Degrees of Freedom
 ------------------
 
@@ -108,7 +119,7 @@ Future Refinements
 
 The following modifications to the IX flowsheet are planned for development:
 
-    * Add examples of other IX modeling options
+    * Add examples of the Freundlich (Clark) ion exchange model.
     * Improve auto-scaling of model for ease of use
 
 Code Documentation
