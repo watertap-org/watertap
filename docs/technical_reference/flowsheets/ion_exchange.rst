@@ -71,7 +71,7 @@ The degrees of freedom for the flowsheet can change depending on the configurati
 Specifics for other configurations options are available in the IX model documentation.
 In this demonstration, the following variables are initially fixed for simulating the IX flowsheet (i.e., degrees of freedom = 0):
 
-    * feed conditions (component flows, temperature, pressure)
+    * Feed conditions (component flows, temperature, pressure)
     * Langmuir equilibrium coefficient for target ion
     * Resin capacity, diameter, porosity, and density
     * Number of columns for the system
