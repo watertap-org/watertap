@@ -1054,7 +1054,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.target_ion_set, doc="Removed total mass of ion in equivalents"
             )
             def eq_mass_removed(b, j):
-                charge = abs(value(prop_in.charge_comp[j]))
+                charge = abs(prop_in.charge_comp[j])
                 return b.mass_removed[j] * charge == pyunits.convert(
                     b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol_tot,
                     to_units=pyunits.mol,
