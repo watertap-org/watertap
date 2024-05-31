@@ -72,6 +72,10 @@ The ion exchange flowsheet demonstration proceeds through five steps:
     and therefore, a less frequent regeneration schedule and lower operating costs. The optimization proceeds in four steps:
         
     * First, the function will set an ``Objective`` on the flowsheet to minimize the levelized cost of water (LCOW).
+    .. math::
+        
+        LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
+
     * Then, the model fixes the effluent concentration of the IX model to 25 mg/L, propagates that concentration to the product block, and re-initializes the product block with the new targeted concentration.
     * Next, three variables are unfixed on the ion exchange model to allow for the model to solve for the new conditions (``dimensionless_time``, ``number_columns``, and the ``bed_depth``).
     * Finally, the model is solved for these new conditions.
@@ -92,7 +96,7 @@ In this demonstration, the following variables are initially fixed for simulatin
     * Langmuir equilibrium coefficient for target ion
     * Resin capacity, diameter, porosity, and density
     * Number of columns for the system
-    * Service flow rate
+    * Service flow rate (loading rate)
     * The dimensionless time for the constant-pattern solution
 
 Flowsheet Specifications
@@ -112,7 +116,7 @@ Flowsheet Specifications
    "Number columns", "4", ":math:`\text{dimensionless}`"
    "Bed void fraction", "0.5", ":math:`\text{dimensionless}`"
    "Bed depth", "1.7", ":math:`\text{m}`"
-   "Service flow rate", "15", ":math:`\text{BV/hr}`"
+   "Service flow rate", "15", ":math:`\text{1/hr}`"
 
 Future Refinements
 ------------------
