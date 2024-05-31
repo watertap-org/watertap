@@ -51,8 +51,12 @@ class IpoptWaterTAP:
         for opt_key, opt_val in kwds.get("options", {}).items():
             setattr(self.options, opt_key, opt_val)
 
-    def executable(self):
-        return self._base_solver().executable()
+    def __getattr__(self, attr):
+        # if not available here, ask the _base_solver
+        try:
+            return getattr(self._base_solver(), attr)
+        except AttributeError:
+            raise
 
     def solve(self, blk, *args, **kwds):
 
@@ -154,7 +158,9 @@ class IpoptWaterTAP:
                     self._cleanup()
                     raise RuntimeError(
                         "Error in AMPL evaluation.\n"
-                        "Run ipopt with halt_on_ampl_error=yes and symbolic_solver_labels=True to see the affected function."
+                        "Re-run ipopt with:\n"
+                        '1. solver options = {"halt_on_ampl_error" : "yes", "nlp_scaling_method" : "gradient-based"\n'
+                        "2. set keyword argument symbolic_solver_labels=True in the pyomo solve function call to see the affected function.\n"
                     )
             else:
                 print("Error in constraint_autoscale_large_jac")
