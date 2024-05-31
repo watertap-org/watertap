@@ -36,7 +36,7 @@ The ion exchange flowsheet demonstration proceeds through five steps:
     continues with the optimization demonstration.
     
 5. Optimally optimizing IX design with ``optimize_system``: 
-    Though not required, this function provides an example of optimizing the design of the IX system for a targeted effluent conenctration
+    Though not required, this function provides an example of optimizing the design of the IX system for a targeted effluent concentration
     of 25 mg/L. The initial model demonstration resulted in an effluent concentration of 0.21 mg/L, so this optimization results in longer breakthrough time
     and therefore, a less frequent regeneration schedule and lower operating costs. The optimization proceeds in four steps:
         
