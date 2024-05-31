@@ -72,6 +72,7 @@ The ion exchange flowsheet demonstration proceeds through five steps:
     and therefore, a less frequent regeneration schedule and lower operating costs. The optimization proceeds in four steps:
         
     * First, the function will set an ``Objective`` on the flowsheet to minimize the levelized cost of water (LCOW).
+    
     .. math::
         
         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
