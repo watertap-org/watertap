@@ -117,7 +117,7 @@ Flowsheet Specifications
    "Number columns", "4", ":math:`\text{dimensionless}`"
    "Bed void fraction", "0.5", ":math:`\text{dimensionless}`"
    "Bed depth", "1.7", ":math:`\text{m}`"
-   "Service flow rate", "15", ":math:`\text{1/hr}`"
+   "Service flow rate (in bed volumes)", "15", ":math:`\text{1/hr}`"
 
 Future Refinements
 ------------------
