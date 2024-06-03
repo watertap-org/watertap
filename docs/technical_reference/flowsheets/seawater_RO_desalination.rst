@@ -93,8 +93,32 @@ some helper functions that group these core functions together for convenience. 
 2. Specify the operating conditions with ``set_operating_conditions()``:
 
     This function begins by specifying the inlet conditions as outlined in Table 1. Then, starting with the ``pretreatment`` block, the operating 
-    conditions for each unit model are set 
+    conditions for each unit model are set according to Table 2.
 
+3. Initialize the unit and costing models with ``initialize_system()``:
+
+    Starting with the ``Feed`` block and continuing sequentially through each part of the treatment train, this function sets the initial condition
+    for all the unit models on the flowsheet and propagates ``Arcs`` that connect each block either to ``Translator`` blocks or treatment blocks. 
+    Each block is initialized and solved by using the local ``solve()`` function to ensure each block solves optimally before trying to solve the next.
+    Note that the order in which blocks/unit models are solved/initialized in WaterTAP is important because the initial conditions are *only* set 
+    for the ``Feed`` block. For these conditions to cascade to downstream unit models, and for the downstream unit models to include the impacts of upstream 
+    process (e.g., component removal), sequential initialization is necessary. Thus, initialization of this flowsheet proceeds as follows:
+
+        #. ``Feed`` block where initial flow rates and solute concentrations are set.
+        #. ``pretreatment`` block 
+        #. translator block from ``pretreatment`` to ``desalination`` (i.e., ``m.fs.tb_prtrt_desal``)
+        #. ``desalination`` block
+        #. translator block from ``desalination`` to ``posttreatment`` (i.e., ``m.fs.tb_desal_psttrt``)
+        #. ``posttreatment`` block
+
+4. Add the system- and unit-level costing packages with ``add_costing()``:
+
+    Because of the nature of the unit models used in this flowsheet (i.e., both zero order and detailed models), two separate system-level costing packages are required. 
+    ``m.fs.zo_costing = ZeroOrderCosting()`` is used to aggregate costs for zero-order models, and ``m.fs.ro_costing = WaterTAPCosting`` is for the more detailed desalination models. 
+    The costing block for each unit model is ``UnitModelCostingBlock`` which has points to a system-level aggregation costing package via the configuration keyword ``flowsheet_costing_block``.
+    Each system-level costing package has a ``.cost_process()`` method that is called to aggregate unit level costs and calculate overall process costs.
+    To aggregate results from both costing packages, a separate ``Expression`` is created for ``total_capital_cost`` and ``total_operating_cost``, and each of these are used
+    to calculate the ``LCOW``.
 
 
 The majority of the unit models on the flowsheet are split up on to separate ``Blocks`` based on the purpose the treatment process serves.
