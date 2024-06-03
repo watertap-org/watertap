@@ -76,7 +76,9 @@ The ion exchange flowsheet demonstration proceeds through five steps:
     .. math::
         
         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
-
+    
+    where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and :math:`f_{util}` represents the utilization factor
+    
     * Then, the model fixes the effluent concentration of the IX model to 25 mg/L, propagates that concentration to the product block, and re-initializes the product block with the new targeted concentration.
     * Next, three variables are unfixed on the ion exchange model to allow for the model to solve for the new conditions (``dimensionless_time``, ``number_columns``, and the ``bed_depth``).
     * Finally, the model is solved for these new conditions.
