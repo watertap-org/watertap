@@ -145,20 +145,25 @@ class UnitTestHarness(abc.ABC):
                 "expressions to an identical, arbitrary value. "
             )
 
-        # Flag to check whether there is a key with 'Inlet' in the name
-        inlet_key = False
-
         for key, expression in conservation.items():
-            try:
-                assert value(expression["in"]) == pytest.approx(
-                    value(expression["out"]),
-                    abs=self.default_absolute_tolerance,
-                    rel=self.default_relative_tolerance,
-                )
-            except:
+            if "in" in expression and "out" in expression:
+                inlet_expression = value(expression["in"])
+                outlet_expression = value(expression["out"])
+                try:
+                    assert inlet_expression == pytest.approx(
+                        outlet_expression,
+                        abs=self.default_absolute_tolerance,
+                        rel=self.default_relative_tolerance,
+                    )
+                except:
+                    raise AssertionError(
+                        f"In {key}, the inlet expression is equal to {inlet_expression}, "
+                        f"but the outlet expression is equal to {outlet_expression}"
+                    )
+            else:
                 raise AssertionError(
-                    f"The inlet expression, '{key}': {inlet_expression}, is not equal to the outlet expression, "
-                    f"'{corresponding_outlet_key}': {outlet_expression}"
+                    f"Ensure the name of the inlet expression in {key} is 'in' and the name of the "
+                    f"outlet expression is 'out'."
                 )
             # if "Inlet" in key:
             #     inlet_key = True

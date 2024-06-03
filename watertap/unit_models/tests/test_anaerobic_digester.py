@@ -207,6 +207,7 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
 
         # Conservation check
+
         self.conservation_equality = {
             "Check 1": {
                 "in": m.fs.unit.inlet.flow_vol[0],
