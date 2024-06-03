@@ -20,7 +20,7 @@ This flowsheet includes examples of several different types of modeling features
 * WaterTAP database
 * Several base IDAES models
 
-The influent and operating conditions are defined from the case study this flowsheet is modeled after. The relevant information is in Table 1:
+The influent are defined from the case study this flowsheet is modeled after. The relevant information is in Table 1:
 
 .. csv-table::
    :header: "Description", "Value", "Units"
@@ -30,11 +30,24 @@ The influent and operating conditions are defined from the case study this flows
    "TSS concentration", "0.03", ":math:`\text{g/L}`"
    "Temperature", "298", ":math:`\text{K}`"
    "Pressure", "100000", ":math:`\text{Pa}`"
-   "Ferric chloride concentration", "20", ":math:`\text{mg/L}`"
-   "Anti-scalant concentration", "5", ":math:`\text{mg/L}`"
-   "Storage tank 1 storage time", "2", ":math:`\text{hr}`"
-   "Storage tank 2 storage time", "1", ":math:`\text{hr}`"
-   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`"
+
+Some unit models have case-specific operating conditions, presented in Table 2:
+
+.. csv-table::
+   :header: "Description", "Value", "Units", "Flowsheet Model Name"
+
+    **Pre-Treatment**
+   "Ferric chloride dose", "20", ":math:`\text{mg/L}`", "``m.fs.ferric_chloride_addition``"
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
+   **Desalination**
+
+   **Post-Treatment**
+   "Anti-scalant dose", "5", ":math:`\text{mg/L}`", "``m.fs.anti_scalant_addition``"
+   "Lime dose", "2.3", ":math:`\text{mg/L}`", "``m.fs.lime_addition``"
+   "Storage tank 2 storage time", "1", ":math:`\text{hr}`", "``m.fs.storage_tank_2``"
+   "Storage tank 3 storage time", "1", ":math:`\text{hr}`", "``m.fs.storage_tank_3``"
+   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`", "``m.fs.uv_aop``"
+   "UV/AOP UV transmittance", "0.95", ":math:`\text{dimensionless}`", "``m.fs.uv_aop``"
 
 
 
