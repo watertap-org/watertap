@@ -106,6 +106,7 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
     # The must use the same property package as the ion exchange model
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.regen = Product(property_package=m.fs.properties)
 
     # Configuration dictionary used to instantiate the ion exchange model:
     #   "property_package" indicates which property package to use for the ion exchange model
@@ -125,6 +126,7 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
     # Touch properties so they are available for scaling, initialization, and reporting.
     ix.process_flow.properties_in[0].conc_mass_phase_comp[...]
     ix.process_flow.properties_out[0].conc_mass_phase_comp[...]
+    ix.regeneration_stream[0].conc_mass_phase_comp[...]
     m.fs.feed.properties[0].flow_vol_phase[...]
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.product.properties[0].conc_mass_phase_comp[...]
@@ -151,6 +153,7 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
     # For example, in this next line the outlet Port on the Feed model is connected to the inlet Port on the ion exchange model
     m.fs.feed_to_ix = Arc(source=m.fs.feed.outlet, destination=ix.inlet)
     m.fs.ix_to_product = Arc(source=ix.outlet, destination=m.fs.product.inlet)
+    m.fs.ix_to_regen = Arc(source=ix.regen, destination=m.fs.regen.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -210,11 +213,13 @@ def initialize_system(m):
     propagate_state(m.fs.feed_to_ix)
     # ... and then initialize the ion exchange model.
     m.fs.ion_exchange.initialize()
-    # With the ion exchange model initialized, we have initial guesses for the Product block
-    # and can propagate the state of the IX effluent stream.
+    # With the ion exchange model initialized, we have initial guesses for the Product and Regen blocks
+    # and can propagate the state of the IX effluent and regeneration stream.
     propagate_state(m.fs.ix_to_product)
-    # Finally, we initialize the product and costing blocks.
+    propagate_state(m.fs.ix_to_regen)
+    # Finally, we initialize the product, regen and costing blocks.
     m.fs.product.initialize()
+    m.fs.regen.initialize()
     m.fs.costing.initialize()
 
 
@@ -233,11 +238,13 @@ def optimize_system(m):
     # and (hopefully) a lower cost.
     ix.process_flow.properties_out[0].conc_mass_phase_comp["Liq", target_ion].fix(0.025)
 
-    # With the new effluent conditions for our ion exchange model, this will have implications for our downstream models (the Product block)
+    # With the new effluent conditions for our ion exchange model, this will have implications for our downstream models (the Product and Regen blocks)
     # Thus, we must re-propagate the new effluent state to these models...
     propagate_state(m.fs.ix_to_product)
+    propagate_state(m.fs.ix_to_regen)
     # ...and re-initialize them to our new conditions.
     m.fs.product.initialize()
+    m.fs.regen.initialize()
 
     # To adjust solution to fixed-pattern to achieve desired effluent, must unfix dimensionless_time.
     ix.dimensionless_time.unfix()
@@ -245,7 +252,8 @@ def optimize_system(m):
     # Here demonstrates optimization around column design
     ix.number_columns.unfix()
     ix.bed_depth.unfix()
-    solver.solve(m)
+    optimized_results = solver.solve(m)
+    assert_optimal_termination(optimized_results)
 
 
 def get_ion_config(ions):
