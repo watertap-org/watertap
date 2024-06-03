@@ -149,34 +149,45 @@ class UnitTestHarness(abc.ABC):
         inlet_key = False
 
         for key, expression in conservation.items():
-            if "Inlet" in key:
-                inlet_key = True
-                corresponding_outlet_key = key.replace("Inlet", "Outlet")
-                inlet_expression = conservation[key]
-                outlet_expression = conservation.get(corresponding_outlet_key, None)
-                if outlet_expression is not None:
-                    try:
-                        assert value(inlet_expression) == pytest.approx(
-                            value(outlet_expression),
-                            abs=self.default_absolute_tolerance,
-                            rel=self.default_relative_tolerance,
-                        )
-                    except:
-                        raise AssertionError(
-                            f"The inlet expression, '{key}': {inlet_expression}, is not equal to the outlet expression, "
-                            f"'{corresponding_outlet_key}': {outlet_expression}"
-                        )
-                else:
-                    raise AssertionError(
-                        f"There is no matching expression for the outlet. The name of the outlet "
-                        f"expression '{corresponding_outlet_key}' should be identical to the inlet expression."
-                        f"'{key}' but replace 'Inlet' with 'Outlet'"
-                    )
-            elif not inlet_key:
-                raise AssertionError(
-                    f"The name of the inlet expression '{key}' should include the word 'Inlet', and the name of the "
-                    f"outlet expression should be identical, but replace 'Inlet' with 'Outlet'."
+            try:
+                assert value(expression["in"]) == pytest.approx(
+                    value(expression["out"]),
+                    abs=self.default_absolute_tolerance,
+                    rel=self.default_relative_tolerance,
                 )
+            except:
+                raise AssertionError(
+                    f"The inlet expression, '{key}': {inlet_expression}, is not equal to the outlet expression, "
+                    f"'{corresponding_outlet_key}': {outlet_expression}"
+                )
+            # if "Inlet" in key:
+            #     inlet_key = True
+            #     corresponding_outlet_key = key.replace("Inlet", "Outlet")
+            #     inlet_expression = conservation[key]
+            #     outlet_expression = conservation.get(corresponding_outlet_key, None)
+            #     if outlet_expression is not None:
+            #         try:
+            #             assert value(inlet_expression) == pytest.approx(
+            #                 value(outlet_expression),
+            #                 abs=self.default_absolute_tolerance,
+            #                 rel=self.default_relative_tolerance,
+            #             )
+            #         except:
+            #             raise AssertionError(
+            #                 f"The inlet expression, '{key}': {inlet_expression}, is not equal to the outlet expression, "
+            #                 f"'{corresponding_outlet_key}': {outlet_expression}"
+            #             )
+            #     else:
+            #         raise AssertionError(
+            #             f"There is no matching expression for the outlet. The name of the outlet "
+            #             f"expression '{corresponding_outlet_key}' should be identical to the inlet expression."
+            #             f"'{key}' but replace 'Inlet' with 'Outlet'"
+            #         )
+            # elif not inlet_key:
+            #     raise AssertionError(
+            #         f"The name of the inlet expression '{key}' should include the word 'Inlet', and the name of the "
+            #         f"outlet expression should be identical, but replace 'Inlet' with 'Outlet'."
+            #     )
 
     @pytest.mark.component
     def test_unit_solutions(self, frame):
