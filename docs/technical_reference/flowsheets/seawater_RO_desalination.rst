@@ -148,6 +148,8 @@ The local function ``build_flowsheet()`` combines steps 1 and 2. The local funct
 Pre-Treatment
 ^^^^^^^^^^^^^
 
+Figure 1 presents the process flow diagram for ``m.fs.pretreatment``. The first unit model on this block, ``intake``, is connected to the
+flowsheet level ``Feed`` block.
 
 .. figure:: ../../_static/flowsheets/sw_fs_pretreat.png
     :width: 800
