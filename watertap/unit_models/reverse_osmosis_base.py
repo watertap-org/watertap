@@ -772,7 +772,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
 
         if self.config.has_full_reporting:
             expr_dict["Average Solvent Mass Flux"] = (
-                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
+                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"]
             )
             if hasattr(self.feed_side, "N_Re_avg"):
                 expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
@@ -780,11 +780,11 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 ]
             for j in self.config.property_package.solute_set:
                 expr_dict[f"{j} Average Solute Mass Flux"] = (
-                    self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
+                    self.flux_mass_phase_comp_avg[time_point, "Liq", j]
                 )
                 if hasattr(self.feed_side, "K_avg"):
                     expr_dict[f"{j} Average Mass Transfer Coefficient"] = (
-                        self.feed_side.K_avg[time_point, j] * 3.6e6
+                        self.feed_side.K_avg[time_point, j]
                     )
 
         # TODO: add more vars
