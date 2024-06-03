@@ -28,7 +28,8 @@ The operating conditions are defined from the case study this flowsheet is model
    "Volumetric flow rate", "7.05", ":math:`\text{MGD}`"
    "TDS concentration", "35", ":math:`\text{g/L}`"
    "TSS concentration", "0.03", ":math:`\text{g/L}`"
-
+   "Temperature", "298", ":math:`\text{K}`"
+   "Pressure", "100000", ":math:`\text{Pa}`"
 
 
 Implementation
