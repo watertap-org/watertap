@@ -39,12 +39,12 @@ The influent conditions are defined from the case study this flowsheet is modele
    "Temperature", "298", ":math:`\text{K}`"
    "Pressure", "100000", ":math:`\text{Pa}`"
 
-Some unit models have case-specific operating conditions, presented in Table 3:
+Some unit models have case-specific operating conditions, presented in Table 3 and includes the different build options for ``erd_type``:
 
 .. csv-table::
    :header: "Description", "Value", "Units", "Flowsheet Model Name"
 
-    **Pre-Treatment**
+   **Pre-Treatment**
    "Ferric chloride dose", "20", ":math:`\text{mg/L}`", "``m.fs.pretreatment.ferric_chloride_addition``"
    "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.pretreatment.storage_tank_1``"
    
@@ -58,11 +58,11 @@ Some unit models have case-specific operating conditions, presented in Table 3:
    "RO permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.RO``"
    "Pump 1 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P1``"
    "Pump 1 operating pressure", "70e5", ":math:`\text{Pa}`", "``m.fs.desalination.P1``"
-
+   
    *if* ``erd_type = "pressure_exchanger"``
    "Pressure exchanger efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.PXR``"
    "Pump 2 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P2``"
-
+   
    *if* ``erd_type = "pump_as_turbine"``
    "Energy recovery device pump efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.ERD``"
    "Energy recovery device permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.ERD``"
@@ -135,10 +135,15 @@ some helper functions that group these core functions together for convenience. 
     After building, specifying, initializing, and costing the models, the flowsheet is solved a final time with the local ``solve()`` function
     and the ``.report()`` method is called for each unit model using ``display_results()``.
 
+The local function ``build_flowsheet()`` combines steps 1 and 2. The local function ``solve_flowsheet()`` combines 3, 4, and 5.
 
+.. note::
 
-Outside of these blocks, the flowsheet contains a feed, disposal, and product models, as well as ``Translator`` blocks that are used to 
-allow for models that use different property models to exchange information. Each of these blocks will be describe further in sections below. 
+    ``Translator`` blocks are used in flowsheets when more than one property package is used in different parts of the flowsheet.
+    In this example, the zero order property package contains state variables that are only indexed by component (e.g., ``conc_mass_comp['TDS']``)
+    while the seawater property package contains state variables indexed by both phase and component (e.g., ``conc_mass_phase_comp['Liq', 'TDS']``).
+    The translator blocks in this flowsheet are used to communicate properties between unit models that use these two property packages and simply
+    say, e.g., ``conc_mass_comp['TDS'] = conc_mass_phase_comp['Liq', 'TDS']``.
 
 Pre-Treatment
 ^^^^^^^^^^^^^
@@ -152,9 +157,9 @@ Pre-Treatment
 Desalination
 ^^^^^^^^^^^^
 
-Desalination!
+Add desalination fig
 
 Post-Treatment
 ^^^^^^^^^^^^^^
 
-Post treatment!
+Add post treatment fig
