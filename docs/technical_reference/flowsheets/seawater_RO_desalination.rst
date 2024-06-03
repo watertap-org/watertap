@@ -20,7 +20,16 @@ This flowsheet includes examples of several different types of modeling features
 * WaterTAP database
 * Several base IDAES models
 
-**add inlet conditions.**
+The operating conditions are defined from the case study this flowsheet is modeled after. The relevant information is in Table 1:
+
+.. csv-table::
+   :header: "Description", "Value", "Units"
+
+   "Volumetric flow rate", "7.05", ":math:`\text{MGD}`"
+   "TDS concentration", "35", ":math:`\text{g/L}`"
+   "TSS concentration", "0.03", ":math:`\text{g/L}`"
+
+
 
 Implementation
 --------------
@@ -42,6 +51,10 @@ some helper functions that group these core functions together for convenience. 
 
     ``Translator`` blocks are added with appropriate constraints and ``Arc`` are used to connect the unit processes in the proper order. 
     Finally, default scaling factors are set and scaling factors are calculated for all variables.
+
+2. Specify the operating conditions with ``set_operating_conditions()``:
+
+
 
 
 
