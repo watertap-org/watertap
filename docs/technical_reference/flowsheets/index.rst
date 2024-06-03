@@ -14,3 +14,4 @@ Flowsheets
    electrodialysis_1stack
    crystallization
    gac
+   seawater_RO_desalination
