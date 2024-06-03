@@ -771,7 +771,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             var_dict["Hydraulic Diameter"] = self.feed_side.dh
 
         if self.config.has_full_reporting:
-            expr_dict["Average Solvent Flux (LMH)"] = (
+            expr_dict["Average Solvent Mass Flux"] = (
                 self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
             )
             if hasattr(self.feed_side, "N_Re_avg"):
@@ -779,11 +779,11 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                     time_point
                 ]
             for j in self.config.property_package.solute_set:
-                expr_dict[f"{j} Average Solute Flux (GMH)"] = (
+                expr_dict[f"{j} Average Solute Mass Flux"] = (
                     self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
                 )
                 if hasattr(self.feed_side, "K_avg"):
-                    expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
+                    expr_dict[f"{j} Average Mass Transfer Coefficient"] = (
                         self.feed_side.K_avg[time_point, j] * 3.6e6
                     )
 
