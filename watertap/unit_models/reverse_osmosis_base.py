@@ -771,9 +771,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             var_dict["Hydraulic Diameter"] = self.feed_side.dh
 
         if self.config.has_full_reporting:
-            expr_dict["Average Solvent Mass Flux"] = (
-                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"]
-            )
+            expr_dict["Average Solvent Mass Flux"] = self.flux_mass_phase_comp_avg[
+                time_point, "Liq", "H2O"
+            ]
             if hasattr(self.feed_side, "N_Re_avg"):
                 expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
                     time_point
