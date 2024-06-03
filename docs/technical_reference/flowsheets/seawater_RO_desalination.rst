@@ -20,7 +20,7 @@ This flowsheet includes examples of several different types of modeling features
 * WaterTAP database
 * Several base IDAES models
 
-The influent are defined from the case study this flowsheet is modeled after. The relevant information is in Table 1:
+The influent are defined from the case study this flowsheet is modeled after. The relevant information is in Table 2:
 
 .. csv-table::
    :header: "Description", "Value", "Units"
@@ -31,7 +31,7 @@ The influent are defined from the case study this flowsheet is modeled after. Th
    "Temperature", "298", ":math:`\text{K}`"
    "Pressure", "100000", ":math:`\text{Pa}`"
 
-Some unit models have case-specific operating conditions, presented in Table 2:
+Some unit models have case-specific operating conditions, presented in Table 3:
 
 .. csv-table::
    :header: "Description", "Value", "Units", "Flowsheet Model Name"
@@ -87,13 +87,14 @@ some helper functions that group these core functions together for convenience. 
         * Desalination (``m.fs.desalination``): contains all the unit models needed to represent the pumping, reverse osmosis (RO), and energy recovery device (ERD) processes.
         * Post-treatment (``m.fs.posttreatment``): includes post desalination disinfection, remineralization, and storage unit models.
 
-    ``Translator`` blocks are added with appropriate constraints and ``Arc`` are used to connect the unit processes in the proper order. 
+    Outside of these, the there is a feed, distribution, landfill, and disposal block that are placed directly on the flowsheet.
+    ``Translator`` blocks are added with appropriate constraints and ``Arc`` are used to connect the unit processes in the proper order.
     Finally, default scaling factors are set and scaling factors are calculated for all variables.
 
 2. Specify the operating conditions with ``set_operating_conditions()``:
 
-    This function begins by specifying the inlet conditions as outlined in Table 1. Then, starting with the ``pretreatment`` block, the operating 
-    conditions for each unit model are set according to Table 2.
+    This function begins by specifying the inlet conditions as outlined in Table 2. Then, starting with the ``pretreatment`` block, the operating 
+    conditions for each unit model are set according to Table 3.
 
 3. Initialize the unit and costing models with ``initialize_system()``:
 
@@ -111,18 +112,19 @@ some helper functions that group these core functions together for convenience. 
         #. translator block from ``desalination`` to ``posttreatment`` (i.e., ``m.fs.tb_desal_psttrt``)
         #. ``posttreatment`` block
 
-4. Add the system- and unit-level costing packages with ``add_costing()``:
+4. Add the system- and unit-level costing packages with ``add_costing()`` and initialize with ``initialize_costing()``:
 
     Because of the nature of the unit models used in this flowsheet (i.e., both zero order and detailed models), two separate system-level costing packages are required. 
     ``m.fs.zo_costing = ZeroOrderCosting()`` is used to aggregate costs for zero-order models, and ``m.fs.ro_costing = WaterTAPCosting`` is for the more detailed desalination models. 
     The costing block for each unit model is ``UnitModelCostingBlock`` which has points to a system-level aggregation costing package via the configuration keyword ``flowsheet_costing_block``.
     Each system-level costing package has a ``.cost_process()`` method that is called to aggregate unit level costs and calculate overall process costs.
     To aggregate results from both costing packages, a separate ``Expression`` is created for ``total_capital_cost`` and ``total_operating_cost``, and each of these are used
-    to calculate the ``LCOW``.
+    to calculate the ``LCOW``. Finally, like the unit models, the costing packages are initialized.
 
+5. Solve the entire flowsheet and display final results with ``display_results()``:
 
-The majority of the unit models on the flowsheet are split up on to separate ``Blocks`` based on the purpose the treatment process serves.
-On the main flowsheet block, there are three separate blocks:
+    After building, specifying, initializing, and costing the models, the flowsheet is solved a final time with the local ``solve()`` function
+    and the ``.report()`` method is called for each unit model using ``display_results()``.
 
 
 
