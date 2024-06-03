@@ -37,17 +37,32 @@ Some unit models have case-specific operating conditions, presented in Table 2:
    :header: "Description", "Value", "Units", "Flowsheet Model Name"
 
     **Pre-Treatment**
-   "Ferric chloride dose", "20", ":math:`\text{mg/L}`", "``m.fs.ferric_chloride_addition``"
-   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
+   "Ferric chloride dose", "20", ":math:`\text{mg/L}`", "``m.fs.pretreatment.ferric_chloride_addition``"
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.pretreatment.storage_tank_1``"
+   
    **Desalination**
+   "RO water permeability coeff.", "4.2E-12", ":math:`\text{m/Pa/s}`", "``m.fs.desalination.RO``"
+   "RO salt permeability coeff.", "3.5e-8", ":math:`\text{m/s}`", "``m.fs.desalination.RO``"
+   "RO spacer porosity", "0.97", ":math:`\text{dimensionless}`", "``m.fs.desalination.RO``"
+   "RO channel height", "1e-3", ":math:`\text{m}`", "``m.fs.desalination.RO``"
+   "RO membrane width per stage", "1000", ":math:`\text{m}`", "``m.fs.desalination.RO``"
+   "RO total membrane area per stage", "13914", ":math:`\text{m}^2`", "``m.fs.desalination.RO``"
+   "Pump 1 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P1``"
+   "Pump 1 operating pressure", "70e5", ":math:`\text{Pa}`", "``m.fs.desalination.P1``"
 
+   *if* ``erd_type = "pressure_exchanger"``
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
+   
    **Post-Treatment**
-   "Anti-scalant dose", "5", ":math:`\text{mg/L}`", "``m.fs.anti_scalant_addition``"
-   "Lime dose", "2.3", ":math:`\text{mg/L}`", "``m.fs.lime_addition``"
-   "Storage tank 2 storage time", "1", ":math:`\text{hr}`", "``m.fs.storage_tank_2``"
-   "Storage tank 3 storage time", "1", ":math:`\text{hr}`", "``m.fs.storage_tank_3``"
-   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`", "``m.fs.uv_aop``"
-   "UV/AOP UV transmittance", "0.95", ":math:`\text{dimensionless}`", "``m.fs.uv_aop``"
+   "Anti-scalant dose", "5", ":math:`\text{mg/L}`", "``m.fs.posttreatment.anti_scalant_addition``"
+   "Lime dose", "2.3", ":math:`\text{mg/L}`", "``m.fs.posttreatment.lime_addition``"
+   "Storage tank 2 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_2``"
+   "Storage tank 3 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_3``"
+   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`", "``m.fs.posttreatment.uv_aop``"
+   "UV/AOP UV transmittance", "0.95", ":math:`\text{dimensionless}`", "``m.fs.posttreatment.uv_aop``"
 
 
 
