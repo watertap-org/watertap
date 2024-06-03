@@ -66,7 +66,7 @@ The ion exchange flowsheet demonstration proceeds through five steps:
     the model has zero degrees of freedom and is solved with ``solver.solve(m)``. The termination condition of the solve is checked and, assuming the solve is optimal, 
     continues with the optimization demonstration.
     
-5. Optimally optimizing IX design with ``optimize_system``: 
+5. Optimizing IX design with ``optimize_system``: 
     Though not required, this function provides an example of optimizing the design of the IX system for a targeted effluent concentration
     of 25 mg/L. The initial model demonstration resulted in an effluent concentration of 0.21 mg/L, so this optimization results in longer breakthrough time
     and therefore, a less frequent regeneration schedule and lower operating costs. The optimization proceeds in four steps:
@@ -78,7 +78,7 @@ The ion exchange flowsheet demonstration proceeds through five steps:
         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
     
     where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and :math:`f_{util}` represents the utilization factor
-    
+
     * Then, the model fixes the effluent concentration of the IX model to 25 mg/L, propagates that concentration to the product block, and re-initializes the product block with the new targeted concentration.
     * Next, three variables are unfixed on the ion exchange model to allow for the model to solve for the new conditions (``dimensionless_time``, ``number_columns``, and the ``bed_depth``).
     * Finally, the model is solved for these new conditions.
