@@ -14,15 +14,15 @@ This flowsheet includes examples of several different types of modeling features
    
    "Zero order unit and costing models", ":doc:`/technical_reference/unit_models/zero_order_unit_models/index`"
    "Zero order costing package", ":doc:`/technical_reference/costing/zero_order_costing`"
-   "Zero order property package", "NEED DOC"
+   "Zero order property package", ""
    "Seawater property package", ":doc:`/technical_reference/property_models/seawater`"
    "Reverse osmosis model", ":doc:`/technical_reference/unit_models/reverse_osmosis_0D`"
-   "Pump model", "NEED DOC"
-   "Energy recovery device model", "NEED DOC"
+   "Pump model", ""
+   "Energy recovery device model", ""
    "Pressure exchanger model", ":doc:`/technical_reference/unit_models/pressure_exchanger`"
    "WaterTAP costing package", ":doc:`/technical_reference/costing/watertap_costing`"
    "Unit model costing packages", ":doc:`/technical_reference/costing/detailed_unit_model_costing`"
-   "WaterTAP database", "NEED DOC"
+   "WaterTAP database", ""
    "IDAES Translator blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/translator`
    "IDAES Product blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
    "IDAES Separator blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/separator`
