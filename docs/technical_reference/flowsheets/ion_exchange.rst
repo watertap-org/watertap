@@ -92,7 +92,7 @@ Degrees of Freedom
 ------------------
 
 The degrees of freedom for the flowsheet can change depending on the configuration options specified during the build. 
-Specifics for other configurations options are available in the IX model documentation.
+Specifics for other configuration options are available in the :doc:`IX unit model documentation </technical_reference/unit_models/ion_exchange_0D>`.
 In this demonstration, the following variables are initially fixed for simulating the IX flowsheet (i.e., degrees of freedom = 0):
 
     * Feed conditions (component flows, temperature, pressure)
