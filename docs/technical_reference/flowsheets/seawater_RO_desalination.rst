@@ -20,7 +20,7 @@ This flowsheet includes examples of several different types of modeling features
 * WaterTAP database
 * Several base IDAES models
 
-The operating conditions are defined from the case study this flowsheet is modeled after. The relevant information is in Table 1:
+The influent and operating conditions are defined from the case study this flowsheet is modeled after. The relevant information is in Table 1:
 
 .. csv-table::
    :header: "Description", "Value", "Units"
@@ -30,6 +30,12 @@ The operating conditions are defined from the case study this flowsheet is model
    "TSS concentration", "0.03", ":math:`\text{g/L}`"
    "Temperature", "298", ":math:`\text{K}`"
    "Pressure", "100000", ":math:`\text{Pa}`"
+   "Ferric chloride concentration", "20", ":math:`\text{mg/L}`"
+   "Anti-scalant concentration", "5", ":math:`\text{mg/L}`"
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`"
+   "Storage tank 2 storage time", "1", ":math:`\text{hr}`"
+   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`"
+
 
 
 Implementation
@@ -55,7 +61,8 @@ some helper functions that group these core functions together for convenience. 
 
 2. Specify the operating conditions with ``set_operating_conditions()``:
 
-
+    This function begins by specifying the inlet conditions as outlined in Table 1. Then, starting with the ``pretreatment`` block, the operating 
+    conditions for each unit model are set 
 
 
 
