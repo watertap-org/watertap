@@ -47,14 +47,17 @@ Some unit models have case-specific operating conditions, presented in Table 2:
    "RO channel height", "1e-3", ":math:`\text{m}`", "``m.fs.desalination.RO``"
    "RO membrane width per stage", "1000", ":math:`\text{m}`", "``m.fs.desalination.RO``"
    "RO total membrane area per stage", "13914", ":math:`\text{m}^2`", "``m.fs.desalination.RO``"
+   "RO permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.RO``"
    "Pump 1 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P1``"
    "Pump 1 operating pressure", "70e5", ":math:`\text{Pa}`", "``m.fs.desalination.P1``"
 
    *if* ``erd_type = "pressure_exchanger"``
-   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
-   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
-   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
-   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.storage_tank_1``"
+   "Pressure exchanger efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.PXR``"
+   "Pump 2 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P2``"
+
+   *if* ``erd_type = "pump_as_turbine"``
+   "Energy recovery device pump efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.ERD``"
+   "Energy recovery device permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.ERD``"
    
    **Post-Treatment**
    "Anti-scalant dose", "5", ":math:`\text{mg/L}`", "``m.fs.posttreatment.anti_scalant_addition``"
