@@ -46,7 +46,7 @@ The following modeling components are used within the flowsheet:
 The ion exchange flowsheet demonstration proceeds through five steps:
 
 1. Building the model with ``ix_build``: 
-    This function builds the flowsheet with a list of ions as input.
+    This function builds the flowsheet with a list of ions as the input.
     If the keyword argument ``target_ion`` is not used, the first ion in the list of ions provided is used as the ``target_ion`` configuration argument for the ``IonExchange0D`` model.
     The ion used in the demonstration is calcium (``Ca_2+``), but the local function ``get_ion_config`` can be used to get diffusivity, molecular weight,
     and charge data for sodium (``Na_+``), chloride (``Cl_-``), magnesium (``Mg_2+``), and sulfate (``SO4_2-``). This function will also add the flowsheet 
