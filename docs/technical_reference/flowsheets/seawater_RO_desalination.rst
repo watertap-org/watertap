@@ -6,21 +6,29 @@ Introduction
 
 This flowsheet represents a full-scale seawater reverse osmosis treatment facility.
 The flowsheet includes pretreatment, desalination, post-treatment, and waste handling unit processes available in WaterTAP.
-Unit models used on this flowsheet span the spectrum from simple (zero order models *add link*) to complex (reverse osmosis).
-This flowsheet includes examples of several different types of modeling features available in WaterTAP, including:
+Unit models used on this flowsheet span the spectrum from simple to detailed.
+This flowsheet includes examples of several different types of modeling features available in WaterTAP, summarized in Table 1:
 
-* Zero order models
-* Zero order property package
-* Reverse osmosis and pump models
-* Sodium chloride property package
-* Translator blocks
-* WaterTAP costing package
-* Zero order costing package
-* Unit model costing packages
-* WaterTAP database
-* Several base IDAES models
+.. csv-table::
+   :header: "Modeling Component", "Documentation"
+   
+   "Zero order unit and costing models", ":doc:`/technical_reference/unit_models/zero_order_unit_models/index`"
+   "Zero order costing package", ":doc:`/technical_reference/costing/zero_order_costing`"
+   "Zero order property package", "NEED DOC"
+   "Seawater property package", ":doc:`/technical_reference/property_models/seawater`"
+   "Reverse osmosis model", ":doc:`/technical_reference/unit_models/reverse_osmosis_0D`"
+   "Pump model", "NEED DOC"
+   "Energy recovery device model", "NEED DOC"
+   "Pressure exchanger model", ":doc:`/technical_reference/unit_models/pressure_exchanger`"
+   "WaterTAP costing package", ":doc:`/technical_reference/costing/watertap_costing`"
+   "Unit model costing packages", ":doc:`/technical_reference/costing/detailed_unit_model_costing`"
+   "WaterTAP database", "NEED DOC"
+   "IDAES Translator blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/translator`
+   "IDAES Product blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
+   "IDAES Separator blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/separator`
+   "IDAES Mixer blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/mixer`
 
-The influent are defined from the case study this flowsheet is modeled after. The relevant information is in Table 2:
+The influent conditions are defined from the case study this flowsheet is modeled after. The relevant information is in Table 2:
 
 .. csv-table::
    :header: "Description", "Value", "Units"
@@ -77,7 +85,8 @@ some helper functions that group these core functions together for convenience. 
 
 1. Creating and instantiating the model using ``build()``:
 
-    This function will create the core components and structure of the flowsheet. 
+    This function will create the core components and structure of the flowsheet. The keyword argument ``erd_type`` dictates the type
+    of energy recovery device to be used, with options ``pressure_exchanger`` or ``pump_as_turbine``.
     First, the ``FlowsheetBlock``, ``Database``, property models, are created. The zero order property models require the user
     to provide a ``solute_list`` (e.g., TDS and TSS), while the seawater property model is pre-populated with TDS as the only solute.
     Separate ``Block`` are created to contain all the unit models required to model the pretreatment, desalination, and post-treatment
