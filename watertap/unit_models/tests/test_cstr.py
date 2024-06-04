@@ -203,41 +203,33 @@ class TestCSTR(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet.temperature[0]] = 304.09
         self.unit_solutions[m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]] = 20.32
 
-        self.unit_solutions[
-            (
-                m.fs.unit.outlet.flow_vol[0]
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0]
                 * sum(
-                    m.fs.unit.outlet.conc_mol_comp[0, j]
+                    m.fs.unit.inlet.conc_mol_comp[0, j]
                     for j in m.fs.properties.component_list
-                )
-            )
-        ] = value(
-            m.fs.unit.inlet.flow_vol[0]
-            * sum(
-                m.fs.unit.inlet.conc_mol_comp[0, j]
-                for j in m.fs.properties.component_list
-            )
-        )
-
-        self.unit_solutions[
-            (
-                (
-                    m.fs.unit.outlet.flow_vol[0]
+                ),
+                "out": m.fs.unit.outlet.flow_vol[0]
+                * sum(
+                    m.fs.unit.inlet.conc_mol_comp[0, j]
+                    for j in m.fs.properties.component_list
+                ),
+            },
+            "Check 2": {
+                "in": (
+                    m.fs.unit.inlet.flow_vol[0]
                     * m.fs.properties.dens_mol
                     * m.fs.properties.cp_mol
-                    * (
-                        m.fs.unit.outlet.temperature[0]
-                        - m.fs.properties.temperature_ref
-                    )
-                )
-                - m.fs.unit.control_volume.heat_of_reaction[0]
-            )
-        ] = value(
-            m.fs.unit.inlet.flow_vol[0]
-            * m.fs.properties.dens_mol
-            * m.fs.properties.cp_mol
-            * (m.fs.unit.inlet.temperature[0] - m.fs.properties.temperature_ref)
-        )
+                    * (m.fs.unit.inlet.temperature[0] - m.fs.properties.temperature_ref)
+                ),
+                "out": m.fs.unit.outlet.flow_vol[0]
+                * m.fs.properties.dens_mol
+                * m.fs.properties.cp_mol
+                * (m.fs.unit.outlet.temperature[0] - m.fs.properties.temperature_ref)
+                - m.fs.unit.control_volume.heat_of_reaction[0],
+            },
+        }
 
         return m
 
@@ -365,7 +357,7 @@ class TestCosting(UnitTestHarness):
         m = build_ASM1()
         m.fs.unit.initialize()
 
-        results = solver.solve(m)
+        solver.solve(m)
 
         # Add unit model costing
         m.fs.costing = WaterTAPCosting()
@@ -380,9 +372,32 @@ class TestCosting(UnitTestHarness):
         iscale.calculate_scaling_factors(m.fs.unit)
 
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 566989.10
+        self.unit_solutions[m.fs.costing.LCOW] = 0.002127
 
-        results = solver.solve(m, tee=True)
+        solver.solve(m, tee=True)
 
         assert pytest.approx(0.002127, rel=1e-3) == value(m.fs.costing.LCOW)
+
+        component_list = [
+            "S_I",
+            "S_S",
+            "X_I",
+            "X_S",
+            "X_BH",
+            "X_BA",
+            "X_P",
+            "S_O",
+            "S_NO",
+            "S_NH",
+            "S_ND",
+            "X_ND",
+        ]
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": m.fs.unit.outlet.flow_vol[0],
+            },
+        }
 
         return m
