@@ -239,26 +239,29 @@ class TestThickener_ASM1(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_ND"]] = 0.0001056
         self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004564
 
-        # Conservation checks
-        self.unit_solutions[
-            (
-                m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
-                + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
-            )
-            / m.fs.props.dens_mass
-        ] = value(m.fs.unit.inlet.flow_vol[0])
-
-        for i in m.fs.props.solute_set:
-            self.unit_solutions[
-                (
-                    m.fs.unit.overflow.flow_vol[0]
-                    * m.fs.unit.overflow.conc_mass_comp[0, i]
-                    + m.fs.unit.underflow.flow_vol[0]
-                    * m.fs.unit.underflow.conc_mass_comp[0, i]
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": (
+                    m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
+                    + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
                 )
-            ] = value(m.fs.unit.inlet.flow_vol[0]) * value(
-                m.fs.unit.inlet.conc_mass_comp[0, i]
-            )
+                / m.fs.props.dens_mass,
+            },
+            "Check 2": {
+                "in": m.fs.unit.inlet.flow_vol[0]
+                * sum(
+                    m.fs.unit.inlet.conc_mass_comp[0, j] for j in m.fs.props.solute_set
+                ),
+                "out": sum(
+                    m.fs.unit.overflow.flow_vol[0]
+                    * m.fs.unit.overflow.conc_mass_comp[0, j]
+                    + m.fs.unit.underflow.flow_vol[0]
+                    * m.fs.unit.underflow.conc_mass_comp[0, j]
+                    for j in m.fs.props.solute_set
+                ),
+            },
+        }
 
         return m
 
@@ -289,26 +292,29 @@ class TestThickener_ASM2d(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_TSS"]] = 0.074169
         self.unit_solutions[m.fs.unit.overflow.alkalinity[0]] = 0.004666
 
-        # Conservation checks
-        self.unit_solutions[
-            (
-                m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
-                + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
-            )
-            / m.fs.props.dens_mass
-        ] = value(m.fs.unit.inlet.flow_vol[0])
-
-        for i in m.fs.props.solute_set:
-            self.unit_solutions[
-                (
-                    m.fs.unit.overflow.flow_vol[0]
-                    * m.fs.unit.overflow.conc_mass_comp[0, i]
-                    + m.fs.unit.underflow.flow_vol[0]
-                    * m.fs.unit.underflow.conc_mass_comp[0, i]
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": (
+                    m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
+                    + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
                 )
-            ] = value(m.fs.unit.inlet.flow_vol[0]) * value(
-                m.fs.unit.inlet.conc_mass_comp[0, i]
-            )
+                / m.fs.props.dens_mass,
+            },
+            "Check 2": {
+                "in": m.fs.unit.inlet.flow_vol[0]
+                * sum(
+                    m.fs.unit.inlet.conc_mass_comp[0, j] for j in m.fs.props.solute_set
+                ),
+                "out": sum(
+                    m.fs.unit.overflow.flow_vol[0]
+                    * m.fs.unit.overflow.conc_mass_comp[0, j]
+                    + m.fs.unit.underflow.flow_vol[0]
+                    * m.fs.unit.underflow.conc_mass_comp[0, j]
+                    for j in m.fs.props.solute_set
+                ),
+            },
+        }
 
         return m
 
@@ -335,26 +341,29 @@ class TestThickener_ASM2d_modified(UnitTestHarness):
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_PP"]] = 0.001336
         self.unit_solutions[m.fs.unit.overflow.conc_mass_comp[0, "X_S"]] = 0.001436
 
-        # Conservation checks
-        self.unit_solutions[
-            (
-                m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
-                + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
-            )
-            / m.fs.props.dens_mass
-        ] = value(m.fs.unit.inlet.flow_vol[0])
-
-        for i in m.fs.props.solute_set:
-            self.unit_solutions[
-                (
-                    m.fs.unit.overflow.flow_vol[0]
-                    * m.fs.unit.overflow.conc_mass_comp[0, i]
-                    + m.fs.unit.underflow.flow_vol[0]
-                    * m.fs.unit.underflow.conc_mass_comp[0, i]
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": (
+                    m.fs.unit.overflow.flow_vol[0] * m.fs.props.dens_mass
+                    + m.fs.unit.underflow.flow_vol[0] * m.fs.props.dens_mass
                 )
-            ] = value(m.fs.unit.inlet.flow_vol[0]) * value(
-                m.fs.unit.inlet.conc_mass_comp[0, i]
-            )
+                / m.fs.props.dens_mass,
+            },
+            "Check 2": {
+                "in": m.fs.unit.inlet.flow_vol[0]
+                * sum(
+                    m.fs.unit.inlet.conc_mass_comp[0, j] for j in m.fs.props.solute_set
+                ),
+                "out": sum(
+                    m.fs.unit.overflow.flow_vol[0]
+                    * m.fs.unit.overflow.conc_mass_comp[0, j]
+                    + m.fs.unit.underflow.flow_vol[0]
+                    * m.fs.unit.underflow.conc_mass_comp[0, j]
+                    for j in m.fs.props.solute_set
+                ),
+            },
+        }
 
         return m
 
@@ -376,6 +385,13 @@ class TestCosting(UnitTestHarness):
 
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 220675.79 * 2
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 12.5 * 0.01255
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": m.fs.unit.underflow.flow_vol[0] + m.fs.unit.overflow.flow_vol[0],
+            },
+        }
 
         return m
 
