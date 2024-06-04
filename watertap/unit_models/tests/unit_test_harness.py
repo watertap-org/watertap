@@ -140,9 +140,7 @@ class UnitTestHarness(abc.ABC):
 
         if conservation == {}:
             raise NotImplementedError(
-                "An expression must be provided for the inlet and outlet stream(s) in the conservation equality. "
-                "If this conservation check should be ignored, set the inlet and outlet "
-                "expressions to an identical, arbitrary value. "
+                "An expression must be provided for the inlet and outlet stream(s) in the conservation equality."
             )
 
         for key, expression in conservation.items():
