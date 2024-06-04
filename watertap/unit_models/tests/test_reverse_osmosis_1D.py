@@ -127,6 +127,15 @@ class TestReverseOsmosis1D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.K_avg[0, "NaCl"]] = 2.985544e-5
         self.unit_solutions[m.fs.unit.area] = 26.63124
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
+
         return m
 
 
@@ -208,6 +217,15 @@ class TestReverseOsmosis1D_basic(UnitTestHarness):
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000265183
         self.unit_solutions[m.fs.unit.area] = 144.307206
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
 
         return m
 
@@ -307,6 +325,15 @@ class TestReverseOsmosis1D_SKK(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.K_avg[0, "NaCl"]] = 3.0276974e-5
         self.unit_solutions[m.fs.unit.area] = 14.20961
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
+
         return m
 
 
@@ -389,6 +416,15 @@ class TestReverseOsmosis1D_cp_mod_fixed(UnitTestHarness):
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000652886
         self.unit_solutions[m.fs.unit.area] = 329.708005
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
 
         return m
 
@@ -473,6 +509,15 @@ class TestReverseOsmosis1D_cp_calculated_kf_fixed(UnitTestHarness):
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000464535
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
+
         return m
 
 
@@ -555,6 +600,15 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000546681
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
 
         return m
 
@@ -640,6 +694,15 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 2.794556261e-5
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
 
         return m
 
@@ -728,6 +791,15 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_dx(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.000588787
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
+
         return m
 
 
@@ -815,5 +887,14 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
         self.unit_solutions[
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         ] = 0.0005792222
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+            },
+        }
 
         return m
