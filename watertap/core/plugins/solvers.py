@@ -171,7 +171,9 @@ class IpoptWaterTAP:
                     self._cleanup()
                     raise RuntimeError(
                         "Error in AMPL evaluation.\n"
-                        "Run ipopt with halt_on_ampl_error=yes and symbolic_solver_labels=True to see the affected function."
+                        "Re-run ipopt with:\n"
+                        '1. solver options = {"halt_on_ampl_error" : "yes", "nlp_scaling_method" : "gradient-based"\n'
+                        "2. set keyword argument symbolic_solver_labels=True in the pyomo solve function call to see the affected function.\n"
                     )
             else:
                 print("Error in constraint_autoscale_large_jac")
