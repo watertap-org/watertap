@@ -150,6 +150,26 @@ class TestIXLangmuir(UnitTestHarness):
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Ca_2+"]
         ] = -1.24713
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ],
+                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ],
+            },
+        }
+
         return m
 
     @pytest.mark.component
@@ -325,6 +345,26 @@ class TestIXFreundlich(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "Cl_-"]
         ] = 4.872e-07
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Cl_-"
+                ],
+                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Cl_-"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
+                    "Liq", "Cl_-"
+                ],
+            },
+        }
 
         return m
 
@@ -524,6 +564,32 @@ class TestIXInert(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "Cl_-"]
         ] = 4.872e-07
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Cl_-"
+                ],
+                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Cl_-"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
+                    "Liq", "Cl_-"
+                ],
+            },
+        }
 
         return m
 
