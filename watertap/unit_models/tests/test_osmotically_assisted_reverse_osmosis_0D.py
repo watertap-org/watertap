@@ -12,7 +12,6 @@
 
 from pyomo.environ import (
     ConcreteModel,
-    value,
 )
 from idaes.core import (
     FlowsheetBlock,
