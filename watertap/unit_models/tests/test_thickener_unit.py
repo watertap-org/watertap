@@ -19,7 +19,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     units,
-    value,
 )
 
 from idaes.core import FlowsheetBlock
