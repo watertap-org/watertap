@@ -11,7 +11,7 @@
 #################################################################################
 
 import pytest
-import watertap.property_models.NDMA_prop_pack as props
+import watertap.watertap.property_models.unit_specific.NDMA_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )

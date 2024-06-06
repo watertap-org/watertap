@@ -27,7 +27,7 @@ from idaes.core import (
     MomentumBalanceType,
 )
 from watertap.unit_models.uv_aop import Ultraviolet0D, UVDoseType
-import watertap.property_models.NDMA_prop_pack as props
+import watertap.watertap.property_models.unit_specific.NDMA_prop_pack as props
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
 )
