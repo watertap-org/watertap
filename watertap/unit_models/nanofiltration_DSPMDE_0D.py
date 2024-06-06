@@ -1579,9 +1579,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             time_point
         ].flow_vol_phase["Liq"]
 
-        expr_dict["Average Volumetric Flux"] = (
-            self.flux_vol_water_avg[time_point] * 3.6e6
-        )
+        expr_dict["Average Volumetric Flux"] = self.flux_vol_water_avg[time_point]
         for j in self.config.property_package.component_list:
             expr_dict[f"Average Mole FLux of {j} "] = self.flux_mol_phase_comp_avg[
                 time_point, "Liq", j
