@@ -70,7 +70,7 @@ from enum import Enum, auto
 _log = idaeslog.getLogger(__name__)
 
 
-class DiffusCalculationType(Enum):
+class DiffusivityCalculationType(Enum):
     isothermal = auto()
     nonisothermal = auto()
 
@@ -85,13 +85,13 @@ class SeawaterParameterData(PhysicalParameterBlock):
         "diffus_calculation",
         ConfigValue(
             default=DiffusivityCalculationType.isothermal,
-            domain=In(DiffusCalculationType),
+            domain=In(DiffusivityCalculationType),
             description="Diffusivity calculation type construction flag",
             doc="""Indicates whether the diffusivity will be calculated assuming isothermal or nonisothermal conditions
         **default** - DiffusCalculationType.isothermal.
         **Valid values:** {
-        **DiffusCalculationType.isothermal** - Diffusivity is based on: (NaCl, isothermal, 25 C) Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067,
-        **DiffusCalculationType.nonisothermal** - Diffusivity is based on: (NaCl, nonisothermal) regression from Zaytsev & Aseev (1992)}""",
+        **DiffusivityCalculationType.isothermal** - Diffusivity is based on: (NaCl, isothermal, 25 C) Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067,
+        **DiffusivityCalculationType.nonisothermal** - Diffusivity is based on: (NaCl, nonisothermal) regression from Zaytsev & Aseev (1992)}""",
         ),
     )
 
@@ -269,7 +269,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
             units=t_inv_units**2,
             doc="Dynamic viscosity parameter 3 for term B",
         )
-        if self.config.diffus_calc_type == DiffusCalculationType.isothermal:
+        if self.config.diffus_calculation == DiffusivityCalculationType.isothermal:
             # diffusivity parameters, 25 C
             # eq. 6 in Bartholomew & Mauter (2019)
             diffus_param_dict = {
@@ -1373,7 +1373,10 @@ class SeawaterStateBlockData(StateBlockData):
         )
 
         def rule_diffus_phase_comp(b, p, j):
-            if b.params.config.diffus_calc_type == DiffusCalculationType.isothermal:
+            if (
+                b.params.config.diffus_calculation
+                == DiffusivityCalculationType.isothermal
+            ):
                 # Bartholomew & Mauter (2019), eq. 6 (substituting NaCl w/ TDS), 25 C
                 return b.diffus_phase_comp[p, j] == (
                     b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, j] ** 4
