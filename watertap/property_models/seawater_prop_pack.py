@@ -82,7 +82,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare(
-        "diffus_calc_type",
+        "diffus_calculation",
         ConfigValue(
             default=DiffusCalculationType.isothermal,
             domain=In(DiffusCalculationType),
