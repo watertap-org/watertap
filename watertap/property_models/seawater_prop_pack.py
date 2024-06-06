@@ -1392,15 +1392,13 @@ class SeawaterStateBlockData(StateBlockData):
                     b.params.diffus_aq_param_D,
                 ]
                 iter_param = {"A": 0, "B": 0, "C": 0, "D": 0}
-                k = 0
-                for key in iter_param:
+                for k, key in enumerate(iter_param):
                     iter_param[key] = (
                         param_vec[k]["0"]
-                        + param_vec[k]["1"] * b.mass_frac_phase_comp[p, "TDS"]
-                        + param_vec[k]["2"] * b.mass_frac_phase_comp[p, "TDS"] ** 2
-                        + param_vec[k]["3"] * b.mass_frac_phase_comp[p, "TDS"] ** 3
+                        + param_vec[k]["1"] * b.mass_frac_phase_comp[p, j]
+                        + param_vec[k]["2"] * b.mass_frac_phase_comp[p, j] ** 2
+                        + param_vec[k]["3"] * b.mass_frac_phase_comp[p, j] ** 3
                     )
-                    k += 1
                 return b.diffus_phase_comp[p, j] == (
                     (
                         iter_param["A"]
