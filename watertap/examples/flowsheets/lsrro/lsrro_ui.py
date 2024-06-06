@@ -230,15 +230,19 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=False,
         )
     for idx, stage in fs.ROUnits.items():
+        if idx == 1:
+            name = "Reverse Osmosis"
+        else:
+            name = "Low-Salt Rejection Reverse Osmosis"
         exports.add(
             obj=stage.A_comp[0, "H2O"],
             name=f"RO {idx} water permeability coefficient",
             ui_units=pyunits.m / pyunits.Pa / pyunits.s,
             display_units="m/Pa/s",
-            rounding=2,
+            rounding=20,
             description=f"Membrane water permeability",
             is_input=True,
-            input_category="Reverse Osmosis",
+            input_category=f"{name}",
             is_output=False,
         )
         exports.add(
@@ -246,10 +250,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             name=f"RO {idx} salt permeability coefficient",
             ui_units=pyunits.m / pyunits.s,
             display_units="m/s",
-            rounding=2,
+            rounding=20,
             description=f"Membrane salt permeability",
             is_input=True,
-            input_category="Reverse Osmosis",
+            input_category=f"{name}",
             is_output=False,
         )
         exports.add(
@@ -260,7 +264,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             rounding=2,
             description=f"Membrane area",
             is_input=True,
-            input_category="Reverse Osmosis",
+            input_category=f"{name}",
             is_output=True,
             output_category="Membrane area",
         )
@@ -272,7 +276,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             rounding=2,
             description=f"Membrane width",
             is_input=True,
-            input_category="Reverse Osmosis",
+            input_category=f"{name}",
             is_output=False,
         )
         exports.add(
@@ -283,7 +287,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             rounding=2,
             description=f"Membrane outlet pressure",
             is_input=True,
-            input_category="Reverse Osmosis",
+            input_category=f"{name}",
             is_output=False,
         )
         if (
@@ -295,10 +299,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 name=f"RO {idx} channel height",
                 ui_units=pyunits.m,
                 display_units="m",
-                rounding=2,
+                rounding=5,
                 description=f"Channel height in membrane stage",
                 is_input=True,
-                input_category="Reverse Osmosis",
+                input_category=f"{name}",
                 is_output=False,
             )
             exports.add(
@@ -309,7 +313,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                 rounding=2,
                 description=f"Spacer porosity in membrane stage",
                 is_input=True,
-                input_category="Reverse Osmosis",
+                input_category=f"{name}",
                 is_output=False,
             )
     for idx, erd in fs.EnergyRecoveryDevices.items():
@@ -817,7 +821,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             name=f"Water permeability coefficient - stage {idx}",
             ui_units=pyunits.L / pyunits.hr / pyunits.m**2 / pyunits.bar,
             display_units="LMH/bar",
-            rounding=2,
+            rounding=20,
             description=f"A value of stage {idx}",
             is_input=False,
             is_output=True,
@@ -833,7 +837,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             name=f"Salt permeability coefficient - stage {idx}",
             ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
             display_units="LMH",
-            rounding=2,
+            rounding=20,
             description=f"B value of stage {idx}",
             is_input=False,
             is_output=True,
