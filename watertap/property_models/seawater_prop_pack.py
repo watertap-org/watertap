@@ -84,7 +84,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
     CONFIG.declare(
         "diffus_calculation",
         ConfigValue(
-            default=DiffusCalculationType.isothermal,
+            default=DiffusivityCalculationType.isothermal,
             domain=In(DiffusCalculationType),
             description="Diffusivity calculation type construction flag",
             doc="""Indicates whether the diffusivity will be calculated assuming isothermal or nonisothermal conditions
