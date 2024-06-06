@@ -233,7 +233,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         if idx == 1:
             name = "Reverse Osmosis"
         else:
-            name = "Low-Salt Rejection Reverse Osmosis"
+            name = "Low-Salt-Rejection Reverse Osmosis"
         exports.add(
             obj=stage.A_comp[0, "H2O"],
             name=f"RO {idx} water permeability coefficient",
