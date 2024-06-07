@@ -140,7 +140,7 @@ def assert_no_degrees_of_freedom(blk):
     check_dof(blk, True)
 
 
-def interval_improve_initial(blk, feasibility_tol=1e-6):
+def interval_initializer(blk, feasibility_tol=1e-6):
     """
     Improve the initialization of ``blk`` utilizing interval arithmetic.
 

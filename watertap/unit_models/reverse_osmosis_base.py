@@ -38,7 +38,7 @@ from watertap.core.membrane_channel_base import (
     TransportModel,
     ModuleType,
 )
-from watertap.core.util.initialization import interval_improve_initial
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
 
@@ -632,7 +632,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             )
 
         # pre-solve using interval arithmetic
-        interval_improve_initial(self)
+        interval_initializer(self)
 
         # Create solver
         opt = get_solver(solver, optarg)

@@ -76,7 +76,7 @@ from watertap.unit_models.thickener import (
     Thickener,
     ActivatedSludgeModelType as thickener_type,
 )
-from watertap.core.util.initialization import check_solve, interval_improve_initial
+from watertap.core.util.initialization import check_solve, interval_initializer
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 
 # Set up logger
@@ -92,7 +92,7 @@ def main(has_electroNP=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
-    interval_improve_initial(m)
+    interval_initializer(m)
     initialize_system(m)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
