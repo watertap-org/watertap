@@ -38,7 +38,7 @@ from watertap.core.membrane_channel_base import (
     TransportModel,
     ModuleType,
 )
-from watertap.core.util.initialization import interval_improve_initial
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
 
@@ -632,7 +632,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             )
 
         # pre-solve using interval arithmetic
-        interval_improve_initial(self)
+        interval_initializer(self)
 
         # Create solver
         opt = get_solver(solver, optarg)
@@ -775,20 +775,20 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             var_dict["Hydraulic Diameter"] = self.feed_side.dh
 
         if self.config.has_full_reporting:
-            expr_dict["Average Solvent Flux (LMH)"] = (
-                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
-            )
+            expr_dict["Average Solvent Mass Flux"] = self.flux_mass_phase_comp_avg[
+                time_point, "Liq", "H2O"
+            ]
             if hasattr(self.feed_side, "N_Re_avg"):
                 expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
                     time_point
                 ]
             for j in self.config.property_package.solute_set:
-                expr_dict[f"{j} Average Solute Flux (GMH)"] = (
-                    self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
+                expr_dict[f"{j} Average Solute Mass Flux"] = (
+                    self.flux_mass_phase_comp_avg[time_point, "Liq", j]
                 )
                 if hasattr(self.feed_side, "K_avg"):
-                    expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
-                        self.feed_side.K_avg[time_point, j] * 3.6e6
+                    expr_dict[f"{j} Average Mass Transfer Coefficient"] = (
+                        self.feed_side.K_avg[time_point, j]
                     )
 
         # TODO: add more vars

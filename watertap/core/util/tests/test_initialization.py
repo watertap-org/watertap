@@ -21,7 +21,7 @@ from watertap.core.util.initialization import (
     assert_degrees_of_freedom,
     assert_no_degrees_of_freedom,
     check_solve,
-    interval_improve_initial,
+    interval_initializer,
 )
 import idaes.logger as idaeslog
 
@@ -158,14 +158,14 @@ class TestIntervalImproveInitial:
         return m
 
     @pytest.mark.unit
-    def test_interval_improve_initial(self, m):
+    def test_interval_initializer(self, m):
 
         # We are checking for 2 things:
         # 1. The what the value is set to within the pyomo model
         # 2. The original bounds have been reset as they were originally
         #    specified in the flowsheet
         feasibility_tol = 1.0e-6
-        interval_improve_initial(m, feasibility_tol=feasibility_tol)
+        interval_initializer(m, feasibility_tol=feasibility_tol)
 
         # Assert the values
         assert m.x.value == pytest.approx(-1, abs=1.3 - 6)

@@ -44,7 +44,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
-from watertap.core.util.initialization import interval_improve_initial
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.ion_exchange import cost_ion_exchange
 
 __author__ = "Kurban Sitterley"
@@ -1054,7 +1054,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.target_ion_set, doc="Removed total mass of ion in equivalents"
             )
             def eq_mass_removed(b, j):
-                charge = prop_in.charge_comp[j]
+                charge = abs(prop_in.charge_comp[j])
                 return b.mass_removed[j] * charge == pyunits.convert(
                     b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol_tot,
                     to_units=pyunits.mol,
@@ -1258,7 +1258,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         init_log.info("Initialization Step 1c Complete.")
 
         # pre-solve using interval arithmetic
-        interval_improve_initial(self)
+        interval_initializer(self)
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

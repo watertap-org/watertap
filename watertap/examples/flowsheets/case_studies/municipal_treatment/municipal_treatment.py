@@ -28,7 +28,7 @@ from idaes.core import UnitModelCostingBlock
 from watertap.core.util.initialization import (
     assert_degrees_of_freedom,
     check_solve,
-    interval_improve_initial,
+    interval_initializer,
 )
 
 from watertap.core.wt_database import Database
@@ -196,7 +196,7 @@ def set_operating_conditions(m):
 
 
 def initialize_system(m):
-    interval_improve_initial(m)
+    interval_initializer(m)
     seq = SequentialDecomposition()
     seq.options.tear_set = []
     seq.options.iterLim = 1

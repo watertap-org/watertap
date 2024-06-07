@@ -41,7 +41,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
-from watertap.core.util.initialization import interval_improve_initial
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.gac import cost_gac
 
 __author__ = "Hunter Barber"
@@ -1136,7 +1136,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # solve unit
 
         # pre-solve using interval arithmetic
-        interval_improve_initial(self)
+        interval_initializer(self)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)

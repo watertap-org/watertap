@@ -38,7 +38,7 @@ from .MD_channel_base import (
 from watertap.costing.unit_models.membrane_distillation import (
     cost_membrane_distillation,
 )
-from watertap.core.util.initialization import interval_improve_initial
+from watertap.core.util.initialization import interval_initializer
 
 __author__ = "Elmira Shamlou"
 
@@ -638,7 +638,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             )
 
         # pre-solve using interval arithmetic
-        interval_improve_initial(self)
+        interval_initializer(self)
 
         # solver
         opt = get_solver(solver, optarg)
