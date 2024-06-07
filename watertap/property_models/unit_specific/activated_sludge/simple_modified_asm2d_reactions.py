@@ -26,7 +26,7 @@ anaerobic digestion processes", 2016, Water Research, 95, pp.370-382.
 # Import IDAES cores
 from idaes.core import declare_process_block_class
 import idaes.logger as idaeslog
-from watertap.property_models.activated_sludge.asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterData,
     _ASM2dReactionBlock,
     ASM2dReactionBlockData,
