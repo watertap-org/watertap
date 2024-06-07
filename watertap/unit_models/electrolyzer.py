@@ -624,8 +624,6 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
                     else:
                         state_args[k] = state_dict[k].value
 
-        interval_initializer(self)
-
         # initialize anolyte control volume
         flags_anolyte = self.anolyte.initialize(
             outlvl=outlvl,
@@ -643,6 +641,9 @@ class ElectrolyzerData(InitializationMixin, UnitModelBlockData):
         )
 
         init_log.info_high("Initialization Step 1 Complete.")
+
+        interval_initializer(self)
+
         # --------------------------------------------------------------------
         # solve unit
 
