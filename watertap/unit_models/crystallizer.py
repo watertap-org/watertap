@@ -587,8 +587,6 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
         opt = get_solver(solver, optarg)
 
-        interval_initializer(self)
-
         # ---------------------------------------------------------------------
         # Initialize holdup block
         flags = self.properties_in.initialize(
@@ -653,6 +651,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_vapor,
         )
         init_log.info_high("Initialization Step 2 Complete.")
+
+        interval_initializer(self)
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
