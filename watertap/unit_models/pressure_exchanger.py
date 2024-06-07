@@ -498,8 +498,6 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         # Set solver and options
         opt = get_solver(solver, optarg)
 
-        interval_initializer(self)
-
         # initialize inlets
         flags_low_in = self.feed_side.properties_in.initialize(
             outlvl=outlvl,
@@ -590,6 +588,8 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             0
         ].pressure.value
         init_log.info_high("Initialize outlets complete")
+
+        interval_initializer(self)
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
