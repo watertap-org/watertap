@@ -890,8 +890,6 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         # Set solver options
         opt = get_solver(solver, optarg)
 
-        interval_initializer(self)
-
         # ---------------------------------------------------------------------
         # Initialize holdup block
         flags = self.control_volume.initialize(
@@ -902,6 +900,8 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
+
+        interval_initializer(self)
 
         # ---------------------------------------------------------------------
         # Solve unit
