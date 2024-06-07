@@ -76,11 +76,7 @@ from watertap.unit_models.thickener import (
     ActivatedSludgeModelType as thickener_type,
 )
 
-from watertap.core.util.initialization import (
-    check_solve,
-    assert_degrees_of_freedom,
-    interval_initializer,
-)
+from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
@@ -677,7 +673,6 @@ def initialize_system(m, bio_P=False):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
-    # interval_initializer(m)
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
