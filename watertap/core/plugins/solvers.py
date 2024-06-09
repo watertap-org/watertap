@@ -228,3 +228,17 @@ class IpoptWaterTAP(_WaterTAPSolverWrapper):
     def _set_options(self, solver):
         for k, v in self.options.items():
             solver.options[k] = v
+
+
+@pyo.SolverFactory.register(
+    "cyipopt-watertap",
+    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
+)
+class CyIpoptWaterTAP(_WaterTAPSolverWrapper):
+
+    name = "cyipopt-watertap"
+    base_solver = "cyipopt"
+
+    def _set_options(self, solver):
+        for k, v in self.options.items():
+            solver.config.options[k] = v
