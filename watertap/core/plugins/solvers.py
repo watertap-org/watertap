@@ -11,6 +11,7 @@
 #################################################################################
 
 import logging
+import abc
 
 import pyomo.environ as pyo
 from pyomo.common.collections import Bunch
@@ -35,14 +36,14 @@ def _pyomo_nl_writer_logger_filter(record):
     return True
 
 
-@pyo.SolverFactory.register(
-    "ipopt-watertap",
-    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
-)
-class IpoptWaterTAP:
+class _WaterTAPSolverWrapper(abc.ABC):
 
-    _name = "ipopt-watertap"
-    _base_solver = "ipopt"
+    name = None
+    base_solver = None
+
+    @abc.abstractmethod
+    def _set_options(self, solver):
+        pass
 
     def __init__(self, **kwds):
         kwds["name"] = self.name
@@ -56,14 +57,6 @@ class IpoptWaterTAP:
             return getattr(pyo.SolverFactory(self.base_solver), attr)
         except AttributeError:
             raise
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def base_solver(self):
-        return self._base_solver
 
     def solve(self, blk, *args, **kwds):
 
@@ -199,10 +192,6 @@ class IpoptWaterTAP:
                 set_scaling_factor(c, s)
         del self._scaling_cache
 
-    def _set_options(self, solver):
-        for k, v in self.options.items():
-            solver.options[k] = v
-
     def _get_option(self, option_name, default_value):
         # NOTE: The options are already copies of the original,
         #       so it is safe to pop them so they don't get sent to Ipopt.
@@ -225,3 +214,17 @@ class IpoptWaterTAP:
                 )
             return False
         return True
+
+
+@pyo.SolverFactory.register(
+    "ipopt-watertap",
+    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
+)
+class IpoptWaterTAP(_WaterTAPSolverWrapper):
+
+    name = "ipopt-watertap"
+    base_solver = "ipopt"
+
+    def _set_options(self, solver):
+        for k, v in self.options.items():
+            solver.options[k] = v
