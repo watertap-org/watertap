@@ -17,7 +17,6 @@ from typing import Container, Optional, Callable
 import pytest
 from _pytest.nodes import Item
 from _pytest.config import Config
-from _pytest.config.argparsing import Parser
 
 
 class MarkerSpec(enum.Enum):
