@@ -480,42 +480,6 @@ def add_costing(m):
     m.fs.costing.LCOCR_comp = Expression(m.fs.costing.LC_comp, rule=rule_LCOCR_comp)
 
 
-def adjust_default_parameters(m):
-    m.fs.metab_hydrogen.hydraulic_retention_time.fix(6)  # default - 12 hours, 0.5x
-    m.fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"].set_value(
-        0.05
-    )  # default - 0.005, 10x
-    m.fs.costing.metab.bead_bulk_density["hydrogen"].fix(7.17)  # default 23.9, 0.3x
-    m.fs.costing.metab.bead_replacement_factor["hydrogen"].fix(1)  # default 3.376, 0.3x
-    m.fs.metab_hydrogen.energy_electric_mixer_vol.fix(0.049875)  # default 0.049875
-    m.fs.metab_hydrogen.energy_electric_vacuum_flow_vol_byproduct.fix(
-        9.190
-    )  # default 9190, 0.001x
-    m.fs.metab_hydrogen.energy_thermal_flow_vol_inlet.fix(7875)  # default 78750, 0.1x
-    m.fs.costing.metab.bead_cost["hydrogen"].fix(14.40)  # default 1440, 0.01x
-    m.fs.costing.metab.reactor_cost["hydrogen"].fix(78.9)  # default 789, 0.1x
-    m.fs.costing.metab.vacuum_cost["hydrogen"].fix(5930)  # default 59300, 0.1x
-    m.fs.costing.metab.mixer_cost["hydrogen"].fix(27.40)  # default 2740, 0.01x
-    m.fs.costing.metab.membrane_cost["hydrogen"].fix(498)  # default 498
-
-    m.fs.metab_methane.hydraulic_retention_time.fix(15)  # default 150, 0.1x
-    m.fs.metab_methane.generation_ratio["cod_to_methane", "methane"].set_value(
-        0.101
-    )  # default 0.101, no change
-    m.fs.costing.metab.bead_bulk_density["methane"].fix(7.17)  # default 23.9, 0.3x
-    m.fs.costing.metab.bead_replacement_factor["methane"].fix(1)  # default 3.376, 0.3x
-    m.fs.metab_methane.energy_electric_mixer_vol.fix(0.049875)  # default 0.049875
-    m.fs.metab_methane.energy_electric_vacuum_flow_vol_byproduct.fix(
-        1.53
-    )  # default 15.3, 0.1x
-    m.fs.metab_methane.energy_thermal_flow_vol_inlet.fix(0)  # default 0
-    m.fs.costing.metab.bead_cost["methane"].fix(14.40)  # default 1440, 0.01x
-    m.fs.costing.metab.reactor_cost["methane"].fix(78.9)  # default 789, 0.1x
-    m.fs.costing.metab.vacuum_cost["methane"].fix(136.0)  # default 1360, 0.1x
-    m.fs.costing.metab.mixer_cost["methane"].fix(27.40)  # default 2740, 0.01x
-    m.fs.costing.metab.membrane_cost["methane"].fix(498)  # default 498
-
-
 def display_metrics_results(m):
     print("----------Levelized costs----------")
     LCOT = value(
