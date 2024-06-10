@@ -21,7 +21,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
-from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
     ModifiedADM1StateBlock,
 )

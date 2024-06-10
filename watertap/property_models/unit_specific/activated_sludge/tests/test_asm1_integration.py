@@ -33,8 +33,10 @@ from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
 
-from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
-from watertap.property_models.activated_sludge.asm1_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+)
+from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 

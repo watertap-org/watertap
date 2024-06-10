@@ -41,10 +41,10 @@ from idaes.core import MaterialFlowBasis
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
     ASM2dReactionBlock,
 )

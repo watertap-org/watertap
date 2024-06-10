@@ -19,7 +19,7 @@ from pyomo.environ import ConcreteModel, Expression, Param, units, value, Var
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
-from watertap.property_models.activated_sludge.asm1_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
     ASM1StateBlock,
 )
