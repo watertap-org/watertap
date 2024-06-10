@@ -97,6 +97,8 @@ def export_to_ui(flowsheet=None, exports=None, build_options=None, **kwargs):
         read_only=False,
         is_output=True,
         output_category=OutputCategory.feed,
+        chart_type="stacked_bar",
+        chart_group="test",
     )
 
 
