@@ -140,13 +140,17 @@ def assert_no_degrees_of_freedom(blk):
     check_dof(blk, True)
 
 
-def interval_initializer(blk, feasibility_tol=1e-6):
+def interval_initializer(
+    blk, feasibility_tol=1e-6, default_initial_value=0.0, logger=_log
+):
     """
     Improve the initialization of ``blk`` utilizing interval arithmetic.
 
     Keyword Arguments:
         blk : block to initialize
         feasibility_tol : tolerance to use for FBBT (default: 1e-6)
+        default_initial_value: set uninitialized variables to this value (default: 0.0)
+        logger : logger to use (default: watertap.core.util.initialization)
 
     Returns:
         None
@@ -162,18 +166,25 @@ def interval_initializer(blk, feasibility_tol=1e-6):
 
     for v, bounds in bound_cache.items():
         if v.value is None:
-            # set to the bound nearer 0
-            v.set_value(0, skip_validation=True)
+            logger.info(
+                f"variable {v.name} has no initial value: setting to {default_initial_value}"
+            )
+            v.set_value(default_initial_value, skip_validation=True)
         if v.lb is not None:
             if v.lb == v.ub:
+                logger.debug(f"setting {v.name} to derived value {v.value}")
                 v.set_value(v.lb, skip_validation=True)
                 continue
             if v.value < v.lb:
-                # print(f"projecting {v.name} at value {v.value} onto lower bound {v.lb}")
+                logger.debug(
+                    f"projecting {v.name} at value {v.value} onto derived lower bound {v.lb}"
+                )
                 v.set_value(v.lb, skip_validation=True)
         if v.ub is not None:
             if v.value > v.ub:
-                # print(f"projecting {v.name} at value {v.value} onto upper bound {v.ub}")
+                logger.debug(
+                    f"projecting {v.name} at value {v.value} onto derived upper bound {v.ub}"
+                )
                 v.set_value(v.ub, skip_validation=True)
 
     for v, bounds in bound_cache.items():
