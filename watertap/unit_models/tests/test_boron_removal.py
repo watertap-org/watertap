@@ -155,6 +155,16 @@ class TestBoronRemoval_IonPropPack_Min(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet_pH()] = 10.171
         self.unit_solutions[m.fs.unit.outlet_pOH()] = 3.8257
         self.unit_solutions[m.fs.unit.caustic_dose_rate[0]] = 1.8e-5
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
+                + m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"],
+                "out": m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
+                + m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"],
+            },
+        }
+
         return m
 
 
@@ -209,6 +219,16 @@ class TestBoronRemoval_IonPropPack_with_ResAlk(UnitTestHarness):
         ] = 1.99642e-4
         self.unit_solutions[m.fs.unit.outlet_pH()] = 11.375
         self.unit_solutions[m.fs.unit.outlet_pOH()] = 2.6218
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
+                + m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"],
+                "out": m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
+                + m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"],
+            },
+        }
+
         return m
 
 
@@ -266,6 +286,16 @@ class TestBoronRemoval_IonPropPack_with_ResBase(UnitTestHarness):
         ] = 8.03579e-5
         self.unit_solutions[m.fs.unit.outlet_pH()] = 9.0343
         self.unit_solutions[m.fs.unit.outlet_pOH()] = 4.9621
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
+                + m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"],
+                "out": m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"]
+                + m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B[OH]3"],
+            },
+        }
+
         return m
 
 
