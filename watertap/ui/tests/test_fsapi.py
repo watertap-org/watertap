@@ -24,8 +24,8 @@ from pyomo.environ import SolverStatus, TerminationCondition
 from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
     seawater_RO_desalination as RO,
 )
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
-    metab_ui as MU,
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination import (
+    dye_desalination_ui as DD,
 )
 
 from watertap.ui import fsapi
@@ -97,6 +97,8 @@ def export_to_ui(flowsheet=None, exports=None, build_options=None, **kwargs):
         read_only=False,
         is_output=True,
         output_category=OutputCategory.feed,
+        chart_type="stacked_bar",
+        chart_group="test",
     )
 
 
@@ -364,7 +366,7 @@ def test_empty_solve():
 
 @pytest.mark.unit
 def test_nonoptimal_termination():
-    fsi = MU.export_to_ui()
+    fsi = DD.export_to_ui()
     fsi.build()
 
     # pick a crazy value
