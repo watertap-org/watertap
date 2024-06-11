@@ -11,7 +11,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 
    "Capital cost A parameter :math:`^1`", ":math:`A`", "``capital_a_parameter``", "19.3552312e6", ":math:`\text{USD}_{2012}`"
    "Capital cost B parameter :math:`^1`", ":math:`B`", "``capital_b_parameter``", "0.6", ":math:`\text{dimensionless}`"
-   "Reference flow :math:`^1`", ":math:`F_r`", "``911.054``", "0.6", ":math:`m^3/h`"
+   "Reference flow :math:`^1`", ":math:`F_r`", "``reference_flow``", "911.054", ":math:`m^3/h`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
