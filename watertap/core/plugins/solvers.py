@@ -43,7 +43,7 @@ class _WaterTAPSolverWrapper(abc.ABC):
 
     @abc.abstractmethod
     def _set_options(self, solver):
-        pass
+        raise NotImplementedError
 
     def __init__(self, **kwds):
         kwds["name"] = self.name
