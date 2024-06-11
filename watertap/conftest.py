@@ -51,7 +51,7 @@ def _handle_requires_idaes_solver(
 
     solver = solver or get_solver()
     idaes_bin_dir = Path(bin_directory).resolve()
-    solver_bin_path = Path(solver.executable()).resolve()
+    solver_bin_path = Path(solver.config.executable.path()).resolve()
 
     if not idaes_bin_dir in solver_bin_path.parents:
         action(f"This test is known to be failing with {solver_bin_path}")

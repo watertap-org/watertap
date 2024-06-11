@@ -143,8 +143,8 @@ class TestIpoptWaterTAP:
     def test_passthrough_negative(self, m, s):
         s.options["nlp_scaling_method"] = "gradient-based"
         s.options["ignore_variable_scaling"] = True
-        with pytest.raises(ApplicationError):
-            pyo.assert_optimal_termination(s.solve(m, tee=True))
+        with pytest.raises(RuntimeError):
+            s.solve(m, tee=True)
         del s.options["nlp_scaling_method"]
         del s.options["ignore_variable_scaling"]
         self._test_bounds(m)
