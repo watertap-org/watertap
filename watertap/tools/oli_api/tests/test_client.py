@@ -67,3 +67,15 @@ def test_get_dbs_file_summary(oliapi_instance: OLIApi, local_dbs_file: Path):
     oliapi_instance.get_user_dbs_file_ids()
     dbs_file_id = oliapi_instance.upload_dbs_file(local_dbs_file)
     oliapi_instance.get_dbs_file_summary(dbs_file_id)
+
+
+@pytest.mark.unit
+def test_valid_phases(oliapi_instance: OLIApi):
+    valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
+    for v in oliapi_instance.valid_phases:
+        assert v in valid_phases
+
+
+@pytest.mark.unit
+def test_invalid_phases(oliapi_instance_with_invalid_phase: OLIApi):
+    oliapi_instance_with_invalid_phase
