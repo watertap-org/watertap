@@ -92,6 +92,8 @@ class ModelExport(BaseModel):
     is_readonly: Union[None, bool] = Field(default=None, validate_default=True)
     input_category: Optional[str] = None
     output_category: Optional[str] = None
+    chart_type: Optional[str] = None
+    chart_group: Optional[str] = None
     # computed
     obj_key: Union[None, str] = Field(default=None, validate_default=True)
     fixed: bool = True
@@ -977,24 +979,19 @@ class FlowsheetInterface:
             return {}
 
         interfaces = {}
-        failed = {}
         _log.debug(f"Loading {len(entry_points)} entry points")
         for ep in entry_points:
             _log.debug(f"ep = {ep}")
             module_name = ep.value
             try:
                 module = ep.load()
-                interface = cls.from_module(module)
             except ImportError as err:
                 _log.error(f"Cannot import module '{module_name}': {err}")
-                failed[module_name] = err
-            except Exception as err:
-                _log.error(f"Error when loading entry point for '{module_name}': {err}")
-                failed[module_name] = err
-            else:
+                continue
+            interface = cls.from_module(module)
+            if interface:
                 interfaces[module_name] = interface
-        if failed:
-            raise RuntimeError(failed)
+
         return interfaces
 
     @classmethod
@@ -1015,16 +1012,18 @@ class FlowsheetInterface:
         # Get function that creates the FlowsheetInterface
         func = getattr(module, cls.UI_HOOK, None)
         if func is None:
-            raise RuntimeError(
+            _log.warning(
                 f"Interface for module '{module}' is missing UI hook function: "
                 f"{cls.UI_HOOK}()"
             )
+            return None
         # Call the function that creates the FlowsheetInterface
         try:
             interface = func()
         except Exception as err:
-            raise RuntimeError(
+            _log.error(
                 f"Cannot get FlowsheetInterface object for module '{module}': {err}"
-            ) from err
+            )
+            return None
         # Return created FlowsheetInterface
         return interface
