@@ -16,7 +16,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-There are no costing method variables unique to the CSTR with injection.
+There are no costing method variables unique to the anaerobic digester.
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
