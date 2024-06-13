@@ -25,7 +25,7 @@ Capital cost is dependent upon the unit's volumetric flowrate, :math:`F`, as sho
 
     .. math::
 
-        C_{cap,tot} = A * F/F_r^{B}
+        C_{cap,tot} = A * (F/F_r)^{B}
 
  
 Operating Cost Calculations
