@@ -127,8 +127,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
 
-        # TODO: Delete unused parameters
-
         self.f_sI_xc = Param(
             initialize=eps,
             units=pyunits.dimensionless,
