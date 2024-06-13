@@ -218,6 +218,17 @@ class TestIpoptWaterTAP:
         assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
 
     @pytest.mark.unit
+    @pytest.mark.skipif(
+        not pyo.SolverFactory("cyipopt").available(exception_flag=False),
+        reason="cyipopt not available",
+    )
+    def test_cyipopt_bound_relax_small(self, m2):
+        s = pyo.SolverFactory("cyipopt-watertap")
+        m2.x.value = m2.factor
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
+
+    @pytest.mark.unit
     def test_default_bound_relax_big(self, m2, s):
         m2.factor = 1.0e16
         m2.x.value = 1.0e16
