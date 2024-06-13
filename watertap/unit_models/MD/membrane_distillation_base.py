@@ -696,9 +696,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "width"):
             var_dict["Membrane Width"] = self.width
 
-        expr_dict["Average Solute Flux"] = self.flux_mass_avg[time_point] * 1000
-        expr_dict["Thermal efficiency (%)"] = self.thermal_efficiency[time_point] * 100
-        expr_dict["Effectiveness (%)"] = self.effectiveness[time_point] * 100
+        expr_dict["Average Solute Flux"] = self.flux_mass_avg[time_point]
+        expr_dict["Thermal efficiency (%)"] = self.thermal_efficiency[time_point]
+        expr_dict["Effectiveness (%)"] = self.effectiveness[time_point]
 
         return {"vars": var_dict, "exprs": expr_dict}
 
