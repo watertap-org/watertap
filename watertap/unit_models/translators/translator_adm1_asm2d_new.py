@@ -215,118 +215,126 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 1")
         def SIC_AD1(blk, t):
             return (
-                blk.config.inlet_reaction_package.Ci["X_su"] * self.biomass
+                blk.config.inlet_reaction_package.Ci["X_su"] * blk.biomass[t] * mw_c
                 - (
                     self.f_sI_xc
-                    * self.biomass
                     * blk.config.inlet_reaction_package.Ci["S_I"]
+                    * mw_c
+                    * blk.biomass[t]
                 )
                 - (
                     self.f_ch_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_ch"]
+                    * mw_c
                 )
                 - (
                     self.f_pr_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_pr"]
+                    * mw_c
                 )
                 - (
                     self.f_li_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_li"]
+                    * mw_c
                 )
                 - (
                     self.f_xI_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_I"]
+                    * mw_c
                 )
                 + (
                     blk.properties_in[t].conc_mass_comp["X_PHA"]
                     * blk.config.inlet_reaction_package.Ci["X_PHA"]
+                    * mw_c
                 )
                 - (
                     blk.properties_in[t].conc_mass_comp["X_PHA"]
                     * blk.config.inlet_reaction_package.Ci["S_ac"]
+                    * mw_c
                 )
             )
 
         @self.Expression(self.flowsheet().time, doc="S_IN concentration at step 1")
         def SIN_AD1(blk, t):
             return (
-                blk.config.inlet_reaction_package.Ni["X_su"] * self.biomass
+                blk.config.inlet_reaction_package.Ni["X_su"] * blk.biomass[t] * mw_n
                 - (
                     self.f_sI_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ni["S_I"]
+                    * mw_n
                 )
                 - (
                     self.f_pr_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ni["X_pr"]
-                )
-                - (
-                    self.f_li_xc
-                    * self.biomass
-                    * blk.config.inlet_reaction_package.Ni["X_li"]
+                    * mw_n
                 )
                 - (
                     self.f_xI_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ni["X_I"]
+                    * mw_n
                 )
             )
 
         @self.Expression(self.flowsheet().time, doc="S_I concentration at step 1")
         def SI_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["S_I"] + (
-                self.f_sI_xc * self.biomass
+                self.f_sI_xc * blk.biomass[t]
             )
 
         @self.Expression(self.flowsheet().time, doc="X_ch concentration at step 1")
         def Xch_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_ch"] + (
-                self.f_ch_xc * self.biomass
+                self.f_ch_xc * blk.biomass[t]
             )
 
         @self.Expression(self.flowsheet().time, doc="X_pr concentration at step 1")
         def Xpr_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_pr"] + (
-                self.f_pr_xc * self.biomass
+                self.f_pr_xc * blk.biomass[t]
             )
 
         @self.Expression(self.flowsheet().time, doc="X_li concentration at step 1")
         def Xli_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_li"] + (
-                self.f_li_xc * self.biomass
+                self.f_li_xc * blk.biomass[t]
             )
 
         @self.Expression(self.flowsheet().time, doc="X_I concentration at step 1")
         def XI_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_I"] + (
-                self.f_xI_xc * self.biomass
+                self.f_xI_xc * blk.biomass[t]
             )
 
         @self.Expression(self.flowsheet().time, doc="S_IP concentration at step 1")
         def SIP_AD1(blk, t):
             return (
                 blk.properties_in[t].conc_mass_comp["S_IP"]
-                + (blk.config.inlet_reaction_package.Pi["X_su"] * self.biomass)
+                + (blk.config.inlet_reaction_package.Pi["X_su"] * blk.biomass[t] * mw_p)
                 - (
                     self.f_sI_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Pi["S_I"]
+                    * mw_p
                 )
-                - (self.f_ch_xc * self.biomass * self.P_ch)
+                - (self.f_ch_xc * blk.biomass[t] * self.P_ch)
                 - (
                     self.f_li_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Pi["X_li"]
+                    * mw_p
                 )
                 - (
                     self.f_xI_xc
-                    * self.biomass
+                    * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Pi["X_I"]
+                    * mw_p
                 )
             )
 
@@ -356,18 +364,21 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         @self.Expression(self.flowsheet().time, doc="S_IC concentration at step 2")
         def SIC_AD2(blk, t):
             return (
-                blk.Xch_AD1 * blk.config.inlet_reaction_package.Ci["X_ch"]
-                + (blk.Xpr_AD1 * blk.config.inlet_reaction_package.Ci["X_pr"])
-                + (blk.Xli_AD1 * blk.config.inlet_reaction_package.Ci["X_li"])
-                - (blk.config.outlet_reaction_package.i_CXS / mw_c)
-                * (blk.Xch_AD1 + blk.Xpr_AD1 + blk.Xli_AD1)
+                blk.Xch_AD1[t] * blk.config.inlet_reaction_package.Ci["X_ch"] * mw_c
+                + (blk.Xpr_AD1[t] * blk.config.inlet_reaction_package.Ci["X_pr"] * mw_c)
+                + (blk.Xli_AD1[t] * blk.config.inlet_reaction_package.Ci["X_li"] * mw_c)
+                - blk.config.outlet_reaction_package.i_CXS
+                * (blk.Xch_AD1[t] + blk.Xpr_AD1[t] + blk.Xli_AD1[t])
                 + blk.properties_in[t].conc_mass_comp["S_su"]
                 * blk.config.inlet_reaction_package.Ci["S_su"]
+                * mw_c
                 + blk.properties_in[t].conc_mass_comp["S_aa"]
                 * blk.config.inlet_reaction_package.Ci["S_aa"]
+                * mw_c
                 + blk.properties_in[t].conc_mass_comp["S_fa"]
                 * blk.config.inlet_reaction_package.Ci["S_fa"]
-                - (blk.config.outlet_reaction_package.i_CSF / mw_c)
+                * mw_c
+                - blk.config.outlet_reaction_package.i_CSF
                 * (
                     blk.properties_in[t].conc_mass_comp["S_su"]
                     + blk.properties_in[t].conc_mass_comp["S_aa"]
@@ -375,29 +386,33 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 )
                 + blk.properties_in[t].conc_mass_comp["S_va"]
                 * blk.config.inlet_reaction_package.Ci["S_va"]
+                * mw_c
                 + blk.properties_in[t].conc_mass_comp["S_bu"]
                 * blk.config.inlet_reaction_package.Ci["S_bu"]
+                * mw_c
                 + blk.properties_in[t].conc_mass_comp["S_pro"]
                 * blk.config.inlet_reaction_package.Ci["S_pro"]
-                + blk.Xac_AD1 * blk.config.inlet_reaction_package.Ci["S_ac"]
-                - (blk.config.outlet_reaction_package.i_CSA / mw_c)
+                * mw_c
+                + blk.Sac_AD1[t] * blk.config.inlet_reaction_package.Ci["S_ac"] * mw_c
+                - blk.config.outlet_reaction_package.i_CSA
                 * (
                     blk.properties_in[t].conc_mass_comp["S_va"]
                     + blk.properties_in[t].conc_mass_comp["S_bu"]
                     + blk.properties_in[t].conc_mass_comp["S_pro"]
-                    + blk.Xac_AD1
+                    + blk.Sac_AD1[t]
                 )
             )
 
         @self.Expression(self.flowsheet().time, doc="S_IN concentration at step 2")
         def SIN_AD2(blk, t):
             return (
-                blk.Xpr_AD1 * blk.config.inlet_reaction_package.Ni["X_pr"]
-                - (blk.config.outlet_reaction_package.i_NXS / mw_n)
-                * (blk.Xch_AD1 + blk.Xpr_AD1 + blk.Xli_AD1)
+                blk.Xpr_AD1[t] * blk.config.inlet_reaction_package.Ni["X_pr"] * mw_n
+                - blk.config.outlet_reaction_package.i_NXS
+                * (blk.Xch_AD1[t] + blk.Xpr_AD1[t] + blk.Xli_AD1[t])
                 + blk.properties_in[t].conc_mass_comp["S_aa"]
                 * blk.config.inlet_reaction_package.Ni["S_aa"]
-                - (blk.config.outlet_reaction_package.i_NSF / mw_n)
+                * mw_n
+                - blk.config.outlet_reaction_package.i_NSF
                 * blk.properties_in[t].conc_mass_comp["S_su"]
                 + blk.properties_in[t].conc_mass_comp["S_fa"]
                 + blk.properties_in[t].conc_mass_comp["S_va"]
@@ -407,12 +422,12 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         def SIP_AD2(blk, t):
             return (
                 self.XPP_AD1
-                + blk.Xch_AD1 * self.P_ch
-                + blk.Xli_AD1 * blk.config.inlet_reaction_package.Pi["X_li"]
-                - (blk.config.outlet_reaction_package.i_PXS / mw_p) * blk.Xch_AD1
-                + blk.Xpr_AD1
-                + blk.Xli_AD1
-                - (blk.config.outlet_reaction_package.i_PSF / mw_p)
+                + blk.Xch_AD1[t] * self.P_ch
+                + blk.Xli_AD1[t] * blk.config.inlet_reaction_package.Pi["X_li"] * mw_p
+                - blk.config.outlet_reaction_package.i_PXS * blk.Xch_AD1[t]
+                + blk.Xpr_AD1[t]
+                + blk.Xli_AD1[t]
+                - blk.config.outlet_reaction_package.i_PSF
                 * blk.properties_in[t].conc_mass_comp["S_su"]
                 + blk.properties_in[t].conc_mass_comp["S_fa"]
                 + blk.properties_in[t].conc_mass_comp["S_va"]
@@ -448,20 +463,20 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 == blk.properties_in[t].conc_mass_comp["S_va"]
                 + blk.properties_in[t].conc_mass_comp["S_bu"]
                 + blk.properties_in[t].conc_mass_comp["S_pro"]
-                + blk.Sac_AD1
+                + blk.Sac_AD1[t]
             )
 
         @self.Constraint(self.flowsheet().time, doc="S_I concentration output")
         def SI_output(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_I"] == blk.SI_AD1
+            return blk.properties_out[t].conc_mass_comp["S_I"] == blk.SI_AD1[t]
 
         @self.Constraint(self.flowsheet().time, doc="S_NH4 concentration output")
         def SNH4_output(blk, t):
             return (
                 blk.properties_out[t].conc_mass_comp["S_NH4"]
                 == blk.properties_in[t].conc_mass_comp["S_IN"]
-                + blk.SIN_AD1
-                + blk.SIN_AD2
+                + blk.SIN_AD1[t]
+                + blk.SIN_AD2[t]
             )
 
         @self.Constraint(self.flowsheet().time, doc="S_PO4 concentration output")
@@ -469,8 +484,8 @@ class TranslatorDataADM1ASM2D(TranslatorData):
             return (
                 blk.properties_out[t].conc_mass_comp["S_PO4"]
                 == blk.properties_in[t].conc_mass_comp["S_IP"]
-                + blk.SIP_AD1
-                + blk.SIP_AD2
+                + blk.SIP_AD1[t]
+                + blk.SIP_AD2[t]
             )
 
         @self.Constraint(self.flowsheet().time, doc="S_IC concentration output")
@@ -478,36 +493,36 @@ class TranslatorDataADM1ASM2D(TranslatorData):
             return (
                 blk.properties_out[t].conc_mass_comp["S_IC"]
                 == blk.properties_in[t].conc_mass_comp["S_IC"]
-                + blk.SIC_AD1
-                + blk.SIC_AD2
+                + blk.SIC_AD1[t]
+                + blk.SIC_AD2[t]
             )
 
         @self.Constraint(self.flowsheet().time, doc="X_I concentration output")
         def XI_output(blk, t):
-            return blk.properties_out[t].conc_mass_comp["X_I"] == blk.XI_AD1
+            return blk.properties_out[t].conc_mass_comp["X_I"] == blk.XI_AD1[t]
 
         @self.Constraint(self.flowsheet().time, doc="X_S concentration output")
         def XS_output(blk, t):
             return (
                 blk.properties_out[t].conc_mass_comp["X_S"]
-                == blk.Xch_AD1 + blk.Xpr_AD1 + blk.Xli_AD1
+                == blk.Xch_AD1[t] + blk.Xpr_AD1[t] + blk.Xli_AD1[t]
             )
 
         @self.Constraint(self.flowsheet().time, doc="S_K concentration output")
         # TODO: Need to add precipitation term for X_Kstruv
         def SK_output(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_K"] == blk.SK_AD2
+            return blk.properties_out[t].conc_mass_comp["S_K"] == blk.SK_AD2[t]
 
         @self.Constraint(self.flowsheet().time, doc="S_Mg concentration output")
         def SMg_output(blk, t):
-            return blk.properties_out[t].conc_mass_comp["S_Mg"] == blk.SMg_AD2
+            return blk.properties_out[t].conc_mass_comp["S_Mg"] == blk.SMg_AD2[t]
 
         self.zero_flow_components = Set(
             initialize=[
                 "S_O2",
                 "S_N2",
                 "S_NO3",
-                "X_BH",
+                "X_H",
                 "X_PAO",
                 "X_PP",
                 "X_PHA",
