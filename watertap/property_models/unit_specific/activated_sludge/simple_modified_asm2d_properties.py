@@ -27,7 +27,7 @@ from idaes.core import (
 )
 from pyomo.common.config import ConfigValue
 import idaes.logger as idaeslog
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterData,
     _ASM2dStateBlock,
     ASM2dStateBlockData,

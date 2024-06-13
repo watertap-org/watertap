@@ -40,13 +40,13 @@ from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.property_models.anaerobic_digestion.adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
     ADM1ReactionBlock,
 )
