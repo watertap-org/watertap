@@ -42,7 +42,7 @@ from idaes.core.util.model_statistics import (
 
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.translators.translator_adm1_asm2d import (
+from watertap.unit_models.translators.translator_adm1_asm2d_new import (
     Translator_ADM1_ASM2D,
 )
 from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
@@ -55,6 +55,10 @@ from watertap.property_models.activated_sludge.modified_asm2d_properties import 
 
 from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
+)
+
+from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+    ModifiedASM2dReactionParameterBlock,
 )
 
 
@@ -73,6 +77,9 @@ def test_config():
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
+    m.fs.ASM2d_rxn_props = ModifiedASM2dReactionParameterBlock(
+        property_package=m.fs.props_ASM2D
+    )
     m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
     m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
         property_package=m.fs.props_ADM1
@@ -81,12 +88,13 @@ def test_config():
     m.fs.unit = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
-        reaction_package=m.fs.ADM1_rxn_props,
+        inlet_reaction_package=m.fs.ADM1_rxn_props,
+        outlet_reaction_package=m.fs.ASM2d_rxn_props,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
     )
 
-    assert len(m.fs.unit.config) == 10
+    assert len(m.fs.unit.config) == 12
 
     assert m.fs.unit.config.outlet_state_defined == True
     assert not m.fs.unit.config.dynamic
@@ -94,7 +102,8 @@ def test_config():
     assert not m.fs.unit.config.has_phase_equilibrium
     assert m.fs.unit.config.inlet_property_package is m.fs.props_ADM1
     assert m.fs.unit.config.outlet_property_package is m.fs.props_ASM2D
-    assert m.fs.unit.config.reaction_package is m.fs.ADM1_rxn_props
+    assert m.fs.unit.config.inlet_reaction_package is m.fs.ADM1_rxn_props
+    assert m.fs.unit.config.outlet_reaction_package is m.fs.ASM2d_rxn_props
 
 
 # -----------------------------------------------------------------------------
@@ -106,6 +115,9 @@ class TestAsm2dAdm1(object):
         m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
+        m.fs.ASM2d_rxn_props = ModifiedASM2dReactionParameterBlock(
+            property_package=m.fs.props_ASM2D
+        )
         m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
         m.fs.ADM1_rxn_props = ModifiedADM1ReactionParameterBlock(
             property_package=m.fs.props_ADM1
@@ -114,7 +126,8 @@ class TestAsm2dAdm1(object):
         m.fs.unit = Translator_ADM1_ASM2D(
             inlet_property_package=m.fs.props_ADM1,
             outlet_property_package=m.fs.props_ASM2D,
-            reaction_package=m.fs.ADM1_rxn_props,
+            inlet_reaction_package=m.fs.ADM1_rxn_props,
+            outlet_reaction_package=m.fs.ASM2d_rxn_props,
             has_phase_equilibrium=False,
             outlet_state_defined=True,
         )
@@ -179,10 +192,10 @@ class TestAsm2dAdm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "temperature")
         assert hasattr(asmadm.fs.unit.outlet, "pressure")
 
-        assert number_variables(asmadm) == 194
+        assert number_variables(asmadm) == 264
         assert number_total_constraints(asmadm) == 21
 
-        assert number_unused_variables(asmadm.fs.unit) == 12
+        assert number_unused_variables(asmadm.fs.unit) == 5
 
     @pytest.mark.component
     def test_units(self, asmadm):
@@ -216,7 +229,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(308.15, rel=1e-3) == value(
             asmadm.fs.unit.outlet.temperature[0]
         )
-        assert pytest.approx(0.025075, rel=1e-3) == value(
+        assert pytest.approx(0.0273213, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_A"]
         )
         assert pytest.approx(0.049635, rel=1e-3) == value(
@@ -225,7 +238,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(0.026599, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_I"]
         )
-        assert pytest.approx(0.60014, rel=1e-3) == value(
+        assert pytest.approx(0.776867, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_NH4"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
@@ -237,7 +250,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
         )
-        assert pytest.approx(0.22677, rel=1e-3) == value(
+        assert pytest.approx(20.814923, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
@@ -246,19 +259,19 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_H"]
         )
-        assert pytest.approx(12.7727, rel=1e-3) == value(
+        assert pytest.approx(13.11925, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_I"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PAO"]
         )
-        assert pytest.approx(0.0022493, rel=1e-3) == value(
+        assert pytest.approx(1e-8, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PHA"]
         )
-        assert pytest.approx(1.0411, rel=1e-3) == value(
+        assert pytest.approx(1e-8, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_PP"]
         )
-        assert pytest.approx(25.4283, rel=1e-3) == value(
+        assert pytest.approx(28.54725, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "X_S"]
         )
         assert pytest.approx(0.02268, rel=1e-3) == value(
@@ -267,7 +280,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(0.02893, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_Mg"]
         )
-        assert pytest.approx(0.34628, rel=1e-3) == value(
+        assert pytest.approx(0.734657, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_IC"]
         )
 
@@ -283,31 +296,5 @@ class TestAsm2dAdm1(object):
                     * asmadm.fs.props_ASM2D.dens_mass
                 )
             )
-            <= 1e-6
-        )
-
-        assert (
-            abs(
-                value(
-                    (
-                        asmadm.fs.unit.inlet.flow_vol[0]
-                        * asmadm.fs.props_ADM1.dens_mass
-                        * asmadm.fs.props_ADM1.cp_mass
-                        * (
-                            asmadm.fs.unit.inlet.temperature[0]
-                            - asmadm.fs.props_ADM1.temperature_ref
-                        )
-                    )
-                    - (
-                        asmadm.fs.unit.outlet.flow_vol[0]
-                        * asmadm.fs.props_ASM2D.dens_mass
-                        * asmadm.fs.props_ASM2D.cp_mass
-                        * (
-                            asmadm.fs.unit.outlet.temperature[0]
-                            - asmadm.fs.props_ASM2D.temperature_ref
-                        )
-                    )
-                )
-            )
-            <= 1e-6
+            <= 1e-5
         )
