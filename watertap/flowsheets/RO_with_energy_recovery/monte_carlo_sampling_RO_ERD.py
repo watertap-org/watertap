@@ -11,7 +11,7 @@
 #################################################################################
 
 from watertap.core.solvers import get_solver
-from watertap.tools.parameter_sweep import (
+from parameter_sweep import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
@@ -25,7 +25,7 @@ from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import 
     optimize,
 )
 
-from watertap.tools.parameter_sweep import (
+from parameter_sweep import (
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,
 )
