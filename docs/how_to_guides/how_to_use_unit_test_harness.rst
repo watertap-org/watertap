@@ -37,9 +37,9 @@ assumes a test file is being created for an anaerobic digester.
 
     # The following imports are unit-model specific
     from watertap.unit_models.anaerobic_digester import AD
-    from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
-    from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
-    from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
+    from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
+    from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
+    from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
     from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
     # Get the default solver for testing

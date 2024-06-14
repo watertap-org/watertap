@@ -10,7 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-from watertap.property_models.coagulation_prop_pack import CoagulationParameterBlock
+from watertap.property_models.unit_specific.coagulation_prop_pack import (
+    CoagulationParameterBlock,
+)
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 from watertap.unit_models.coag_floc_model import CoagulationFlocculation
