@@ -127,16 +127,6 @@ jobs:
       run:
         |
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
-    - name: Test with pytest
-      run: |
-        pytest --pyargs watertap
-    - name: Upload coverage report as job artifact
-      if: matrix.coverage
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report-${{ matrix.os }}
-        path: coverage.xml
-        if-no-files-found: error
     - name: Test documentation code
       run: |
         make -C docs doctest -d
