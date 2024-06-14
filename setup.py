@@ -83,7 +83,7 @@ setup(
         "pyomo>=6.6.1",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
-        "parameter-sweep[ray] @ git+https://github.com/watertap-org/parameter-sweep@main",
+        "parameter-sweep[ray]==0.1.dev2",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic >= 2, <3",
         "numpy",
