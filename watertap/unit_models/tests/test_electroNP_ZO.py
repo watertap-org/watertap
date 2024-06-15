@@ -19,7 +19,7 @@ from pyomo.environ import (
 )
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
-from watertap.property_models.activated_sludge.simple_modified_asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.simple_modified_asm2d_properties import (
     SimpleModifiedASM2dParameterBlock,
 )
 from watertap.core.solvers import get_solver
