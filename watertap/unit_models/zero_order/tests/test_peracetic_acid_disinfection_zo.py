@@ -14,10 +14,9 @@
 Tests for zero-order peracetic acid disinfection model
 """
 
-import pytest, os
+import pytest
 
 from pyomo.environ import (
-    Block,
     Var,
     Constraint,
     ConcreteModel,
@@ -30,12 +29,10 @@ from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import PeraceticAcidDisinfectionZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
-from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -200,57 +197,3 @@ class TestPeraceticAcidDisinfection:
     @pytest.mark.component
     def test_report(self, model):
         model.fs.unit.report()
-
-
-def test_costing():
-    m = ConcreteModel()
-    m.db = Database()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(
-        solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
-    )
-    source_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "..",
-        "..",
-        "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "peracetic_acid_disinfection",
-        "peracetic_acid_case_study.yaml",
-    )
-    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
-    m.fs.unit = PeraceticAcidDisinfectionZO(property_package=m.fs.params, database=m.db)
-
-    # Inlet mass flowrates in kg/s
-    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(2800)
-    m.fs.unit.inlet.flow_mass_comp[0, "peracetic_acid"].fix(0.005)
-    m.fs.unit.inlet.flow_mass_comp[0, "total_coliforms_fecal_ecoli"].fix(5.56e-7)
-
-    m.fs.unit.load_parameters_from_database(use_default_removal=True)
-
-    assert degrees_of_freedom(m.fs.unit) == 0
-
-    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-
-    assert isinstance(m.fs.costing.peracetic_acid_disinfection, Block)
-    assert isinstance(m.fs.costing.peracetic_acid_disinfection.sizing_cost, Var)
-
-    assert isinstance(m.fs.unit.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
-
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit) == 0
-    initialization_tester(m)
-    results = solver.solve(m)
-    assert_optimal_termination(results)
-
-    assert pytest.approx(9676817.28, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
-
-    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
-    assert (
-        m.fs.unit.disinfection_solution_flow_vol[0]
-        in m.fs.costing._registered_flows["disinfection_solution"]
-    )

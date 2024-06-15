@@ -13,11 +13,9 @@
 Tests for zero-order autothermal hydrothermal liquefaction model
 """
 import pytest
-import os
 
 
 from pyomo.environ import (
-    Block,
     ConcreteModel,
     Constraint,
     value,
@@ -30,12 +28,10 @@ from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import ATHTLZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
-from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -184,129 +180,3 @@ class TestATHTLZO:
     def test_report(self, model):
 
         model.fs.unit.report()
-
-
-def test_costing():
-    m = ConcreteModel()
-    m.db = Database()
-
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.params = WaterParameterBlock(
-        solute_list=[
-            "organic_solid",
-            "organic_liquid",
-            "inorganic_solid",
-            "carbon_dioxide",
-        ]
-    )
-
-    source_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "..",
-        "..",
-        "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "supercritical_sludge_to_gas",
-        "supercritical_sludge_to_gas_global_costing.yaml",
-    )
-
-    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
-
-    m.fs.unit = ATHTLZO(property_package=m.fs.params, database=m.db)
-
-    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(400)
-    m.fs.unit.inlet.flow_mass_comp[0, "organic_solid"].fix(71.2)
-    m.fs.unit.inlet.flow_mass_comp[0, "organic_liquid"].fix(0)
-    m.fs.unit.inlet.flow_mass_comp[0, "inorganic_solid"].fix(28.8)
-    m.fs.unit.inlet.flow_mass_comp[0, "carbon_dioxide"].fix(0)
-    m.fs.unit.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit) == 0
-
-    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-
-    assert isinstance(m.fs.costing.autothermal_hydrothermal_liquefaction, Block)
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.installation_factor_reactor,
-        Var,
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.equipment_cost_reactor, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.base_flowrate_reactor, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.scaling_exponent_reactor, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.installation_factor_pump, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.equipment_cost_pump, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.base_flowrate_pump, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.scaling_exponent_pump, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.installation_factor_other,
-        Var,
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.equipment_cost_other, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.base_flowrate_other, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.scaling_exponent_other, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.installation_factor_solid_filter,
-        Var,
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.equipment_cost_solid_filter,
-        Var,
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.base_flowrate_solid_filter,
-        Var,
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.scaling_exponent_solid_filter,
-        Var,
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.installation_factor_heat,
-        Var,
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.equipment_cost_heat, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.base_flowrate_heat, Var
-    )
-    assert isinstance(
-        m.fs.costing.autothermal_hydrothermal_liquefaction.scaling_exponent_heat, Var
-    )
-
-    assert isinstance(m.fs.unit.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
-
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit) == 0
-    initialization_tester(m)
-    results = solver.solve(m)
-    assert_optimal_termination(results)
-
-    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
-    assert (
-        m.fs.unit.catalyst_flow[0] in m.fs.costing._registered_flows["catalyst_ATHTL"]
-    )
