@@ -44,7 +44,7 @@
 # derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
-__author__ = "Oluwamayowa Amusat, Alexander Dudchenko, Paul Vecchiarelli"
+__author__ = "Oluwamayowa Amusat, Alexander Dudchenko, Paul Vecchiarelli, Adam Atia"
 
 
 import logging
@@ -65,6 +65,8 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     input_unit_set,
     output_unit_set,
 )
+
+from numpy import reshape, sqrt
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -469,6 +471,7 @@ class Flash:
             "vapor-fraction",
             "isochoric",
         ]:
+
             if calculated_variable is not None:
                 if calculated_variable not in ["temperature", "pressure"]:
                     raise RuntimeError(
@@ -1062,6 +1065,7 @@ def flatten_results(processed_requests):
             raise RuntimeError(f"Unexpected type for data: {type(data)}")
 
     def _get_nested_data(data, keys):
+
         for key in keys:
             data = data[key]
         return data
@@ -1080,6 +1084,7 @@ def flatten_results(processed_requests):
                 if "unit" in values:
                     unit = values["unit"] if values["unit"] else "dimensionless"
                     extracted_values.update({"units": unit})
+
             elif all(k in values for k in ["found", "phase"]):
                 extracted_values = values
             else:
@@ -1089,7 +1094,7 @@ def flatten_results(processed_requests):
                         "units": unit,
                         "values": values["value"],
                     }
-                else:
+                elif "values" in values:
                     extracted_values = {
                         k: {
                             "units": unit,
@@ -1097,6 +1102,23 @@ def flatten_results(processed_requests):
                         }
                         for k, v in values["values"].items()
                     }
+                elif "data" in values:
+                    # intended for vaporDiffusivityMatrix
+                    mat_dim = int(sqrt(len(values["data"])))
+                    diffmat = reshape(values["data"], newshape=(mat_dim, mat_dim))
+
+                    extracted_values = {
+                        f'({values["speciesNames"][i]},{values["speciesNames"][j]})': {
+                            "units": values["unit"],
+                            "values": diffmat[i][j],
+                        }
+                        for i in range(len(diffmat))
+                        for j in range(i, len(diffmat))
+                    }
+                else:
+                    raise NotImplementedError(
+                        f"results structure not accounted for. results:\n{values}"
+                    )
         else:
             raise RuntimeError(f"Unexpected type for data: {type(values)}")
         return extracted_values
@@ -1126,7 +1148,10 @@ def flatten_results(processed_requests):
                     if isinstance(prop[-1], int):
                         prop_tag = _get_nested_data(result, prop)["name"]
             else:
-                _logger.warning(f"Unexpected result in result")
+                _logger.warning(
+                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict}"
+                )
+
             label = f"{prop_tag}_{phase_tag}" if phase_tag else prop_tag
             input_dict[k][label] = _extract_values(result, prop)
         return input_dict
