@@ -36,8 +36,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.feed.properties[0].flow_vol_phase["Liq"],
         name="Feed solution volume flowrate",
-        ui_units=pyunits.m ** 3/ pyunits.s,
-        display_units="m^3/s",
+        ui_units=pyunits.m**3 / pyunits.s,
+        display_units="m^3 s^-1",
         rounding=3,
         description="Inlet water mass flowrate",
         is_input=True,
@@ -47,8 +47,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.feed.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
         name="Na_+ molar concentration",
-        ui_units=pyunits.mol / pyunits.m **3,
-        display_units="mol/m^3",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol m^-3",
         rounding=3,
         description="Molcar concentration of Na_+ ions in the feed solution",
         is_input=True,
@@ -59,8 +59,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.feed.properties[0].conc_mol_phase_comp["Liq", "Cl_-"],
         name="Cl_- molar concentration",
-        ui_units=pyunits.mol / pyunits.m **3,
-        display_units="mol/m^3",
+        ui_units=pyunits.mol / pyunits.m**3,
+        display_units="mol m^-3",
         rounding=3,
         description="Molcar concentration of Cl_- ions in the feed solution",
         is_input=True,
@@ -68,16 +68,121 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
 
+    # ED stack conditions
     exports.add(
         obj=fs.EDstack.voltage_applied[0],
         name="Stack voltage",
-        ui_units=pyunits.mol / pyunits.m **3,
+        ui_units=pyunits.mol / pyunits.m**3,
         display_units="V",
         rounding=3,
         description="Applied constant voltage on the ED stack",
         is_input=True,
         input_category="ED stack",
         is_output=True,
+    )
+    exports.add(
+        obj=fs.EDstack.cell_pair_num,
+        name="Cell pair number",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=0,
+        description="Cell pair number in a single ED stack",
+        is_input=True,
+        input_category="ED stack",
+        is_output=True,
+    )
+    exports.add(
+        obj=fs.EDstack.channel_height,
+        name="Channel height",
+        ui_units=pyunits.meter,
+        display_units="m",
+        rounding=4,
+        description="Channel height of the ED flow channels",
+        is_input=True,
+        input_category="ED stack",
+        is_output=True,
+    )
+    exports.add(
+        obj=fs.EDstack.cell_width,
+        name="Cell width",
+        ui_units=pyunits.meter,
+        display_units="m",
+        rounding=3,
+        description="The width of ED cell or stack",
+        is_input=True,
+        input_category="ED stack",
+        is_output=True,
+    )
+    exports.add(
+        obj=fs.EDstack.cell_length,
+        name="Channel length",
+        ui_units=pyunits.meter,
+        display_units="m",
+        rounding=3,
+        description="The length of ED cell or stack",
+        is_input=True,
+        input_category="ED stack",
+        is_output=True,
+    )
+
+    exports.add(
+        obj=fs.EDstack.spacer_porosity,
+        name="Spacer porosity",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=2,
+        description="Porosity of the flow spacer",
+        is_input=True,
+        input_category="ED stack",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.spacer_porosity,
+        name="Spacer porosity",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=2,
+        description="Porosity of the flow spacer",
+        is_input=True,
+        input_category="ED stack",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.spacer_specific_area,
+        name="Spacer specific surface area",
+        ui_units=pyunits.meter**-1,
+        display_units="m^-1",
+        rounding=0,
+        description="Specific surface area of the flow spacer",
+        is_input=True,
+        input_category="ED stack",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.electrodes_resistance,
+        name="Electrode resistance",
+        ui_units=pyunits.ohm * pyunits.meter**2,
+        display_units="ohm m^2",
+        rounding=2,
+        description="Areal resistance of the two electrodes",
+        is_input=True,
+        input_category="ED stack",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.current_utilization,
+        name="Current utilization coefficient",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=2,
+        description="Current utilization coefficient",
+        is_input=True,
+        input_category="ED stack",
+        is_output=False,
     )
 
     exports.add(
@@ -91,51 +196,194 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="ED stack",
         is_output=True,
     )
-    
-    m.fs.feed.properties[0].pressure.fix(101325)
-    m.fs.feed.properties[0].temperature.fix(298.15)
-    m.fs.pump0.control_volume.properties_in[0].pressure.fix(101325)
-    m.fs.pump1.efficiency_pump.fix(0.8)
-    m.fs.pump0.efficiency_pump.fix(0.8)
 
-    m.fs.prod.properties[0].pressure.fix(101325)
-    m.fs.disp.properties[0].pressure.fix(101325)
-    m.fs.disp.properties[0].temperature.fix(298.15)
+    # Membrane-related properties
+    exports.add(
+        obj=fs.EDstack.water_trans_number_membrane["cem"],
+        name="Water electroosmosis transport number of CEM",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=2,
+        description="Water electroosmosis transport number of CEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.EDstack.water_trans_number_membrane["aem"],
+        name="Water electroosmosis transport number of AEM",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=2,
+        description="Water electroosmosis transport number of AEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
 
-    # Set ED unit vars
-    # membrane properties
-    m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
-    m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
-    m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
-    m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
-    m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
-    m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
-    m.fs.EDstack.solute_diffusivity_membrane["cem", "Na_+"].fix(3.28e-11)
-    m.fs.EDstack.solute_diffusivity_membrane["aem", "Na_+"].fix(3.28e-11)
-    m.fs.EDstack.solute_diffusivity_membrane["cem", "Cl_-"].fix(3.28e-11)
-    m.fs.EDstack.solute_diffusivity_membrane["aem", "Cl_-"].fix(3.28e-11)
-    m.fs.EDstack.ion_trans_number_membrane["cem", "Na_+"].fix(1)
-    m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
-    m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
-    m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
-    m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
-    m.fs.EDstack.membrane_thickness["cem"].fix(1.3e-4)
+    exports.add(
+        obj=fs.EDstack.water_permeability_membrane["cem"],
+        name="Water osmosis permeability of CEM",
+        ui_units=pyunits.meter * pyunits.second**-1 * pyunits.pascal**-1,
+        display_units="m s^-1 Pa^-1",
+        rounding=2,
+        description="Water osmosis permeability of CEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.EDstack.water_permeability_membrane["aem"],
+        name="Water osmosis permeability of AEM",
+        ui_units=pyunits.meter * pyunits.second**-1 * pyunits.pascal**-1,
+        display_units="m s^-1 Pa^-1",
+        rounding=2,
+        description="Water osmosis permeability of AEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
 
-    # Stack properties
-    m.fs.EDstack.cell_pair_num.fix(56)
-    m.fs.EDstack.channel_height.fix(7.1e-4)
-    m.fs.EDstack.cell_width.fix(0.197)
-    m.fs.EDstack.cell_length.fix(1.68)
+    exports.add(
+        obj=fs.EDstack.membrane_areal_resistance["cem"],
+        name="Areal resistnace of CEM",
+        ui_units=pyunits.ohm * pyunits.meter**2,
+        display_units="ohm m^2",
+        rounding=2,
+        description="Areal resistnace of CEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.EDstack.membrane_areal_resistance["aem"],
+        name="Areal resistnace of AEM",
+        ui_units=pyunits.ohm * pyunits.meter**2,
+        display_units="ohm m^2",
+        rounding=2,
+        description="Areal resistnace of AEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
 
-    # Spacer properties
-    m.fs.EDstack.spacer_porosity.fix(0.83)
-    m.fs.EDstack.spacer_specific_area.fix(10400)
+    exports.add(
+        obj=fs.EDstack.membrane_thickness["cem"],
+        name="Thickness of CEM",
+        ui_units=pyunits.meter,
+        display_units="m",
+        rounding=2,
+        description="Thickness of CEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.EDstack.membrane_thickness["aem"],
+        name="Thickness of AEM",
+        ui_units=pyunits.meter,
+        display_units="m",
+        rounding=2,
+        description="Thickness of AEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
 
-    # Electrochemical properties
-    m.fs.EDstack.electrodes_resistance.fix(0)
-    m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.diffus_mass.fix(1.6e-9)
-    # Unit model data, feed pump
+    exports.add(
+        obj=fs.EDstack.solute_diffusivity_membrane["cem", "Na_+"],
+        name="Na_+ diffusivity as solute in CEM",
+        ui_units=pyunits.meter**2 * pyunits.second**-1,
+        display_units="m^2 s^-1",
+        rounding=2,
+        description="Na_+ diffusivity as solute in CEM (the mass diffusivity of the corresponding neutral solute should be used.)",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.solute_diffusivity_membrane["aem", "Na_+"],
+        name="Na_+ diffusivity as solute in AEM",
+        ui_units=pyunits.meter**2 * pyunits.second**-1,
+        display_units="m^2 s^-1",
+        rounding=2,
+        description="Na_+ diffusivity as solute in AEM (the mass diffusivity of the corresponding neutral solute should be used.)",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.solute_diffusivity_membrane["cem", "Cl_-"],
+        name="Cl_- diffusivity as solute in CEM",
+        ui_units=pyunits.meter**2 * pyunits.second**-1,
+        display_units="m^2 s^-1",
+        rounding=2,
+        description="Cl_- diffusivity as solute in CEM (the mass diffusivity of the corresponding neutral solute should be used.)",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.solute_diffusivity_membrane["aem", "Cl_-"],
+        name="Cl_- diffusivity as solute in AEM",
+        ui_units=pyunits.meter**2 * pyunits.second**-1,
+        display_units="m^2 s^-1",
+        rounding=2,
+        description="Cl_- diffusivity as solute in AEM (the mass diffusivity of the corresponding neutral solute should be used.)",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+
+    exports.add(
+        obj=fs.EDstack.ion_trans_number_membrane["cem", "Na_+"],
+        name="Na_+ transport number in CEM",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=1,
+        description="Na_+ transport number in CEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.EDstack.ion_trans_number_membrane["aem", "Na_+"],
+        name="Na_+ transport number in AEM",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=1,
+        description="Na_+ transport number in AEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"],
+        name="Cl_- transport number in CEM",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=1,
+        description="Cl_- transport number in CEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"],
+        name="Cl_- transport number in AEM",
+        ui_units=pyunits.dimensionless,
+        display_units="1",
+        rounding=1,
+        description="Cl_- transport number in AEM",
+        is_input=True,
+        input_category="Membrane properties",
+        is_output=False,
+    )
+
+    # Feed pump properties
     exports.add(
         obj=fs.pump0.efficiency_pump[0],
         name="Concentrate Pump efficiency",
@@ -157,123 +405,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         description="Efficiency of diluate feed pump",
         is_input=True,
         input_category="Feed Pump",
-        is_output=False,
-    )
-
-    # exports.add(
-    #     obj=fs.pump0.control_volume.properties_out[0].pressure,
-    #     name="Concentrate Pump Operating pressure",
-    #     ui_units=pyunits.bar,
-    #     display_units="bar",
-    #     rounding=2,
-    #     description="Operating pressure of feed pump",
-    #     is_input=True,
-    #     input_category="Feed Pump",
-    #     is_output=False,
-    # )
-
-    # Unit model data, RO
-    exports.add(
-        obj=fs.RO.A_comp[0, "H2O"],
-        name="Water permeability coefficient",
-        ui_units=pyunits.L / pyunits.hr / pyunits.m**2 / pyunits.bar,
-        display_units="LMH/bar",
-        rounding=2,
-        description="Water permeability coefficient",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=False,
-    )
-
-    exports.add(
-        obj=fs.RO.B_comp[0, "NaCl"],
-        name="Salt permeability coefficient",
-        ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
-        display_units="LMH",
-        rounding=2,
-        description="Salt permeability coefficient",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.RO.feed_side.channel_height,
-        name="Feed-side channel height",
-        ui_units=pyunits.mm,
-        display_units="mm",
-        rounding=2,
-        description="Feed-side channel height",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.RO.feed_side.spacer_porosity,
-        name="Feed-side spacer porosity",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Feed-side spacer porosity",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.RO.permeate.pressure[0],
-        name="Permeate-side pressure",
-        ui_units=pyunits.bar,
-        display_units="bar",
-        rounding=2,
-        description="Permeate-side pressure",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.RO.width,
-        name="Width",
-        ui_units=pyunits.m,
-        display_units="m",
-        rounding=2,
-        description="Stage width",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
-        name="Water mass recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Water mass recovery of RO unit",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=True,
-        output_category="System metrics",
-    )
-
-    # Unit model data, ERD
-    exports.add(
-        obj=fs.ERD.efficiency_pump[0],
-        name="Pump efficiency",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Efficiency of energy recovery device",
-        is_input=True,
-        input_category="Energy Recovery Device",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.ERD.control_volume.properties_out[0].pressure,
-        name="Operating pressure",
-        ui_units=pyunits.bar,
-        display_units="bar",
-        rounding=2,
-        description="Operating pressure of energy recovery device",
-        is_input=True,
-        input_category="Energy Recovery Device",
         is_output=False,
     )
 
@@ -393,12 +524,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Product",
     )
     exports.add(
-        obj=fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
+        obj=fs.product.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
+        name="NaCl molar concentration",
+        ui_units=pyunits.mol / pyunits.meter**3,
+        display_units="mol m^-3",
         rounding=3,
-        description="Outlet product water NaCl concentration",
+        description="Outlet product water NaCl molar concentration",
         is_input=False,
         is_output=True,
         output_category="Product",
@@ -411,31 +542,32 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
-        description="Outlet product water volumetric flow rate",
+        description="Outlet disposal water volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category="Disposal",
     )
     exports.add(
-        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
+        obj=fs.disposal.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
+        name="NaCl molar concentration",
+        ui_units=pyunits.mol / pyunits.meter**3,
+        display_units="mol m^-3",
         rounding=3,
-        description="Outlet product water NaCl concentration",
+        description="Outlet disposal water NaCl molar concentration",
         is_input=False,
         is_output=True,
         output_category="Disposal",
     )
 
     # System metrics
+
     exports.add(
-        obj=fs.RO.area,
-        name="Area",
+        obj=fs.mem_area,
+        name="Membrane area",
         ui_units=pyunits.m**2,
         display_units="m^2",
         rounding=2,
-        description="Membrane area",
+        description="Membrane area of aem or cem",
         is_input=False,
         is_output=True,
         output_category="System metrics",
@@ -464,9 +596,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
 
-def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwargs):
-    # build and solve initial flowsheet
-    m = build()
+def build_flowsheet(build_options=None, **kwargs):
 
     # the UI sets `capital_recovery_factor`, so unfix `wacc`
     m.fs.costing.wacc.unfix()
@@ -475,8 +605,19 @@ def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwar
     solver = get_solver()
 
     # build, set, and initialize
-    m = build(erd_type=erd_type)
-    set_operating_conditions(m)
+    m = build()
+    init_arg = {
+        ("flow_vol_phase", ("Liq")): 5.2e-4,
+        ("conc_mol_phase_comp", ("Liq", "Na_+")): 34.188,
+        ("conc_mol_phase_comp", ("Liq", "Cl_-")): 34.188,
+    }  # Corresponding to C_feed = 2g/L
+    m.fs.feed.properties.calculate_state(
+        init_arg,
+        hold_state=True,
+    )
+    m.fs.EDstack.voltage_applied[0].fix(10)
+    m.fs.recovery_vol_H2O.fix(0.7)
+    _condition_base(m)
     initialize_system(m, solver=solver)
 
     # NOTE: GUI aims to solve simulation-based flowsheet
