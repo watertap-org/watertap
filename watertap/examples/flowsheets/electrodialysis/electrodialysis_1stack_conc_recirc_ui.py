@@ -62,7 +62,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol m^-3",
         rounding=3,
-        description="Molcar concentration of Cl_- ions in the feed solution",
+        description="Molar concentration of Cl_- ions in the feed solution",
         is_input=True,
         input_category="Feed",
         is_output=False,
