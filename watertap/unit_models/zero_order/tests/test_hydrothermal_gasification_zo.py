@@ -13,11 +13,9 @@
 Tests for zero-order hydrothermal gasification model
 """
 import pytest
-import os
 
 
 from pyomo.environ import (
-    Block,
     ConcreteModel,
     Constraint,
     value,
@@ -30,12 +28,10 @@ from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import HTGZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
-from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
