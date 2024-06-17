@@ -137,11 +137,6 @@ def main(bio_P=True):
     display_costing(m)
     display_performance_metrics(m)
 
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
     return m, results
 
 
@@ -576,7 +571,7 @@ def set_scaling(m):
     ]:
         iscale.set_scaling_factor(unit.electricity_consumption, 1e3)
 
-        # This helps to solve AD initialization to an optimal solution
+    # This helps to solve AD initialization to an optimal solution
     iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
     iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_generation, 1e2)
     iscale.set_scaling_factor(m.fs.AD.liquid_phase.mass_transfer_term, 1e2)
