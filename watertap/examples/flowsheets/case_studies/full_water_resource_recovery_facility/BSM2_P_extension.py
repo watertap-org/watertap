@@ -91,6 +91,8 @@ _log = idaeslog.getLogger(__name__)
 def main(bio_P=True):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
+    set_scaling(m)
+
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
@@ -134,6 +136,11 @@ def main(bio_P=True):
 
     display_costing(m)
     display_performance_metrics(m)
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     return m, results
 
@@ -510,6 +517,9 @@ def set_operating_conditions(m):
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
+
+def set_scaling(m):
+
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
@@ -532,9 +542,52 @@ def set_operating_conditions(m):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
+    reactors = [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R7",
+        "R8",
+        "R9",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R18",
+        "R19",
+    ]
+
+    for r in reactors:
+        iscale.set_scaling_factor(
+            block.control_volume.rate_reaction_extent[0.0, r], 1e2
+        )
+
+    for unit in [
+        m.fs.AD,
+        m.fs.dewater,
+        m.fs.thickener,
+    ]:
+        iscale.set_scaling_factor(unit.electricity_consumption, 1e3)
+
+        # This helps to solve AD initialization to an optimal solution
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_generation, 1e2)
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.mass_transfer_term, 1e2)
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_extent, 1e1)
+
+    iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1)
+
     # Apply scaling
     scale_variables(m)
-    iscale.calculate_scaling_factors(m)
+
+    iscale.calculate_scaling_factors(m.fs)
 
 
 def initialize_system(m, bio_P=False):
