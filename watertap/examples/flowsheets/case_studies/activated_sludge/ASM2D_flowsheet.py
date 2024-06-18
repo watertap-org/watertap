@@ -43,10 +43,10 @@ from idaes.core.util.tables import (
 )
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
 
