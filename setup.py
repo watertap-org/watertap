@@ -88,7 +88,7 @@ setup(
         "scipy",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic >= 2, <3",
-        "numpy",
+        "numpy < 1.24",
         "importlib-resources",
     ],
     extras_require={
