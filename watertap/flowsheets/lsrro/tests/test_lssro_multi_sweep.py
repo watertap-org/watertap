@@ -29,7 +29,7 @@ _test_cases = list(range(1, 3))
 @pytest.mark.integration
 def test_against_multisweep(number_of_stages, tmp_path):
     csv_file_name = f"{number_of_stages}_stage_results_LSRRO.csv"
-    csv_test_file_name = os.path.join("/", csv_file_name)
+    csv_test_file_name = os.path.join(_this_file_path, csv_file_name)
     csv_baseline_file_name = os.path.join(
         _this_file_path, "parameter_sweep_baselines", csv_file_name
     )
