@@ -215,18 +215,22 @@ class TestIpoptWaterTAP:
 
     @pytest.fixture(scope="class")
     def m2(self):
-        m = pyo.ConcreteModel()
-        m.factor = pyo.Param(initialize=1.0e-16, mutable=True)
-        m.x = pyo.Var(bounds=(0.5 * m.factor, 1.5 * m.factor), initialize=m.factor)
-        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        m.scaling_factor[m.x] = pyo.value(1.0 / m.factor)
-        m.o = pyo.Objective(expr=m.x / m.factor)
-        return m
+        m2 = pyo.ConcreteModel()
+        m2.b = b = pyo.Block()
+        b.factor = pyo.Param(initialize=1.0e-16, mutable=True)
+        b.x = pyo.Var(bounds=(0.5 * b.factor, 1.5 * b.factor), initialize=b.factor)
+        b.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        b.scaling_factor[b.x] = pyo.value(1.0 / b.factor)
+        b.o = pyo.Objective(expr=b.x / b.factor)
+
+        return m2
 
     @pytest.mark.unit
     def test_default_bound_relax_small(self, m2, s):
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(
+            5.000000024092977e-17, abs=0, rel=1e-8
+        )
 
     @pytest.mark.unit
     @pytest.mark.skipif(
@@ -235,19 +239,21 @@ class TestIpoptWaterTAP:
     )
     def test_cyipopt_bound_relax_small(self, m2):
         s = pyo.SolverFactory("cyipopt-watertap")
-        m2.x.value = m2.factor
+        m2.b.x.value = m2.b.factor
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(
+            5.000000024092977e-17, abs=0, rel=1e-8
+        )
 
     @pytest.mark.unit
     def test_default_bound_relax_big(self, m2, s):
-        m2.factor = 1.0e16
-        m2.x.value = 1.0e16
-        m2.x.lb = 0.5 * m2.factor
-        m2.x.ub = 1.5 * m2.factor
-        m2.scaling_factor[m2.x] = pyo.value(1.0 / m2.factor)
+        m2.b.factor = 1.0e16
+        m2.b.x.value = 1.0e16
+        m2.b.x.lb = 0.5 * m2.b.factor
+        m2.b.x.ub = 1.5 * m2.b.factor
+        m2.b.scaling_factor[m2.b.x] = pyo.value(1.0 / m2.b.factor)
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e15, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(5.000000024092977e15, abs=0, rel=1e-8)
 
     @pytest.mark.unit
     @pytest.mark.skipif(
