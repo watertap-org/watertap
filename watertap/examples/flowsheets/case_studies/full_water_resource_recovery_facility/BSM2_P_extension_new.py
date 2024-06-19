@@ -90,7 +90,7 @@ from idaes.core.util import DiagnosticsToolbox
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=False):
+def main(bio_P=True):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
     set_scaling(m)
@@ -154,21 +154,21 @@ def main(bio_P=False):
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
-    # add_costing(m)
-    # m.fs.costing.initialize()
-    #
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # print("----------------   badly_scaled_var_list after costing  ----------------")
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    #
-    # assert_degrees_of_freedom(m, 0)
-    #
-    # results = solve(m)
-    # pyo.assert_optimal_termination(results)
-    #
-    # display_costing(m)
-    # display_performance_metrics(m)
+    add_costing(m)
+    m.fs.costing.initialize()
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list after costing  ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    assert_degrees_of_freedom(m, 0)
+
+    results = solve(m)
+    pyo.assert_optimal_termination(results)
+
+    display_costing(m)
+    display_performance_metrics(m)
 
     return m, results
 
@@ -569,48 +569,6 @@ def set_scaling(m):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
-    # reactors = [
-    #     "R1",
-    #     "R2",
-    #     "R3",
-    #     "R4",
-    #     "R5",
-    #     "R6",
-    #     "R7",
-    #     "R8",
-    #     "R9",
-    #     "R10",
-    #     "R11",
-    #     "R12",
-    #     "R13",
-    #     "R14",
-    #     "R15",
-    #     "R16",
-    #     "R17",
-    #     "R18",
-    #     "R19",
-    # ]
-    #
-    # for r in reactors:
-    #     iscale.set_scaling_factor(
-    #         block.control_volume.rate_reaction_extent[0.0, r], 1e2
-    #     )
-    #
-    # for unit in [
-    #     m.fs.AD,
-    #     m.fs.dewater,
-    #     m.fs.thickener,
-    # ]:
-    #     iscale.set_scaling_factor(unit.electricity_consumption, 1e3)
-    #
-    # # This helps to solve AD initialization to an optimal solution
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_generation, 1e2)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.mass_transfer_term, 1e2)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_extent, 1e1)
-    #
-    # iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1)
-
     # This helps to solve AD initialization to an optimal solution
     iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
     iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_generation, 1e2)
@@ -656,48 +614,6 @@ def set_scaling(m):
     iscale.set_scaling_factor(
         m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_PHA"], 1
     )
-
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["S_su"], 1)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["S_fa"], 1e-1)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["S_ch4"], 1e9)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["S_IC"], 1)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["S_IN"], 1)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["S_IP"], 1)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["X_su"], 1e9)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["X_fa"], 1e9)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["X_c4"], 1e9)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["X_pro"], 1e9)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["X_ac"], 1e9)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["X_I"], 1e-2)
-    # iscale.set_scaling_factor(m.fs.translator_adm1_asm2d.properties_in[0.0].conc_mass_comp["X_PHA"], 1)
-
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["S_su"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["S_fa"], 1e-1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["S_ch4"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["S_IC"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["S_IN"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["S_IP"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["X_su"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["X_fa"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["X_c4"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["X_pro"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["X_ac"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["X_I"], 1e-1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_in[0.0].conc_mass_comp["X_PHA"], 1)
-
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["S_su"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["S_fa"], 1e-1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["S_ch4"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["S_IC"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["S_IN"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["S_IP"], 1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["X_su"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["X_fa"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["X_c4"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["X_pro"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["X_ac"], 1e9)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["X_I"], 1e-1)
-    # iscale.set_scaling_factor(m.fs.AD.liquid_phase.properties_out[0.0].conc_mass_comp["X_PHA"], 1)
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -802,123 +718,24 @@ def initialize_system(m, bio_P=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0245,  # 0.0325
-                (0, "S_F"): 0.15,  # 0.15
-                (0, "S_I"): 0.05745,  # 0.05745
-                (0, "S_N2"): 0.02,  # 0.02
-                (0, "S_NH4"): 0.185,  # 0.19***
-                (0, "S_NO3"): 1e-10,  # 1e-10
-                (0, "S_O2"): 0.001,  # 0.001
-                (0, "S_PO4"): 0.2,  # 0.2
-                (0, "S_K"): 0.38,  # 0.38
-                (0, "S_Mg"): 0.023,  # 0.023
-                (0, "S_IC"): 0.1,  # 0.06
-                (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 24,  # 24
-                (0, "X_I"): 11.31,  # 11.31
-                (0, "X_PAO"): 9,  # 9
-                (0, "X_PHA"): 0.09,  # 0.09
-                (0, "X_PP"): 2,  # 2
-                (0, "X_S"): 4.2,  # 4.2
-            },
-            "temperature": {0: 308.15},
-            "pressure": {0: 101325},
-        }
-
-        tear_guesses3 = {
-            "flow_vol": {0: 0.0029},
-            "conc_mass_comp": {
-                (0, "S_su"): 0.11,
-                (0, "S_aa"): 0.049,
-                (0, "S_fa"): 1e-10,
-                (0, "S_va"): 1e-10,
-                (0, "S_bu"): 1e-10,
-                (0, "S_pro"): 1e-10,
-                (0, "S_ac"): 0.056,
-                (0, "S_h2"): 1e-10,
-                (0, "S_ch4"): 1e-10,
-                (0, "S_IC"): 1.14,
-                (0, "S_IN"): 1.85,
-                (0, "S_IP"): 3.49,
-                (0, "S_I"): 0.057,
-                (0, "X_ch"): 10.27,
-                (0, "X_pr"): 10.37,
-                (0, "X_li"): 13.33,
-                (0, "X_su"): 1e-10,
-                (0, "X_aa"): 1e-10,
-                (0, "X_fa"): 1e-10,
-                (0, "X_c4"): 1e-10,
-                (0, "X_pro"): 1e-10,
-                (0, "X_ac"): 1e-10,
-                (0, "X_h2"): 1e-10,
-                (0, "X_I"): 14.64,
-                (0, "X_PHA"): 1e-10,
-                (0, "X_PP"): 1e-10,
-                (0, "X_PAO"): 1e-10,
-                (0, "S_K"): 1.28,
-                (0, "S_Mg"): 0.92,
-            },
-            "temperature": {0: 308.15},
-            "pressure": {0: 101325},
-        }
-        tear_guesses4 = {
-            "flow_vol": {0: 0.0029},
-            "conc_mass_comp": {
-                (0, "S_su"): 11.06,
-                (0, "S_aa"): 0.0071,
-                (0, "S_fa"): 12.67,
-                (0, "S_va"): 0.017,
-                (0, "S_bu"): 0.018,
-                (0, "S_pro"): 1.59,
-                (0, "S_ac"): 1.83,
-                (0, "S_h2"): 3e-7,
-                (0, "S_ch4"): 0.046,
-                (0, "S_IC"): 1.59,
-                (0, "S_IN"): 2.89,
-                (0, "S_IP"): 3.61,
-                (0, "S_I"): 0.057,
-                (0, "X_ch"): 0.075,
-                (0, "X_pr"): 0.076,
-                (0, "X_li"): 0.097,
-                (0, "X_su"): 1e-11,
-                (0, "X_aa"): 0.65,
-                (0, "X_fa"): 1e-10,
-                (0, "X_c4"): 0.22,
-                (0, "X_pro"): 1e-10,
-                (0, "X_ac"): 0.1787,
-                (0, "X_h2"): 0.064,
-                (0, "X_I"): 14.67,
-                (0, "X_PHA"): 1e-8,
-                (0, "X_PP"): 1e-10,
-                (0, "X_PAO"): 1e-9,
-                (0, "S_K"): 1.28,
-                (0, "S_Mg"): 0.92,
-            },
-            "temperature": {0: 308.15},
-            "pressure": {0: 101325},
-        }
-
-        tear_guesses5 = {
-            "flow_vol": {0: 0.00287},
-            "conc_mass_comp": {
-                (0, "S_A"): 3.46,
-                (0, "S_F"): 23.74,
+                (0, "S_A"): 0.0245,
+                (0, "S_F"): 0.15,
                 (0, "S_I"): 0.05745,
-                (0, "S_IC"): 1.394,
-                (0, "S_K"): 1.28,
-                (0, "S_Mg"): 0.92,
-                (0, "S_N2"): 1e-10,
-                (0, "S_NH4"): 15.27,
+                (0, "S_N2"): 0.02,
+                (0, "S_NH4"): 0.19,
                 (0, "S_NO3"): 1e-10,
-                (0, "S_O2"): 1e-10,
-                (0, "S_PO4"): 20.73,
-                (0, "X_AUT"): 1e-10,
-                (0, "X_H"): 1e-10,
-                (0, "X_I"): 14.79,
-                (0, "X_PAO"): 1e-10,
-                (0, "X_PHA"): 1e-10,
-                (0, "X_PP"): 1e-10,
-                (0, "X_S"): 1.25,
+                (0, "S_O2"): 0.002,
+                (0, "S_PO4"): 0.2,
+                (0, "S_K"): 0.38,
+                (0, "S_Mg"): 0.023,
+                (0, "S_IC"): 0.1,
+                (0, "X_AUT"): 1e-9,
+                (0, "X_H"): 24,
+                (0, "X_I"): 11.31,
+                (0, "X_PAO"): 9,
+                (0, "X_PHA"): 0.09,
+                (0, "X_PP"): 2,
+                (0, "X_S"): 4.2,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -927,9 +744,6 @@ def initialize_system(m, bio_P=False):
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
-    # seq.set_guesses_for(m.fs.translator_asm2d_adm1.outlet, tear_guesses3)
-    # seq.set_guesses_for(m.fs.translator_adm1_asm2d.inlet, tear_guesses4)
-    # seq.set_guesses_for(m.fs.translator_adm1_asm2d.outlet, tear_guesses5)
 
     def function(unit):
         # unit.initialize(outlvl=idaeslog.INFO)
@@ -960,7 +774,6 @@ def initialize_system(m, bio_P=False):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
-    # solver.options["max_iter"] = 0
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
