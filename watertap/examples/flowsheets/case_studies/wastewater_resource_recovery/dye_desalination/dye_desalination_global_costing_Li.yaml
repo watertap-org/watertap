@@ -1,0 +1,70 @@
+base_currency: USD_2020
+base_period: year
+defined_flows:
+  electricity:
+    value: 0.08
+    units: USD_2020/kWh
+  waste_disposal:
+    value: 1
+    units: USD_2020/m**3
+  dye_disposal:
+    value: 120
+    units: USD_2020/m**3
+  Li_mass: 
+    value: 45000 #averaged price of Li/kg before and after crash (75,000 vs 15,000 as of December 2023)
+    units: USD_2020/m**3
+  H2: 
+    value: 5 # average price of H2/kg as of December 2023
+    units: USD_2020/m**3
+  Cl_disposal:
+    value: 0.00076 #https://waterboards.ca.gov/drinking_water/certlic/drinkingwater/docs/attachment_c3.pdf
+    units: USD_2020/m**3
+  Mg_disposal:
+    value: 1
+    units: USD_2020/m**3
+  brine_recovery:
+    value: 1
+    units: USD_2020/m**3
+  recovered_water:
+    value: 1.25
+    units: USD_2020/m**3
+global_parameters:
+  plant_lifetime:
+    value: 30
+    units: year
+  utilization_factor:
+    value: 0.85
+    units: dimensionless
+  land_cost_percent_FCI:
+    value: 0
+    units: dimensionless
+  working_capital_percent_FCI:
+    value: 0
+    units: dimensionless
+  salaries_percent_FCI:
+    value: 0
+    units: 1/year
+  benefit_percent_of_salary:
+    value: 0
+    units: dimensionless
+  maintenance_costs_percent_FCI:
+    value: 0
+    units: 1/year
+  laboratory_fees_percent_FCI:
+    value: 0
+    units: 1/year
+  insurance_and_taxes_percent_FCI:
+    value: 0
+    units: 1/year
+  wacc:
+    # Weighted Average Cost of Capital (WACC)
+    value: 0.05
+    units: dimensionless
+  TPEC:
+    # Total Purchased Equipment Cost
+    value: 3.4
+    units: dimensionless
+  TIC:
+    # Total Installed Cost
+    value: 1.65
+    units: dimensionless
