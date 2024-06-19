@@ -34,14 +34,14 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
 )
 from watertap.unit_models.thickener import Thickener, ActivatedSludgeModelType
-from watertap.property_models.activated_sludge.asm1_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
 from watertap.costing import WaterTAPCosting
