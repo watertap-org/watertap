@@ -515,16 +515,15 @@ def set_operating_conditions(m):
 
 def set_scaling(m):
 
-    def scale_variables(m):
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-            if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-2)
-            if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
+        if "temperature" in var.name:
+            iscale.set_scaling_factor(var, 1e-2)
+        if "pressure" in var.name:
+            iscale.set_scaling_factor(var, 1e-4)
+        if "conc_mass_comp" in var.name:
+            iscale.set_scaling_factor(var, 1e2)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -536,51 +535,6 @@ def set_scaling(m):
             block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
-
-    reactors = [
-        "R1",
-        "R2",
-        "R3",
-        "R4",
-        "R5",
-        "R6",
-        "R7",
-        "R8",
-        "R9",
-        "R10",
-        "R11",
-        "R12",
-        "R13",
-        "R14",
-        "R15",
-        "R16",
-        "R17",
-        "R18",
-        "R19",
-    ]
-
-    for r in reactors:
-        iscale.set_scaling_factor(
-            block.control_volume.rate_reaction_extent[0.0, r], 1e2
-        )
-
-    for unit in [
-        m.fs.AD,
-        m.fs.dewater,
-        m.fs.thickener,
-    ]:
-        iscale.set_scaling_factor(unit.electricity_consumption, 1e3)
-
-    # This helps to solve AD initialization to an optimal solution
-    iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
-    iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_generation, 1e2)
-    iscale.set_scaling_factor(m.fs.AD.liquid_phase.mass_transfer_term, 1e2)
-    iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_extent, 1e1)
-
-    iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1)
-
-    # Apply scaling
-    scale_variables(m)
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -764,7 +718,6 @@ def add_costing(m):
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
-    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
     iscale.calculate_scaling_factors(m.fs)
 
