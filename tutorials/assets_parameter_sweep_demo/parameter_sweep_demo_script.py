@@ -10,10 +10,10 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.core.solvers import get_solver
-from watertap.flowsheets.RO_with_energy_recovery import (
+from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     optimize,
 )
-from watertap.flowsheets.RO_with_energy_recovery import (
+from watertap.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import (
     build_model,
     build_outputs,
 )
