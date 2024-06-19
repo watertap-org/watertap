@@ -86,16 +86,16 @@ The format of the file is documented in the :meth:`FlowsheetExport.from_csv` met
 API keywords as columns in a table. For example, the CSV table for the API calls above would look like:
 
 .. csv-table:: nf_exports.csv
-    :header: "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output", "output_category"
+    :header: "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output"
 
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]","Water mass flowrate","Inlet water mass flowrate","units.kg / units.w","kg/s",3,true,"Feed",false,""
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]","NaCl mass flowrate","Inlet NaCl mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false,"
+    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]","Water mass flowrate","Inlet water mass flowrate","units.kg / units.w","kg/s",3,true,"Feed",false
+    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]","NaCl mass flowrate","Inlet NaCl mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false
 
 The raw text version is::
 
-    "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output", "output_category"
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]","Water mass flowrate","Inlet water mass flowrate","units.kg / units.w","kg/s",3,true,"Feed",false,""
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]","NaCl mass flowrate","Inlet NaCl mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false,"
+    "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output"
+    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]","Water mass flowrate","Inlet water mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false
+    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]","NaCl mass flowrate","Inlet NaCl mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false
 
 2. ``do_build`` - This function defines the build function for a flowsheet. See example below::
 
