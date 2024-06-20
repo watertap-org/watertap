@@ -484,6 +484,11 @@ class IXParmest:
             print("default filtering")
 
             for i, cb in enumerate(self.all_cbs):
+                # if cb > df.c0.iloc[0]:
+                #     self.excl_cbs.append(cb)
+                #     self.excl_bvs.append(self.all_bvs[i])
+                #     continue
+
                 if i != len(self.all_cbs) - 1:
                     if (
                         # cb > last_cb
@@ -688,8 +693,10 @@ class IXParmest:
 
     def build_parmest_experiment_list(self):
         self.experiment_list = list()
-        for i in self.df_curve.index:
-            self.experiment_list.append(IXExperiment(self, self.df_curve, i))
+        self.df_exp = self.df_curve[self.df_curve.bv.isin(self.keep_bvs)].copy()
+        self.df_exp.reset_index(inplace=True, drop=True)
+        for i in self.df_exp.index:
+            self.experiment_list.append(IXExperiment(self, self.df_exp, i))
 
     def run_parmest(self):
         """
