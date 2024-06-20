@@ -15,3 +15,4 @@ Flowsheets
    crystallization
    ion_exchange
    gac
+   RO_with_energy_recovery
