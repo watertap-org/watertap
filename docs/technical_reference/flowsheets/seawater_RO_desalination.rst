@@ -62,8 +62,8 @@ some helper functions that group these core functions together for convenience. 
 
 2. Specify the operating conditions with ``set_operating_conditions()``:
 
-    This function begins by specifying the inlet conditions as outlined in Table 2. Then, starting with the ``pretreatment`` block, the operating 
-    conditions for each unit model are set according to Table 3.
+    This function begins by specifying the inlet conditions. Then, starting with the ``pretreatment`` block, the operating 
+    conditions for each unit model are set. The inlet conditions and specific unit model operating conditions are in the Flowsheet Specifications section of this page.
 
 3. Initialize the unit and costing models with ``initialize_system()``:
 
