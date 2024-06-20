@@ -40,8 +40,3 @@ Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.heat_exchanger`
-
-References
-----------
-
-Estimated from multiple sources.
