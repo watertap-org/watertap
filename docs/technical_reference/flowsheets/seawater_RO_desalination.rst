@@ -173,8 +173,8 @@ including the different build options for ``erd_type``:
 
     **Influent Conditions**
    "Volumetric flow rate", "7.05", ":math:`\text{MGD}`"
-   "TDS concentration", "35", ":math:`\text{g/L}`"
-   "TSS concentration", "0.03", ":math:`\text{g/L}`"
+   "TDS :sup:`1` concentration", "35", ":math:`\text{g/L}`"
+   "TSS :sup:`2` concentration", "0.03", ":math:`\text{g/L}`"
    "Temperature", "298", ":math:`\text{K}`"
    "Pressure", "100000", ":math:`\text{Pa}`"
 
@@ -206,5 +206,13 @@ including the different build options for ``erd_type``:
    "Lime dose", "2.3", ":math:`\text{mg/L}`", "``m.fs.posttreatment.lime_addition``"
    "Storage tank 2 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_2``"
    "Storage tank 3 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_3``"
-   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`", "``m.fs.posttreatment.uv_aop``"
-   "UV/AOP UV transmittance", "0.95", ":math:`\text{dimensionless}`", "``m.fs.posttreatment.uv_aop``"
+   "UV/AOP :sup:`3` reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`", "``m.fs.posttreatment.uv_aop``"
+   "UV/AOP :sup:`3` UV transmittance", "0.95", ":math:`\text{dimensionless}`", "``m.fs.posttreatment.uv_aop``"
+
+.. note::
+   
+   :sup:`1`  TDS = total dissolved solids
+   |
+   :sup:`2`  TSS = total suspended solids
+   |
+   :sup:`3`  UV = Ultraviolet; AOP = Advanced oxidation process
