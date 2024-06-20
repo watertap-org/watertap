@@ -8,54 +8,6 @@ This flowsheet represents a full-scale seawater reverse osmosis treatment facili
 The flowsheet includes pretreatment, desalination, post-treatment, and waste handling unit processes available in WaterTAP.
 Unit models used on this flowsheet span the spectrum from simple to detailed.
 
-The influent conditions are defined from the case study this flowsheet is modeled after. The relevant information is in Table 2:
-
-.. csv-table::
-   :header: "Description", "Value", "Units"
-
-   "Volumetric flow rate", "7.05", ":math:`\text{MGD}`"
-   "TDS concentration", "35", ":math:`\text{g/L}`"
-   "TSS concentration", "0.03", ":math:`\text{g/L}`"
-   "Temperature", "298", ":math:`\text{K}`"
-   "Pressure", "100000", ":math:`\text{Pa}`"
-
-Some unit models have case-specific operating conditions, presented in Table 3 and includes the different build options for ``erd_type``:
-
-.. csv-table::
-   :header: "Description", "Value", "Units", "Flowsheet Model Name"
-
-   **Pre-Treatment**
-   "Ferric chloride dose", "20", ":math:`\text{mg/L}`", "``m.fs.pretreatment.ferric_chloride_addition``"
-   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.pretreatment.storage_tank_1``"
-   
-   **Desalination**
-   "RO water permeability coefficient", "4.2e-12", ":math:`\text{m/Pa/s}`", "``m.fs.desalination.RO``"
-   "RO salt permeability coefficient", "3.5e-8", ":math:`\text{m/s}`", "``m.fs.desalination.RO``"
-   "RO spacer porosity", "0.97", ":math:`\text{dimensionless}`", "``m.fs.desalination.RO``"
-   "RO channel height", "1e-3", ":math:`\text{m}`", "``m.fs.desalination.RO``"
-   "RO membrane width per stage", "1000", ":math:`\text{m}`", "``m.fs.desalination.RO``"
-   "RO total membrane area per stage", "13914", ":math:`\text{m}^2`", "``m.fs.desalination.RO``"
-   "RO permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.RO``"
-   "Pump 1 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P1``"
-   "Pump 1 operating pressure", "70e5", ":math:`\text{Pa}`", "``m.fs.desalination.P1``"
-   
-   *if* ``erd_type == "pressure_exchanger"``
-   "Pressure exchanger efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.PXR``"
-   "Pump 2 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P2``"
-   
-   *if* ``erd_type == "pump_as_turbine"``
-   "Energy recovery device pump efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.ERD``"
-   "Energy recovery device permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.ERD``"
-   
-   **Post-Treatment**
-   "Anti-scalant dose", "5", ":math:`\text{mg/L}`", "``m.fs.posttreatment.anti_scalant_addition``"
-   "Lime dose", "2.3", ":math:`\text{mg/L}`", "``m.fs.posttreatment.lime_addition``"
-   "Storage tank 2 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_2``"
-   "Storage tank 3 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_3``"
-   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`", "``m.fs.posttreatment.uv_aop``"
-   "UV/AOP UV transmittance", "0.95", ":math:`\text{dimensionless}`", "``m.fs.posttreatment.uv_aop``"
-
-
 
 Implementation
 --------------
@@ -168,8 +120,8 @@ flowsheet level ``Feed`` block.
 Desalination
 ^^^^^^^^^^^^
 
-Figure 2 presents the process flow diagrame for ``m.fs.desalination`` if ``erd_type = "pressure_exchanger"``.
-Figure 3 presents the process flow diagrame for ``m.fs.desalination`` if ``erd_type = "pump_as_turbine"``.
+Figure 2 presents the process flow diagrame for ``m.fs.desalination`` if ``erd_type == "pressure_exchanger"``.
+Figure 3 presents the process flow diagrame for ``m.fs.desalination`` if ``erd_type == "pump_as_turbine"``.
 In either case, the first unit model on this block is connected to the flowsheet level translator block ``tb_prtrt_desal``.
 
 .. figure:: ../../_static/flowsheets/sw_fs_desal-PXR.png
@@ -206,3 +158,53 @@ Figure 5 presents the process flow diagram for the entire flowsheet for both ERD
     :align: center
 
     Figure 5: Process flow diagram for entire flowsheet.
+
+
+Flowsheet Specifications
+------------------------
+
+The influent conditions are defined from the case study used to develop this flowsheet. 
+Additionally, some unit models have case-specific operating conditions.
+The influent conditions and case-specific operating conditions for certain unit models are presented in Table 1,
+including the different build options for ``erd_type``:
+
+.. csv-table::
+   :header: "Description", "Value", "Units", "Flowsheet Model Name"
+
+    **Influent Conditions**
+   "Volumetric flow rate", "7.05", ":math:`\text{MGD}`"
+   "TDS concentration", "35", ":math:`\text{g/L}`"
+   "TSS concentration", "0.03", ":math:`\text{g/L}`"
+   "Temperature", "298", ":math:`\text{K}`"
+   "Pressure", "100000", ":math:`\text{Pa}`"
+
+   **Pre-Treatment**
+   "Ferric chloride dose", "20", ":math:`\text{mg/L}`", "``m.fs.pretreatment.ferric_chloride_addition``"
+   "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.pretreatment.storage_tank_1``"
+   
+   **Desalination**
+   "RO water permeability coefficient", "4.2e-12", ":math:`\text{m/Pa/s}`", "``m.fs.desalination.RO``"
+   "RO salt permeability coefficient", "3.5e-8", ":math:`\text{m/s}`", "``m.fs.desalination.RO``"
+   "RO spacer porosity", "0.97", ":math:`\text{dimensionless}`", "``m.fs.desalination.RO``"
+   "RO channel height", "1e-3", ":math:`\text{m}`", "``m.fs.desalination.RO``"
+   "RO membrane width per stage", "1000", ":math:`\text{m}`", "``m.fs.desalination.RO``"
+   "RO total membrane area per stage", "13914", ":math:`\text{m}^2`", "``m.fs.desalination.RO``"
+   "RO permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.RO``"
+   "Pump 1 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P1``"
+   "Pump 1 operating pressure", "70e5", ":math:`\text{Pa}`", "``m.fs.desalination.P1``"
+   
+   *if* ``erd_type == "pressure_exchanger"``
+   "Pressure exchanger efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.PXR``"
+   "Pump 2 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P2``"
+   
+   *if* ``erd_type == "pump_as_turbine"``
+   "Energy recovery device pump efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.ERD``"
+   "Energy recovery device permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.ERD``"
+   
+   **Post-Treatment**
+   "Anti-scalant dose", "5", ":math:`\text{mg/L}`", "``m.fs.posttreatment.anti_scalant_addition``"
+   "Lime dose", "2.3", ":math:`\text{mg/L}`", "``m.fs.posttreatment.lime_addition``"
+   "Storage tank 2 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_2``"
+   "Storage tank 3 storage time", "1", ":math:`\text{hr}`", "``m.fs.posttreatment.storage_tank_3``"
+   "UV/AOP reduction equivalent dose", "350", ":math:`\text{mJ/}\text{cm}^2`", "``m.fs.posttreatment.uv_aop``"
+   "UV/AOP UV transmittance", "0.95", ":math:`\text{dimensionless}`", "``m.fs.posttreatment.uv_aop``"
