@@ -13,5 +13,6 @@ Flowsheets
    electrodialysis_1stack_conc_recirc
    electrodialysis_1stack
    crystallization
+   ion_exchange
    gac
    seawater_RO_desalination
