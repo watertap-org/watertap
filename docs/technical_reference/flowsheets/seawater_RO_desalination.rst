@@ -111,7 +111,7 @@ Pre-Treatment
 Figure 1 presents the process flow diagram for ``m.fs.pretreatment``. The first unit model on this block, ``intake``, is connected to the
 flowsheet level ``Feed`` block.
 
-.. figure:: ../../_static/flowsheets/sw_fs_pretreat.png
+.. figure:: ../../_static/flowsheets/SW_RO_fs_pretreat.png
     :width: 800
     :align: center
 
@@ -124,17 +124,17 @@ Figure 2 presents the process flow diagram for ``m.fs.desalination`` if ``erd_ty
 Figure 3 presents the process flow diagram for ``m.fs.desalination`` if ``erd_type == "pump_as_turbine"``.
 In either case, the first unit model on this block is connected to the flowsheet level translator block ``tb_prtrt_desal``.
 
-.. figure:: ../../_static/flowsheets/sw_fs_desal-PXR.png
+.. figure:: ../../_static/flowsheets/SW_RO_fs_desal_PXR.png
     :width: 800
     :align: center
 
     Figure 2: Process flow diagram for desalination block for pressure exchanger ERD.
 
-.. figure:: ../../_static/flowsheets/sw_fs_desal-turbine.png
+.. figure:: ../../_static/flowsheets/SW_RO_fs_desal_turbine.png
     :width: 600
     :align: center
 
-    Figure 3: Process flow diagram for desalination block for pump as turbine ERD.
+    Figure 3: Process flow diagram for desalination block for pump-as-turbine ERD.
 
 Post-Treatment
 ^^^^^^^^^^^^^^
@@ -142,7 +142,7 @@ Post-Treatment
 Figure 4 presents the process flow diagram for ``m.fs.posttreatment``. The first unit model on this block is connected to the
 flowsheet level translator block ``tb_desal_psttrt``.
 
-.. figure:: ../../_static/flowsheets/sw_fs_posttreat.png
+.. figure:: ../../_static/flowsheets/SW_RO_fs_posttreat.png
     :width: 800
     :align: center
 
@@ -153,7 +153,7 @@ Full Flowsheet
 
 Figure 5 presents the process flow diagram for the entire flowsheet for both ERD options.
 
-.. figure:: ../../_static/flowsheets/sw_fs_full.png
+.. figure:: ../../_static/flowsheets/SW_RO_fs_full.png
     :width: 1500
     :align: center
 
