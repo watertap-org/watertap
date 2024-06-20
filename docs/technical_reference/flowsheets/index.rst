@@ -15,3 +15,4 @@ Flowsheets
    crystallization
    ion_exchange
    gac
+   membrane_distillation
