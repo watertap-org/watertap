@@ -160,12 +160,30 @@ Figure 5 presents the process flow diagram for the entire flowsheet for both ERD
     Figure 5: Process flow diagram for entire flowsheet.
 
 
+Degrees of Freedom
+------------------
+
+The degrees of freedom (DOF) for the flowsheet can change depending on model configuration options.
+For either ``erd_type``, after building the flowsheet with the provided ``build()`` function, there are 58 DOF.
+Many of these DOF are related to the not-yet-propagated Arcs between each of the unit process blocks.
+Others are related to influent conditions and specific operating conditions for each unit model that must be specified by the user.
+The operating conditions for this demonstration are provided in the following section, and include:
+
+* Influent conditions (component flows, temperature, pressure)
+* Chemical doses
+* RO membrane properties
+* RO operating pressure
+* Pump and ERD efficiencies
+* Storage duration
+
+Passing the default build to the provided function ``set_operating_conditions()`` will result in a model with zero DOF.
+
 Flowsheet Specifications
 ------------------------
 
 The influent conditions are defined from the case study used to develop this flowsheet. 
 Additionally, some unit models have case-specific operating conditions.
-The influent conditions and case-specific operating conditions for certain unit models are presented in Table 1,
+The influent conditions and case-specific operating conditions for certain unit models are presented in the following table,
 including the different build options for ``erd_type``:
 
 .. csv-table::
