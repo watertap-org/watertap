@@ -13,7 +13,6 @@ Implementation
 
 This flowsheet uses several different modeling features available in WaterTAP, including:
 
-
 WaterTAP costing package
     * :doc:`/technical_reference/costing/watertap_costing`
 Unit model costing packages
@@ -62,7 +61,22 @@ as well as helper functions that group these core functions together for conveni
     Depending on the ``erd_type`` different helper functions are used to initialize the relevant 
     ERD-related unit models.    
 
+* Optionally optimize the system with ``optimize_set_up()``:
 
+    The model is fully defined and can be solved with the provided ``solve()`` function after the user passes 
+    the model through ``initialize_system()``. This function is provided as a demostration of how the system could be
+    optimized the minimize the levelized cost of water (LCOW). The optimization routine proceeds as follows:
+
+    #. An ``Objectve`` is placed on the flowsheet set to minimize the ``LCOW`` expression in the costing package.
+    #. Operating pressure for the RO booster pump is unfixed and realistic bounds are placed on the pressure.
+    #. Similarly, the RO membrane area is unfixed and bounds are placed on the membrane area.
+    #. To ensure the product water is still of acceptable quality, a ``Constraint`` is placed on the effluent 
+       concentration of the RO to be less than 500 mg/L.
+    #. Additionally, there is a minimum water flux placed on the RO model to be over 2.8e-4 kg/m2-s.
+
+There are other helper functions, like ``display_system()``, ``display_design()``, and ``display_state()``, that 
+are used to print out the results of the model solve. The ``main()`` function is an example of building, specifying, 
+initializing, and optimizing an RO-ERD system with WaterTAP.
 
 
 Degrees of Freedom 
@@ -79,9 +93,9 @@ the model with ``no_ERD`` results in 13 DOF.
 
 Passing any model build to the provided function ``set_operating_conditions()`` will result in a model with zero DOF.
 
+
 Flowsheet Specifications
 ------------------------
-
 
 The influent conditions are defined from the case study used to develop this flowsheet. 
 Additionally, some unit models have case-specific operating conditions.
