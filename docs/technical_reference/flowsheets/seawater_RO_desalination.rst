@@ -56,7 +56,7 @@ some helper functions that group these core functions together for convenience. 
         * Desalination (``m.fs.desalination``): contains all the unit models needed to represent the pumping, reverse osmosis (RO), and energy recovery device (ERD) processes.
         * Post-treatment (``m.fs.posttreatment``): includes post desalination disinfection, remineralization, and storage unit models.
 
-    Outside of these, the there is a feed, distribution, landfill, and disposal block that are placed directly on the flowsheet.
+    Outside of these, there is a feed, distribution, landfill, and disposal block that are placed directly on the flowsheet.
     ``Translator`` blocks are added with appropriate constraints and ``Arc`` are used to connect the unit processes in the proper order.
     Finally, default scaling factors are set and scaling factors are calculated for all variables.
 
