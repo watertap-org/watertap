@@ -46,7 +46,21 @@ as well as helper functions that group these core functions together for conveni
     The user can set via keyword arguments the volumetric flow rate (``flow_vol``), mass fraction of NaCl (``salt_mass_conc``),
     a target fractional mass-based water recovery ``water_recovery``, and a fractional over pressure (``over_pressure``). 
     Over pressure is the fractional increase in pressure over of the brine osmotic pressure to use as the
-    operating pressure for the RO process.
+    an initial guess for the RO operating pressure as determined by the helper function ``calculate_operating_pressure``.
+    Initial values for relevant RO membrane parameters are provided in the Flowsheet Specifications section.
+    After the RO unit is initialized, the area is unfixed and the mass-based recovery is fixed to the 
+    user provided value.
+
+* Calculating the RO operating pressure with ``calculate_operating_pressure()``:
+
+    This helper functions takes in the RO feed state block and will calculate the needed operating pressure
+    to achieve the desired mass-based water recovery.
+
+* Initialize entire system with ``initialize_system()``:
+
+    After the model is built and specified, this function will initialize the feed, RO, and costing blocks.
+    Depending on the ``erd_type`` different helper functions are used to initialize the relevant 
+    ERD-related unit models.    
 
 
 
