@@ -6,7 +6,8 @@ Introduction
 
 This flowsheet represents a reverse osmosis (RO) with energy recovery device (ERD). 
 The flowsheet is similar to the desalination block of the full-scale seawater RO treatment facility flowsheet,
-but provides different options for optimization of the process.
+but includes an demonstration for optimization of the process. The user can select between pressure exchanger ERD, 
+pump-as-turbine ERD, or no ERD.
 
 Implementation
 --------------
@@ -79,6 +80,32 @@ are used to print out the results of the model solve. The ``main()`` function is
 initializing, and optimizing an RO-ERD system with WaterTAP.
 
 
+Figure 1 presents the process flow diagram if ``erd_type == pressure_exchanger``.
+
+.. figure:: ../../_static/flowsheets/RO_w_ERD-PXR.png
+    :width: 600
+    :align: center
+
+    Figure 1: Process flow for RO with pressure exchanger ERD.
+
+Figure 2 presents the process flow diagram if ``erd_type == pump_as_turbine``.
+
+.. figure:: ../../_static/flowsheets/RO_w_ERD-turbine.png
+    :width: 600
+    :align: center
+
+    Figure 2: Process flow for RO with pump-as-turbine ERD.
+
+
+Figure 3 presents the process flow diagram with no ERD (i.e., ``erd_type == no_ERD``).
+
+.. figure:: ../../_static/flowsheets/RO_w_ERD-no_ERD.png
+    :width: 600
+    :align: center
+
+    Figure 3: Process flow for RO without ERD.
+
+
 Degrees of Freedom 
 ------------------
 
@@ -130,7 +157,6 @@ including the different build options for ``erd_type``:
    "Energy recovery device pump efficiency", "0.95", ":math:`\text{dimensionless}`"
    "Energy recovery device permeate side pressure", "101325", ":math:`\text{Pa}`"
    
-
 
 Code Documentation
 ------------------
