@@ -18,30 +18,30 @@ similar to this::
 
     from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
     def export_to_ui():
-    return FlowsheetInterface(
-        name="OARO",
-        do_export=export_variables,
-        do_build=build_flowsheet,
-        do_solve=solve_flowsheet,
-        build_options={
-            "NumberOfStages": {
-                "name": "NumberOfStages",
-                "display_name": "Number of stages",
-                "values_allowed": "int",
-                "value": 3,  # default value
-                "max_val": 8,  # optional
-                "min_val": 1,  # optional
+        return FlowsheetInterface(
+            name="OARO",
+            do_export=export_variables,
+            do_build=build_flowsheet,
+            do_solve=solve_flowsheet,
+            build_options={
+                "NumberOfStages": {
+                    "name": "NumberOfStages",
+                    "display_name": "Number of stages",
+                    "values_allowed": "int",
+                    "value": 3,  # default value
+                    "max_val": 8,  # optional
+                    "min_val": 1,  # optional
+                },
+                "SystemRecovery": {
+                    "name": "SystemRecovery",
+                    "display_name": "System Mass Recovery",
+                    "values_allowed": "float",
+                    "value": 0.5,  # default value
+                    "max_val": 1,  # optional
+                    "min_val": 0,  # optional
+                },
             },
-            "SystemRecovery": {
-                "name": "SystemRecovery",
-                "display_name": "System Mass Recovery",
-                "values_allowed": "float",
-                "value": 0.5,  # default value
-                "max_val": 1,  # optional
-                "min_val": 0,  # optional
-            },
-        },
-    )
+        )
 There are 3 required functions: 
 
 1. ``do_export`` - This function defines the variables that will be displayed on the UI.
