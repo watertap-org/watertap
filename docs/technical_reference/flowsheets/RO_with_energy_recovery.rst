@@ -139,3 +139,5 @@ Code Documentation
 
 References
 ----------
+
+References for each component and model used in this flowsheet can be found using the links provided in the Implementation section of this documentation.
