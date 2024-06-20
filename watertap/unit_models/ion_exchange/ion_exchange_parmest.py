@@ -693,10 +693,10 @@ class IXParmest:
 
     def build_parmest_experiment_list(self):
         self.experiment_list = list()
-        self.df_exp = self.df_curve[self.df_curve.bv.isin(self.keep_bvs)].copy()
-        self.df_exp.reset_index(inplace=True, drop=True)
-        for i in self.df_exp.index:
-            self.experiment_list.append(IXExperiment(self, self.df_exp, i))
+        # self.df_exp = self.df_curve[self.df_curve.bv.isin(self.keep_bvs)].copy()
+        # self.df_exp.reset_index(inplace=True, drop=True)
+        for i in self.df_curve.index:
+            self.experiment_list.append(IXExperiment(self, self.df_curve, i))
 
     def run_parmest(self):
         """
