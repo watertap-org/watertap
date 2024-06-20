@@ -49,8 +49,8 @@ Some unit models have case-specific operating conditions, presented in Table 3 a
    "Storage tank 1 storage time", "2", ":math:`\text{hr}`", "``m.fs.pretreatment.storage_tank_1``"
    
    **Desalination**
-   "RO water permeability coeff.", "4.2E-12", ":math:`\text{m/Pa/s}`", "``m.fs.desalination.RO``"
-   "RO salt permeability coeff.", "3.5e-8", ":math:`\text{m/s}`", "``m.fs.desalination.RO``"
+   "RO water permeability coefficient", "4.2e-12", ":math:`\text{m/Pa/s}`", "``m.fs.desalination.RO``"
+   "RO salt permeability coefficient", "3.5e-8", ":math:`\text{m/s}`", "``m.fs.desalination.RO``"
    "RO spacer porosity", "0.97", ":math:`\text{dimensionless}`", "``m.fs.desalination.RO``"
    "RO channel height", "1e-3", ":math:`\text{m}`", "``m.fs.desalination.RO``"
    "RO membrane width per stage", "1000", ":math:`\text{m}`", "``m.fs.desalination.RO``"
