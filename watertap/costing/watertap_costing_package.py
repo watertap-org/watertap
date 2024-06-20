@@ -61,6 +61,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name (optional) - name for the LCOW variable (default: LCOW)
         """
 
+        denominator = (
+            pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / self.base_period)
+            * self.utilization_factor
+        )
+
         self.add_component(
             name,
             pyo.Expression(
@@ -68,15 +73,140 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     self.total_capital_cost * self.capital_recovery_factor
                     + self.total_operating_cost
                 )
-                / (
-                    pyo.units.convert(
-                        flow_rate, to_units=pyo.units.m**3 / self.base_period
-                    )
-                    * self.utilization_factor
-                ),
+                / denominator,
                 doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
             ),
         )
+
+        c_units = self.base_currency
+        t_units = self.base_period
+        direct_capex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by component",
+        )
+        indirect_capex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by component",
+        )
+        fixed_opex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by component",
+        )
+        variable_opex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by component",
+        )
+        self.add_component(name + "_component_direct_capex", direct_capex_lcows)
+        self.add_component(name + "_component_indirect_capex", indirect_capex_lcows)
+        self.add_component(name + "_component_fixed_opex", fixed_opex_lcows)
+        self.add_component(name + "_component_variable_opex", variable_opex_lcows)
+
+        agg_direct_capex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by unit type",
+        )
+        agg_indirect_capex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by unit type",
+        )
+        agg_fixed_opex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by unit type",
+        )
+        agg_variable_opex_lcows = pyo.Expression(
+            pyo.Any,
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by unit type",
+        )
+        self.add_component(name + "_aggregate_direct_capex", agg_direct_capex_lcows)
+        self.add_component(name + "_aggregate_indirect_capex", agg_indirect_capex_lcows)
+        self.add_component(name + "_aggregate_fixed_opex", agg_fixed_opex_lcows)
+        self.add_component(name + "_aggregate_variable_opex", agg_variable_opex_lcows)
+        for u in self._registered_unit_costing:
+            direct_capex_numerator = 0
+            indirect_capex_numerator = 0
+            fixed_opex_numerator = 0
+            variable_opex_numerator = 0
+            if hasattr(u, "capital_cost"):
+                direct_capital_cost = pyo.units.convert(
+                    u.direct_capital_cost, to_units=c_units
+                )
+                capital_cost = pyo.units.convert(u.capital_cost, to_units=c_units)
+                # capital costs w/ recovery factor
+                direct_capex_numerator += (
+                    self.capital_recovery_factor * direct_capital_cost
+                )
+                capex_numerator = self.capital_recovery_factor * (
+                    self.total_investment_factor * capital_cost
+                )
+                indirect_capex_numerator += capex_numerator - direct_capex_numerator
+
+                # maintenance_labor_chemical_operating_cost,
+                # part of total_fixed_operating_cost
+                fixed_opex_numerator += (
+                    self.maintenance_labor_chemical_factor * capital_cost
+                )
+            if hasattr(u, "fixed_operating_cost"):
+                fixed_opex_numerator += pyo.units.convert(
+                    u.fixed_operating_cost, to_units=c_units / t_units
+                )
+            if hasattr(u, "variable_operating_cost"):
+                variable_opex_numerator += pyo.units.convert(
+                    u.variable_operating_cost, to_units=c_units / t_units
+                )
+            direct_capex_lcows[u.unit_model.name] = direct_capex_numerator / denominator
+            indirect_capex_lcows[u.unit_model.name] = (
+                indirect_capex_numerator / denominator
+            )
+            fixed_opex_lcows[u.unit_model.name] = fixed_opex_numerator / denominator
+            variable_opex_lcows[u.unit_model.name] = (
+                variable_opex_numerator / denominator
+            )
+
+            unit_model_class = u.unit_model.parent_component().process_block_class()
+            if unit_model_class not in agg_direct_capex_lcows:
+                agg_direct_capex_lcows[unit_model_class] = 0
+                agg_indirect_capex_lcows[unit_model_class] = 0
+                agg_fixed_opex_lcows[unit_model_class] = 0
+                agg_variable_opex_lcows[unit_model_class] = 0
+
+            agg_direct_capex_lcows[unit_model_class] += direct_capex_lcows[
+                u.unit_model.name
+            ]
+            agg_indirect_capex_lcows[unit_model_class] += indirect_capex_lcows[
+                u.unit_model.name
+            ]
+            agg_fixed_opex_lcows[unit_model_class] += fixed_opex_lcows[
+                u.unit_model.name
+            ]
+            agg_variable_opex_lcows[unit_model_class] += variable_opex_lcows[
+                u.unit_model.name
+            ]
+
+        for ftype, flows in self._registered_flows.items():
+            # part of total_variable_operating_cost
+            if ftype in agg_variable_opex_lcows:
+                raise RuntimeError(
+                    f"Found unit model named {ftype} but want to name flow {ftype} for {name+'_component_variable_opex'}"
+                )
+            if ftype not in self.used_flows:
+                assert len(flows) == 0
+                continue
+            agg_variable_opex_lcows[ftype] = (
+                self.aggregate_flow_costs[ftype] * self.utilization_factor / denominator
+            )
+            cost_var = getattr(self, f"{ftype}_cost")
+            for flow in flows:
+                # part of total_variable_operating_cost
+                flow_cost = pyo.units.convert(
+                    flow * cost_var, to_units=c_units / t_units
+                )
+                if str(flow) in variable_opex_lcows:
+                    raise RuntimeError(
+                        f"Found unit model named {str(flow)} but need to name flow {flow} for {name+'_aggregate_variable_opex'}"
+                    )
+                variable_opex_lcows[str(flow)] = (
+                    flow_cost * self.utilization_factor
+                ) / denominator
 
     def add_specific_energy_consumption(
         self, flow_rate, name="specific_energy_consumption"
