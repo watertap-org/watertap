@@ -14,7 +14,7 @@ Implementation
 --------------
 
 Figure 1 illustrates the process flow diagram for a Mechanical Vapor Compression (MVC) desalination system.
-In this configuration, feedwater is pumped and equally divided between the cold inlets of a distillate heat
+In this configuration, feedwater is pumped and divided between the cold inlets of a distillate heat
 exchanger (HEX) and a brine HEX. The preheated feed exiting these heat exchangers combines and enters the evaporator,
 where it absorbs heat from the condensing steam and vaporizes, leaving behind concentrated brine. The generated vapor
 is then directed to a compressor, which elevates its temperature and pressure. This compressed vapor is recycled back
