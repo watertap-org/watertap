@@ -85,7 +85,7 @@ some helper functions that group these core functions together for convenience. 
 
     Because of the nature of the unit models used in this flowsheet (i.e., both zero order and detailed models), two separate system-level costing packages are required. 
     ``m.fs.zo_costing = ZeroOrderCosting()`` is used to aggregate costs for zero-order models, and ``m.fs.ro_costing = WaterTAPCosting`` is for the more detailed desalination models. 
-    The costing block for each unit model is ``UnitModelCostingBlock`` which has points to a system-level aggregation costing package via the configuration keyword ``flowsheet_costing_block``.
+    The costing block for each unit model is ``UnitModelCostingBlock`` that points to a system-level aggregation costing package via the configuration keyword ``flowsheet_costing_block``.
     Each system-level costing package has a ``.cost_process()`` method that is called to aggregate unit level costs and calculate overall process costs.
     To aggregate results from both costing packages, a separate ``Expression`` is created for ``total_capital_cost`` and ``total_operating_cost``, and each of these are used
     to calculate the ``LCOW``. Finally, like the unit models, the costing packages are initialized.
@@ -120,8 +120,8 @@ flowsheet level ``Feed`` block.
 Desalination
 ^^^^^^^^^^^^
 
-Figure 2 presents the process flow diagrame for ``m.fs.desalination`` if ``erd_type == "pressure_exchanger"``.
-Figure 3 presents the process flow diagrame for ``m.fs.desalination`` if ``erd_type == "pump_as_turbine"``.
+Figure 2 presents the process flow diagram for ``m.fs.desalination`` if ``erd_type == "pressure_exchanger"``.
+Figure 3 presents the process flow diagram for ``m.fs.desalination`` if ``erd_type == "pump_as_turbine"``.
 In either case, the first unit model on this block is connected to the flowsheet level translator block ``tb_prtrt_desal``.
 
 .. figure:: ../../_static/flowsheets/sw_fs_desal-PXR.png
