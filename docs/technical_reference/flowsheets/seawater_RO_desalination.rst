@@ -14,30 +14,19 @@ Implementation
 
 This flowsheet uses several different modeling features available in WaterTAP, including:
 
-
-WaterTAP costing package
+Costing packages:
     * :doc:`/technical_reference/costing/watertap_costing`
-Unit model costing packages
     * :doc:`/technical_reference/costing/detailed_unit_model_costing`
-Zero order unit and costing models
-    * :doc:`/technical_reference/unit_models/zero_order_unit_models/index`
-Zero order costing package
     * :doc:`/technical_reference/costing/zero_order_costing`
-Zero order property package
+Property models:
     * :doc:`/technical_reference/core/water_props`
-Seawater property package
     * :doc:`/technical_reference/property_models/seawater`
-Reverse osmosis model
+Unit models:
+    * :doc:`/technical_reference/unit_models/zero_order_unit_models/index`
     * :doc:`/technical_reference/unit_models/reverse_osmosis_0D`
-Pressure exchanger model
     * :doc:`/technical_reference/unit_models/pressure_exchanger`
-IDAES Translator blocks
-    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/translator`
-IDAES Product blocks
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
-IDAES Separator blocks
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/separator`
-IDAES Mixer blocks
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/mixer`
     
 The demonstration file itself contains several core functions that are used to build, specify, initialize, and solve the model, as well as
