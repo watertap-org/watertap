@@ -90,7 +90,7 @@ from idaes.core.util import DiagnosticsToolbox
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=True):
+def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
     set_scaling(m)
@@ -107,6 +107,22 @@ def main(bio_P=True):
     )
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    print("----------------   Re-scaling  ----------------")
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    for x in badly_scaled_var_list:
+        var_name = "m." + str(x[0].name)
+        print(
+            f" The scaling factor for {var_name} is: {iscale.get_scaling_factor(x[0])}"
+        )
+        # print(f" The scaling factor for {x[0].name} is: {iscale.get_scaling_factor(x[0])}")
+        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
+
+    # print(
+    #     "----------------   badly_scaled_var_list after re-scaling  ----------------"
+    # )
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     dt = DiagnosticsToolbox(m)
     print("---Structural Issues---")
