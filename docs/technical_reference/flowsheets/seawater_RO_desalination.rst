@@ -36,7 +36,7 @@ some helper functions that group these core functions together for convenience. 
 
     This function will create the core components and structure of the flowsheet. The keyword argument ``erd_type`` dictates the type
     of energy recovery device to be used, with options ``pressure_exchanger`` or ``pump_as_turbine``.
-    First, the ``FlowsheetBlock``, ``Database``, property models, are created. The zero order property models require the user
+    First, the ``FlowsheetBlock``, ``Database``, and property models are created. The zero order property models require the user
     to provide a ``solute_list`` (e.g., TDS and TSS), while the seawater property model is pre-populated with TDS as the only solute.
     Separate ``Block`` are created to contain all the unit models required to model the pretreatment, desalination, and post-treatment
     parts of the treatment train:
@@ -45,7 +45,7 @@ some helper functions that group these core functions together for convenience. 
         * Desalination (``m.fs.desalination``): contains all the unit models needed to represent the pumping, reverse osmosis (RO), and energy recovery device (ERD) processes.
         * Post-treatment (``m.fs.posttreatment``): includes post desalination disinfection, remineralization, and storage unit models.
 
-    Outside of these, the there is a feed, distribution, landfill, and disposal block that are placed directly on the flowsheet.
+    Outside of these, there is a feed, distribution, landfill, and disposal block that are placed directly on the flowsheet.
     ``Translator`` blocks are added with appropriate constraints and ``Arc`` are used to connect the unit processes in the proper order.
     Finally, default scaling factors are set and scaling factors are calculated for all variables.
 
