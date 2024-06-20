@@ -66,7 +66,6 @@ Degrees of Freedom
 The following variables are initially specified for simulating the MVC flowsheet (i.e., degrees of freedom = 0):
     * feed water conditions (mass flow, mass fractions, temperature, and pressure)
     * feed pump efficiency and pressure change (ΔP)
-    * separator split fraction
     * distillate HEX heat transfer coefficient, area, cold-side ΔP, and hot-side ΔP
     * brine HEX heat transfer coefficient, area, cold-side ΔP, and hot-side ΔP
     * evaporator outlet brine temperature and overall heat transfer coefficient
