@@ -94,7 +94,7 @@ The user can specify the scaling factors for component mass flowrates with the f
 .. doctest::
 
   # relevant imports
-  import watertap.property_models.coagulation_prop_pack as props
+  import watertap.property_models.unit_specific.coagulation_prop_pack as props
   from idaes.core.util.scaling import calculate_scaling_factors
 
   # relevant assignments
