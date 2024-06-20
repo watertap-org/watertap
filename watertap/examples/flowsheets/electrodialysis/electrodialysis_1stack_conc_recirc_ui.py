@@ -605,6 +605,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 def build_flowsheet(build_options=None, **kwargs):
 
     # the UI sets `capital_recovery_factor`, so unfix `wacc`
+    m = build()
     m.fs.costing.wacc.unfix()
     m.fs.costing.capital_recovery_factor.fix()
 
