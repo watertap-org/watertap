@@ -7,26 +7,6 @@ Introduction
 This flowsheet represents a full-scale seawater reverse osmosis treatment facility.
 The flowsheet includes pretreatment, desalination, post-treatment, and waste handling unit processes available in WaterTAP.
 Unit models used on this flowsheet span the spectrum from simple to detailed.
-This flowsheet includes examples of several different types of modeling features available in WaterTAP, summarized in Table 1:
-
-.. csv-table::
-   :header: "Modeling Component", "Documentation"
-   
-   "Zero order unit and costing models", ":doc:`/technical_reference/unit_models/zero_order_unit_models/index`"
-   "Zero order costing package", ":doc:`/technical_reference/costing/zero_order_costing`"
-   "Zero order property package", ""
-   "Seawater property package", ":doc:`/technical_reference/property_models/seawater`"
-   "Reverse osmosis model", ":doc:`/technical_reference/unit_models/reverse_osmosis_0D`"
-   "Pump model", ""
-   "Energy recovery device model", ""
-   "Pressure exchanger model", ":doc:`/technical_reference/unit_models/pressure_exchanger`"
-   "WaterTAP costing package", ":doc:`/technical_reference/costing/watertap_costing`"
-   "Unit model costing packages", ":doc:`/technical_reference/costing/detailed_unit_model_costing`"
-   "WaterTAP database", ""
-   "IDAES Translator blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/translator`
-   "IDAES Product blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
-   "IDAES Separator blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/separator`
-   "IDAES Mixer blocks", :doc:`idaes:reference_guides/model_libraries/generic/unit_models/mixer`
 
 The influent conditions are defined from the case study this flowsheet is modeled after. The relevant information is in Table 2:
 
@@ -59,11 +39,11 @@ Some unit models have case-specific operating conditions, presented in Table 3 a
    "Pump 1 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P1``"
    "Pump 1 operating pressure", "70e5", ":math:`\text{Pa}`", "``m.fs.desalination.P1``"
    
-   *if* ``erd_type = "pressure_exchanger"``
+   *if* ``erd_type == "pressure_exchanger"``
    "Pressure exchanger efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.PXR``"
    "Pump 2 efficiency", "0.8", ":math:`\text{dimensionless}`", "``m.fs.desalination.P2``"
    
-   *if* ``erd_type = "pump_as_turbine"``
+   *if* ``erd_type == "pump_as_turbine"``
    "Energy recovery device pump efficiency", "0.95", ":math:`\text{dimensionless}`", "``m.fs.desalination.ERD``"
    "Energy recovery device permeate side pressure", "101325", ":math:`\text{Pa}`", "``m.fs.desalination.ERD``"
    
@@ -80,6 +60,34 @@ Some unit models have case-specific operating conditions, presented in Table 3 a
 Implementation
 --------------
 
+This flowsheet uses several different modeling features available in WaterTAP, including:
+
+
+WaterTAP costing package
+    * :doc:`/technical_reference/costing/watertap_costing`
+Unit model costing packages
+    * :doc:`/technical_reference/costing/detailed_unit_model_costing`
+Zero order unit and costing models
+    * :doc:`/technical_reference/unit_models/zero_order_unit_models/index`
+Zero order costing package
+    * :doc:`/technical_reference/costing/zero_order_costing`
+Zero order property package
+    * :doc:`/technical_reference/core/water_props`
+Seawater property package
+    * :doc:`/technical_reference/property_models/seawater`
+Reverse osmosis model
+    * :doc:`/technical_reference/unit_models/reverse_osmosis_0D`
+Pressure exchanger model
+    * :doc:`/technical_reference/unit_models/pressure_exchanger`
+IDAES Translator blocks
+    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/translator`
+IDAES Product blocks
+    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
+IDAES Separator blocks
+    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/separator`
+IDAES Mixer blocks
+    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/mixer`
+    
 The demonstration file itself contains several core functions that are used to build, specify, initialize, and solve the model, as well as
 some helper functions that group these core functions together for convenience. Building and solving the flowsheet proceeds in six steps:
 
