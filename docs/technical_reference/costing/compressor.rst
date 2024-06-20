@@ -20,7 +20,7 @@ The following variables are used on the unit block (e.g., m.fs.unit.costing) whe
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Vapor flow rate", ":math:`\dot{m}_{\text{Vap, H2O}}`", "``flow_mass_phase_comp``", "None", ":math:`\text{kg/s}`"
+   "Vapor flow rate", ":math:`\dot{m}_{\text{Vap, H2O}}`", "``flow_mass_phase_comp``", "[t]", ":math:`\text{kg/s}`"
    "Pressure ratio", ":math:`PR`", "``pressure_ratio``", "None", ":math:`\text{dimensionless}`"
 
 Capital Cost Calculations
