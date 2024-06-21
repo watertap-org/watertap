@@ -19,31 +19,24 @@ similar to this::
     from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
     def export_to_ui():
         return FlowsheetInterface(
-            name="OARO",
+            name="NF-DSPM-DE",
             do_export=export_variables,
             do_build=build_flowsheet,
             do_solve=solve_flowsheet,
+            get_diagram=get_diagram,
+            requires_idaes_solver=True,
+            category=FlowsheetCategory.wastewater,
             build_options={
-                "NumberOfStages": {
-                    "name": "NumberOfStages",
-                    "display_name": "Number of stages",
-                    "values_allowed": "int",
-                    "value": 3,  # default value
-                    "max_val": 8,  # optional
-                    "min_val": 1,  # optional
-                },
-                "SystemRecovery": {
-                    "name": "SystemRecovery",
-                    "display_name": "System Mass Recovery",
-                    "values_allowed": "float",
-                    "value": 0.5,  # default value
-                    "max_val": 1,  # optional
-                    "min_val": 0,  # optional
-                },
-            },
+                "Bypass": {
+                    "name": "bypass option",
+                    "display_name": "With Bypass",
+                    "values_allowed": ['false', 'true'],
+                    "value": "false"
+                }
+            }
         )
 
-There are 3 required functions: 
+There are 3 required functions:
 
 1. ``do_export`` - This function defines the variables that will be displayed on the UI.
 
@@ -54,142 +47,133 @@ The first way is to use the Python API to call ``exports.add()`` (:meth:`Flowshe
     def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
         fs = flowsheet
         exports.add(
-            obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
-            name="Water mass flowrate",
-            ui_units=pyunits.kg / pyunits.s,
-            display_units="kg/s",
-            rounding=3,
-            description="Inlet water mass flowrate",
+            obj=fs.feed.properties[0].flow_vol_phase["Liq"],
+            name="Volumetric flow rate",
+            ui_units=pyunits.L / pyunits.hr,
+            display_units="L/h",
+            rounding=2,
+            description="Inlet volumetric flow rate",
             is_input=True,
             input_category="Feed",
             is_output=False,
+            output_category="Feed",
         )
         exports.add(
-            obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
-            name="NaCl mass flowrate",
-            ui_units=pyunits.kg / pyunits.s,
-            display_units="kg/s",
-            rounding=3,
-            description="Inlet NaCl mass flowrate",
+            obj=fs.NF.pump.outlet.pressure[0],
+            name="NF pump pressure",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="NF pump pressure",
             is_input=True,
-            input_category="Feed",
-            is_output=False,
+            input_category="NF design",
+            is_output=True,
+            output_category="NF design",
+        )
+        exports.add(
+            obj=fs.NF.product.properties[0].flow_vol_phase["Liq"],
+            name="NF product volume flow",
+            ui_units=pyunits.L / pyunits.hr,
+            display_units="L/h",
+            rounding=2,
+            description="NF design",
+            is_input=False,
+            input_category="NF design",
+            is_output=True,
+            output_category="NF design",
         )
 
 The second way to export variables is to create a comma-separated values (CSV) file with the same information, and
 read that in with ``exports.from_csv()`` (:meth:`FlowsheetExport.from_csv`). For example::
 
     def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
-        exports.from_csv(file="oaro_exports.csv", flowsheet=flowsheet)
+        exports.from_csv(file="nf_exports.csv", flowsheet=flowsheet)
 
 By default, the file is located in the same directory as the Python module.
 The format of the file is documented in the :meth:`FlowsheetExport.from_csv` method, but it basically puts the
 API keywords as columns in a table. For example, the CSV table for the API calls above would look like:
 
-.. csv-table:: oaro_exports.csv
-    :header: "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output"
+.. csv-table:: nf_exports.csv
+    :header: "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output", "output_category"
 
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]","Water mass flowrate","Inlet water mass flowrate","units.kg / units.w","kg/s",3,true,"Feed",false
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]","NaCl mass flowrate","Inlet NaCl mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false
+    "fs.feed.properties[0].flow_vol_phase['Liq']","Volumetric flow rate","Volumetric flow rate","units.L / units.hr","L/h",2,true,"Feed",false,""
+    "fs.NF.pump.outlet.pressure[0]","NF pump pressure","Nanofiltration pump outlet pressure","units.bar","bar",true,"NF design",true,"NF design"
+    "fs.NF.product.properties[0].flow_vol_phase['Liq']","NF product volume flow rate","Nanofiltration product volume flow rate","units.L / units.hr","L/h",2,false,"",true,"NF design"
 
 The raw text version is::
 
-    "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output"
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]","Water mass flowrate","Inlet water mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false
-    "fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]","NaCl mass flowrate","Inlet NaCl mass flowrate","units.kg / units.s","kg/s",3,true,"Feed",false
+    "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output", "output_category"
+    "fs.feed.properties[0].flow_vol_phase['Liq']","Volumetric flow rate","Volumetric flow rate","units.L / units.hr","L/h",2,true,"Feed",false,""
+    "fs.NF.pump.outlet.pressure[0]","NF pump pressure","Nanofiltration pump outlet pressure","units.bar","bar",true,"NF design",true,"NF design"
+    "fs.NF.product.properties[0].flow_vol_phase['Liq']","NF product volume flow rate","Nanofiltration product volume flow rate","units.L / units.hr","L/h",2,false,"",true,"NF design"
 
 2. ``do_build`` - This function defines the build function for a flowsheet. See example below::
 
-    from watertap.flowsheets.oaro.oaro_multi import (
+    from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
         build,
         set_operating_conditions,
         initialize_system,
-        optimize_set_up,
         solve,
+        add_costing,
+        adjust_default_parameters,
     )
     def build_flowsheet():
-        m = build(number_of_stages=number_of_stages, erd_type=erd_type)
+        # build and solve initial flowsheet
+        m = build()
+
         set_operating_conditions(m)
-        initialize_system(
-            m,
-            number_of_stages,
-            solvent_multiplier=0.5,
-            solute_multiplier=0.7,
-            solver=solver,
-        )
+        assert_degrees_of_freedom(m, 0)
+        assert_units_consistent(m)
 
-        optimize_set_up(
-            m, number_of_stages=number_of_stages, water_recovery=system_recovery
-        )
+        initialize_system(m)
 
-        results = solve(m, solver=solver)
+        results = solve(m)
         assert_optimal_termination(results)
 
+        add_costing(m)
+        assert_degrees_of_freedom(m, 0)
+        m.fs.costing.initialize()
+
+        adjust_default_parameters(m)
+
+        results = solve(m)
+        assert_optimal_termination(results)
         return m
 
 
 3. ``do_solve`` - This function defines the solve function for a flowsheet. See example below::
 
-    from watertap.flowsheets.oaro.oaro_multi import solve
+    from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import solve
     def solve_flowsheet(flowsheet=None):
         fs = flowsheet
         results = solve(fs)
         return results
 
-Additionally, there are optional parameters to assign a category, provide build options, 
+Additionally, there are optional parameters to assign a category, provide build options,
 and provide a diagram function among others. See additional examples below.
 
 Build function using build options::
 
     def build_flowsheet(build_options=None, **kwargs):
+        # build and solve initial flowsheet
         if build_options is not None:
-            # get solver
+            if build_options["Bypass"].value == "true": #build with bypass
+                solver = get_solver()
+                m = nf_with_bypass.build()
+                nf_with_bypass.initialize(m, solver)
+                nf_with_bypass.unfix_opt_vars(m)
+            else: # build without bypass
+                solver = get_solver()
+                m = nf.build()
+                nf.initialize(m, solver)
+                nf.add_objective(m)
+                nf.unfix_opt_vars(m)
+        else: # build without bypass
             solver = get_solver()
-
-            # build, set, and initialize
-            m = build(
-                number_of_stages=build_options["NumberOfStages"].value, erd_type=erd_type
-            )
-            set_operating_conditions(m)
-            initialize_system(
-                m,
-                number_of_stages=build_options["NumberOfStages"].value,
-                solvent_multiplier=0.5,
-                solute_multiplier=0.7,
-                solver=solver,
-            )
-
-            optimize_set_up(
-                m,
-                number_of_stages=build_options["NumberOfStages"].value,
-                water_recovery=build_options["SystemRecovery"].value,
-            )
-
-            # display
-            solve(m, solver=solver)
-        else:
-            # get solver
-            solver = get_solver()
-
-            # build, set, and initialize
-            m = build(number_of_stages=3, erd_type=erd_type)
-            set_operating_conditions(m)
-            initialize_system(
-                m,
-                number_of_stages=3,
-                solvent_multiplier=0.5,
-                solute_multiplier=0.7,
-                solver=solver,
-            )
-
-            optimize_set_up(
-                m,
-                number_of_stages=3,
-                water_recovery=0.5,
-            )
-
-            # display
-            solve(m, solver=solver)
+            m = nf.build()
+            nf.initialize(m, solver)
+            nf.add_objective(m)
+            nf.unfix_opt_vars(m)
         return m
 
 Custom diagram function::
@@ -200,13 +184,13 @@ Custom diagram function::
         else:
             return "nf_ui.png"
 
-Enable UI to discover flowsheet - In order for the UI to discover a flowsheet, an 
+Enable UI to discover flowsheet - In order for the UI to discover a flowsheet, an
 entrypoint must be defined in setup.py with the path to the export file. For examples, see below::
 
     entry_points={
         "watertap.flowsheets": [
-            "RO = watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui",
-            "OARO = watertap.flowsheets.oaro.oaro_multi_ui",
+            "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
+            "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
         ]
 
 
