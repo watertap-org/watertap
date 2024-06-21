@@ -212,7 +212,7 @@ A thorough scaling routine for the ASM2D property package has yet to be implemen
 
 Class Documentation
 -------------------
-.. currentmodule:: watertap.property_models.activated_sludge.modified_asm2d_properties
+.. currentmodule:: watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties
 
 .. autoclass:: ModifiedASM2dParameterBlock
     :members:
@@ -230,7 +230,7 @@ Class Documentation
     :members:
     :noindex:
 
-.. currentmodule:: watertap.property_models.activated_sludge.modified_asm2d_reactions
+.. currentmodule:: watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions
 
 .. autoclass:: ModifiedASM2dReactionParameterBlock
     :members:

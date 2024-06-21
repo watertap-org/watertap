@@ -114,6 +114,9 @@ jobs:
         echo '::group::Output of "pip install -U ray" command'
         pip install -U ray
         echo '::endgroup::'
+        echo '::group::Output of "conda install -c conda-forge cyipopt" command'
+        conda install -c conda-forge cyipopt "numpy<2"
+        echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
         pip list
