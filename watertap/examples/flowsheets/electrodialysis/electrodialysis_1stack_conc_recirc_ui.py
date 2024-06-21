@@ -143,18 +143,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.EDstack.spacer_porosity,
-        name="Spacer porosity",
-        ui_units=pyunits.dimensionless,
-        display_units="1",
-        rounding=2,
-        description="Porosity of the flow spacer",
-        is_input=True,
-        input_category="ED stack",
-        is_output=False,
-    )
-
-    exports.add(
         obj=fs.EDstack.spacer_specific_area,
         name="Spacer specific surface area",
         ui_units=pyunits.meter**-1,
