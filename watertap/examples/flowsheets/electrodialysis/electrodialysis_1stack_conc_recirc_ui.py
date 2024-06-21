@@ -497,7 +497,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Product
     exports.add(
-        obj=fs.product.properties[0].flow_vol_phase["Liq"],
+        obj=fs.prod.properties[0].flow_vol_phase["Liq"],
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -508,7 +508,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Product",
     )
     exports.add(
-        obj=fs.product.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
+        obj=fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
         name="NaCl molar concentration",
         ui_units=pyunits.mol / pyunits.meter**3,
         display_units="mol m^-3",
@@ -532,7 +532,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Disposal
     exports.add(
-        obj=fs.disposal.properties[0].flow_vol_phase["Liq"],
+        obj=fs.disp.properties[0].flow_vol_phase["Liq"],
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
@@ -543,7 +543,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Disposal",
     )
     exports.add(
-        obj=fs.disposal.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
+        obj=fs.disp.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
         name="NaCl molar concentration",
         ui_units=pyunits.mol / pyunits.meter**3,
         display_units="mol m^-3",
