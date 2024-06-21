@@ -41,6 +41,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.core.util.initialization import interval_initializer
 
 __author__ = "Austin Ladshaw"
 
@@ -899,6 +900,8 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
+
+        interval_initializer(self)
 
         # ---------------------------------------------------------------------
         # Solve unit

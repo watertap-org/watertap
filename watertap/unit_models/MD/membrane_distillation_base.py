@@ -38,6 +38,7 @@ from .MD_channel_base import (
 from watertap.costing.unit_models.membrane_distillation import (
     cost_membrane_distillation,
 )
+from watertap.core.util.initialization import interval_initializer
 
 __author__ = "Elmira Shamlou"
 
@@ -635,6 +636,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 f"{self.name} degrees of freedom were not 0 at the beginning "
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
+
+        # pre-solve using interval arithmetic
+        interval_initializer(self)
 
         # solver
         opt = get_solver(solver, optarg)

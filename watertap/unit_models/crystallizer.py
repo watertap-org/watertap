@@ -40,6 +40,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.crystallizer import cost_crystallizer
 
 _log = idaeslog.getLogger(__name__)
@@ -650,6 +651,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_vapor,
         )
         init_log.info_high("Initialization Step 2 Complete.")
+
+        interval_initializer(self)
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
