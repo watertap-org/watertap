@@ -108,7 +108,7 @@ CONFIG_Template.declare(
     "dynamic",
     ConfigValue(
         default=False,
-        domain=In([False]),
+        domain=Bool,
         description="Dynamic model flag - must be False",
         doc="""Indicates whether this model will be dynamic or not.
 **default** - False. Membrane units do not yet support dynamic
@@ -120,7 +120,7 @@ CONFIG_Template.declare(
     "has_holdup",
     ConfigValue(
         default=False,
-        domain=In([False]),
+        domain=Bool,
         description="Holdup construction flag - must be False",
         doc="""Indicates whether holdup terms should be constructed or not.
 **default** - False. Membrane units do not have defined volume, thus
