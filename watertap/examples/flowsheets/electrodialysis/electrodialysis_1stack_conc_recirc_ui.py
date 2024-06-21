@@ -42,7 +42,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         description="Inlet water mass flowrate",
         is_input=True,
         input_category="Feed",
-        is_output=False,
+        is_output=True,
+        output_category="Feed",
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
@@ -483,23 +484,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Feed
     exports.add(
-        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hour,
-        display_units="m3/hr",
+        obj=fs.feed_salinity,
+        name="NaCl mass concentration",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg m^-3",
         rounding=2,
-        description="Inlet volumetric flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Feed",
-    )
-    exports.add(
-        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=2,
-        description="Inlet NaCl concentration",
+        description="Feed NaCl mass concentration",
         is_input=False,
         is_output=True,
         output_category="Feed",
@@ -507,12 +497,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Product
     exports.add(
-        obj=fs.product.properties[0].flow_vol,
+        obj=fs.product.properties[0].flow_vol_phase["Liq"],
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
-        description="Outlet product water volumetric flow rate",
+        description="Product water volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category="Product",
@@ -523,7 +513,18 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.mol / pyunits.meter**3,
         display_units="mol m^-3",
         rounding=3,
-        description="Outlet product water NaCl molar concentration",
+        description="Product water NaCl molar concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Product",
+    )
+    exports.add(
+        obj=fs.product_salinity,
+        name="NaCl mass concentration",
+        ui_units=pyunits.kg / pyunits.meter**3,
+        display_units="kg m^-3",
+        rounding=3,
+        description="Product water NaCl mass concentration",
         is_input=False,
         is_output=True,
         output_category="Product",
@@ -531,12 +532,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Disposal
     exports.add(
-        obj=fs.disposal.properties[0].flow_vol,
+        obj=fs.disposal.properties[0].flow_vol_phase["Liq"],
         name="Volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
-        description="Outlet disposal water volumetric flow rate",
+        description="Disposal water volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category="Disposal",
@@ -547,10 +548,21 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.mol / pyunits.meter**3,
         display_units="mol m^-3",
         rounding=3,
-        description="Outlet disposal water NaCl molar concentration",
+        description="Disposal water NaCl molar concentration",
         is_input=False,
         is_output=True,
         output_category="Disposal",
+    )
+    exports.add(
+        obj=fs.disposal_salinity,
+        name="NaCl mass concentration",
+        ui_units=pyunits.kg / pyunits.meter**3,
+        display_units="kg m^-3",
+        rounding=3,
+        description="Disposal water NaCl mass concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Product",
     )
 
     # System metrics
