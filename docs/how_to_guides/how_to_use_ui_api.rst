@@ -42,6 +42,7 @@ similar to this::
                 },
             },
         )
+
 There are 3 required functions: 
 
 1. ``do_export`` - This function defines the variables that will be displayed on the UI.
