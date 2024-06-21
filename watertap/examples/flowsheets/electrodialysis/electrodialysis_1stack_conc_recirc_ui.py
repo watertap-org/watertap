@@ -73,7 +73,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.EDstack.voltage_applied[0],
         name="Stack voltage",
-        ui_units=pyunits.mol / pyunits.m**3,
+        ui_units=pyunits.volt,
         display_units="V",
         rounding=3,
         description="Applied constant voltage on the ED stack",
