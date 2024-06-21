@@ -115,7 +115,7 @@ jobs:
         pip install -U ray
         echo '::endgroup::'
         echo '::group::Output of "conda install -c conda-forge cyipopt" command'
-        conda install -c conda-forge cyipopt
+        conda install -c conda-forge cyipopt "numpy<2"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -170,6 +170,9 @@ jobs:
           # but does require token for other workflows e.g. merge to `main`
           # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
           token: ${{ secrets.CODECOV_TOKEN }}
+          # downgrading after v0.7.0 broke tokenless upload
+          # see codecov/codecov-action#1487
+          version: v0.6.0
 
   user-mode-pytest:
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
