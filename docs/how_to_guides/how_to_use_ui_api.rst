@@ -86,7 +86,7 @@ By default, the file is located in the same directory as the Python module.
 The format of the file is documented in the :meth:`FlowsheetExport.from_csv` method, but it basically puts the
 API keywords as columns in a table. For example, the CSV table for the API calls above would look like:
 
-.. csv-table:: nf_exports.csv
+.. csv-table:: oaro_exports.csv
     :header: "obj", "name", "descriptions", "ui_units", "display_units", "rounding", "is_input", "input_category", "is_output"
 
     "fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]","Water mass flowrate","Inlet water mass flowrate","units.kg / units.w","kg/s",3,true,"Feed",false
