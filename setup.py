@@ -80,12 +80,8 @@ setup(
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo>=6.6.1",  # (also needed for units in electrolyte database (edb))
+        "pyomo>=6.6.1",
         "pyyaml",  # watertap.core.wt_database
-        # the following requirements are for the electrolyte database (edb)
-        "pymongo>3",  # database interface
-        "fastjsonschema",  # schema validation
-        "click",  # command-line tools with Click
         # for parameter_sweep
         "h5py",
         "requests",
@@ -98,8 +94,6 @@ setup(
     extras_require={
         "testing": [
             "pytest",
-            "json-schema-for-humans",
-            "mongomock",
             "pandas",
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
@@ -121,12 +115,10 @@ setup(
             "urllib3 < 2",  # see watertap-org/watertap#1021,
             # other requirements
             "linkify-it-py",
-            "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
             # other requirements
             "pytest",  # test framework
             "pytest-cov",  # code coverage
-            "mongomock",  # mongodb mocking for testing
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
         ],
@@ -144,10 +136,6 @@ setup(
         ],
     },
     entry_points={
-        # add edb CLI commands
-        "console_scripts": [
-            "edb = watertap.edb.commands:command_base",
-        ],
         "watertap.flowsheets": [
             "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
             "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",

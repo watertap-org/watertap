@@ -1454,7 +1454,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Bed Depth"] = self.bed_depth
         var_dict["Col. Height to Diam. Ratio"] = self.col_height_to_diam_ratio
         var_dict["Bed Porosity"] = self.bed_porosity
-        var_dict["Service Flow Rate [BV/hr]"] = self.service_flow_rate
+        var_dict["Service Flow Rate"] = self.service_flow_rate
         var_dict["Bed Velocity"] = self.vel_bed
         var_dict["Resin Particle Diameter"] = self.resin_diam
         var_dict["Resin Bulk Density"] = self.resin_bulk_dens
@@ -1464,8 +1464,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Peclet Number (bed)"] = self.N_Pe_bed
         var_dict["Peclet Number (particle)"] = self.N_Pe_particle
         if self.config.isotherm == IsothermType.langmuir:
-            var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity
-            var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity
+            var_dict["Total Resin Capacity"] = self.resin_max_capacity
+            var_dict["Usable Resin Capacity"] = self.resin_eq_capacity
             var_dict["Number Transfer Units"] = self.num_transfer_units
             var_dict["Total Mass Removed [equivalents]"] = self.mass_removed[target_ion]
             var_dict["Dimensionless Time"] = self.dimensionless_time

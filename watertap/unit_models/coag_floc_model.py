@@ -1283,9 +1283,9 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         t = time_point
         return {
             "vars": {
-                "Total Power Usage  (kW)": self.total_power[t],
-                "Rapid Mixing Power (kW)": self.rapid_mixing_power[t],
-                "Flocc Mixing Power (kW)": self.flocculation_power[t],
+                "Total Power Usage": self.total_power[t],
+                "Rapid Mixing Power": self.rapid_mixing_power[t],
+                "Flocc Mixing Power": self.flocculation_power[t],
             },
             "exprs": {},
             "params": {},

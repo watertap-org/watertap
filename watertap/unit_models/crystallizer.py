@@ -772,22 +772,20 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        var_dict["Operating Temperature (K)"] = self.temperature_operating
-        var_dict["Operating Pressure (Pa)"] = self.pressure_operating
-        var_dict["Magma density of solution (Kg/m**3)"] = self.dens_mass_magma
-        var_dict["Slurry density (Kg/m3)"] = self.dens_mass_slurry
+        var_dict["Operating Temperature"] = self.temperature_operating
+        var_dict["Operating Pressure"] = self.pressure_operating
+        var_dict["Magma density of solution"] = self.dens_mass_magma
+        var_dict["Slurry density"] = self.dens_mass_slurry
         var_dict["Heat requirement"] = self.work_mechanical[time_point]
-        var_dict["Crystallizer diameter (m)"] = self.diameter_crystallizer
-        var_dict["Magma circulation flow rate (m**3/s)"] = (
-            self.magma_circulation_flow_vol
-        )
+        var_dict["Crystallizer diameter"] = self.diameter_crystallizer
+        var_dict["Magma circulation flow rate"] = self.magma_circulation_flow_vol
         var_dict["Vol. frac. of solids in suspension, 1-E"] = (
             self.product_volumetric_solids_fraction
         )
         var_dict["Residence time"] = self.t_res
-        var_dict["Crystallizer minimum active volume (m**3)"] = self.volume_suspension
-        var_dict["Suspension height in crystallizer (m)"] = self.height_slurry
-        var_dict["Crystallizer height (m)"] = self.height_crystallizer
+        var_dict["Crystallizer minimum active volume"] = self.volume_suspension
+        var_dict["Suspension height in crystallizer"] = self.height_slurry
+        var_dict["Crystallizer height"] = self.height_crystallizer
 
         for j in self.config.property_package.solute_set:
             yield_mem_name = f"{j} yield (fraction)"
