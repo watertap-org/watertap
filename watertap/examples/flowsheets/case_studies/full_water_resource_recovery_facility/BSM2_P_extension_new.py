@@ -111,12 +111,22 @@ def main(bio_P=False):
     print("----------------   Re-scaling  ----------------")
     badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
     for x in badly_scaled_var_list:
+        old_sf = iscale.get_scaling_factor(x[0])
         var_name = "m." + str(x[0].name)
+        # power = round(pyo.log10(abs(x[0].value)))
+        # sf = 1 / 10 ** power
+
+        if 1 < x[0].value < 10:
+            sf = 1
+        else:
+            power = round(pyo.log10(abs(x[0].value)))
+            sf = 1 / 10**power
+
+        iscale.set_scaling_factor(x[0], sf)
+
         print(
-            f" The scaling factor for {var_name} is: {iscale.get_scaling_factor(x[0])}"
+            f" The scaling factor for {var_name} ({x[0].value}) was {old_sf}, but is now {sf}"
         )
-        # print(f" The scaling factor for {x[0].name} is: {iscale.get_scaling_factor(x[0])}")
-        # iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
 
     # print(
     #     "----------------   badly_scaled_var_list after re-scaling  ----------------"
