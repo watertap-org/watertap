@@ -75,19 +75,18 @@ __author__ = "Alexander V. Dudchenko"
 def main():
     m = build()
     initialize(m)
+    m.fs.Pretreatment.separator.component_removal_percent["X"].fix(50)
+    m.fs.Pretreatment.separator.separation_cost["X"].fix(0.5)
     m.fs.Valorizer.separator.product_value["X"].fix(1)
     m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)
 
-    m.fs.Desal_1.desalter.water_recovery.unfix()
-    m.fs.Desal_1.desalter.brine_solids_concentration.fix(10)
-    m.fs.Desal_2.desalter.water_recovery.fix(25)
+    m.fs.Desal_1.desalter.water_recovery.fix(80)
+    m.fs.Desal_2.desalter.water_recovery.fix(50)
     m.fs.Desal_2.desalter.recovery_cost.fix(0.01)
     m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
     m.fs.Desal_3.desalter.water_recovery.unfix()
     m.fs.Desal_3.desalter.brine_water_percent.fix(80)
-
     solve(m)
-    display_processes(m.fs)
 
 
 def build(
@@ -134,7 +133,7 @@ def build(
                     "base_cost": 10,
                     "recovery_cost": 0.0,
                     "min_recovery": 0,
-                    "max_recovery": 99,
+                    "max_recovery": 99.9,
                     "default_recovery": 90,
                 },
             },
@@ -313,8 +312,8 @@ def set_feed(m):
     m.fs.feed.properties[0].temperature.fix(298.15)
     m.fs.feed.properties[0].pressure.fix(101325)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
-    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "TDS"].fix(3.5 / 1000)
-    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "X"].fix(0.3 / 1000)
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "TDS"].fix(3.5)  # kg/m3 or g/L
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "X"].fix(0.3)  # kg/m3 or g/L
     update_feed(m.fs)
 
 
@@ -497,6 +496,7 @@ def update_feed(blk, solver=None):
     if solver == None:
         solver = get_solver()
     _logger.info("solved feed")
+    fix_conc_feed(blk)
     solver.solve(blk.feed.properties[0])
     blk.feed.properties[0].conc_mass_phase_comp.unfix()
     blk.feed.properties[0].flow_mass_phase_comp.fix()

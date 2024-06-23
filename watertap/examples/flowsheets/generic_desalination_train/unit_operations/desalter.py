@@ -79,7 +79,7 @@ def build(
         units=pyunits.dimensionless,
         doc="water recovery",
     )
-    iscale.set_scaling_factor(block.desalter.brine_water_percent, 1)
+    iscale.set_scaling_factor(block.desalter.brine_water_percent, 1 / 100)
     block.desalter.brine_water_percent.unfix()
     block.desalter.brine_unit.properties_out[0].flow_vol_phase[...]
 
@@ -116,7 +116,7 @@ def build(
         ]
         * 100
     )
-    iscale.constraint_scaling_transform(block.desalter.water_percent_eq, 1)
+    iscale.constraint_scaling_transform(block.desalter.water_percent_eq, 1 / 100)
 
 
 def initialize(m, blk, solver):
@@ -137,5 +137,6 @@ def display(m, blk):
     _logger.info(
         f"Product flow {value(blk.desalter.product_properties[0].flow_mass_phase_comp['Liq','H2O'])}"
     )
+    _logger.info(f"Brine water content (%) {value(blk.desalter.brine_water_percent)}")
     _logger.info(f"Recovery (%) {value(blk.desalter.water_recovery)}")
     _logger.info(f"Annual cost ($) {value(blk.desalter.annual_cost)}")
