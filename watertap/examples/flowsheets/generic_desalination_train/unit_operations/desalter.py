@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from watertap.unit_models.generic_units.generic_desalter import (
+from watertap.unit_models.generic_desalter import (
     GenericDesalter,
 )
 from pyomo.environ import (

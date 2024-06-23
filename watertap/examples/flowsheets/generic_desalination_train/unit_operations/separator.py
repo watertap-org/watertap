@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from watertap.unit_models.generic_units.generic_separation import (
+from watertap.unit_models.generic_separation import (
     GenericSeparation,
 )
 from pyomo.environ import (

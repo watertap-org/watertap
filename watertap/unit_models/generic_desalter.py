@@ -15,7 +15,8 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.network import Arc
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (
@@ -28,7 +29,6 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
-
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
@@ -40,8 +40,8 @@ __author__ = "Alexander V. Dudchenko"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("GenericSeparation")
-class GenericSeparationData(UnitModelBlockData):
+@declare_process_block_class("GenericDesalter")
+class GenericDesalterData(UnitModelBlockData):
     """
     GenericDesalter - users must provide water recovery
     """
@@ -161,6 +161,20 @@ class GenericSeparationData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "has_full_reporting",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Level of reporting results",
+            doc="""Level of reporting results.
+            **default** - False.
+            **Valid values:** {
+            **False** - include minimal reporting of results,
+            **True** - report additional properties of interest that aren't constructed by
+            the unit model by default. Also, report averaged expression values""",
+        ),
+    )
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -170,37 +184,23 @@ class GenericSeparationData(UnitModelBlockData):
         self._get_property_package()
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        self.component_removal_percent = Var(
-            self.config.property_package.component_list,
-            initialize=0,
-            bounds=(0, 100),
+        self.water_recovery = Var(
+            initialize=80,
+            bounds=(None, 99.9999),
             domain=Reals,
             units=pyunits.dimensionless,
-            doc="removal_percent",
+            doc="water recovery",
         )
-        self.component_removal_percent.fix()
-        self.additive_dose = Var(
-            initialize=0,
-            domain=Reals,
-            units=pyunits.mg / pyunits.L,
-            doc="dose of chemical",
-        )
-        self.additive_dose.fix()
-        self.additive_mass_flow = Var(
-            initialize=0,
-            domain=Reals,
-            units=pyunits.kg / pyunits.s,
-            doc="dose of chemical",
-        )
-        self.separator_unit = ControlVolume0DBlock(
+        self.water_recovery.fix()
+        self.brine_unit = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
-        self.separator_unit.add_state_blocks(has_phase_equilibrium=False)
+        self.brine_unit.add_state_blocks(has_phase_equilibrium=False)
 
-        self.separator_unit.add_material_balances(
+        self.brine_unit.add_material_balances(
             balance_type=self.config.material_balance_type,
             has_mass_transfer=True,
         )
@@ -214,28 +214,19 @@ class GenericSeparationData(UnitModelBlockData):
         self.product_properties[0].define_state_vars()
         self.add_inlet_port(
             name="inlet",
-            block=self.separator_unit.properties_in,
+            block=self.brine_unit.properties_in,
         )
-        self.add_port(name="treated", block=self.separator_unit.properties_out)
+        self.add_port(name="brine", block=self.brine_unit.properties_out)
         self.add_port(name="product", block=self.product_properties)
 
-        self.addive_eq = Constraint(
-            expr=self.additive_mass_flow
-            == pyunits.convert(self.additive_dose, to_units=pyunits.kg / pyunits.L)
-            * pyunits.convert(
-                self.separator_unit.properties_in[0].flow_vol_phase["Liq"],
-                to_units=pyunits.L / pyunits.s,
-            )
-        )
-
-        @self.separator_unit.Constraint(
+        @self.brine_unit.Constraint(
             self.flowsheet().config.time,
             doc="isothermal energy balance for reactor",
         )
         def eq_isothermal(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
-        @self.separator_unit.Constraint(
+        @self.brine_unit.Constraint(
             self.flowsheet().config.time,
             doc="isothermal energy balance for reactor",
         )
@@ -248,7 +239,7 @@ class GenericSeparationData(UnitModelBlockData):
         )
         def eq_isothermal(b, t):
             return (
-                b.separator_unit.properties_in[t].temperature
+                b.brine_unit.properties_in[t].temperature
                 == b.product_properties[t].temperature
             )
 
@@ -258,35 +249,36 @@ class GenericSeparationData(UnitModelBlockData):
         )
         def eq_isobaric(b, t):
             return (
-                b.separator_unit.properties_in[t].pressure
+                b.brine_unit.properties_in[t].pressure
                 == b.product_properties[t].pressure
             )
 
-        @self.separator_unit.Constraint(
+        @self.brine_unit.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass balance",
         )
         def eq_ion_transfer(b, t, phase, ion):
-            if (
-                b.config.property_package.config.material_flow_basis
-                == MaterialFlowBasis.mass
-            ):
-                return (
-                    b.properties_in[t].flow_mass_phase_comp[phase, ion]
-                    * (1 - self.component_removal_percent[ion] / 100)
-                    == b.properties_out[t].flow_mass_phase_comp[phase, ion]
-                )
-            elif (
-                b.config.property_package.config.material_flow_basis
-                == MaterialFlowBasis.molar
-            ):
-                return (
-                    b.properties_in[t].flow_mol_phase_comp[phase, ion]
-                    * (1 - self.component_removal_percent[ion] / 100)
-                    == b.properties_out[t].flow_mol_phase_comp[phase, ion]
-                )
+            if ion == "H2O":
+                return Constraint.Skip
+            else:
+                if (
+                    b.config.property_package.config.material_flow_basis
+                    == MaterialFlowBasis.mass
+                ):
+                    return (
+                        b.properties_in[t].flow_mass_phase_comp[phase, ion]
+                        == b.properties_out[t].flow_mass_phase_comp[phase, ion]
+                    )
+                elif (
+                    b.config.property_package.config.material_flow_basis
+                    == MaterialFlowBasis.molar
+                ):
+                    return (
+                        b.properties_in[t].flow_mol_phase_comp[phase, ion]
+                        == b.properties_out[t].flow_mol_phase_comp[phase, ion]
+                    )
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -295,54 +287,49 @@ class GenericSeparationData(UnitModelBlockData):
             doc="Mass balance",
         )
         def eq_product_ion_transfer(b, t, phase, ion):
-            if (
-                b.config.property_package.config.material_flow_basis
-                == MaterialFlowBasis.mass
-            ):
-                return (
-                    b.product_properties[t].flow_mass_phase_comp[phase, ion]
-                    == b.separator_unit.properties_in[t].flow_mass_phase_comp[
-                        phase, ion
-                    ]
-                    * self.component_removal_percent[ion]
-                    / 100
-                )
-            elif (
-                b.config.property_package.config.material_flow_basis
-                == MaterialFlowBasis.molar
-            ):
-                return (
-                    b.product_properties[t].flow_mol_phase_comp[phase, ion]
-                    == b.separator_unit.properties_in[t].flow_mol_phase_comp[phase, ion]
-                    * self.component_removal_percent[ion]
-                    / 100
-                )
+            if ion == "H2O":
+                return Constraint.Skip
+            else:
+                if (
+                    b.config.property_package.config.material_flow_basis
+                    == MaterialFlowBasis.mass
+                ):
+                    return (
+                        b.product_properties[t].flow_mass_phase_comp[phase, ion] == 0.0
+                    )
+                elif (
+                    b.config.property_package.config.material_flow_basis
+                    == MaterialFlowBasis.molar
+                ):
+                    return (
+                        b.product_properties[t].flow_mass_phase_comp[phase, ion] == 0.0
+                    )
 
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     # self.config.property_package.phase_list,
-        #     # self.config.property_package.component_list,
-        #     doc="Mass balance with reaction terms",
-        # )
-        # def eq_water_recovery(b, t):
-        #     return (
-        #         b.separator_unit.properties_in[t].flow_vol_phase["Liq"]
-        #         * (self.water_recovery)
-        #         == b.product_properties[t].flow_vol_phase["Liq"]
-        #     )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            # self.config.property_package.phase_list,
+            # self.config.property_package.component_list,
+            doc="Mass balance with reaction terms",
+        )
+        def eq_water_recovery(b, t):
+            return (
+                b.brine_unit.properties_in[t].flow_vol_phase["Liq"]
+                * (self.water_recovery / 100)
+                == b.product_properties[t].flow_vol_phase["Liq"]
+            )
 
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     # self.config.property_package.phase_list,
-        #     # self.config.property_package.component_list,
-        #     doc="Mass balance with reaction terms",
-        # )
-        # def eq_brine_flow(b, t):
-        #     return b.separator_unit.properties_out[t].flow_vol_phase[
-        #         "Liq"
-        #     ] == b.separator_unit.properties_in[t].flow_vol_phase["Liq"] * (
-        #         1 - self.water_recovery
-        #     )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            # self.config.property_package.phase_list,
+            # self.config.property_package.component_list,
+            doc="Mass balance with reaction terms",
+        )
+        def eq_brine_flow(b, t):
+            return b.brine_unit.properties_out[t].flow_vol_phase[
+                "Liq"
+            ] == b.brine_unit.properties_in[t].flow_vol_phase["Liq"] * (
+                1 - self.water_recovery / 100
+            )
 
     def initialize_build(
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
@@ -366,7 +353,7 @@ class GenericSeparationData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
-        control_vol_flags = self.separator_unit.initialize(
+        control_vol_flags = self.brine_unit.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -376,19 +363,25 @@ class GenericSeparationData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
-        self.separator_unit.release_state(control_vol_flags, outlvl)
+        self.brine_unit.release_state(control_vol_flags, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        for (t, j), con in self.eq_ion_transfer.items():
+        for (t, p, j), con in self.brine_unit.eq_ion_transfer.items():
             sf = iscale.get_scaling_factor(
-                self.separator_unit.properties_in[t].get_material_flow_terms("Liq", j)
+                self.brine_unit.properties_in[t].get_material_flow_terms(p, j)
             )
             iscale.constraint_scaling_transform(con, sf)
-        iscale.constraint_scaling_transform(self.eq_isobaric, 1 / 1e5)
-        iscale.constraint_scaling_transform(self.separator_unit.eq_isobaric, 1 / 1e5)
-        iscale.constraint_scaling_transform(self.separator_unit.eq_isothermal, 1 / 100)
-        iscale.constraint_scaling_transform(self.eq_isothermal, 1 / 100)
-        # iscale.constraint_scaling_transform(self.eq_water_recovery, 1)
-        # iscale.set_scaling_factor(self.water_recovery, 1)
+        sf = iscale.get_scaling_factor(
+            self.brine_unit.properties_in[0].pressure, 1 / 1e5
+        )
+        iscale.constraint_scaling_transform(self.eq_isobaric[0], sf)
+        iscale.constraint_scaling_transform(self.brine_unit.eq_isobaric[0], sf)
+        sf = iscale.get_scaling_factor(
+            self.brine_unit.properties_in[0].temperature, 1 / 100
+        )
+        iscale.constraint_scaling_transform(self.brine_unit.eq_isothermal[0], sf)
+        iscale.constraint_scaling_transform(self.eq_isothermal[0], sf)
+        iscale.constraint_scaling_transform(self.eq_water_recovery[0], 1)
+        iscale.set_scaling_factor(self.water_recovery, 1)

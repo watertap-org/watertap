@@ -174,13 +174,14 @@ def build(
         use_watertap_convention=False,
     )
     """ set up mcas as our default prop package for tracking ions etc."""
+
     mcas_props = {
         "activity_coefficient_model": ActivityCoefficientModel.ideal,
         "density_calculation": DensityCalculation.constant,
     }
     mcas_props.update(source_details)
     mcas_props.update({"material_flow_basis": MaterialFlowBasis.mass})
-
+    print(mcas_props)
     """ build all the processes and connection"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
