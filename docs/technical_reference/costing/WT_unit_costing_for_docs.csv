@@ -1,0 +1,28 @@
+﻿name,unit
+aeration tank,aeration_tank
+anaerobic digester,anaerobic_digester
+clarifier,clarifier
+compressor,compressor
+crystallizer,crystallizer
+cstr injection,cstr_injection
+cstr,cstr
+dewatering,dewatering
+electrodialysis,electrodialysis
+electrolyzer,electrolyzer
+electroNP,electroNP
+energy recovery device,energy_recovery_device
+evaporator,evaporator
+gac,gac
+heat exchanger,heat_exchanger
+heater chiller,heater_chiller
+ion exchange,ion_exchange
+membrane distillation,membrane_distillation
+mixer,mixer
+nanofiltration,nanofiltration
+osmotically assisted reverse osmosis,osmotically_assisted_reverse_osmosis
+pressure exchanger,pressure_exchanger
+pump,pump
+reverse osmosis,reverse_osmosis
+stoichiometric reactor,stoichiometric_reactor
+thickener,thickener
+uv aop,uv_aop

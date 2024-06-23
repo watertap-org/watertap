@@ -36,7 +36,9 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
     TransportModel,
+    ModuleType,
 )
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
 
@@ -100,7 +102,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
-            friction_factor=self.config.friction_factor,
         )
 
         self.feed_side.add_control_volume_isothermal_conditions()
@@ -287,10 +288,24 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         if include_constraint:
-            # Membrane area equation
-            @self.Constraint(doc="Total Membrane area")
-            def eq_area(b):
-                return b.area == b.length * b.width
+            if self.config.module_type == ModuleType.flat_sheet:
+                # Membrane area equation for flat plate membranes
+                @self.Constraint(doc="Total Membrane area")
+                def eq_area(b):
+                    return b.area == b.length * b.width
+
+            elif self.config.module_type == ModuleType.spiral_wound:
+                # Membrane area equation
+                @self.Constraint(doc="Total Membrane area")
+                def eq_area(b):
+                    return b.area == b.length * 2 * b.width
+
+            else:
+                raise ConfigurationError(
+                    "Unsupported membrane module type: {}".format(
+                        self.config.module_type
+                    )
+                )
 
     def _add_flux_balance(self):
 
@@ -616,6 +631,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
+        # pre-solve using interval arithmetic
+        interval_initializer(self)
+
         # Create solver
         opt = get_solver(solver, optarg)
 
@@ -757,20 +775,20 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             var_dict["Hydraulic Diameter"] = self.feed_side.dh
 
         if self.config.has_full_reporting:
-            expr_dict["Average Solvent Flux (LMH)"] = (
-                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
-            )
+            expr_dict["Average Solvent Mass Flux"] = self.flux_mass_phase_comp_avg[
+                time_point, "Liq", "H2O"
+            ]
             if hasattr(self.feed_side, "N_Re_avg"):
                 expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
                     time_point
                 ]
             for j in self.config.property_package.solute_set:
-                expr_dict[f"{j} Average Solute Flux (GMH)"] = (
-                    self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
+                expr_dict[f"{j} Average Solute Mass Flux"] = (
+                    self.flux_mass_phase_comp_avg[time_point, "Liq", j]
                 )
                 if hasattr(self.feed_side, "K_avg"):
-                    expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
-                        self.feed_side.K_avg[time_point, j] * 3.6e6
+                    expr_dict[f"{j} Average Mass Transfer Coefficient"] = (
+                        self.feed_side.K_avg[time_point, j]
                     )
 
         # TODO: add more vars
