@@ -161,18 +161,16 @@ class GenericDesalterData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
+
     CONFIG.declare(
-        "has_full_reporting",
+        "tracked_solids_list",
         ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Level of reporting results",
-            doc="""Level of reporting results.
-            **default** - False.
-            **Valid values:** {
-            **False** - include minimal reporting of results,
-            **True** - report additional properties of interest that aren't constructed by
-            the unit model by default. Also, report averaged expression values""",
+            default=None,
+            domain=list,
+            description="List of solids that can form in desalter unit",
+            doc="""A list of solids that will should be tracked in the waste of desalter unit, 
+            if None, then model will not include calculation of water content in solids or 
+            solids concentration""",
         ),
     )
 
@@ -192,6 +190,21 @@ class GenericDesalterData(UnitModelBlockData):
             doc="water recovery",
         )
         self.water_recovery.fix()
+        if self.config.tracked_solids_list is not None:
+            self.brine_solids_concentration = Var(
+                initialize=80,
+                bounds=(None, None),
+                domain=Reals,
+                units=pyunits.kg / pyunits.m**3,
+                doc="water recovery",
+            )
+            self.brine_water_mass_percent = Var(
+                initialize=80,
+                bounds=(None, None),
+                domain=Reals,
+                units=pyunits.dimensionless,
+                doc="water recovery",
+            )
         self.brine_unit = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
@@ -307,8 +320,6 @@ class GenericDesalterData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            # self.config.property_package.phase_list,
-            # self.config.property_package.component_list,
             doc="Mass balance with reaction terms",
         )
         def eq_water_recovery(b, t):
@@ -320,8 +331,6 @@ class GenericDesalterData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            # self.config.property_package.phase_list,
-            # self.config.property_package.component_list,
             doc="Mass balance with reaction terms",
         )
         def eq_brine_flow(b, t):
@@ -330,6 +339,46 @@ class GenericDesalterData(UnitModelBlockData):
             ] == b.brine_unit.properties_in[t].flow_vol_phase["Liq"] * (
                 1 - self.water_recovery / 100
             )
+
+        if self.config.tracked_solids_list is not None:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="Mass balance with reaction terms",
+            )
+            def solids_concentration_eq(b, t):
+                return b.brine_solids_concentration * b.brine_unit.properties_out[
+                    t
+                ].flow_vol_phase["Liq"] == sum(
+                    [
+                        b.brine_unit.properties_out[t].flow_mass_phase_comp["Liq", tds]
+                        for tds in self.config.tracked_solids_list
+                    ]
+                )
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="Mass balance with reaction terms",
+            )
+            def water_mass_frac_eq(b, t):
+                return (
+                    b.brine_water_mass_percent
+                    * (
+                        sum(
+                            [
+                                b.brine_unit.properties_out[0].flow_mass_phase_comp[
+                                    "Liq", tds
+                                ]
+                                for tds in self.config.tracked_solids_list
+                            ]
+                        )
+                        + b.brine_unit.properties_out[0].flow_mass_phase_comp[
+                            "Liq", "H2O"
+                        ]
+                    )
+                    == b.brine_unit.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+                    * 100
+                )
 
     def initialize_build(
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None

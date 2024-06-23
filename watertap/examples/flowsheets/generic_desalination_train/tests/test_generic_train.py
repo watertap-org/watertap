@@ -37,7 +37,7 @@ def test_standard_train():
     m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
     # config as crystalizer
     m.fs.Desal_3.desalter.water_recovery.unfix()
-    m.fs.Desal_3.desalter.brine_water_percent.fix(80)
+    m.fs.Desal_3.desalter.brine_water_mass_percent.fix(80)
 
     m.fs.Valorizer.separator.product_value["X"].fix(1)
     m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)

@@ -51,7 +51,9 @@ def build():
 
     m.fs.properties = MCASParameterBlock(**mcas_props)
 
-    m.fs.unit = GenericDesalter(property_package=m.fs.properties)
+    m.fs.unit = GenericDesalter(
+        property_package=m.fs.properties, tracked_solids_list=["TDS"]
+    )
     m.fs.unit.water_recovery.fix(50)
     m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1)
     m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.1)
@@ -83,5 +85,7 @@ def test_solve():
     assert value(
         m.fs.unit.product.flow_mass_phase_comp[0, "Liq", "H2O"]
     ) == pytest.approx(0.555, rel=1e-3)
-
+    assert value(m.fs.unit.brine_solids_concentration) == pytest.approx(
+        180.180, rel=1e-3
+    )
     return m

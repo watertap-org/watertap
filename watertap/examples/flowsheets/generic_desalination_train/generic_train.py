@@ -85,7 +85,7 @@ def main():
     m.fs.Desal_2.desalter.recovery_cost.fix(0.01)
     m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
     m.fs.Desal_3.desalter.water_recovery.unfix()
-    m.fs.Desal_3.desalter.brine_water_percent.fix(80)
+    m.fs.Desal_3.desalter.brine_water_mass_percent.fix(80)
     solve(m)
 
 
