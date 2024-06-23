@@ -17,12 +17,6 @@ from idaes.core import FlowsheetBlock
 
 import idaes.core.util.scaling as iscale
 
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
-    PressureChangeType,
-)
 
 from watertap.unit_models.generic_separation import (
     GenericSeparation,
@@ -34,7 +28,6 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MaterialFlowBasis,
 )
 
-from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # -----------------------------------------------------------------------------

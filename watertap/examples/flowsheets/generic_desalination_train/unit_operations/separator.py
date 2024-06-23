@@ -15,7 +15,6 @@ from watertap.unit_models.generic_separation import (
 )
 from pyomo.environ import (
     value,
-    ConcreteModel,
     Var,
     units as pyunits,
 )
@@ -23,6 +22,7 @@ from watertap.examples.flowsheets.generic_desalination_train.costing import (
     separator_costing,
 )
 import logging
+
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
