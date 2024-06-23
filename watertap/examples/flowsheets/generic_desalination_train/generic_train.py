@@ -356,7 +356,7 @@ def initialize(m, solver=None, **kwargs):
     if solver is None:
         solver = get_solver()
     m.fs.feed.initialize(optarg=solver.options)
-    # loop over all the proceses and thier arcs and initalize
+    # loop over all the process and their arcs and initialize
     # right now only supporting linear trains with no recycle
     for i, proc_dict in enumerate(m.fs.process_order):
         propagate_state(m.arc_order[i])
@@ -500,8 +500,6 @@ def update_feed(blk, solver=None):
     solver.solve(blk.feed.properties[0])
     blk.feed.properties[0].conc_mass_phase_comp.unfix()
     blk.feed.properties[0].flow_mass_phase_comp.fix()
-    total_charge = 0
-    print("total_charge", total_charge)
 
 
 def display_processes(blk):

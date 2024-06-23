@@ -27,23 +27,6 @@ def export_to_ui():
         get_diagram=get_diagram,
         requires_idaes_solver=True,
         category=FlowsheetCategory.wastewater,
-        # build_options={
-        #     # "train_type": {
-        #     #     "name": "Treatment train type",
-        #     #     "display_name": "Treatment train type",
-        #     #     "values_allowed": [
-        #     #         "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
-        #     #         "Pretreatment>Desal1>Desal2>Valorizer",
-        #     #     ],
-        #     #     "value": "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer",
-        #     # },
-        #     "water_source_type": {
-        #         "name": "Type of source water",
-        #         "display_name": "Source water",
-        #         "values_allowed": ["generic", "BGW1", "BGW5", "Seawater"],
-        #         "value": "generic",
-        #     },
-        # },
     )
 
 
@@ -89,44 +72,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             chart_type="stacked_bar_with_net",
             chart_group="process_cost",
         )
-
-    # exports.add(
-    #     obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-    #     name="Feed flow rate",
-    #     ui_units=pyunits.m**3 / pyunits.day,
-    #     display_units="m^3/day",
-    #     rounding=2,
-    #     description="Feed flow rate",
-    #     is_input=True,
-    #     input_category="Feed",
-    #     is_output=True,
-    #     output_category="Feed",
-    # )
-    # exports.add(
-    #     obj=fs.product.properties[0].flow_vol_phase["Liq"],
-    #     name="Product flow rate",
-    #     ui_units=pyunits.m**3 / pyunits.day,
-    #     display_units="m^3/day",
-    #     rounding=2,
-    #     description="Feed flow rate",
-    #     is_input=False,
-    #     input_category="Product",
-    #     is_output=True,
-    #     output_category="Product",
-    # )
-    # exports.add(
-    #     obj=fs.disposal.properties[0].flow_vol_phase["Liq"],
-    #     name="Waste flow rate",
-    #     ui_units=pyunits.m**3 / pyunits.day,
-    #     display_units="m^3/day",
-    #     rounding=2,
-    #     description="Feed flow rate",
-    #     is_input=False,
-    #     input_category="Waste",
-    #     is_output=True,
-    #     output_category="Waste",
-    # )
-
     for proc in fs.process_order:
         block = proc["process_block"]
         process_name = proc["process_name"]
@@ -449,28 +394,14 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
 def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
-    print("UI FLOWSHEET", build_options)
-    # if build_options["Bypass"].value == "true":  # build with bypass
-
     solver = get_solver()
-    m = generic_train.build(
-        # train_type=build_options["train_type"].value,
-        # water_source=build_options["water_source_type"].value,
-    )
+    m = generic_train.build()
     generic_train.initialize(m, solver)
     return m
 
 
 def get_diagram(build_options):
-    # if (
-    #     build_options["train_type"].value
-    #     == "Pretreatment>Desal1>Desal2>Crystalizer>Valorizer"
-    # ):
-    #     return "pd1d2cv.png"
-    # elif build_options["train_type"].value == "Pretreatment>Desal1>Desal2>Valorizer":
-    #     return "pd1d2v.png"
-    # else:
-    return "fig_with_costs.png"  # "pd1d2cv.png"
+    return "fig_with_costs.png"
 
 
 def solve_flowsheet(flowsheet):
