@@ -125,19 +125,17 @@ def initialize(m, blk, solver):
 
 def unfix_opt_vars(m, blk):
     blk.desalter.water_recovery.unfix()
-    # blk.desalter.water_recovery.setlb(0)
-    # blk.desalter.water_recovery.setub(99.9)
 
 
 def display(m, blk):
     _logger.info(
-        f"Feed flow {value(blk.desalter.brine_unit.properties_in[0].flow_vol_phase['Liq'])}"
+        f"Feed flow {value(blk.desalter.brine_unit.properties_in[0].flow_mass_phase_comp['Liq','H2O'])}"
     )
     _logger.info(
-        f"Brine flow {value(blk.desalter.brine_unit.properties_out[0].flow_vol_phase['Liq'])}"
+        f"Brine flow {value(blk.desalter.brine_unit.properties_out[0].flow_mass_phase_comp['Liq','H2O'])}"
     )
     _logger.info(
-        f"Product flow {value(blk.desalter.product_properties[0].flow_vol_phase['Liq'])}"
+        f"Product flow {value(blk.desalter.product_properties[0].flow_mass_phase_comp['Liq','H2O'])}"
     )
     _logger.info(f"Recovery (%) {value(blk.desalter.water_recovery)}")
     _logger.info(f"Annual cost ($) {value(blk.desalter.annual_cost)}")

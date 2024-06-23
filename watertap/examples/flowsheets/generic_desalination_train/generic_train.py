@@ -46,7 +46,6 @@ from idaes.models.unit_models import (
 
 import watertap.examples.flowsheets.generic_desalination_train.utils.scale_utils as scaleTools
 from pyomo.util.check_units import assert_units_consistent
-import watertap.examples.flowsheets.generic_desalination_train.source_water.source_water_importer as waterImporter
 from watertap.examples.flowsheets.generic_desalination_train.costing import (
     generic_costing,
     stream_costing,
@@ -75,29 +74,20 @@ __author__ = "Alexander V. Dudchenko"
 
 def main():
     m = build()
-
-    # m.fs.Valorizer.separator.product_value["X"].fix(1)
-    # m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)
-
     initialize(m)
-    # m.fs.Desal_1.desalter.water_recovery.unfix()
-    # m.fs.Desal_1.desalter.brine_solids_concentration.fix(10)
-    # m.fs.Desal_2.desalter.water_recovery.fix(25)
-    # m.fs.Desal_2.desalter.recovery_cost.fix(0.01)
-    # m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
-    # m.fs.Desal_3.desalter.water_recovery.unfix()
-    # m.fs.Desal_3.desalter.brine_water_percent.fix(80)
-    for k in [0.5, 1, 1.5, 2, 2.5, 3.0]:
+    m.fs.Valorizer.separator.product_value["X"].fix(1)
+    m.fs.Valorizer.separator.component_removal_percent["X"].fix(50)
 
-        solve(m)
-        display_processes(m.fs)
-        # display_processes(m)
-        # m.fs.Desal_1.desalter.brine_solids_concentration.display()
-    # m.fs.Desal_1.desalter.brine_water_percent.display()
-    # m.fs.Desal_3.desalter.brine_solids_concentration.display()
-    # m.fs.Desal_3.desalter.brine_water_percent.display()
-    # m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_mass_phase_comp.display()
-    # m.fs.Desal_3.desalter.brine_unit.properties_out[0].flow_vol_phase.display()
+    m.fs.Desal_1.desalter.water_recovery.unfix()
+    m.fs.Desal_1.desalter.brine_solids_concentration.fix(10)
+    m.fs.Desal_2.desalter.water_recovery.fix(25)
+    m.fs.Desal_2.desalter.recovery_cost.fix(0.01)
+    m.fs.Desal_2.desalter.recovery_cost_offset.fix(35)
+    m.fs.Desal_3.desalter.water_recovery.unfix()
+    m.fs.Desal_3.desalter.brine_water_percent.fix(80)
+
+    solve(m)
+    display_processes(m.fs)
 
 
 def build(
@@ -161,34 +151,27 @@ def build(
     }
 
     train_order = train_orders[train_type]
-
-    working_location = os.path.dirname(os.path.realpath(__file__))
-    """import source water"""
-    (
-        source_details,
-        source_mass_comp_dict,
-        source_pH,
-        tracked_solids,
-    ) = waterImporter.get_source_water_data(
-        working_location + "/source_water/{}.yaml".format(water_source),
-        use_watertap_convention=False,
-    )
     """ set up mcas as our default prop package for tracking ions etc."""
 
     mcas_props = {
         "activity_coefficient_model": ActivityCoefficientModel.ideal,
         "density_calculation": DensityCalculation.constant,
+        "solute_list": ["TDS", "X"],
+        "mw_data": {"H2O": 0.01801528, "TDS": 1, "X": 1},
+        "charge": {"TDS": 0.0, "X": 0.0},
+        "material_flow_basis": MaterialFlowBasis.mass,
     }
-    mcas_props.update(source_details)
-    mcas_props.update({"material_flow_basis": MaterialFlowBasis.mass})
-    print(mcas_props)
+
+    # defines solids used for precipitator tracking
+
+    tracked_solids = ["TDS"]
     """ build all the processes and connection"""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(**mcas_props)
     m.fs.costing = generic_costing.add_generic_costing_block()
+
     m.working_name = water_source + "_" + train_type.replace(">", "_")
-    m.working_location = working_location
 
     m.fs.feed = Feed(property_package=m.fs.properties)
     """  make sure these are constructed."""
@@ -300,9 +283,12 @@ def build(
     generic_costing.cost_process(
         m.fs.costing, m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
+
     TransformationFactory("network.expand_arcs").apply_to(m)
+
     """set in initial operating conditions"""
-    waterImporter.set_feed(m.fs, source_mass_comp_dict, 1)
+    set_feed(m)
+
     """ set scaling for feed_composition"""
     scaleTools.set_default_scaling(
         m.fs.feed.properties[0],
@@ -321,6 +307,15 @@ def build(
     _logger.info(f"DOFS:{degrees_of_freedom(m)}")
     assert degrees_of_freedom(m) == 0
     return m
+
+
+def set_feed(m):
+    m.fs.feed.properties[0].temperature.fix(298.15)
+    m.fs.feed.properties[0].pressure.fix(101325)
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "TDS"].fix(3.5 / 1000)
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "X"].fix(0.3 / 1000)
+    update_feed(m.fs)
 
 
 def add_flowsheet_level_constraints(m, blk):
@@ -410,9 +405,6 @@ def build_selected_processes(m, process_name, process_type, default_kwargs=None)
                 "opt_guess": None,
                 "init_args": None,
                 "display_func": desalter.display,
-                "phreeqc_func": None,
-                # "influent_pH": block.desalter.influent_pH,
-                # "effluent_pH": block.desalter.effluent_pH,
                 "default_scale_func": None,
             }
         )
@@ -434,9 +426,6 @@ def build_selected_processes(m, process_name, process_type, default_kwargs=None)
                 "opt_guess": None,
                 "init_args": None,
                 "display_func": separator.display,
-                "phreeqc_func": None,
-                # "influent_pH": block.desalter.influent_pH,
-                # "effluent_pH": block.desalter.effluent_pH,
                 "default_scale_func": None,
             }
         )
@@ -459,9 +448,6 @@ def build_selected_processes(m, process_name, process_type, default_kwargs=None)
                 "opt_guess": None,
                 "init_args": None,
                 "display_func": separator.display,
-                "phreeqc_func": None,
-                # "influent_pH": block.desalter.influent_pH,
-                # "effluent_pH": block.desalter.effluent_pH,
                 "default_scale_func": None,
             }
         )
@@ -505,19 +491,15 @@ def fix_conc_feed(blk):
     blk.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix()
 
 
-def update_feed(blk, solver):
+def update_feed(blk, solver=None):
+    """used to update feed composition based on what user enters
+    in ui, which uses concentration, rather then mass flow basis"""
     if solver == None:
         solver = get_solver()
     _logger.info("solved feed")
     solver.solve(blk.feed.properties[0])
     blk.feed.properties[0].conc_mass_phase_comp.unfix()
     blk.feed.properties[0].flow_mass_phase_comp.fix()
-    if ("Liq", "Cl") in blk.feed.properties[0].flow_mass_phase_comp.keys():
-        blk.feed.properties[0].assert_electroneutrality(
-            defined_state=True,
-            adjust_by_ion="Cl",
-            get_property="flow_mass_phase_comp",
-        )
     total_charge = 0
     print("total_charge", total_charge)
 
@@ -529,13 +511,13 @@ def display_processes(blk):
         _logger.info(f"{name} LCOW {value(var)}")
     _logger.info("Water recovery {}%".format(blk.water_recovery.value))
     _logger.info(
-        f"Feed flow (kg/s) {value(blk.feed.properties[0].flow_vol_phase['Liq'])}"
+        f"Feed flow (kg/s) {value(blk.feed.properties[0].flow_mass_phase_comp['Liq','H2O'])}"
     )
     _logger.info(
-        f"Product flow (kg/s) {value(blk.product.properties[0].flow_vol_phase['Liq'])}"
+        f"Product flow (kg/s) {value(blk.product.properties[0].flow_mass_phase_comp['Liq','H2O'])}"
     )
     _logger.info(
-        f"Disposal flow (kg/s) {value(blk.disposal.properties[0].flow_vol_phase['Liq'])}"
+        f"Disposal flow (kg/s) {value(blk.disposal.properties[0].flow_mass_phase_comp['Liq','H2O'])}"
     )
 
     _logger.info(f"Annual feed cost ($) {value(blk.feed.annual_cost)}")

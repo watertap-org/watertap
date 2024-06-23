@@ -369,14 +369,19 @@ class GenericSeparationData(UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        for (t, j), con in self.eq_ion_transfer.items():
+        for (t, p, j), con in self.separator_unit.eq_ion_transfer.items():
             sf = iscale.get_scaling_factor(
-                self.separator_unit.properties_in[t].get_material_flow_terms("Liq", j)
+                self.separator_unit.properties_in[t].get_material_flow_terms(p, j)
             )
             iscale.constraint_scaling_transform(con, sf)
-        iscale.constraint_scaling_transform(self.eq_isobaric, 1 / 1e5)
-        iscale.constraint_scaling_transform(self.separator_unit.eq_isobaric, 1 / 1e5)
-        iscale.constraint_scaling_transform(self.separator_unit.eq_isothermal, 1 / 100)
-        iscale.constraint_scaling_transform(self.eq_isothermal, 1 / 100)
-        # iscale.constraint_scaling_transform(self.eq_water_recovery, 1)
-        # iscale.set_scaling_factor(self.water_recovery, 1)
+        sf = iscale.get_scaling_factor(
+            self.separator_unit.properties_in[0].pressure, 1 / 1e5
+        )
+        iscale.constraint_scaling_transform(self.eq_isobaric[0], sf)
+        iscale.constraint_scaling_transform(self.separator_unit.eq_isobaric[0], sf)
+
+        sf = iscale.get_scaling_factor(
+            self.separator_unit.properties_in[0].temperature, 1 / 100
+        )
+        iscale.constraint_scaling_transform(self.separator_unit.eq_isothermal[0], sf)
+        iscale.constraint_scaling_transform(self.eq_isothermal[0], sf)

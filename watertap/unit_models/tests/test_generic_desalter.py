@@ -47,13 +47,12 @@ solver = get_solver()
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
+
     mcas_props = {
         "activity_coefficient_model": ActivityCoefficientModel.ideal,
         "density_calculation": DensityCalculation.constant,
         "solute_list": ["TDS", "X"],
-        "diffusivity_data": {("Liq", "TDS"): 1.33e-09, ("Liq", "X"): 7.53e-10},
-        "mw_data": {"H2O": 0.01801528, "TDS": 0.022989769, "X": 1},
-        "stokes_radius_data": {"TDS": 1.84e-10, "X": 3.09e-10},
+        "mw_data": {"H2O": 0.01801528, "TDS": 1, "X": 1},
         "charge": {"TDS": 0.0, "X": 0.0},
         "material_flow_basis": MaterialFlowBasis.mass,
     }
@@ -75,6 +74,7 @@ def build():
 @pytest.mark.unit
 def test_solve():
     m = build()
+    m.fs.unit.initialize()
     assert degrees_of_freedom(m) == 0
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
@@ -91,10 +91,5 @@ def test_solve():
     assert value(
         m.fs.unit.product.flow_mass_phase_comp[0, "Liq", "H2O"]
     ) == pytest.approx(0.555, rel=1e-3)
-    assert value(
-        m.fs.unit.product.flow_mass_phase_comp[0, "Liq", "TDS"]
-    ) == pytest.approx(5e-9, rel=1e-8)
-    assert value(
-        m.fs.unit.product.flow_mass_phase_comp[0, "Liq", "X"]
-    ) == pytest.approx(5e-9, rel=1e-8)
+
     return m

@@ -55,7 +55,6 @@ def cost_desalter(costing_block, desalter, base_cost=1, recovery_cost=0, opt_nam
             to_units=pyunits.m**3 / pyunits.year,
         )
     )
-    desalter.absolute_cost_eq.pprint()
     desalter.LCOW_eq = Constraint(
         expr=desalter.LCOW
         == desalter.annual_cost
