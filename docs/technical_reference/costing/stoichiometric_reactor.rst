@@ -27,7 +27,7 @@ There are not unique costing variables constructed for stoichiometric reactor
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-(if user only includes reagents).(Refer to `stoichiometric reactor documentation <https://watertap.readthedocs.io/en/stable/technical_reference/unit_models/stoichiometric_reactor.html>`_) 
+If user only includes reagents, refer to `stoichiometric reactor documentation <https://watertap.readthedocs.io/en/stable/technical_reference/unit_models/stoichiometric_reactor.html>`_) 
 
     .. math::
 
