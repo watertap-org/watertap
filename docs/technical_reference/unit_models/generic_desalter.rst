@@ -1,5 +1,5 @@
 Generic desalination unit
-=================================
+=========================
 
 .. index::
    pair: watertap.unit_models.generic_desalter;generic_desalter

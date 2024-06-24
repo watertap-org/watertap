@@ -15,4 +15,5 @@ Flowsheets
    crystallization
    ion_exchange
    gac
+   generic_treatment_train
    seawater_RO_desalination

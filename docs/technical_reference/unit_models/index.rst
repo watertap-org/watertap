@@ -18,6 +18,8 @@ Unit Models
    electrolyzer
    electroNP_ZO
    gac
+   generic_desalter
+   generic_separation
    ion_exchange_0D
    membrane_distillation_0D
    mvc
