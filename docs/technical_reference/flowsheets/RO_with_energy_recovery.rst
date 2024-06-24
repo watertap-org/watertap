@@ -155,8 +155,3 @@ Code Documentation
 ------------------
 
 * :mod:`watertap.examples.flowsheets.RO_with_energy_recovery`
-
-References
-----------
-
-References for each component and model used in this flowsheet can be found using the links provided in the Implementation section of this documentation.
