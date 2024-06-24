@@ -235,14 +235,14 @@ class GenericDesalterData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="isothermal energy balance for reactor",
         )
-        def eq_isothermal(b, t):
+        def eq_isothermal_brine_unit(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         @self.brine_unit.Constraint(
             self.flowsheet().config.time,
             doc="isothermal energy balance for reactor",
         )
-        def eq_isobaric(b, t):
+        def eq_isobaric_brine_unit(b, t):
             return b.properties_in[t].pressure == b.properties_out[t].pressure
 
         @self.Constraint(
@@ -425,11 +425,15 @@ class GenericDesalterData(UnitModelBlockData):
             self.brine_unit.properties_in[0].pressure, 1 / 1e5
         )
         iscale.constraint_scaling_transform(self.eq_isobaric[0], sf)
-        iscale.constraint_scaling_transform(self.brine_unit.eq_isobaric[0], sf)
+        iscale.constraint_scaling_transform(
+            self.brine_unit.eq_isobaric_brine_unit[0], sf
+        )
         sf = iscale.get_scaling_factor(
             self.brine_unit.properties_in[0].temperature, 1 / 100
         )
-        iscale.constraint_scaling_transform(self.brine_unit.eq_isothermal[0], sf)
+        iscale.constraint_scaling_transform(
+            self.brine_unit.eq_isothermal_brine_unit[0], sf
+        )
         iscale.constraint_scaling_transform(self.eq_isothermal[0], sf)
         iscale.constraint_scaling_transform(self.eq_water_recovery[0], 1)
         iscale.set_scaling_factor(self.water_recovery, 1)
