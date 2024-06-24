@@ -15,7 +15,7 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -161,20 +161,6 @@ class GenericSeparationData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     ),
-    CONFIG.declare(
-        "has_full_reporting",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Level of reporting results",
-            doc="""Level of reporting results.
-            **default** - False.
-            **Valid values:** {
-            **False** - include minimal reporting of results,
-            **True** - report additional properties of interest that aren't constructed by
-            the unit model by default. Also, report averaged expression values""",
-        ),
-    )
 
     def build(self):
         # Call UnitModel.build to setup dynamics

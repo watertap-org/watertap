@@ -15,8 +15,7 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
-from pyomo.network import Arc
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
