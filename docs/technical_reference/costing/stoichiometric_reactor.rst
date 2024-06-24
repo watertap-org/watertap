@@ -36,7 +36,7 @@ If user only includes reagents, refer to `stoichiometric reactor documentation <
         CC_{acidification}=C_{acid}*\sum{Q_{reagent}}
 
 
- where M_{reagent} is mass flow all reagent added in softening processes, and Q_{reagent} is flow volume of chemical added. 
+ where :math:`M_{reagent}` is mass flow all reagent added in softening processes, and :math:`Q_{reagent}` is flow volume of chemical added. 
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
