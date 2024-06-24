@@ -20,7 +20,7 @@ Mixers combine the pressurized streams from the primary pumps and booster pumps.
 Energy recovery devices (ERDs) are employed to optimize energy use. These devices recover energy from the retentate stream of the first RO stage and the final brine from the last LSR stage.
 
 
-.. figure:: ../../_static/flowsheets/LSRRO.png
+.. figure:: ../../_static/flowsheets/lsrro.png
     :width: 800
     :align: center
 
