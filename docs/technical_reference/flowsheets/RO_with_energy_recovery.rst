@@ -18,7 +18,6 @@ Costing packages:
     * :doc:`/technical_reference/costing/watertap_costing`
     * :doc:`/technical_reference/costing/detailed_unit_model_costing`
 Property models:
-    * :doc:`/technical_reference/core/water_props`
     * :doc:`/technical_reference/property_models/NaCl`
 Unit models:
     * :doc:`/technical_reference/unit_models/reverse_osmosis_0D`
@@ -28,7 +27,7 @@ Unit models:
     * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/mixer`
 
 The demonstration file itself contains several core functions that are used to build, specify, initialize, solve, and (optionally) optimize the model, 
-as well as helper functions that group these core functions together for convenience.
+as well as helper functions that group these core functions together for convenience or to display results.
 
 * Creating and instantiating the model using ``build()``:
     
@@ -69,7 +68,7 @@ as well as helper functions that group these core functions together for conveni
     #. Similarly, the RO membrane area is unfixed and bounds are placed on the membrane area.
     #. To ensure the product water is still of acceptable quality, a ``Constraint`` is placed on the effluent 
        concentration of the RO to be less than 500 mg/L.
-    #. Additionally, there is a minimum water flux placed on the RO model to be over 2.8e-4 kg/m2-s.
+    #. Additionally, there is a minimum water flux placed on the RO model to be over 2.8e-4 kg/m :math:`\text{}^2`/s.
 
 There are other helper functions, like ``display_system()``, ``display_design()``, and ``display_state()``, that 
 are used to print out the results of the model solve. The ``main()`` function is an example of building, specifying, 
@@ -120,9 +119,7 @@ Passing any model build to the provided function ``set_operating_conditions()`` 
 Flowsheet Specifications
 ------------------------
 
-The influent conditions are defined from the case study used to develop this flowsheet. 
-Additionally, some unit models have case-specific operating conditions.
-The influent conditions and case-specific operating conditions for certain unit models are presented in the following table,
+The influent and operating conditions for the different flowsheet configurations are presented in the following table,
 including the different build options for ``erd_type``:
 
 .. csv-table::
@@ -130,7 +127,7 @@ including the different build options for ``erd_type``:
 
     **Influent Conditions**
    "Volumetric flow rate", "1e-3", ":math:`\text{m}^3/\text{s}`"
-   "TDS mass fraction", "0.035", ":math:`\text{dimensioneless}`"
+   "TDS mass fraction", "0.035", ":math:`\text{dimensionless}`"
    "Temperature", "298", ":math:`\text{K}`"
    "Pressure", "101325", ":math:`\text{Pa}`"
    
