@@ -15,16 +15,11 @@ from watertap.unit_models.generic_desalter import (
 )
 from pyomo.environ import (
     value,
-    Var,
-    Constraint,
-    Reals,
-    units as pyunits,
 )
 from watertap.examples.flowsheets.generic_desalination_train.costing import (
     desalter_costing,
 )
 import logging
-import idaes.core.util.scaling as iscale
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
