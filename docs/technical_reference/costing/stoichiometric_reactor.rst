@@ -43,6 +43,7 @@ Operating Cost Calculations
 
 There are no operational costs provided, user needs to manually cost the reagent addition per mass/flow of reagent as done in the example below for 
 softening operation with soda ash and lime addition. 
+
 .. code-block::
 
    # build the unit model 
