@@ -1579,9 +1579,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             time_point
         ].flow_vol_phase["Liq"]
 
-        expr_dict["Average Volumetric Flux (LMH)"] = (
-            self.flux_vol_water_avg[time_point] * 3.6e6
-        )
+        expr_dict["Average Volumetric Flux"] = self.flux_vol_water_avg[time_point]
         for j in self.config.property_package.component_list:
             expr_dict[f"Average Mole FLux of {j} "] = self.flux_mol_phase_comp_avg[
                 time_point, "Liq", j
@@ -1682,13 +1680,13 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             if self.feed_side.properties_in[time_point].is_property_constructed(
                 "pressure_osm_phase"
             ):
-                var_dict[f"Osmotic Pressure @ Bulk Feed, Inlet (Pa)"] = (
+                var_dict[f"Osmotic Pressure @ Bulk Feed, Inlet"] = (
                     self.feed_side.properties_in[time_point].pressure_osm_phase["Liq"]
                 )
             if self.feed_side.properties_out[time_point].is_property_constructed(
                 "pressure_osm_phase"
             ):
-                var_dict[f"Osmotic Pressure @ Bulk Feed, Outlet (Pa)"] = (
+                var_dict[f"Osmotic Pressure @ Bulk Feed, Outlet"] = (
                     self.feed_side.properties_out[time_point].pressure_osm_phase["Liq"]
                 )
 
@@ -1700,16 +1698,16 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     io = "Outlet"
                     prop_feed = self.feed_side.properties_out[time_point]
 
-                var_dict[f"Osmotic Pressure @ Membrane Interface, {io} (Pa)"] = (
+                var_dict[f"Osmotic Pressure @ Membrane Interface, {io}"] = (
                     self.feed_side.properties_interface[
                         time_point, x
                     ].pressure_osm_phase["Liq"]
                 )
 
-                var_dict[f"Osmotic Pressure @ Permeate, {io} (Pa)"] = (
-                    self.permeate_side[time_point, x].pressure_osm_phase["Liq"]
-                )
-                expr_dict[f"Net Driving Pressure, {io} (Pa)"] = (
+                var_dict[f"Osmotic Pressure @ Permeate, {io}"] = self.permeate_side[
+                    time_point, x
+                ].pressure_osm_phase["Liq"]
+                expr_dict[f"Net Driving Pressure, {io}"] = (
                     prop_feed.pressure
                     - self.permeate_side[time_point, x].pressure
                     - (

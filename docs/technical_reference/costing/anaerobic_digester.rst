@@ -9,45 +9,34 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``parameter_name``", "1", ":math:`\text{dimensionless}`"
+   "Capital cost A parameter :math:`^1`", ":math:`A`", "``capital_a_parameter``", "19.3552312e6", ":math:`\text{USD}_{2012}`"
+   "Capital cost B parameter :math:`^1`", ":math:`B`", "``capital_b_parameter``", "0.6", ":math:`\text{dimensionless}`"
+   "Reference flow :math:`^1`", ":math:`F_r`", "``reference_flow``", "911.054", ":math:`m^3/h`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_anaerobic_digester` costing method in the ``watertap_costing_package``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "description", ":math:`Symbol_{example}`", "``variable_name``", "[t]", ":math:`\text{dimensionless}`"
+There are no costing method variables unique to the anaerobic digester.
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Describe capital costs..keep it concise where possible
+Capital cost is dependent upon the unit's volumetric flowrate, :math:`F`, as shown in the equation below.
 
     .. math::
 
-        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}
-
-    .. math::
-
-        C_{cap,example1} = fill in equation for each component in total capex equation
+        C_{cap,tot} = A * (F/F_r)^{B}
 
  
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Describe operating/maintenance costs..keep it concise where possible
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(electricity consumption for the anaerobic digester), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_{util}`. The annual electricity costs are calculated as:
 
     .. math::
-
-        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}
-
-    .. math::
-
-        C_{op,example1} = fill in equation for each component in total opex equation
-
+        C_{op, tot} = C_{elec} = E Q f_{util} P
  
 Code Documentation
 ------------------
@@ -56,4 +45,7 @@ Code Documentation
 
 References
 ----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
+[1] Eberle, Annika, Irina Tsiryapkina, Steve Peterson, Laura Vimmerstedt, Dylan Hettinger,
+and Daniel Inman. 2020. An Overview of the Waste-to-Energy System Simulation
+(WESyS) Model. Golden, CO: National Renewable Energy Laboratory.
+NREL/TP-6A20-77166. https://www.nrel.gov/docs/fy21osti/77166.pdf.
