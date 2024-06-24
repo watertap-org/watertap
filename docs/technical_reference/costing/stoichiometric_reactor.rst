@@ -16,8 +16,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Softening capital cost", ":math:`C_softening`", "``capital_cost_softening``", "374.9", ":math:`\text{USD/(lb/day)}`"
-   "Acid addition capital cost", ":math:`C_acid`", "``capital_cost_acid_addition``", "127.8", ":math:`\text{USD/(gallon/day)}`"
+   "Softening capital cost", ":math:`C_{softening}`", "``capital_cost_softening``", "374.9", ":math:`\text{USD/(lb/day)}`"
+   "Acid addition capital cost", ":math:`C_{acid}`", "``capital_cost_acid_addition``", "127.8", ":math:`\text{USD/(gallon/day)}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
