@@ -41,7 +41,7 @@ If user only includes reagents, refer to `stoichiometric reactor documentation <
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no operational costs provided, user needs to manually cost the reagent addition per mass/flow of reagent as in example below for 
+There are no operational costs provided, user needs to manually cost the reagent addition per mass/flow of reagent as done in the example below for 
 softening operation with soda ash and lime addition. 
 .. code-block::
 
