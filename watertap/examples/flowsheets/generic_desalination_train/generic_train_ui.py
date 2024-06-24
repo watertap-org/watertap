@@ -351,7 +351,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
                     output_category=optional_inputs,
                 )
                 exports.add(
-                    obj=block.desalter.brine_water_mass_fraction,
+                    obj=block.desalter.brine_water_mass_percent,
                     name=f"{process_name_nice} sludge water content",
                     ui_units=pyunits.dimensionless,
                     display_units="%",
