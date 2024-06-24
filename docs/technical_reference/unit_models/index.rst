@@ -19,7 +19,7 @@ Unit Models
    electroNP_ZO
    gac
    generic_desalter
-   generic_separation
+   generic_separator
    ion_exchange_0D
    membrane_distillation_0D
    mvc
