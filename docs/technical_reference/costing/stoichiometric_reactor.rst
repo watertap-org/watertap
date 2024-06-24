@@ -22,7 +22,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-There are not unique costing variables constructed for stoichiometric reactor
+There are not unique costing variables constructed for the stoichiometric reactor.
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
