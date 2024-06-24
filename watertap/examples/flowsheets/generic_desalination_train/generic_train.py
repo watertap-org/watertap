@@ -58,7 +58,6 @@ from watertap.examples.flowsheets.generic_desalination_train.unit_operations imp
 )
 
 import logging
-import os
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
