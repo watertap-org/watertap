@@ -16,3 +16,4 @@ Flowsheets
    ion_exchange
    gac
    lsrro
+   seawater_RO_desalination
