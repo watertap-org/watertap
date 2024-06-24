@@ -108,13 +108,11 @@ def main(bio_P=False):
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
-    print("----------------   Re-scaling  ----------------")
+    print("----------------  Automatic Re-scaling  ----------------")
     badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
     for x in badly_scaled_var_list:
         old_sf = iscale.get_scaling_factor(x[0])
         var_name = "m." + str(x[0].name)
-        # power = round(pyo.log10(abs(x[0].value)))
-        # sf = 1 / 10 ** power
 
         if 1 < x[0].value < 10:
             sf = 1
@@ -127,12 +125,6 @@ def main(bio_P=False):
         print(
             f" The scaling factor for {var_name} ({x[0].value}) was {old_sf}, but is now {sf}"
         )
-
-    # print(
-    #     "----------------   badly_scaled_var_list after re-scaling  ----------------"
-    # )
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     dt = DiagnosticsToolbox(m)
     print("---Structural Issues---")
@@ -791,6 +783,24 @@ def initialize_system(m, bio_P=False):
                 m.fs.translator_asm2d_adm1.inlet.conc_mass_comp.unfix()
                 m.fs.translator_asm2d_adm1.inlet.temperature.unfix()
                 m.fs.translator_asm2d_adm1.inlet.pressure.unfix()
+        elif unit == m.fs.AD:
+            try:
+                print("Trying to initialize AD")
+                unit.initialize(outlvl=idaeslog.DEBUG)
+            except:
+                print("Entering exception clause")
+                m.fs.AD.inlet.flow_vol.fix()
+                m.fs.AD.inlet.conc_mass_comp.fix()
+                m.fs.AD.inlet.temperature.fix()
+                m.fs.AD.inlet.pressure.fix()
+
+                solver = pyo.SolverFactory("ipopt")
+                solver.solve(m.fs.AD, tee=True)
+
+                m.fs.AD.inlet.flow_vol.unfix()
+                m.fs.AD.inlet.conc_mass_comp.unfix()
+                m.fs.AD.inlet.temperature.unfix()
+                m.fs.AD.inlet.pressure.unfix()
         else:
             unit.initialize(outlvl=idaeslog.INFO)
 
