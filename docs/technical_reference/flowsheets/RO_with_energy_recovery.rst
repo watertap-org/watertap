@@ -61,7 +61,7 @@ as well as helper functions that group these core functions together for conveni
 * Optionally optimize the system with ``optimize_set_up()``:
 
     The model is fully defined and can be solved with the provided ``solve()`` function after the user passes 
-    the model through ``initialize_system()``. This function is provided as a demostration of how the system could be
+    the model through ``initialize_system()``. This function is provided as a demonstration of how the system could be
     optimized the minimize the levelized cost of water (LCOW). The optimization routine proceeds as follows:
 
     #. An ``Objectve`` is placed on the flowsheet set to minimize the ``LCOW`` expression in the costing package.
