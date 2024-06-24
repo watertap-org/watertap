@@ -16,3 +16,4 @@ Flowsheets
    ion_exchange
    gac
    RO_with_energy_recovery
+   seawater_RO_desalination
