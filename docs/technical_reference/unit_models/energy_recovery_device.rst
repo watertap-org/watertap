@@ -49,4 +49,10 @@ Equations and Relationships
 The constraints are the same listed in
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
+Class Documentation
+-------------------
+.. currentmodule:: watertap.unit_models.pressure_changer
 
+.. autoclass:: EnergyRecoveryDevice
+    :members:
+    :noindex:
