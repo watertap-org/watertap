@@ -10,7 +10,7 @@ The condensation site of the permeated vapor depends on the MD configuration. In
 Implementation
 --------------
 
-Figure 1 shows the flowsheet diagram for a Direct Contact Membrane Distillation (DCMD) model operating in continuous recirculation. In this mode, a large portion of the concentrated brine is recirculated and mixed with the makeup feed to achieve high recoveries. This approach helps overcome the low single-pass recovery limitation of MD technologies, which is typically a maximum of 10%.
+Figure 1 shows the flowsheet diagram for a DCMD model operating in continuous recirculation mode, where a large portion of the concentrated brine is recirculated and mixed with the makeup feed to achieve high recoveries. This approach helps overcome the low single-pass recovery limitation of MD technologies, which is typically a maximum of 10%.
 The simulation includes an integrated external heat exchanger for heat recovery, optimizing energy use. The flowsheet encompasses:
 
 - An MD module for the distillation process.
@@ -26,7 +26,7 @@ The flowsheet relies on the following key assumptions:
 
    * Supports steady-state only
    * Supports optimization and minimizes the levelized cost of water (LCOW) with constraints
-   * Uses the `Seawater Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_
+   * Uses the `Seawater Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_ and  `Water Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/water.html>`_
    * Number of stages and system recovery should be specified for optimization
 
 .. figure:: ../../_static/flowsheets/MD.png
@@ -44,6 +44,7 @@ Documentation for each of the unit models can be found here:
 
 Documentation for the property model can be found here:
    * `Seawater Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_
+   * `Water Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/water.html>`_
 
 This flowsheet aims to solve an optimization problem that minimizes the levelized cost of water (LCOW) with a specified overall water recovery.
 LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and :math:`f_{util}` represents the utilization factor:
