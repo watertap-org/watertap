@@ -50,9 +50,9 @@ When the configuration ``variable_efficiency`` is not ``VariableEfficiency.none`
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Best efficiency point flowrate of the centrifugal pump", ":math:`F_{bp}`", "bep_flow", "None", ":math:`\text{m}^3/\text{s}`"
-   "Best efficiency of the centrifugal pump", ":math:`\eta_{bp}`", "bep_eta", "None", "dimensionless"
-   "Ratio of pump flowrate to best efficiency point flowrate", ":math:`r_{bp, t}`", "flow_ratio", "[t]", "dimensionless"
+   "Best efficiency point flowrate of the centrifugal pump", ":math:`F_{bp}`", "``bep_flow``", "None", ":math:`\text{m}^3/\text{s}`"
+   "Best efficiency of the centrifugal pump", ":math:`\eta_{bp}`", "``bep_eta``", "None", "dimensionless"
+   "Ratio of pump flowrate to best efficiency point flowrate", ":math:`r_{bp, t}`", "``flow_ratio``", "[t]", "dimensionless"
 
 Equations and Relationships
 ---------------------------
