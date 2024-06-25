@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-from watertap.property_models.coagulation_prop_pack import (
+from watertap.property_models.unit_specific.coagulation_prop_pack import (
     CoagulationParameterBlock,
     CoagulationStateBlock,
 )
