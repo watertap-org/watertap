@@ -63,7 +63,7 @@ where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital r
 
 Degrees of Freedom
 ------------------
-The following variables are specified for simulating the MVC flowsheet based on the default settings:
+The following variables are specified for MVC flowsheet based on the default settings:
     * feed water conditions (mass flow, mass fractions, temperature, and pressure)
     * feed pump efficiency and pressure change (ΔP)
     * distillate HEX heat transfer coefficient, cold-side ΔP, and hot-side ΔP
