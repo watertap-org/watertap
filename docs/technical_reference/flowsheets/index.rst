@@ -16,3 +16,4 @@ Flowsheets
    ion_exchange
    gac
    membrane_distillation
+   seawater_RO_desalination

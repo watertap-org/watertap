@@ -38,6 +38,7 @@ from .MD_channel_base import (
 from watertap.costing.unit_models.membrane_distillation import (
     cost_membrane_distillation,
 )
+from watertap.core.util.initialization import interval_initializer
 
 __author__ = "Elmira Shamlou"
 
@@ -636,6 +637,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
+        # pre-solve using interval arithmetic
+        interval_initializer(self)
+
         # solver
         opt = get_solver(solver, optarg)
 
@@ -696,9 +700,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "width"):
             var_dict["Membrane Width"] = self.width
 
-        expr_dict["Average Solute Flux (LMH)"] = self.flux_mass_avg[time_point] * 1000
-        expr_dict["Thermal efficiency (%)"] = self.thermal_efficiency[time_point] * 100
-        expr_dict["Effectiveness (%)"] = self.effectiveness[time_point] * 100
+        expr_dict["Average Solute Flux"] = self.flux_mass_avg[time_point]
+        expr_dict["Thermal efficiency (%)"] = self.thermal_efficiency[time_point]
+        expr_dict["Effectiveness (%)"] = self.effectiveness[time_point]
 
         return {"vars": var_dict, "exprs": expr_dict}
 
