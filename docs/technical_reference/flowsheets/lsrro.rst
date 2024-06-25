@@ -166,7 +166,7 @@ Flowsheet Specifications
    "**Primary and booster pumps**", "", ""
    "Pump efficiency", "0.75", "dimensionless"
    "**ERDs**", "", ""
-   "efficiency", "0.8", ""
+   "efficiency", "0.8", "dimensionless"
    "Outlet pressure", "101325", "Pa"
    "**RO Stage**", "", ""
    "Water permeability coefficient", "4.2E-12", "m/s-Pa"
