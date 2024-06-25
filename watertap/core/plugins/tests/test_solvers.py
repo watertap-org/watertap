@@ -19,8 +19,11 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
     constraints_with_scale_factor_generator,
 )
+from idaes.core.util.model_statistics import number_activated_objectives
 from watertap.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP, _pyomo_nl_writer_log
+
+import watertap.core.plugins.solvers as solver_module
 
 
 class TestIpoptWaterTAP:
@@ -38,8 +41,6 @@ class TestIpoptWaterTAP:
         set_scaling_factor(b.d, 1e6)
 
         b.o = pyo.Expression(expr=sum(b.a) ** 2)
-
-        m.o = pyo.Objective(expr=m.a + b.o)
 
         # references are tricky, could cause a variable
         # to be iterated over several times in
@@ -105,6 +106,7 @@ class TestIpoptWaterTAP:
     @pytest.mark.unit
     def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
         s._reset_scaling_factors()
+        s._remove_dummy_objective()
 
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
@@ -120,6 +122,7 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
         del s.options["ignore_variable_scaling"]
 
     @pytest.mark.unit
@@ -138,6 +141,7 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
 
     @pytest.mark.unit
     def test_passthrough_negative(self, m, s):
@@ -150,6 +154,7 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
 
     @pytest.mark.unit
     def test_solve_incorrect_number_of_arguments(self, m, s):
@@ -164,6 +169,7 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
         m.a.value = 1
 
     @pytest.mark.unit
@@ -173,6 +179,7 @@ class TestIpoptWaterTAP:
         s._scale_constraints(m)
         m.a.value = 1
         del s.options["halt_on_ampl_error"]
+        s._remove_dummy_objective()
 
     @pytest.mark.unit
     def test_solve_AMPL_evaluation_error_cleans_up(self, m, s):
@@ -182,11 +189,12 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
         m.a.value = 1
 
     @pytest.mark.unit
     def test_solve_constraint_autoscale_large_jac_error_cleans_up(self, m, s):
-        constraint_autoscale_large_jac = iscale.constraint_autoscale_large_jac
+        constraint_autoscale_large_jac = solver_module._constraint_autoscale_large_jac
 
         class CALJErrorException(Exception):
             pass
@@ -194,46 +202,101 @@ class TestIpoptWaterTAP:
         def _bad_constraint_autoscale_large_jac(*args, **kwargs):
             raise CALJErrorException
 
-        iscale.constraint_autoscale_large_jac = _bad_constraint_autoscale_large_jac
+        solver_module._constraint_autoscale_large_jac = (
+            _bad_constraint_autoscale_large_jac
+        )
         with pytest.raises(CALJErrorException):
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
-        iscale.constraint_autoscale_large_jac = constraint_autoscale_large_jac
+        assert number_activated_objectives(m) == 0
+        solver_module._constraint_autoscale_large_jac = constraint_autoscale_large_jac
 
     @pytest.fixture(scope="class")
     def m2(self):
-        m = pyo.ConcreteModel()
-        m.factor = pyo.Param(initialize=1.0e-16, mutable=True)
-        m.x = pyo.Var(bounds=(0.5 * m.factor, 1.5 * m.factor), initialize=m.factor)
-        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        m.scaling_factor[m.x] = pyo.value(1.0 / m.factor)
-        m.o = pyo.Objective(expr=m.x / m.factor)
-        return m
+        m2 = pyo.ConcreteModel()
+        m2.b = b = pyo.Block()
+        b.factor = pyo.Param(initialize=1.0e-16, mutable=True)
+        b.x = pyo.Var(bounds=(0.5 * b.factor, 1.5 * b.factor), initialize=b.factor)
+        b.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        b.scaling_factor[b.x] = pyo.value(1.0 / b.factor)
+        b.o = pyo.Objective(expr=b.x / b.factor)
+
+        return m2
 
     @pytest.mark.unit
     def test_default_bound_relax_small(self, m2, s):
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(
+            5.000000024092977e-17, abs=0, rel=1e-8
+        )
 
     @pytest.mark.unit
+    @pytest.mark.xfail(
+        reason="Needs https://github.com/Pyomo/pyomo/pull/3295", strict=True
+    )
     @pytest.mark.skipif(
         not pyo.SolverFactory("cyipopt").available(exception_flag=False),
         reason="cyipopt not available",
     )
     def test_cyipopt_bound_relax_small(self, m2):
         s = pyo.SolverFactory("cyipopt-watertap")
-        m2.x.value = m2.factor
+        m2.b.x.value = m2.b.factor
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(
+            5.000000024092977e-17, abs=0, rel=1e-8
+        )
 
     @pytest.mark.unit
     def test_default_bound_relax_big(self, m2, s):
-        m2.factor = 1.0e16
-        m2.x.value = 1.0e16
-        m2.x.lb = 0.5 * m2.factor
-        m2.x.ub = 1.5 * m2.factor
-        m2.scaling_factor[m2.x] = pyo.value(1.0 / m2.factor)
+        m2.b.factor = 1.0e16
+        m2.b.x.value = 1.0e16
+        m2.b.x.lb = 0.5 * m2.b.factor
+        m2.b.x.ub = 1.5 * m2.b.factor
+        m2.b.scaling_factor[m2.b.x] = pyo.value(1.0 / m2.b.factor)
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e15, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(5.000000024092977e15, abs=0, rel=1e-8)
+
+    @pytest.mark.unit
+    @pytest.mark.skipif(
+        not pyo.SolverFactory("cyipopt").available(exception_flag=False),
+        reason="cyipopt not available",
+    )
+    def test_cyipopt_watertap_with_grey_box(self):
+        # This test runs the example in pynumero:
+        # pyomo/contrib/pynumero/examples/external_grey_box/react_example/maximize_cb_outputs.py
+        # with cyipopt-watertap, which uses an ExternalGreyBoxBlock
+        solver = pyo.SolverFactory("cyipopt-watertap")
+
+        from pyomo.contrib.pynumero.interfaces.external_grey_box import (
+            ExternalGreyBoxBlock,
+        )
+        from pyomo.contrib.pynumero.examples.external_grey_box.react_example.reactor_model_outputs import (
+            ReactorConcentrationsOutputModel,
+        )
+
+        # in this simple example, we will use an external grey box model representing
+        # a steady-state reactor, and solve for the space velocity that maximizes
+        # the concentration of component B coming out of the reactor
+        m = pyo.ConcreteModel()
+
+        # create a block to store the external reactor model
+        m.reactor = ExternalGreyBoxBlock(
+            external_model=ReactorConcentrationsOutputModel()
+        )
+
+        # The reaction rate constants and the feed concentration will
+        # be fixed for this example
+        m.k1con = pyo.Constraint(expr=m.reactor.inputs["k1"] == 5 / 6)
+        m.k2con = pyo.Constraint(expr=m.reactor.inputs["k2"] == 5 / 3)
+        m.k3con = pyo.Constraint(expr=m.reactor.inputs["k3"] == 1 / 6000)
+        m.cafcon = pyo.Constraint(expr=m.reactor.inputs["caf"] == 10000)
+
+        # add an objective function that maximizes the concentration
+        # of cb coming out of the reactor
+        m.obj = pyo.Objective(expr=m.reactor.outputs["cb"], sense=pyo.maximize)
+
+        solver.options["hessian_approximation"] = "limited-memory"
+        results = solver.solve(m, tee=True)
+        pyo.assert_optimal_termination(results)

@@ -138,7 +138,6 @@ setup(
     entry_points={
         "watertap.flowsheets": [
             "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
-            "nf_with_bypass = watertap.examples.flowsheets.nf_dspmde.nf_with_bypass_ui",
             "bsm2 = watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_ui",
             "bsm2_P_extension = watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_P_extension_ui",
             "dye_desalination = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_ui",
