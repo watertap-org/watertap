@@ -103,4 +103,4 @@ There is an extra inequality constraint to ensure the Liquid Entry Pressure (LEP
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Liquid Entry Pressure", ":math:`P_{hot\_ch\_inlet} \le 10^5`"
+   "Liquid Entry Pressure", ":math:`P_{hot\_channel\_inlet} \le 10^5`"
