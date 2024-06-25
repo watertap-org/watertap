@@ -71,7 +71,7 @@ If ``B_case`` is set to ``single_optimum``:
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Salt permeability coefficient constant in all LSR stages", ":math:`B_{\text{comp}_{\text{system}}}`", "B_comp_system", "[t, j]", ":math:`\text{m/s}`"
+   "Salt permeability coefficient constant in all LSR stages", ":math:`B_{\text{comp}_{\text{system}}}`", "``B_comp_system``", "[t, j]", ":math:`\text{m/s}`"
 
 
 
