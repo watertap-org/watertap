@@ -90,7 +90,7 @@ If ``B_max`` is set:
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Units"
 
-   "Maximum allowable B value", ":math:`B_{\text{max}}`", "B_max", ":math:`\text{m/s}`"
+   "Maximum allowable B value", ":math:`B_{\text{max}}`", "``B_max``", ":math:`\text{m/s}`"
 
 Constraints
 -----------
