@@ -41,3 +41,7 @@ Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.evaporator`
+
+References
+----------
+
