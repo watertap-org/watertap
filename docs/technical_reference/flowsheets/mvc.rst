@@ -32,7 +32,7 @@ system. The flowsheet relies on the following key assumptions:
     Figure 1. MVC flowsheet
 
 Documentation for each of the WaterTAP unit models can be found below.
-    * `Pressure Changer <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/pressure_changer.html>`_
+    * `Pressure Changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_
     * `Evaporator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
     * `Compressor <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
     * `Condenser <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
