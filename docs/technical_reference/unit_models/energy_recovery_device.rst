@@ -25,7 +25,7 @@ Model Structure
 The energy recovery device unit model consists of a single ``ControlVolume0D`` (named ``control_volume``)
 with one Inlet Port (named ``inlet``) and one Outlet Port (named ``outlet``).
 This model inherits `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_
-with the configuration ``compressor`` is fixed to ``False``, representing that the unit should be considered as an expander with pressure drop.
+with the configuration ``compressor`` fixed to ``False``, representing that the unit should be considered as an expander with pressure drop.
 
 Sets
 ----
