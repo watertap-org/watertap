@@ -91,7 +91,7 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Symbol", "Units"
+   :header: "Description", "Variable Name", "Units"
 
    "Recycle ratio (Ratio of recycle stream to the make up feed)", ``Recyle_ratio``, ":math:`\text{dimensionless}`"
 
