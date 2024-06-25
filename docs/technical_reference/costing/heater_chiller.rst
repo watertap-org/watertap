@@ -61,7 +61,3 @@ Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.heater_chiller`
-
-References
-----------
-
