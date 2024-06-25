@@ -34,6 +34,7 @@ from idaes.core import (
     useDefault,
 )
 from watertap.core.solvers import get_solver
+from watertap.core.util.initialization import interval_initializer
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -496,6 +497,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
         # Set solver and options
         opt = get_solver(solver, optarg)
+
         # initialize inlets
         flags_low_in = self.feed_side.properties_in.initialize(
             outlvl=outlvl,
@@ -586,6 +588,8 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             0
         ].pressure.value
         init_log.info_high("Initialize outlets complete")
+
+        interval_initializer(self)
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

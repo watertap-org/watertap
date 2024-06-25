@@ -25,7 +25,7 @@ The following variables are used on the unit block (e.g., m.fs.unit.costing) whe
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Heat duty", ":math:`E`", "``heat_duty``", "None", ":math:`\text{W}`"
+   "Heat duty", ":math:`E`", "``heat_duty``", "[t]", ":math:`\text{W}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
