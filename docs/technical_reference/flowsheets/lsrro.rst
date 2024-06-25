@@ -164,7 +164,7 @@ Flowsheet Specifications
    :header: "Description", "Value", "Units"
 
    "**Primary and booster pumps**", "", ""
-   "Pump efficiency", "0.75", ""
+   "Pump efficiency", "0.75", "dimensionless"
    "**ERDs**", "", ""
    "efficiency", "0.8", ""
    "Outlet pressure", "101325", "Pa"
