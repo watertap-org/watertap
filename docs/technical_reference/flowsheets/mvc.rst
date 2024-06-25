@@ -95,23 +95,19 @@ Flowsheet Specifications
 
    "**Distillate HEX**"
    "Overall heat transfer coefficient", "2000", ":math:`W/\left(m^2K\right)`"
-   "Area", "125", ":math:`\text{m}^2`"
    "Cold-side pressure change", "7000", ":math:`\text{Pa}`"
    "Hot-side pressure change", "7000", ":math:`\text{Pa}`"
 
    "**Brine HEX**"
    "Overall heat transfer coefficient", "2000", ":math:`W/\left(m^2K\right)`"
-   "Area", "125", ":math:`\text{m}^2`"
    "Cold-side pressure change", "7000", ":math:`\text{Pa}`"
    "Hot-side pressure change", "7000", ":math:`\text{Pa}`"
 
    "**Evaporator**"
-   "Outlet brine temperature", "343.15", ":math:`\text{K}`"
    "Overall heat transfer coefficient", "3000", ":math:`W/\left(m^2K\right)`"
 
    "**Compressor**"
    "Compressor efficiency", "0.8", ":math:`\text{dimensionless}`"
-   "Pressure ratio", "1.6", ":math:`\text{dimensionless}`"
 
    "**Brine Pump**"
    "Pump efficiency", "0.8", ":math:`\text{dimensionless}`"
