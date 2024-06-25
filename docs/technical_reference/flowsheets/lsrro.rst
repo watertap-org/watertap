@@ -63,7 +63,7 @@ If ``A_case`` is set to ``single_optimum``:
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Water permeability coefficient constant in all LSR stages", ":math:`A_{\text{comp}_{\text{system}}}`", "A_comp_system", "[t, j]", ":math:`\text{m/Pa/s}`"
+   "Water permeability coefficient constant in all LSR stages", ":math:`A_{\text{comp}_{\text{system}}}`", "``A_comp_system``", "[t, j]", ":math:`\text{m/Pa/s}`"
 
 
 If ``B_case`` is set to ``single_optimum``:
