@@ -83,7 +83,7 @@ If ``AB_tradeoff`` is set to ``equality_constraint`` or ``inequality_constraint`
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Units"
 
-   "Water and salt permeatbility coefficient trade-off", ":math:`AB_{\text{trade-off}}`", "AB_tradeoff_coeff", ":math:`\text{m/s}`"
+   "Water and salt permeatbility coefficient trade-off", ":math:`AB_{\text{trade-off}}`", "``AB_tradeoff_coeff``", ":math:`\text{m/s}`"
 
 If ``B_max`` is set:
 
