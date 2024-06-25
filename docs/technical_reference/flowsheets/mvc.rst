@@ -33,9 +33,9 @@ system. The flowsheet relies on the following key assumptions:
 
 Documentation for each of the WaterTAP unit models can be found below.
     * `Pressure Changer <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/pressure_changer.html>`_
-    * `Evaporator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/evaporator.html>`_
-    * `Compressor <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/compressor.html>`_
-    * `Condenser <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/condenser.html>`_
+    * `Evaporator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
+    * `Compressor <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
+    * `Condenser <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
 
 Documentation for each of the IDAES unit models can be found below.
     * `Feed <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/feed.html>`_
