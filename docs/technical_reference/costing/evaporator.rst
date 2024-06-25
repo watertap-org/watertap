@@ -45,4 +45,3 @@ Code Documentation
 References
 ----------
 
-Estimated from multiple sources.
