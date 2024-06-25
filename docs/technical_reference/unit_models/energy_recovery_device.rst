@@ -50,10 +50,3 @@ The constraints are the same listed in
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
 
-Class Documentation
--------------------
-.. currentmodule:: watertap.unit_models.energy_recovery_device
-
-.. autoclass:: EnergyRecoveryDevice
-    :members:
-    :noindex:

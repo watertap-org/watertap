@@ -79,10 +79,3 @@ then the pump efficiency only depends on flow:
          0.4 & \text{for } r_{bp, t} > 1.4
        \end{cases}
 
-Class Documentation
--------------------
-.. currentmodule:: watertap.unit_models.pump
-
-.. autoclass:: Pump
-    :members:
-    :noindex:
