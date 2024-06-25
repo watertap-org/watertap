@@ -180,7 +180,7 @@ Flowsheet Specifications
    "Water permeability coefficient", "2.78E-12 to 4.2E-11", "m/s-Pa"
    "Salt permeability coefficient", "3.5E-8 to B_max", "m/s"
    "Feed-channel height", "1E-3", "m"
-   "Feed-side spacer porosity", "0.85", ""
+   "Feed-side spacer porosity", "0.85", "dimensionless"
    "Minimum LSRRO pressure", "10E5", "Pa"
    "Maximum LSRRO pressure", "65E5", "Pa"
    "**Additional Specifications**", "", ""
