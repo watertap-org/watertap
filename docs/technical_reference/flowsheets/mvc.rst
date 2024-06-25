@@ -63,13 +63,13 @@ where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital r
 
 Degrees of Freedom
 ------------------
-The following variables are initially specified for simulating the MVC flowsheet (i.e., degrees of freedom = 0):
+The following variables are specified for simulating the MVC flowsheet based on the default settings:
     * feed water conditions (mass flow, mass fractions, temperature, and pressure)
     * feed pump efficiency and pressure change (ΔP)
-    * distillate HEX heat transfer coefficient, area, cold-side ΔP, and hot-side ΔP
-    * brine HEX heat transfer coefficient, area, cold-side ΔP, and hot-side ΔP
-    * evaporator outlet brine temperature and overall heat transfer coefficient
-    * compressor efficiency and pressure ratio
+    * distillate HEX heat transfer coefficient, cold-side ΔP, and hot-side ΔP
+    * brine HEX heat transfer coefficient, cold-side ΔP, and hot-side ΔP
+    * evaporator overall heat transfer coefficient
+    * compressor efficiency
     * brine pump efficiency and ΔP
     * distillate pump efficiency and ΔP
     * translator block outlet TDS concentration
