@@ -23,7 +23,7 @@ class Solver(Enum):
     ipopt = 1
     petsc = 2
 
-SolverChoice = Solver.ipopt
+SolverChoice = Solver.petsc
 
 m = ConcreteModel()
 m.tf = Param(initialize=0.8e-3) # 8 mm
@@ -42,8 +42,8 @@ m.Cb0 = Param(initialize=6.226e-3) # kmol/m3
 m.Cp0 = Param(initialize=0.0) # kmol/m3
 m.Fb0 = Param(initialize=2.166e-4) # m3/s
 m.Pb0 = Param(initialize=5.83) # atm
-m.Tb0 = Param(initialize=31) # C
-m.Tp0 = Param(initialize=31) # C
+m.Tb0 = Param(initialize=304.65) # C
+m.Tp0 = Param(initialize=304.65) # C
 m.Db = Param(initialize=1.7657e-9) # m2/s
 m.Dp = Param(initialize=1.7354e-9) # m2/s
 m.Jw0 = Param(initialize=4.41493388e-06)
@@ -115,8 +115,8 @@ m.diffeq4 = Constraint(m.x, m.t, rule=_diffeq4)
 def _diffeq5(m, i, j): # Tb PDE
     if i == 0 or j == 0:
         return Constraint.Skip
-    return m.dTbdt[i, j] == -(m.Fb[i, j]*m.dTbdx[i, j] + m.dFbdx[i, j]*m.Tb[i, j])/(m.tf*m.W) - m.Jw[i, j]*(m.Tb[i, j]-m.Tp[i, j])/m.tf
-    # return m.dTbdt[i, j] == -m.Fb[i, j]*m.dTbdx[i, j]/(m.tf*m.W) - m.Jw[i, j]*(m.Tb[i, j]-m.Tp[i, j])/m.tf
+    # return m.dTbdt[i, j] == -(m.Fb[i, j]*m.dTbdx[i, j] + m.dFbdx[i, j]*m.Tb[i, j])/(m.tf*m.W) - m.Jw[i, j]*(m.Tb[i, j]-m.Tp[i, j])/m.tf
+    return m.dTbdt[i, j] == -m.Fb[i, j]*m.dTbdx[i, j]/(m.tf*m.W) - m.Jw[i, j]*(m.Tb[i, j]-m.Tp[i, j])/m.tf
 
 m.diffeq5 = Constraint(m.x, m.t, rule=_diffeq5)
 
@@ -161,69 +161,69 @@ m.algeq4 = Constraint(m.x, m.t, rule=_algeq4)
 
 # m.algeq5 = Constraint(m.x, m.t, rule=_algeq5)
 
-def _initcon_1(m, i):
-    if i == 1:
-        return Constraint.Skip
-    return m.Cb[i, 0] == m.Cb0
+# def _initcon_1(m, i):
+#     if i == 1:
+#         return Constraint.Skip
+#     return m.Cb[i, 0] == m.Cb0
 
-m.initcon_1 = Constraint(m.x, rule=_initcon_1)
+# m.initcon_1 = Constraint(m.x, rule=_initcon_1)
 
-def _initcon_2(m, i):
-    if i == 1:
-        return Constraint.Skip
-    return m.Cp[i, 0] == m.Cp0
+# def _initcon_2(m, i):
+#     if i == 1:
+#         return Constraint.Skip
+#     return m.Cp[i, 0] == m.Cp0
 
-m.initcon_2 = Constraint(m.x, rule=_initcon_2)
+# m.initcon_2 = Constraint(m.x, rule=_initcon_2)
 
-def _initcon_3(m, i):
-    return m.Fb[i, 0] == m.Fb0
+# def _initcon_3(m, i):
+#     return m.Fb[i, 0] == m.Fb0
 
-m.initcon_3 = Constraint(m.x, rule=_initcon_3)
+# m.initcon_3 = Constraint(m.x, rule=_initcon_3)
 
-def _initcon_4(m, i):
-    return m.Pb[i, 0] == m.Pb0
+# def _initcon_4(m, i):
+#     return m.Pb[i, 0] == m.Pb0
 
-m.initcon_4 = Constraint(m.x, rule=_initcon_4)
+# m.initcon_4 = Constraint(m.x, rule=_initcon_4)
 
-def _initcon_5(m, i):
-    return m.Tb[i, 0] == m.Tb0
+# def _initcon_5(m, i):
+#     return m.Tb[i, 0] == m.Tb0
 
-m.initcon_5 = Constraint(m.x, rule=_initcon_5)
+# m.initcon_5 = Constraint(m.x, rule=_initcon_5)
 
-def _initcon_6(m, i):
-    return m.Tp[i, 0] == m.Tp0
+# def _initcon_6(m, i):
+#     return m.Tp[i, 0] == m.Tp0
 
-m.initcon_6 = Constraint(m.x, rule=_initcon_6)
+# m.initcon_6 = Constraint(m.x, rule=_initcon_6)
 
-# def _leftbccon_1(m, j):
-#     return m.Cb[0, j] == m.Cb0
+def _leftbccon_1(m, j):
+    return m.Cb[0, j] == m.Cb0
 
-# m.leftbccon_1 = Constraint(m.t, rule=_leftbccon_1)
+m.leftbccon_1 = Constraint(m.t, rule=_leftbccon_1)
 
-# def _leftbccon_2(m, j):
-#     return m.Cp[0, j] == m.Cp0
+def _leftbccon_2(m, j):
+    return m.Cp[0, j] == m.Cp0
 
-# m.leftbccon_2 = Constraint(m.t, rule=_leftbccon_2)
+m.leftbccon_2 = Constraint(m.t, rule=_leftbccon_2)
 
-# def _leftbccon_3(m, j):
-#     return m.Fb[0, j] == m.Fb0
+def _leftbccon_3(m, j):
+    return m.Fb[0, j] == m.Fb0
 
-# m.leftbccon_3 = Constraint(m.t, rule=_leftbccon_3)
+m.leftbccon_3 = Constraint(m.t, rule=_leftbccon_3)
 
-# def _leftbccon_4(m, j):
-#     return m.Pb[0, j] == m.Pb0
+def _leftbccon_4(m, j):
+    return m.Pb[0, j] == m.Pb0
 
-# m.leftbccon_4 = Constraint(m.t, rule=_leftbccon_4)
+m.leftbccon_4 = Constraint(m.t, rule=_leftbccon_4)
 
-# def _leftbccon_5(m, j):
-#     return m.Tb[0, j] == m.Tb0
+def _leftbccon_5(m, j):
+    return m.Tb[0, j] == m.Tb0
 
-# m.leftbccon_5 = Constraint(m.t, rule=_leftbccon_5)
+m.leftbccon_5 = Constraint(m.t, rule=_leftbccon_5)
 
-# def _leftbccon_6(m, j):
-#     return m.Tp[0, j] == m.Tp0
+def _leftbccon_6(m, j):
+    return m.Tp[0, j] == m.Tp0
 
-# m.leftbccon_6 = Constraint(m.t, rule=_leftbccon_6)
+m.leftbccon_6 = Constraint(m.t, rule=_leftbccon_6)
 
 def _upperbound_1(m, j):
     return m.dCbdx[1, j] == 0
@@ -259,9 +259,9 @@ m.obj = Objective(expr=1)
 
 # Discretize using Orthogonal Collocation
 # discretizer = TransformationFactory('dae.collocation')
-# discretizer.apply_to(m,nfe=15,ncp=3,wrt=m.x)
-# discretizer.apply_to(m,nfe=8,ncp=3,wrt=m.t)
-print("Degrees of Freedom before Discretization = ", degrees_of_freedom(m))
+# discretizer.apply_to(m,nfe=5,ncp=3,wrt=m.x)
+# discretizer.apply_to(m,nfe=6,ncp=3,wrt=m.t)
+# print("Degrees of Freedom before Discretization = ", degrees_of_freedom(m))
 # Discretize using Finite Difference and Collocation
 discretizer = TransformationFactory('dae.collocation')
 discretizer2 = TransformationFactory('dae.finite_difference')
@@ -271,7 +271,7 @@ discretizer2.apply_to(m, nfe=30, wrt=m.t, scheme='BACKWARD')
 # Discretize using Finite Difference Method
 # discretizer = TransformationFactory('dae.finite_difference')
 # discretizer.apply_to(m,nfe=6,wrt=m.x,scheme='BACKWARD')
-# discretizer.apply_to(m,nfe=6,wrt=m.t,scheme='BACKWARD')
+# discretizer.apply_to(m,nfe=120,wrt=m.t,scheme='BACKWARD')
 
 # create the scaling factors
 m.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -298,9 +298,9 @@ m.scaling_factor[m.dTbdt] = 1e2    # scale the Tb variable
 m.scaling_factor[m.dTpdt] = 1e2    # scale the Tp variable
 m.scaling_factor[m.dCbdx] = 1e3    # scale the Cb variable
 m.scaling_factor[m.dCpdx] = 1e3    # scale the Cp variable
-iscale.calculate_scaling_factors(m)
-scaled_model = TransformationFactory('core.scale_model').create_using(m)
-print("Degrees of Freedom after Discretization = ", degrees_of_freedom(m))
+# iscale.calculate_scaling_factors(m)
+# scaled_model = TransformationFactory('core.scale_model').create_using(m)
+# print("Degrees of Freedom after Discretization = ", degrees_of_freedom(m))
 
 if SolverChoice == Solver.ipopt:
 
@@ -317,15 +317,15 @@ if SolverChoice == Solver.ipopt:
 else:
     idaeslog.solver_log.tee = True
     results = petsc.petsc_dae_by_time_element(
-        scaled_model,
-        time=scaled_model.t,
+        m,
+        time=m.t,
         keepfiles=True,
         symbolic_solver_labels=True,
         ts_options={
             "--ts_type": "beuler",
             # "-ts_arkimex_type": "1bee",
             "--ts_dt": 0.1,
-            "--ts_rtol": 1e-3,
+            "--ts_rtol": 1e-5,
             # "--ts_adapt_clip":"0.001,3600",
             # "--ksp_monitor":"",
             "--ts_adapt_dt_min": 1e-3,
@@ -340,7 +340,7 @@ else:
             # "-ksp_converged_reason": "",
             # "-snes_test_jacobian": "",
             "snes_grid_sequence": "",
-            "-pc_type": "lu",
+            "-pc_type": "svd",
             # "-mat_view": "",
             "--ts_save_trajectory": 1,
             "--ts_trajectory_type": "visualization",
@@ -349,9 +349,9 @@ else:
             "-snes_max_it": 50,
             "-snes_rtol": 0,
             "-snes_stol": 0,
-            "-snes_atol": 1e-6,
+            "-snes_atol": 1e-8,
         },
-        skip_initial=False,
+        skip_initial=True,
         initial_solver="ipopt",
         initial_solver_options={
             "constr_viol_tol": 1e-8,
@@ -366,7 +366,7 @@ else:
     for result in results.results:
         assert_optimal_termination(result)
 
-TransformationFactory('core.scale_model').propagate_solution(scaled_model, m)
+# TransformationFactory('core.scale_model').propagate_solution(scaled_model, m)
 
 # solver = SolverFactory('ipopt')
 # solver.options['max_iter'] = 1000
@@ -432,7 +432,7 @@ ax = fig.add_subplot(1, 1, 1)
 ax.set_xlabel('Time t')
 ax.set_ylabel('Cb(x=L)')
 ax.plot(t[0,:], Cb[-1,:])
-ax.set_xlim([0, 100])
+# ax.set_xlim([0, 100])
 plt.show()
 print('Jw0 model vs real: ', Jw[0,0], 4.41493388e-06)
 print('Js0 model vs real: ', Js[0,0], 6.39196682e-09)
