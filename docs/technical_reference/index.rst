@@ -19,5 +19,4 @@ Technical Reference
 .. toctree::
     :maxdepth: 1
 
-    edb/index
     ui/index

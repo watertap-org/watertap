@@ -57,8 +57,10 @@ from idaes.core.util.tables import (
 )
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
-from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
-from watertap.property_models.activated_sludge.asm1_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+)
+from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 

@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-import watertap.property_models.cryst_prop_pack as props
+import watertap.property_models.unit_specific.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.models.properties.tests.test_harness import (
