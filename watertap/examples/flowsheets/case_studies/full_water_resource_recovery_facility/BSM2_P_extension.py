@@ -84,6 +84,7 @@ from watertap.costing.unit_models.clarifier import (
 )
 
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 
 # Set up logger
@@ -101,30 +102,12 @@ def main(bio_P=True):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print(
-        "----------------   badly_scaled_var_list b4 initialization  ----------------"
-    )
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    # print("----------------  Automatic Re-scaling  ----------------")
     # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    # print(
+    #     "----------------   badly_scaled_var_list b4 initialization  ----------------"
+    # )
     # for x in badly_scaled_var_list:
-    #     old_sf = iscale.get_scaling_factor(x[0])
-    #     var_name = "m." + str(x[0].name)
-    #
-    #     if 1 < x[0].value < 10:
-    #         sf = 1
-    #     else:
-    #         power = round(pyo.log10(abs(x[0].value)))
-    #         sf = 1 / 10**power
-    #
-    #     iscale.set_scaling_factor(x[0], sf)
-    #
-    #     print(
-    #         f" The scaling factor for {var_name} ({x[0].value}) was {old_sf}, but is now {sf}"
-    #     )
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     dt = DiagnosticsToolbox(m)
     print("---Structural Issues---")
@@ -137,12 +120,29 @@ def main(bio_P=True):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print(
-        "----------------   badly_scaled_var_list after initialization  ----------------"
-    )
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    # print(
+    #     "----------------   badly_scaled_var_list after initialization  ----------------"
+    # )
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    # # Use of Degeneracy Hunter for troubleshooting model.
+    # m.obj = pyo.Objective(expr=0)
+    # solver = get_solver()
+    # solver.options["max_iter"] = 10000
+    # results = solver.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # dh.check_residuals(tol=1e-8)
+    # # dh.check_variable_bounds(tol=1e-8)
+    # # dh.check_rank_equality_constraints(dense=True)
+    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # # print_close_to_bounds(m)
+    # # print_infeasible_constraints(m)
 
     results = solve(m)
 
@@ -167,10 +167,10 @@ def main(bio_P=True):
     print("---Numerical Issues---")
     dt.report_numerical_issues()
 
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list after solve  ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    # print("----------------   badly_scaled_var_list after solve  ----------------")
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -705,29 +705,133 @@ def initialize_system(m, bio_P=False):
             "pressure": {0: 101325},
         }
 
+        # tear_guesses = {
+        #     "flow_vol": {0: 1.237},
+        #     "conc_mass_comp": {
+        #         (0, "S_A"): 0.0005,
+        #         (0, "S_F"): 0.00046,
+        #         (0, "S_I"): 0.0575,
+        #         (0, "S_N2"): 0.025,
+        #         (0, "S_NH4"): 0.18,
+        #         (0, "S_NO3"): 1e-9,
+        #         (0, "S_O2"): 0.00192,
+        #         (0, "S_PO4"): 0.216,
+        #         (0, "S_K"): 0.37,
+        #         (0, "S_Mg"): 0.023,
+        #         (0, "S_IC"): 0.12,
+        #         (0, "X_AUT"): 1e-9,
+        #         (0, "X_H"): 3.24,
+        #         (0, "X_I"): 2.98,
+        #         (0, "X_PAO"): 3.51,
+        #         (0, "X_PHA"): 0.08,
+        #         (0, "X_PP"): 1.17,
+        #         (0, "X_S"): 0.054,
+        #     },
+        #     "temperature": {0: 308.15},
+        #     "pressure": {0: 101325},
+        # }
+        #
+        # tear_guesses2 = {
+        #     "flow_vol": {0: 0.003},
+        #     "conc_mass_comp": {
+        #         (0, "S_A"): 0.065,
+        #         (0, "S_F"): 0.16,
+        #         (0, "S_I"): 0.05745,
+        #         (0, "S_N2"): 0.025,
+        #         (0, "S_NH4"): 0.20,
+        #         (0, "S_NO3"): 1e-9,
+        #         (0, "S_O2"): 0.0013,
+        #         (0, "S_PO4"): 0.23,
+        #         (0, "S_K"): 0.38,
+        #         (0, "S_Mg"): 0.027,
+        #         (0, "S_IC"): 0.07,
+        #         (0, "X_AUT"): 1e-9,
+        #         (0, "X_H"): 22.7,
+        #         (0, "X_I"): 10.9,
+        #         (0, "X_PAO"): 10.8,
+        #         (0, "X_PHA"): 0.0053,
+        #         (0, "X_PP"): 2.93,
+        #         (0, "X_S"): 3.87,
+        #     },
+        #     "temperature": {0: 308.15},
+        #     "pressure": {0: 101325},
+        # }
+
     else:
         # Initial guesses for flow into first reactor
+        # tear_guesses = {
+        #     "flow_vol": {0: 1.235},
+        #     "conc_mass_comp": {
+        #         (0, "S_A"): 0.0007,
+        #         (0, "S_F"): 0.0004,
+        #         (0, "S_I"): 0.0575,
+        #         (0, "S_N2"): 0.05,
+        #         (0, "S_NH4"): 0.007,
+        #         (0, "S_NO3"): 0.0035,
+        #         (0, "S_O2"): 0.00192,
+        #         (0, "S_PO4"): 0.02,
+        #         (0, "S_K"): 0.37,
+        #         (0, "S_Mg"): 0.02,
+        #         (0, "S_IC"): 0.11,
+        #         (0, "X_AUT"): 0.12,
+        #         (0, "X_H"): 3.3,
+        #         (0, "X_I"): 3.0,
+        #         (0, "X_PAO"): 2.3,
+        #         (0, "X_PHA"): 0.06,
+        #         (0, "X_PP"): 0.75,
+        #         (0, "X_S"): 0.050,
+        #     },
+        #     "temperature": {0: 308.15},
+        #     "pressure": {0: 101325},
+        # }
+        #
+        # tear_guesses2 = {
+        #     "flow_vol": {0: 0.003},
+        #     "conc_mass_comp": {
+        #         (0, "S_A"): 0.0245,
+        #         (0, "S_F"): 0.15,
+        #         (0, "S_I"): 0.05745,
+        #         (0, "S_N2"): 0.02,
+        #         (0, "S_NH4"): 0.19,
+        #         (0, "S_NO3"): 1e-10,
+        #         (0, "S_O2"): 0.002,
+        #         (0, "S_PO4"): 0.2,
+        #         (0, "S_K"): 0.38,
+        #         (0, "S_Mg"): 0.023,
+        #         (0, "S_IC"): 0.1,
+        #         (0, "X_AUT"): 1e-9,
+        #         (0, "X_H"): 24,
+        #         (0, "X_I"): 11.31,
+        #         (0, "X_PAO"): 9,
+        #         (0, "X_PHA"): 0.09,
+        #         (0, "X_PP"): 2,
+        #         (0, "X_S"): 4.2,
+        #     },
+        #     "temperature": {0: 308.15},
+        #     "pressure": {0: 101325},
+        # }
+
         tear_guesses = {
-            "flow_vol": {0: 1.235},
+            "flow_vol": {0: 1.2367},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0007,
+                (0, "S_A"): 0.0005,
                 (0, "S_F"): 0.0004,
-                (0, "S_I"): 0.0575,
-                (0, "S_N2"): 0.05,
-                (0, "S_NH4"): 0.007,
-                (0, "S_NO3"): 0.0035,
+                (0, "S_I"): 0.05745,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.175,
+                (0, "S_NO3"): 1e-9,
                 (0, "S_O2"): 0.00192,
-                (0, "S_PO4"): 0.02,
+                (0, "S_PO4"): 1.91,
                 (0, "S_K"): 0.37,
                 (0, "S_Mg"): 0.02,
-                (0, "S_IC"): 0.11,
-                (0, "X_AUT"): 0.12,
+                (0, "S_IC"): 0.13,
+                (0, "X_AUT"): 1e-9,
                 (0, "X_H"): 3.3,
                 (0, "X_I"): 3.0,
-                (0, "X_PAO"): 2.3,
-                (0, "X_PHA"): 0.06,
-                (0, "X_PP"): 0.75,
-                (0, "X_S"): 0.050,
+                (0, "X_PAO"): 3.8,
+                (0, "X_PHA"): 0.093,
+                (0, "X_PP"): 1.26,
+                (0, "X_S"): 0.056,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -736,24 +840,24 @@ def initialize_system(m, bio_P=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0245,
+                (0, "S_A"): 0.095,
                 (0, "S_F"): 0.15,
                 (0, "S_I"): 0.05745,
-                (0, "S_N2"): 0.02,
-                (0, "S_NH4"): 0.19,
-                (0, "S_NO3"): 1e-10,
-                (0, "S_O2"): 0.002,
-                (0, "S_PO4"): 0.2,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.18,
+                (0, "S_NO3"): 1e-9,
+                (0, "S_O2"): 0.0014,
+                (0, "S_PO4"): 1.92,
                 (0, "S_K"): 0.38,
-                (0, "S_Mg"): 0.023,
-                (0, "S_IC"): 0.1,
+                (0, "S_Mg"): 0.024,
+                (0, "S_IC"): 0.075,
                 (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 24,
-                (0, "X_I"): 11.31,
-                (0, "X_PAO"): 9,
-                (0, "X_PHA"): 0.09,
-                (0, "X_PP"): 2,
-                (0, "X_S"): 4.2,
+                (0, "X_H"): 22.3,
+                (0, "X_I"): 10.8,
+                (0, "X_PAO"): 11.2,
+                (0, "X_PHA"): 0.0056,
+                (0, "X_PP"): 3.09,
+                (0, "X_S"): 3.8,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -783,24 +887,6 @@ def initialize_system(m, bio_P=False):
                 m.fs.translator_asm2d_adm1.inlet.conc_mass_comp.unfix()
                 m.fs.translator_asm2d_adm1.inlet.temperature.unfix()
                 m.fs.translator_asm2d_adm1.inlet.pressure.unfix()
-        elif unit == m.fs.AD:
-            try:
-                print("Trying to initialize AD")
-                unit.initialize(outlvl=idaeslog.DEBUG)
-            except:
-                print("Entering exception clause")
-                m.fs.AD.inlet.flow_vol.fix()
-                m.fs.AD.inlet.conc_mass_comp.fix()
-                m.fs.AD.inlet.temperature.fix()
-                m.fs.AD.inlet.pressure.fix()
-
-                solver = pyo.SolverFactory("ipopt")
-                solver.solve(m.fs.AD, tee=True)
-
-                m.fs.AD.inlet.flow_vol.unfix()
-                m.fs.AD.inlet.conc_mass_comp.unfix()
-                m.fs.AD.inlet.temperature.unfix()
-                m.fs.AD.inlet.pressure.unfix()
         else:
             unit.initialize(outlvl=idaeslog.INFO)
 
@@ -1016,19 +1102,21 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main()
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            "R1": m.fs.R1.outlet,
-            "R2": m.fs.R2.outlet,
-            "R3": m.fs.R3.outlet,
-            "R4": m.fs.R4.outlet,
-            "R5": m.fs.R5.outlet,
-            "R6": m.fs.R6.outlet,
-            "R7": m.fs.R7.outlet,
-            "thickener outlet": m.fs.thickener.underflow,
+            # "R3 inlet": m.fs.R3.inlet,
+            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            # "R1": m.fs.R1.outlet,
+            # "R2": m.fs.R2.outlet,
+            # "R3": m.fs.R3.outlet,
+            # "R4": m.fs.R4.outlet,
+            # "R5": m.fs.R5.outlet,
+            # "R6": m.fs.R6.outlet,
+            # "R7": m.fs.R7.outlet,
+            # "thickener outlet": m.fs.thickener.underflow,
             "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "dewater outlet": m.fs.dewater.overflow,
             "Treated water": m.fs.Treated.inlet,
