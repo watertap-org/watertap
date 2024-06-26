@@ -332,6 +332,8 @@ see reaction package for documentation.}""",
             has_equilibrium=self.config.has_equilibrium_reactions
         )
 
+        self.liquid_phase.add_geometry()
+
         # Separate liquid and vapor phases means that phase equilibrium will
         # be handled at the unit model level, thus has_phase_equilibrium is
         # False, but has_mass_transfer is True.
@@ -376,8 +378,6 @@ see reaction package for documentation.}""",
                 f"{self.name} vapor and liquid property packages must use the "
                 f"same material flow basis."
             )
-
-        self.liquid_phase.add_geometry()
 
         # Add Ports
         self.add_inlet_port(name="inlet", block=self.liquid_phase, doc="Liquid feed")

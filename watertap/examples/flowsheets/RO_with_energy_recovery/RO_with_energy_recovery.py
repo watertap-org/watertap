@@ -109,6 +109,8 @@ def build(erd_type=ERDtype.pressure_exchanger):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
     )
     m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    print(dir(m.fs.RO.feed_side.eq_friction_factor))
+    m.fs.RO.feed_side.eq_friction_factor.pprint()
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pressure_exchanger:

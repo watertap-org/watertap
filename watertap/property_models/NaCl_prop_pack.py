@@ -788,11 +788,13 @@ class NaClStateBlockData(StateBlockData):
         return self.enth_flow
 
     # TODO: make property package compatible with dynamics
-    # def get_material_density_terms(self, p, j):
-    #     """Create material density terms."""
+    def get_material_density_terms(self, p, j):
+        """Create material density terms."""
+        return self.dens_mass_phase[p]
 
-    # def get_enthalpy_density_terms(self, p):
-    #     """Create enthalpy density terms."""
+    def get_energy_density_terms(self, p):
+        """Create enthalpy density terms."""
+        return self.enth_mass_phase[p] * self.dens_mass_phase[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
