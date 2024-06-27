@@ -16,7 +16,7 @@ Degrees of Freedom
 
 Energy recovery device units generally have two degrees of freedom:
 
-* outlet pressure, :math:`P_{out}` or :math:`\Delta P`
+* outlet pressure, :math:`P_{out}` or pressure change across the inlet and outlet,:math:`\Delta P`
 * pump efficiency
 
 Model Structure
