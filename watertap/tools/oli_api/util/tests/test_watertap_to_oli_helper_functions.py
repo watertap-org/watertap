@@ -18,8 +18,6 @@ from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     oli_reverse_lookup,
     names_db,
 )
-from pyomo.environ import units as pyunits, value
-from pyomo.util.check_units import assert_units_equivalent
 
 __author__ = "Paul Vecchiarelli, Adam Atia"
 
