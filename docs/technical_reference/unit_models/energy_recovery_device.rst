@@ -46,7 +46,7 @@ The variables are the same listed in Variable tab of
 
 Equations and Relationships
 ---------------------------
-The constraints are the same listed in
+The constraints are the same as those listed in
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
 Class Documentation
