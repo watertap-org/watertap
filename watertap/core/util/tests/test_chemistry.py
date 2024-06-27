@@ -18,6 +18,7 @@ from watertap.core.util.chemistry import (
     get_charge,
     get_molar_mass,
     get_molar_mass_quantity,
+    get_periodic_table,
 )
 from pyomo.environ import units as pyunits, value
 from pyomo.util.check_units import assert_units_equivalent
@@ -99,14 +100,13 @@ def test_get_mw_quantity():
 
 @pytest.fixture
 def periodic_table() -> pd.DataFrame:
-    parent_dir = Path(__file__).parent
-    return pd.read_csv(parent_dir / "periodic_table.csv")
+    return get_periodic_table()
 
 
 @pytest.mark.unit
 def test_periodic_table_headers(periodic_table):
     test_headers = ["AtomicMass", "Symbol"]
-    assert all(header in get_test_file.columns for header in test_headers)
+    assert all(header in periodic_table.columns for header in test_headers)
     size = {"cols": 28, "rows": 118}
     assert len(periodic_table.columns) == size["cols"]
     assert len(periodic_table.values) == size["rows"]

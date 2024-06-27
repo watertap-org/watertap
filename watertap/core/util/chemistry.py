@@ -71,6 +71,11 @@ def get_charge_group(charge: int) -> str:
     return group
 
 
+def get_periodic_table() -> pd.DataFrame:
+    parent_dir = Path(__file__).parent
+    return pd.read_csv(parent_dir / "periodic_table.csv")
+
+
 def get_molar_mass(watertap_name: str) -> float:
     """
     Extracts atomic weight data from a periodic table file
@@ -84,8 +89,7 @@ def get_molar_mass(watertap_name: str) -> float:
     :return molar_mass: float value for molar mass of solute
     """
 
-    parent_dir = Path(__file__).parent
-    periodic_table = pd.read_csv(parent_dir / "periodic_table.csv")
+    periodic_table = get_periodic_table()
 
     components = watertap_name.split("_")
     elements = findall("[A-Z][a-z]?[0-9]*", components[0])
