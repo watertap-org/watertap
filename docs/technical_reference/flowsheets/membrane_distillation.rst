@@ -75,7 +75,7 @@ Flowsheet Specifications
    "Membrane thickness", "1e-4", "m"
    "Membrane thermal conductivity", "0.2", "W/m/K"
    "MD hot and cold channels height", "0.0019", "m"
-   "MD hot and cold channels spacer porosity", "0.77", "dimensionless"
+   "MD hot and cold channels spacer porosity", "0.77", ":math:`\text{dimensionless}`"
    "**Heat Exchanger**"
    "Overall heat transfer coefficient", "2000", ":math:`\text{W/m}^{2}\text{/K}`"
    "**Pumps**"
