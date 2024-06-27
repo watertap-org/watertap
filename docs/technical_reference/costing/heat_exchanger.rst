@@ -1,5 +1,5 @@
 Heat Exchanger Costing Method
-==============================
+=============================
 
 Costing Method Parameters
 +++++++++++++++++++++++++
@@ -9,51 +9,34 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``parameter_name``", "1", ":math:`\text{dimensionless}`"
+   "Heat exchanger unit cost", ":math:`C_{hx}`", "``unit_cost``", "300", ":math:`\text{USD}_{2020}`"
+   "Material factor cost", ":math:`f_{m}`", "``material_factor_cost``", "1", ":math:`\text{dimensionless}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_heat_exchanger` costing method in the ``watertap_costing_package``:
+The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_heat_exchanger` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``variable_name``", "[t]", ":math:`\text{dimensionless}`"
+   "Heat exchanger area", ":math:`A_{hx}`", "``area``", "None", ":math:`\text{m}^2`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Describe capital costs..keep it concise where possible
+The capital cost is dependent on the heat exchanger area, :math:`A`, and the material factor, :math:`f_{m}`, as shown in the equation below.
 
     .. math::
 
-        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}
+        C_{cap, tot} = C_{hx} \cdot f_{m} \cdot A_{hx}
 
-    .. math::
-
-        C_{cap,example1} = fill in equation for each component in total capex equation
-
- 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Describe operating/maintenance costs..keep it concise where possible
+There are no unique operating costs specific to the heat exchanger unit.
 
-    .. math::
-
-        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}
-
-    .. math::
-
-        C_{op,example1} = fill in equation for each component in total opex equation
-
- 
 Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.heat_exchanger`
-
-References
-----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
