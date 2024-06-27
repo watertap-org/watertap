@@ -215,3 +215,4 @@ Module Documentation
 --------------------
 
 * :mod:`parameter_sweep`
+* :mod:`parameter_sweep.differential`
