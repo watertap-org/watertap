@@ -13,8 +13,7 @@
 GUI configuration for the extended BSM2 flowsheet.
 """
 
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import units as pyunits
 
 from watertap.ui.fsapi import FlowsheetInterface
 
