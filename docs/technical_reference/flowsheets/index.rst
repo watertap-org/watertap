@@ -15,3 +15,5 @@ Flowsheets
    crystallization
    ion_exchange
    gac
+   mvc
+   seawater_RO_desalination
