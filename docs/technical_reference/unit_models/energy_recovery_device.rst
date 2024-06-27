@@ -41,7 +41,7 @@ Sets
 Variables
 ---------
 
-The variables are the same listed in Variable tab of
+The variables are the same as those listed in the "Variable" tab of
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
 Equations and Relationships
