@@ -65,7 +65,7 @@ When the configuration ``variable_efficiency`` is not ``VariableEfficiency.none`
    :header: "Description", "Equation"
 
    "Pump flow ratio", ":math:`F_{in, t} = r_{bp, t} * F_{bp}`"
-   "Actual pump efficiency", ":math:`\eta_{pump, t} = \eta_{bp} * r_{bp, t}`"
+   "Actual pump efficiency", ":math:`\eta_{pump, t} = \eta_{bep} * r_{bep, t}`"
 
 When the configuration ``variable_efficiency`` is set to ``VariableEfficiency.flow``,
 then the pump efficiency only depends on flow:
