@@ -98,7 +98,7 @@ Additional Variables
 Additional Constraints
 ----------------------
 
-There is an extra inequality constraint to ensure the Liquid Entry Pressure (LEP) to prevent membrane wetting:
+There is an extra inequality constraint to ensure the hydraulic pressure inside the MD module is lower than the Liquid Entry Pressure (LEP) to prevent membrane wetting:
 
 .. csv-table::
    :header: "Description", "Equation"
