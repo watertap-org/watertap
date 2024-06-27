@@ -60,7 +60,7 @@ In addition to the overall water recovery, the following variables need to be sp
    * Feed water conditions (flow, temperature, pressure, component concentrations)
    * Pump efficiency
    * Membrane permeability coefficient, thickness, and thermal conductivity
-   * MD Hot and cold channel spacer porosity and height
+   * MD hot and cold channel spacer porosity and height
    * Heat exchanger overall heat transfer coefficient
 
 
