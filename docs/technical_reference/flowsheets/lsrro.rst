@@ -1,6 +1,11 @@
 Low-Salt-Rejection Reverse Osmosis (LSRRO)
 ==========================================
 
+.. note::
+   When utilizing this model in research or publications, please cite the following reference:
+
+   Atia, A. A., Allen, J., Young, E., Knueven, B., & Bartholomew, T. V. (2023). Cost optimization of low-salt-rejection reverse osmosis. Desalination, 551, 116407.
+
 Introduction
 ---------------
 
@@ -186,7 +191,4 @@ Flowsheet Specifications
    "**Additional Specifications**", "", ""
    "Permeate quality limit", "500E-6", "ppm"
 
-.. note::
-   When utilizing this model in research or publications, please cite the following reference:
 
-   Atia, A. A., Allen, J., Young, E., Knueven, B., & Bartholomew, T. V. (2023). Cost optimization of low-salt-rejection reverse osmosis. Desalination, 551, 116407.
