@@ -77,7 +77,7 @@ Flowsheet Specifications
    "MD hot and cold channels height", "0.0019", "m"
    "MD hot and cold channels spacer porosity", "0.77", "dimensionless"
    "**Heat Exchanger**"
-   "Overall heat transfer coefficient", "2000", "W/m²K"
+   "Overall heat transfer coefficient", "2000", ":math:`\text{W/m}^{2}\text{/K}`"
    "**Pumps**"
    "Efficiency", "0.8", "dimensionless"
    "**Heater**"
