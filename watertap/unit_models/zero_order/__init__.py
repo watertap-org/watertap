@@ -84,4 +84,25 @@ from .electrocoagulation_zo import ElectrocoagulationZO
 # =========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 
+from .anaerobic_digestion_reactive_zo import AnaerobicDigestionReactiveZO
+from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
+from .autothermal_hydrothermal_liquefaction_zo import ATHTLZO
+from .CANDOP_zo import CANDOPZO
+from .centrifuge_zo import CentrifugeZO
+from .cloth_media_filtration_zo import ClothMediaFiltrationZO
+from .cofermentation_zo import CofermentationZO
+from .constructed_wetlands_zo import ConstructedWetlandsZO
+from .gas_sparged_membrane_zo import GasSpargedMembraneZO
+from .hrcs_zo import HRCSZO
+from .hydrothermal_gasification_zo import HTGZO
+from .magprex_zo import MagprexZO
+from .membrane_evaporator_zo import MembraneEvaporatorZO
+from .metab_zo import MetabZO
+from .microbial_battery_zo import MicrobialBatteryZO
+from .peracetic_acid_disinfection_zo import PeraceticAcidDisinfectionZO
+from .photothermal_membrane_zo import PhotothermalMembraneZO
 from .secondary_treatment_wwtp_zo import SecondaryTreatmentWWTPZO
+from .struvite_classifier_zo import StruviteClassifierZO
+from .suboxic_activated_sludge_process_zo import SuboxicASMZO
+from .supercritical_salt_precipitation_zo import SaltPrecipitationZO
+from .vfa_recovery_zo import VFARecoveryZO
