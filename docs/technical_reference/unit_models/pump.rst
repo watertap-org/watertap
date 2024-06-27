@@ -68,7 +68,7 @@ When the configuration ``variable_efficiency`` is not ``VariableEfficiency.none`
    "Actual pump efficiency", ":math:`\eta_{pump, t} = \eta_{bep} * r_{bep, t}`"
 
 When the configuration ``variable_efficiency`` is set to ``VariableEfficiency.flow``,
-then the pump efficiency only depends on flow:
+then the pump efficiency is assumed to depend only on flow:
 
     .. math::
 
