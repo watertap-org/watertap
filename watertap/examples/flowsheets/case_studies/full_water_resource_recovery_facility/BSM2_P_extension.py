@@ -83,8 +83,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
-from idaes.core.util import DiagnosticsToolbox
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -100,10 +98,6 @@ def main(bio_P=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
-
-    dt = DiagnosticsToolbox(m)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
 
     initialize_system(m, bio_P=bio_P)
     for mx in m.fs.mixers:
@@ -132,16 +126,8 @@ def main(bio_P=False):
         fail_flag=True,
     )
 
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
-
     add_costing(m)
     m.fs.costing.initialize()
-
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list after costing  ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     assert_degrees_of_freedom(m, 0)
 
