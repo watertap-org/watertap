@@ -1,0 +1,52 @@
+base_currency: USD_2020
+base_period: year
+defined_flows:
+  electricity:
+    value: 0.08
+    units: USD_2020/kWh
+  filtration_media_disposal:
+    value: 100
+    units: USD_2020/kg
+  filtration_media:
+    value: 4000
+    units: USD_2020/kg
+global_parameters:
+  plant_lifetime:
+    value: 30
+    units: year
+  utilization_factor:
+    value: 0.85
+    units: dimensionless
+  land_cost_percent_FCI:
+    value: 0
+    units: dimensionless
+  working_capital_percent_FCI:
+    value: 0
+    units: dimensionless
+  salaries_percent_FCI:
+    value: 0
+    units: 1/year
+  benefit_percent_of_salary:
+    value: 0
+    units: dimensionless
+  maintenance_costs_percent_FCI:
+    value: 0.02
+    units: 1/year
+  laboratory_fees_percent_FCI:
+    value: 0
+    units: 1/year
+  insurance_and_taxes_percent_FCI:
+    value: 0
+    units: 1/year
+  wacc:
+    # Weighted Average Cost of Capital (WACC)
+    value: 0.05
+    units: dimensionless
+  TPEC:
+    # Total Purchased Equipment Cost
+    value: 3.4
+    units: dimensionless
+  TIC:
+    # Total Installed Cost
+    value: 2
+    units: dimensionless

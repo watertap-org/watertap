@@ -1,0 +1,72 @@
+base_currency: USD_2020
+base_period: year
+defined_flows:
+  electricity:
+    value: 0.08
+    units: USD_2020/kWh
+  heat:
+    value: 0.025
+    units: USD_2020/kWh
+  hydrogen_product:
+    value: 2
+    units: USD_2020/kg
+  ammonia_product:
+    value: 800
+    units: USD_2020/short_ton
+    metadata: Anhydrous ammonia (fertilizer) prices have varied between 400 - 1516 $/ton based on USDA data from 2008-2021 in Illinois; the upper limit is associated with the Russia-Ukraine War
+  phosphorus_product:
+    value: 40
+    units: USD_2020/kg
+  vfa_product:
+    value: 384
+    units: USD_2020/metric_ton
+    metadata: 384 $/ton (assumed metric) estimated as minimum selling price in Fasahati & Liu, 2014.
+  water_product:
+    value: 0.1
+    units: USD_2020/m**3
+  waste_disposal:
+    value: 1
+    units: USD_2020/m**3
+  food_waste_tipping_fee:
+    value: 1
+    units: USD_2020/m**3
+global_parameters:
+  plant_lifetime:
+    value: 30
+    units: year
+  utilization_factor:
+    value: 0.85
+    units: dimensionless
+  land_cost_percent_FCI:
+    value: 0
+    units: dimensionless
+  working_capital_percent_FCI:
+    value: 0
+    units: dimensionless
+  salaries_percent_FCI:
+    value: 0
+    units: 1/year
+  benefit_percent_of_salary:
+    value: 0
+    units: dimensionless
+  maintenance_costs_percent_FCI:
+    value: 0.03
+    units: 1/year
+  laboratory_fees_percent_FCI:
+    value: 0
+    units: 1/year
+  insurance_and_taxes_percent_FCI:
+    value: 0
+    units: 1/year
+  wacc:
+    # Weighted Average Cost of Capital (WACC)
+    value: 0.05
+    units: dimensionless
+  TPEC:
+    # Total Purchased Equipment Cost
+    value: 1
+    units: dimensionless
+  TIC:
+    # Total Installed Cost
+    value: 2
+    units: dimensionless
