@@ -79,7 +79,7 @@ Flowsheet Specifications
    "**Heat Exchanger**"
    "Overall heat transfer coefficient", "2000", ":math:`\text{W/m}^{2}\text{/K}`"
    "**Pumps**"
-   "Efficiency", "0.8", "dimensionless"
+   "Efficiency", "0.8", ":math:`\text{dimensionless}`"
    "**Heater**"
    "Maximum outlet temperature", "90", "°C"
    "**Cooler**"
