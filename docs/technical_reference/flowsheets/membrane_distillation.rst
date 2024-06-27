@@ -46,7 +46,7 @@ Documentation for the property model can be found here:
    * `Seawater Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_
    * `Water Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/water.html>`_
 
-This flowsheet aims to solve an optimization problem that minimizes the levelized cost of water (LCOW) with a specified overall water recovery.
+This flowsheet aims to solve an optimization problem that minimizes the LCOW with a specified overall water recovery.
 LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and :math:`f_{util}` represents the utilization factor:
 
     .. math::
