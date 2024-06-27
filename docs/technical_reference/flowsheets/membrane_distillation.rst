@@ -93,7 +93,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Recycle ratio (Ratio of recycle stream to the make up feed)", ``Recycle_ratio``, ":math:`\text{dimensionless}`"
+   "Recycle ratio (Ratio of recycle stream to the make up feed)", ``recycle_ratio``, ":math:`\text{dimensionless}`"
 
 Additional Constraints
 ----------------------
