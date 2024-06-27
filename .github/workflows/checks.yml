@@ -281,7 +281,7 @@ jobs:
 
   macos:
     name: macOS setup (EXPERIMENTAL)
-    runs-on: macos-11
+    runs-on: macos-13
     needs: [code-formatting]
     strategy:
       fail-fast: false
