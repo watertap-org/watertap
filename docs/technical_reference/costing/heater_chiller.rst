@@ -1,5 +1,5 @@
 Heater/Chiller Costing Method
-==============================
+=============================
 
 Costing Method Parameters
 +++++++++++++++++++++++++
@@ -9,51 +9,55 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``parameter_name``", "1", ":math:`\text{dimensionless}`"
+   "**Electric Heater**"
+   "Heater unit cost", ":math:`C_{heater}`", "``unit_cost``", "0.066", ":math:`\text{USD}_{2018}\text{/W}`"
+   "Heat generation efficiency", ":math:`HE`", "``HE``", "0.99", ":math:`\text{dimensionless}`"
+
+   "**Chiller**"
+   "Chiller unit cost", ":math:`C_{chiller}`", "``unit_cost``", "0.2", ":math:`\text{USD}_{2018}\text{/W}`"
+   "Coefficient of performance", ":math:`COP`", "``COP``", "7", ":math:`\text{dimensionless}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_heater_chiller` costing method in the ``watertap_costing_package``:
+The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_heater_chiller` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``variable_name``", "[t]", ":math:`\text{dimensionless}`"
+   "Heat duty", ":math:`E`", "``heat_duty``", "[t]", ":math:`\text{W}`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Describe capital costs..keep it concise where possible
+For the **Electric Heater**:
+
+The capital cost is dependent on the heat duty, :math:`E`, and the heat generation efficiency, :math:`HE`, as shown in the equation below.
 
     .. math::
 
-        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}
+        C_{cap, tot} = C_{heater} \cdot \frac{E}{HE}
+
+For the **Chiller**:
+
+The capital cost is dependent on the effective heat duty, :math:`E`, and the coefficient of performance, :math:`COP`, as shown in the equation below.
 
     .. math::
 
-        C_{cap,example1} = fill in equation for each component in total capex equation
+        C_{cap, tot} = C_{chiller} \cdot \frac{E}{COP}
 
- 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Describe operating/maintenance costs..keep it concise where possible
+Electricity :math:`C_{elec}` is a variable operating cost based on the energy intensity :math:`E` of the unit process
+(heat duty for the heater or the chiller), electricity price :math:`P`, electricity flow :math:`Q`, and the plant
+utilization factor :math:`f_{util}`. The annual electricity costs are calculated as:
 
     .. math::
 
-        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}
+        C_{op, tot} = C_{elec} = E Q f_{util} P
 
-    .. math::
-
-        C_{op,example1} = fill in equation for each component in total opex equation
-
- 
 Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.heater_chiller`
-
-References
-----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
