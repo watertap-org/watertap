@@ -21,6 +21,7 @@ https://gist.github.com/GoodmanSciences/c2dd862cd38f21b0ad36b8f96b4bf1ee.
 __author__ = "Paul Vecchiarelli, Ben Knueven, Adam Atia"
 
 from collections import namedtuple
+from re import findall
 
 from watertap.core.util.chemistry import (
     get_charge,

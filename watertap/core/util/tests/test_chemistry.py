@@ -9,6 +9,9 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+from pathlib import Path
+
+import pandas as pd
 import pytest
 
 from watertap.core.util.chemistry import (
@@ -92,3 +95,18 @@ def test_get_mw_quantity():
         result2 = get_molar_mass_quantity(solute_name, units=pyunits.g / pyunits.mol)
         assert value(result2) == mw_value
         assert_units_equivalent(result2, pyunits.g / pyunits.mol)
+
+
+@pytest.fixture
+def periodic_table() -> pd.DataFrame:
+    parent_dir = Path(__file__).parent
+    return pd.read_csv(parent_dir / "periodic_table.csv")
+
+
+@pytest.mark.unit
+def test_periodic_table_headers(periodic_table):
+    test_headers = ["AtomicMass", "Symbol"]
+    assert all(header in get_test_file.columns for header in test_headers)
+    size = {"cols": 28, "rows": 118}
+    assert len(periodic_table.columns) == size["cols"]
+    assert len(periodic_table.values) == size["rows"]
