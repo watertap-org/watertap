@@ -298,3 +298,29 @@ class TestAsm2dAdm1(object):
             )
             <= 1e-5
         )
+
+        assert (
+            abs(
+                value(
+                    (
+                        asmadm.fs.unit.inlet.flow_vol[0]
+                        * asmadm.fs.props_ADM1.dens_mass
+                        * asmadm.fs.props_ADM1.cp_mass
+                        * (
+                            asmadm.fs.unit.inlet.temperature[0]
+                            - asmadm.fs.props_ADM1.temperature_ref
+                        )
+                    )
+                    - (
+                        asmadm.fs.unit.outlet.flow_vol[0]
+                        * asmadm.fs.props_ASM2D.dens_mass
+                        * asmadm.fs.props_ASM2D.cp_mass
+                        * (
+                            asmadm.fs.unit.outlet.temperature[0]
+                            - asmadm.fs.props_ASM2D.temperature_ref
+                        )
+                    )
+                )
+            )
+            <= 1e-6
+        )
