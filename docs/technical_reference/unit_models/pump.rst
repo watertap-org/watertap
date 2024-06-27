@@ -79,6 +79,8 @@ then the pump efficiency is assumed to depend only on flow:
          0.4 & \text{for } r_{bp, t} > 1.4
        \end{cases}
 
+**NOTE: this option for centrifugal pumps has been used in modeling but not validated for high pressure applications**
+
 Class Documentation
 -------------------
 .. currentmodule:: watertap.unit_models.pressure_changer
@@ -86,3 +88,9 @@ Class Documentation
 .. autoclass:: Pump
     :members:
     :noindex:
+
+References
+----------
+Kuritza, J. C., Camponogara, G., Marques, M. G., Sanagiotto, D. G., & Battiston, C. (2017).
+Dimensionless curves of centrifugal pumps for water supply systems: development and case study. Rbrh, 22, e45.
+https://www.scielo.br/j/rbrh/a/GpYnSMFgwbm6WWcksDTXq6z/?format=html&lang=en
