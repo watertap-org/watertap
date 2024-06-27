@@ -9,10 +9,11 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pathlib import Path
-
 import pandas as pd
 import pytest
+
+from pyomo.environ import units as pyunits, value
+from pyomo.util.check_units import assert_units_equivalent
 
 from watertap.core.util.chemistry import (
     get_charge,
@@ -20,8 +21,6 @@ from watertap.core.util.chemistry import (
     get_molar_mass_quantity,
     get_periodic_table,
 )
-from pyomo.environ import units as pyunits, value
-from pyomo.util.check_units import assert_units_equivalent
 
 
 @pytest.mark.unit
