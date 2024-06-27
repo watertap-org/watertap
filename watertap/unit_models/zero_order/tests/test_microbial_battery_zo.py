@@ -13,8 +13,10 @@
 Tests for zero-order microbial battery model
 """
 import pytest
+import os
 
 from pyomo.environ import (
+    Block,
     Var,
     Constraint,
     ConcreteModel,
@@ -27,10 +29,12 @@ from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MicrobialBatteryZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -207,3 +211,66 @@ class TestMicrobialBattery:
     @pytest.mark.component
     def test_report(self, model):
         model.fs.unit.report()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(
+        solute_list=[
+            "arsenic",
+            "uranium",
+            "nitrate",
+            "phosphates",
+            "iron",
+            "filtration_media",
+        ]
+    )
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "data",
+        "techno_economic",
+        "groundwater_treatment_case_study.yaml",
+    )
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
+    m.fs.unit = MicrobialBatteryZO(property_package=m.fs.params, database=m.db)
+
+    # Inlet mass flowrates in kg/s
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.01)
+    m.fs.unit.inlet.flow_mass_comp[0, "arsenic"].fix(4e-10)
+    m.fs.unit.inlet.flow_mass_comp[0, "uranium"].fix(6e-10)
+    m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(1e-7)
+    m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1e-9)
+    m.fs.unit.inlet.flow_mass_comp[0, "iron"].fix(5e-9)
+    m.fs.unit.inlet.flow_mass_comp[0, "filtration_media"].fix(5e-9)
+
+    m.db.get_unit_operation_parameters("microbial_battery")
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+    assert degrees_of_freedom(m.fs.unit) == 0
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.costing.cost_process()
+
+    assert isinstance(m.fs.costing.microbial_battery, Block)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.costing.microbial_battery.sizing_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    initialization_tester(m)
+
+    assert pytest.approx(8640.097, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert "filtration_media" in m.fs.costing._registered_flows
+    assert "filtration_media_disposal" in m.fs.costing._registered_flows
+
+    assert isinstance(m.fs.costing.total_capital_cost, Var)
+    assert isinstance(m.fs.costing.aggregate_flow_costs, Var)

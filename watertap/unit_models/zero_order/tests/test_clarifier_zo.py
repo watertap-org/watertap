@@ -13,6 +13,7 @@
 Tests for zero-order clarifier model
 """
 import pytest
+import os
 
 
 from pyomo.environ import (
@@ -450,3 +451,54 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit1) == 0
 
     assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+
+
+def test_costing_non_default_subtype():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.params = WaterParameterBlock(solute_list=["tss", "cod"])
+
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "data",
+        "techno_economic",
+        "hrcs_case_1575.yaml",
+    )
+
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
+
+    m.fs.unit1 = ClarifierZO(
+        property_package=m.fs.params,
+        database=m.db,
+        process_subtype="HRCS_clarifier",
+    )
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "cod"].fix(1)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    assert isinstance(m.fs.costing.clarifier, Block)
+    assert isinstance(m.fs.costing.clarifier.HRT, Var)
+    assert isinstance(m.fs.costing.clarifier.sizing_cost, Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert (
+        m.fs.unit1.ferric_chloride_demand[0]
+        in m.fs.costing._registered_flows["ferric_chloride"]
+    )
