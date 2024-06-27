@@ -46,7 +46,7 @@ If precipitants are supplied
    * precipitant mass flow rate 
    * mass fraction of solids in precipitant (solid) waste stream
 
-Model Structure and usage
+Model Structure and Usage
 -------------------------
 The stoichiometric reactor uses control volumes to perform the dissolution reaction and 
 precipitation reaction, while an IDAES separator is used to separate precipitated solids 
@@ -140,64 +140,6 @@ Variables
    "Stoichiometric coefficients for precipitation", precipitation_stoich_comp, "[precipitant, :math:`j`]",dimensionless
    "Fraction of solids in waste stream",  waste_mass_frac_precipitate, None, fraction
 
-   
-Costing method
---------------
-
-Currently, the costing method is implemented for lime and soda ash softening and acidification which only include
-the capital cost of building the reactor. The capital cost of lime soda ash is a function of 
-total reagent mass being added to the softening process and is only valid when both precipitant and reagents are provided.
-While acid additon capital cost is only consutructed if only reagents are provided. Acid addition costing is 
-base on folume flow of acid per day. 
-
-.. math::
-
-      C_{softening}=C_{base capital value}*\sum{M_{reagent}}
-
-      C_{acidification}=C_{base capital value}*\sum{Q_{reagent}}
-
-Where default value C_{basecapitalvalue} is 374.9 $/lb of reagent (soda ash + lime)/day, 
-while for acid adition the cost is 127.8$/gallon of reagent (HCl)/day
-
-To cost reagent dosing, user must manually register the mass flow of each reagent and supply
-a cost as follows
-
-.. code-block::
-
-   # build the unit model 
-   m.fs.chemical_addition = StoichiometricReactor(
-         property_package=m.fs.properties,
-         reagent=reagents,
-      )
-   # The user must the specify how much reagent to add
-   m.fs.chemical_addition.reagent_dose["Na2CO3"].fix(1e-3)
-   m.fs.chemical_addition.reagent_dose["CaO"].fix(1e-3)
-
-   # specify the costs for lime (CaO)
-   blk.lime_cost = Param(
-      initialize=0.13,
-      units=m.fs.costing.base_currency / pyunits.kg,
-      mutable=True,
-   )
-   # specify the costs for soda ash (Na2CO3)
-   blk.soda_ash_cost = Param(
-      initialize=0.13,
-      units=m.fs.costing.base_currency / pyunits.kg,
-      mutable=True,
-   )
-   # Register the flow for each chemical being added
-   m.fs.costing.register_flow_type("lime_cost", blk.lime_cost )
-   m.fs.costing.register_flow_type("soda_ash_cost", blk.soda_ash_cost )
-   
-   # Register the flow for each chemical being added
-   m.fs.costing.cost_flow(
-      blk.lime_cost,
-      "lime_cost",
-   )
-   m.fs.costing.cost_flow(
-      blk.soda_ash_cost,
-      "soda_ash_cost",
-   )
 
 Class Documentation
 -------------------
