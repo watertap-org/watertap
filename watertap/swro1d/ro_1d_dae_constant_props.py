@@ -23,7 +23,7 @@ class Solver(Enum):
     ipopt = 1
     petsc = 2
 
-SolverChoice = Solver.petsc
+SolverChoice = Solver.ipopt
 
 m = ConcreteModel()
 m.tf = Param(initialize=0.8e-3) # 8 mm
@@ -42,8 +42,8 @@ m.Cb0 = Param(initialize=6.226e-3) # kmol/m3
 m.Cp0 = Param(initialize=0.0) # kmol/m3
 m.Fb0 = Param(initialize=2.166e-4) # m3/s
 m.Pb0 = Param(initialize=5.83) # atm
-m.Tb0 = Param(initialize=304.65) # C
-m.Tp0 = Param(initialize=304.65) # C
+m.Tb0 = Param(initialize=304.65) # K
+m.Tp0 = Param(initialize=304.65) # K
 m.Db = Param(initialize=1.7657e-9) # m2/s
 m.Dp = Param(initialize=1.7354e-9) # m2/s
 m.Jw0 = Param(initialize=4.41493388e-06)
@@ -67,20 +67,20 @@ m.kx = Var(m.x, m.t, within=NonNegativeReals, initialize=m.kx0)
 # for i in range(9):
     # m.add_component('x%s' % i, Var(m.x, m.t))
 
-m.dCbdt = DerivativeVar(m.Cb, wrt=m.t, initialize=-1.0)
+m.dCbdt = DerivativeVar(m.Cb, wrt=m.t, initialize=1.0)
 m.dCpdt = DerivativeVar(m.Cp, wrt=m.t, initialize=1.0)
-m.dFbdt = DerivativeVar(m.Fb, wrt=m.t, initialize=-1.0)
-m.dPbdt = DerivativeVar(m.Pb, wrt=m.t, initialize=-1.0)
-m.dTbdt = DerivativeVar(m.Tb, wrt=m.t, initialize=-1.0)
+m.dFbdt = DerivativeVar(m.Fb, wrt=m.t, initialize=1.0)
+m.dPbdt = DerivativeVar(m.Pb, wrt=m.t, initialize=1.0)
+m.dTbdt = DerivativeVar(m.Tb, wrt=m.t, initialize=1.0)
 m.dTpdt = DerivativeVar(m.Tp, wrt=m.t, initialize=1.0)
-m.dCbdx = DerivativeVar(m.Cb, wrt=m.x, initialize=-1.0)
+m.dCbdx = DerivativeVar(m.Cb, wrt=m.x, initialize=1.0)
 m.dCpdx = DerivativeVar(m.Cp, wrt=m.x, initialize=1.0)
-m.dFbdx = DerivativeVar(m.Fb, wrt=m.x, initialize=-1.0)
-m.dPbdx = DerivativeVar(m.Pb, wrt=m.x, initialize=-1.0)
-m.dTbdx = DerivativeVar(m.Tb, wrt=m.x, initialize=-1.0)
-m.dTpdx = DerivativeVar(m.Tp, wrt=m.x, initialize=-1.0)
+m.dFbdx = DerivativeVar(m.Fb, wrt=m.x, initialize=1.0)
+m.dPbdx = DerivativeVar(m.Pb, wrt=m.x, initialize=1.0)
+m.dTbdx = DerivativeVar(m.Tb, wrt=m.x, initialize=1.0)
+m.dTpdx = DerivativeVar(m.Tp, wrt=m.x, initialize=1.0)
 m.dCbdx2 = DerivativeVar(m.Cb, wrt=(m.x, m.x), initialize=1.0)
-m.dCpdx2 = DerivativeVar(m.Cp, wrt=(m.x, m.x), initialize=-1.0)
+m.dCpdx2 = DerivativeVar(m.Cp, wrt=(m.x, m.x), initialize=1.0)
 # m.dFpdx = DerivativeVar(m.Fp, wrt=m.x, initialize=1.0)
 
 def _diffeq1(m, i, j): # Cb PDE
@@ -161,66 +161,78 @@ m.algeq4 = Constraint(m.x, m.t, rule=_algeq4)
 
 # m.algeq5 = Constraint(m.x, m.t, rule=_algeq5)
 
-# def _initcon_1(m, i):
-#     if i == 1:
-#         return Constraint.Skip
-#     return m.Cb[i, 0] == m.Cb0
+def _initcon_1(m, i):
+    if i == 1:
+        return Constraint.Skip
+    return m.Cb[i, 0] == m.Cb0
 
-# m.initcon_1 = Constraint(m.x, rule=_initcon_1)
+m.initcon_1 = Constraint(m.x, rule=_initcon_1)
 
-# def _initcon_2(m, i):
-#     if i == 1:
-#         return Constraint.Skip
-#     return m.Cp[i, 0] == m.Cp0
+def _initcon_2(m, i):
+    if i == 1:
+        return Constraint.Skip
+    return m.Cp[i, 0] == m.Cp0
 
-# m.initcon_2 = Constraint(m.x, rule=_initcon_2)
+m.initcon_2 = Constraint(m.x, rule=_initcon_2)
 
-# def _initcon_3(m, i):
-#     return m.Fb[i, 0] == m.Fb0
+def _initcon_3(m, i):
+    return m.Fb[i, 0] == m.Fb0
 
-# m.initcon_3 = Constraint(m.x, rule=_initcon_3)
+m.initcon_3 = Constraint(m.x, rule=_initcon_3)
 
-# def _initcon_4(m, i):
-#     return m.Pb[i, 0] == m.Pb0
+def _initcon_4(m, i):
+    return m.Pb[i, 0] == m.Pb0
 
-# m.initcon_4 = Constraint(m.x, rule=_initcon_4)
+m.initcon_4 = Constraint(m.x, rule=_initcon_4)
 
-# def _initcon_5(m, i):
-#     return m.Tb[i, 0] == m.Tb0
+def _initcon_5(m, i):
+    return m.Tb[i, 0] == m.Tb0
 
-# m.initcon_5 = Constraint(m.x, rule=_initcon_5)
+m.initcon_5 = Constraint(m.x, rule=_initcon_5)
 
-# def _initcon_6(m, i):
-#     return m.Tp[i, 0] == m.Tp0
+def _initcon_6(m, i):
+    return m.Tp[i, 0] == m.Tp0
 
-# m.initcon_6 = Constraint(m.x, rule=_initcon_6)
+m.initcon_6 = Constraint(m.x, rule=_initcon_6)
 
 def _leftbccon_1(m, j):
+    if j == 0: # To avoid (0,0) as already specified in IC
+        return Constraint.Skip
     return m.Cb[0, j] == m.Cb0
 
 m.leftbccon_1 = Constraint(m.t, rule=_leftbccon_1)
 
 def _leftbccon_2(m, j):
+    if j == 0: # To avoid (0,0) as already specified in IC
+        return Constraint.Skip
     return m.Cp[0, j] == m.Cp0
 
 m.leftbccon_2 = Constraint(m.t, rule=_leftbccon_2)
 
 def _leftbccon_3(m, j):
+    if j == 0: # To avoid (0,0) as already specified in IC
+        return Constraint.Skip
     return m.Fb[0, j] == m.Fb0
 
 m.leftbccon_3 = Constraint(m.t, rule=_leftbccon_3)
 
 def _leftbccon_4(m, j):
+    if j == 0: # To avoid (0,0) as already specified in IC
+        return Constraint.Skip
     return m.Pb[0, j] == m.Pb0
 
 m.leftbccon_4 = Constraint(m.t, rule=_leftbccon_4)
 
 def _leftbccon_5(m, j):
+    if j == 0: # To avoid (0,0) as already specified in IC
+        return Constraint.Skip
     return m.Tb[0, j] == m.Tb0
 
 m.leftbccon_5 = Constraint(m.t, rule=_leftbccon_5)
 
 def _leftbccon_6(m, j):
+    if j == 0: # To avoid (0,0) as already specified in IC
+        return Constraint.Skip
     return m.Tp[0, j] == m.Tp0
 
 m.leftbccon_6 = Constraint(m.t, rule=_leftbccon_6)
@@ -234,26 +246,6 @@ def _upperbound_2(m, j):
     return m.dCpdx[1, j] == 0
 
 m.upperbound_2 = Constraint(m.t, rule=_upperbound_2)
-
-# def _leftbound_1(m, j):
-#     return m.Jw[0, j] == m.Jw0
-
-# m.leftbound_1 = Constraint(m.t, rule=_leftbound_1)
-
-# def _leftbound_2(m, j):
-#     return m.Js[0, j] == m.Js0
-
-# m.leftbound_2 = Constraint(m.t, rule=_leftbound_2)
-
-# def _leftbound_3(m, j):
-#     return m.Cw[0, j] == m.Cw0
-
-# m.leftbound_3 = Constraint(m.t, rule=_leftbound_3)
-
-# def _leftbound_4(m, j):
-#     return m.kx[0, j] == m.kx0
-
-# m.leftbound_4 = Constraint(m.t, rule=_leftbound_4)
 
 m.obj = Objective(expr=1)
 
@@ -276,31 +268,31 @@ discretizer2.apply_to(m, nfe=30, wrt=m.t, scheme='BACKWARD')
 # create the scaling factors
 m.scaling_factor = Suffix(direction=Suffix.EXPORT)
 m.scaling_factor[m.diffeq1] = 1e4 # scale Cb eq
-m.scaling_factor[m.diffeq2] = 1e3 # scale Cp eq
+m.scaling_factor[m.diffeq2] = 1e8 # scale Cp eq
 m.scaling_factor[m.diffeq3] = 1e5 # scale Fb eq
-m.scaling_factor[m.diffeq3] = 1e-3 # scale Pb eq
-m.scaling_factor[m.diffeq5] = 1e1 # scale Tb eq
-m.scaling_factor[m.diffeq6] = 1e1 # scale Tp eq
+# m.scaling_factor[m.diffeq3] = 1e1 # scale Pb eq
+# m.scaling_factor[m.diffeq5] = 1e1 # scale Tb eq
+# m.scaling_factor[m.diffeq6] = 1e1 # scale Tp eq
 m.scaling_factor[m.algeq1] = 1e7 # scale Jw eq
 m.scaling_factor[m.algeq2] = 1e9  # scale Js eq
 m.scaling_factor[m.algeq4] = 1e6  # scale kx eq
 m.scaling_factor[m.Cb] = 1e4    # scale the Cb variable
-m.scaling_factor[m.Cp] = 1e3    # scale the Cp variable
+m.scaling_factor[m.Cp] = 1e8    # scale the Cp variable
 m.scaling_factor[m.Fb] = 1e5    # scale the Fb variable
 m.scaling_factor[m.Jw] = 1e7    # scale the Jw variable
 m.scaling_factor[m.Js] = 1e9    # scale the Js variable
 m.scaling_factor[m.kx] = 1e6    # scale the kx variable
-m.scaling_factor[m.dCbdt] = 1e4    # scale the Cb variable
+m.scaling_factor[m.dCbdt] = 1e3    # scale the Cb variable
 m.scaling_factor[m.dCpdt] = 1e3    # scale the Cp variable
 m.scaling_factor[m.dFbdt] = 1e3    # scale the Fb variable
 m.scaling_factor[m.dPbdt] = 1e3    # scale the Pb variable
-m.scaling_factor[m.dTbdt] = 1e2    # scale the Tb variable
-m.scaling_factor[m.dTpdt] = 1e2    # scale the Tp variable
+# m.scaling_factor[m.dTbdt] = 1e2    # scale the Tb variable
+# m.scaling_factor[m.dTpdt] = 1e2    # scale the Tp variable
 m.scaling_factor[m.dCbdx] = 1e3    # scale the Cb variable
 m.scaling_factor[m.dCpdx] = 1e3    # scale the Cp variable
-# iscale.calculate_scaling_factors(m)
-# scaled_model = TransformationFactory('core.scale_model').create_using(m)
-# print("Degrees of Freedom after Discretization = ", degrees_of_freedom(m))
+iscale.calculate_scaling_factors(m)
+scaled_model = TransformationFactory('core.scale_model').create_using(m)
+print("Degrees of Freedom after Discretization = ", degrees_of_freedom(m))
 
 if SolverChoice == Solver.ipopt:
 
@@ -308,6 +300,8 @@ if SolverChoice == Solver.ipopt:
     print(solver._version)
     # solver.options['max_iter'] = 1000
     solver.options['linear_solver'] = 'mumps'
+    solver.options['tol'] = 1e-8
+    # solver.options['print_level'] = 6
     # solver.options['hsllib'] = '/usr/local/fya/watertap/hsl_ma97-2.8.1'
     solver.options['nlp_scaling_method'] = 'user-scaling'
     solver.options['OF_ma57_automatic_scaling'] = 'yes'
@@ -328,7 +322,7 @@ else:
             "--ts_rtol": 1e-5,
             # "--ts_adapt_clip":"0.001,3600",
             # "--ksp_monitor":"",
-            "--ts_adapt_dt_min": 1e-3,
+            "--ts_adapt_dt_min": 1e-1,
             "--ts_adapt_dt_max": 3600,
             "--snes_type": "newtontr",
             # "--ts_max_reject": 200,
@@ -366,14 +360,7 @@ else:
     for result in results.results:
         assert_optimal_termination(result)
 
-# TransformationFactory('core.scale_model').propagate_solution(scaled_model, m)
-
-# solver = SolverFactory('ipopt')
-# solver.options['max_iter'] = 1000
-# solver.options['nlp_scaling_method'] = 'user-scaling'
-# solver.options['OF_ma57_automatic_scaling'] = 'yes'
-# solver.options['halt_on_ampl_error'] = 'no'
-# results = solver.solve(m, tee=True)
+TransformationFactory('core.scale_model').propagate_solution(scaled_model, m)
 
 x = []
 t = []
@@ -419,7 +406,7 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 x, t, Cb, Cp, Fb, Jw, Js, Cw, kx = np.array(x), np.array(t), np.array(Cb), np.array(Cp), np.array(Fb), np.array(Jw), np.array(Js), np.array(Cw), np.array(kx)
 Cp_av = np.sum(Cp, axis=0)
-print(Cb.shape)
+# print(Cp)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1, projection='3d')
@@ -442,4 +429,4 @@ print('Min of params error at 0: ', min([abs(Jw[0,0] - 4.41493388e-06), abs(Js[0
 print('Cb[x=0,t=1]: ', Cb[0,1])
 print('Cb[x=L,t=End]: ', Cb[-1,-1], '0.00675')
 print('Fb[x=L,t=End]: ', Fb[-1,-1], '0.0001951')
-print('Cpav[t=End]: ', Cp_av[-1], '0.00182')
+print('Cpav[t=End]: ', Cp_av, '0.00182')
