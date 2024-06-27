@@ -39,6 +39,22 @@ def export_to_ui():
                 "max_val": 8,  # optional
                 "min_val": 1,  # optional
             },
+            "FeedFlowRate": {
+                "name": "FeedFlowRate",
+                "display_name": "Feed Flow Rate (m3/s)",
+                "values_allowed": "float",
+                "value": 1e-3,  # default value
+                "max_val": 1,  # optional
+                "min_val": 1e-5,  # optional
+            },
+            "FeedNaClConcentration": {
+                "name": "FeedNaClConcentration",
+                "display_name": "Feed NaCl Concentration (kg/m3)",
+                "values_allowed": "float",
+                "value": 70,  # default value
+                "max_val": 100,  # optional
+                "min_val": 1,  # optional
+            },
             "ROFiniteElements": {
                 "name": "ROFiniteElements",
                 "display_name": "RO Finite Elements",
@@ -896,7 +912,11 @@ def build_flowsheet(build_options=None, **kwargs):
             number_of_RO_finite_elements=build_options["ROFiniteElements"].value,
             B_max=build_options["BMax"].value,
         )
-        set_operating_conditions(m)
+        set_operating_conditions(
+            m,
+            Cin=build_options["FeedNaClConcentration"].value,
+            Qin=build_options["FeedFlowRate"].value,
+        )
 
         initialize(m)
 
