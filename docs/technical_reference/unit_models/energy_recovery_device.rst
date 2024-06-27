@@ -16,8 +16,8 @@ Degrees of Freedom
 
 Energy recovery device units generally have two degrees of freedom:
 
-* outlet pressure, :math:`P_{out}` or :math:`\Delta P`
-* pump efficiency
+* outlet pressure, :math:`P_{out}` or pressure change across the inlet and outlet,:math:`\Delta P`
+* energy recovery device efficiency
 
 Model Structure
 ---------------
@@ -41,12 +41,12 @@ Sets
 Variables
 ---------
 
-The variables are the same listed in Variable tab of
+The variables are the same as those listed in the "Variable" tab of
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
 Equations and Relationships
 ---------------------------
-The constraints are the same listed in
+The constraints are the same as those listed in
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
 Class Documentation
