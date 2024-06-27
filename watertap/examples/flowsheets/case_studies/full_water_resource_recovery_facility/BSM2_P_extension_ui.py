@@ -23,6 +23,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
     set_operating_conditions,
+    set_scaling,
     initialize_system,
     solve,
     add_costing,
@@ -3851,6 +3852,7 @@ def build_flowsheet(build_options=None, **kwargs):
     m = build()
 
     set_operating_conditions(m)
+    set_scaling(m)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
