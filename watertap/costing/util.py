@@ -217,7 +217,7 @@ def cost_rectifier(blk, power=100 * pyo.units.kW, ac_dc_conversion_efficiency=0.
         )
     )
 
-    # cost electicity flow
+    # cost electricity flow
     blk.costing_package.cost_flow(blk.ac_power, "electricity")
 
 
