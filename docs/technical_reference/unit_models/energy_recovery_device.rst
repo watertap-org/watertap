@@ -4,7 +4,8 @@ Energy Recovery Device
 .. index::
    pair: watertap.unit_models.energy_recovery_device;energy_recovery_device
 
-This energy recovery device unit model is a class of pressure changer which is based on the `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_
+This energy recovery device unit model represents a reversible pump or Pelton turbine.
+It is a class of pressure changer which is based on the `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_
 and makes the following assumptions:
 
    * supports a single liquid phase only
