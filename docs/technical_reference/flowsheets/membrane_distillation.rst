@@ -68,7 +68,7 @@ Flowsheet Specifications
 ------------------------
 
 .. csv-table::
-   :header: "Description", "Units", "Value"
+   :header: "Description", "value", "Units"
 
    "**MD Module**"
    "Membrane permeability coefficient", "1e-10", "m/Pa/s"
