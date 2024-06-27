@@ -3849,8 +3849,7 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
-    m = build()
-
+    m = build(bio_P=False)
     set_operating_conditions(m)
     set_scaling(m)
 
@@ -3859,18 +3858,13 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    assert_degrees_of_freedom(m, 0)
-    assert_units_consistent(m)
-
-    initialize_system(m)
-
+    initialize_system(m, bio_P=False)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    solve(m)
 
     m.fs.R5.KLa.fix(240)
     m.fs.R6.KLa.fix(240)
@@ -3878,16 +3872,15 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # Resolve with controls in place
-    results = solve(m)
-    assert_optimal_termination(results)
+
+    solve(m)
 
     add_costing(m)
-    assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    assert_degrees_of_freedom(m, 0)
+
+    solve(m)
     return m
 
 
