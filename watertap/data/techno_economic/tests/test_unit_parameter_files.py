@@ -24,7 +24,27 @@ dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 db = Database()
 
-exclude_files = ["water_sources.yaml", "component_list.yaml", "default_case_study.yaml"]
+exclude_files = [
+    "water_sources.yaml",
+    "component_list.yaml",
+    "default_case_study.yaml",
+    # IEDO files
+    "amo_1595_case_study.yaml",
+    "amo_1690_case_study.yaml",
+    "biomembrane_filtration_global_costing.yaml",
+    "case_1617.yaml",
+    "GLSD_anaerobic_digestion_global_costing.yaml",
+    "groundwater_treatment_case_study.yaml",
+    "hrcs_case_1575.yaml",
+    "magprex_case_1575.yaml",
+    "metab_global_costing.yaml",
+    "peracetic_acid_case_study.yaml",
+    "suboxic_activated_sludge_process_global.yaml",
+    "supercritical_sludge_to_gas_global_costing.yaml",
+    "swine_wwt_global_costing.yaml",
+    "wastewater_default_case_study.yaml",
+]
+
 
 tech_list = []
 for f in os.listdir(dbpath):

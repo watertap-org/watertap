@@ -35,7 +35,7 @@ In general you would import your own flowsheet module.
 
     # replace this with your own flowsheet module, e.g.
     # import my_flowsheet_module as mfm
-    import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
+    import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
 Once this is done, import the parameter sweep tool
 

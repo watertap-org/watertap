@@ -182,11 +182,8 @@ def test_costing():
         "..",
         "..",
         "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "amo_1575_magprex",
+        "data",
+        "techno_economic",
         "magprex_case_1575.yaml",
     )
 
