@@ -35,8 +35,7 @@ from pyomo.common.log import LoggingIntercept
 import logging
 
 
-if __name__ == "__main__":
-
+def main():
     # create model, flowsheet
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -222,3 +221,9 @@ if __name__ == "__main__":
     # print('number_total_constraints:', number_total_constraints(m.fs))
     # print('number_activated_constraints:', number_activated_constraints(m.fs))
     # print('number_activated_equalities', number_activated_equalities(m.fs))
+
+    return m
+
+
+if __name__ == "__main__":
+    m = main()
