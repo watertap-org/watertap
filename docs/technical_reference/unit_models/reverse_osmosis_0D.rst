@@ -4,7 +4,8 @@ This reverse osmosis (RO) unit model
    * is 0-dimensional
    * supports a single liquid phase only
    * supports steady-state only
-   * is based on the solution-diffusion model and film theory
+   * supports both solution-diffusion (SD) and Spiegler-Kedem-Katchalsky (SKK) models [1]
+   * supports flat-sheet and spiral-wound module designs
    * assumes isothermal conditions
 
 .. index::
@@ -138,6 +139,14 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Friction factor", ":math:`f`", "feed_side.friction_factor_darcy", "[t, x]", ":math:`\text{dimensionless}`"
    "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "feed_side.dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
 
+if ``transport_model`` is set to ``TransportModel.SKK``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Reflection coefficient", ":math:`\sigma`", "reflect_coeff", "None", ":math:`\text{dimensionless}`"
+   "Alpha", ":math:`\alpha`", "alpha", "None", ":math:`\text{s/m}`"
+
 .. _0dro_equations:
 
 Equations
@@ -146,8 +155,10 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
-   "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
+   "Solvent flux across membrane (solution-diffusion)", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
+   "Solvent flux across membrane (SKK)", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - \sigma(\pi_{f}-\pi_{p}))`"
+   "Solute flux across membrane (solution-diffusion)", ":math:`J_{solute} = B(C_{f} - C_{p})`"
+   "Solute flux across membrane (SKK)", ":math:`J_{solute} = B(C_{f} - C_{p}) + (1 - \sigma)\frac{J_{solvent}}{\rho_{solvent}}C_{f}`"
    "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
    "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
    "Permeate-side solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
@@ -159,7 +170,8 @@ Equations
    "Reynolds number",":math:`Re = \frac{\rho v_f d_h}{\mu}`"
    "Hydraulic diameter",":math:`d_h = \frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
    "Cross-sectional area",":math:`A_c = h_{ch}W\epsilon_{sp}`"
-   "Membrane area",":math:`A_m = LW`"
+   "Membrane area (flat-plate)",":math:`A_m = LW`"
+   "Membrane area (spiral-wound)",":math:`A_m = 2LW`"
    "Pressure drop",":math:`ΔP = (\frac{ΔP}{Δx})_{avg}L`"
    "Feed-channel velocity",":math:`v_f = Q_f/A_c`"
    "Friction factor",":math:`f = 0.42+\frac{189.3}{Re}`"
@@ -167,8 +179,13 @@ Equations
    "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
    "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
    "Observed solute rejection", ":math:`r_j = 1 - \frac{C_{p,mix}}{C_{f,in}}`" 
+   "Alpha", ":math:`\alpha = \frac{1 - \sigma}{B}`" 
 
 Class Documentation
 -------------------
 
 * :mod:`watertap.unit_models.reverse_osmosis_0D`
+
+References
+----------
+Spiegler, K. S., & Kedem, O. (1966). Thermodynamics of hyperfiltration (reverse osmosis): criteria for efficient membranes. Desalination, 1(4), 311-326.

@@ -255,7 +255,7 @@ The rules for inhibition related to secondary substrate (:math:`I_{IN,lim}`), hy
 
 Class Documentation
 -------------------
-.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties
+.. currentmodule:: watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties
 
 .. autoclass:: ADM1ParameterBlock
     :members:
@@ -273,7 +273,7 @@ Class Documentation
     :members:
     :noindex:
 
-.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties_vapor
+.. currentmodule:: watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor
 
 .. autoclass:: ADM1_vaporParameterBlock
     :members:
@@ -291,7 +291,7 @@ Class Documentation
     :members:
     :noindex:
 
-.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_reactions
+.. currentmodule:: watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions
 
 .. autoclass:: ADM1ReactionParameterBlock
     :members:

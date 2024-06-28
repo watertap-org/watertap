@@ -20,12 +20,16 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.util.initialization import (
+    assert_degrees_of_freedom,
+    check_solve,
+    interval_initializer,
+)
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -192,6 +196,7 @@ def set_operating_conditions(m):
 
 
 def initialize_system(m):
+    interval_initializer(m)
     seq = SequentialDecomposition()
     seq.options.tear_set = []
     seq.options.iterLim = 1

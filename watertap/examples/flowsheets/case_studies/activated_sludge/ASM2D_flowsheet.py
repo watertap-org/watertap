@@ -33,7 +33,7 @@ from idaes.models.unit_models import (
     Product,
 )
 from idaes.models.unit_models.separator import SplittingType
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -43,10 +43,10 @@ from idaes.core.util.tables import (
 )
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
 
@@ -387,7 +387,9 @@ def build_flowsheet():
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-8})
+        unit.initialize(
+            outlvl=idaeslog.INFO, optarg={"bound_push": 1e-8}, solver="ipopt-watertap"
+        )
         badly_scaled_vars = list(iscale.badly_scaled_var_generator(unit))
         if len(badly_scaled_vars) > 0:
             automate_rescale_variables(unit)

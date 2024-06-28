@@ -16,16 +16,16 @@ from pyomo.environ import (
     units,
 )
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
 from watertap.unit_models.anaerobic_digester import AD
-from watertap.property_models.anaerobic_digestion.adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
 

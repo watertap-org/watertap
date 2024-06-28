@@ -22,7 +22,7 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
@@ -30,7 +30,9 @@ import idaes.core.util.scaling as iscale
 from watertap.unit_models.clarifier import Clarifier
 from idaes.models.unit_models.separator import SplittingType
 
-from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+)
 
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting

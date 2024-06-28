@@ -47,7 +47,7 @@ from idaes.models.unit_models import (
     Product,
 )
 from idaes.models.unit_models.separator import SplittingType
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -57,8 +57,10 @@ from idaes.core.util.tables import (
 )
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
-from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
-from watertap.property_models.activated_sludge.asm1_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+)
+from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 

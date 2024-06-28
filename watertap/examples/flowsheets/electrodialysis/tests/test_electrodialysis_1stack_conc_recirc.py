@@ -12,7 +12,7 @@
 
 import pytest
 from pyomo.environ import value
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.core.util.initialization import check_dof
 import watertap.examples.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc as edfs
 

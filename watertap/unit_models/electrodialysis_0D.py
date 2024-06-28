@@ -35,7 +35,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 
@@ -2508,10 +2508,8 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         return {
             "vars": {
-                "Total electrical power consumption(Watt)": self.power_electrical[
-                    time_point
-                ],
-                "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
+                "Total electrical power consumption": self.power_electrical[time_point],
+                "Specific electrical power consumption": self.specific_power_electrical[
                     time_point
                 ],
                 "Current efficiency for deionzation": self.current_efficiency[

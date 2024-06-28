@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.examples.flowsheets.oaro.oaro_multi import (
     build,
@@ -144,6 +144,30 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category="OARO",
             is_output=False,
         )
+        exports.add(
+            obj=stage.feed_inlet.pressure[0],
+            name=f"OARO stage{idx} feed inlet operating pressure",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=1,
+            description=f"OARO stage{idx} feed inlet operating pressure",
+            is_input=True,
+            input_category="OARO",
+            is_output=True,
+            output_category="OARO metrics",
+        )
+        exports.add(
+            obj=stage.area,
+            name=f"OARO {idx} membrane area",
+            ui_units=pyunits.m**2,
+            display_units="m2",
+            rounding=2,
+            description=f"Membrane area of OARO {idx}",
+            is_input=True,
+            input_category="OARO",
+            is_output=True,
+            output_category="OARO metrics",
+        )
 
     # Unit model, RO
     exports.add(
@@ -201,6 +225,30 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_input=True,
         input_category="Reverse Osmosis",
         is_output=False,
+    )
+    exports.add(
+        obj=fs.RO.inlet.pressure[0],
+        name="RO feed inlet operating pressure",
+        ui_units=pyunits.bar,
+        display_units="bar",
+        rounding=1,
+        description="RO feed inlet operating pressure",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=True,
+        output_category="RO metrics",
+    )
+    exports.add(
+        obj=fs.RO.area,
+        name=f"RO membrane area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description=f"Membrane area of RO",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=True,
+        output_category="RO metrics",
     )
 
     # Unit model data, primary pumps
@@ -496,34 +544,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             output_category="OARO metrics",
         )
         exports.add(
-            obj=stage.feed_inlet.pressure[0],
-            name=f"OARO stage{idx} feed inlet operating pressure",
-            ui_units=pyunits.bar,
-            display_units="bar",
-            rounding=1,
-            description=f"OARO stage{idx} feed inlet operating pressure",
-            is_input=False,
-            is_output=True,
-            output_category="OARO metrics",
-        )
-        exports.add(
             obj=stage.permeate_inlet.pressure[0],
             name=f"OARO stage{idx} permeate inlet operating pressure",
             ui_units=pyunits.bar,
             display_units="bar",
             rounding=1,
             description=f"OARO stage{idx} permeate inlet operating pressure",
-            is_input=False,
-            is_output=True,
-            output_category="OARO metrics",
-        )
-        exports.add(
-            obj=stage.area,
-            name=f"OARO stage{idx} membrane area",
-            ui_units=pyunits.m**2,
-            display_units="m2",
-            rounding=2,
-            description=f"OARO stage{idx} membrane area",
             is_input=False,
             is_output=True,
             output_category="OARO metrics",
@@ -558,28 +584,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units=" ",
         rounding=2,
         description="RO water mass recovery",
-        is_input=False,
-        is_output=True,
-        output_category="RO metrics",
-    )
-    exports.add(
-        obj=fs.RO.inlet.pressure[0],
-        name="RO feed inlet operating pressure",
-        ui_units=pyunits.bar,
-        display_units="bar",
-        rounding=1,
-        description="RO feed inlet operating pressure",
-        is_input=False,
-        is_output=True,
-        output_category="RO metrics",
-    )
-    exports.add(
-        obj=fs.RO.area,
-        name="RO membrane area",
-        ui_units=pyunits.m**2,
-        display_units="m2",
-        rounding=2,
-        description="RO membrane area",
         is_input=False,
         is_output=True,
         output_category="RO metrics",

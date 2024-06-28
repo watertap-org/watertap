@@ -23,7 +23,7 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Feed, Product
 from watertap.unit_models.ion_exchange_0D import (
@@ -40,23 +40,22 @@ import math
 
 __author__ = "Kurban Sitterley"
 
-target_ion = "Ca_2+"
-ions = [target_ion]
-mass_frac = 1e-4
-feed_mass_frac = {target_ion: mass_frac}
+
 solver = get_solver()
 
 
-class TestIXDemo:
-    @pytest.fixture(scope="class")
-    def ix_0D(self):
+class TestIXDemoCa:
 
+    @pytest.fixture(scope="class")
+    def ix_0D_Ca(self):
+        target_ion = "Ca_2+"
+        ions = [target_ion]
         m = ixf.ix_build(ions)
         return m
 
     @pytest.mark.unit
-    def test_build_model(self, ix_0D):
-        m = ix_0D
+    def test_build_model(self, ix_0D_Ca):
+        m = ix_0D_Ca
 
         # Test basic build
         assert isinstance(m, ConcreteModel)
@@ -110,9 +109,9 @@ class TestIXDemo:
         assert_units_consistent(m)
 
     @pytest.mark.component
-    def test_specific_operating_conditions(self, ix_0D):
+    def test_specific_operating_conditions(self, ix_0D_Ca):
 
-        m = ix_0D
+        m = ix_0D_Ca
         ixf.set_operating_conditions(m)
         ixf.initialize_system(m)
         assert degrees_of_freedom(m) == 0
@@ -230,8 +229,8 @@ class TestIXDemo:
 
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
-    def test_optimization(self, ix_0D):
-        m = ix_0D
+    def test_optimization(self, ix_0D_Ca):
+        m = ix_0D_Ca
         ixf.optimize_system(m)
         isinstance(m.fs.obj, Objective)
         assert m.fs.obj.expr == m.fs.costing.LCOW
@@ -267,30 +266,18 @@ class TestIXDemo:
         assert degrees_of_freedom(m) == 0
 
         results_dict = {
-            "resin_diam": 0.0007,
-            "resin_bulk_dens": 0.7,
             "resin_surf_per_vol": 4285.714,
             "c_norm": {"Ca_2+": 0.99398},
-            "bed_vol_tot": 11.999,
             "bed_depth": 2.211,
-            "bed_porosity": 0.5,
-            "col_height": 4.2371,
-            "col_diam": 1.175,
-            "col_height_to_diam_ratio": 3.604409,
-            "number_columns": 5.0,
-            "t_breakthru": 133829.353,
-            "ebct": 239.999,
+            "t_breakthru": 133829.3,
             "vel_bed": 0.009213559,
-            "service_flow_rate": 15.0,
-            "N_Re": 6.449491,
+            "N_Re": 6.4494,
             "N_Sc": {"Ca_2+": 1086.956},
             "N_Sh": {"Ca_2+": 28.755},
             "N_Pe_particle": 0.122332,
             "N_Pe_bed": 386.44,
-            "resin_max_capacity": 3.0,
             "resin_eq_capacity": 2.9873,
             "resin_unused_capacity": 0.01266295,
-            "langmuir": {"Ca_2+": 0.7},
             "mass_removed": {"Ca_2+": 12546.81},
             "num_transfer_units": 38.872,
             "dimensionless_time": 1.3321,
@@ -298,23 +285,6 @@ class TestIXDemo:
             "fluid_mass_transfer_coeff": {"Ca_2+": 3.7792e-05},
             "pressure_drop": 16.049,
             "bed_vol": 2.399,
-            "t_rinse": 1199.9,
-            "t_waste": 3600.0,
-            "t_cycle": 137429.353,
-            "regen_pump_power": 0.030195009,
-            "regen_tank_vol": 29.999,
-            "bw_flow": 0.0075372,
-            "bed_expansion_frac": 0.46395,
-            "rinse_flow": 0.049999999,
-            "bw_pump_power": 0.004551716,
-            "rinse_pump_power": 0.060390018,
-            "bed_expansion_h": 1.0259,
-            "main_pump_power": 6.7349,
-            "col_vol_per": 4.5988,
-            "col_vol_tot": 22.994,
-            "t_contact": 119.999,
-            "vel_inter": 0.018427119,
-            "bv_calc": 557.622,
             "lh": 12.909,
             "separation_factor": {"Ca_2+": 1.4285},
             "rate_coeff": {"Ca_2+": 0.0002313},
@@ -357,6 +327,7 @@ class TestIXDemo:
                 assert pytest.approx(r, rel=1e-3) == value(mv)
 
     @pytest.mark.unit
+    @pytest.mark.requires_idaes_solver
     def test_main_fun(self):
         m = ixf.main()
 
@@ -369,7 +340,6 @@ class TestIXDemo:
             "bed_porosity": 0.5,
             "col_height": 4.2371,
             "col_diam": 1.1755,
-            "col_height_to_diam_ratio": 3.6044,
             "number_columns": 5.0,
             "t_breakthru": 133829.3,
             "ebct": 240,
@@ -380,7 +350,6 @@ class TestIXDemo:
             "N_Sh": {"Ca_2+": 28.755},
             "N_Pe_particle": 0.122332,
             "N_Pe_bed": 386.4407,
-            "resin_max_capacity": 3.0,
             "resin_eq_capacity": 2.9873,
             "langmuir": {"Ca_2+": 0.7},
             "mass_removed": {"Ca_2+": 12546.81},
@@ -416,6 +385,166 @@ class TestIXDemo:
             "LCOW": 0.1384073,
             "specific_energy_consumption": 0.03794785,
         }
+        for v, r in sys_cost_results.items():
+            mv = getattr(m.fs.costing, v)
+            if mv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(mv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(mv)
+
+
+class TestIXDemoSO4:
+
+    @pytest.fixture(scope="class")
+    def ix_0D_SO4(self):
+        target_ion = "SO4_2-"
+        ions = [target_ion]
+        m = ixf.ix_build(ions)
+        return m
+
+    @pytest.mark.unit
+    def test_build_model(self, ix_0D_SO4):
+        m = ix_0D_SO4
+
+        # Test basic build
+        assert isinstance(m, ConcreteModel)
+        assert isinstance(m.fs, FlowsheetBlock)
+        assert isinstance(m.fs.properties, MCASParameterBlock)
+        assert isinstance(m.fs.costing, Block)
+        assert isinstance(m.fs.feed, Feed)
+        assert isinstance(m.fs.ion_exchange, IonExchange0D)
+        assert isinstance(m.fs.product, Product)
+
+        # Test port
+        assert isinstance(m.fs.feed.outlet, Port)
+        assert isinstance(m.fs.ion_exchange.inlet, Port)
+        assert isinstance(m.fs.ion_exchange.outlet, Port)
+        assert isinstance(m.fs.product.inlet, Port)
+
+        # # Test consting
+        assert isinstance(m.fs.ion_exchange.costing, Block)
+        assert isinstance(m.fs.ion_exchange.costing.capital_cost, Var)
+        assert isinstance(m.fs.ion_exchange.costing.fixed_operating_cost, Var)
+
+        var_str_list = [
+            "total_capital_cost",
+            "total_operating_cost",
+        ]
+        for var_str in var_str_list:
+            var = getattr(m.fs.costing, var_str)
+            assert isinstance(var, Var)
+
+        # Test arcs
+        arc_dict = {
+            m.fs.feed_to_ix: (m.fs.feed.outlet, m.fs.ion_exchange.inlet),
+            m.fs.ix_to_product: (m.fs.ion_exchange.outlet, m.fs.product.inlet),
+        }
+        for arc, port_tpl in arc_dict.items():
+            assert arc.source is port_tpl[0]
+            assert arc.destination is port_tpl[1]
+
+        # test configrations
+        assert len(m.fs.ion_exchange.config) == 11
+        assert not m.fs.ion_exchange.config.dynamic
+        assert not m.fs.ion_exchange.config.has_holdup
+        assert m.fs.ion_exchange.config.target_ion == "SO4_2-"
+        assert m.fs.ion_exchange.ion_exchange_type == IonExchangeType.anion
+        assert m.fs.ion_exchange.config.regenerant == RegenerantChem.NaCl
+        assert m.fs.ion_exchange.config.isotherm == IsothermType.langmuir
+
+        assert m.fs.ion_exchange.config.property_package is m.fs.properties
+        assert "H2O" in m.fs.properties.component_list
+
+        assert_units_consistent(m)
+
+    @pytest.mark.component
+    def test_specific_operating_conditions(self, ix_0D_SO4):
+
+        m = ix_0D_SO4
+        ixf.set_operating_conditions(m)
+        ixf.initialize_system(m)
+        assert degrees_of_freedom(m) == 0
+
+        solver = get_solver()
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+        assert value(m.fs.feed.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
+            0.05, rel=1e-3
+        )
+        assert value(m.fs.product.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
+            0.049995010, rel=1e-3
+        )
+        assert value(
+            sum(
+                m.fs.feed.properties[0].conc_mass_phase_comp["Liq", j]
+                for j in m.fs.properties.ion_set
+            )
+        ) == pytest.approx(0.1, rel=1e-3)
+        assert value(
+            sum(
+                m.fs.product.properties[0].conc_mass_phase_comp["Liq", j]
+                for j in m.fs.properties.ion_set
+            )
+        ) == pytest.approx(8.821e-5, rel=1e-3)
+
+        results_dict = {
+            "resin_surf_per_vol": 4285.714,
+            "c_norm": {"SO4_2-": 0.473},
+            "bed_vol_tot": 12.0,
+            "col_height": 3.4887,
+            "col_diam": 1.498,
+            "col_height_to_diam_ratio": 2.327,
+            "number_columns": 4.0,
+            "t_breakthru": 136055.4,
+            "ebct": 240.0,
+            "vel_bed": 0.0070833,
+            "N_Re": 4.958333,
+            "N_Sc": {"SO4_2-": 943.3},
+            "N_Sh": {"SO4_2-": 25.095},
+            "N_Pe_particle": 0.107827,
+            "N_Pe_bed": 261.867,
+            "resin_max_capacity": 3.0,
+            "resin_eq_capacity": 1.685707,
+            "resin_unused_capacity": 1.314292,
+            "langmuir": {"SO4_2-": 0.7},
+            "mass_removed": {"SO4_2-": 7079.969},
+            "num_transfer_units": 39.087,
+            "dimensionless_time": 1.0,
+            "partition_ratio": 566.397,
+            "fluid_mass_transfer_coeff": {"SO4_2-": 3.8001e-05},
+            "pressure_drop": 9.450141,
+            "separation_factor": {"SO4_2-": 1.4285},
+            "rate_coeff": {"SO4_2-": 0.000232663},
+            "HTU": {"SO4_2-": 0.043492261},
+        }
+        for v, r in results_dict.items():
+            ixv = getattr(m.fs.ion_exchange, v)
+            if ixv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(ixv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(ixv)
+
+        sys_cost_results = {
+            "aggregate_capital_cost": 866570.3,
+            "aggregate_fixed_operating_cost": 5492.468,
+            "aggregate_variable_operating_cost": 0.0,
+            "aggregate_flow_electricity": 4.023,
+            "aggregate_flow_NaCl": 1016854.2,
+            "aggregate_flow_costs": {"electricity": 2468.7, "NaCl": 92576.0},
+            "total_capital_cost": 866570.3,
+            "total_operating_cost": 117029.8,
+            "aggregate_direct_capital_cost": 433285.1,
+            "maintenance_labor_chemical_operating_cost": 25997.1,
+            "total_fixed_operating_cost": 31489.578,
+            "total_variable_operating_cost": 85540.2,
+            "total_annualized_cost": 203686.8,
+            "annual_water_production": 1419950.1,
+            "LCOW": 0.14344,
+            "specific_energy_consumption": 0.022353,
+        }
+
         for v, r in sys_cost_results.items():
             mv = getattr(m.fs.costing, v)
             if mv.is_indexed():

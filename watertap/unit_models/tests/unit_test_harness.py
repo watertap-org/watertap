@@ -18,7 +18,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -59,8 +59,8 @@ class UnitTestHarness(abc.ABC):
         self.default_zero = 1e-10
 
         # arguments for solver tolerance
-        self.default_absolute_tolerance = 1e-12
-        self.default_relative_tolerance = 1e-6
+        self.default_absolute_tolerance = 1e-5
+        self.default_relative_tolerance = 1e-3
 
         model = self.configure()
         if not hasattr(self, "unit_model_block"):

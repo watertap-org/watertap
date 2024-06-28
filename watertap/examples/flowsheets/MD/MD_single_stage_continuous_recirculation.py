@@ -23,7 +23,7 @@ from pyomo.environ import (
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
     propagate_state,
@@ -57,7 +57,10 @@ from watertap.costing.unit_models.pump import (
 from watertap.costing.unit_models.heater_chiller import (
     cost_heater_chiller,
 )
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import (
+    assert_degrees_of_freedom,
+    interval_initializer,
+)
 
 __author__ = "Elmira Shamlou"
 
@@ -69,6 +72,8 @@ def main():
     initialize_system(m, solver=solver)
 
     optimize_set_up(m)
+
+    interval_initializer(m)
     solve(m, solver=solver)
 
     print("\n***---optimization results---***")

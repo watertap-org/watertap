@@ -18,14 +18,14 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 
 from watertap.unit_models.crystallizer import Crystallization
-import watertap.property_models.cryst_prop_pack as props
+import watertap.property_models.unit_specific.cryst_prop_pack as props
 from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 # -----------------------------------------------------------------------------
