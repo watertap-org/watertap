@@ -214,11 +214,8 @@ def test_costing():
         "..",
         "..",
         "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "peracetic_acid_disinfection",
+        "data",
+        "techno_economic",
         "peracetic_acid_case_study.yaml",
     )
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
