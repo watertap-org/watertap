@@ -16,5 +16,6 @@ Flowsheets
    ion_exchange
    gac
    generic_desalination_train
+   lsrro
    mvc
    seawater_RO_desalination
