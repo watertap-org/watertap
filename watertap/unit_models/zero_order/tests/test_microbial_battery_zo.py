@@ -232,11 +232,8 @@ def test_costing():
         "..",
         "..",
         "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "groundwater_treatment",
+        "data",
+        "techno_economic",
         "groundwater_treatment_case_study.yaml",
     )
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)

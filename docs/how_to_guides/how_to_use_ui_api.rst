@@ -28,7 +28,7 @@ similar to this::
             category=FlowsheetCategory.wastewater,
             build_options={
                 "Bypass": {
-                    "name": "bypass option", 
+                    "name": "bypass option",
                     "display_name": "With Bypass",
                     "values_allowed": ['false', 'true'],
                     "value": "false"
@@ -36,7 +36,7 @@ similar to this::
             }
         )
 
-There are 3 required functions: 
+There are 3 required functions:
 
 1. ``do_export`` - This function defines the variables that will be displayed on the UI.
 
@@ -149,7 +149,7 @@ The raw text version is::
         results = solve(fs)
         return results
 
-Additionally, there are optional parameters to assign a category, provide build options, 
+Additionally, there are optional parameters to assign a category, provide build options,
 and provide a diagram function among others. See additional examples below.
 
 Build function using build options::
@@ -184,7 +184,7 @@ Custom diagram function::
         else:
             return "nf_ui.png"
 
-Enable UI to discover flowsheet - In order for the UI to discover a flowsheet, an 
+Enable UI to discover flowsheet - In order for the UI to discover a flowsheet, an
 entrypoint must be defined in setup.py with the path to the export file. For examples, see below::
 
     entry_points={
