@@ -578,10 +578,9 @@ class Flash:
         # otherwise, assume a solute dictionary with {solute_name: concentration_value}
         else:
             unit = self.input_unit_set["molecularConcentration"]["oli_unit"]
-            inflows_oli_names = {get_oli_name(k): v for k,v in inflows.items()}
+            inflows_oli_names = {get_oli_name(k): v for k, v in inflows.items()}
             input_dict["inflows"] = {"unit": unit, "values": inflows_oli_names}
 
-   
         if flash_method == "corrosion-rates":
             _logger.info(
                 f"Ensure DBS file uses 'AQ' thermodynamic framework to use Corrosion Analyzer"
