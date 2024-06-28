@@ -9,7 +9,14 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "``parameter_name``", "1", ":math:`\text{dimensionless}`"
+   "**Standard mixer**"
+   "Mixer unit cost", ":math:`C_{standard}`", "``unit_cost``", "361", ":math:`\text{USD}_{2018}\text{/L/s}`"
+
+   "**NaOCl mixer**"
+   "Mixer unit cost", ":math:`C_{NaOCl}`", "``unit_cost``", "160", ":math:`\text{USD}_{2018}\text{/L/s}`"
+
+   "**CaOH2 mixer**"
+   "Mixer unit cost", ":math:`C_{CaOH2}`", "``unit_cost``", "160", ":math:`\text{USD}_{2018}\text{/L/s}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
