@@ -42,14 +42,6 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
-        build_options={
-            "BioP": {
-                "name": "BioP",
-                "display_name": "BioP",
-                "values_allowed": ["False", "True"],
-                "value": "True",  # default value
-            },
-        },
     )
 
 
@@ -3860,7 +3852,7 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
-    m = build(bio_P=build_options["BioP"].value)
+    m = build(bio_P=False)
     set_operating_conditions(m)
     set_scaling(m)
 
@@ -3869,7 +3861,7 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    initialize_system(m, bio_P=build_options["BioP"].value)
+    initialize_system(m, bio_P=False)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
