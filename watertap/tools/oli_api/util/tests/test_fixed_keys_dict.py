@@ -89,17 +89,22 @@ output_unit_set_temp = {
     "molecularConcentration": input_unit_set_temp["molecularConcentration"],
 }
 
+
 @pytest.mark.unit
 def test_input_output_fixed_key_dicts():
     input_unit_set_temp.keys() == input_unit_set.keys()
     for k in input_unit_set_temp.keys():
-        assert input_unit_set[k]["oli_unit"]==input_unit_set_temp[k]["oli_unit"]    
-        assert_units_equivalent(input_unit_set[k]["pyomo_unit"], input_unit_set_temp[k]["pyomo_unit"])
-    
+        assert input_unit_set[k]["oli_unit"] == input_unit_set_temp[k]["oli_unit"]
+        assert_units_equivalent(
+            input_unit_set[k]["pyomo_unit"], input_unit_set_temp[k]["pyomo_unit"]
+        )
+
     output_unit_set_temp.keys() == output_unit_set.keys()
     for k in output_unit_set_temp.keys():
-        assert output_unit_set[k]["oli_unit"]==output_unit_set_temp[k]["oli_unit"]    
-        assert_units_equivalent(output_unit_set[k]["pyomo_unit"], output_unit_set_temp[k]["pyomo_unit"])
+        assert output_unit_set[k]["oli_unit"] == output_unit_set_temp[k]["oli_unit"]
+        assert_units_equivalent(
+            output_unit_set[k]["pyomo_unit"], output_unit_set_temp[k]["pyomo_unit"]
+        )
 
 
 @pytest.mark.unit
