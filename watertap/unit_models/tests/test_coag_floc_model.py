@@ -161,6 +161,19 @@ class TestCoagFloc(UnitTestHarness):
             9.36352627e-6
         )
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TSS"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Sludge"],
+                "out": m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "Sludge"],
+            },
+        }
+
         return m
 
 
@@ -178,6 +191,19 @@ class TestCoagFlocNoChemicals(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]] = (
             0.0001872506
         )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TSS"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Sludge"],
+                "out": m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "Sludge"],
+            },
+        }
 
         return m
 
