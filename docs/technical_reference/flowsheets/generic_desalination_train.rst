@@ -28,7 +28,7 @@ For a zero degrees of freedom optimization the user is expected to provide unit 
     * Desalination unit cost
         * Using base treatment cost:
             * m.fs.{unit_name}.desalter.base_cost (in $/m^3 of product)
-        * Defining cost as a linear function of cost per water recovery and offset which will compute base case as base_cost=recovery_cost*water_recovery+offset
+        * Defining cost as a linear function of cost per water recovery and offset which will compute the base case as base_cost=recovery_cost*water_recovery+offset
             * m.fs.{unit_name}.desalter.brine_solids_concentration (kg/m^3) 
             * m.fs.{unit_name}.desalter.brine_water_mass_percent (%) 
     * Desalination unit operation (Fix only one)
