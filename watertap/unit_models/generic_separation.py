@@ -237,7 +237,7 @@ class GenericSeparationData(UnitModelBlockData):
 
         @self.separator_unit.Constraint(
             self.flowsheet().config.time,
-            doc="isothermal energy balance for reactor",
+            doc="isobaric energy balance for reactor",
         )
         def eq_isobaric_separator_unit(b, t):
             return b.properties_in[t].pressure == b.properties_out[t].pressure
