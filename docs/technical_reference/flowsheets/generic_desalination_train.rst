@@ -10,10 +10,17 @@ The flowsheet relies on `MCAS <https://watertap.readthedocs.io/en/latest/technic
 Implementation
 --------------
 
-The default flowsheet builds a typical ZLD processes shown in figure 1. 
+The default flowsheet builds a typical zero liquid discharge processes shown in figure 1 useing generic desalter and separator units. 
 
 .. figure:: ../../_static/flowsheets/generic_treatment_train.png
 
+The Documentation for desalter and separator units: 
+    * `Generic desalter <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/generic_desalter.html>`_
+    * `Generic separator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/generic_separator.html>`_
+
+
+Degrees of Freedom
+------------------
 For a zero degrees of freedom optimization the user is expected to provide unit level costing and operation for each step:
     * Feed sourcing cost (m.fs.feed.costing.base_cost in $/m^3)
     * Product distribution cost (m.fs.product.costing.base_cost in $/m^3)
@@ -43,8 +50,54 @@ For a zero degrees of freedom optimization the user is expected to provide unit 
         * (Optional) Target product removal amount (m.fs.Valorizer.separator.component_removal_percent[{component] in % (Default: 0 for all components))
         * (Optional) Chemical addition amount (m.fs.Valorizer.separator.additive_cost in PPM if any (Default: 0) 
 
+
 The flowsheet is populated with baseline costs for the unit operations based on general literature values, as presented in Figure 1. 
 
-The Documentation for separator and desalter units: 
-    * `Generic desalter <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/generic_desalter.html>`_
-    * `Generic separator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/generic_separator.html>`_
+
+Flowsheet Specifications
+------------------------
+
+These are the default values configured in flowsheet main function: 
+
+.. csv-table::
+   :header: "Description", "Value", "Units"
+
+   "**Feed Water**"
+   "Water mass flow","1", ":math:`\text{kg/s}`"
+   "TDS concentration", "3.5", ":math:`\text{g/L}`"
+   "ion X", "0.3", ":math:`\text{g/L}`"
+   "Temperature", "298.15", ":math:`\text{K}`"
+   "Pressure", "101325", ":math:`\text{Pa}`"
+
+   "**Stream costing**"
+   "Product distribution", "0.0", ":math:`\text{$/m^3}`"
+   "Feed sourcing", "0.0", ":math:`\text{$/m^3}`"
+   "Waste disposal", "1.0", ":math:`\text{$/m^3}`"
+
+   "**Pretreatment**"
+   "Base cost", "0.0", ":math:`\text{$/m^3}`"
+   "Additive cost", "0.0", ":math:`\text{$/kg}`"
+   "Additive dose", "1.0", ":math:`\text{PPM}`"
+   "Component removal percent [X]", "50", ":math:`\text{%}`"
+   "Separation cost [X]", "0.5", ":math:`\text{$/kg}`"
+
+   "**Desal_1**"
+   "Base cost", "0.3", ":math:`\text{$/m^3}`"
+   "Recovery", "80", ":math:`\text{%}`"
+
+   "**Desal_2**"
+   "Base cost", "0.5", ":math:`\text{$/m^3}`"
+   "Recovery cost", "0.01", ":math:`\text{$/m^3/%wr}`"
+   "Recovery cost offset", "35", ":math:`\text{%}`"
+   "Recovery", "50", ":math:`\text{%}`"
+
+   "**Desal_3**"
+   "Base cost", "10", ":math:`\text{$/m^3}`"
+   "Brine water mass percent", "80", ":math:`\text{%}`"
+
+   "**Valorizer**"
+   "Base cost", "0", ":math:`\text{$/m^3}`"
+   "Additive dose", "0", ":math:`\text{PPM}`"
+   "Additive cost", "0", ":math:`\text{$/m^3}`"
+   "Component removal percent [X]", "50", ":math:`\text{%}`"
+   "Product value [X]", "1", ":math:`\text{$/kg}`"
