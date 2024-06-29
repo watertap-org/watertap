@@ -1,4 +1,4 @@
-Generic desalination unit
+Generic desalter unit
 =========================
 
 .. index::
