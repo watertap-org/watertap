@@ -190,7 +190,7 @@ class GenericSeparationData(UnitModelBlockData):
             initialize=0,
             domain=Reals,
             units=pyunits.kg / pyunits.s,
-            doc="dose of chemical",
+            doc="chemical mass flow",
         )
         self.separator_unit = ControlVolume0DBlock(
             dynamic=False,
