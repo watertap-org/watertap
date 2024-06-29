@@ -209,6 +209,23 @@ class TestPump(UnitTestHarness):
             ]
         ] = 0.035
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+                "out": m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+            },
+        }
+
         return m
 
 
@@ -236,6 +253,23 @@ class TestEnergyRecoveryDevice(UnitTestHarness):
                 "Liq", "TDS"
             ]
         ] = 0.035
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+                "out": m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+            },
+        }
 
         return m
 
@@ -265,6 +299,23 @@ class TestPumpVariableFlow(UnitTestHarness):
             ]
         ] = 0.035
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+                "out": m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+            },
+        }
+
         return m
 
 
@@ -289,5 +340,22 @@ class TestPumpIsothermal(UnitTestHarness):
                 "Liq", "TDS"
             ]
         ] = 0.00203
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+                "out": m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
+            },
+        }
 
         return m
