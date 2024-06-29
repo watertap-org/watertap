@@ -44,14 +44,14 @@ from idaes.models.unit_models import (
     Feed,
 )
 
-import watertap.examples.flowsheets.generic_desalination_train.utils.scale_utils as scaleTools
+import watertap.flowsheets.generic_desalination_train.utils.scale_utils as scaleTools
 from pyomo.util.check_units import assert_units_consistent
-from watertap.examples.flowsheets.generic_desalination_train.costing import (
+from watertap.flowsheets.generic_desalination_train.costing import (
     generic_costing,
     stream_costing,
 )
 from pyomo.network import Arc
-from watertap.examples.flowsheets.generic_desalination_train.unit_operations import (
+from watertap.flowsheets.generic_desalination_train.unit_operations import (
     desalter,
     mixer,
     separator,

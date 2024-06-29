@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
-from watertap.examples.flowsheets.generic_desalination_train import generic_train
+from watertap.flowsheets.generic_desalination_train import generic_train
 from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 

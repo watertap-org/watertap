@@ -101,3 +101,8 @@ These are the default values configured in flowsheet main function:
    "Additive cost", "0", ":math:`\text{$/m^3}`"
    "Component removal percent [X]", "50", ":math:`\text{%}`"
    "Product value [X]", "1", ":math:`\text{$/kg}`"
+
+Code Documentation
+------------------
+
+* :mod:`watertap.flowsheets.generic_desalination_train`
