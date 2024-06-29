@@ -10,7 +10,7 @@ The flowsheet relies on `MCAS <https://watertap.readthedocs.io/en/latest/technic
 Implementation
 --------------
 
-The default flowsheet builds a typical zero liquid discharge processes shown in figure 1 useing generic desalter and separator units. 
+The default flowsheet builds a typical zero liquid discharge processes shown in Figure 1 using generic desalter and separator units. 
 
 .. figure:: ../../_static/flowsheets/generic_treatment_train.png
 
