@@ -26,10 +26,10 @@ Sets
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "time", ":math:`t`", "[0]"
-   "phases", ":math:`p`", "['Liq']"
-   "components", ":math:`j`", "['H2O', solutes]"
-   "tracked_solids_list", ":math:`tds`", "['TDS','X', etc.]"
+   "Time", ":math:`t`", "[0]"
+   "Phases", ":math:`p`", "['Liq']"
+   "Components", ":math:`j`", "['H2O', solutes]"
+   "Tracked solids list", ":math:`tds`", "['TDS','X', etc.]"
 
 Variables
 ----------
