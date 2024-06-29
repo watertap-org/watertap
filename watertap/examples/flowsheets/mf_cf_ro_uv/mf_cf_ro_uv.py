@@ -231,9 +231,11 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
             )
 
     # Add Mixer for concentrate recirculation
-    m.fs.feed_mixer = Mixer(property_package=m.fs.ro_props,
-                            # momentum_mixing_type=MomentumMixingType.equality,
-                            inlet_list=["cf_effluent", "recirculated_concentrate"]) 
+    m.fs.feed_mixer = Mixer(
+        property_package=m.fs.ro_props,
+        # momentum_mixing_type=MomentumMixingType.equality,
+        inlet_list=["cf_effluent", "recirculated_concentrate"],
+    )
     # RO Train =====================================================================
     # High-pressure RO pump
     m.fs.hp_pump = Pump(property_package=m.fs.ro_props)
@@ -265,15 +267,17 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
         erd_type_not_found(erd_config)
     # ===============================================================================
     # Add splitter for recirculated concentrate and waste concentrate
-    m.fs.concentrate_splitter = Separator(property_package=m.fs.ro_props, outlet_list=["recirculated_concentrate", "waste_brine"])
-
+    m.fs.concentrate_splitter = Separator(
+        property_package=m.fs.ro_props,
+        outlet_list=["recirculated_concentrate", "waste_brine"],
+    )
 
     # Translate RO to MCAS property model
     m.fs.ro_to_mcas_translator = Translator(
         inlet_property_package=m.fs.ro_props, outlet_property_package=m.fs.mcas_props
     )
 
-    #TODO: this seems incorrect since translator connects to permeate and TSS shouldn't end up there
+    # TODO: this seems incorrect since translator connects to permeate and TSS shouldn't end up there
     @m.fs.ro_to_mcas_translator.Constraint(m.fs.mcas_props.component_list)
     def eq_flow_mass_comp(blk, j):
         if j.lower() == "tss":
@@ -360,16 +364,25 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
     elif erd_config == ERDtype.no_ERD:
 
         m.fs.translator_to_mixer = Arc(
-            source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.feed_mixer.cf_effluent)
+            source=m.fs.mcas_to_ro_translator.outlet,
+            destination=m.fs.feed_mixer.cf_effluent,
+        )
         m.fs.mixer_to_hp_pump = Arc(
-            source=m.fs.feed_mixer.outlet, destination=m.fs.hp_pump.inlet)
+            source=m.fs.feed_mixer.outlet, destination=m.fs.hp_pump.inlet
+        )
         m.fs.hp_pump_to_RO = Arc(source=m.fs.hp_pump.outlet, destination=m.fs.RO.inlet)
         m.fs.RO_brine_to_splitter = Arc(
             source=m.fs.RO.retentate, destination=m.fs.concentrate_splitter.inlet
         )
-        m.fs.concentrate_to_mixer = Arc(source=m.fs.concentrate_splitter.recirculated_concentrate, destination=m.fs.feed_mixer.recirculated_concentrate)
-        m.fs.concentrate_to_waste = Arc(source=m.fs.concentrate_splitter.waste_brine, destination=m.fs.waste_brine.inlet)
- 
+        m.fs.concentrate_to_mixer = Arc(
+            source=m.fs.concentrate_splitter.recirculated_concentrate,
+            destination=m.fs.feed_mixer.recirculated_concentrate,
+        )
+        m.fs.concentrate_to_waste = Arc(
+            source=m.fs.concentrate_splitter.waste_brine,
+            destination=m.fs.waste_brine.inlet,
+        )
+
     else:
         # this case should be caught in the previous conditional
         erd_type_not_found(erd_config)
@@ -453,7 +466,7 @@ def set_operating_conditions(m):
     m.fs.mf.load_parameters_from_database(use_default_removal=True)
     # Negate energy accounting for MF since modeling pump separately
     m.fs.mf.energy_electric_flow_vol_inlet.fix(0)
-    
+
     # cf pump
     m.fs.cf_pump.efficiency_pump.fix(0.8)
     m.fs.cf_pump.control_volume.properties_out[0].pressure.fix(2e5)
@@ -528,7 +541,7 @@ def initialize_system(m):
     propagate_state(m.fs.translator_to_mixer)
     propagate_state(m.fs.concentrate_to_mixer)
     m.fs.feed_mixer.initialize()
-    
+
     propagate_state(m.fs.mixer_to_hp_pump)
     m.fs.hp_pump.initialize()
 
