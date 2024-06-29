@@ -10,18 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as ro_erd
-from watertap.tools.parameter_sweep.parameter_sweep import (
-    ParameterSweep,
-    RecursiveParameterSweep,
-)
-from watertap.tools.parameter_sweep.parameter_sweep_reader import ParameterSweepReader
-
-from watertap.tools.parameter_sweep.parameter_sweep_differential import (
-    DifferentialParameterSweep,
-)
-from idaes.core.solvers import get_solver
-import os
+import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as ro_erd
 
 __author__ = "Alexander V. Dudchenko (SLAC)"
 

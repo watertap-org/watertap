@@ -22,7 +22,7 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
@@ -30,7 +30,9 @@ import idaes.core.util.scaling as iscale
 from watertap.unit_models.clarifier import Clarifier
 from idaes.models.unit_models.separator import SplittingType
 
-from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+)
 
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
@@ -143,6 +145,56 @@ class TestClarifier(UnitTestHarness):
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "S_ND"]] = 0.005
         self.unit_solutions[m.fs.unit.effluent.conc_mass_comp[0, "X_ND"]] = 0.00836576
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0]
+                * (
+                    m.fs.unit.inlet.conc_mass_comp[0, "S_I"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "S_S"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "X_I"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "X_S"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "X_BH"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "X_BA"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "X_P"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "S_O"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "S_NO"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "S_NH"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "S_ND"]
+                    + m.fs.unit.inlet.conc_mass_comp[0, "X_ND"]
+                ),
+                "out": m.fs.unit.underflow.flow_vol[0]
+                * (
+                    m.fs.unit.underflow.conc_mass_comp[0, "S_I"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "S_S"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "X_I"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "X_S"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "X_BH"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "X_BA"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "X_P"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "S_O"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "S_NO"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "S_NH"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "S_ND"]
+                    + m.fs.unit.underflow.conc_mass_comp[0, "X_ND"]
+                )
+                + m.fs.unit.effluent.flow_vol[0]
+                * (
+                    m.fs.unit.effluent.conc_mass_comp[0, "S_I"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "S_S"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "X_I"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "X_S"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "X_BH"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "X_BA"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "X_P"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "S_O"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "S_NO"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "S_NH"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "S_ND"]
+                    + m.fs.unit.effluent.conc_mass_comp[0, "X_ND"]
+                ),
+            },
+        }
+
         return m
 
 
@@ -163,6 +215,13 @@ class TestCircularCosting(UnitTestHarness):
         m.fs.costing.cost_process()
 
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 1681573 * 2
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": m.fs.unit.underflow.flow_vol[0] + m.fs.unit.effluent.flow_vol[0],
+            },
+        }
 
         return m
 
@@ -186,6 +245,13 @@ class TestRectangularCosting(UnitTestHarness):
 
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 2131584 * 2
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": m.fs.unit.underflow.flow_vol[0] + m.fs.unit.effluent.flow_vol[0],
+            },
+        }
+
         return m
 
 
@@ -206,5 +272,12 @@ class TestPrimaryClarifierCosting(UnitTestHarness):
         m.fs.costing.cost_process()
 
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 1390570 * 2
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": m.fs.unit.underflow.flow_vol[0] + m.fs.unit.effluent.flow_vol[0],
+            },
+        }
 
         return m

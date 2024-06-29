@@ -27,16 +27,16 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.unit_models.anaerobic_digester import AD
-from watertap.property_models.anaerobic_digestion.adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
 
@@ -205,5 +205,36 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.KH_h2[0]] = 0.0007384652
         self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
         self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
+
+        # Conservation check
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_vol[0],
+                "out": (
+                    m.fs.unit.liquid_outlet.flow_vol[0] * m.fs.props.dens_mass
+                    + m.fs.unit.vapor_outlet.flow_vol[0] * m.fs.props_vap.dens_mass
+                )
+                / m.fs.props.dens_mass,
+            },
+            "Check 2": {
+                "in": (
+                    m.fs.unit.inlet.flow_vol[0]
+                    * m.fs.props.dens_mass
+                    * m.fs.props.cp_mass
+                    * (m.fs.unit.inlet.temperature[0] - m.fs.props.temperature_ref)
+                )
+                - (
+                    m.fs.unit.liquid_outlet.flow_vol[0]
+                    * m.fs.props.dens_mass
+                    * m.fs.props.cp_mass
+                    * (
+                        m.fs.unit.liquid_outlet.temperature[0]
+                        - m.fs.props.temperature_ref
+                    )
+                ),
+                "out": -1 * m.fs.unit.liquid_phase.enthalpy_transfer[0],
+            },
+        }
 
         return m

@@ -35,7 +35,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
@@ -519,7 +519,6 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of Borate",
         )
-
         # Variables for volume and retention time
         self.reactor_volume = Var(
             initialize=1,
@@ -802,10 +801,10 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             )
 
     def outlet_pH(self, time=0):
-        return -log10(value(self.conc_mol_H[time]) / 1000)
+        return -log10(self.conc_mol_H[time] / (1000 * (pyunits.mol / pyunits.m**3)))
 
     def outlet_pOH(self, time=0):
-        return -log10(value(self.conc_mol_OH[time]) / 1000)
+        return -log10(self.conc_mol_OH[time] / (1000 * (pyunits.mol / pyunits.m**3)))
 
     def propogate_initial_state(self):
         units_meta = self.config.property_package.get_metadata().get_derived_units

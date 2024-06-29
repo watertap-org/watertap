@@ -30,102 +30,106 @@ assumes a test file is being created for an anaerobic digester.
     from pyomo.environ import ConcreteModel
 
     from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     import idaes.core.util.scaling as iscale
 
     from watertap.costing import WaterTAPCosting
 
     # The following imports are unit-model specific
     from watertap.unit_models.anaerobic_digester import AD
-    from watertap.property_models.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
-    from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
-    from watertap.property_models.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
+    from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import ADM1ParameterBlock
+    from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import ADM1_vaporParameterBlock
+    from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import ADM1ReactionParameterBlock
     from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
     # Get the default solver for testing
     solver = get_solver()
 
-Next, setup the configure function which will create the flowsheet, specify the property and reaction packages,
-specify the unit model configuration (named `fs.unit`), set the operating conditions, add the unit model costing, and
-set the scaling factors for any variables that are badly scaled. Then, iterate through any variables on the unit model that you'd like to have the value of tested. Finally, return the top-level Pyomo model.
-Failures may arise at this stage, at which point an error message will be displayed that prompts you
-to adjust something in the configure function and/or address the discrepancy between the
-expected value for a variable (user-input) and its actual value.
+Next, set up the `build` function which will create the flowsheet and specify the property package, reaction package,
+unit model configuration (named `fs.unit`), operating conditions, and scaling factors for any variables that are badly scaled.
+Then, set up the `configure` function which will use the model, `m`, returned from `build` to assert that the specified
+unit model variables are equivalent to their expected values. This function must also include at least one conservation check
+in which the user specifies an inlet expression and an outlet expression, and the test harness will assert that the
+two expressions are equivalent. This functionality should be used to ensure the unit model maintains conservation
+(mass, energy, momentum, etc.).
+If failures arise after running the test file, error messages will be displayed that prompt you
+to modify the `build` function, address the discrepancy between the
+expected value for a variable (user-input) and its actual value, and/or address the discrepancy between the conservation expressions.
 
 .. testcode::
 
-    class TestUnitDefault(UnitTestHarness):
-        @pytest.mark.unit
+    def build():
+        # Create the ConcreteModel and FlowsheetBlock
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        # Set up the property package and a reaction package, if relevant
+        m.fs.props = ADM1ParameterBlock()
+        m.fs.props_vap = ADM1_vaporParameterBlock()
+        m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
+
+        # Create the unit model and specify configration options
+        m.fs.unit = AD(
+            liquid_property_package=m.fs.props,
+            vapor_property_package=m.fs.props_vap,
+            reaction_package=m.fs.rxn_props,
+            has_heat_transfer=True,
+            has_pressure_change=False,
+        )
+
+        # Set the operating conditions
+        m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
+        m.fs.unit.inlet.temperature.fix(308.15)
+        m.fs.unit.inlet.pressure.fix(101325)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
+
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
+
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.liquid_outlet.temperature.fix(308.15)
+
+        # Set scaling factors for badly scaled variables
+        iscale.set_scaling_factor(
+        m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
+        )
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
+    class TestAnaerobicDigester(UnitTestHarness):
         def configure(self):
-            # Create the ConcreteModel and FlowsheetBlock
-            m = ConcreteModel()
-            m.fs = FlowsheetBlock(dynamic=False)
-
-            # Set up the property package and a reaction package, if relevant
-            m.fs.props = ADM1ParameterBlock()
-            m.fs.props_vap = ADM1_vaporParameterBlock()
-            m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
-
-            # Create the unit model and specify configration options
-            m.fs.unit = AD(
-                liquid_property_package=m.fs.props,
-                vapor_property_package=m.fs.props_vap,
-                reaction_package=m.fs.rxn_props,
-                has_heat_transfer=True,
-                has_pressure_change=False,
-            )
-
-            # Set the operating conditions
-            m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
-            m.fs.unit.inlet.temperature.fix(308.15)
-            m.fs.unit.inlet.pressure.fix(101325)
-
-            m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
-            m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
-
-            m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
-            m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
-
-            m.fs.unit.inlet.cations[0].fix(0.04)
-            m.fs.unit.inlet.anions[0].fix(0.02)
-
-            m.fs.unit.volume_liquid.fix(3400)
-            m.fs.unit.volume_vapor.fix(300)
-            m.fs.unit.liquid_outlet.temperature.fix(308.15)
-
-            # Add unit model costing
-            m.fs.costing = WaterTAPCosting()
-
-            m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-            m.fs.costing.cost_process()
-
-            # Set scaling factors for badly scaled variables
-            iscale.set_scaling_factor(
-            m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
-            )
-            iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-6)
+            m = build()
 
             # Check the expected unit model outputs
+
             self.unit_solutions[m.fs.unit.liquid_outlet.pressure[0]] = 101325
             self.unit_solutions[m.fs.unit.liquid_outlet.temperature[0]] = 308.15
             self.unit_solutions[
@@ -213,5 +217,36 @@ expected value for a variable (user-input) and its actual value.
             self.unit_solutions[m.fs.unit.electricity_consumption[0]] = 23.7291667
             self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1880470.588
             self.unit_solutions[m.fs.unit.costing.capital_cost] = 2166581.415
+
+            # Conservation check
+
+            self.conservation_equality = {
+                "Check 1": {
+                    "in": m.fs.unit.inlet.flow_vol[0],
+                    "out": (
+                        m.fs.unit.liquid_outlet.flow_vol[0] * m.fs.props.dens_mass
+                        + m.fs.unit.vapor_outlet.flow_vol[0] * m.fs.props_vap.dens_mass
+                    )
+                    / m.fs.props.dens_mass,
+                },
+                "Check 2": {
+                    "in": (
+                        m.fs.unit.inlet.flow_vol[0]
+                        * m.fs.props.dens_mass
+                        * m.fs.props.cp_mass
+                        * (m.fs.unit.inlet.temperature[0] - m.fs.props.temperature_ref)
+                    )
+                    - (
+                        m.fs.unit.liquid_outlet.flow_vol[0]
+                        * m.fs.props.dens_mass
+                        * m.fs.props.cp_mass
+                        * (
+                            m.fs.unit.liquid_outlet.temperature[0]
+                            - m.fs.props.temperature_ref
+                        )
+                    ),
+                    "out": -1 * m.fs.unit.liquid_phase.enthalpy_transfer[0],
+                },
+            }
 
             return m

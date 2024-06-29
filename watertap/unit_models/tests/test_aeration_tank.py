@@ -38,34 +38,36 @@ from idaes.core.util.testing import (
     initialization_tester,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from watertap.unit_models.aeration_tank import AerationTank, ElectricityConsumption
 
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
-from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
-from watertap.property_models.activated_sludge.asm1_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+)
+from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
 
-from watertap.property_models.anaerobic_digestion.adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
 

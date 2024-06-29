@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-from watertap.property_models.coagulation_prop_pack import (
+from watertap.property_models.unit_specific.coagulation_prop_pack import (
     CoagulationParameterBlock,
     CoagulationStateBlock,
 )
@@ -33,7 +33,7 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
 

@@ -45,7 +45,7 @@ An example of the functions setup for use with loopTool for RO_with_energy_recov
 
 .. code-block::
 
-   import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as ro_erd
+   import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as ro_erd
    def ro_build(erd_type=None, **kwargs):
       m = ro_erd.build(erd_type)
       return m

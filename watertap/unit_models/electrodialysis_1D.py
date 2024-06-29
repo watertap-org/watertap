@@ -40,7 +40,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.solvers.get_solver import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -2863,17 +2863,17 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         return {
             "vars": {
-                "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[
+                "Total electrical power consumption": self.diluate.power_electrical_x[
                     time_point, self.diluate.length_domain.last()
                 ],
-                "Specific electrical power consumption, ED stack (kW*h/m**3)": self.specific_power_electrical[
+                "Specific electrical power consumption, ED stack": self.specific_power_electrical[
                     time_point
                 ],
                 "Water recovery by mass": self.recovery_mass_H2O[time_point],
-                "Channel inlet velocity, diluate (m/s)": self.velocity_diluate[
+                "Channel inlet velocity, diluate": self.velocity_diluate[
                     time_point, self.diluate.length_domain.first()
                 ],
-                "Channel inlet velocity, concentrate (m/s)": self.velocity_concentrate[
+                "Channel inlet velocity, concentrate": self.velocity_concentrate[
                     time_point, self.diluate.length_domain.first()
                 ],
             },

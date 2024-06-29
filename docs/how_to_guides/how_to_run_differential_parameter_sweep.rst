@@ -23,7 +23,7 @@ As before, we begin by importing or explicitly programming any functions relatin
 
     # replace this with your own flowsheet module, e.g.
     # import my_flowsheet_module as mfm
-    import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
+    import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
 Once this is done, we import the differential parameter sweep tool and sampling classes.
 

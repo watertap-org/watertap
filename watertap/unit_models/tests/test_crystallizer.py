@@ -18,14 +18,14 @@ from idaes.core import (
     FlowsheetBlock,
 )
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 
 from watertap.unit_models.crystallizer import Crystallization
-import watertap.property_models.cryst_prop_pack as props
+import watertap.property_models.unit_specific.cryst_prop_pack as props
 from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 # -----------------------------------------------------------------------------
@@ -195,6 +195,63 @@ class TestCrystallizer(UnitTestHarness):
         self.unit_solutions[m.fs.unit.t_res] = 1.022821
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.827
 
+        comp_lst = ["NaCl", "H2O"]
+        phase_lst = ["Sol", "Liq", "Vap"]
+        phase_comp_list = [
+            (p, j)
+            for j in comp_lst
+            for p in phase_lst
+            if (p, j) in m.fs.unit.properties_in[0].phase_component_set
+        ]
+
+        flow_mass_in = sum(
+            m.fs.unit.properties_in[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_out = sum(
+            m.fs.unit.properties_out[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_solids = sum(
+            m.fs.unit.properties_solids[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+        flow_mass_vapor = sum(
+            m.fs.unit.properties_vapor[0].flow_mass_phase_comp[p, j]
+            for p in phase_lst
+            for j in comp_lst
+            if (p, j) in phase_comp_list
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": flow_mass_in,
+                "out": flow_mass_out + flow_mass_solids + flow_mass_vapor,
+            },
+            "Check 2": {
+                "in": flow_mass_in,
+                "out": (
+                    flow_mass_out * m.fs.unit.properties_out[0].enth_mass_phase["Liq"]
+                    + flow_mass_vapor
+                    * m.fs.unit.properties_vapor[0].enth_mass_solvent["Vap"]
+                    + flow_mass_solids
+                    * m.fs.unit.properties_solids[0].enth_mass_solute["Sol"]
+                    + flow_mass_solids
+                    * m.fs.unit.properties_solids[0].dh_crystallization_mass_comp[
+                        "NaCl"
+                    ]
+                    - m.fs.unit.work_mechanical[0]
+                )
+                / m.fs.unit.properties_in[0].enth_mass_phase["Liq"],
+            },
+        }
+
         return m
 
 
@@ -217,6 +274,19 @@ class TestCrystallizer_costing_by_mass(UnitTestHarness):
         self.unit_solutions[m.fs.unit.diameter_crystallizer] = 1.5427211
         self.unit_solutions[m.fs.unit.volume_suspension] = 0.95871257
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 600166.827
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Sol", "NaCl"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.solids.flow_mass_phase_comp[0, "Sol", "NaCl"]
+                + m.fs.unit.vapor.flow_mass_phase_comp[0, "Vap", "H2O"],
+            },
+        }
 
         return m
 
@@ -245,5 +315,18 @@ class TestCrystallizer_costing_by_volume(UnitTestHarness):
         self.unit_solutions[m.fs.unit.diameter_crystallizer] = 1.5427211
         self.unit_solutions[m.fs.unit.volume_suspension] = 0.9587126
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 398225.15644
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Sol", "NaCl"]
+                + m.fs.unit.inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+                + m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.solids.flow_mass_phase_comp[0, "Sol", "NaCl"]
+                + m.fs.unit.vapor.flow_mass_phase_comp[0, "Vap", "H2O"],
+            },
+        }
 
         return m

@@ -14,7 +14,7 @@ import pytest
 import pyomo.environ as pyo
 
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
 )
@@ -167,13 +167,22 @@ class TestElectrolyzer(UnitTestHarness):
             m.fs.unit.catholyte.properties_out[0].flow_mol_phase_comp["Liq", "OH-"]
         ] = 1.568
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.anolyte.properties_in[0].flow_vol_phase["Liq"]
+                + m.fs.unit.catholyte.properties_in[0].flow_vol_phase["Liq"],
+                "out": m.fs.unit.anolyte.properties_out[0].flow_vol_phase["Liq"]
+                + m.fs.unit.catholyte.properties_out[0].flow_vol_phase["Liq"],
+            },
+        }
+
         return m
 
     @pytest.mark.unit
     def test_electroneutrality(self):
 
         m = build()
-        results = solver.solve(m)
+        solver.solve(m)
 
         # check charge balance
         m.fs.unit.anolyte.properties_in[0].assert_electroneutrality(

@@ -4,28 +4,32 @@ Unit Models
 .. toctree::
    :maxdepth: 1
 
-   reverse_osmosis_0D
-   reverse_osmosis_1D
-   nanofiltration_ZO
-   nanofiltration_dspmde_0D
-   pressure_exchanger
+   anaerobic_digester
+   aeration_tank
+   boron_removal
+   clarifier
    coag_floc_model
    crystallizer_0D
-   boron_removal
+   cstr
+   cstr_injection
+   dewatering
    electrodialysis_0D
    electrodialysis_1D
    electrolyzer
-   uv_aop
+   electroNP_ZO
    gac
-   osmotically_assisted_reverse_osmosis_0D
-   osmotically_assisted_reverse_osmosis_1D
-   anaerobic_digester
    ion_exchange_0D
    membrane_distillation_0D
    mvc
-   thickener
-   dewatering
-   electroNP_ZO
-   translators/index
-   zero_order_unit_models/index
+   nanofiltration_ZO
+   nanofiltration_dspmde_0D
+   osmotically_assisted_reverse_osmosis_0D
+   osmotically_assisted_reverse_osmosis_1D
+   pressure_exchanger
+   reverse_osmosis_0D
+   reverse_osmosis_1D
    stoichiometric_reactor
+   thickener
+   translators/index
+   uv_aop
+   zero_order_unit_models/index
