@@ -37,8 +37,8 @@ Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Index", "Units"
    
-   "Water recovery", "water_recovery", "None", "%"
-   "Brine water mass fraction", "brine_water_mass_percent", "None", "%"
+   "Water recovery", "water_recovery", "None", ":math:`\text{dimensionless}`"
+   "Brine water mass fraction", "brine_water_mass_percent", "None", ":math:`\text{dimensionless}`"
    "Brine solids concentration", "brine_solids_concentration", "None", "kg/:math:`\text{m}^3`"
 
 Class Documentation
