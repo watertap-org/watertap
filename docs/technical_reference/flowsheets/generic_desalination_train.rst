@@ -5,7 +5,7 @@ Introduction
 ------------
 This flowsheet builds a treatment train with generic units that operate with assumed performance and use simple costs specified by the user for each unit operation. 
 The flowsheet uses its own simple costing package and uses generic_desalter and generic_separation units to estimate overall treatment costs. 
-The flowsheet relies on MCAS properties package to track different species through the train. 
+The flowsheet relies on `MCAS <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/mc_aq_sol.html>`_ properties package to track different species through the train. 
 
 Implementation
 --------------
