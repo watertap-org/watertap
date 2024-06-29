@@ -75,31 +75,31 @@ These are the default values configured in flowsheet main function:
    "Waste disposal", "1.0", ":math:`\text{$/m^3}`"
 
    "**Pretreatment**"
-   "Base cost", "0.0", ":math:`\text{$/m^3}`"
+   "Base cost", "0.0", ":math:`\text{$/}\text{m}^3`"
    "Additive cost", "0.0", ":math:`\text{$/kg}`"
    "Additive dose", "1.0", ":math:`\text{PPM}`"
    "Component removal percent [X]", "50", ":math:`\text{%}`"
    "Separation cost [X]", "0.5", ":math:`\text{$/kg}`"
 
    "**Desal_1**"
-   "Base cost", "0.3", ":math:`\text{$/m^3}`"
+   "Base cost", "0.3", ":math:`\text{$/}\text{m}^3`"
    "Recovery", "80", ":math:`\text{%}`"
 
    "**Desal_2**"
-   "Base cost", "0.5", ":math:`\text{$/m^3}`"
-   "Recovery cost", "0.01", ":math:`\text{$/m^3/%wr}`"
-   "Recovery cost offset", "35", ":math:`\text{%}`"
-   "Recovery", "50", ":math:`\text{%}`"
+   "Base cost", "0.5", ":math:`\text{$/}\text{m}^3`"
+   "Recovery cost", "0.01", ":math:`\text{$/}(\text{\%wr*m}^3)`"
+   "Recovery cost offset", "35", ":math:`\text{\%}`"
+   "Recovery", "50", ":math:`\text{\%}`"
 
    "**Desal_3**"
    "Base cost", "10", ":math:`\text{$/m^3}`"
-   "Brine water mass percent", "80", ":math:`\text{%}`"
+   "Brine water mass percent", "80", ":math:`\text{\%}`"
 
    "**Valorizer**"
-   "Base cost", "0", ":math:`\text{$/m^3}`"
+   "Base cost", "0", ":math:`\text{$/}\text{m}^3`"
    "Additive dose", "0", ":math:`\text{PPM}`"
-   "Additive cost", "0", ":math:`\text{$/m^3}`"
-   "Component removal percent [X]", "50", ":math:`\text{%}`"
+   "Additive cost", "0", ":math:`\text{$/}\text{m}^3`"
+   "Component removal percent [X]", "50", ":math:`\text{\%}`"
    "Product value [X]", "1", ":math:`\text{$/kg}`"
 
 Code Documentation
