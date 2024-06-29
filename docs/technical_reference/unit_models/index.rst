@@ -17,6 +17,7 @@ Unit Models
    electrodialysis_1D
    electrolyzer
    electroNP_ZO
+   energy_recovery_device
    gac
    generic_desalter
    generic_separator
@@ -28,6 +29,7 @@ Unit Models
    osmotically_assisted_reverse_osmosis_0D
    osmotically_assisted_reverse_osmosis_1D
    pressure_exchanger
+   pump
    reverse_osmosis_0D
    reverse_osmosis_1D
    stoichiometric_reactor
