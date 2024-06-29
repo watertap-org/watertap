@@ -202,7 +202,7 @@ class GenericDesalterData(UnitModelBlockData):
                 bounds=(None, None),
                 domain=Reals,
                 units=pyunits.dimensionless,
-                doc="water recovery",
+                doc="brine water mass percent",
             )
         self.brine_unit = ControlVolume0DBlock(
             dynamic=False,
