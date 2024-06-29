@@ -17,7 +17,7 @@ For inlet conditions:
     * pressure
     * component mass compositions
 
-Unit overall operaiton:
+Unit overall operation:
     * percent of component to remove from feed stream 
     * amount of chemical to add for operation 
     
