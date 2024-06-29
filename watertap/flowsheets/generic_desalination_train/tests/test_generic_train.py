@@ -90,3 +90,9 @@ def test_standard_train():
     assert value(
         m.fs.Valorizer.separator.product_properties[0].flow_mass_phase_comp["Liq", "X"]
     ) == pytest.approx(7.528607927133832e-05, rel=1e-6)
+
+
+@pytest.mark.unit
+def test_main():
+    result = gt.main()
+    assert_optimal_termination(result)
