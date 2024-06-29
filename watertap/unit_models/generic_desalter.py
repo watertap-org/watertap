@@ -195,7 +195,7 @@ class GenericDesalterData(UnitModelBlockData):
                 bounds=(None, None),
                 domain=Reals,
                 units=pyunits.kg / pyunits.m**3,
-                doc="water recovery",
+                doc="brine solids concentration",
             )
             self.brine_water_mass_percent = Var(
                 initialize=80,
