@@ -18,7 +18,7 @@ Pump units generally have two or more degrees of freedom, depending on the pump 
 
 Typical fixed variables are:
 
-* outlet pressure, :math:`P_{out}` or :math:`\Delta P`
+* outlet pressure, :math:`P_{out}` or pressure difference across the inlet and outlet,:math:`\Delta P`
 * pump efficiency
 
 Model Structure
@@ -42,21 +42,21 @@ Sets
 Variables
 ---------
 
-When the configuration ``variable_efficiency`` is set to default ``VariableEfficiency.none``, the variables are the same listed in Variable tab of
+When the configuration option ``variable_efficiency`` is set to its default of ``VariableEfficiency.none`` (indicating constant efficiency), the variables are the same as those listed in the "Variable" tab of
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
-When the configuration ``variable_efficiency`` is not ``VariableEfficiency.none``, then there are three additional variables:
+When the configuration ``variable_efficiency`` is not ``VariableEfficiency.none``, then there are three additional variables to account for variable pump efficiency:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Best efficiency point flowrate of the centrifugal pump", ":math:`F_{bp}`", "``bep_flow``", "None", ":math:`\text{m}^3/\text{s}`"
+   "Best efficiency point flowrate of the centrifugal pump", ":math:`F_{bep}`", "``bep_flow``", "None", ":math:`\text{m}^3/\text{s}`"
    "Best efficiency of the centrifugal pump", ":math:`\eta_{bep}`", "``bep_eta``", "None", "dimensionless"
    "Ratio of pump flowrate to best efficiency point flowrate", ":math:`r_{bep, t}`", "``flow_ratio``", "[t]", "dimensionless"
 
 Equations and Relationships
 ---------------------------
-When the configuration ``variable_efficiency`` is set to default ``VariableEfficiency.none``, the constraints are the same listed in
+When the configuration ``variable_efficiency`` is set to default ``VariableEfficiency.none``, the constraints are the same as those listed in
 `IDAES pressure changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_.
 
 When the configuration ``variable_efficiency`` is not ``VariableEfficiency.none``, there are two additional constraints:
