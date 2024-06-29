@@ -28,6 +28,7 @@ from pyomo.environ import (
     Set,
     value,
     Var,
+    assert_optimal_termination,
 )
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
@@ -38,6 +39,10 @@ from watertap.core import (
     WaterParameterBlock,
     WaterStateBlock,
     ZeroOrderBaseData,
+)
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MaterialFlowBasis,
 )
 from watertap.core.zero_order_sido_reactive import (
     build_sido_reactive,
@@ -544,3 +549,35 @@ class TestSIDORErrors:
             "species B in reaction Rxn3.",
         ):
             m.fs.unit = DerivedSIDOR(property_package=m.fs.water_props, database=m.db)
+
+@pytest.mark.component()
+def test_with_MCAS():
+    """Check compatibility of ZO model with MCAS."""
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = MCASParameterBlock(
+        solute_list=["A", "B"],
+        ignore_neutral_charge=True,
+        material_flow_basis=MaterialFlowBasis.mass,
+        mw_data={"A": None, "B": None},
+    )
+
+    m.db = Database(dbpath=local_path)
+
+
+    m.fs.unit = DerivedSIDOR(property_package=m.fs.params, database=m.db)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "A"].fix(1)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "B"].fix(1)
+    m.fs.unit.inlet.temperature.fix()
+    m.fs.unit.inlet.pressure.fix()
+
+    m.fs.unit.recovery_frac_mass_H2O.fix(0.8)
+    m.fs.unit.removal_frac_mass_comp[0, "A"].fix(0.1)
+    m.fs.unit.removal_frac_mass_comp[0, "B"].fix(0.2)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert_optimal_termination(results)
