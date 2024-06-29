@@ -16,7 +16,7 @@ For inlet conditions:
     * pressure
     * component mass compositions
 
-Unit overall operaiton:
+Unit overall operation:
     * water recovery 
     * solids concentration in brine (User must provide tracked solids list)
     * water content of the brine (User must provide tracked solids list)
