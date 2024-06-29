@@ -945,7 +945,7 @@ class FlowsheetInterface:
         To set up a flowsheet interface for discovery, locate your Python package distribution's file (normally
         :file:`setup.py`, :file:`pyproject.toml`, or equivalent) and add an entry in the ``entry_points`` section.
 
-        For example, to add a flowsheet defined in :file:`watertap/examples/flowsheets/my_flowsheet.py`
+        For example, to add a flowsheet defined in :file:`watertap/flowsheets/flowsheets/my_flowsheet.py`
         so that it can be discovered with the name ``my_flowsheet`` wherever the ``watertap`` package is installed,
         the following should be added to WaterTAP's :file:`setup.py`::
 
@@ -955,7 +955,7 @@ class FlowsheetInterface:
                entry_points={
                    "watertap.flowsheets": [
                         # other flowsheet entry points
-                        "my_flowsheet = watertap.examples.flowsheets.my_flowsheet",
+                        "my_flowsheet = watertap.flowsheets.flowsheets.my_flowsheet",
                    ]
                }
            )
