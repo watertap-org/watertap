@@ -26,9 +26,9 @@ Sets
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "time", ":math:`t`", "[0]"
-   "phases", ":math:`p`", "['Liq']"
-   "components", ":math:`j`", "['H2O', solutes]"
+   "Time", ":math:`t`", "[0]"
+   "Phases", ":math:`p`", "['Liq']"
+   "Components", ":math:`j`", "['H2O', solutes]"
    
 Variables
 ----------
