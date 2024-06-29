@@ -6,7 +6,7 @@ Generic desalination unit
 
 Introduction
 ------------
-This is a generic desalination unit designed to separate water from other stream components. The user must specify target water recovery 
+This is a generic desalination unit designed to separate water from other stream components. The user must specify target water recovery.
 The unit assumes full complete separation of ions from the liquid stream (100 % rejection). 
 
 Degrees of Freedom
