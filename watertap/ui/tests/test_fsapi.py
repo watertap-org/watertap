@@ -21,12 +21,8 @@ from pyomo.environ import units as pyunits
 from pyomo.environ import Var, value
 from pyomo.environ import SolverStatus, TerminationCondition
 
-from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
-    seawater_RO_desalination as RO,
-)
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination import (
-    dye_desalination_ui as DD,
-)
+from watertap.flowsheets.seawater_RO_desalination import seawater_RO_desalination as RO
+from watertap.flowsheets.dye_desalination import dye_desalination_ui as DD
 
 from watertap.ui import fsapi
 
