@@ -240,6 +240,7 @@ class TestSIDO:
     def test_report(self, model):
         model.fs.unit.report()
 
+
 @pytest.mark.component()
 def test_with_MCAS():
     """Check compatibility of ZO model with MCAS."""

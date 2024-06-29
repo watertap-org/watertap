@@ -47,6 +47,7 @@ def test_private_attributes():
     assert m.fs.unit._stream_table_dict == {}
     assert m.fs.unit._perf_var_dict == {}
 
+
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
@@ -58,6 +59,7 @@ def test_config():
     assert "database" in m.fs.unit.config
     assert m.fs.unit.config.isothermal == True
     assert m.fs.unit.config.isobaric == True
+
 
 class TestZOBase:
     @pytest.fixture

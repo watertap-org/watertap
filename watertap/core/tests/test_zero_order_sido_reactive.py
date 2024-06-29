@@ -550,6 +550,7 @@ class TestSIDORErrors:
         ):
             m.fs.unit = DerivedSIDOR(property_package=m.fs.water_props, database=m.db)
 
+
 @pytest.mark.component()
 def test_with_MCAS():
     """Check compatibility of ZO model with MCAS."""
@@ -563,7 +564,6 @@ def test_with_MCAS():
     )
 
     m.db = Database(dbpath=local_path)
-
 
     m.fs.unit = DerivedSIDOR(property_package=m.fs.params, database=m.db)
     m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)

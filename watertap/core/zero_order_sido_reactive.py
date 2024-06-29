@@ -359,6 +359,7 @@ def _add_isobaric_constraints(blk):
         obj = getattr(b, port)
         return b.inlet.pressure[t] == obj.pressure[t]
 
+
 def initialize_sidor(
     blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
 ):
@@ -490,7 +491,6 @@ def calculate_scaling_factors_sidor(self):
             ),
         )  # would just be a duplicate of above
 
-    
     dbparams = self.config.database.get_unit_operation_parameters(
         self._tech_type, subtype=self.config.process_subtype
     )
