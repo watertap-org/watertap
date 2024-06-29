@@ -16,7 +16,7 @@ from watertap.unit_models.generic_desalter import (
 from pyomo.environ import (
     value,
 )
-from watertap.examples.flowsheets.generic_desalination_train.costing import (
+from watertap.flowsheets.generic_desalination_train.costing import (
     desalter_costing,
 )
 import logging

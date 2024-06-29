@@ -18,7 +18,7 @@ from pyomo.environ import (
     Var,
     units as pyunits,
 )
-from watertap.examples.flowsheets.generic_desalination_train.costing import (
+from watertap.flowsheets.generic_desalination_train.costing import (
     separator_costing,
 )
 import logging
