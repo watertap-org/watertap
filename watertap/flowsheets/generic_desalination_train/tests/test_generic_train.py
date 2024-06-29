@@ -2,7 +2,7 @@ from pyomo.environ import assert_optimal_termination, value
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.generic_desalination_train import generic_train as gt
+from watertap.flowsheets.generic_desalination_train import generic_train as gt
 
 import pytest
 
