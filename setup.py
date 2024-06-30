@@ -138,9 +138,9 @@ setup(
     entry_points={
         "watertap.flowsheets": [
             "nf = watertap.flowsheets.nf_dspmde.nf_ui",
-            "bsm2 = watertap.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_ui",
-            "bsm2_P_extension = watertap.flowsheets.case_studies.full_water_resource_recovery_facility.BSM2_P_extension_ui",
-            "dye_desalination = watertap.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_ui",
+            "bsm2 = watertap.flowsheets.full_water_resource_recovery_facility.BSM2_ui",
+            "bsm2_P_extension = watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension_ui",
+            "dye_desalination = watertap.flowsheets.dye_desalination.dye_desalination_ui",
             "mvc = watertap.flowsheets.mvc.mvc_single_stage_ui",
             "RO = watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui",
             "OARO = watertap.flowsheets.oaro.oaro_multi_ui",
