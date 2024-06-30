@@ -70,12 +70,9 @@ These are the default values configured in flowsheet main function:
    "Pressure", "101325", ":math:`\text{Pa}`"
 
    "**Stream costing**"
-   "Product distribution", "0.0", ":math:`\text{$/m^3}`"
-   "Feed sourcing", "0.0", ":math:`\text{$/m^3}`"
-   "Waste disposal", "1.0", ":math:`\text{$/m^3}`"
-
-   "**Pretreatment**"
-   "Base cost", "0.0", ":math:`\text{$/}\text{m}^3`"
+   "Product distribution", "0.0", ":math:`\text{$/}\text{m}^3`"
+   "Feed sourcing", "0.0", ":math:`\text{$/}\text{m}^3`"
+   "Waste disposal", "1.0", ":math:`\text{$/}\text{m}^3`"
    "Additive cost", "0.0", ":math:`\text{$/kg}`"
    "Additive dose", "1.0", ":math:`\text{PPM}`"
    "Component removal percent [X]", "50", ":math:`\text{%}`"
