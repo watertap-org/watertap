@@ -466,11 +466,8 @@ def test_costing_non_default_subtype():
         "..",
         "..",
         "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "amo_1575_hrcs",
+        "data",
+        "techno_economic",
         "hrcs_case_1575.yaml",
     )
 

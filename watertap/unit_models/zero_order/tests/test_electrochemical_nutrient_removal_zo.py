@@ -195,11 +195,8 @@ def test_costing():
         "..",
         "..",
         "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "electrochemical_nutrient_removal",
+        "data",
+        "techno_economic",
         "case_1617.yaml",
     )
 

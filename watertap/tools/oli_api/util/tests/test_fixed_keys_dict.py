@@ -27,7 +27,84 @@ def test_fixed_keys_dict():
     with pytest.raises(RuntimeError):
         output_unit_set._check_value("mass", ["not_kg"])
 
-    output_unit_set.pprint()
+
+input_unit_set_temp = {
+    "inflows": {
+        "oli_unit": "mg/L",
+        "pyomo_unit": pyunits.mg / pyunits.L,
+    },
+    "molecularConcentration": {
+        "oli_unit": "mg/L",
+        "pyomo_unit": pyunits.mg / pyunits.L,
+    },
+    "mass": {"oli_unit": "mg", "pyomo_unit": pyunits.mg},
+    "temperature": {"oli_unit": "K", "pyomo_unit": pyunits.K},
+    "pressure": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
+    "enthalpy": {"oli_unit": "J", "pyomo_unit": pyunits.J},
+    "vaporAmountMoles": {"oli_unit": "mol", "pyomo_unit": pyunits.mol},
+    "vaporMolFrac": {
+        "oli_unit": "mol/mol",
+        "pyomo_unit": pyunits.mol / pyunits.mol,
+    },
+    "totalVolume": {"oli_unit": "L", "pyomo_unit": pyunits.L},
+    "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "pipeFlowVelocity": {
+        "oli_unit": "m/s",
+        "pyomo_unit": pyunits.meter / pyunits.second,
+    },
+    "diskDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "diskRotatingSpeed": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
+    "rotorDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "rotorRotation": {"oli_unit": "cycle/s", "pyomo_unit": 1 / pyunits.second},
+    "shearStress": {"oli_unit": "Pa", "pyomo_unit": pyunits.Pa},
+    "pipeDiameter": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "pipeRoughness": {"oli_unit": "m", "pyomo_unit": pyunits.meter},
+    "liquidFlowInPipe": {
+        "oli_unit": "L/s",
+        "pyomo_unit": pyunits.L / pyunits.second,
+    },
+    "gasFlowInPipe": {"oli_unit": "L/s", "pyomo_unit": pyunits.L / pyunits.second},
+    "viscAbs2ndLiq": {
+        "oli_unit": "Pa-s",
+        "pyomo_unit": pyunits.Pa * pyunits.second,
+    },
+    "alkalinity": {"oli_unit": "mg HCO3/L", "pyomo_unit": pyunits.mg / pyunits.L},
+    "TIC": {"oli_unit": "mol C/L", "pyomo_unit": pyunits.mol / pyunits.L},
+    "CO2GasFraction": {
+        "oli_unit": "mol/mol",
+        "pyomo_unit": pyunits.mol / pyunits.mol,
+    },
+}
+
+output_unit_set_temp = {
+    "enthalpy": input_unit_set_temp["enthalpy"],
+    "mass": input_unit_set_temp["mass"],
+    "pt": input_unit_set_temp["pressure"],
+    "total": input_unit_set_temp["mass"],
+    "liq1_phs_comp": input_unit_set_temp["mass"],
+    "solid_phs_comp": input_unit_set_temp["mass"],
+    "vapor_phs_comp": input_unit_set_temp["mass"],
+    "liq2_phs_comp": input_unit_set_temp["mass"],
+    "combined_phs_comp": input_unit_set_temp["mass"],
+    "molecularConcentration": input_unit_set_temp["molecularConcentration"],
+}
+
+
+@pytest.mark.unit
+def test_input_output_fixed_key_dicts():
+    input_unit_set_temp.keys() == input_unit_set.keys()
+    for k in input_unit_set_temp.keys():
+        assert input_unit_set[k]["oli_unit"] == input_unit_set_temp[k]["oli_unit"]
+        assert_units_equivalent(
+            input_unit_set[k]["pyomo_unit"], input_unit_set_temp[k]["pyomo_unit"]
+        )
+
+    output_unit_set_temp.keys() == output_unit_set.keys()
+    for k in output_unit_set_temp.keys():
+        assert output_unit_set[k]["oli_unit"] == output_unit_set_temp[k]["oli_unit"]
+        assert_units_equivalent(
+            output_unit_set[k]["pyomo_unit"], output_unit_set_temp[k]["pyomo_unit"]
+        )
 
 
 @pytest.mark.unit
