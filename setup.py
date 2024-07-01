@@ -145,6 +145,8 @@ setup(
             "RO = watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui",
             "OARO = watertap.flowsheets.oaro.oaro_multi_ui",
             "GAC = watertap.flowsheets.gac.gac_ui",
+            "ED_conc_recirc = watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc_ui",
+            "LSRRO = watertap.flowsheets.lsrro.lsrro_ui",
         ],
     },
 )
