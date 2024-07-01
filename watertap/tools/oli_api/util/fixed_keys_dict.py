@@ -89,6 +89,10 @@ class FixedKeysDict(UserDict):
 
 
 input_unit_set_temp = {
+    "inflows": {
+        "oli_unit": "mg/L",
+        "pyomo_unit": pyunits.mg / pyunits.L,
+    },
     "molecularConcentration": {
         "oli_unit": "mg/L",
         "pyomo_unit": pyunits.mg / pyunits.L,
@@ -132,11 +136,27 @@ input_unit_set_temp = {
     },
 }
 
+
+# TODO: consider adding these: https://devdocs.olisystems.com/user-defined-output-unit-set
+# and reducing hard-coding by using default_input_unit_set references
+output_unit_set_temp = {
+    "enthalpy": input_unit_set_temp["enthalpy"],
+    "mass": input_unit_set_temp["mass"],
+    "pt": input_unit_set_temp["pressure"],
+    "total": input_unit_set_temp["mass"],
+    "liq1_phs_comp": input_unit_set_temp["mass"],
+    "solid_phs_comp": input_unit_set_temp["mass"],
+    "vapor_phs_comp": input_unit_set_temp["mass"],
+    "liq2_phs_comp": input_unit_set_temp["mass"],
+    "combined_phs_comp": input_unit_set_temp["mass"],
+    "molecularConcentration": input_unit_set_temp["molecularConcentration"],
+}
+
 input_unit_set = FixedKeysDict(
     {k: FixedKeysDict(v) for k, v in input_unit_set_temp.items()}
 )
-default_unit_set = FixedKeysDict(
-    {k: FixedKeysDict(v) for k, v in input_unit_set_temp.items()}
+output_unit_set = FixedKeysDict(
+    {k: FixedKeysDict(v) for k, v in output_unit_set_temp.items()}
 )
 
 optional_properties = FixedKeysDict(
@@ -181,24 +201,7 @@ optional_properties = FixedKeysDict(
     }
 )
 
-# TODO: consider adding these: https://devdocs.olisystems.com/user-defined-output-unit-set
-# and reducing hard-coding by using default_input_unit_set references
-output_unit_set = FixedKeysDict(
-    {
-        "enthalpy": default_unit_set["enthalpy"]["oli_unit"],
-        "mass": default_unit_set["mass"]["oli_unit"],
-        "pt": default_unit_set["pressure"]["oli_unit"],
-        "total": default_unit_set["mass"]["oli_unit"],
-        "liq1_phs_comp": default_unit_set["mass"]["oli_unit"],
-        "solid_phs_comp": default_unit_set["mass"]["oli_unit"],
-        "vapor_phs_comp": default_unit_set["mass"]["oli_unit"],
-        "liq2_phs_comp": default_unit_set["mass"]["oli_unit"],
-        "combined_phs_comp": default_unit_set["mass"]["oli_unit"],
-        "molecularConcentration": default_unit_set["molecularConcentration"][
-            "oli_unit"
-        ],
-    }
-)
 
 if __name__ == "__main__":
-    unit_set = input_unit_set_temp
+    unit_set = input_unit_set
+    output_unit_set = output_unit_set
