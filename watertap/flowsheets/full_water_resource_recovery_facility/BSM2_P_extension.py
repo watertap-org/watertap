@@ -88,7 +88,7 @@ from watertap.costing.unit_models.clarifier import (
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=False):
+def main(bio_P=True):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
     set_scaling(m)
@@ -140,7 +140,7 @@ def main(bio_P=False):
     return m, results
 
 
-def build(bio_P=False):
+def build(bio_P=True):
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -585,7 +585,7 @@ def set_scaling(m):
     iscale.calculate_scaling_factors(m.fs)
 
 
-def initialize_system(m, bio_P=False):
+def initialize_system(m, bio_P=True):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
@@ -925,7 +925,7 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {

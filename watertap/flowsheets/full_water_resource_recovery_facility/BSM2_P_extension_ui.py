@@ -28,7 +28,6 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     solve,
 )
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -3852,7 +3851,7 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
-    m = build(bio_P=False)
+    m = build(bio_P=True)
     set_operating_conditions(m)
     set_scaling(m)
 
@@ -3861,7 +3860,7 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    initialize_system(m, bio_P=False)
+    initialize_system(m, bio_P=True)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
@@ -3886,7 +3885,7 @@ def build_flowsheet(build_options=None, **kwargs):
     #     logger=_log,
     #     fail_flag=True,
     # )
-
+    #
     # add_costing(m)
     # m.fs.costing.initialize()
     #
