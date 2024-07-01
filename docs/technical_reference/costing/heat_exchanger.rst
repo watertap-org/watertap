@@ -34,7 +34,14 @@ The capital cost is dependent on the heat exchanger area, :math:`A`, and the mat
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no unique operating costs specific to the heat exchanger unit.
+The operating cost includes the cost of steam when the heat exchanger is used as a steam heater. 
+The steam consumption operating cost can be calculated as:
+
+.. math::
+
+    C_{op, tot} = C_{steam} \cdot \dot{m}_{steam}
+
+
 
 Code Documentation
 ------------------
