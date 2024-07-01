@@ -25,7 +25,6 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
-
 from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -201,11 +200,8 @@ def test_costing():
         "..",
         "..",
         "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "supercritical_sludge_to_gas",
+        "data",
+        "techno_economic",
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
 

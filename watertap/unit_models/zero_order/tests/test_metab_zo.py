@@ -234,11 +234,8 @@ class TestMetabZO_hydrogen_cost:
             "..",
             "..",
             "..",
-            "examples",
-            "flowsheets",
-            "case_studies",
-            "wastewater_resource_recovery",
-            "metab",
+            "data",
+            "techno_economic",
             "metab_global_costing.yaml",
         )
         m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
@@ -337,11 +334,8 @@ class TestMetabZO_methane_cost:
             "..",
             "..",
             "..",
-            "examples",
-            "flowsheets",
-            "case_studies",
-            "wastewater_resource_recovery",
-            "metab",
+            "data",
+            "techno_economic",
             "metab_global_costing.yaml",
         )
         m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
