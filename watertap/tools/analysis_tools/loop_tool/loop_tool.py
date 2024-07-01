@@ -72,7 +72,6 @@ class loopTool:
             execute_simulations : of looptool should execute simulations upon setup,
                                     other user can call build_run_dict, and run_simulations call manually
             h5_backup : Set location for back up file, if set to False, no backup will be created, otherwise backup will be autocreated
-
         """
 
         self.loop_file = loop_file

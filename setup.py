@@ -147,6 +147,7 @@ setup(
             "GAC = watertap.flowsheets.gac.gac_ui",
             "ED_conc_recirc = watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc_ui",
             "LSRRO = watertap.flowsheets.lsrro.lsrro_ui",
+            "generic desal train = watertap.flowsheets.generic_desalination_train.generic_train_ui",
         ],
     },
 )
