@@ -451,7 +451,7 @@ class MCASParameterData(PhysicalParameterBlock):
 
         if len(track_bad_mw_input) > 0:
             raise ConfigurationError(
-                f"'mw_data' values must either by numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}"
+                f"'mw_data' values must either be numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}"
             )
 
         # TODO: consider turning parameters into variables for future param estimation
