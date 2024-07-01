@@ -11,7 +11,7 @@
 #################################################################################
 from watertap.core.solvers import get_solver
 from watertap.ui.fsapi import FlowsheetInterface
-from watertap.examples.flowsheets.lsrro.lsrro import (
+from watertap.flowsheets.lsrro.lsrro import (
     build,
     set_operating_conditions,
     initialize,
