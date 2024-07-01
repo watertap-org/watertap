@@ -32,7 +32,6 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
 
 
 class TestFullFlowsheet:
-    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=False)
@@ -109,8 +108,8 @@ class TestFullFlowsheet:
             0.00018726, rel=1e-3
         )
 
-    @pytest.mark.component
     @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
 
@@ -125,7 +124,6 @@ class TestFullFlowsheet:
 
 
 class TestFullFlowsheetBioPTrue:
-    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=True)
@@ -202,8 +200,8 @@ class TestFullFlowsheetBioPTrue:
             0.00022427, rel=1e-3
         )
 
-    @pytest.mark.component
     @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
 
