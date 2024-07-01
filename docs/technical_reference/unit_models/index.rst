@@ -19,6 +19,8 @@ Unit Models
    electroNP_ZO
    energy_recovery_device
    gac
+   generic_desalter
+   generic_separator
    ion_exchange_0D
    membrane_distillation_0D
    mvc
