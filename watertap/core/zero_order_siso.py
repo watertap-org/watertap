@@ -130,7 +130,7 @@ def build_siso(self):
     ):
         _add_isothermal_constraints(self)
     if ("pressure" in self.properties_in[0].define_state_vars()) and (
-        self.config.isothermal
+        self.config.isobaric
     ):
         _add_isobaric_constraints(self)
 
