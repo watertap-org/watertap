@@ -145,6 +145,7 @@ setup(
             "RO = watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui",
             "OARO = watertap.flowsheets.oaro.oaro_multi_ui",
             "GAC = watertap.flowsheets.gac.gac_ui",
+            "LSRRO = watertap.flowsheets.lsrro.lsrro_ui",
         ],
     },
 )
