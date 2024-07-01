@@ -88,6 +88,19 @@ class TestSteamHeater0D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
             338.631650369243
         )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+                + m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"],
+                "out": m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+                + m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
         return m
 
 
@@ -107,6 +120,20 @@ class TestCondenserNoEstimation(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
         ] = 0.5
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+                + m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"],
+                "out": m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+                + m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
         return m
 
 
@@ -143,5 +170,18 @@ class TestCondenserwithEstimation(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"]
         ] = 0.035
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+                + m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"],
+                "out": m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+                + m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
 
         return m
