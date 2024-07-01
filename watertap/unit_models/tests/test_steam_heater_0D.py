@@ -58,9 +58,15 @@ def build(mode, estimate_cooling_water=False):
     m.fs.unit.hot_side_inlet.temperature.fix(273.15 + 140)
     m.fs.unit.hot_side_inlet.pressure[0].fix(201325)
     m.fs.unit.cold_side_inlet.pressure.fix(101325)
-    m.fs.unit.cold_side_inlet.temperature.fix(273.15 + 70)
-    m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.035 * 1)
-    m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
+    m.fs.unit.cold_side_inlet.temperature.fix(273.15 + 25)
+    total_flow_mass = 10
+    TDS_mass_frac = 0.035
+    m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        TDS_mass_frac * total_flow_mass
+    )
+    m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        (1 - TDS_mass_frac) * total_flow_mass
+    )
     m.fs.unit.area.fix(10)
     m.fs.unit.overall_heat_transfer_coefficient.fix(2e3)
 
@@ -75,9 +81,12 @@ class TestSteamHeater0D(UnitTestHarness):
 
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-        ] = 0.3866673044556532
+        ] = 0.6913572208080987
         self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
-            382.5402847383156
+            381.3881358453978
+        )
+        self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
+            338.631650369243
         )
         return m
 
@@ -89,10 +98,50 @@ class TestCondenserNoEstimation(UnitTestHarness):
         m.fs.unit.area.unfix()
 
         self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
-            372.3643754442967
+            375.3825125826731
         )
         self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
-            370.927606062192
+            327.67799780959757
         )
-        self.unit_solutions[m.fs.unit.area] = 16.404635965540233
+        self.unit_solutions[m.fs.unit.area] = 7.089052938081363
+        self.unit_solutions[
+            m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+        ] = 0.5
+        return m
+
+
+class TestCondenserwithEstimation(UnitTestHarness):
+    def configure(self):
+        m = build(Mode.CONDENSER, estimate_cooling_water=True)
+        m.fs.unit.area.unfix()
+
+        outlet_temperature = 340
+        m.fs.unit.cold_side_outlet.temperature[0].fix(outlet_temperature)
+        m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
+        total_flow_mass = 12
+        TDS_mass_frac = 0.035
+        m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].unfix()
+        m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].unfix()
+        m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+            TDS_mass_frac * total_flow_mass
+        )
+        m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].set_value(
+            (1 - TDS_mass_frac) * total_flow_mass
+        )
+
+        self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
+            373.69526509227114
+        )
+        self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = 340
+        self.unit_solutions[m.fs.unit.area] = 7.774904144204368
+        self.unit_solutions[
+            m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+        ] = 0.24841897743647612
+        self.unit_solutions[
+            m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 6.849266092188223
+        self.unit_solutions[
+            m.fs.unit.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"]
+        ] = 0.035
+
         return m
