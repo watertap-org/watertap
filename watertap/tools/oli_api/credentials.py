@@ -51,7 +51,6 @@ import logging
 from copy import deepcopy
 
 import json
-import requests
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -60,6 +59,7 @@ from pyomo.common.dependencies import attempt_import
 cryptography, cryptography_available = attempt_import("cryptography", defer_check=False)
 if cryptography_available:
     from cryptography.fernet import Fernet
+requests, requests_available = attempt_import("requests", defer_check=False)
 
 _logger = logging.getLogger(__name__)
 # set to info level, so user can see what is going on
