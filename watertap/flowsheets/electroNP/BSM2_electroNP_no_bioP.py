@@ -627,8 +627,6 @@ if __name__ == "__main__":
     if m.fs.has_electroNP is False:
         stream_table = create_stream_table_dataframe(
             {
-                "R3 inlet": m.fs.R3.inlet,
-                "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
                 "Feed": m.fs.FeedWater.outlet,
                 "R1": m.fs.R1.outlet,
                 "R2": m.fs.R2.outlet,
@@ -648,8 +646,6 @@ if __name__ == "__main__":
     else:
         stream_table = create_stream_table_dataframe(
             {
-                "R3 inlet": m.fs.R3.inlet,
-                "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
                 "Feed": m.fs.FeedWater.outlet,
                 "R1": m.fs.R1.outlet,
                 "R2": m.fs.R2.outlet,
