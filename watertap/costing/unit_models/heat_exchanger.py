@@ -28,12 +28,20 @@ def build_heat_exchanger_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
+    blk.steam_cost = pyo.Var(
+        initialize=0.008,
+        units=pyo.units.USD_2018 / (pyo.units.kg),
+        doc="steam cost per kg",
+    )
+
+    blk.parent_block().register_flow_type("steam", blk.steam_cost)
+
 
 @register_costing_parameter_block(
     build_rule=build_heat_exchanger_cost_param_block,
     parameter_block_name="heat_exchanger",
 )
-def cost_heat_exchanger(blk):
+def cost_heat_exchanger(blk, cost_steam_flow=False):
     """
     Heat Exchanger Costing Method
 
@@ -54,3 +62,12 @@ def cost_heat_exchanger(blk):
             to_units=blk.costing_package.base_currency,
         )
     )
+
+    if cost_steam_flow:
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                (blk.unit_model.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]),
+                to_units=pyo.units.kg / pyo.units.s,
+            ),
+            "steam",
+        )
