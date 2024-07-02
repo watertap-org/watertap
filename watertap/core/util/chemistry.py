@@ -115,7 +115,7 @@ def get_molar_mass(watertap_name: str) -> float:
         except IndexError:
             raise IOError(
                 f"The symbol '{element}' from the component name '{components[0]}' could not be found in the periodic table."
-           )
+            )
 
         molar_mass += element_counts[element] * atomic_mass
 

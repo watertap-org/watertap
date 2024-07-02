@@ -82,6 +82,7 @@ def test_get_mw_exception():
     ):
         get_molar_mass_quantity("TDS")
 
+
 @pytest.mark.unit
 def test_get_mw_quantity():
     z = {
