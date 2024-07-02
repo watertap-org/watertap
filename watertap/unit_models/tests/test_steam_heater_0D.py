@@ -26,6 +26,7 @@ from idaes.models.unit_models.heat_exchanger import (
     HeatExchangerFlowPattern,
 )
 import idaes.core.util.scaling as iscale
+import pytest
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 
@@ -75,6 +76,7 @@ def build(mode, estimate_cooling_water=False):
     return m
 
 
+@pytest.mark.requires_idaes_solver
 class TestSteamHeater0D(UnitTestHarness):
     def configure(self):
         m = build(Mode.HEATER)
@@ -104,6 +106,7 @@ class TestSteamHeater0D(UnitTestHarness):
         return m
 
 
+@pytest.mark.requires_idaes_solver
 class TestCondenserNoEstimation(UnitTestHarness):
     def configure(self):
         m = build(Mode.CONDENSER, estimate_cooling_water=False)
@@ -137,6 +140,7 @@ class TestCondenserNoEstimation(UnitTestHarness):
         return m
 
 
+@pytest.mark.requires_idaes_solver
 class TestCondenserwithEstimation(UnitTestHarness):
     def configure(self):
         m = build(Mode.CONDENSER, estimate_cooling_water=True)

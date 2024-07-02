@@ -36,7 +36,7 @@ Operating Cost Calculations
 +++++++++++++++++++++++++++
 
 The operating cost includes the cost of steam when the heat exchanger is used as a steam heater. 
-The steam consumption operating cost can be calculated as:
+The steam consumption operating cost is calculated as:
 
 .. math::
 
