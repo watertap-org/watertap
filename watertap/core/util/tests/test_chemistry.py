@@ -76,7 +76,11 @@ def test_get_mw_exception():
         IOError, match="Molecular weight data could not be found for foo."
     ):
         get_molar_mass("foo")
-
+    with pytest.raises(
+        IOError,
+        match="The symbol 'T' from the component name 'TDS' could not be found in the periodic table.",
+    ):
+        get_molar_mass_quantity("TDS")
 
 @pytest.mark.unit
 def test_get_mw_quantity():
