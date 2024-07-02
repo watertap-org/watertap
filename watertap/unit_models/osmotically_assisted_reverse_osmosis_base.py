@@ -350,12 +350,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                     def eq_area(b):
                         return b.area == b.length * b.width
 
-                elif self.config.module_type == ModuleType.spiral_wound:
-                    # Membrane area equation
-                    @self.Constraint(doc="Total Membrane area")
-                    def eq_area(b):
-                        return b.area == b.length * 2 * b.width
-
                 else:
                     raise ConfigurationError(
                         "Unsupported membrane module type: {}".format(
