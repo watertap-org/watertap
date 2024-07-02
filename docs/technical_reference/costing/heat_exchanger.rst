@@ -11,6 +11,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 
    "Heat exchanger unit cost", ":math:`C_{hx}`", "``unit_cost``", "300", ":math:`\text{USD}_{2020}`"
    "Material factor cost", ":math:`f_{m}`", "``material_factor_cost``", "1", ":math:`\text{dimensionless}`"
+   "Steam cost per kg", ":math:`C_{steam}`", "``steam_cost``", "0.008", ":math:`\text{USD}_{2018}/\text{kg}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -34,7 +35,14 @@ The capital cost is dependent on the heat exchanger area, :math:`A`, and the mat
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-There are no unique operating costs specific to the heat exchanger unit.
+The operating cost includes the cost of steam when the heat exchanger is used as a steam heater. 
+The steam consumption operating cost is calculated as:
+
+.. math::
+
+    C_{op, tot} = C_{steam} \cdot \dot{m}_{steam}
+
+
 
 Code Documentation
 ------------------
