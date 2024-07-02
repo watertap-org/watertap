@@ -38,6 +38,7 @@ from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 def build():
     m = ConcreteModel()
