@@ -31,101 +31,7 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
 )
 
 
-# class TestFullFlowsheet:
-#     @pytest.mark.requires_idaes_solver
-#     @pytest.fixture(scope="class")
-#     def system_frame(self):
-#         m, res = main(bio_P=False)
-#         m.results = res
-#         return m
-#
-#     @pytest.mark.requires_idaes_solver
-#     @pytest.mark.integration
-#     def test_structure(self, system_frame):
-#         assert_units_consistent(system_frame)
-#         assert degrees_of_freedom(system_frame) == 0
-#         assert_optimal_termination(system_frame.results)
-#
-#     @pytest.mark.requires_idaes_solver
-#     @pytest.mark.component
-#     def test_solve(self, system_frame):
-#         m = system_frame
-#
-#         assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-#             0.2422, rel=1e-3
-#         )
-#         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-#             4.44674e-06, rel=1e-3
-#         )
-#         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-#             0.00022843, rel=1e-3
-#         )
-#         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-#             0.057450, rel=1e-3
-#         )
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
-#         ) == pytest.approx(0.024899, rel=1e-3)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-#         ) == pytest.approx(0.1718729, rel=1e-3)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
-#         ) == pytest.approx(0, abs=1e-6)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-#         ) == pytest.approx(0.00774579, rel=1e-3)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-#         ) == pytest.approx(1.753375, rel=1e-3)
-#         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-#             0.37011, rel=1e-2
-#         )
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-#         ) == pytest.approx(0.018262599, rel=1e-3)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-#         ) == pytest.approx(0.149954, rel=1e-3)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
-#         ) == pytest.approx(1.561525e-9, rel=1e-3)
-#         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
-#             0.012539, rel=1e-3
-#         )
-#         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-#             0.0119244, rel=1e-3
-#         )
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
-#         ) == pytest.approx(0.0132446, rel=1e-3)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-#         ) == pytest.approx(6.419e-06, rel=1e-3)
-#         assert value(
-#             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
-#         ) == pytest.approx(0.0044148, rel=1e-3)
-#         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-#             0.000213467, rel=1e-3
-#         )
-#
-#     @pytest.mark.component
-#     @pytest.mark.requires_idaes_solver
-#     def test_costing(self, system_frame):
-#         m = system_frame
-#
-#         # check costing
-#         assert value(m.fs.costing.LCOW) == pytest.approx(0.46999, rel=1e-3)
-#         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-#             24033384.339, rel=1e-3
-#         )
-#         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-#             831076.007, rel=1e-3
-#         )
-
-
 class TestFullFlowsheetBioPTrue:
-    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=True)
@@ -202,8 +108,8 @@ class TestFullFlowsheetBioPTrue:
             0.00020320, rel=1e-3
         )
 
-    @pytest.mark.component
     @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
 

@@ -34,7 +34,7 @@ Once this is done, we import the parameter sweep tool and two different random s
 
 .. testcode::
 
-    from watertap.tools.parameter_sweep import parameter_sweep, UniformSample, NormalSample
+    from parameter_sweep import parameter_sweep, UniformSample, NormalSample
 
 The parameter sweep tool currently offers 6 classes that can be broadly categorized under the following 3 categroies:
 
@@ -132,4 +132,4 @@ which will parallelize the requested parameter sweep between 4 computational uni
 Module Documentation
 --------------------
 
-* :mod:`watertap.tools.parameter_sweep`
+* :mod:`parameter_sweep`
