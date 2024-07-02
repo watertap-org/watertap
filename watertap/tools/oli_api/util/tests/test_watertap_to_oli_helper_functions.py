@@ -60,7 +60,6 @@ def test_case_exception():
     )
 
 
-
 @pytest.mark.unit
 def test_reverse_lookup():
     assert oli_reverse_lookup("NAION", names_db) == "Na_+"
