@@ -36,6 +36,9 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
 )
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
+    ModifiedASM2dReactionParameterBlock,
+)
 from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
@@ -66,6 +69,9 @@ def build_flowsheet():
         property_package=m.fs.props_ADM1
     )
     m.fs.props_ASM2D = ModifiedASM2dParameterBlock()
+    m.fs.rxn_props_ASM2D = ModifiedASM2dReactionParameterBlock(
+        property_package=m.fs.props_ASM2D
+    )
     m.fs.costing = WaterTAPCosting()
 
     # Unit models
@@ -81,7 +87,8 @@ def build_flowsheet():
     m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
-        reaction_package=m.fs.rxn_props_ADM1,
+        inlet_reaction_package=m.fs.rxn_props_ADM1,
+        outlet_reaction_package=m.fs.rxn_props_ASM2D,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
     )

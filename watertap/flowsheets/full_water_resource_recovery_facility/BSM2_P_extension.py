@@ -91,6 +91,8 @@ _log = idaeslog.getLogger(__name__)
 def main(bio_P=True):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
+    set_scaling(m)
+
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
@@ -138,7 +140,7 @@ def main(bio_P=True):
     return m, results
 
 
-def build(bio_P=False):
+def build(bio_P=True):
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -268,7 +270,8 @@ def build(bio_P=False):
     m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
-        reaction_package=m.fs.rxn_props_ADM1,
+        inlet_reaction_package=m.fs.rxn_props_ADM1,
+        outlet_reaction_package=m.fs.rxn_props_ASM2D,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
     )
@@ -510,16 +513,17 @@ def set_operating_conditions(m):
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
-    def scale_variables(m):
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-            if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-2)
-            if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+
+def set_scaling(m):
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
+        if "temperature" in var.name:
+            iscale.set_scaling_factor(var, 1e-2)
+        if "pressure" in var.name:
+            iscale.set_scaling_factor(var, 1e-4)
+        if "conc_mass_comp" in var.name:
+            iscale.set_scaling_factor(var, 1e2)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -532,12 +536,56 @@ def set_operating_conditions(m):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
-    # Apply scaling
-    scale_variables(m)
-    iscale.calculate_scaling_factors(m)
+    # This helps to solve AD initialization to an optimal solution
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0.0].reaction_rate, 1e5)
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_generation, 1e2)
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.mass_transfer_term, 1e2)
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.rate_reaction_extent, 1e1)
+
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_su"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_fa"], 1e-1
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_ch4"], 1e9
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_IC"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_IN"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["S_IP"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_su"], 1e9
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_fa"], 1e9
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_c4"], 1e9
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_pro"], 1e9
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_ac"], 1e9
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_I"], 1e-1
+    )
+    iscale.set_scaling_factor(
+        m.fs.translator_asm2d_adm1.properties_out[0].conc_mass_comp["X_PHA"], 1
+    )
+
+    iscale.calculate_scaling_factors(m.fs)
 
 
-def initialize_system(m, bio_P=False):
+def initialize_system(m, bio_P=True):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
@@ -555,26 +603,78 @@ def initialize_system(m, bio_P=False):
     if bio_P:
         # Initial guesses for flow into first reactor
         tear_guesses = {
-            "flow_vol": {0: 1.2368},
+            "flow_vol": {0: 1.237},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0009,
-                (0, "S_F"): 0.00042,
-                (0, "S_I"): 0.05745,
-                (0, "S_N2"): 0.0534,
-                (0, "S_NH4"): 0.0089,
-                (0, "S_NO3"): 0.0046,
-                (0, "S_O2"): 0.0046,
-                (0, "S_PO4"): 0.0118,
-                (0, "S_K"): 0.373,
+                (0, "S_A"): 0.0006,
+                (0, "S_F"): 0.00044,
+                (0, "S_I"): 0.0575,
+                (0, "S_IC"): 0.12,
+                (0, "S_K"): 0.37,
                 (0, "S_Mg"): 0.023,
-                (0, "S_IC"): 0.1366,
-                (0, "X_AUT"): 0.135,
-                (0, "X_H"): 3.647,
-                (0, "X_I"): 3.314,
-                (0, "X_PAO"): 2.984,
-                (0, "X_PHA"): 0.083,
-                (0, "X_PP"): 0.9907,
-                (0, "X_S"): 0.05823,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.18,
+                (0, "S_NO3"): 1e-10,
+                (0, "S_O2"): 0.0047,
+                (0, "S_PO4"): 0.021,
+                (0, "X_AUT"): 1e-10,
+                (0, "X_H"): 3.22,
+                (0, "X_I"): 3.03,
+                (0, "X_PAO"): 3.15,
+                (0, "X_PHA"): 0.08,
+                (0, "X_PP"): 1.047,
+                (0, "X_S"): 0.053,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses2 = {
+            "flow_vol": {0: 0.00287},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.065,
+                (0, "S_F"): 0.16,
+                (0, "S_I"): 0.05745,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.19,
+                (0, "S_NO3"): 1e-10,
+                (0, "S_O2"): 0.0031,
+                (0, "S_PO4"): 0.22,
+                (0, "S_K"): 0.38,
+                (0, "S_Mg"): 0.026,
+                (0, "S_IC"): 0.07,
+                (0, "X_AUT"): 9e-8,
+                (0, "X_H"): 23.17,
+                (0, "X_I"): 11.31,
+                (0, "X_PAO"): 10.17,
+                (0, "X_PHA"): 0.0038,
+                (0, "X_PP"): 2.69,
+                (0, "X_S"): 3.96,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+    else:
+        tear_guesses = {
+            "flow_vol": {0: 1.2367},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.0005,
+                (0, "S_F"): 0.0004,
+                (0, "S_I"): 0.05745,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.175,
+                (0, "S_NO3"): 1e-9,
+                (0, "S_O2"): 0.00192,
+                (0, "S_PO4"): 1.91,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.02,
+                (0, "S_IC"): 0.13,
+                (0, "X_AUT"): 1e-9,
+                (0, "X_H"): 3.3,
+                (0, "X_I"): 3.0,
+                (0, "X_PAO"): 3.8,
+                (0, "X_PHA"): 0.093,
+                (0, "X_PP"): 1.26,
+                (0, "X_S"): 0.056,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -583,78 +683,24 @@ def initialize_system(m, bio_P=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.10,
-                (0, "S_F"): 0.16,
-                (0, "S_I"): 0.05745,
-                (0, "S_N2"): 0.039,
-                (0, "S_NH4"): 0.035,
-                (0, "S_NO3"): 0.0032,
-                (0, "S_O2"): 0.00314,
-                (0, "S_PO4"): 0.0238,
-                (0, "S_K"): 0.379,
-                (0, "S_Mg"): 0.026,
-                (0, "S_IC"): 0.078,
-                (0, "X_AUT"): 0.342,
-                (0, "X_H"): 23.95,
-                (0, "X_I"): 11.9,
-                (0, "X_PAO"): 9.62,
-                (0, "X_PHA"): 0.0033,
-                (0, "X_PP"): 2.51,
-                (0, "X_S"): 3.92,
-            },
-            "temperature": {0: 308.15},
-            "pressure": {0: 101325},
-        }
-
-    else:
-        # Initial guesses for flow into first reactor
-        tear_guesses = {
-            "flow_vol": {0: 1.235},
-            "conc_mass_comp": {
-                (0, "S_A"): 0.0007,
-                (0, "S_F"): 0.0004,
-                (0, "S_I"): 0.0575,
-                (0, "S_N2"): 0.05,
-                (0, "S_NH4"): 0.007,
-                (0, "S_NO3"): 0.0035,
-                (0, "S_O2"): 0.00192,
-                (0, "S_PO4"): 0.02,
-                (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.02,
-                (0, "S_IC"): 0.11,
-                (0, "X_AUT"): 0.12,
-                (0, "X_H"): 3.3,
-                (0, "X_I"): 3.0,
-                (0, "X_PAO"): 2.3,
-                (0, "X_PHA"): 0.06,
-                (0, "X_PP"): 0.75,
-                (0, "X_S"): 0.050,
-            },
-            "temperature": {0: 308.15},
-            "pressure": {0: 101325},
-        }
-
-        tear_guesses2 = {
-            "flow_vol": {0: 0.0027},
-            "conc_mass_comp": {
-                (0, "S_A"): 0.044,
+                (0, "S_A"): 0.095,
                 (0, "S_F"): 0.15,
-                (0, "S_I"): 0.0575,
-                (0, "S_N2"): 0.035,
-                (0, "S_NH4"): 0.03,
-                (0, "S_NO3"): 0.002,
-                (0, "S_O2"): 0.0012,
-                (0, "S_PO4"): 0.02,
+                (0, "S_I"): 0.05745,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.18,
+                (0, "S_NO3"): 1e-9,
+                (0, "S_O2"): 0.0014,
+                (0, "S_PO4"): 1.92,
                 (0, "S_K"): 0.38,
-                (0, "S_Mg"): 0.023,
-                (0, "S_IC"): 0.063,
-                (0, "X_AUT"): 0.31,
-                (0, "X_H"): 24.8,
-                (0, "X_I"): 11.8,
-                (0, "X_PAO"): 8.5,
-                (0, "X_PHA"): 0.086,
-                (0, "X_PP"): 2.1,
-                (0, "X_S"): 4.2,
+                (0, "S_Mg"): 0.024,
+                (0, "S_IC"): 0.075,
+                (0, "X_AUT"): 1e-9,
+                (0, "X_H"): 22.3,
+                (0, "X_I"): 10.8,
+                (0, "X_PAO"): 11.2,
+                (0, "X_PHA"): 0.0056,
+                (0, "X_PP"): 3.09,
+                (0, "X_S"): 3.8,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -716,7 +762,25 @@ def add_costing(m):
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
-    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
+    iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
+
+    iscale.set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-7)
+    iscale.set_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
+    iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
+
+    iscale.set_scaling_factor(m.fs.CL.costing.capital_cost, 1e-7)
+    iscale.set_scaling_factor(m.fs.CL2.costing.capital_cost, 1e-7)
+    iscale.set_scaling_factor(m.fs.thickener.costing.capital_cost, 1e-5)
+    iscale.set_scaling_factor(m.fs.dewater.costing.capital_cost, 1e-6)
+    iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
+
+    iscale.set_scaling_factor(m.fs.R1.costing.capital_cost, 1e-5)
+    iscale.set_scaling_factor(m.fs.R2.costing.capital_cost, 1e-5)
+    iscale.set_scaling_factor(m.fs.R3.costing.capital_cost, 1e-5)
+    iscale.set_scaling_factor(m.fs.R4.costing.capital_cost, 1e-5)
+    iscale.set_scaling_factor(m.fs.R5.costing.capital_cost, 1e-6)
+    iscale.set_scaling_factor(m.fs.R6.costing.capital_cost, 1e-6)
+    iscale.set_scaling_factor(m.fs.R7.costing.capital_cost, 1e-6)
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -861,11 +925,13 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main()
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
+            "R3 inlet": m.fs.R3.inlet,
+            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
             "R1": m.fs.R1.outlet,
             "R2": m.fs.R2.outlet,
             "R3": m.fs.R3.outlet,

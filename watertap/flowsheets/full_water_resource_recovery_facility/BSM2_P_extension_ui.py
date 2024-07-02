@@ -13,20 +13,25 @@
 GUI configuration for the extended BSM2 flowsheet.
 """
 
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
+import pyomo.environ as pyo
+from pyomo.environ import units as pyunits
+
+import idaes.logger as idaeslog
 
 from watertap.ui.fsapi import FlowsheetInterface
-
-from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
     set_operating_conditions,
+    set_scaling,
     initialize_system,
     solve,
     add_costing,
 )
+from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def export_to_ui():
@@ -3848,28 +3853,24 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
-    m = build()
-
+    m = build(bio_P=True)
     set_operating_conditions(m)
+    set_scaling(m)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    assert_degrees_of_freedom(m, 0)
-    assert_units_consistent(m)
-
-    initialize_system(m)
-
+    initialize_system(m, bio_P=True)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
     results = solve(m)
-    assert_optimal_termination(results)
 
+    # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)
     m.fs.R6.KLa.fix(240)
     m.fs.R7.KLa.fix(84)
@@ -3878,14 +3879,22 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
     # Resolve with controls in place
     results = solve(m)
-    assert_optimal_termination(results)
+
+    pyo.assert_optimal_termination(results)
+    check_solve(
+        results,
+        checkpoint="re-solve with controls in place",
+        logger=_log,
+        fail_flag=True,
+    )
 
     add_costing(m)
-    assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
+    assert_degrees_of_freedom(m, 0)
+
     results = solve(m)
-    assert_optimal_termination(results)
+    pyo.assert_optimal_termination(results)
     return m
 
 
