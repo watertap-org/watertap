@@ -51,22 +51,6 @@ def get_charge(watertap_name: str) -> int:
     return charge
 
 
-def get_charge_group(charge: int) -> str:
-    """
-    Categorizes molecule based on its charge.
-    :param charge: integer value for charge
-    :return group: string name for charge group
-    """
-
-    if charge == 0:
-        group = "Neutrals"
-    elif charge > 0:
-        group = "Cations"
-    elif charge < 0:
-        group = "Anions"
-    return group
-
-
 def get_molar_mass(watertap_name: str) -> float:
     """
     Extracts atomic weight data from a periodic table file
