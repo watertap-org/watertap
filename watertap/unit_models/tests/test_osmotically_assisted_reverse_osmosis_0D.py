@@ -19,7 +19,7 @@ from idaes.core import (
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
 )
-from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
+from watertap.unit_models.reverse_osmosis_base import TransportModel
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.core.solvers import get_solver
 from idaes.core.util.scaling import (
