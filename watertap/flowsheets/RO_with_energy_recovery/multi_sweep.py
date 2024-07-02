@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.tools.parameter_sweep import PredeterminedFixedSample, parameter_sweep
+from parameter_sweep import PredeterminedFixedSample, parameter_sweep
 import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO
 from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     ERDtype,

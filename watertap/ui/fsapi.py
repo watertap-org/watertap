@@ -344,10 +344,10 @@ class FlowsheetExport(BaseModel):
             model_export = args[0]
         elif data is None:
             _log.debug(f"Create ModelExport from args: {kwargs}")
-            model_export = ModelExport.parse_obj(kwargs)
+            model_export = ModelExport.model_validate(kwargs)
         else:
             if isinstance(data, dict):
-                model_export = ModelExport.parse_obj(data)
+                model_export = ModelExport.model_validate(data)
             else:
                 model_export = data
         key = model_export.obj_key
@@ -617,7 +617,7 @@ class FlowsheetInterface:
         Args:
             fs: An existing wrapper to a flowsheet object. If this is not provided,
                 then one will be constructed by passing the keyword arguments to
-                the built-in pydantic ``parse_obj()`` method
+                the built-in pydantic ``model_validate()`` method
                 of :class:`FlowsheetExport`.
             do_build: Function to call to build the flowsheet. It should build the
                 flowsheet model and return the `FlowsheetBlock`, which is typically
@@ -631,7 +631,7 @@ class FlowsheetInterface:
             **kwargs: See `fs` arg. If the `fs` arg *is* provided, these are ignored.
         """
         if fs is None:
-            self.fs_exp = FlowsheetExport.parse_obj(kwargs)
+            self.fs_exp = FlowsheetExport.model_validate(kwargs)
         else:
             self.fs_exp = fs
         self._actions = {}
@@ -719,7 +719,7 @@ class FlowsheetInterface:
             data: The input flowsheet (probably deserialized from JSON)
         """
         u = pyo.units
-        fs = FlowsheetExport.parse_obj(data)  # new instance from data
+        fs = FlowsheetExport.model_validate(data)  # new instance from data
         # Set the value for each input variable
         missing = []
         # 'src' is the data source and 'dst' is this flowsheet (destination)
@@ -806,7 +806,7 @@ class FlowsheetInterface:
             None
         """
 
-        # fs = FlowsheetExport.parse_obj(data)  # new instance from data
+        # fs = FlowsheetExport.model_validate(data)  # new instance from data
         self.fs_exp.build_options[option_name].value = new_option
 
         # # get function name from model options

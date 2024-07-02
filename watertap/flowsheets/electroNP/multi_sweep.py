@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.tools.parameter_sweep import (
+from parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )

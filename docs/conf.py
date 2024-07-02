@@ -99,6 +99,7 @@ html_favicon = "_static/favicon.ico"
 # intersphinx mapping to idaes
 intersphinx_mapping = {
     "idaes": ("https://idaes-pse.readthedocs.io/en/stable/", None),
+    "parameter_sweep": ("https://parameter-sweep.readthedocs.io/en/latest/", None),
 }
 
 rst_epilog = """
