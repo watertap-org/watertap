@@ -86,7 +86,7 @@ Equations and Relationships
    "X_pr concentration", ":math:`X_{pr, 1} = X_{pr, in} + (f_{pr, xc} * X_{bio})`"
    "X_li concentration", ":math:`X_{li, 1} = X_{li, in} + (f_{li, xc} * X_{bio})`"
    "X_I concentration", ":math:`S_{I, 1} = X_{I, in} + (f_{xI, xc} * X_{bio})`"
-   "S_IP concentration", ":math:`S_{IP, 1} = S_{IP, in} + (X_{bio} * Pi[X_{su}] * 31) - (X_{bio} * f_{sI, xc} * Pi[S_{I}] * 31) - (X_{bio} * f_{ch, xc} * P_ch) - (X_{bio} * f_{li, xc} * Pi[X_{li}] * 31) - (X_{bio} * f_{xI, xc} * Pi[X_{I}] * 31)`"
+   "S_IP concentration", ":math:`S_{IP, 1} = X_{PP, in} + (X_{bio} * Pi[X_{su}] * 31) - (X_{bio} * f_{sI, xc} * Pi[S_{I}] * 31) - (X_{bio} * f_{ch, xc} * P_ch) - (X_{bio} * f_{li, xc} * Pi[X_{li}] * 31) - (X_{bio} * f_{xI, xc} * Pi[X_{I}] * 31)`"
    "X_PHA concentration", ":math:`X_{PHA, 1} = 0`"
    "X_PP concentration", ":math:`X_{PP, 1} = 0`"
    "X_PAO concentration", ":math:`X_{PAO, 1} = 0`"

@@ -314,7 +314,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         @self.Expression(self.flowsheet().time, doc="S_IP concentration at step 1")
         def SIP_AD1(blk, t):
             return (
-                blk.properties_in[t].conc_mass_comp["S_IP"]
+                blk.properties_in[t].conc_mass_comp["X_PP"]
                 + (blk.config.inlet_reaction_package.Pi["X_su"] * blk.biomass[t] * mw_p)
                 - (
                     self.f_sI_xc
