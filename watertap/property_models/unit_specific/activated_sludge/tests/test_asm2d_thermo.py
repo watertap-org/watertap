@@ -263,7 +263,7 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
-        sv = model.props[1].define_state_vars()
+        sv = model.props[1].define_port_members()
 
         assert len(sv) == 5
         for i in sv:

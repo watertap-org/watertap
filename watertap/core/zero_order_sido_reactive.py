@@ -328,6 +328,37 @@ def build_sido_reactive(self):
 
     self._get_Q = MethodType(_get_Q_sidor, self)
 
+    if ("temperature" in self.properties_in[0].define_state_vars()) and (
+        self.config.isothermal
+    ):
+        _add_isothermal_constraints(self)
+    if ("pressure" in self.properties_in[0].define_state_vars()) and (
+        self.config.isobaric
+    ):
+        _add_isobaric_constraints(self)
+
+
+def _add_isothermal_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        ["byproduct", "treated"],
+        doc="Isothermal constraints",
+    )
+    def eq_isothermal(b, t, port):
+        obj = getattr(b, port)
+        return b.inlet.temperature[t] == obj.temperature[t]
+
+
+def _add_isobaric_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        ["byproduct", "treated"],
+        doc="Isobaric constraints",
+    )
+    def eq_isobaric(b, t, port):
+        obj = getattr(b, port)
+        return b.inlet.pressure[t] == obj.pressure[t]
+
 
 def initialize_sidor(
     blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None

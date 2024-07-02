@@ -796,5 +796,4 @@ def export_to_ui():
 
 
 if __name__ == "__main__":
-    main(erd_type="pressure_exchanger")
-    # main(erd_type='pump_as_turbine')
+    m = main(erd_type="pressure_exchanger")
