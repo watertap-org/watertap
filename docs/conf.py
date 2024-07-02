@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "WaterTAP"
-copyright = "2020-2023, NAWI"
+copyright = "2020-2024, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
@@ -99,6 +99,7 @@ html_favicon = "_static/favicon.ico"
 # intersphinx mapping to idaes
 intersphinx_mapping = {
     "idaes": ("https://idaes-pse.readthedocs.io/en/stable/", None),
+    "parameter_sweep": ("https://parameter-sweep.readthedocs.io/en/latest/", None),
 }
 
 rst_epilog = """

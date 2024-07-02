@@ -328,7 +328,7 @@ class Flash:
                 },
             ]
         )
-        conc_unit = self.input_unit_set["molecularConcentration"]["oli_unit"]
+        conc_unit = self.input_unit_set["inflows"]["oli_unit"]
         _logger.info(f"Using {conc_unit} for inflows input")
         for k, v in inflows.items():
             charge = get_charge(k)
@@ -336,7 +336,7 @@ class Flash:
                 {
                     "group": get_charge_group(charge),
                     "name": get_oli_name(k),
-                    "unit": self.input_unit_set["molecularConcentration"]["oli_unit"],
+                    "unit": conc_unit,
                     "value": v,
                     "charge": charge,
                 }
@@ -387,7 +387,7 @@ class Flash:
         """
         Configure Flash Analysis JSON input.
 
-        :param inflows: dictionary of solutes, of the form {"unit": unit, "values": {solute: concentration}}
+        :param inflows: dictionary of solutes, of the form {"unit": unit, "values": {solute_name: concentration_value}}; otherwise, {solute_name: concentration_value}
         :param flash_method: string for flash calculation name
         :param temperature: float for temperature in Kelvins
         :param pressure: float for pressure in Pascals
@@ -525,7 +525,7 @@ class Flash:
                 raise ValueError(
                     f"Invalid vapor fraction: {vapor_fraction}. Expected number"
                 )
-            input_dict["vaporMolFrac"] = vapor_fraction_input
+            input_dict["vaporMolFrac"] = vapor_fraction_amount
 
         if flash_method == "isochoric":
             volume_input = {
@@ -573,7 +573,13 @@ class Flash:
                     }
                 )
 
-        input_dict["inflows"] = inflows
+        if ("unit" in inflows.keys()) and ("values" in inflows.keys()):
+            input_dict["inflows"] = inflows
+        # otherwise, assume a solute dictionary with {solute_name: concentration_value}
+        else:
+            unit = self.input_unit_set["molecularConcentration"]["oli_unit"]
+            inflows_oli_names = {get_oli_name(k): v for k, v in inflows.items()}
+            input_dict["inflows"] = {"unit": unit, "values": inflows_oli_names}
 
         if flash_method == "corrosion-rates":
             _logger.info(
@@ -808,9 +814,12 @@ class Flash:
         else:
             json_input["params"] = input_data
 
+        output_unit_set_info = {}
+        for k, v in self.output_unit_set.items():
+            output_unit_set_info[k] = v["oli_unit"]
         additional_params = {
             "optionalProperties": dict(self.optional_properties),
-            "unitSetInfo": dict(self.output_unit_set),
+            "unitSetInfo": dict(output_unit_set_info),
         }
         if included_solids and excluded_solids:
             raise RuntimeError(
