@@ -809,11 +809,11 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_solute", 1e-3, index="Sol")
         self.set_default_scaling("dens_mass_solute", 1e-3, index="Liq")
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
-        self.set_default_scaling("enth_mass_solvent", 1e-2, index="Liq")
-        self.set_default_scaling("enth_mass_solvent", 1e-3, index="Vap")
+        self.set_default_scaling("enth_mass_solvent", 1e-5, index="Liq")
+        self.set_default_scaling("enth_mass_solvent", 1e-6, index="Vap")
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
-        self.set_default_scaling("dh_vap_mass_solvent", 1e-3)
-        self.set_default_scaling("dh_crystallization_mass_comp", 1e-2, index="NaCl")
+        self.set_default_scaling("dh_vap_mass_solvent", 1e-6)
+        self.set_default_scaling("dh_crystallization_mass_comp", 1e-5, index="NaCl")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -1322,9 +1322,9 @@ class NaClStateBlockData(StateBlockData):
     # 7. Latent heat of vapourization of pure water
     def _dh_vap_mass_solvent(self):
         self.dh_vap_mass_solvent = Var(
-            initialize=2.4e3,
-            bounds=(1, 1e5),
-            units=pyunits.kJ / pyunits.kg,
+            initialize=2.4e6,
+            bounds=(1e3, 1e8),
+            units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization of pure water",
         )
 
@@ -1338,7 +1338,7 @@ class NaClStateBlockData(StateBlockData):
                 + b.params.dh_vap_w_param_4 * t**4
             )
             return b.dh_vap_mass_solvent == pyunits.convert(
-                dh_vap_sol, to_units=pyunits.kJ / pyunits.kg
+                dh_vap_sol, to_units=pyunits.J / pyunits.kg
             )
 
         self.eq_dh_vap_mass_solvent = Constraint(rule=rule_dh_vap_mass_solvent)
@@ -1603,9 +1603,9 @@ class NaClStateBlockData(StateBlockData):
     def _enth_mass_solvent(self):
         self.enth_mass_solvent = Var(
             ["Liq", "Vap"],
-            initialize=1e3,
-            bounds=(1, 1e4),
-            units=pyunits.kJ * pyunits.kg**-1,
+            initialize=1e6,
+            bounds=(1e3, 1e7),
+            units=pyunits.J * pyunits.kg**-1,
             doc="Specific saturated enthalpy of pure solvent",
         )
 
@@ -1619,13 +1619,13 @@ class NaClStateBlockData(StateBlockData):
             )
             if p == "Liq":  # enthalpy, eq. 55 in Sharqawy
                 return b.enth_mass_solvent[p] == pyunits.convert(
-                    h_w, to_units=pyunits.kJ * pyunits.kg**-1
+                    h_w, to_units=pyunits.J * pyunits.kg**-1
                 )
             elif p == "Vap":
 
                 return (
                     b.enth_mass_solvent[p]
-                    == pyunits.convert(h_w, to_units=pyunits.kJ * pyunits.kg**-1)
+                    == pyunits.convert(h_w, to_units=pyunits.J * pyunits.kg**-1)
                     + +b.dh_vap_mass_solvent
                 )
 
@@ -1637,9 +1637,9 @@ class NaClStateBlockData(StateBlockData):
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
             ["Liq"],
-            initialize=500,
-            bounds=(1, 1000),
-            units=pyunits.kJ * pyunits.kg**-1,
+            initialize=500e3,
+            bounds=(1e3, 1e6),
+            units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy of NaCl solution",
         )
 
@@ -1691,9 +1691,14 @@ class NaClStateBlockData(StateBlockData):
                 + (b.params.enth_phase_param_E5 * S**4)
             )
 
-            return b.enth_mass_phase["Liq"] == enth_a + (enth_b * t) + (
-                enth_c * t**2
-            ) + (enth_d * t**3) + (enth_e * t**4)
+            return b.enth_mass_phase["Liq"] == pyunits.convert(
+                enth_a
+                + (enth_b * t)
+                + (enth_c * t**2)
+                + (enth_d * t**3)
+                + (enth_e * t**4),
+                to_units=pyunits.J / pyunits.kg,
+            )
 
         self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
 
@@ -1701,9 +1706,9 @@ class NaClStateBlockData(StateBlockData):
     def _dh_crystallization_mass_comp(self):
         self.dh_crystallization_mass_comp = Var(
             ["NaCl"],
-            initialize=1,
-            bounds=(-1e3, 1e3),
-            units=pyunits.kJ / pyunits.kg,
+            initialize=1e3,
+            bounds=(-1e6, 1e6),
+            units=pyunits.J / pyunits.kg,
             doc="NaCl heat of crystallization",
         )
 
@@ -1712,17 +1717,15 @@ class NaClStateBlockData(StateBlockData):
                 b.params.config.heat_of_crystallization_model
                 == HeatOfCrystallizationModel.constant
             ):
-                return (
-                    b.dh_crystallization_mass_comp["NaCl"]
-                    == b.params.dh_crystallization_param
+                return b.dh_crystallization_mass_comp["NaCl"] == pyunits.convert(
+                    b.params.dh_crystallization_param, to_units=pyunits.J / pyunits.kg
                 )
             elif (
                 b.params.config.heat_of_crystallization_model
                 == HeatOfCrystallizationModel.zero
             ):
                 return (
-                    b.dh_crystallization_mass_comp["NaCl"]
-                    == 0 * pyunits.kJ / pyunits.kg
+                    b.dh_crystallization_mass_comp["NaCl"] == 0 * pyunits.J / pyunits.kg
                 )
             elif (
                 b.params.config.heat_of_crystallization_model
@@ -1740,9 +1743,9 @@ class NaClStateBlockData(StateBlockData):
     def _enth_mass_solute(self):
         self.enth_mass_solute = Var(
             ["Sol"],
-            initialize=1e3,
-            bounds=(1e-3, 1e4),
-            units=pyunits.kJ / pyunits.kg,
+            initialize=1e6,
+            bounds=(1e-6, 1e7),
+            units=pyunits.J / pyunits.kg,
             doc="Specific enthalpy of solid NaCl crystals",
         )
 
@@ -1788,8 +1791,9 @@ class NaClStateBlockData(StateBlockData):
 
             # (v) Convert from molar enthalpy to mass enthalpy
             enth_mass_solute_mol = enth_mass_solute_mol / b.params.mw_comp["NaCl"]
-            return b.enth_mass_solute[p] == enth_mass_solute_mol * (
-                pyunits.kJ / pyunits.J
+            return b.enth_mass_solute[p] == pyunits.convert(
+                enth_mass_solute_mol * (pyunits.kJ / pyunits.J),
+                to_units=pyunits.J / pyunits.kg,
             )
 
         self.eq_enth_mass_solute = Constraint(["Sol"], rule=rule_enth_mass_solute)

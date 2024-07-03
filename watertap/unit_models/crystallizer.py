@@ -425,7 +425,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 - b.properties_out[0].enth_flow
                 - b.properties_vapor[0].enth_flow
                 - b.properties_solids[0].enth_flow
-                + self.work_mechanical[0]
+                + pyunits.convert(self.work_mechanical[0], to_units=pyunits.J / pyunits.s)
                 - sum(
                     b.properties_solids[0].flow_mass_phase_comp["Sol", j]
                     * b.properties_solids[0].dh_crystallization_mass_comp[j]
