@@ -64,6 +64,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         Returns:
             None
         """
+        super.add_geometry()
         # Validate and create flow direction attribute, like 1D
         if flow_direction in (flwd for flwd in FlowDirection):
             self._flow_direction = flow_direction
@@ -152,7 +153,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="pressure drop per unit length across channel",
             )
-
+            
             @self.Constraint(
                 self.flowsheet().config.time, doc="pressure change due to friction"
             )
