@@ -18,7 +18,7 @@ import idaes.logger as idaeslog
 
 from pyomo.environ import Param, Var, units as pyunits
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 # Set up logger
