@@ -1744,7 +1744,7 @@ class NaClStateBlockData(StateBlockData):
         self.enth_mass_solute = Var(
             ["Sol"],
             initialize=1e6,
-            bounds=(1e-6, 1e7),
+            bounds=(1e0, 1e7),
             units=pyunits.J / pyunits.kg,
             doc="Specific enthalpy of solid NaCl crystals",
         )
