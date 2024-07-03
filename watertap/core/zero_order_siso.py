@@ -125,6 +125,33 @@ def build_siso(self):
 
     self._get_Q = MethodType(_get_Q_siso, self)
 
+    if ("temperature" in self.properties_in[0].define_state_vars()) and (
+        self.config.isothermal
+    ):
+        _add_isothermal_constraints(self)
+    if ("pressure" in self.properties_in[0].define_state_vars()) and (
+        self.config.isobaric
+    ):
+        _add_isobaric_constraints(self)
+
+
+def _add_isothermal_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        doc="Isothermal constraints",
+    )
+    def eq_isothermal(b, t):
+        return b.inlet.temperature[t] == b.treated.temperature[t]
+
+
+def _add_isobaric_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        doc="Isobaric constraints",
+    )
+    def eq_isobaric(b, t):
+        return b.inlet.pressure[t] == b.treated.pressure[t]
+
 
 def initialize_siso(
     blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None

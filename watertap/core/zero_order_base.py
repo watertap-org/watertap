@@ -19,12 +19,12 @@ import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
 
 
-# Some more inforation about this module
-__author__ = "Andrew Lee"
+# Some more information about this module
+__author__ = "Andrew Lee, Adam Atia"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -93,6 +93,25 @@ class ZeroOrderBaseData(UnitModelBlockData):
             description="Process subtype to use when looking up parameters from database."
         ),
     )
+    CONFIG.declare(
+        "isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="Isothermal flag for constraint construction.",
+            doc="Isothermal assumption, or ignore temperature variables in unit. Default=True",
+        ),
+    )
+
+    CONFIG.declare(
+        "isobaric",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="Isobaric flag for constraint construction",
+            doc="Isobaric assumption, or ignore pressure variables in unit. Default=True",
+        ),
+    )
 
     def build(self):
         super().build()
@@ -141,7 +160,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
             )
 
     # Place holders for assigning methods
-    # used to link to initization routine
+    # used to link to initialization routine
     def _initialize(self, state_args, outlvl, solver, optarg):
         raise NotImplementedError()
 
