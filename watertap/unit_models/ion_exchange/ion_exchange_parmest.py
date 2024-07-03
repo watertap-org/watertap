@@ -191,6 +191,10 @@ class IXParmest:
             self.scale_from_value = scale_from_value
 
         self.get_curve_conditions()
+        if self.just_plot_curve:
+            self.plot_curve()
+            return 
+        
         self.get_model_config()
 
         self.rebuild()  # initial build of model
@@ -386,9 +390,6 @@ class IXParmest:
         self.mw = self.compound_data["mw_comp"] * pyunits.kg / pyunits.mol
         self.diffusivity = self.compound_data["diffusivity"]
         self.filter_data()
-
-        if self.just_plot_curve:
-            return
 
         try:
             if ((max(self.keep_bvs) - min(self.keep_bvs)) ** 2) > 0:
