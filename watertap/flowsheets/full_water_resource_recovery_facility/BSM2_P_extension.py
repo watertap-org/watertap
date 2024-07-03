@@ -83,12 +83,13 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
+from idaes.core.util import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=True):
+def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
     set_scaling(m)
@@ -99,12 +100,47 @@ def main(bio_P=True):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
+    print("----------------   Re-scaling V1  ----------------")
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    for x in badly_scaled_var_list:
+        if 1 < x[0].value < 10:
+            sf = 1
+        else:
+            power = round(pyo.log10(abs(x[0].value)))
+            sf = 1 / 10**power
+
+        iscale.set_scaling_factor(x[0], sf)
+
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+
     initialize_system(m, bio_P=bio_P)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
+
+    print("----------------   Re-scaling V2  ----------------")
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    for x in badly_scaled_var_list:
+        if 1 < x[0].value < 10:
+            sf = 1
+        else:
+            power = round(pyo.log10(abs(x[0].value)))
+            sf = 1 / 10**power
+
+        iscale.set_scaling_factor(x[0], sf)
+
+    print("----------------   Degen Hunter  ----------------")
+    # Use of Degeneracy Hunter for troubleshooting model.
+    # m.obj = pyo.Objective(expr=0)
+    # solver = get_solver()
+    # solver.options["max_iter"] = 10000
+    # results = solver.solve(m, tee=True)
+    # m.fs.R3.inlet.display()
+    # m.fs.translator_asm2d_adm1.inlet.display()
 
     results = solve(m)
 
@@ -115,6 +151,7 @@ def main(bio_P=True):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+
     # Resolve with controls in place
     results = solve(m)
 
@@ -126,16 +163,21 @@ def main(bio_P=True):
         fail_flag=True,
     )
 
-    add_costing(m)
-    m.fs.costing.initialize()
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
 
-    assert_degrees_of_freedom(m, 0)
-
-    results = solve(m)
-    pyo.assert_optimal_termination(results)
-
-    display_costing(m)
-    display_performance_metrics(m)
+    # add_costing(m)
+    # m.fs.costing.initialize()
+    #
+    # assert_degrees_of_freedom(m, 0)
+    #
+    # results = solve(m)
+    # pyo.assert_optimal_termination(results)
+    #
+    # display_costing(m)
+    # display_performance_metrics(m)
 
     return m, results
 
@@ -653,28 +695,66 @@ def initialize_system(m, bio_P=True):
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
         }
+
+        tear_guesses3 = {
+            "flow_vol": {0: 0.003},
+            "conc_mass_comp": {
+                (0, "S_I"): 0.057,
+                (0, "S_IC"): 1.16,
+                (0, "S_IN"): 1.89,
+                (0, "S_IP"): 3.83,
+                (0, "S_K"): 1.39,
+                (0, "S_Mg"): 1.04,
+                (0, "S_aa"): 0.048,
+                (0, "S_ac"): 0.092,
+                (0, "S_bu"): 6e-11,
+                (0, "S_ch4"): 1e-14,
+                (0, "S_fa"): 5e-10,
+                (0, "S_h2"): 6e-11,
+                (0, "S_pro"): 6e-11,
+                (0, "S_su"): 0.11,
+                (0, "S_va"): 6e-11,
+                (0, "X_I"): 14.51,
+                (0, "X_PAO"): 1e-10,
+                (0, "X_PHA"): 1e-12,
+                (0, "X_PP"): 1e-10,
+                (0, "X_aa"): 6e-11,
+                (0, "X_ac"): 1e-14,
+                (0, "X_c4"): 1e-14,
+                (0, "X_ch"): 10.28,
+                (0, "X_fa"): 1e-14,
+                (0, "X_h2"): 6e-11,
+                (0, "X_li"): 13.33,
+                (0, "X_pr"): 10.38,
+                (0, "X_pro"): 1e-14,
+                (0, "X_su"): 1e-14,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
     else:
         tear_guesses = {
             "flow_vol": {0: 1.2367},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0005,
-                (0, "S_F"): 0.0004,
+                (0, "S_A"): 0.0004638,
+                (0, "S_F"): 0.0004066,
                 (0, "S_I"): 0.05745,
-                (0, "S_N2"): 0.025,
-                (0, "S_NH4"): 0.175,
-                (0, "S_NO3"): 1e-9,
+                (0, "S_IC"): 0.1276,
+                (0, "S_K"): 0.3698,
+                (0, "S_Mg"): 0.02051,
+                (0, "S_N2"): 0.02489,
+                (0, "S_NH4"): 0.1749,
+                (0, "S_NO3"): 4e-7,
                 (0, "S_O2"): 0.00192,
-                (0, "S_PO4"): 1.91,
-                (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.02,
-                (0, "S_IC"): 0.13,
-                (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 3.3,
-                (0, "X_I"): 3.0,
-                (0, "X_PAO"): 3.8,
-                (0, "X_PHA"): 0.093,
-                (0, "X_PP"): 1.26,
-                (0, "X_S"): 0.056,
+                (0, "S_PO4"): 1.02034,
+                (0, "X_AUT"): 6e-6,
+                (0, "X_H"): 3.3124,
+                (0, "X_I"): 3.04851,
+                (0, "X_PAO"): 3.7953,
+                (0, "X_PHA"): 0.09305,
+                (0, "X_PP"): 1.2622,
+                (0, "X_S"): 0.05622,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -683,24 +763,24 @@ def initialize_system(m, bio_P=True):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.095,
-                (0, "S_F"): 0.15,
+                (0, "S_A"): 0.09547,
+                (0, "S_F"): 0.1462,
                 (0, "S_I"): 0.05745,
-                (0, "S_N2"): 0.025,
-                (0, "S_NH4"): 0.18,
-                (0, "S_NO3"): 1e-9,
-                (0, "S_O2"): 0.0014,
-                (0, "S_PO4"): 1.92,
-                (0, "S_K"): 0.38,
-                (0, "S_Mg"): 0.024,
-                (0, "S_IC"): 0.075,
-                (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 22.3,
-                (0, "X_I"): 10.8,
-                (0, "X_PAO"): 11.2,
-                (0, "X_PHA"): 0.0056,
-                (0, "X_PP"): 3.09,
-                (0, "X_S"): 3.8,
+                (0, "S_IC"): 0.07557,
+                (0, "S_K"): 0.3761,
+                (0, "S_Mg"): 0.02442,
+                (0, "S_N2"): 0.02489,
+                (0, "S_NH4"): 0.1846,
+                (0, "S_NO3"): 1e-6,
+                (0, "S_O2"): 0.001378,
+                (0, "S_PO4"): 1.03468,
+                (0, "X_AUT"): 1e-5,
+                (0, "X_H"): 22.3117,
+                (0, "X_I"): 10.8229,
+                (0, "X_PAO"): 11.2674,
+                (0, "X_PHA"): 0.005629,
+                (0, "X_PP"): 3.09211,
+                (0, "X_S"): 3.8081,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -712,6 +792,62 @@ def initialize_system(m, bio_P=True):
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO)
+        # if unit == m.fs.translator_asm2d_adm1:
+        #     try:
+        #         print("Trying to initialize ASM2d-ADM1 translator")
+        #         unit.initialize(outlvl=idaeslog.DEBUG)
+        #     except:
+        #         print("Entering exception clause")
+        #         m.fs.translator_asm2d_adm1.inlet.flow_vol.fix()
+        #         m.fs.translator_asm2d_adm1.inlet.conc_mass_comp.fix()
+        #         m.fs.translator_asm2d_adm1.inlet.temperature.fix()
+        #         m.fs.translator_asm2d_adm1.inlet.pressure.fix()
+        #
+        #         solver = get_solver()
+        #         solver.solve(m.fs.translator_asm2d_adm1, tee=True)
+        #
+        #         m.fs.translator_asm2d_adm1.inlet.flow_vol.unfix()
+        #         m.fs.translator_asm2d_adm1.inlet.conc_mass_comp.unfix()
+        #         m.fs.translator_asm2d_adm1.inlet.temperature.unfix()
+        #         m.fs.translator_asm2d_adm1.inlet.pressure.unfix()
+        # elif unit == m.fs.AD:
+        #     try:
+        #         print("Trying to initialize ASM2d-ADM1 translator")
+        #         unit.initialize(outlvl=idaeslog.DEBUG)
+        #     except:
+        #         print("Entering exception clause")
+        #         m.fs.AD.inlet.flow_vol.fix()
+        #         m.fs.AD.inlet.conc_mass_comp.fix()
+        #         m.fs.AD.inlet.temperature.fix()
+        #         m.fs.AD.inlet.pressure.fix()
+        #
+        #         solver = get_solver()
+        #         solver.solve(m.fs.AD, tee=True)
+        #
+        #         m.fs.AD.inlet.flow_vol.unfix()
+        #         m.fs.AD.inlet.conc_mass_comp.unfix()
+        #         m.fs.AD.inlet.temperature.unfix()
+        #         m.fs.AD.inlet.pressure.unfix()
+        # elif unit == m.fs.translator_adm1_asm2d:
+        #     try:
+        #         print("Trying to initialize ASM2d-ADM1 translator")
+        #         unit.initialize(outlvl=idaeslog.DEBUG)
+        #     except:
+        #         print("Entering exception clause")
+        #         m.fs.translator_adm1_asm2d.inlet.flow_vol.fix()
+        #         m.fs.translator_adm1_asm2d.inlet.conc_mass_comp.fix()
+        #         m.fs.translator_adm1_asm2d.inlet.temperature.fix()
+        #         m.fs.translator_adm1_asm2d.inlet.pressure.fix()
+        #
+        #         solver = get_solver()
+        #         solver.solve(m.fs.AD, tee=True)
+        #
+        #         m.fs.translator_adm1_asm2d.inlet.flow_vol.unfix()
+        #         m.fs.translator_adm1_asm2d.inlet.conc_mass_comp.unfix()
+        #         m.fs.translator_adm1_asm2d.inlet.temperature.unfix()
+        #         m.fs.translator_adm1_asm2d.inlet.pressure.unfix()
+        # else:
+        #     unit.initialize(outlvl=idaeslog.INFO)
 
     seq.run(m, function)
 
@@ -925,7 +1061,7 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
@@ -948,3 +1084,5 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    m.fs.R3.inlet.display()
+    m.fs.translator_asm2d_adm1.inlet.display()
