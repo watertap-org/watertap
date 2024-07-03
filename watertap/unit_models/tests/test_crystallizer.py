@@ -229,6 +229,7 @@ class TestCrystallizer(UnitTestHarness):
             if (p, j) in phase_comp_list
         )
 
+        kj_to_j = 1e3
         self.conservation_equality = {
             "Check 1": {
                 "in": flow_mass_in,
@@ -246,7 +247,7 @@ class TestCrystallizer(UnitTestHarness):
                     * m.fs.unit.properties_solids[0].dh_crystallization_mass_comp[
                         "NaCl"
                     ]
-                    - m.fs.unit.work_mechanical[0]
+                    - m.fs.unit.work_mechanical[0] * kj_to_j
                 )
                 / m.fs.unit.properties_in[0].enth_mass_phase["Liq"],
             },

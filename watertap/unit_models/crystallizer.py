@@ -708,12 +708,14 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(
             self.dens_mass_slurry, 1e-3
         )  # scaling factor of dens_mass_phase['Liq']
+        kj_to_j = 1e3
         iscale.set_scaling_factor(
             self.work_mechanical[0],
             iscale.get_scaling_factor(
                 self.properties_in[0].flow_mass_phase_comp["Vap", "H2O"]
             )
-            * iscale.get_scaling_factor(self.properties_in[0].enth_mass_solvent["Vap"]),
+            * iscale.get_scaling_factor(self.properties_in[0].enth_mass_solvent["Vap"])
+            * kj_to_j,
         )
 
         # transforming constraints
