@@ -108,10 +108,10 @@ def plot_theta(blk):
         )
 
     # ylabe = blk.compound.swapcase() + f" [{blk.conc_units_str}]"
-    ylabe = "C/C$_0$, " + blk.compound.swapcase()
+    ylabe = "C/C$_0$, " + blk.compound.title()
     title = (
         f"Curve {blk.curve_id}:\n"
-        + blk.compound.swapcase()
+        + blk.compound.title()
         + ", "
         + blk.ref.replace("_", " ").title()
         + ", "
@@ -543,7 +543,7 @@ def plot_initial_guess(blk):
 
     title = (
         f"Initial Guess - Curve {blk.curve_id}:\n"
-        + blk.compound.swapcase()
+        + blk.compound.title()
         + " "
         + blk.ref.replace("_", " ").title()
         + " "
@@ -552,7 +552,7 @@ def plot_initial_guess(blk):
     )
     ax.set_xlabel("BV")
     # ylabe = blk.compound.swapcase() + f" [{blk.conc_units_str}]"
-    ylabe = "C/C$_0$" + blk.compound.swapcase()
+    ylabe = "C/C$_0$" + blk.compound.title()
     ax.set_ylabel(ylabe)
     ax.set_title(title)
     ax.set_ylim([-0.01, 1.02])
@@ -592,7 +592,7 @@ def plot_estimate_bv50(blk):
 
     title = (
         f"BV50 Estimate Results Compare - Curve {blk.curve_id}:\n"
-        + blk.compound.swapcase()
+        + blk.compound.title()
         + " "
         + blk.ref.replace("_", " ").title()
         + " "
@@ -721,7 +721,7 @@ def plot_estimate_bv50(blk):
         bbox=boxprops,
     )
     ax.set_xlabel("BV")
-    ylabe = blk.compound.swapcase() + f" [{blk.conc_units_str}]"
+    ylabe = blk.compound.title() + f" [{blk.conc_units_str}]"
     ax.set_ylabel(ylabe)
     ax.set_title(title)
     ax.set_ylim([-0.01, 1.02])
@@ -736,8 +736,7 @@ def plot_estimate_bv50(blk):
 def plot_curve(blk):
 
     fig, ax = plt.subplots(figsize=blk.figsize)
-    ax.scatter(blk.excl_bvs, blk.excl_cbs, marker="x", color="k", label="Excluded data")
-    # ax.scatter(keep_bv, keep_cb, color="r", marker=".", label="Fitted data")
+    ax.scatter(blk.excl_bvs, blk.excl_cnorms, marker="x", color="k", label="Excluded data")
     ax.plot(
         blk.keep_bvs,
         blk.keep_cnorms,
@@ -764,7 +763,7 @@ def plot_curve(blk):
 
     title = (
         f"Data Used for Curve {blk.curve_id}\n"
-        + blk.compound.swapcase()
+        + blk.compound.title()
         + ", "
         + blk.ref.replace("_", " ").title()
         + ", "
@@ -773,10 +772,10 @@ def plot_curve(blk):
     )
     ax.set_xlabel("BV")
     # ylabe = blk.compound.swapcase()
-    ylabe = "C/C$_0$, " + blk.compound.swapcase()
+    ylabe = "C/C$_0$, " + blk.compound.title()
     ax.set_ylabel(ylabe)
     ax.set_title(title)
-    ax.set_ylim([-0.05, 1.02])
+    # ax.set_ylim([-0.05, 1.02])
     ax.set_xlim([-5, max(blk.all_bvs) * 1.05])
     ax.legend()
     plt.tight_layout()
