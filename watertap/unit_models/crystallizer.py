@@ -440,11 +440,11 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         # TO-DO: Figure out actual liquid and solid pressures.
         @self.Constraint()
         def eq_p_con1(b):
-            return b.properties_in[0].pressure == b.properties_out[0].pressure
+            return self.pressure_operating == b.properties_out[0].pressure
 
         @self.Constraint()
         def eq_p_con2(b):
-            return b.properties_in[0].pressure == b.properties_solids[0].pressure
+            return self.pressure_operating == b.properties_solids[0].pressure
 
         @self.Constraint()
         def eq_p_con3(b):
@@ -762,6 +762,21 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 self.properties_in[0].flow_mass_phase_comp["Liq", j]
             )
             iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_enthalpy_balance.items():
+            sf = iscale.get_scaling_factor(
+                self.properties_out[0].flow_mass_phase_comp["Vap", "H2O"]
+            )
+            sw = iscale.get_scaling_factor(
+                self.properties_out[0].enth_mass_solvent["Vap"]
+            )
+            iscale.constraint_scaling_transform(c, sf*sw)
+
+        for ind, c in self.eq_minimum_hex_circulation_rate_constraint.items():
+            sf = iscale.get_scaling_factor(
+                self.work_mechanical[0]
+            )
+            iscale.constraint_scaling_transform(c, sf * 1e-3)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
