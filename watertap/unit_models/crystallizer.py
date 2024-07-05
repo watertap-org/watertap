@@ -770,12 +770,10 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             sw = iscale.get_scaling_factor(
                 self.properties_out[0].enth_mass_solvent["Vap"]
             )
-            iscale.constraint_scaling_transform(c, sf*sw)
+            iscale.constraint_scaling_transform(c, sf * sw)
 
         for ind, c in self.eq_minimum_hex_circulation_rate_constraint.items():
-            sf = iscale.get_scaling_factor(
-                self.work_mechanical[0]
-            )
+            sf = iscale.get_scaling_factor(self.work_mechanical[0])
             iscale.constraint_scaling_transform(c, sf * 1e-3)
 
     def _get_stream_table_contents(self, time_point=0):
