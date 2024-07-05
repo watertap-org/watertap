@@ -247,7 +247,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                     self.f_xI_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_I"]
-                    * mw_c
                 )
                 + (
                     blk.properties_in[t].conc_mass_comp["X_PHA"]
