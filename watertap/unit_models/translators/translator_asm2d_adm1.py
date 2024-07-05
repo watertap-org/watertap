@@ -750,10 +750,7 @@ see reaction package for documentation.}""",
                 self.flowsheet().time, doc="S_NH4 concentration (kgN/m3) output"
             )
             def SIN_output(blk, t):
-                return (
-                    blk.properties_out[t].conc_mass_comp["S_IN"]
-                    == blk.SNH4_AS5[t] / mw_n
-                )
+                return blk.properties_out[t].conc_mass_comp["S_IN"] == blk.SNH4_AS5[t]
 
             @self.Expression(
                 self.flowsheet().time, doc="S_PO4 concentration (kgP/m3) at step 5"
@@ -891,10 +888,7 @@ see reaction package for documentation.}""",
                 self.flowsheet().time, doc="S_IP concentration (kgP/m3) output"
             )
             def SIP_output(blk, t):
-                return (
-                    blk.properties_out[t].conc_mass_comp["S_IP"]
-                    == blk.SPO4_AS6[t] / mw_p
-                )
+                return blk.properties_out[t].conc_mass_comp["S_IP"] == blk.SPO4_AS6[t]
 
             @self.Expression(
                 self.flowsheet().time, doc="S_IC concentration (kgC/m3) at step 6"
@@ -1239,10 +1233,7 @@ see reaction package for documentation.}""",
                 self.flowsheet().time, doc="S_IC concentration (kgC/m3) output"
             )
             def SIC_output(blk, t):
-                return (
-                    blk.properties_out[t].conc_mass_comp["S_IC"]
-                    == blk.SIC_AS5[t] / mw_c
-                )
+                return blk.properties_out[t].conc_mass_comp["S_IC"] == blk.SIC_AS5[t]
 
             self.XS_AS5 = Param(
                 initialize=eps,
@@ -1328,7 +1319,7 @@ see reaction package for documentation.}""",
             def XPP_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["X_PP"]
-                    == blk.properties_in[0].conc_mass_comp["X_PP"] / mw_p
+                    == blk.properties_in[0].conc_mass_comp["X_PP"]
                 )
 
             @self.Constraint(
