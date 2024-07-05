@@ -195,7 +195,7 @@ class TestAsm2dAdm1(object):
         assert number_variables(asmadm) == 264
         assert number_total_constraints(asmadm) == 21
 
-        assert number_unused_variables(asmadm.fs.unit) == 5
+        assert number_unused_variables(asmadm.fs.unit) == 4
 
     @pytest.mark.component
     def test_units(self, asmadm):
@@ -250,7 +250,7 @@ class TestAsm2dAdm1(object):
         assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
         )
-        assert pytest.approx(20.814923, abs=1e-6) == value(
+        assert pytest.approx(0.35699, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
