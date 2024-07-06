@@ -14,21 +14,16 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     Var,
-    Objective,
     Block,
 )
 from pyomo.network import Port
 
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    MomentumBalanceType,
-)
+from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.unit_models.crystallizer import Crystallization
 from watertap.flowsheets.crystallization.sim_simple_crystallizer import main as cryst_ex
 from watertap.property_models.unit_specific.cryst_prop_pack import NaClParameterBlock
-from watertap.costing import WaterTAPCosting, CrystallizerCostType
+from watertap.costing import CrystallizerCostType
 
 
 class TestCrystallizerBuild:
