@@ -10,11 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import json
-from copy import deepcopy
-import onnx
-
-# from onnx2keras import onnx_to_keras
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -25,10 +20,7 @@ from pyomo.environ import (
     Constraint,
     Suffix,
     units as pyunits,
-    Reals,
     NonNegativeReals,
-    SolverFactory,
-    Block,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -64,8 +56,8 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "Oluwamayowa Amusat"
 
 
-@declare_process_block_class("Crystallization")
-class CrystallizationData(UnitModelBlockData):
+@declare_process_block_class("SurrogateCrystallizer")
+class SurrogateCrystallizerData(UnitModelBlockData):
     """
     ML-based crystallizer model
     """
@@ -120,6 +112,32 @@ class CrystallizationData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "vapor_property_package",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package to use for vapor phase",
+            doc="""Property parameter object used to define property calculations
+    for the vapor phase,
+    **default** - useDefault.
+    **Valid values:** {
+    **useDefault** - use default package from parent model or flowsheet,
+    **PropertyParameterObject** - a PropertyParameterBlock object.}""",
+        ),
+    )
+    CONFIG.declare(
+        "vapor_property_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing vapor phase properties",
+            doc="""A ConfigBlock with arguments to be passed to vapor phase
+property block(s) and used when constructing these,
+**default** - None.
+**Valid values:** {
+see property package for documentation.}""",
+        ),
+    )
+    CONFIG.declare(
         "input_ion_list",
         ConfigValue(
             default={},
@@ -140,7 +158,10 @@ class CrystallizationData(UnitModelBlockData):
 
     def build(self):
         # Need to define any additional property packages before calling the build function
-        self.vap_prop = props3.WaterParameterBlock()
+        if self.config.vapor_property_package is None:
+            self.vap_prop = props3.WaterParameterBlock()
+        else:
+            self.vap_prop = self.config.vapor_property_package
 
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -592,75 +613,3 @@ class CrystallizationData(UnitModelBlockData):
     @property
     def default_costing_method(self):
         return cost_surrogate_crystallizer
-
-
-# def add_crystallizer_nn_model(blk,
-#                               surrogate_inputs_with_bounds,
-#                               surrogate_outputs,
-#                               path_to_onnx_model,
-#                               path_to_offsetscaler_json,
-#                               surrogate_to_flowsheet_basis_ratio):
-#     ##############################################################################################################
-#     # ONNX block loading into IDAES Surrogate Block
-#     ##############################################################################################################
-#     # Load surrogate model
-#     def load_model(fpath):
-#         onnx_model = onnx.load(fpath)
-#         k_model = onnx_to_keras(onnx_model, ['input'], name_policy='renumerate')
-#         k_model.summary()
-#         return k_model
-
-#     def recreate_offsetscaler(fpath):
-#         f = open(fpath)
-#         scalers = json.load(f)
-#         input_scaler = OffsetScaler.from_dict(scalers[0])
-#         output_scaler = OffsetScaler.from_dict(scalers[1])
-#         return input_scaler, output_scaler
-
-#     def create_keras_surrogate_object(path_to_onnx_model, path_to_offsetscaler_json, input_labels, output_labels,
-#                                       input_bounds):
-#         model = load_model(path_to_onnx_model)
-#         input_scaler, output_scaler = recreate_offsetscaler(path_to_offsetscaler_json)
-#         keras_surr = KerasSurrogate(model, input_labels=list(input_labels), output_labels=list(output_labels),
-#                                     input_scaler=input_scaler, output_scaler=output_scaler,
-#                                     input_bounds=input_bounds)
-#         return model, keras_surr
-
-#     def surrogate_object_block_creation(self):
-#         blk.crystallizer_surrogate = SurrogateBlock(concrete=True)
-#         # Create keras object of crystallizer model
-#         surrogate_input_vars = list(surrogate_inputs_with_bounds.keys())
-#         surrogate_input_bounds = {k: surrogate_inputs_with_bounds[k]['var_bounds']
-#                                   for (k, v) in surrogate_inputs_with_bounds.items()}
-#         surrogate_output_vars = list(surrogate_outputs.keys())
-#         onxx_load, cryst_model = create_keras_surrogate_object(path_to_onnx_model,
-#                                                                path_to_offsetscaler_json,
-#                                                                surrogate_input_vars,
-#                                                                surrogate_output_vars,
-#                                                                surrogate_input_bounds)
-
-#         crystallizer_inputs = [surrogate_inputs_with_bounds[k]['flowsheet_var']
-#                                for (k, v) in surrogate_inputs_with_bounds.items()]
-#         crystallizer_outputs = [surrogate_outputs[k]['flowsheet_var']
-#                                 for (k, v) in surrogate_outputs.items()]
-
-#         # Check that all solids listed in the crystallier model definition are present in the set of outputs.
-#         try:
-#             assert set(list(blk.solids_list)).issubset(surrogate_outputs.keys())
-#         except AssertionError:
-#             raise('List of solids provided in crystallizer model must match surrogate output keys for solids. Please check.')
-#         blk.crystallizer_surrogate.build_model(cryst_model, input_vars=crystallizer_inputs,
-#                                                output_vars=crystallizer_outputs,
-#                                                formulation=KerasSurrogate.Formulation.FULL_SPACE, )
-
-#     # Create surrogate block
-#     surrogate_object_block_creation(blk)
-
-#     # Add constraints tying provided mass variables with crystallizer unit variables - done to avoid unit challenges
-#     def eq_mass_conversion_constraint(b, j):
-#         return b.mixed_solids[j] == pyunits.convert(surrogate_outputs[j]['flowsheet_var'], to_units=pyunits.kg/pyunits.s) / surrogate_to_flowsheet_basis_ratio
-#     blk.mass_conversion_constraints = Constraint(blk.solids_list, rule=eq_mass_conversion_constraint)
-
-#     # Add a constraint to tie pressures together after unit conversion
-#     ## TODO: remove hard-coding
-#     blk.pressure_conversion_constraints = Constraint(expr=blk.pressure_operating == pyunits.convert(surrogate_outputs['Vapor Pressure (atm)']['flowsheet_var'], to_units=pyunits.Pa))
