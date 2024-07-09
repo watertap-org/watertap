@@ -159,9 +159,9 @@ see property package for documentation.}""",
     def build(self):
         # Need to define any additional property packages before calling the build function
         if self.config.vapor_property_package is None:
-            self.vap_prop = props3.WaterParameterBlock()
+            self.config.vapor_property_package = props3.WaterParameterBlock()
         else:
-            self.vap_prop = self.config.vapor_property_package
+            pass
 
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -269,9 +269,9 @@ see property package for documentation.}""",
         # Add vapor outlet
         tmp_dict2 = dict()
         tmp_dict2["has_phase_equilibrium"] = False
-        tmp_dict2["parameters"] = self.vap_prop
+        tmp_dict2["parameters"] = self.config.vapor_property_package
         tmp_dict["defined_state"] = False
-        self.properties_out_vapor = self.vap_prop.state_block_class(
+        self.properties_out_vapor = self.config.vapor_property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of vapor outlet",
             **tmp_dict2,
@@ -285,7 +285,7 @@ see property package for documentation.}""",
         # Add constraints
         # 1. Fix empty flows:
         self.S["H2O"].fix(0.0)
-        for p in self.vap_prop.phase_list:
+        for p in self.config.vapor_property_package.phase_list:
             if p == "Liq":
                 self.properties_out_vapor[0].flow_mass_phase_comp[p, "H2O"].fix(0.0)
 
@@ -319,7 +319,7 @@ see property package for documentation.}""",
                     )
                     + sum(
                         b.properties_out_vapor[0].flow_mass_phase_comp[p, j]
-                        for p in self.vap_prop.phase_list
+                        for p in self.config.vapor_property_package.phase_list
                     )
                     + b.S[j]
                 )
@@ -350,7 +350,7 @@ see property package for documentation.}""",
                 return (
                     sum(
                         b.properties_out_vapor[0].flow_mass_phase_comp[p, j]
-                        for p in self.vap_prop.phase_list
+                        for p in self.config.vapor_property_package.phase_list
                     )
                     == b.properties_in[0].flow_mass_phase_comp["Liq", j]
                     * b.evaporation_percent
@@ -402,7 +402,7 @@ see property package for documentation.}""",
         def eq_total_vapor_constraint(b):
             return b.V_total == sum(
                 b.properties_out_vapor[0].flow_mass_phase_comp[p, "H2O"]
-                for p in self.vap_prop.phase_list
+                for p in self.config.vapor_property_package.phase_list
             )
 
         # 6. Constraints for computing heat requirement
@@ -414,7 +414,7 @@ see property package for documentation.}""",
                 0
             ].enth_flow == b.properties_out_liq[0].enth_flow + sum(
                 b.properties_out_vapor[0].enth_flow_phase[p]
-                for p in self.vap_prop.phase_list
+                for p in self.config.vapor_property_package.phase_list
             )
 
     def initialize_build(
@@ -491,7 +491,7 @@ see property package for documentation.}""",
                     state_args_vapor[k][m] = state_dict_vapor[k][m].value
             else:
                 state_args_vapor[k] = state_dict_vapor[k].value
-        for p in self.vap_prop.phase_list:
+        for p in self.config.vapor_property_package.phase_list:
             for j in self.ion_list:
                 if p == "Vap":
                     state_args_vapor["flow_mass_phase_comp"][p, "H2O"] = state_args[
