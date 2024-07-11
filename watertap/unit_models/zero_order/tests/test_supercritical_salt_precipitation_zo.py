@@ -187,11 +187,8 @@ def test_costing():
         "..",
         "..",
         "..",
-        "examples",
-        "flowsheets",
-        "case_studies",
-        "wastewater_resource_recovery",
-        "supercritical_sludge_to_gas",
+        "data",
+        "techno_economic",
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
 

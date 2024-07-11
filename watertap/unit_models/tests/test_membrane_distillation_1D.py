@@ -121,6 +121,17 @@ class TestMembraneDisillation1D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.46958331303607553
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.6876122888049245
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
         return m
 
 
@@ -204,6 +215,17 @@ class TestMembraneDisillation1D_temperature_polarization_none(UnitTestHarness):
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.4809369122475431
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.7627285773397838
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
         return m
 
 
@@ -286,6 +308,17 @@ class TestMembraneDisillation1D_temperature_polarization_fixed(UnitTestHarness):
         self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0029585609332568297
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.46956031608126614
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.6875676750917696
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
 
         return m
 
@@ -376,6 +409,17 @@ class TestMembraneDisillation1D_temperature_polarization_calculated(UnitTestHarn
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.467514426654
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.804743863406
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
         return m
 
 
@@ -465,6 +509,17 @@ class TestMembraneDisillation1D_temperature_polarization_calculated_concentratio
         self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 304.3575352876
         self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 350.4506210584
         self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0034497717645
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
 
         return m
 
@@ -561,6 +616,17 @@ class TestMembraneDisillation1D_temperature_polarization_calculated_concentratio
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.4639450335411154
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8045838444505841
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
         return m
 
 
@@ -654,6 +720,17 @@ class TestMembraneDisillation1D_temperature_polarization_calculated_concentratio
         self.unit_solutions[m.fs.unit.recovery_mass[0]] = 0.04309319772012876
         self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.4671469978106365
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8064633314925004
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
 
         return m
 
@@ -754,6 +831,17 @@ class TestMembraneDisillation1D_temperature_polarization_calculated_concentratio
         self.unit_solutions[m.fs.unit.hot_ch.deltaP_channel[0]] = -500000.0
         self.unit_solutions[m.fs.unit.cold_ch.deltaP_channel[0]] = -500000.0
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
         return m
 
 
@@ -851,4 +939,16 @@ class TestMembraneDisillation1D_temperature_polarization_calculated_concentratio
         self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.8058008099288198
         self.unit_solutions[m.fs.unit.hot_ch.deltaP_channel[0]] = -297491.6707887916
         self.unit_solutions[m.fs.unit.cold_ch.deltaP_channel[0]] = -332494.6036866968
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
         return m

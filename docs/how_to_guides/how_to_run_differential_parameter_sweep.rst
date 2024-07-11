@@ -23,13 +23,13 @@ As before, we begin by importing or explicitly programming any functions relatin
 
     # replace this with your own flowsheet module, e.g.
     # import my_flowsheet_module as mfm
-    import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
+    import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
 Once this is done, we import the differential parameter sweep tool and sampling classes.
 
 .. testcode::
 
-    from watertap.tools.parameter_sweep import differential_parameter_sweep, UniformSample, NormalSample
+    from parameter_sweep import differential_parameter_sweep, UniformSample, NormalSample
 
 We will use the :ref:`same setup steps as before<how_to_use_parameter_sweep>` to set up the generating functions for our model, sweep params, and outputs:
 
@@ -214,4 +214,5 @@ With the flowsheet defined and suitably initialized, along with the definitions 
 Module Documentation
 --------------------
 
-* :mod:`watertap.tools.parameter_sweep`
+* :mod:`parameter_sweep`
+* :mod:`parameter_sweep.differential`

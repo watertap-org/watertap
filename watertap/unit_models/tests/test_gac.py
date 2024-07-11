@@ -112,6 +112,23 @@ class TestGACHand(UnitTestHarness):
         self.unit_solutions[m.fs.unit.operational_time] = 2554000
         self.unit_solutions[m.fs.unit.bed_volumes_treated] = 8514
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ],
+            },
+        }
+
         return m
 
 
@@ -205,6 +222,23 @@ class TestGACCrittenden(UnitTestHarness):
         self.unit_solutions[m.fs.unit.bed_mass_gac] = 4004
         self.unit_solutions[m.fs.unit.conc_ratio_avg] = 0.2287
         self.unit_solutions[m.fs.unit.ele_operational_time[1]] = 6462000
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ],
+            },
+        }
 
         return m
 
@@ -304,6 +338,41 @@ class TestGACMultiComponent(UnitTestHarness):
         self.unit_solutions[m.fs.unit.N_Sc] = 2001
         self.unit_solutions[m.fs.unit.kf] = 2.600e-5
         self.unit_solutions[m.fs.unit.ds] = 1.245e-14
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ]
+                + m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "BGSOL"
+                ]
+                + m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "BGCAT"
+                ]
+                + m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "BGAN"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ]
+                + m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "BGSOL"
+                ]
+                + m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "BGCAT"
+                ]
+                + m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "BGAN"
+                ],
+            },
+        }
 
         return m
 

@@ -10,13 +10,31 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+# The function _constraint_autoscale_large_jac is modified from the function
+# idaes.core.util.scaling.constraint_autoscale_large_jac
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+
 import logging
+import abc
 
 import pyomo.environ as pyo
 from pyomo.common.collections import Bunch
-from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
+from pyomo.common.modeling import unique_component_name
+from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.interfaces.external_grey_box import ExternalGreyBoxBlock
 
-import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
     get_scaling_factor,
     set_scaling_factor,
@@ -36,14 +54,18 @@ def _pyomo_nl_writer_logger_filter(record):
     return True
 
 
-@pyo.SolverFactory.register(
-    "ipopt-watertap",
-    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
-)
-class IpoptWaterTAP:
+class _WaterTAPSolverWrapper(abc.ABC):
 
-    name = "ipopt-watertap"
-    _base_solver = IPOPT
+    name = None
+    base_solver = None
+
+    @abc.abstractmethod
+    def _set_options(self, solver):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _get_pyomo_nlp(self, model):
+        raise NotImplementedError
 
     def __init__(self, **kwds):
         kwds["name"] = self.name
@@ -52,15 +74,15 @@ class IpoptWaterTAP:
             setattr(self.options, opt_key, opt_val)
 
     def __getattr__(self, attr):
-        # if not available here, ask the _base_solver
+        # if not available here, ask the base_solver
         try:
-            return getattr(self._base_solver(), attr)
+            return getattr(pyo.SolverFactory(self.base_solver), attr)
         except AttributeError:
             raise
 
     def solve(self, blk, *args, **kwds):
 
-        solver = self._base_solver()
+        solver = pyo.SolverFactory(self.base_solver)
         self._tee = kwds.get("tee", False)
 
         self._original_options = self.options
@@ -82,8 +104,7 @@ class IpoptWaterTAP:
             self.options["honor_original_bounds"] = "no"
 
         if not self._is_user_scaling():
-            for k, v in self.options.items():
-                solver.options[k] = v
+            self._set_options(solver)
             try:
                 return solver.solve(blk, *args, **kwds)
             finally:
@@ -91,8 +112,11 @@ class IpoptWaterTAP:
 
         if self._tee:
             print(
-                "ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling"
+                f"{self.name}: {self.base_solver} with user variable scaling and IDAES jacobian constraint scaling"
             )
+        # past here we need the AmplInterface
+        if not AmplInterface.available():
+            raise RuntimeError("Pynumero not available.")
 
         _pyomo_nl_writer_log.addFilter(_pyomo_nl_writer_logger_filter)
         nlp = self._scale_constraints(blk)
@@ -106,8 +130,7 @@ class IpoptWaterTAP:
 
         # Now set the options to be used by Ipopt
         # as we've popped off the above in _get_option
-        for k, v in self.options.items():
-            solver.options[k] = v
+        self._set_options(solver)
 
         try:
             return solver.solve(blk, *args, **kwds)
@@ -135,9 +158,11 @@ class IpoptWaterTAP:
         #       factors and reset them to their original values
         #       so that repeated calls to solve change the scaling
         #       each time based on the initial values, just like in Ipopt.
+        self._add_dummy_objective(blk)
         try:
-            _, _, nlp = iscale.constraint_autoscale_large_jac(
-                blk,
+            nlp = self._get_pyomo_nlp(blk)
+            _constraint_autoscale_large_jac(
+                nlp,
                 ignore_constraint_scaling=ignore_constraint_scaling,
                 ignore_variable_scaling=ignore_variable_scaling,
                 max_grad=max_grad,
@@ -176,6 +201,7 @@ class IpoptWaterTAP:
     def _cleanup(self):
         self._options_cleanup()
         self._reset_scaling_factors()
+        self._remove_dummy_objective()
         _pyomo_nl_writer_log.removeFilter(_pyomo_nl_writer_logger_filter)
 
     def _cache_scaling_factors(self, blk):
@@ -194,6 +220,26 @@ class IpoptWaterTAP:
                 set_scaling_factor(c, s)
         del self._scaling_cache
 
+    def _add_dummy_objective(self, blk):
+        # Pynumero requires an objective, but I don't, so let's see if we have one
+        n_obj = 0
+        for c in blk.component_data_objects(pyo.Objective, active=True):
+            n_obj += 1
+        # Add an objective if there isn't one
+        if n_obj == 0:
+            self._dummy_objective = pyo.Objective(expr=0)
+            name = unique_component_name(blk, "objective")
+            blk.add_component(name, self._dummy_objective)
+        else:
+            self._dummy_objective = None
+
+    def _remove_dummy_objective(self):
+        if self._dummy_objective is not None:
+            # delete dummy objective
+            blk = self._dummy_objective.parent_block()
+            blk.del_component(self._dummy_objective)
+        del self._dummy_objective
+
     def _get_option(self, option_name, default_value):
         # NOTE: The options are already copies of the original,
         #       so it is safe to pop them so they don't get sent to Ipopt.
@@ -202,7 +248,7 @@ class IpoptWaterTAP:
             option_value = default_value
         else:
             if self._tee:
-                print(f"ipopt-watertap: {option_name}={option_value}")
+                print(f"{self.name}: {option_name}={option_value}")
         return option_value
 
     def _is_user_scaling(self):
@@ -216,3 +262,113 @@ class IpoptWaterTAP:
                 )
             return False
         return True
+
+
+@pyo.SolverFactory.register(
+    "ipopt-watertap",
+    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
+)
+class IpoptWaterTAP(_WaterTAPSolverWrapper):
+
+    name = "ipopt-watertap"
+    base_solver = "ipopt"
+
+    def _set_options(self, solver):
+        for k, v in self.options.items():
+            solver.options[k] = v
+
+    def _get_pyomo_nlp(self, blk):
+        return PyomoNLP(blk)
+
+
+@pyo.SolverFactory.register(
+    "cyipopt-watertap",
+    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
+)
+class CyIpoptWaterTAP(_WaterTAPSolverWrapper):
+
+    name = "cyipopt-watertap"
+    base_solver = "cyipopt"
+
+    def _set_options(self, solver):
+        for k, v in self.options.items():
+            solver.config.options[k] = v
+
+    def _get_pyomo_nlp(self, blk):
+        greyboxes = []
+        try:
+            for greybox in blk.component_objects(
+                ExternalGreyBoxBlock, descend_into=True
+            ):
+                greybox.parent_block().reclassify_component_type(greybox, pyo.Block)
+                greyboxes.append(greybox)
+
+            nlp = PyomoNLP(blk)
+
+        finally:
+            for greybox in greyboxes:
+                greybox.parent_block().reclassify_component_type(
+                    greybox, ExternalGreyBoxBlock
+                )
+
+        return nlp
+
+
+def _constraint_autoscale_large_jac(
+    nlp,
+    ignore_constraint_scaling=False,
+    ignore_variable_scaling=False,
+    max_grad=100,
+    min_scale=1e-6,
+):
+    """Automatically scale constraints based on the Jacobian.  This function
+    imitates Ipopt's default constraint scaling.  This scales constraints down
+    to avoid extremely large values in the Jacobian.  This function also returns
+    the unscaled and scaled Jacobian matrixes and the Pynumero NLP which can be
+    used to identify the constraints and variables corresponding to the rows and
+    comlumns.
+
+    Args:
+        nlp: model to scale
+        ignore_constraint_scaling: ignore existing constraint scaling
+        ignore_variable_scaling: ignore existing variable scaling
+        max_grad: maximum value in Jacobian after scaling, subject to minimum
+            scaling factor restriction.
+        min_scale: minimum scaling factor allowed, keeps constraints from being
+            scaled too much.
+
+    Returns:
+        None
+    """
+    jac = nlp.evaluate_jacobian().tocsr()
+    # Get lists of variables and constraints to translate Jacobian indexes
+    # save them on the NLP for later, since generating them seems to take a while
+    nlp.clist = clist = nlp.get_pyomo_constraints()
+    nlp.vlist = vlist = nlp.get_pyomo_variables()
+    # Create a scaled Jacobian to account for variable scaling, for now ignore
+    # constraint scaling
+    jac_scaled = jac.copy()
+    for i, c in enumerate(clist):
+        for j in jac_scaled[i].indices:
+            v = vlist[j]
+            if ignore_variable_scaling:
+                sv = 1
+            else:
+                sv = get_scaling_factor(v, default=1)
+            jac_scaled[i, j] = jac_scaled[i, j] / sv
+    # calculate constraint scale factors
+    for i, c in enumerate(clist):
+        sc = get_scaling_factor(c, default=1)
+        if ignore_constraint_scaling or get_scaling_factor(c) is None:
+            sc = 1
+            row = jac_scaled[i]
+            for d in row.indices:
+                row[0, d] = abs(row[0, d])
+            mg = row.max()
+            if mg > max_grad:
+                sc = max(min_scale, max_grad / mg)
+            set_scaling_factor(c, sc)
+        for j in jac_scaled[i].indices:
+            # update the scaled jacobian
+            jac_scaled[i, j] = jac_scaled[i, j] * sc
+    return None
