@@ -83,8 +83,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
-from idaes.core.util import DiagnosticsToolbox
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -98,10 +96,6 @@ def main(bio_P=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
-
-    dt = DiagnosticsToolbox(m)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
 
     initialize_system(m, bio_P=bio_P)
     for mx in m.fs.mixers:
@@ -130,11 +124,6 @@ def main(bio_P=False):
         logger=_log,
         fail_flag=True,
     )
-
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
-    dt.display_variables_with_extreme_jacobians()
-    dt.display_constraints_with_extreme_jacobians()
 
     add_costing(m)
     m.fs.costing.initialize()
