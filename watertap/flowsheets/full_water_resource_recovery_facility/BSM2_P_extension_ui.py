@@ -23,7 +23,6 @@ from watertap.ui.fsapi import FlowsheetInterface
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
     set_operating_conditions,
-    set_scaling,
     initialize_system,
     solve,
     add_costing,
@@ -3855,7 +3854,6 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     m = build(bio_P=True)
     set_operating_conditions(m)
-    set_scaling(m)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
