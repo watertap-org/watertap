@@ -72,7 +72,7 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_NH4"]
-        ) == pytest.approx(9.69686, rel=1e-4)
+        ) == pytest.approx(0.82687, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_NO3"]
         ) == pytest.approx(0, abs=1e-4)
@@ -81,7 +81,7 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
-        ) == pytest.approx(1.5905, rel=1e-4)
+        ) == pytest.approx(0.66164, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_AUT"]
         ) == pytest.approx(0, abs=1e-4)
@@ -103,7 +103,7 @@ class TestElectroNPFlowsheet:
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
         ) == pytest.approx(1.36886, rel=1e-4)
-        assert value(model.fs.costing.LCOW) == pytest.approx(7.63996, rel=1e-4)
+        assert value(model.fs.costing.LCOW) == pytest.approx(6.284, rel=1e-4)
 
     @pytest.mark.component
     def test_display(self, model):

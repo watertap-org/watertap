@@ -111,18 +111,6 @@ def main(has_electroNP=False):
         fail_flag=True,
     )
 
-    # print("----------------   Degen Hunter  ----------------")
-    # # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
-    # # for x in badly_scaled_var_list:
-    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    # dh.check_residuals(tol=1e-8)
-
     return m, results
 
 
@@ -568,58 +556,6 @@ def initialize_system(m, has_electroNP=False):
     for o in order:
         print(o[0].name)
 
-    # tear_guesses = {
-    #     "flow_vol": {0: 1.236},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.00046,
-    #         (0, "S_F"): 0.00041,
-    #         (0, "S_I"): 0.05745,
-    #         (0, "S_N2"): 0.025,
-    #         (0, "S_NH4"): 0.12,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.00192,
-    #         (0, "S_PO4"): 1.91,
-    #         (0, "S_K"): 0.37,
-    #         (0, "S_Mg"): 0.02,
-    #         (0, "S_IC"): 0.13,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 3.3,
-    #         (0, "X_I"): 3.0,
-    #         (0, "X_PAO"): 3.8,
-    #         (0, "X_PHA"): 0.093,
-    #         (0, "X_PP"): 1.26,
-    #         (0, "X_S"): 0.056,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-    #
-    # tear_guesses2 = {
-    #     "flow_vol": {0: 0.003},
-    #     "conc_mass_comp": {
-    #         (0, "S_A"): 0.095,
-    #         (0, "S_F"): 0.15,
-    #         (0, "S_I"): 0.05745,
-    #         (0, "S_N2"): 0.025,
-    #         (0, "S_NH4"): 0.13,
-    #         (0, "S_NO3"): 1e-9,
-    #         (0, "S_O2"): 0.0014,
-    #         (0, "S_PO4"): 1.92,
-    #         (0, "S_K"): 0.38,
-    #         (0, "S_Mg"): 0.024,
-    #         (0, "S_IC"): 0.075,
-    #         (0, "X_AUT"): 1e-9,
-    #         (0, "X_H"): 22.3,
-    #         (0, "X_I"): 10.8,
-    #         (0, "X_PAO"): 11.3,
-    #         (0, "X_PHA"): 0.0056,
-    #         (0, "X_PP"): 3.09,
-    #         (0, "X_S"): 3.8,
-    #     },
-    #     "temperature": {0: 308.15},
-    #     "pressure": {0: 101325},
-    # }
-
     if has_electroNP:
         tear_guesses = {
             "flow_vol": {0: 1.2366},
@@ -754,18 +690,18 @@ if __name__ == "__main__":
                 "Feed": m.fs.FeedWater.outlet,
                 "R3 inlet": m.fs.R3.inlet,
                 "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-                # "R1": m.fs.R1.outlet,
-                # "R2": m.fs.R2.outlet,
-                # "R3": m.fs.R3.outlet,
-                # "R4": m.fs.R4.outlet,
-                # "R5": m.fs.R5.outlet,
-                # "R6": m.fs.R6.outlet,
-                # "R7": m.fs.R7.outlet,
-                # "thickener outlet": m.fs.thickener.underflow,
-                # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
-                # "dewater outlet": m.fs.dewater.overflow,
-                # "Treated water": m.fs.Treated.inlet,
-                # "Sludge": m.fs.Sludge.inlet,
+                "R1": m.fs.R1.outlet,
+                "R2": m.fs.R2.outlet,
+                "R3": m.fs.R3.outlet,
+                "R4": m.fs.R4.outlet,
+                "R5": m.fs.R5.outlet,
+                "R6": m.fs.R6.outlet,
+                "R7": m.fs.R7.outlet,
+                "thickener outlet": m.fs.thickener.underflow,
+                "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
+                "dewater outlet": m.fs.dewater.overflow,
+                "Treated water": m.fs.Treated.inlet,
+                "Sludge": m.fs.Sludge.inlet,
             },
             time_point=0,
         )
@@ -775,20 +711,20 @@ if __name__ == "__main__":
                 "Feed": m.fs.FeedWater.outlet,
                 "R3 inlet": m.fs.R3.inlet,
                 "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-                # "R1": m.fs.R1.outlet,
-                # "R2": m.fs.R2.outlet,
-                # "R3": m.fs.R3.outlet,
-                # "R4": m.fs.R4.outlet,
-                # "R5": m.fs.R5.outlet,
-                # "R6": m.fs.R6.outlet,
-                # "R7": m.fs.R7.outlet,
-                # "thickener outlet": m.fs.thickener.underflow,
-                # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
-                # "dewater outlet": m.fs.dewater.overflow,
-                # "electroNP treated": m.fs.electroNP.treated,
-                # "electroNP byproduct": m.fs.electroNP.byproduct,
-                # "Treated water": m.fs.Treated.inlet,
-                # "Sludge": m.fs.Sludge.inlet,
+                "R1": m.fs.R1.outlet,
+                "R2": m.fs.R2.outlet,
+                "R3": m.fs.R3.outlet,
+                "R4": m.fs.R4.outlet,
+                "R5": m.fs.R5.outlet,
+                "R6": m.fs.R6.outlet,
+                "R7": m.fs.R7.outlet,
+                "thickener outlet": m.fs.thickener.underflow,
+                "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
+                "dewater outlet": m.fs.dewater.overflow,
+                "electroNP treated": m.fs.electroNP.treated,
+                "electroNP byproduct": m.fs.electroNP.byproduct,
+                "Treated water": m.fs.Treated.inlet,
+                "Sludge": m.fs.Sludge.inlet,
             },
             time_point=0,
         )
