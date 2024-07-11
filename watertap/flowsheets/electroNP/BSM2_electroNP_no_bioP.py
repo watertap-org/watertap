@@ -79,8 +79,6 @@ from watertap.unit_models.thickener import (
 from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 
-from idaes.core.util.model_diagnostics import DegeneracyHunter
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
