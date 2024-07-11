@@ -92,24 +92,12 @@ _log = idaeslog.getLogger(__name__)
 def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
-    # set_scaling(m)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
-
-    # print("----------------   Re-scaling V1  ----------------")
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # for x in badly_scaled_var_list:
-    #     if 1 < x[0].value < 10:
-    #         sf = 1
-    #     else:
-    #         power = round(pyo.log10(abs(x[0].value)))
-    #         sf = 1 / 10**power
-    #
-    #     iscale.set_scaling_factor(x[0], sf)
 
     dt = DiagnosticsToolbox(m)
     print("---Structural Issues---")
@@ -121,26 +109,6 @@ def main(bio_P=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
-
-    # print("----------------   Re-scaling V2  ----------------")
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # for x in badly_scaled_var_list:
-    #     if 1 < x[0].value < 10:
-    #         sf = 1
-    #     else:
-    #         power = round(pyo.log10(abs(x[0].value)))
-    #         sf = 1 / 10**power
-    #
-    #     iscale.set_scaling_factor(x[0], sf)
-
-    # print("----------------   Degen Hunter  ----------------")
-    # # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=True)
-    # m.fs.R3.inlet.display()
-    # m.fs.translator_asm2d_adm1.inlet.display()
 
     results = solve(m)
 
@@ -711,62 +679,6 @@ def initialize_system(m, bio_P=True):
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO)
-        # if unit == m.fs.translator_asm2d_adm1:
-        #     try:
-        #         print("Trying to initialize ASM2d-ADM1 translator")
-        #         unit.initialize(outlvl=idaeslog.DEBUG)
-        #     except:
-        #         print("Entering exception clause")
-        #         m.fs.translator_asm2d_adm1.inlet.flow_vol.fix()
-        #         m.fs.translator_asm2d_adm1.inlet.conc_mass_comp.fix()
-        #         m.fs.translator_asm2d_adm1.inlet.temperature.fix()
-        #         m.fs.translator_asm2d_adm1.inlet.pressure.fix()
-        #
-        #         solver = get_solver()
-        #         solver.solve(m.fs.translator_asm2d_adm1, tee=True)
-        #
-        #         m.fs.translator_asm2d_adm1.inlet.flow_vol.unfix()
-        #         m.fs.translator_asm2d_adm1.inlet.conc_mass_comp.unfix()
-        #         m.fs.translator_asm2d_adm1.inlet.temperature.unfix()
-        #         m.fs.translator_asm2d_adm1.inlet.pressure.unfix()
-        # elif unit == m.fs.AD:
-        #     try:
-        #         print("Trying to initialize ASM2d-ADM1 translator")
-        #         unit.initialize(outlvl=idaeslog.DEBUG)
-        #     except:
-        #         print("Entering exception clause")
-        #         m.fs.AD.inlet.flow_vol.fix()
-        #         m.fs.AD.inlet.conc_mass_comp.fix()
-        #         m.fs.AD.inlet.temperature.fix()
-        #         m.fs.AD.inlet.pressure.fix()
-        #
-        #         solver = get_solver()
-        #         solver.solve(m.fs.AD, tee=True)
-        #
-        #         m.fs.AD.inlet.flow_vol.unfix()
-        #         m.fs.AD.inlet.conc_mass_comp.unfix()
-        #         m.fs.AD.inlet.temperature.unfix()
-        #         m.fs.AD.inlet.pressure.unfix()
-        # elif unit == m.fs.translator_adm1_asm2d:
-        #     try:
-        #         print("Trying to initialize ASM2d-ADM1 translator")
-        #         unit.initialize(outlvl=idaeslog.DEBUG)
-        #     except:
-        #         print("Entering exception clause")
-        #         m.fs.translator_adm1_asm2d.inlet.flow_vol.fix()
-        #         m.fs.translator_adm1_asm2d.inlet.conc_mass_comp.fix()
-        #         m.fs.translator_adm1_asm2d.inlet.temperature.fix()
-        #         m.fs.translator_adm1_asm2d.inlet.pressure.fix()
-        #
-        #         solver = get_solver()
-        #         solver.solve(m.fs.AD, tee=True)
-        #
-        #         m.fs.translator_adm1_asm2d.inlet.flow_vol.unfix()
-        #         m.fs.translator_adm1_asm2d.inlet.conc_mass_comp.unfix()
-        #         m.fs.translator_adm1_asm2d.inlet.temperature.unfix()
-        #         m.fs.translator_adm1_asm2d.inlet.pressure.unfix()
-        # else:
-        #     unit.initialize(outlvl=idaeslog.INFO)
 
     seq.run(m, function)
 
@@ -980,25 +892,25 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            # "R3 inlet": m.fs.R3.inlet,
+            "R3 inlet": m.fs.R3.inlet,
             "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-            # "R1": m.fs.R1.outlet,
-            # "R2": m.fs.R2.outlet,
-            # "R3": m.fs.R3.outlet,
-            # "R4": m.fs.R4.outlet,
-            # "R5": m.fs.R5.outlet,
-            # "R6": m.fs.R6.outlet,
-            # "R7": m.fs.R7.outlet,
-            # "thickener outlet": m.fs.thickener.underflow,
+            "R1": m.fs.R1.outlet,
+            "R2": m.fs.R2.outlet,
+            "R3": m.fs.R3.outlet,
+            "R4": m.fs.R4.outlet,
+            "R5": m.fs.R5.outlet,
+            "R6": m.fs.R6.outlet,
+            "R7": m.fs.R7.outlet,
+            "thickener outlet": m.fs.thickener.underflow,
             "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "dewater outlet": m.fs.dewater.overflow,
             "Treated water": m.fs.Treated.inlet,
-            # "Sludge": m.fs.Sludge.inlet,
+            "Sludge": m.fs.Sludge.inlet,
         },
         time_point=0,
     )
