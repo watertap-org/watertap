@@ -107,7 +107,7 @@ def test_config():
 
 
 # -----------------------------------------------------------------------------
-class TestAsm2dAdm1(object):
+class TestAdm1Asm2d(object):
     @pytest.fixture(scope="class")
     def asmadm(self):
         m = ConcreteModel()

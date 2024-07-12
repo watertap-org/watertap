@@ -145,36 +145,6 @@ see reaction package for documentation.}""",
         mw_c = 12 * pyunits.kg / pyunits.kmol
 
         # TODO: Move these parameter values to the modified ADM1 rxn package
-        self.f_sI_xc = Param(
-            initialize=eps,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Soluble inerts from composites",
-        )
-        self.f_xI_xc = Param(
-            initialize=0.1,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Particulate inerts from composites",
-        )
-        self.f_ch_xc = Param(
-            initialize=0.275,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Carbohydrates from composites",
-        )
-        self.f_pr_xc = Param(
-            initialize=0.275,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Proteins from composites",
-        )
-        self.f_li_xc = Param(
-            initialize=0.35,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Lipids from composites",
-        )
         self.f_XPHA_Sva = Param(
             initialize=0.1,
             units=pyunits.dimensionless,
@@ -214,12 +184,6 @@ see reaction package for documentation.}""",
             units=pyunits.dimensionless,
             mutable=True,
             doc="P content of inert soluble COD S_I, [kg P/kg COD]",
-        )
-        self.P_ch = Param(
-            initialize=eps,
-            units=pyunits.kmol / pyunits.kg,
-            mutable=True,
-            doc="P content of X_ch",
         )
         self.eps_smooth = Param(
             initialize=1e-4,
@@ -533,7 +497,7 @@ see reaction package for documentation.}""",
             def SI_AS4(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["S_I"]
-                    + blk.biomass[t] * self.f_sI_xc
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_sI_xc
                 )
 
             @self.Constraint(
@@ -550,13 +514,13 @@ see reaction package for documentation.}""",
                     blk.SNH4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_NBM
                     - blk.biomass[t]
-                    * self.f_sI_xc
+                    * blk.config.outlet_reaction_package.f_sI_xc
                     * blk.config.inlet_reaction_package.i_NSI
                     - blk.biomass[t]
-                    * self.f_xI_xc
+                    * blk.config.outlet_reaction_package.f_xI_xc
                     * blk.config.inlet_reaction_package.i_NSI
                     - blk.biomass[t]
-                    * self.f_pr_xc
+                    * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ni["X_pr"]
                     * mw_n
                 )
@@ -568,13 +532,18 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
-                    - blk.biomass[t] * self.f_sI_xc * self.i_PSI
                     - blk.biomass[t]
-                    * self.f_xI_xc
+                    * blk.config.outlet_reaction_package.f_sI_xc
+                    * self.i_PSI
+                    - blk.biomass[t]
+                    * blk.config.outlet_reaction_package.f_xI_xc
                     * blk.config.inlet_reaction_package.i_PXI
-                    - blk.biomass[t] * self.f_ch_xc * self.P_ch * mw_p
                     - blk.biomass[t]
-                    * self.f_li_xc
+                    * blk.config.outlet_reaction_package.f_ch_xc
+                    * blk.config.outlet_reaction_package.P_ch
+                    * mw_p
+                    - blk.biomass[t]
+                    * blk.config.outlet_reaction_package.f_li_xc
                     * blk.config.outlet_reaction_package.Pi["X_li"]
                     * mw_p
                 )
@@ -587,21 +556,21 @@ see reaction package for documentation.}""",
                     blk.SIC_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_CXB
                     - blk.biomass[t]
-                    * self.f_sI_xc
+                    * blk.config.outlet_reaction_package.f_sI_xc
                     * blk.config.inlet_reaction_package.i_CSI
                     - blk.biomass[t]
-                    * self.f_xI_xc
+                    * blk.config.outlet_reaction_package.f_xI_xc
                     * blk.config.inlet_reaction_package.i_CXI
                     - blk.biomass[t]
-                    * self.f_pr_xc
+                    * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ci["X_pr"]
                     * mw_c
                     - blk.biomass[t]
-                    * self.f_ch_xc
+                    * blk.config.outlet_reaction_package.f_ch_xc
                     * blk.config.outlet_reaction_package.Ci["X_ch"]
                     * mw_c
                     - blk.biomass[t]
-                    * self.f_li_xc
+                    * blk.config.outlet_reaction_package.f_li_xc
                     * blk.config.outlet_reaction_package.Ci["X_li"]
                     * mw_c
                 )
@@ -612,7 +581,7 @@ see reaction package for documentation.}""",
             def XI_AS4(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["X_I"]
-                    + blk.biomass[t] * self.f_xI_xc
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_xI_xc
                 )
 
             @self.Constraint(
@@ -710,7 +679,8 @@ see reaction package for documentation.}""",
             def Xch_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["X_ch"]
-                    == blk.Xch_mapping[t] + blk.biomass[t] * self.f_ch_xc
+                    == blk.Xch_mapping[t]
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_ch_xc
                 )
 
             @self.Constraint(
@@ -720,7 +690,8 @@ see reaction package for documentation.}""",
             def Xpr_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["X_pr"]
-                    == blk.Xpr_mapping[t] + blk.biomass[t] * self.f_pr_xc
+                    == blk.Xpr_mapping[t]
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_pr_xc
                 )
 
             @self.Constraint(
@@ -730,7 +701,8 @@ see reaction package for documentation.}""",
             def Xli_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["X_li"]
-                    == blk.Xli_mapping[t] + blk.biomass[t] * self.f_li_xc
+                    == blk.Xli_mapping[t]
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_li_xc
                 )
 
             @self.Expression(
@@ -760,7 +732,9 @@ see reaction package for documentation.}""",
                     blk.SPO4_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
                     * blk.config.inlet_reaction_package.i_PXS
-                    - blk.Xch_mapping[t] * self.P_ch * mw_p
+                    - blk.Xch_mapping[t]
+                    * blk.config.outlet_reaction_package.P_ch
+                    * mw_p
                     - blk.Xli_mapping[t]
                     * blk.config.outlet_reaction_package.Pi["X_li"]
                     * mw_p
@@ -969,7 +943,7 @@ see reaction package for documentation.}""",
             def SI_AS4(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["S_I"]
-                    + blk.biomass[t] * self.f_sI_xc
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_sI_xc
                 )
 
             @self.Constraint(
@@ -986,13 +960,13 @@ see reaction package for documentation.}""",
                     blk.SNH4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_NBM
                     - blk.biomass[t]
-                    * self.f_sI_xc
+                    * blk.config.outlet_reaction_package.f_sI_xc
                     * blk.config.inlet_reaction_package.i_NSI
                     - blk.biomass[t]
-                    * self.f_xI_xc
+                    * blk.config.outlet_reaction_package.f_xI_xc
                     * blk.config.inlet_reaction_package.i_NSI
                     - blk.biomass[t]
-                    * self.f_pr_xc
+                    * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ni["X_pr"]
                     * mw_n
                 )
@@ -1004,13 +978,18 @@ see reaction package for documentation.}""",
                 return (
                     blk.SPO4_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_PBM
-                    - blk.biomass[t] * self.f_sI_xc * self.i_PSI
                     - blk.biomass[t]
-                    * self.f_xI_xc
+                    * blk.config.outlet_reaction_package.f_sI_xc
+                    * self.i_PSI
+                    - blk.biomass[t]
+                    * blk.config.outlet_reaction_package.f_xI_xc
                     * blk.config.inlet_reaction_package.i_PXI
-                    - blk.biomass[t] * self.f_ch_xc * self.P_ch * mw_p
                     - blk.biomass[t]
-                    * self.f_li_xc
+                    * blk.config.outlet_reaction_package.f_ch_xc
+                    * blk.config.outlet_reaction_package.P_ch
+                    * mw_p
+                    - blk.biomass[t]
+                    * blk.config.outlet_reaction_package.f_li_xc
                     * blk.config.outlet_reaction_package.Pi["X_li"]
                     * mw_p
                 )
@@ -1023,21 +1002,21 @@ see reaction package for documentation.}""",
                     blk.SIC_AS3[t]
                     + blk.biomass[t] * blk.config.inlet_reaction_package.i_CXB
                     - blk.biomass[t]
-                    * self.f_sI_xc
+                    * blk.config.outlet_reaction_package.f_sI_xc
                     * blk.config.inlet_reaction_package.i_CSI
                     - blk.biomass[t]
-                    * self.f_xI_xc
+                    * blk.config.outlet_reaction_package.f_xI_xc
                     * blk.config.inlet_reaction_package.i_CXI
                     - blk.biomass[t]
-                    * self.f_pr_xc
+                    * blk.config.outlet_reaction_package.f_pr_xc
                     * blk.config.outlet_reaction_package.Ci["X_pr"]
                     * mw_c
                     - blk.biomass[t]
-                    * self.f_ch_xc
+                    * blk.config.outlet_reaction_package.f_ch_xc
                     * blk.config.outlet_reaction_package.Ci["X_ch"]
                     * mw_c
                     - blk.biomass[t]
-                    * self.f_li_xc
+                    * blk.config.outlet_reaction_package.f_li_xc
                     * blk.config.outlet_reaction_package.Ci["X_li"]
                     * mw_c
                 )
@@ -1048,7 +1027,7 @@ see reaction package for documentation.}""",
             def XI_AS4(blk, t):
                 return (
                     blk.properties_in[t].conc_mass_comp["X_I"]
-                    + blk.biomass[t] * self.f_xI_xc
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_xI_xc
                 )
 
             @self.Constraint(
@@ -1148,7 +1127,8 @@ see reaction package for documentation.}""",
             def Xch_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["X_ch"]
-                    == blk.Xch_mapping[t] + blk.biomass[t] * self.f_ch_xc
+                    == blk.Xch_mapping[t]
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_ch_xc
                 )
 
             @self.Constraint(
@@ -1158,7 +1138,8 @@ see reaction package for documentation.}""",
             def Xpr_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["X_pr"]
-                    == blk.Xpr_mapping[t] + blk.biomass[t] * self.f_pr_xc
+                    == blk.Xpr_mapping[t]
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_pr_xc
                 )
 
             @self.Constraint(
@@ -1168,7 +1149,8 @@ see reaction package for documentation.}""",
             def Xli_output(blk, t):
                 return (
                     blk.properties_out[t].conc_mass_comp["X_li"]
-                    == blk.Xli_mapping[t] + blk.biomass[t] * self.f_li_xc
+                    == blk.Xli_mapping[t]
+                    + blk.biomass[t] * blk.config.outlet_reaction_package.f_li_xc
                 )
 
             @self.Expression(
@@ -1198,7 +1180,9 @@ see reaction package for documentation.}""",
                     blk.SPO4_AS4[t]
                     + blk.properties_in[t].conc_mass_comp["X_S"]
                     * blk.config.inlet_reaction_package.i_PXS
-                    - blk.Xch_mapping[t] * self.P_ch * mw_p
+                    - blk.Xch_mapping[t]
+                    * blk.config.outlet_reaction_package.P_ch
+                    * mw_p
                     - blk.Xli_mapping[t]
                     * blk.config.outlet_reaction_package.Pi["X_li"]
                     * mw_p

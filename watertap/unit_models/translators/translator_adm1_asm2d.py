@@ -131,45 +131,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         mw_k = 39.1 * pyunits.kg / pyunits.kmol
         mw_mg = 24.3 * pyunits.kg / pyunits.kmol
 
-        # TODO: Move these parameter values to the modified ADM1 rxn package
-        self.f_sI_xc = Param(
-            initialize=eps,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Soluble inerts from composites",
-        )
-        self.f_xI_xc = Param(
-            initialize=0.1,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Particulate inerts from composites",
-        )
-        self.f_ch_xc = Param(
-            initialize=0.275,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Carbohydrates from composites",
-        )
-        self.f_pr_xc = Param(
-            initialize=0.275,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Proteins from composites",
-        )
-        self.f_li_xc = Param(
-            initialize=0.35,
-            units=pyunits.dimensionless,
-            mutable=True,
-            doc="Lipids from composites",
-        )
-
-        self.P_ch = Param(
-            initialize=eps,
-            units=pyunits.kmol / pyunits.kg,
-            mutable=True,
-            doc="P content of X_ch",
-        )
-
         @self.Constraint(
             self.flowsheet().time,
             doc="Equality volumetric flow equation",
@@ -224,27 +185,27 @@ class TranslatorDataADM1ASM2D(TranslatorData):
             return (
                 blk.config.inlet_reaction_package.Ci["X_su"] * blk.biomass[t]
                 - (
-                    self.f_sI_xc
+                    blk.config.inlet_reaction_package.f_sI_xc
                     * blk.config.inlet_reaction_package.Ci["S_I"]
                     * blk.biomass[t]
                 )
                 - (
-                    self.f_ch_xc
+                    blk.config.inlet_reaction_package.f_ch_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_ch"]
                 )
                 - (
-                    self.f_pr_xc
+                    blk.config.inlet_reaction_package.f_pr_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_pr"]
                 )
                 - (
-                    self.f_li_xc
+                    blk.config.inlet_reaction_package.f_li_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_li"]
                 )
                 - (
-                    self.f_xI_xc
+                    blk.config.inlet_reaction_package.f_xI_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ci["X_I"]
                 )
@@ -265,17 +226,17 @@ class TranslatorDataADM1ASM2D(TranslatorData):
             return (
                 blk.config.inlet_reaction_package.Ni["X_su"] * blk.biomass[t]
                 - (
-                    self.f_sI_xc
+                    blk.config.inlet_reaction_package.f_sI_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ni["S_I"]
                 )
                 - (
-                    self.f_pr_xc
+                    blk.config.inlet_reaction_package.f_pr_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ni["X_pr"]
                 )
                 - (
-                    self.f_xI_xc
+                    blk.config.inlet_reaction_package.f_xI_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Ni["X_I"]
                 )
@@ -286,7 +247,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         )
         def SI_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["S_I"] + (
-                self.f_sI_xc * blk.biomass[t]
+                blk.config.inlet_reaction_package.f_sI_xc * blk.biomass[t]
             )
 
         @self.Expression(
@@ -294,7 +255,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         )
         def Xch_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_ch"] + (
-                self.f_ch_xc * blk.biomass[t]
+                blk.config.inlet_reaction_package.f_ch_xc * blk.biomass[t]
             )
 
         @self.Expression(
@@ -302,7 +263,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         )
         def Xpr_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_pr"] + (
-                self.f_pr_xc * blk.biomass[t]
+                blk.config.inlet_reaction_package.f_pr_xc * blk.biomass[t]
             )
 
         @self.Expression(
@@ -310,7 +271,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         )
         def Xli_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_li"] + (
-                self.f_li_xc * blk.biomass[t]
+                blk.config.inlet_reaction_package.f_li_xc * blk.biomass[t]
             )
 
         @self.Expression(
@@ -318,7 +279,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         )
         def XI_AD1(blk, t):
             return blk.properties_in[t].conc_mass_comp["X_I"] + (
-                self.f_xI_xc * blk.biomass[t]
+                blk.config.inlet_reaction_package.f_xI_xc * blk.biomass[t]
             )
 
         @self.Expression(
@@ -329,18 +290,22 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 blk.properties_in[t].conc_mass_comp["X_PP"] / mw_XPP
                 + (blk.config.inlet_reaction_package.Pi["X_su"] * blk.biomass[t])
                 - (
-                    self.f_sI_xc
+                    blk.config.inlet_reaction_package.f_sI_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Pi["S_I"]
                 )
-                - (self.f_ch_xc * blk.biomass[t] * self.P_ch)
                 - (
-                    self.f_li_xc
+                    blk.config.inlet_reaction_package.f_ch_xc
+                    * blk.biomass[t]
+                    * blk.config.inlet_reaction_package.P_ch
+                )
+                - (
+                    blk.config.inlet_reaction_package.f_li_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Pi["X_li"]
                 )
                 - (
-                    self.f_xI_xc
+                    blk.config.inlet_reaction_package.f_xI_xc
                     * blk.biomass[t]
                     * blk.config.inlet_reaction_package.Pi["X_I"]
                 )
@@ -436,7 +401,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         def SIP_AD2(blk, t):
             return (
                 self.XPP_AD1
-                + blk.Xch_AD1[t] * self.P_ch
+                + blk.Xch_AD1[t] * blk.config.inlet_reaction_package.P_ch
                 + blk.Xli_AD1[t] * blk.config.inlet_reaction_package.Pi["X_li"]
                 - blk.config.outlet_reaction_package.i_PXS
                 / mw_p
