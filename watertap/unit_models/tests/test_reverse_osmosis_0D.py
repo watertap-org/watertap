@@ -44,11 +44,13 @@ import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import pytest
+
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 def test_default_config_and_build():
@@ -58,22 +60,24 @@ def test_default_config_and_build():
     m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
     assert len(m.fs.unit.config) == 15
-    config_keys = ["dynamic",
-    "has_holdup",
-    "property_package",
-    "property_package_args",
-    "material_balance_type",
-    "energy_balance_type",
-    "momentum_balance_type",
-    "concentration_polarization_type",
-    "mass_transfer_coefficient",
-    "transport_model",
-    "module_type",
-    "has_pressure_change",
-    "pressure_change_type",
-    "friction_factor",
-    "has_full_reporting"]
-    
+    config_keys = [
+        "dynamic",
+        "has_holdup",
+        "property_package",
+        "property_package_args",
+        "material_balance_type",
+        "energy_balance_type",
+        "momentum_balance_type",
+        "concentration_polarization_type",
+        "mass_transfer_coefficient",
+        "transport_model",
+        "module_type",
+        "has_pressure_change",
+        "pressure_change_type",
+        "friction_factor",
+        "has_full_reporting",
+    ]
+
     for key in m.fs.unit.config:
         assert key in config_keys
 
@@ -95,7 +99,7 @@ def test_default_config_and_build():
     assert m.fs.unit.config.transport_model == TransportModel.SD
     assert m.fs.unit.config.friction_factor == FrictionFactor.default_by_module_type
     assert m.fs.unit.config.module_type == ModuleType.flat_sheet
-    assert not m.fs.unit.config.has_full_reporting 
+    assert not m.fs.unit.config.has_full_reporting
     # test ports
     port_lst = ["inlet", "retentate", "permeate"]
     for port_str in port_lst:
@@ -106,13 +110,17 @@ def test_default_config_and_build():
 
     # test feed-side control volume and associated stateblocks
     assert isinstance(m.fs.unit.feed_side, MembraneChannel0DBlock)
-    assert isinstance(m.fs.unit.permeate_side, StateBlock)  
+    assert isinstance(m.fs.unit.permeate_side, StateBlock)
     assert isinstance(m.fs.unit.mixed_permeate, StateBlock)
-    assert str(m.fs.unit.permeate_side.index_set()) == 'fs._time*fs.unit.feed_side.length_domain'
+    assert (
+        str(m.fs.unit.permeate_side.index_set())
+        == "fs._time*fs.unit.feed_side.length_domain"
+    )
     # test statistics
     assert number_variables(m) == 134
     assert number_total_constraints(m) == 110
     assert number_unused_variables(m) == 1
+
 
 def build():
     m = ConcreteModel()
