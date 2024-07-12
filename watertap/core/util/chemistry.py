@@ -8,9 +8,7 @@ from pyomo.environ import units as pyunits
 def get_charge(watertap_name: str) -> int:
     """
     Gets charge from WaterTAP formatted names.
-
     :param watertap_name: string name of a solute in WaterTAP format
-
     :return charge: integer value of charge
     """
 
@@ -53,39 +51,13 @@ def get_charge(watertap_name: str) -> int:
     return charge
 
 
-def get_charge_group(charge: int) -> str:
-    """
-    Categorizes molecule based on its charge.
-
-    :param charge: integer value for charge
-
-    :return group: string name for charge group
-    """
-
-    if charge == 0:
-        group = "Neutrals"
-    elif charge > 0:
-        group = "Cations"
-    elif charge < 0:
-        group = "Anions"
-    return group
-
-
-def get_periodic_table() -> pd.DataFrame:
-    parent_dir = Path(__file__).parent
-    return pd.read_csv(parent_dir / "periodic_table.csv")
-
-
 def get_molar_mass(watertap_name: str) -> float:
     """
     Extracts atomic weight data from a periodic table file
     to generate the molar mass of a chemical substance.
-
     TODO: additional testing for complex solutes
     such as CH3CO2H, [UO2]2[OH]4, etc.
-
     :param watertap_name: string name of a solute in WaterTAP format
-
     :return molar_mass: float value for molar mass of solute
     """
 
@@ -118,17 +90,46 @@ def get_molar_mass(watertap_name: str) -> float:
 
     molar_mass = 0
     for element in element_counts:
-        atomic_mass = float(
-            periodic_table["AtomicMass"][(periodic_table["Symbol"] == element)].values[
-                0
-            ]
-        )
+        try:
+            atomic_mass = float(
+                periodic_table["AtomicMass"][
+                    (periodic_table["Symbol"] == element)
+                ].values[0]
+            )
+        except IndexError:
+            raise IOError(
+                f"The symbol '{element}' from the component name '{components[0]}' could not be found in the periodic table."
+            )
+
         molar_mass += element_counts[element] * atomic_mass
 
     if not molar_mass:
         raise IOError(f"Molecular weight data could not be found for {watertap_name}.")
 
     return molar_mass
+
+
+def get_charge_group(charge: int) -> str:
+    """
+    Categorizes molecule based on its charge.
+
+    :param charge: integer value for charge
+
+    :return group: string name for charge group
+    """
+
+    if charge == 0:
+        group = "Neutrals"
+    elif charge > 0:
+        group = "Cations"
+    elif charge < 0:
+        group = "Anions"
+    return group
+
+
+def get_periodic_table() -> pd.DataFrame:
+    parent_dir = Path(__file__).parent
+    return pd.read_csv(parent_dir / "periodic_table.csv")
 
 
 def get_molar_mass_quantity(watertap_name: str, units=pyunits.kg / pyunits.mol):
