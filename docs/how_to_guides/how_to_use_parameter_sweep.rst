@@ -35,13 +35,13 @@ In general you would import your own flowsheet module.
 
     # replace this with your own flowsheet module, e.g.
     # import my_flowsheet_module as mfm
-    import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
+    import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
 Once this is done, import the parameter sweep tool
 
 .. testcode::
 
-    from watertap.tools.parameter_sweep import parameter_sweep, LinearSample
+    from parameter_sweep import parameter_sweep, LinearSample
 
 Conceptually, regardless of the number of iterations necessary to test each possible combination of variables, it is only necessary to build, simulate, and set up the model once.
 Thus, these steps are left to the user and handled outside the parameter sweep function.
@@ -158,4 +158,4 @@ Note that there are additional keyword arguments that can be passed to this func
 Module Documentation
 --------------------
 
-* :mod:`watertap.tools.parameter_sweep`
+* :mod:`parameter_sweep`

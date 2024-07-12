@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -45,27 +45,29 @@ from watertap.unit_models.aeration_tank import AerationTank, ElectricityConsumpt
 
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
-from watertap.property_models.activated_sludge.asm1_properties import ASM1ParameterBlock
-from watertap.property_models.activated_sludge.asm1_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+)
+from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
-from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
 
-from watertap.property_models.anaerobic_digestion.adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
-from watertap.property_models.anaerobic_digestion.adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
 

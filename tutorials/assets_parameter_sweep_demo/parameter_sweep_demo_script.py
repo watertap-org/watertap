@@ -10,14 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.core.solvers import get_solver
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     optimize,
 )
-from watertap.examples.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import (
+from watertap.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import (
     build_model,
     build_outputs,
 )
-from watertap.tools.parameter_sweep import (
+from parameter_sweep import (
     LinearSample,
     UniformSample,
     ParameterSweep,
@@ -263,8 +263,6 @@ def create_differential_parameter_sweep_object(
 if __name__ == "__main__":
     import sys
     import time
-    import numpy as np
-    import pprint
 
     start_time = time.time()
 

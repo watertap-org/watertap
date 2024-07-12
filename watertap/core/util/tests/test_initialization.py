@@ -12,7 +12,7 @@
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Var, Constraint
+from pyomo.environ import ConcreteModel, Var, Constraint, ConstraintList
 
 from watertap.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
@@ -21,6 +21,7 @@ from watertap.core.util.initialization import (
     assert_degrees_of_freedom,
     assert_no_degrees_of_freedom,
     check_solve,
+    interval_initializer,
 )
 import idaes.logger as idaeslog
 
@@ -133,3 +134,48 @@ class TestCheckSolve:
         check_solve(results, logger=_log, fail_flag=True)
 
         m.acon.activate()
+
+
+class TestIntervalImproveInitial:
+
+    @pytest.fixture(scope="class")
+    def m(self):
+
+        # This is the same model used in the pyomo fbbt test at
+        # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
+
+        m = ConcreteModel()
+        m.x = Var(bounds=(-3, 3))
+        m.y = Var(bounds=(0, None))
+        m.z = Var()
+        m.c = ConstraintList()
+        m.c.add(m.x + m.y >= -1)
+        m.c.add(m.x + m.y <= -1)
+        m.c.add(m.y - m.x * m.z <= 2)
+        m.c.add(m.y - m.x * m.z >= -2)
+        m.c.add(m.x + m.z == 1)
+
+        return m
+
+    @pytest.mark.unit
+    def test_interval_initializer(self, m):
+
+        # We are checking for 2 things:
+        # 1. The what the value is set to within the pyomo model
+        # 2. The original bounds have been reset as they were originally
+        #    specified in the flowsheet
+        feasibility_tol = 1.0e-6
+        interval_initializer(m, feasibility_tol=feasibility_tol)
+
+        # Assert the values
+        assert m.x.value == pytest.approx(-1, abs=1.3 - 6)
+        assert m.y.value == pytest.approx(0.0, abs=1.0e-6)
+        assert m.z.value == pytest.approx(2.0, abs=1.0e-6)
+
+        # Assert the restored bounds
+        assert m.x.lb == -3.0
+        assert m.x.ub == 3.0
+        assert m.y.lb == 0.0
+        assert m.y.ub == None
+        assert m.z.lb == None
+        assert m.z.ub == None

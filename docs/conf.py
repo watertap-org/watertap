@@ -31,13 +31,13 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "WaterTAP"
-copyright = "2020-2023, NAWI"
+copyright = "2020-2024, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "1.0.dev0"
+release = "1.1.dev0"
 # The short X.Y version
-version = "1.0.dev0"
+version = "1.1.dev0"
 # -- General configuration ---------------------------------------------------
 
 
@@ -96,6 +96,11 @@ html_logo = "_static/NAWI_logo.png"
 #
 html_favicon = "_static/favicon.ico"
 
+# intersphinx mapping to idaes
+intersphinx_mapping = {
+    "idaes": ("https://idaes-pse.readthedocs.io/en/stable/", None),
+    "parameter_sweep": ("https://parameter-sweep.readthedocs.io/en/latest/", None),
+}
 
 rst_epilog = """
 .. |Binder launch button| image:: https://mybinder.org/badge_logo.svg
