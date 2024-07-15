@@ -46,6 +46,11 @@ from watertap.unit_models.ion_exchange.util import (
     plot_theta,
     plot_estimate_bv50,
     plot_curve,
+    build_results_dict,
+    results_dict_append,
+    save_results,
+    save_output,
+    save_figs,
 )
 from watertap.core.solvers import get_solver
 from .ion_exchange_clark import IonExchangeClark
@@ -60,7 +65,7 @@ class IXParmest:
     def __init__(
         self,
         curve_id=None,
-        df_curve=None,
+        input_data=None,
         ix_model=IonExchangeClark,
         regenerant="single_use",
         data_file=None,
@@ -85,29 +90,42 @@ class IXParmest:
         max_zero=1e-3,  # replace all values of c_norm < c0_min_thresh with this value
         min_one=0.9999,  # replace all values of c_norm > c0_max_thresh with this value
         use_all_data=False,  # eliminate filtering data and use all points
-        use_this_data=None,  # list of indexes in df_curve corresponding to data points to use
+        use_this_data=None,  # list of indexes in filtered_data corresponding to data points to use
         figsize=(7, 5),
         just_plot_curve=False,
-        save_path=None,
+        save_directory=None,
     ):
-        if df_curve is None:
+
+        if input_data is None and data_file is None:
+            raise ValueError(
+                "No input data provided."
+                "Must provide either DataFrame of data via input_data keyword"
+                " or path to input file via data_file keyword."
+            )
+
+        if input_data is None:
             curve_data = pd.read_csv(data_file)
             if curve_id is None:
                 assert len(curve_data.curve_id.unique()) == 1
                 self.curve_id = curve_data.curve_id.unique()[0]
             else:
                 self.curve_id = curve_id
-            self.df_curve = curve_data[curve_data.curve_id == self.curve_id].copy()
+            self.input_data = curve_data[curve_data.curve_id == self.curve_id].copy()
         else:
             # option to provide separate DataFrame with breakthrough curve_id info
-            self.df_curve = df_curve
+            self.input_data = input_data
             # assume the provided DataFrame only contains one curve
-            assert len(df_curve.curve_id.unique()) == 1
+            assert len(self.input_data.curve_id.unique()) == 1
             # override curve_id if provided
-            self.curve_id = df_curve.curve_id.unique()[0]
-        self.df_curve.sort_values("bv", inplace=True)
+            self.curve_id = self.input_data.curve_id.unique()[0]
+
+        self.input_data["point_id"] = [x for x in range(len(self.input_data))]
+        self.input_data.set_index("point_id", inplace=True)
+        self.filtered_data = deepcopy(self.input_data)
+        self.filtered_data.sort_values("bv", inplace=True)
         self.ix_model = ix_model
         self.regenerant = regenerant
+
         if theta_names is None:
             self.theta_names = thetas
         else:
@@ -170,21 +188,23 @@ class IXParmest:
 
         if self.c0_min_thresh <= 0:
             self.max_zero = max_zero
-            max_zero_i = self.df_curve.query("c_norm <= 0").index.max()
-            self.df_curve.at[max_zero_i, "c_norm"] = max_zero
-            self.df_curve.at[max_zero_i, "cb"] = (
-                max_zero * self.df_curve.at[max_zero_i, "c0"]
+            max_zero_i = self.filtered_data.query("c_norm <= 0").index.max()
+            self.filtered_data.at[max_zero_i, "c_norm"] = max_zero
+            self.filtered_data.at[max_zero_i, "cb"] = (
+                max_zero * self.filtered_data.at[max_zero_i, "c0"]
             )
             self.c0_min_thresh = 0.9 * max_zero
-        if 0 in self.df_curve.c_norm.to_list():
-            self.df_curve = self.df_curve.query("c_norm > 0")
+        if 0 in self.filtered_data.c_norm.to_list():
+            self.filtered_data = self.filtered_data.query("c_norm > 0")
 
         if self.c0_max_thresh >= 1:
             self.min_one = min_one
-            min_one_i = self.df_curve.query("c_norm >= 1").index.to_list()
+            min_one_i = self.filtered_data.query("c_norm >= 1").index.to_list()
             for i in min_one_i:
-                self.df_curve.at[i, "c_norm"] = min_one
-                self.df_curve.at[i, "cb"] = min_one * self.df_curve.at[i, "c0"]
+                self.filtered_data.at[i, "c_norm"] = min_one
+                self.filtered_data.at[i, "cb"] = (
+                    min_one * self.filtered_data.at[i, "c0"]
+                )
             self.c0_max_thresh = min_one
 
         if cb50_min_thresh is None:
@@ -201,8 +221,18 @@ class IXParmest:
             self.scale_from_value += ["bv"]
         else:
             self.scale_from_value = scale_from_value
-        
-        self.save_path = save_path
+
+        self.save_directory = save_directory
+
+        self.dropped_points = [
+            p for p in self.input_data.index if p not in self.filtered_data.index
+        ]
+        self.modified_points = [
+            p
+            for p in self.input_data.index
+            if p not in self.dropped_points
+            and not self.filtered_data.loc[p].equals(self.input_data.loc[p])
+        ]
 
         self.get_curve_conditions()
         if self.just_plot_curve:
@@ -214,7 +244,7 @@ class IXParmest:
         self.rebuild()  # initial build of model
         # self.m0 = self.m.clone()  # intact initial build of model
         # self.R_sq = np.nan
-        # self.build_results_dict()  # build dict for storing results
+        self.build_results_dict()  # build dict for storing results
 
     def run_all_things(self, plot_things=False, save_things=False, overwrite=True):
         """Run all methods to complete parmest run
@@ -264,6 +294,9 @@ class IXParmest:
 
         def linear_inv(cb, slope, b):
             return (cb - b) / slope
+
+        if not self.ix_model is IonExchangeClark:
+            raise ValueError("Can only use estimate_bv50 method if using Clark model.")
 
         if not hasattr(self, "bv_pred_ig"):
             self.test_initial_guess()
@@ -349,7 +382,7 @@ class IXParmest:
             elif self.tc != "optimal":
                 # self.bv_fail_ig_fake.append(bv)
                 self.cb_fail_ig_fake.append(cnorm)
-            # self.results_dict_append(blk=ix)
+            self.results_dict_append(ix_blk=ix)
 
         self.flag = "test_initial_guess"
         m = self.m.clone()
@@ -368,7 +401,7 @@ class IXParmest:
             elif self.tc != "optimal":
                 self.bv_fail_ig.append(bv)
                 self.cb_fail_ig.append(cnorm)
-            # self.results_dict_append(blk=ix)
+            self.results_dict_append(ix_blk=ix)
 
     def get_curve_conditions(self):
         """
@@ -376,7 +409,7 @@ class IXParmest:
         and other metadata
         """
 
-        df = self.df_curve.copy()
+        df = self.filtered_data.copy()
 
         # TODO: insert check for columns that should all have same value
 
@@ -472,7 +505,7 @@ class IXParmest:
         5. (if the current cb is not the last) The next cb (i + 1) is some threshold greater than the current cb
         """
 
-        df = self.df_curve.copy()
+        df = self.filtered_data.copy()
         last_cb = -0.01
         self.keep_cbs = []
         self.keep_bvs = []
@@ -721,10 +754,10 @@ class IXParmest:
         }
         self.df_exp = pd.DataFrame.from_dict(exp_dict).set_index("exp_num")
         self.df_exp["c0"] = self.c0
-        # self.df_exp = self.df_curve[self.df_curve.bv.isin(self.keep_bvs)].copy()
+        # self.df_exp = self.filtered_data[self.filtered_data.bv.isin(self.keep_bvs)].copy()
         # self.df_exp.reset_index(inplace=True, drop=True)
-        # for i in self.df_curve.index:
-        for i in self.df_exp.index: 
+        # for i in self.filtered_data.index:
+        for i in self.df_exp.index:
             self.experiment_list.append(IXExperiment(self, self.df_exp, i))
 
     def run_parmest(self):
@@ -840,7 +873,7 @@ class IXParmest:
             elif self.tc == "optimal":
                 self.bv_pred_theta_test.append(ix.bv())
                 self.cnorm_pred_theta_test.append(cnorm)
-            # self.results_dict_append(blk=ix)
+            self.results_dict_append(ix_blk=ix)
 
         self.bv_pred_theta = []
         self.bv_fail_theta = []
@@ -874,11 +907,26 @@ class IXParmest:
                 self.bv_pred_theta.append(ix.bv())
                 self.keep_bv_theta.append(bv)
                 self.cnorm_pred_theta.append(cnorm)
-            # self.results_dict_append(blk=ix)
+            self.results_dict_append(ix_blk=ix)
 
         self.corr_matrix = np.corrcoef(self.keep_bv_theta, self.bv_pred_theta)
         corr = self.corr_matrix[0, 1]
         self.R_sq = corr**2
+
+    def build_results_dict(self, **kwargs):
+        build_results_dict(self, **kwargs)
+
+    def results_dict_append(self, **kwargs):
+        results_dict_append(self, **kwargs)
+
+    def save_output(self):
+        save_output(self)
+
+    def save_results(self):
+        save_results(self)
+
+    def save_figs(self):
+        save_figs(self)
 
     def plot_initial_guess(self):
         plot_initial_guess(self)
@@ -1039,7 +1087,7 @@ class IXExperiment(Experiment):
 #     data=[[v for v in self.initial_guess_theta_dict.values()]],
 #     columns=self.theta_names,
 # )
-# self.df_parmest = self.df_curve[self.df_curve.cb.isin(self.keep_cbs)]
+# self.df_parmest = self.filtered_data[self.filtered_data.cb.isin(self.keep_cbs)]
 
 # def parmest_regression(data):
 #     """

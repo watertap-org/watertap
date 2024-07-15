@@ -234,7 +234,7 @@ class IonExchangeThomasData(IonExchangeBaseData):
 
             right_side = (
                 b.tb_traps[k]
-                + b.thomas_constant ** -1
+                + b.thomas_constant**-1
                 - (
                     (b.bed_mass * b.resin_max_capacity)
                     / prop_in.flow_mass_phase_comp["Liq", j]
