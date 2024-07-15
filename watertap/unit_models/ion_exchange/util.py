@@ -19,6 +19,13 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
+from .ion_exchange_clark import IonExchangeClark
+
+theta_title_dict = {
+    "thomas_constant": "k$_{Th}$",
+    "resin_max_capacity": "q$_{max}$"
+}
+
 
 def plot_theta(blk):
 
@@ -26,15 +33,19 @@ def plot_theta(blk):
 
     if not all(hasattr(blk, attr) for attr in ["test_cnorms", "test_bvs", "R_sq"]):
         blk.test_theta()
+    
+    stat_str = f"Theta (R$^2$: {blk.R_sq:.3f})"
+    theta_str = [f"{theta_title_dict[k]}: {v:.2e}" for k, v in blk.theta_dict.items()]
+    textstr = "\n".join([stat_str] + theta_str)
 
-    textstr = "\n".join(
-        [
-            f"Theta (R$^2$: {blk.R_sq:.3f})",
-            f"  k$_T$: {blk.theta_dict['mass_transfer_coeff']:.2e}",
-            f"  n: {blk.theta_dict['freundlich_n']:.2f}",
-            f"  BV50: {round(blk.theta_dict['bv_50'])}",
-        ]
-    )
+    # textstr = "\n".join(
+    #     [
+    #         f"Theta (R$^2$: {blk.R_sq:.3f})",
+    #         f"  k$_T$: {blk.theta_dict['mass_transfer_coeff']:.2e}",
+    #         f"  n: {blk.theta_dict['freundlich_n']:.2f}",
+    #         f"  BV50: {round(blk.theta_dict['bv_50'])}",
+    #     ]
+    # )
     boxprops = dict(boxstyle="round", facecolor="wheat", alpha=0.25)
 
     fig1, ax1 = plt.subplots(figsize=blk.figsize)
@@ -533,13 +544,7 @@ def plot_initial_guess(blk):
         # label="Influent",
     )
 
-    ax.scatter(
-        [blk.initial_guess_dict["bv_50"]],
-        [0.5],
-        marker="*",
-        color="springgreen",
-        # label="BV50 Guess",
-    )
+
 
     title = (
         f"Initial Guess - Curve {blk.curve_id}:\n"
@@ -557,23 +562,32 @@ def plot_initial_guess(blk):
     ax.set_title(title)
     ax.set_ylim([-0.01, 1.02])
 
-    textstr = "\n".join(
-        [
-            f"Guess",
-            f"  k$_T$: {blk.initial_guess_dict['mass_transfer_coeff']:.2e}",
-            f"  $n$: {blk.initial_guess_dict['freundlich_n']:.2f}",
-            f"  BV50: {round(blk.initial_guess_dict['bv_50'])}",
-        ]
-    )
-    boxprops = dict(boxstyle="round", facecolor="wheat", alpha=0.25)
-    ax.text(
-        0.04,
-        0.95,
-        textstr,
-        verticalalignment="top",
-        transform=ax.transAxes,
-        bbox=boxprops,
-    )
+    if blk.ix_model is IonExchangeClark:
+
+        ax.scatter(
+            [blk.initial_guess_dict["bv_50"]],
+            [0.5],
+            marker="*",
+            color="springgreen",
+            # label="BV50 Guess",
+        )
+        textstr = "\n".join(
+            [
+                f"Guess",
+                f"  k$_T$: {blk.initial_guess_dict['mass_transfer_coeff']:.2e}",
+                f"  $n$: {blk.initial_guess_dict['freundlich_n']:.2f}",
+                f"  BV50: {round(blk.initial_guess_dict['bv_50'])}",
+            ]
+        )
+        boxprops = dict(boxstyle="round", facecolor="wheat", alpha=0.25)
+        ax.text(
+            0.04,
+            0.95,
+            textstr,
+            verticalalignment="top",
+            transform=ax.transAxes,
+            bbox=boxprops,
+        )
     ax.legend()
     plt.tight_layout()
 
