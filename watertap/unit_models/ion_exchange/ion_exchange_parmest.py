@@ -49,8 +49,9 @@ from watertap.unit_models.ion_exchange.util import (
 )
 from watertap.core.solvers import get_solver
 from .ion_exchange_clark import IonExchangeClark
+from .ion_exchange_thomas import IonExchangeThomas
 
-thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
+# thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -68,6 +69,7 @@ class IXParmest:
         bv=None,
         cb=None,
         c_norm=None,
+        thetas=None,
         initial_guess_dict=dict(),
         initial_guess_theta_dict=dict(),
         theta_names=None,
@@ -86,6 +88,7 @@ class IXParmest:
         use_this_data=None,  # list of indexes in df_curve corresponding to data points to use
         figsize=(7, 5),
         just_plot_curve=False,
+        save_path=None,
     ):
         if df_curve is None:
             curve_data = pd.read_csv(data_file)
@@ -130,10 +133,11 @@ class IXParmest:
             self.use_all_data = False
 
         if initial_guess_dict == dict():
-            self.initial_guess_dict = {  # default initial guesses for regressed parameters
-                "mass_transfer_coeff": 0.1,  # by default, bv_50 has no initial guess. Default initial guess for bv_50 is avg of BV values from curve_id.
-                "freundlich_n": 1.1,
-            }
+            if self.ix_model is IonExchangeClark:
+                self.initial_guess_dict = {  # default initial guesses for regressed parameters
+                    "mass_transfer_coeff": 0.1,  # by default, bv_50 has no initial guess. Default initial guess for bv_50 is avg of BV values from curve_id.
+                    "freundlich_n": 1.1,
+                }
         else:
             self.initial_guess_dict = deepcopy(initial_guess_dict)
 
@@ -155,6 +159,14 @@ class IXParmest:
         self.c0_min_thresh = c0_min_thresh
         self.c0_max_thresh = c0_max_thresh
         self.c_next_thresh = c_next_thresh
+
+        if thetas is None:
+            if ix_model is IonExchangeClark:
+                self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
+            if ix_model is IonExchangeThomas:
+                self.thetas = ["thomas_constant", "resin_max_capacity"]
+        else:
+            self.thetas = thetas
 
         if self.c0_min_thresh <= 0:
             self.max_zero = max_zero
@@ -189,12 +201,14 @@ class IXParmest:
             self.scale_from_value += ["bv"]
         else:
             self.scale_from_value = scale_from_value
+        
+        self.save_path = save_path
 
         self.get_curve_conditions()
         if self.just_plot_curve:
             self.plot_curve()
-            return 
-        
+            return
+
         self.get_model_config()
 
         self.rebuild()  # initial build of model
@@ -441,10 +455,11 @@ class IXParmest:
         if self.bv is None:
             self.bv = self.keep_bvs[-1]
 
-        if "bv_50" not in self.initial_guess_dict.keys():
-            self.initial_guess_dict["bv_50"] = np.mean(self.keep_bvs)
-        if "bv_50" not in self.initial_guess_theta_dict.keys():
-            self.initial_guess_theta_dict["bv_50"] = np.mean(self.keep_bvs)
+        if self.ix_model is IonExchangeClark:
+            if "bv_50" not in self.initial_guess_dict.keys():
+                self.initial_guess_dict["bv_50"] = np.mean(self.keep_bvs)
+            if "bv_50" not in self.initial_guess_theta_dict.keys():
+                self.initial_guess_theta_dict["bv_50"] = np.mean(self.keep_bvs)
 
     def filter_data(self):
         """
@@ -668,7 +683,11 @@ class IXParmest:
                     if get_scaling_factor(ixv) is None:
                         set_scaling_factor(ixv, sf)
 
-        constraint_scaling_transform(ix.eq_clark[target_component], 1e-2)
+        if self.ix_model is IonExchangeClark:
+            constraint_scaling_transform(ix.eq_clark[target_component], 1e-2)
+
+        if self.ix_model is IonExchangeThomas:
+            constraint_scaling_transform(ix.eq_thomas[target_component], 1e-2)
 
     def solve_it(self, m=None, solver="watertap", optarg=dict(), tee=False):
         """
@@ -694,10 +713,19 @@ class IXParmest:
 
     def build_parmest_experiment_list(self):
         self.experiment_list = list()
+        exp_dict = {
+            "exp_num": [x for x in range(len(self.keep_bvs))],
+            "cb": self.keep_cbs,
+            "bv": self.keep_bvs,
+            "c_norm": self.keep_cnorms,
+        }
+        self.df_exp = pd.DataFrame.from_dict(exp_dict).set_index("exp_num")
+        self.df_exp["c0"] = self.c0
         # self.df_exp = self.df_curve[self.df_curve.bv.isin(self.keep_bvs)].copy()
         # self.df_exp.reset_index(inplace=True, drop=True)
-        for i in self.df_curve.index:
-            self.experiment_list.append(IXExperiment(self, self.df_curve, i))
+        # for i in self.df_curve.index:
+        for i in self.df_exp.index: 
+            self.experiment_list.append(IXExperiment(self, self.df_exp, i))
 
     def run_parmest(self):
         """
@@ -934,7 +962,11 @@ class IXExperiment(Experiment):
         self.data_i = data.loc[experiment_number]
         self.ix_parmest_obj = ix_parmest_obj
         self.model = None
-        self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
+        self.thetas = self.ix_parmest_obj.thetas
+        # if self.ix_parmest_obj.ix_model is IonExchangeClark:
+        #     self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
+        # if self.ix_parmest_obj.ix_model is IonExchangeThomas:
+        #     self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
 
     def create_model(self):
         # self.model = self.ix_parmest_obj.m.clone()
