@@ -658,7 +658,7 @@ class MembraneChannelMixin:
                 units=units_meta("length") ** 2,
                 doc="Cross sectional area",
             )
-        # may already be constructed under add_geometry() in MembraneChannel0D
+        # in case channel_height is already constructed
         if not hasattr(self, "channel_height"):
             self.channel_height = Var(
                 initialize=1e-3,
