@@ -53,8 +53,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
     def add_state_blocks(
         self,
         has_phase_equilibrium=None,
-        property_package_vapor=None,
-        property_package_args_vapor=None,
     ):
         super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
 
@@ -90,13 +88,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             )
 
         add_object_reference(self, "properties", properties_dict)
-
-        self._add_interface_stateblock(has_phase_equilibrium)
-        self._add_vapor_stateblock(
-            property_package_vapor,
-            property_package_args_vapor,
-            has_phase_equilibrium=False,
-        )
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         if pressure_change_type == PressureChangeType.fixed_per_stage:

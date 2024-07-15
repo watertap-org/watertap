@@ -18,7 +18,9 @@ from pyomo.environ import (
     check_optimal_termination,
     exp,
     units as pyunits,
+    Constraint,
 )
+from enum import Enum, auto
 
 from idaes.core import UnitModelBlockData
 from watertap.core.solvers import get_solver
@@ -43,6 +45,20 @@ from watertap.core.util.initialization import interval_initializer
 __author__ = "Elmira Shamlou"
 
 
+class MDconfigurationType(Enum):
+    """
+    DCMD: Direct Contact Membrane Distillation
+    VMD: Vacuum Membrane Distillation
+    PGMD_CGMD: Permeate Gap or Conductive Gap Membrane distillation
+    AGMD: Air Gap Membrane Distillation
+    """
+
+    DCMD = auto()
+    VMD = auto()
+    PGMD_CGMD = auto()
+    AGMD = auto()
+
+
 class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
     def build(self):
         """
@@ -56,8 +72,13 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         self.hot_ch.add_state_blocks(
             has_phase_equilibrium=False,
+        )
+
+        self.hot_ch._add_interface_stateblock(has_phase_equilibrium=False)
+        self.hot_ch._add_vapor_stateblock(
             property_package_vapor=self.config.hot_ch.property_package_vapor,
             property_package_args_vapor=self.config.hot_ch.property_package_args_vapor,
+            has_phase_equilibrium=False,
         )
 
         # self.hot_ch.set_config(self.config.hot_ch)
@@ -101,32 +122,77 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             "cold_ch", self.config, self.config.cold_ch
         )
 
-        self.cold_ch.add_state_blocks(
-            has_phase_equilibrium=False,
-            property_package_vapor=self.config.cold_ch.property_package_vapor,
-            property_package_args_vapor=self.config.cold_ch.property_package_args_vapor,
-        )
+        self.cold_ch.add_state_blocks(has_phase_equilibrium=False)
 
-        self.cold_ch.add_material_balances(
-            balance_type=self.config.cold_ch.material_balance_type,
-            has_mass_transfer=True,
-        )
+        # cold channel
+        # vacuum channel is VMD is also named as cold_ch
 
-        self.cold_ch.add_momentum_balances(
-            balance_type=self.config.cold_ch.momentum_balance_type,
-            pressure_change_type=self.config.cold_ch.pressure_change_type,
-            has_pressure_change=self.config.cold_ch.has_pressure_change,
-            friction_factor=self.config.cold_ch.friction_factor,
-        )
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.DCMD,
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            self.cold_ch._add_interface_stateblock(has_phase_equilibrium=False)
 
-        self.cold_ch.add_energy_balances(
-            balance_type=self.config.cold_ch.energy_balance_type,
-            has_heat_transfer=True,
-            has_enthalpy_transfer=True,
-        )
+            # Add constraint for volumetric flow equality between interface and bulk
+            self.cold_ch.add_extensive_flow_to_interface()
 
-        # Add constraint for volumetric flow equality between interface and bulk
-        self.cold_ch.add_extensive_flow_to_interface()
+        if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+            self.cold_ch._add_vapor_stateblock(
+                property_package_vapor=self.config.cold_ch.property_package_vapor,
+                property_package_args_vapor=self.config.cold_ch.property_package_args_vapor,
+                has_phase_equilibrium=False,
+            )
+
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.DCMD,
+            MDconfigurationType.VMD,
+        ]:
+            self.cold_ch.add_material_balances(
+                balance_type=self.config.cold_ch.material_balance_type,
+                has_mass_transfer=True,
+            )
+        elif self.config.MD_configuration_Type in [
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            self.cold_ch.add_material_balances(
+                balance_type=self.config.cold_ch.material_balance_type,
+                has_mass_transfer=False,
+            )
+
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.DCMD,
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            self.cold_ch.add_momentum_balances(
+                balance_type=self.config.cold_ch.momentum_balance_type,
+                pressure_change_type=self.config.cold_ch.pressure_change_type,
+                has_pressure_change=self.config.cold_ch.has_pressure_change,
+                friction_factor=self.config.cold_ch.friction_factor,
+            )
+
+        if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+            self.cold_ch.add_energy_balances(
+                balance_type=self.config.cold_ch.energy_balance_type,
+                has_heat_transfer=True,
+                has_enthalpy_transfer=True,
+            )
+        elif self.config.MD_configuration_Type in [
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            self.cold_ch.add_energy_balances(
+                balance_type=self.config.cold_ch.energy_balance_type,
+                has_heat_transfer=True,
+                has_enthalpy_transfer=True,
+            )
+        elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+            self.cold_ch.add_energy_balances(
+                balance_type=self.config.cold_ch.energy_balance_type,
+                has_enthalpy_transfer=True,
+            )
 
         # Concentration polarization constraint is not accounted for in the below method; it is
         # written later in the base model (eq_concentration_polarization)
@@ -136,30 +202,80 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 concentration_polarization_type=ConcentrationPolarizationType.none,
                 mass_transfer_coefficient=MassTransferCoefficient.none,
             )
-
-        self.cold_ch.add_temperature_polarization(
-            temperature_polarization_type=self.config.cold_ch.temperature_polarization_type,
-        )
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.DCMD,
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            self.cold_ch.add_temperature_polarization(
+                temperature_polarization_type=self.config.cold_ch.temperature_polarization_type,
+            )
 
         try:
             self.cold_ch.apply_transformation()
         except AttributeError:
             pass
 
-        for t in self.flowsheet().config.time:
-            for x in self.cold_ch.length_domain:
-                # Check if 'Vap' phase and 'H2O' component are defined in the property package
-                if (
-                    "Vap" in self.cold_ch.config.property_package.phase_list
-                    and "H2O" in self.cold_ch.config.property_package.component_list
-                ):
-                    # If so, fix the flow of 'H2O' in the 'Vap' phase to 0
-                    self.cold_ch.properties[t, x].flow_mass_phase_comp[
-                        "Vap", "H2O"
-                    ].fix(0)
-                    self.cold_ch.properties_interface[t, x].flow_mass_phase_comp[
-                        "Vap", "H2O"
-                    ].fix(0)
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.DCMD,
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            for t in self.flowsheet().config.time:
+                for x in self.cold_ch.length_domain:
+                    # Check if 'Vap' phase and 'H2O' component are defined in the property package
+                    if (
+                        "Vap" in self.cold_ch.config.property_package.phase_list
+                        and "H2O" in self.cold_ch.config.property_package.component_list
+                    ):
+                        # If so, fix the flow of 'H2O' in the 'Vap' phase to 0
+                        self.cold_ch.properties[t, x].flow_mass_phase_comp[
+                            "Vap", "H2O"
+                        ].fix(0)
+                        self.cold_ch.properties_interface[t, x].flow_mass_phase_comp[
+                            "Vap", "H2O"
+                        ].fix(0)
+
+        # gap channel
+        # modification required for AGMD
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            self._make_MD_channel_control_volume(
+                "gap_ch", self.config, self.config.gap_ch
+            )
+
+            self.gap_ch.add_state_blocks(
+                has_phase_equilibrium=False,
+            )
+
+            self.gap_ch._add_interface_stateblock(has_phase_equilibrium=False)
+
+            self.gap_ch.add_material_balances(
+                balance_type=self.config.hot_ch.material_balance_type,
+                has_mass_transfer=True,
+            )
+
+            self.gap_ch.add_momentum_balances(
+                balance_type=self.config.cold_ch.momentum_balance_type,
+                pressure_change_type=self.config.cold_ch.pressure_change_type,
+                has_pressure_change=self.config.cold_ch.has_pressure_change,
+                friction_factor=self.config.cold_ch.friction_factor,
+            )
+
+            self.gap_ch.add_energy_balances(
+                balance_type=self.config.hot_ch.energy_balance_type,
+                has_heat_transfer=True,
+                has_enthalpy_transfer=True,
+            )
+
+            self.gap_ch.add_extensive_flow_to_interface()
+
+            try:
+                self.gap_ch.apply_transformation()
+            except AttributeError:
+                pass
 
         add_object_reference(self, "length_domain", self.hot_ch.length_domain)
         add_object_reference(
@@ -206,11 +322,11 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 * b.hot_ch.properties[t, b.first_element].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ]
-                == b.cold_ch.properties[t, b.first_element].flow_mass_phase_comp[
+                == b.hot_ch.properties[t, b.first_element].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ]
-                - b.cold_ch.properties[
-                    t, b.cold_ch.length_domain.last()
+                - b.hot_ch.properties[
+                    t, b.hot_ch.length_domain.last()
                 ].flow_mass_phase_comp["Liq", "H2O"]
             )
 
@@ -231,19 +347,29 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
             return total_enth_flux / (total_enth_flux + total_cond_heat_flux)
 
-        @self.Expression(
-            self.flowsheet().config.time,
-            doc="module heat recovery: ratio of the actual heat recovered by cold side to the maximum ideal heat recovery",
-        )
-        def effectiveness(b, t):
-
-            return (
-                b.cold_ch.properties[t, b.first_element].temperature
-                - b.cold_ch.properties[t, b.cold_ch.length_domain.last()].temperature
-            ) / (
-                b.hot_ch.properties[t, b.first_element].temperature
-                - b.cold_ch.properties[t, b.cold_ch.length_domain.last()].temperature
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.DCMD,
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
+            # to do: define effectiveness at the flowsheet level, particularly for VMD and DCMD configs
+            @self.Expression(
+                self.flowsheet().config.time,
+                doc="module heat recovery: ratio of the actual heat recovered by cold side to the maximum ideal heat recovery",
             )
+            def effectiveness(b, t):
+
+                return (
+                    b.cold_ch.properties[t, b.first_element].temperature
+                    - b.cold_ch.properties[
+                        t, b.cold_ch.length_domain.last()
+                    ].temperature
+                ) / (
+                    b.hot_ch.properties[t, b.first_element].temperature
+                    - b.cold_ch.properties[
+                        t, b.cold_ch.length_domain.last()
+                    ].temperature
+                )
 
     def _add_mass_flux(self):
 
@@ -306,12 +432,38 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="Solvent mass flux",
         )
         def eq_flux_mass(b, t, x):
-            return b.flux_mass[t, x] == b.permeability_coef[
-                t
-            ] / b.membrane_thickness * (
-                b.hot_ch.properties_interface[t, x].pressure_sat
-                - b.cold_ch.properties_interface[t, x].pressure_sat
-            )
+
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return b.flux_mass[t, x] == b.permeability_coef[
+                    t
+                ] / b.membrane_thickness * (
+                    b.hot_ch.properties_interface[t, x].pressure_sat
+                    - b.cold_ch.properties_interface[t, x].pressure_sat
+                )
+            elif self.config.MD_configuration_Type in [
+                MDconfigurationType.PGMD_CGMD,
+                MDconfigurationType.AGMD,
+            ]:
+                return b.flux_mass[t, x] == b.permeability_coef[
+                    t
+                ] / b.membrane_thickness * (
+                    b.hot_ch.properties_interface[t, x].pressure_sat
+                    - b.gap_ch.properties_interface[t, x].pressure_sat
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                self.vacuum_pressure = Var(
+                    self.flowsheet().config.time,
+                    initialize=10,
+                    bounds=(1e-11, 1e-9),
+                    units=units_meta("pressure"),
+                    doc="Vacuum pressure in the VMD configuration",
+                )
+                return b.flux_mass[t, x] == b.permeability_coef[
+                    t
+                ] / b.membrane_thickness * (
+                    b.hot_ch.properties_interface[t, x].pressure_sat
+                    - b.vacuum_pressure[t]
+                )
 
         @self.Expression(
             self.flowsheet().config.time,
@@ -358,11 +510,24 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="cold side evaporation enthalpy flux",
         )
         def eq_flux_cold_enth(b, t, x):
-            return (
-                b.flux_enth_cold[t, x]
-                == b.flux_mass[t, x]
-                * b.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
-            )
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return (
+                    b.flux_enth_cold[t, x]
+                    == b.flux_mass[t, x]
+                    * b.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.flux_enth_cold[t, x]
+                    == b.flux_mass[t, x]
+                    * b.gap_ch.properties[t, x].enth_mass_phase["Liq"]
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return (
+                    b.flux_enth_cold[t, x]
+                    == b.flux_mass[t, x]
+                    * b.cold_ch.properties[t, x].enth_mass_phase["Vap"]
+                )
 
         @self.Expression(
             self.flowsheet().config.time,
@@ -410,10 +575,18 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="cold side Vapor temperature",
         )
         def eq_vapor_temperature_cold(b, t, x):
-            return (
-                b.cold_ch.properties_vapor[t, x].temperature
-                == b.cold_ch.properties_interface[t, x].temperature
-            )
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return (
+                    b.cold_ch.properties_vapor[t, x].temperature
+                    == b.cold_ch.properties_interface[t, x].temperature
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return (
+                    b.cold_ch.properties[t, x].temperature
+                    == b.hot_ch.properties_interface[t, x].temperature
+                )
+            else:
+                return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().time,
@@ -421,10 +594,15 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="cold  side Vapor pressure",
         )
         def eq_vapor_pressure_cold(b, t, x):
-            return (
-                b.cold_ch.properties_vapor[t, x].pressure
-                == b.cold_ch.properties_interface[t, x].pressure_sat
-            )
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return (
+                    b.cold_ch.properties_vapor[t, x].pressure
+                    == b.cold_ch.properties_interface[t, x].pressure_sat
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return b.cold_ch.properties[t, x].pressure == b.vacuum_pressure[t]
+            else:
+                return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -448,10 +626,15 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         def eq_vapor_flow_equal(b, t, x):
             lb = b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Liq", "H2O"].lb
             b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Liq", "H2O"].fix(lb)
-            return (
-                b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
-                == b.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
-            )
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return (
+                    b.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+                    == b.cold_ch.properties_vapor[t, x].flow_mass_phase_comp[
+                        "Vap", "H2O"
+                    ]
+                )
+            else:
+                return Constraint.Skip
 
         # Check for hot channel temperature polarization type
         if (
@@ -535,12 +718,20 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="conduction heat flux",
         )
         def eq_flux_heat(b, t, x):
-            return b.flux_conduction_heat[
-                t, x
-            ] == b.membrane_thermal_conductivity / b.membrane_thickness * (
-                b.hot_ch.properties_interface[t, x].temperature
-                - b.cold_ch.properties_interface[t, x].temperature
-            )
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return b.flux_conduction_heat[
+                    t, x
+                ] == b.membrane_thermal_conductivity / b.membrane_thickness * (
+                    b.hot_ch.properties_interface[t, x].temperature
+                    - b.cold_ch.properties_interface[t, x].temperature
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return b.flux_conduction_heat[
+                    t, x
+                ] == b.membrane_thermal_conductivity / b.membrane_thickness * (
+                    b.hot_ch.properties_interface[t, x].temperature
+                    - b.gap_ch.properties_interface[t, x].temperature
+                )
 
         @self.Expression(
             self.flowsheet().config.time,
@@ -551,6 +742,92 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 sum(b.flux_conduction_heat[t, x] for x in self.difference_elements)
                 / self.nfe
             )
+
+        ###########
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="heat conduction across the gap in PGMD and CGMD configuration",
+        )
+        def eq_flux_conduction_gap(b, t, x):
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                self.gap_thickness = Var(
+                    initialize=1e-4,
+                    bounds=(1e-5, 1e-2),
+                    doc="gap thickness",
+                    units=pyunits.m,
+                )
+
+                self.gap_thermal_conductivity = Var(
+                    initialize=0.2,
+                    bounds=(0, 1),
+                    units=pyunits.J * pyunits.s**-1 * pyunits.K**-1 * pyunits.m**-1,
+                    doc="Thermal conductivity coefficient of the gap",
+                )
+                return b.flux_enth_hot + [t, x] + b.flux_conduction_heat[
+                    t, x
+                ] == b.gap_thermal_conductivity / b.gap_thickness * (
+                    b.gap_ch.properties_interface[t, x].temperature
+                    - b.cold_ch.properties_interface[t, x].temperature
+                )
+            else:
+                return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="gap bulk temperature in PGMD and CGMD",
+        )
+        def gap_bulk_temperature(b, t, x):
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                b.gap_ch.properties_interface[
+                    t, x
+                ].temperature + b.cold_ch.properties_interface[
+                    t, x
+                ].temperature == 2 * b.gap_ch.properties[
+                    t, x
+                ].temperature
+
+            else:
+                return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="heat of vapor expansion for VMD configuration",
+        )
+        def eq_vapor_expansion_heat(b, t, x):
+            if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                self.vapor_exp_heat = Var(
+                    self.flowsheet().config.time,
+                    self.difference_elements,
+                    initialize=1e3,
+                    bounds=(1e-10, 1e5),
+                    units=pyunits.J * pyunits.s**-1 * pyunits.m**-2,
+                    doc="vapor expansion heat flux",
+                )
+                return (
+                    b.hot_ch.properties_vapor[t, x].enth_mass_phase_comp["Vap", "H2O"]
+                    - b.cold_ch.properties[t, x].enth_mass_phase_comp["Vap", "H2O"]
+                    == b.vapor_exp_heat[t, x]
+                )
+            else:
+                return Constraint.Skip
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Average vapor expansion heat flux expression",
+        )
+        def flux_expansion_heat_avg(b, t):
+            if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return (
+                    sum(b.vapor_exp_heat[t, x] for x in self.difference_elements)
+                    / self.nfe
+                )
+            else:
+                return Constraint.Skip
+
+        ###########
 
         return self.eq_flux_heat
 

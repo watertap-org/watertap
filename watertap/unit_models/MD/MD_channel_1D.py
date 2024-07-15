@@ -85,30 +85,6 @@ class MDChannel1DBlockData(MDChannelMixin, ControlVolume1DBlockData):
         )
         add_object_reference(self, "width", width_var)
 
-    def add_state_blocks(
-        self,
-        has_phase_equilibrium=None,
-        property_package_vapor=None,
-        property_package_args_vapor=None,
-    ):
-        """
-        This method constructs the state blocks for the
-        control volume.
-
-        Args:
-            has_phase_equilibrium: indicates whether equilibrium calculations
-                                    will be required in state blocks
-        Returns:
-            None
-        """
-        super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
-        self._add_interface_stateblock(has_phase_equilibrium)
-        self._add_vapor_stateblock(
-            property_package_vapor,
-            property_package_args_vapor,
-            has_phase_equilibrium=False,
-        )
-
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)
 
