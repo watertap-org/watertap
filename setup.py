@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.0.dev0",
+    version="1.1.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -83,9 +83,7 @@ setup(
         "pyomo>=6.6.1",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
-        "h5py",
-        "requests",
-        "scipy",
+        "parameter-sweep>=0.1.dev5",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic >= 2, <3",
         "numpy",
@@ -147,6 +145,7 @@ setup(
             "GAC = watertap.flowsheets.gac.gac_ui",
             "ED_conc_recirc = watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc_ui",
             "LSRRO = watertap.flowsheets.lsrro.lsrro_ui",
+            "generic desal train = watertap.flowsheets.generic_desalination_train.generic_train_ui",
         ],
     },
 )

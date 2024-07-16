@@ -17,7 +17,7 @@ from watertap.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD imp
     build_model,
     build_outputs,
 )
-from watertap.tools.parameter_sweep import (
+from parameter_sweep import (
     LinearSample,
     UniformSample,
     ParameterSweep,
