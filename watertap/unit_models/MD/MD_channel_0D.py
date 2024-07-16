@@ -222,25 +222,27 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             raise ConfigurationError(
                 "Either hot_ch or cold_ch must be set in the configuration."
             )
-        state_args_interface = self._get_state_args_interface(
-            state_args_properties_in, state_args_properties_out
-        )
-        self.properties_interface.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_interface,
-        )
+        if hasattr(self, "properties_interface"):
+            state_args_interface = self._get_state_args_interface(
+                state_args_properties_in, state_args_properties_out
+            )
+            self.properties_interface.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args_interface,
+            )
 
-        state_args_vapor = self._get_state_args_vapor(
-            state_args_properties_in, state_args_properties_out
-        )
-        self.properties_vapor.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_vapor,
-        )
+        if hasattr(self, "properties_vapor"):
+            state_args_vapor = self._get_state_args_vapor(
+                state_args_properties_in, state_args_properties_out
+            )
+            self.properties_vapor.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args_vapor,
+            )
 
         init_log.info("Initialization Complete")
 

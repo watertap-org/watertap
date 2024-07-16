@@ -207,7 +207,7 @@ see property package for documentation.}""",
     _CONFIG_Template.declare(
         "temperature_polarization_type",
         ConfigValue(
-            default=TemperaturePolarizationType.calculated,
+            default=TemperaturePolarizationType.none,
             domain=In(TemperaturePolarizationType),
             description="External temperature polarization effect",
             doc="""
@@ -228,7 +228,7 @@ see property package for documentation.}""",
     _CONFIG_Template.declare(
         "concentration_polarization_type",
         ConfigValue(
-            default=ConcentrationPolarizationType.calculated,
+            default=ConcentrationPolarizationType.none,
             domain=In(ConcentrationPolarizationType),
             description="External concentration polarization effect in RO",
             doc="""
@@ -249,7 +249,7 @@ see property package for documentation.}""",
     _CONFIG_Template.declare(
         "mass_transfer_coefficient",
         ConfigValue(
-            default=MassTransferCoefficient.calculated,
+            default=MassTransferCoefficient.none,
             domain=In(MassTransferCoefficient),
             description="Mass transfer coefficient in RO feed channel",
             doc="""
@@ -455,9 +455,9 @@ see property package for documentation.}""",
                     b.gap_ch.mass_transfer_term[t, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                    b.cold_ch.mass_transfer_term[
-                        t, p, j
-                    ] == -b.hot_ch.mass_transfer_term[t, "Liq", j]
+                    return ( b.cold_ch.mass_transfer_term[
+                        t, "Vap", j
+                    ] == -b.hot_ch.mass_transfer_term[t, "Liq", j])
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -487,9 +487,9 @@ see property package for documentation.}""",
             if self.config.MD_configuration_Type == MDconfigurationType.VMD:
                 return (
                     b.hot_ch.heat[t]
-                    == -b.area * b.flux_conduction_heat_avg[t]
-                    - b.flux_expansion_heat_avg[t]
-                )
+                    == -b.area * (b.flux_conduction_heat_avg[t]
+                    + b.flux_expansion_heat_avg[t]
+                ))
 
             else:
                 return b.hot_ch.heat[t] == -b.area * b.flux_conduction_heat_avg[t]
