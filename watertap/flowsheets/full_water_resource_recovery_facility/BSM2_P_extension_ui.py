@@ -19,6 +19,7 @@ from pyomo.environ import units as pyunits
 import idaes.logger as idaeslog
 
 from watertap.ui.fsapi import FlowsheetInterface
+from watertap.core.solvers import get_solver
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
@@ -42,6 +43,14 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        build_options={
+            "BioP": {
+                "name": "BioP",
+                "display_name": "Phosphorus Biomass Transformation",
+                "values_allowed": ["False", "True"],
+                "value": "False",  # default value
+            },
+        },
     )
 
 
@@ -3852,7 +3861,13 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
-    m = build(bio_P=False)
+    solver = get_solver()
+
+    if build_options["BioP"].value:
+        m = build(bio_P=True)
+    else:
+        m = build(bio_P=False)
+
     set_operating_conditions(m)
 
     for mx in m.fs.mixers:
@@ -3860,13 +3875,17 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    initialize_system(m, bio_P=False)
+    if build_options["BioP"].value:
+        initialize_system(m, bio_P=True)
+    else:
+        initialize_system(m, bio_P=False)
+
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    results = solve(m)
+    solve(m, solver=solver)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)
@@ -3875,24 +3894,17 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # Resolve with controls in place
-    results = solve(m)
 
-    pyo.assert_optimal_termination(results)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
+    # Resolve with controls in place
+    solve(m, solver=solver)
 
     add_costing(m)
     m.fs.costing.initialize()
 
     assert_degrees_of_freedom(m, 0)
 
-    results = solve(m)
-    pyo.assert_optimal_termination(results)
+    solve(m, solver=solver)
+
     return m
 
 
