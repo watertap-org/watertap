@@ -29,6 +29,9 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
 )
+from watertap.core.solvers import get_solver
+
+solver = get_solver()
 
 
 class TestFullFlowsheetBioPFalse:
