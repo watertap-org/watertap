@@ -3898,5 +3898,6 @@ def solve_flowsheet(flowsheet=None):
     Solves the initial flowsheet.
     """
     fs = flowsheet
-    results = solve(fs)
+    solver = get_solver()
+    results = solve(fs, solver=solver)
     return results
