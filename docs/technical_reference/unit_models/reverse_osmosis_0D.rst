@@ -178,7 +178,7 @@ Equations
    "Feed-channel velocity",":math:`v_f = Q_f/A_c`"
    "Feed-channel volume", ":math:`V_{f} = LWh_{ch}`"
    "Friction factor (flat-plate)",":math:`f = 0.42+\frac{189.3}{Re}`"
-   "Friction factor (spiral-wound)",":math:`f = \frac{6.23}{Re}^0.3`"
+   "Friction factor (spiral-wound)",":math:`f = \frac{6.23}{Re}^{0.3}`"
    "Pressure drop per unit length",":math:`\frac{ΔP}{Δx} = \frac{1}{2d_h}f\rho v_f^{2}`"
    "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
    "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
