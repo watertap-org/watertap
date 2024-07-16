@@ -13,7 +13,6 @@
 GUI configuration for the extended BSM2 flowsheet.
 """
 
-import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 
 import idaes.logger as idaeslog
@@ -28,7 +27,7 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     solve,
     add_costing,
 )
-from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
