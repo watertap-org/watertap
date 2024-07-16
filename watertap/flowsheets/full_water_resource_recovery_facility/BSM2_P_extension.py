@@ -667,7 +667,7 @@ def initialize_system(m, bio_P=True):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO)
+        unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
 
@@ -723,20 +723,6 @@ def add_costing(m):
     iscale.set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-7)
     iscale.set_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
     iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
-
-    iscale.set_scaling_factor(m.fs.CL.costing.capital_cost, 1e-7)
-    iscale.set_scaling_factor(m.fs.CL2.costing.capital_cost, 1e-7)
-    iscale.set_scaling_factor(m.fs.thickener.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.dewater.costing.capital_cost, 1e-6)
-    iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
-
-    iscale.set_scaling_factor(m.fs.R1.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R2.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R3.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R4.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R5.costing.capital_cost, 1e-6)
-    iscale.set_scaling_factor(m.fs.R6.costing.capital_cost, 1e-6)
-    iscale.set_scaling_factor(m.fs.R7.costing.capital_cost, 1e-6)
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -881,7 +867,7 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
