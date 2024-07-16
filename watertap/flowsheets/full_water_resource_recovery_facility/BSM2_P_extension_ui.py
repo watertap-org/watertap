@@ -42,14 +42,6 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
-        build_options={
-            "BioP": {
-                "name": "BioP",
-                "display_name": "Phosphorus Biomass Transformation",
-                "values_allowed": ["False", "True"],
-                "value": "False",  # default value
-            },
-        },
     )
 
 
@@ -3861,89 +3853,44 @@ def build_flowsheet(build_options=None, **kwargs):
     Builds the initial flowsheet.
     """
     solver = get_solver()
-    if build_options is not None:
-        if build_options["BioP"].value:
-            m = build(bio_P=True)
-        else:
-            m = build(bio_P=False)
 
-        set_operating_conditions(m)
+    m = build(bio_P=False)
 
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
+    set_operating_conditions(m)
 
-        if build_options["BioP"].value:
-            initialize_system(m, bio_P=True)
-        else:
-            initialize_system(m, bio_P=False)
+    for mx in m.fs.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
+    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
+    initialize_system(m, bio_P=False)
 
-        solve(m, solver=solver)
+    for mx in m.fs.mixers:
+        mx.pressure_equality_constraints[0.0, 2].deactivate()
+    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
+    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-        # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-        m.fs.R5.KLa.fix(240)
-        m.fs.R6.KLa.fix(240)
-        m.fs.R7.KLa.fix(84)
-        m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    solve(m, solver=solver)
 
-        # Resolve with controls in place
-        solve(m, solver=solver)
+    # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
+    m.fs.R5.KLa.fix(240)
+    m.fs.R6.KLa.fix(240)
+    m.fs.R7.KLa.fix(84)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
-        add_costing(m)
-        m.fs.costing.initialize()
+    # Resolve with controls in place
+    solve(m, solver=solver)
 
-        assert_degrees_of_freedom(m, 0)
+    add_costing(m)
+    m.fs.costing.initialize()
 
-        solve(m, solver=solver)
+    assert_degrees_of_freedom(m, 0)
 
-        return m
+    solve(m, solver=solver)
 
-    else:
-        m = build(bio_P=False)
-
-        set_operating_conditions(m)
-
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
-
-        initialize_system(m, bio_P=False)
-
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
-
-        solve(m, solver=solver)
-
-        # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-        m.fs.R5.KLa.fix(240)
-        m.fs.R6.KLa.fix(240)
-        m.fs.R7.KLa.fix(84)
-        m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-        m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-
-        # Resolve with controls in place
-        solve(m, solver=solver)
-
-        add_costing(m)
-        m.fs.costing.initialize()
-
-        assert_degrees_of_freedom(m, 0)
-
-        solve(m, solver=solver)
-
-        return m
+    return m
 
 
 def solve_flowsheet(flowsheet=None):
