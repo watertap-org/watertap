@@ -38,12 +38,14 @@ class TestFullFlowsheetBioPFalse:
         m.results = res
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
@@ -106,6 +108,7 @@ class TestFullFlowsheetBioPFalse:
             0.00021346, rel=1e-3
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
@@ -127,12 +130,14 @@ class TestFullFlowsheetBioPTrue:
         m.results = res
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
