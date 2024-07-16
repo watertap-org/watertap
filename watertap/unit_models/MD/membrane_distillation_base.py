@@ -764,11 +764,36 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     units=pyunits.J * pyunits.s**-1 * pyunits.K**-1 * pyunits.m**-1,
                     doc="Thermal conductivity coefficient of the gap",
                 )
-                return b.flux_enth_hot + [t, x] + b.flux_conduction_heat[
+
+                self.flux_conduction_heat_gap = Var(
+                    self.flowsheet().config.time,
+                    self.difference_elements,
+                    initialize=1e3,
+                    bounds=(1e-10, 1e5),
+                    units=pyunits.J * pyunits.s**-1 * pyunits.m**-2,
+                    doc="vapor expansion heat flux",
+                )
+                return b.flux_conduction_heat_gap[
                     t, x
                 ] == b.gap_thermal_conductivity / b.gap_thickness * (
                     b.gap_ch.properties_interface[t, x].temperature
                     - b.cold_ch.properties_interface[t, x].temperature
+                )
+            else:
+                return Constraint.Skip
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Average conduction heat flux across the gap",
+        )
+        def flux_expansion_heat_avg(b, t):
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    sum(
+                        b.flux_conduction_heat_gap[t, x]
+                        for x in self.difference_elements
+                    )
+                    / self.nfe
                 )
             else:
                 return Constraint.Skip
@@ -779,6 +804,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="gap bulk temperature in PGMD and CGMD",
         )
         def gap_bulk_temperature(b, t, x):
+            # assuming linear temperature change across the gap
             if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
                 b.gap_ch.properties_interface[
                     t, x

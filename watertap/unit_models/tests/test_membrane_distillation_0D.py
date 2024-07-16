@@ -64,8 +64,7 @@ def build():
             "pressure_change_type": PressureChangeType.fixed_per_stage,
             "flow_direction": FlowDirection.backward,
         },
-        MD_configuration_Type = MDconfigurationType.DCMD
-
+        MD_configuration_Type=MDconfigurationType.DCMD,
     )
 
     # fully specify system

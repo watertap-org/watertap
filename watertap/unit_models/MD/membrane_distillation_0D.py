@@ -510,6 +510,19 @@ see property package for documentation.}""",
                 )
             elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                 return Constraint.Skip
+            
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Connecting the cold channel conductive heat transfer to conductive heat across the gap",
+        )
+        def eq_conductive_heat_transfer_gap(b, t):
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.cold_ch.heat[t]
+                    == b.flux_conduction_heat_gap_avg[t] * b.area
+                )
+            else:
+                return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().config.time,
