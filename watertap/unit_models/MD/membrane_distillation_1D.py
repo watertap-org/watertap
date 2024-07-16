@@ -594,7 +594,9 @@ see property package for documentation.}""",
         )
         def eq_conductive_heat_transfer_gap(b, t, x):
             if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                return b.cold_ch.heat[t,x] == b.flux_conduction_heat_gap[t, x] * b.width
+                return (
+                    b.cold_ch.heat[t, x] == b.flux_conduction_heat_gap[t, x] * b.width
+                )
             else:
                 return Constraint.Skip
 
