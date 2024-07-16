@@ -771,7 +771,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     initialize=1e3,
                     bounds=(1e-10, 1e5),
                     units=pyunits.J * pyunits.s**-1 * pyunits.m**-2,
-                    doc="vapor expansion heat flux",
+                    doc="conduction heat across the gap",
                 )
                 return b.flux_conduction_heat_gap[
                     t, x
@@ -786,7 +786,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Average conduction heat flux across the gap",
         )
-        def flux_expansion_heat_avg(b, t):
+        def flux_conduction_heat_gap_avg(b, t):
             if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
                 return (
                     sum(
@@ -1036,6 +1036,14 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.membrane_thermal_conductivity) is None:
             iscale.set_scaling_factor(self.membrane_thermal_conductivity, 10)
 
+        if hasattr(self, "gap_thermal_conductivity"):
+            if iscale.get_scaling_factor(self.gap_thermal_conductivity) is None:
+                iscale.set_scaling_factor(self.gap_thermal_conductivity, 10)
+
+        if hasattr(self, "gap_thermal_conductivity"):
+            if iscale.get_scaling_factor(self.gap_thickness) is None:
+                iscale.set_scaling_factor(self.gap_thickness, 1e4)
+
         for (t, x), v in self.flux_mass.items():
             if iscale.get_scaling_factor(v) is None:
 
@@ -1090,6 +1098,34 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     )
                 )
                 iscale.set_scaling_factor(v, sf_flux_cond)
+
+        if hasattr(self, "flux_conduction_heat_gap"):
+            for (t, x), v in self.flux_conduction_heat_gap.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_flux_cond = (
+                        iscale.get_scaling_factor(self.membrane_thermal_conductivity)
+                        / iscale.get_scaling_factor(self.membrane_thickness)
+                        * iscale.get_scaling_factor(
+                            self.hot_ch.properties_interface[t, x].temperature
+                        )
+                    )
+                    iscale.set_scaling_factor(v, sf_flux_cond)
+
+        if hasattr(self, "vacuum_pressure"):
+            for (t, x), v in self.vacuum_pressure.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_vacuum_pressure = iscale.get_scaling_factor(
+                        self.hot_ch.properties[t, x].pressure
+                    )
+                    iscale.set_scaling_factor(v, sf_vacuum_pressure)
+
+        if hasattr(self, "vapor_exp_heat"):
+            for (t, x), v in self.vapor_exp_heat.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_exp_heat = iscale.get_scaling_factor(
+                        self.hot_ch.properties[t, x].enth_mass_phase_comp["Vap", "H2O"]
+                    )
+                    iscale.set_scaling_factor(v, sf_exp_heat)
 
         if hasattr(self, "length"):
             if iscale.get_scaling_factor(self.length) is None:
