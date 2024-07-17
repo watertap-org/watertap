@@ -539,7 +539,7 @@ def set_operating_conditions(m):
     iscale.calculate_scaling_factors(m.fs)
 
 
-def initialize_system(m, bio_P=True):
+def initialize_system(m, bio_P=True, solver=None):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
@@ -719,10 +719,6 @@ def add_costing(m):
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
     iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
-
-    # iscale.set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-7)
-    # iscale.set_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
-    # iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
 
     iscale.calculate_scaling_factors(m.fs)
 
