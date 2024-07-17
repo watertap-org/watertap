@@ -26,7 +26,8 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     solve,
     # add_costing,
 )
-from watertap.core.util.initialization import assert_degrees_of_freedom
+
+# from watertap.core.util.initialization import assert_degrees_of_freedom
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
