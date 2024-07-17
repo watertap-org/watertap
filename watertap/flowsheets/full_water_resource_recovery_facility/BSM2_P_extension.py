@@ -720,9 +720,9 @@ def add_costing(m):
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
     iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
 
-    iscale.set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-7)
-    iscale.set_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
-    iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
+    # iscale.set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-7)
+    # iscale.set_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
+    # iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -867,7 +867,7 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
