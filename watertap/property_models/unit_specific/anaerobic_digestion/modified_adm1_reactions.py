@@ -739,7 +739,13 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Reference temperature",
             units=pyo.units.K,
         )
-
+        self.eps = pyo.Param(
+            within=pyo.PositiveReals,
+            mutable=True,
+            default=1e-10,
+            doc="Epsilon value to avoid numerical issues",
+            units=pyo.units.dimensionless,
+        )
         # Reaction Stoichiometry
         # This is the stoichiometric part of the Peterson matrix in dict form.
         # See Table 1.1 and 2.1 in Flores-Alsina et al., 2016.
@@ -2355,7 +2361,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_va"]
                                 + b.conc_mass_comp_ref["S_bu"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + b.params.eps * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * b.I[r]
@@ -2374,7 +2380,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_va"]
                                 + b.conc_mass_comp_ref["S_bu"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + b.params.eps * pyo.units.kg / pyo.units.m**3
                             )
                         )
                         * b.I[r]
@@ -2466,6 +2472,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                         / (
                             b.params.K_PP * b.conc_mass_comp_ref["X_PAO"]
                             + b.conc_mass_comp_ref["X_PP"]
+                            + b.params.eps * pyo.units.kg / pyo.units.m**3
                         )
                         * b.conc_mass_comp_ref["X_PAO"]
                         * b.conc_mass_comp_ref["S_va"]
@@ -2474,7 +2481,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             + b.conc_mass_comp_ref["S_bu"]
                             + b.conc_mass_comp_ref["S_pro"]
                             + b.conc_mass_comp_ref["S_ac"]
-                            + 1e-10 * pyo.units.kg / pyo.units.m**3
+                            + b.params.eps * pyo.units.kg / pyo.units.m**3
                         ),
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
@@ -2496,7 +2503,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             + b.conc_mass_comp_ref["S_bu"]
                             + b.conc_mass_comp_ref["S_pro"]
                             + b.conc_mass_comp_ref["S_ac"]
-                            + 1e-10 * pyo.units.kg / pyo.units.m**3
+                            + b.params.eps * pyo.units.kg / pyo.units.m**3
                         ),
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
@@ -2518,7 +2525,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             + b.conc_mass_comp_ref["S_bu"]
                             + b.conc_mass_comp_ref["S_pro"]
                             + b.conc_mass_comp_ref["S_ac"]
-                            + 1e-10 * pyo.units.kg / pyo.units.m**3
+                            + b.params.eps * pyo.units.kg / pyo.units.m**3
                         ),
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
@@ -2540,7 +2547,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                             + b.conc_mass_comp_ref["S_bu"]
                             + b.conc_mass_comp_ref["S_pro"]
                             + b.conc_mass_comp_ref["S_ac"]
-                            + 1e-10 * pyo.units.kg / pyo.units.m**3
+                            + b.params.eps * pyo.units.kg / pyo.units.m**3
                         ),
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
