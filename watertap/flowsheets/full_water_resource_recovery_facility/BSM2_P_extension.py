@@ -25,7 +25,7 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import (
     FlowsheetBlock,
-    UnitModelCostingBlock,
+    # UnitModelCostingBlock,
 )
 from idaes.models.unit_models import (
     CSTR,
@@ -76,12 +76,16 @@ from watertap.unit_models.thickener import (
     ActivatedSludgeModelType as thickener_type,
 )
 
-from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
-from watertap.costing import WaterTAPCosting
-from watertap.costing.unit_models.clarifier import (
-    cost_circular_clarifier,
-    cost_primary_clarifier,
+from watertap.core.util.initialization import (
+    check_solve,
+    # assert_degrees_of_freedom
 )
+
+# from watertap.costing import WaterTAPCosting
+# from watertap.costing.unit_models.clarifier import (
+#     cost_circular_clarifier,
+#     cost_primary_clarifier,
+# )
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
