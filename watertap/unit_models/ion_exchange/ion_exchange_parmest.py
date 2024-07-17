@@ -75,9 +75,9 @@ class IXParmest:
         cb=None,
         c_norm=None,
         thetas=None,
+        theta_names=None,
         initial_guess_dict=dict(),
         initial_guess_theta_dict=dict(),
-        theta_names=None,
         set_bounds_dict=dict(),
         calc_from_constr_dict=dict(),
         autoscale_fixed=True,
@@ -125,11 +125,6 @@ class IXParmest:
         self.filtered_data.sort_values("bv", inplace=True)
         self.ix_model = ix_model
         self.regenerant = regenerant
-
-        if theta_names is None:
-            self.theta_names = thetas
-        else:
-            self.theta_names = theta_names
 
         self.figsize = figsize
         self.bv = bv  # need value for initial model build
@@ -182,9 +177,16 @@ class IXParmest:
             if ix_model is IonExchangeClark:
                 self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
             if ix_model is IonExchangeThomas:
+                print("ix_model is Thomas")
                 self.thetas = ["thomas_constant", "resin_max_capacity"]
         else:
             self.thetas = thetas
+
+        if theta_names is None:
+            print("theta_names is None")
+            self.theta_names = self.thetas
+        else:
+            self.theta_names = theta_names
 
         if self.c0_min_thresh <= 0:
             self.max_zero = max_zero
@@ -431,6 +433,7 @@ class IXParmest:
         numer = getattr(pyunits, self.conc_units_str.split("/")[0])
         denom = getattr(pyunits, self.conc_units_str.split("/")[1])
         self.conc_units = numer / denom
+        self.c0_kg_m3 = pyunits.convert(self.c0 * self.conc_units, to_units=pyunits.kg / pyunits.m**3)
 
         self.target_component = self.compound_data["name"]
         self.charge = self.compound_data["charge"]
