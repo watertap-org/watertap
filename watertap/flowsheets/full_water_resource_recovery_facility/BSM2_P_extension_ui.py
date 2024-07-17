@@ -18,7 +18,6 @@ from pyomo.environ import units as pyunits
 import idaes.logger as idaeslog
 
 from watertap.ui.fsapi import FlowsheetInterface
-from watertap.core.solvers import get_solver
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
@@ -42,6 +41,7 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        requires_idaes_solver=True,
     )
 
 
@@ -3852,7 +3852,6 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
-    solver = get_solver()
 
     m = build(bio_P=False)
 
@@ -3870,7 +3869,7 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    solve(m, solver=solver)
+    solve(m)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)
@@ -3881,14 +3880,14 @@ def build_flowsheet(build_options=None, **kwargs):
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Resolve with controls in place
-    solve(m, solver=solver)
+    solve(m)
 
     add_costing(m)
     m.fs.costing.initialize()
 
     assert_degrees_of_freedom(m, 0)
 
-    solve(m, solver=solver)
+    solve(m)
 
     return m
 
@@ -3898,6 +3897,5 @@ def solve_flowsheet(flowsheet=None):
     Solves the initial flowsheet.
     """
     fs = flowsheet
-    solver = get_solver()
-    results = solve(fs, solver=solver)
+    results = solve(fs)
     return results
