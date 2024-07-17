@@ -159,23 +159,10 @@ class IonExchangeThomasData(IonExchangeBaseData):
         def bed_mass(b):
             return pyunits.convert(b.bed_volume * b.resin_density, to_units=pyunits.kg)
 
-        # @self.Constraint(self.target_component_set, doc="Schmidt number")
-        # def eq_Sc(b, j):  # Eq. 3.359, Inglezakis + Poulopoulos
-        #     return (
-        #         b.N_Sc[j]
-        #         == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
-        #     )
-
-        # @self.Constraint(self.target_component_set, doc="Sherwood number")
-        # def eq_Sh(b, j):  # Eq. 3.346, Inglezakis + Poulopoulos
-        #     return (
-        #         b.N_Sh[j]
-        #         == b.Sh_A
-        #         * b.bed_porosity**b.Sh_exp_A
-        #         * b.N_Re**b.Sh_exp_B
-        #         * b.N_Sc[j] ** b.Sh_exp_C
-        #     )
-
+        @self.Constraint(doc="Empty bed contact time")
+        def eq_ebct(b):
+            return b.ebct * b.loading_rate == b.bed_depth
+        
         @self.Constraint(
             self.target_component_set, doc="Mass transfer for regeneration stream"
         )
@@ -191,18 +178,7 @@ class IonExchangeThomasData(IonExchangeBaseData):
 
         @self.Constraint(self.target_component_set, doc="Thomas equation")
         def eq_thomas(b, j):
-            # left_side = (log(b.c_breakthru[j]) + b.c_breakthru[j]) / (
-            #     b.thomas_constant * prop_in.conc_mass_phase_comp["Liq", j]
-            # )
 
-            # right_side = (
-            #     b.breakthrough_time
-            #     + b.thomas_constant ** -1
-            #     - (
-            #         (b.bed_mass * b.resin_max_capacity)
-            #         / prop_in.flow_mass_phase_comp["Liq", j]
-            #     )
-            # )
             left_side = log(b.c_norm[j] ** -1 - 1)
             right_side = b.thomas_constant * (
                 (b.resin_max_capacity * b.bed_mass) / prop_in.flow_vol_phase["Liq"]
