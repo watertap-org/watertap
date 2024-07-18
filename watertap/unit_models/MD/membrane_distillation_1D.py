@@ -529,9 +529,10 @@ see property package for documentation.}""",
                     b.gap_ch.mass_transfer_term[t, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                     return (b.cold_ch.mass_transfer_term[
-                        t, x, p, j
-                    ] == -b.hot_ch.mass_transfer_term[t, x, "Liq", j])
+                    return (
+                        b.cold_ch.mass_transfer_term[t, x, p, j]
+                        == -b.hot_ch.mass_transfer_term[t, x, "Liq", j]
+                    )
 
         @self.Constraint(
             self.flowsheet().config.time,

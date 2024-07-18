@@ -36,7 +36,6 @@ from .MD_channel_base import (
     ConcentrationPolarizationType,
     TemperaturePolarizationType,
     MassTransferCoefficient,
-    PressureChangeType
 )
 from watertap.costing.unit_models.membrane_distillation import (
     cost_membrane_distillation,
@@ -219,8 +218,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.cold_ch.add_temperature_polarization(
                 temperature_polarization_type=self.config.cold_ch.temperature_polarization_type,
             )
-
-
 
         try:
             self.cold_ch.apply_transformation()
@@ -611,7 +608,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     == b.cold_ch.properties_interface[t, x].pressure_sat
                 )
             elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-               return  b.vacuum_pressure[t] - b.cold_ch.properties[t, x].pressure == 0
+                return b.vacuum_pressure[t] - b.cold_ch.properties[t, x].pressure == 0
             else:
                 return Constraint.Skip
 
@@ -672,7 +669,11 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 )
 
         # Check for cold channel temperature polarization type
-        if self.config.MD_configuration_Type in [MDconfigurationType.DCMD, MDconfigurationType.PGMD_CGMD, MDconfigurationType.AGMD]:
+        if self.config.MD_configuration_Type in [
+            MDconfigurationType.DCMD,
+            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.AGMD,
+        ]:
             if (
                 self.config.cold_ch.temperature_polarization_type
                 != TemperaturePolarizationType.none
@@ -684,18 +685,17 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     doc="Temperature polarization in cold channel",
                 )
                 def eq_temperature_polarization_cold(b, t, x):
-                        return (
-                            b.cold_ch.h_conv[t, x]
-                            * (
-                                -b.cold_ch.properties[t, x].temperature
-                                + b.cold_ch.properties_interface[t, x].temperature
-                            )
-                            == b.flux_conduction_heat[t, x]
-                            + b.flux_enth_cold[t, x]
-                            - b.flux_mass[t, x]
-                            * b.cold_ch.properties[t, x].enth_mass_phase["Liq"]
+                    return (
+                        b.cold_ch.h_conv[t, x]
+                        * (
+                            -b.cold_ch.properties[t, x].temperature
+                            + b.cold_ch.properties_interface[t, x].temperature
                         )
-
+                        == b.flux_conduction_heat[t, x]
+                        + b.flux_enth_cold[t, x]
+                        - b.flux_mass[t, x]
+                        * b.cold_ch.properties[t, x].enth_mass_phase["Liq"]
+                    )
 
         return self.eq_flux_mass
 
@@ -821,13 +821,11 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         def gap_bulk_temperature(b, t, x):
             # assuming linear temperature change across the gap
             if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                return (b.gap_ch.properties_interface[
-                    t, x
-                ].temperature + b.cold_ch.properties_interface[
-                    t, x
-                ].temperature == 2 * b.gap_ch.properties[
-                    t, x
-                ].temperature)
+                return (
+                    b.gap_ch.properties_interface[t, x].temperature
+                    + b.cold_ch.properties_interface[t, x].temperature
+                    == 2 * b.gap_ch.properties[t, x].temperature
+                )
 
             else:
                 return Constraint.Skip
@@ -944,23 +942,22 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             initialize_guess=initialize_guess,
-            type="hot_ch",
+            type="cold_ch",
         )
 
         init_log.info_high("Initialization Step 1b (cold channel) Complete")
 
         if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
             gap_ch_flags = self.gap_ch.initialize(
-            state_args=state_args_cold_ch,
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            initialize_guess=initialize_guess,
-            type="cold_ch",
-        )
-            
-            init_log.info_high("Initialization Step 1c (gap channel) Complete")
+                state_args=state_args_cold_ch,
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                initialize_guess=initialize_guess,
+                type="cold_ch",
+            )
 
+            init_log.info_high("Initialization Step 1c (gap channel) Complete")
 
         if degrees_of_freedom(self) != 0:
             raise Exception(
@@ -1108,20 +1105,26 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                         self.cold_ch.properties[t, x].flow_mass_phase_comp["Vap", "H2O"]
                     )
                     iscale.set_scaling_factor(
-                        self.cold_ch.properties[t, x].flow_mass_phase_comp["Vap", "H2O"],
+                        self.cold_ch.properties[t, x].flow_mass_phase_comp[
+                            "Vap", "H2O"
+                        ],
                         sf * 1000,
                     )
 
                 elif self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                     sf_flux_enth = sf_flux * iscale.get_scaling_factor(
-                            self.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
-                        )
+                        self.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
+                    )
                     iscale.set_scaling_factor(v, sf_flux_enth)
                     sf = iscale.get_scaling_factor(
-                        self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+                        self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp[
+                            "Vap", "H2O"
+                        ]
                     )
                     iscale.set_scaling_factor(
-                        self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"],
+                        self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp[
+                            "Vap", "H2O"
+                        ],
                         sf * 1000,
                     )
 

@@ -456,9 +456,10 @@ see property package for documentation.}""",
                     b.gap_ch.mass_transfer_term[t, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                    return ( b.cold_ch.mass_transfer_term[
-                        t, "Vap", j
-                    ] == -b.hot_ch.mass_transfer_term[t, "Liq", j])
+                    return (
+                        b.cold_ch.mass_transfer_term[t, "Vap", j]
+                        == -b.hot_ch.mass_transfer_term[t, "Liq", j]
+                    )
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -486,11 +487,9 @@ see property package for documentation.}""",
         )
         def eq_conductive_heat_transfer_hot(b, t):
             if self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                return (
-                    b.hot_ch.heat[t]
-                    == -b.area * (b.flux_conduction_heat_avg[t]
-                    + b.flux_expansion_heat_avg[t]
-                ))
+                return b.hot_ch.heat[t] == -b.area * (
+                    b.flux_conduction_heat_avg[t] + b.flux_expansion_heat_avg[t]
+                )
 
             else:
                 return b.hot_ch.heat[t] == -b.area * b.flux_conduction_heat_avg[t]

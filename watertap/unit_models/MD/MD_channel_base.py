@@ -124,7 +124,9 @@ class MDChannelMixin:
             if hasattr(self, "properties_interface"):
                 if b._skip_element(x):
                     return Constraint.Skip
-                return b.properties_interface[t, x].pressure == b.properties[t, x].pressure
+                return (
+                    b.properties_interface[t, x].pressure == b.properties[t, x].pressure
+                )
             else:
                 return Constraint.Skip
 
