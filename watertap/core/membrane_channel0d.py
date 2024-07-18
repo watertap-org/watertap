@@ -12,6 +12,7 @@
 
 from pyomo.environ import (
     NegativeReals,
+    NonNegativeReals,
     Set,
     Var,
 )
@@ -64,6 +65,32 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         Returns:
             None
         """
+        # volume will be added be calling add_geometry from ControlVolume0D
+        if not hasattr(self, "length") and not hasattr(self, "width"):
+            self._add_var_reference(length_var, "length", "length_var")
+            self._add_var_reference(width_var, "width", "width_var")
+
+        if hasattr(self, "length") and hasattr(self, "width"):
+            super().add_geometry()
+            units_meta = self.config.property_package.get_metadata().get_derived_units
+
+            if not hasattr(self, "channel_height"):
+                self.channel_height = Var(
+                    initialize=1e-3,
+                    bounds=(1e-4, 5e-3),
+                    domain=NonNegativeReals,
+                    units=units_meta("length"),
+                    doc="membrane-channel height",
+                )
+
+            # # TODO: negating spacer volume for now as it can be assumed negligible (Park et al., 2020: https://doi.org/10.1016/j.desal.2020.114625). Revisit.
+            # # Note: considering that this volume relationship holds for both flat_sheet and spiral_wound types
+            @self.Constraint(
+                self.flowsheet().config.time, doc="Membrane-channel volume"
+            )
+            def eq_volume(b, t):
+                return b.volume[t] == b.length * b.width * b.channel_height
+
         # Validate and create flow direction attribute, like 1D
         if flow_direction in (flwd for flwd in FlowDirection):
             self._flow_direction = flow_direction
@@ -72,10 +99,6 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 "{} invalid value for flow_direction "
                 "argument. Must be a FlowDirection Enum.".format(self.name)
             )
-
-        if not hasattr(self, "length") and not hasattr(self, "width"):
-            self._add_var_reference(length_var, "length", "length_var")
-            self._add_var_reference(width_var, "width", "width_var")
 
     def add_state_blocks(self, has_phase_equilibrium=None):
         """
@@ -275,6 +298,12 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             self.release_state(source_flags, outlvl)
 
     def calculate_scaling_factors(self):
+        # set volume scale factor first otherwise ControlVolume0D default will be set
+        if hasattr(self, "volume"):
+            for v in self.volume.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e3)
+
         super().calculate_scaling_factors()
 
         if hasattr(self, "area"):
