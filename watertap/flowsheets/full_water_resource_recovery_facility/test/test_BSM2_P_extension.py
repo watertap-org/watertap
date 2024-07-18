@@ -115,7 +115,7 @@ class TestFullFlowsheetBioPFalse:
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
-    
+
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(0.469988, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
@@ -207,7 +207,7 @@ class TestFullFlowsheetBioPTrue:
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
-    
+
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(0.47146, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
