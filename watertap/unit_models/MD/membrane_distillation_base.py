@@ -36,6 +36,7 @@ from .MD_channel_base import (
     ConcentrationPolarizationType,
     TemperaturePolarizationType,
     MassTransferCoefficient,
+    PressureChangeType
 )
 from watertap.costing.unit_models.membrane_distillation import (
     cost_membrane_distillation,
@@ -170,6 +171,14 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 balance_type=self.config.cold_ch.momentum_balance_type,
                 pressure_change_type=self.config.cold_ch.pressure_change_type,
                 has_pressure_change=self.config.cold_ch.has_pressure_change,
+                friction_factor=self.config.cold_ch.friction_factor,
+            )
+
+        if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+            self.cold_ch.add_momentum_balances(
+                balance_type=self.config.cold_ch.momentum_balance_type,
+                pressure_change_type=self.config.cold_ch.pressure_change_type,
+                has_pressure_change=False,
                 friction_factor=self.config.cold_ch.friction_factor,
             )
 
@@ -455,9 +464,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                 self.vacuum_pressure = Var(
                     self.flowsheet().config.time,
-                    initialize=10,
-                    bounds=(1e-11, 1e-9),
-                    units=units_meta("pressure"),
+                    initialize=1e3,
+                    bounds=(0.001, 1e6),
+                    units=pyunits.Pa,
                     doc="Vacuum pressure in the VMD configuration",
                 )
                 return b.flux_mass[t, x] == b.permeability_coef[
@@ -602,7 +611,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     == b.cold_ch.properties_interface[t, x].pressure_sat
                 )
             elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                return b.cold_ch.properties[t, x].pressure == b.vacuum_pressure[t]
+               return  b.vacuum_pressure[t] - b.cold_ch.properties[t, x].pressure == 0
             else:
                 return Constraint.Skip
 
@@ -812,13 +821,13 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         def gap_bulk_temperature(b, t, x):
             # assuming linear temperature change across the gap
             if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                b.gap_ch.properties_interface[
+                return (b.gap_ch.properties_interface[
                     t, x
                 ].temperature + b.cold_ch.properties_interface[
                     t, x
                 ].temperature == 2 * b.gap_ch.properties[
                     t, x
-                ].temperature
+                ].temperature)
 
             else:
                 return Constraint.Skip
@@ -935,7 +944,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             initialize_guess=initialize_guess,
-            type="cold_ch",
+            type="hot_ch",
         )
 
         init_log.info_high("Initialization Step 1b (cold channel) Complete")
@@ -1102,8 +1111,8 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                         self.cold_ch.properties[t, x].flow_mass_phase_comp["Vap", "H2O"],
                         sf * 1000,
                     )
-                else:
-        
+
+                elif self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                     sf_flux_enth = sf_flux * iscale.get_scaling_factor(
                             self.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
                         )

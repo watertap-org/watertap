@@ -359,6 +359,7 @@ see property package for documentation.}""",
 
     CONFIG.declare("hot_ch", _CONFIG_Template(doc="hot channel config arguments"))
     CONFIG.declare("cold_ch", _CONFIG_Template(doc="cold channel config arguments"))
+    CONFIG.declare("gap_ch", _CONFIG_Template(doc="cold channel config arguments"))
 
     # Common config args for both sides
 
