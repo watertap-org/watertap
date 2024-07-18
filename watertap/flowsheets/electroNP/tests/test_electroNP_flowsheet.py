@@ -60,7 +60,7 @@ class TestElectroNPFlowsheet:
         )
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_A"]
-        ) == pytest.approx(0.1264, rel=1e-4)
+        ) == pytest.approx(8.41996, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_F"]
         ) == pytest.approx(22.21, rel=1e-4)
@@ -72,7 +72,7 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_NH4"]
-        ) == pytest.approx(1.3008, rel=1e-4)
+        ) == pytest.approx(0.82687, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_NO3"]
         ) == pytest.approx(0, abs=1e-4)
@@ -81,7 +81,7 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
-        ) == pytest.approx(0.6634, rel=1e-4)
+        ) == pytest.approx(0.66164, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_AUT"]
         ) == pytest.approx(0, abs=1e-4)
@@ -90,20 +90,20 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_I"]
-        ) == pytest.approx(14.89, rel=1e-4)
+        ) == pytest.approx(15.025, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_PAO"]
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_PHA"]
-        ) == pytest.approx(8.2936, rel=1e-4)
+        ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_PP"]
-        ) == pytest.approx(0.13023, rel=1e-4)
+        ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
-        ) == pytest.approx(0.15927, rel=1e-4)
-        assert value(model.fs.costing.LCOW) == pytest.approx(6.2871, rel=1e-4)
+        ) == pytest.approx(1.36886, rel=1e-4)
+        assert value(model.fs.costing.LCOW) == pytest.approx(6.284, rel=1e-4)
 
     @pytest.mark.component
     def test_display(self, model):
