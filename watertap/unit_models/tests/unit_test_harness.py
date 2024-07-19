@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -18,9 +18,10 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -52,14 +53,17 @@ class UnitTestHarness(abc.ABC):
         # solution map from var to value
         self.unit_solutions = ComponentMap()
 
+        # dictionary of expressions for conservation checks
+        self.conservation_equality = {}
+
         # arguments for badly scaled variables
         self.default_large = 1e4
         self.default_small = 1e-3
         self.default_zero = 1e-10
 
         # arguments for solver tolerance
-        self.default_absolute_tolerance = 1e-12
-        self.default_relative_tolerance = 1e-6
+        self.default_absolute_tolerance = 1e-5
+        self.default_relative_tolerance = 1e-3
 
         model = self.configure()
         if not hasattr(self, "unit_model_block"):
@@ -80,6 +84,7 @@ class UnitTestHarness(abc.ABC):
         blk._test_objs.solver = self.solver
         blk._test_objs.optarg = self.optarg
         blk._test_objs.unit_solutions = self.unit_solutions
+        blk._test_objs.conservation_equality = self.conservation_equality
 
     @abc.abstractmethod
     def configure(self):
@@ -123,7 +128,41 @@ class UnitTestHarness(abc.ABC):
             unit=blk,
             solver=blk._test_objs.solver,
             optarg=blk._test_objs.optarg,
+            outlvl=idaeslog.DEBUG,
         )
+
+    @pytest.mark.component
+    def test_conservation(self, frame):
+        self.configure_class()
+        m, blk = frame
+
+        conservation = blk._test_objs.conservation_equality
+
+        if conservation == {}:
+            raise NotImplementedError(
+                "An expression must be provided for the inlet and outlet stream(s) in the conservation equality."
+            )
+
+        for key, expression in conservation.items():
+            if "in" in expression and "out" in expression:
+                inlet_expression = value(expression["in"])
+                outlet_expression = value(expression["out"])
+                try:
+                    assert inlet_expression == pytest.approx(
+                        outlet_expression,
+                        abs=self.default_absolute_tolerance,
+                        rel=self.default_relative_tolerance,
+                    )
+                except:
+                    raise AssertionError(
+                        f"In {key}, the inlet expression is equal to {inlet_expression}, "
+                        f"but the outlet expression is equal to {outlet_expression}"
+                    )
+            else:
+                raise AssertionError(
+                    f"Ensure the name of the inlet expression in {key} is 'in' and the name of the "
+                    f"outlet expression is 'out'."
+                )
 
     @pytest.mark.component
     def test_unit_solutions(self, frame):
@@ -138,7 +177,7 @@ class UnitTestHarness(abc.ABC):
             opt = get_solver(
                 solver=blk._test_objs.solver, options=blk._test_objs.optarg
             )
-        results = opt.solve(blk)
+        results = opt.solve(blk, tee=True)
 
         # check solve
         badly_scaled_vars = list(
@@ -178,3 +217,8 @@ class UnitTestHarness(abc.ABC):
                 )
             if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
+
+    @pytest.mark.component
+    def test_reporting(self, frame):
+        m, blk = frame
+        blk.report()

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -29,7 +29,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock, declare_process_block_class
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -125,7 +125,8 @@ class TestGeneralMethods:
                 "sulfuric_acid",
             ]
 
-        assert number_unfixed_variables(model.fs.frame) == 0
+        # factor capital annualization
+        assert number_unfixed_variables(model.fs.frame) == 1
 
         assert isinstance(model.fs.frame.plant_lifetime, Var)
         assert value(model.fs.frame.plant_lifetime) == 30
@@ -149,7 +150,7 @@ class TestGeneralMethods:
 
         assert isinstance(model.fs.frame.wacc, Var)
         assert value(model.fs.frame.wacc) == 0.05
-        assert isinstance(model.fs.frame.capital_recovery_factor, Expression)
+        assert isinstance(model.fs.frame.capital_recovery_factor, Var)
         assert value(model.fs.frame.capital_recovery_factor) == pytest.approx(
             0.0650514, rel=1e-5
         )

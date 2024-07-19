@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -23,7 +23,7 @@ def build_electrodialysis_cost_param_block(blk):
     # The following costing itemization and values are referenced to "Desalination 452 (2019) 265–278"
     blk.membrane_capital_cost = pyo.Var(
         initialize=160,
-        doc="Membrane and capitcal costs in [US$/m^2-membrane-area]",
+        doc="Membrane and capital costs in [US$/m^2-membrane-area]",
         units=pyo.units.USD_2018 / (pyo.units.meter**2),
     )
 
@@ -33,7 +33,7 @@ def build_electrodialysis_cost_param_block(blk):
         units=pyo.units.year**-1,
     )
 
-    blk.stack_electrode_captical_cost = pyo.Var(
+    blk.stack_electrode_capital_cost = pyo.Var(
         initialize=2100,
         doc="Electrode cost in [US$/m^2-electrode-area] ",
         units=pyo.units.USD_2018 / (pyo.units.meter**2),
@@ -102,7 +102,7 @@ def cost_electrodialysis_stack(blk):
                         * blk.unit_model.cell_width
                         * blk.unit_model.cell_length
                     )
-                    + blk.costing_package.electrodialysis.stack_electrode_captical_cost
+                    + blk.costing_package.electrodialysis.stack_electrode_capital_cost
                     * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
                     to_units=blk.costing_package.base_currency,
                 )
@@ -121,7 +121,7 @@ def cost_electrodialysis_stack(blk):
                     * blk.unit_model.cell_width
                     * blk.unit_model.cell_length
                 )
-                + blk.costing_package.electrodialysis.stack_electrode_captical_cost
+                + blk.costing_package.electrodialysis.stack_electrode_capital_cost
                 * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
                 to_units=blk.costing_package.base_currency,
             )
@@ -138,7 +138,7 @@ def cost_electrodialysis_stack(blk):
                 * blk.unit_model.cell_length
             )
             + blk.costing_package.electrodialysis.factor_stack_electrode_replacement
-            * blk.costing_package.electrodialysis.stack_electrode_captical_cost
+            * blk.costing_package.electrodialysis.stack_electrode_capital_cost
             * (2 * blk.unit_model.cell_width * blk.unit_model.cell_length),
             to_units=blk.costing_package.base_currency
             / blk.costing_package.base_period,

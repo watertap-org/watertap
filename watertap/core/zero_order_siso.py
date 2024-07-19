@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -17,7 +17,7 @@ outlet where composition changes, such as a generic bioreactor).
 from types import MethodType
 
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 
@@ -124,6 +124,33 @@ def build_siso(self):
     self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
 
     self._get_Q = MethodType(_get_Q_siso, self)
+
+    if ("temperature" in self.properties_in[0].define_state_vars()) and (
+        self.config.isothermal
+    ):
+        _add_isothermal_constraints(self)
+    if ("pressure" in self.properties_in[0].define_state_vars()) and (
+        self.config.isobaric
+    ):
+        _add_isobaric_constraints(self)
+
+
+def _add_isothermal_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        doc="Isothermal constraints",
+    )
+    def eq_isothermal(b, t):
+        return b.inlet.temperature[t] == b.treated.temperature[t]
+
+
+def _add_isobaric_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        doc="Isobaric constraints",
+    )
+    def eq_isobaric(b, t):
+        return b.inlet.pressure[t] == b.treated.pressure[t]
 
 
 def initialize_siso(

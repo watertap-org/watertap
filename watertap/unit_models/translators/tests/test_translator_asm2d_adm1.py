@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 """
 Tests for ASM2d-ADM1 Translator unit model.
 
@@ -32,7 +31,7 @@ from idaes.core import FlowsheetBlock
 
 from pyomo.environ import units
 
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -45,19 +44,19 @@ from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 
-from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
 
-from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
 
@@ -66,6 +65,7 @@ from pyomo.util.check_units import assert_units_consistent
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -140,16 +140,10 @@ class TestAsm2dAdm1_bioP_true(object):
         m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.02644 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.01766 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02723 * units.kg / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(
-            0.01858 * units.kg / units.m**3
-        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(0.01858 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(0.00507 * units.kg / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(
-            0.00002 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(
-            0.00469 * units.kg / units.m**3
-        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(0.00002 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(0.00469 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.07899 * units.kg / units.m**3)
 
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(10.96441 * units.kg / units.m**3)
@@ -157,12 +151,8 @@ class TestAsm2dAdm1_bioP_true(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(9.47939 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3.8622 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0.45087 * units.kg / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(
-            0.02464 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
-            0.33379 * units.kg / units.m**3
-        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.02464 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(0.33379 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.01979 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.18987 * units.kg / units.m**3)
 
@@ -173,16 +163,6 @@ class TestAsm2dAdm1_bioP_true(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-        assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
-        assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
-        assert value(asmadm.fs.unit.f_xI_xc) == 0.1
-        assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
-        assert value(asmadm.fs.unit.f_ch_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_pr_xc, Param)
-        assert value(asmadm.fs.unit.f_pr_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_li_xc, Param)
-        assert value(asmadm.fs.unit.f_li_xc) == 0.35
 
         assert isinstance(asmadm.fs.unit.f_XPHA_Sva, Param)
         assert value(asmadm.fs.unit.f_XPHA_Sva) == 0.1
@@ -427,16 +407,10 @@ class TestAsm2dAdm1_bioP_false(object):
         m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.02644 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.01766 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02723 * units.kg / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(
-            0.01858 * units.kg / units.m**3
-        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(0.01858 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(0.00507 * units.kg / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(
-            0.00002 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(
-            0.00469 * units.kg / units.m**3
-        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(0.00002 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(0.00469 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.07899 * units.kg / units.m**3)
 
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(10.96441 * units.kg / units.m**3)
@@ -444,12 +418,8 @@ class TestAsm2dAdm1_bioP_false(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(9.47939 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(3.8622 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0.45087 * units.kg / units.m**3)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(
-            0.02464 * units.kg / units.m**3
-        )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
-            0.33379 * units.kg / units.m**3
-        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0.02464 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(0.33379 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.01979 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.18987 * units.kg / units.m**3)
 
@@ -458,16 +428,6 @@ class TestAsm2dAdm1_bioP_false(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-        assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
-        assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
-        assert value(asmadm.fs.unit.f_xI_xc) == 0.1
-        assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
-        assert value(asmadm.fs.unit.f_ch_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_pr_xc, Param)
-        assert value(asmadm.fs.unit.f_pr_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_li_xc, Param)
-        assert value(asmadm.fs.unit.f_li_xc) == 0.35
 
         assert isinstance(asmadm.fs.unit.f_XPHA_Sva, Param)
         assert value(asmadm.fs.unit.f_XPHA_Sva) == 0.1

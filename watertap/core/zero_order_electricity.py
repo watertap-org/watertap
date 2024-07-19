@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -18,7 +18,7 @@ import idaes.logger as idaeslog
 
 from pyomo.environ import Param, Var, units as pyunits
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 # Set up logger
@@ -65,9 +65,7 @@ def constant_intensity(self):
     def electricity_consumption(b, t):
         return b.electricity[t] == (
             b.energy_electric_flow_vol_inlet
-            * pyunits.convert(
-                b.get_inlet_flow(t), to_units=pyunits.m**3 / pyunits.hour
-            )
+            * pyunits.convert(b.get_inlet_flow(t), to_units=pyunits.m**3 / pyunits.hour)
         )
 
     self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)

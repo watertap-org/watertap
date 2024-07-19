@@ -1,5 +1,5 @@
-###############################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -8,6 +8,9 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
+#################################################################################
+
+###############################################################################
 #
 # OLI Systems, Inc. Copyright © 2022, all rights reserved.
 #
@@ -41,7 +44,6 @@
 # derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
-
 from pathlib import Path
 
 import pytest
@@ -56,15 +58,24 @@ def test_dbs_file_available_for_testing(local_dbs_file: Path):
 
 @pytest.mark.unit
 def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
-    ids = [oliapi_instance.get_dbs_file_id(str(local_dbs_file)) for i in range(3)]
+    ids = [oliapi_instance.upload_dbs_file(str(local_dbs_file)) for i in range(3)]
     oliapi_instance.dbs_file_cleanup(ids)
 
 
 @pytest.mark.unit
-def test_get_user_summary(oliapi_instance: OLIApi):
-    original_dbs_file_ids = oliapi_instance.get_user_dbs_file_ids()
-    if len(original_dbs_file_ids) > 1:
-        dbs_file_ids = original_dbs_file_ids[:1]
-    else:
-        dbs_file_ids = original_dbs_file_ids
-    oliapi_instance.get_user_summary(dbs_file_ids)
+def test_get_dbs_file_summary(oliapi_instance: OLIApi, local_dbs_file: Path):
+    oliapi_instance.get_user_dbs_file_ids()
+    dbs_file_id = oliapi_instance.upload_dbs_file(local_dbs_file)
+    oliapi_instance.get_dbs_file_summary(dbs_file_id)
+
+
+@pytest.mark.unit
+def test_valid_phases(oliapi_instance: OLIApi):
+    valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
+    for v in oliapi_instance.valid_phases:
+        assert v in valid_phases
+
+
+@pytest.mark.unit
+def test_invalid_phases(oliapi_instance_with_invalid_phase: OLIApi):
+    oliapi_instance_with_invalid_phase

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -40,7 +40,7 @@ except ImportError:
 # third-party
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, Field, field_validator, ValidationInfo, ConfigDict
 import pyomo.environ as pyo
 
 #: Forward-reference to a FlowsheetInterface type, used in
@@ -89,22 +89,22 @@ class ModelExport(BaseModel):
     description: str = ""
     is_input: bool = True
     is_output: bool = True
-    is_readonly: bool = None
-    input_category: Optional[str]
-    output_category: Optional[str]
+    is_readonly: Union[None, bool] = Field(default=None, validate_default=True)
+    input_category: Optional[str] = None
+    output_category: Optional[str] = None
+    chart_type: Optional[str] = None
+    chart_group: Optional[str] = None
     # computed
-    obj_key: str = None
+    obj_key: Union[None, str] = Field(default=None, validate_default=True)
     fixed: bool = True
     lb: Union[None, float] = 0.0
     ub: Union[None, float] = 0.0
     num_samples: int = 2
     has_bounds: bool = True
     is_sweep: bool = False
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    class Config:
-        arbitrary_types_allowed = True
-
-    @validator("obj", always=True, pre=True)
+    @field_validator("obj")
     @classmethod
     def ensure_obj_is_supported(cls, v):
         if v is not None:
@@ -142,52 +142,52 @@ class ModelExport(BaseModel):
     # (e.g. `None` for a strict (non-`Optional` `bool` field)
 
     # Get value from object
-    @validator("value", always=True)
+    @field_validator("value")
     @classmethod
-    def validate_value(cls, v, values):
-        if values.get("obj", None) is None:
+    def validate_value(cls, v, info: ValidationInfo):
+        if info.data.get("obj", None) is None:
             return v
-        obj = cls._get_supported_obj(values, allow_none=False)
+        obj = cls._get_supported_obj(info.data, allow_none=False)
         return pyo.value(obj)
 
     # Derive display_units from ui_units
-    @validator("display_units", always=True)
+    @field_validator("display_units")
     @classmethod
-    def validate_units(cls, v, values):
+    def validate_units(cls, v, info: ValidationInfo):
         if not v:
-            u = values.get("ui_units", pyo.units.dimensionless)
+            u = info.data.get("ui_units", pyo.units.dimensionless)
             v = str(pyo.units.get_units(u))
         return v
 
     # set name dynamically from object
-    @validator("name", always=True)
+    @field_validator("name")
     @classmethod
-    def validate_name(cls, v, values):
+    def validate_name(cls, v, info: ValidationInfo):
         if not v:
-            obj = cls._get_supported_obj(values, allow_none=False)
+            obj = cls._get_supported_obj(info.data, allow_none=False)
             try:
                 v = obj.name
             except AttributeError:
                 pass
         return v
 
-    @validator("is_readonly", always=True, pre=True)
+    @field_validator("is_readonly")
     @classmethod
-    def set_readonly_default(cls, v, values):
+    def set_readonly_default(cls, v, info: ValidationInfo):
         if v is None:
             v = True
-            obj = cls._get_supported_obj(values, allow_none=False)
+            obj = cls._get_supported_obj(info.data, allow_none=False)
             if obj.is_variable_type() or (
                 obj.is_parameter_type() and obj.parent_component().mutable
             ):
                 v = False
         return v
 
-    @validator("obj_key", always=True, pre=True)
+    @field_validator("obj_key")
     @classmethod
-    def set_obj_key_default(cls, v, values):
+    def set_obj_key_default(cls, v, info: ValidationInfo):
         if v is None:
-            obj = cls._get_supported_obj(values, allow_none=False)
+            obj = cls._get_supported_obj(info.data, allow_none=False)
             v = str(obj)
         return v
 
@@ -197,37 +197,37 @@ class ModelOption(BaseModel):
 
     name: str
     category: str = "Build Options"
-    display_name: str = None
-    description: str = None
+    display_name: Union[None, str] = Field(default=None, validate_default=True)
+    description: Union[None, str] = Field(default=None, validate_default=True)
     display_values: List[Any] = []
     values_allowed: Union[str, List[Any]]
     min_val: Union[None, int, float] = None
     max_val: Union[None, int, float] = None
     value: Any = None
 
-    @validator("display_name", always=True)
+    @field_validator("display_name")
     @classmethod
-    def validate_display_name(cls, v, values):
+    def validate_display_name(cls, v, info: ValidationInfo):
         if v is None:
-            v = values.get("name")
+            v = info.data.get("name")
         return v
 
-    @validator("description", always=True)
+    @field_validator("description")
     @classmethod
-    def validate_description(cls, v, values):
+    def validate_description(cls, v, info: ValidationInfo):
         if v is None:
-            v = values.get("display_name")
+            v = info.data.get("display_name")
         return v
 
-    @validator("value")
+    @field_validator("value")
     @classmethod
-    def validate_value(cls, v, values):
-        allowed = values.get("values_allowed", None)
+    def validate_value(cls, v, info: ValidationInfo):
+        allowed = info.data.get("values_allowed", None)
         # check if values allowed is int or float and ensure valid value
         if allowed == "int":
             if isinstance(v, int):
-                min_val = values.get("min_val", float("-inf"))
-                max_val = values.get("max_val", float("-inf"))
+                min_val = info.data.get("min_val", float("-inf"))
+                max_val = info.data.get("max_val", float("-inf"))
                 if v >= min_val and v <= max_val:
                     return v
                 else:
@@ -238,8 +238,8 @@ class ModelOption(BaseModel):
                 raise ValueError(f"'value' ({v}) not a valid integer")
         elif allowed == "float":
             if isinstance(v, int) or isinstance(v, float):
-                min_val = values.get("min_val", float("-inf"))
-                max_val = values.get("max_val", float("-inf"))
+                min_val = info.data.get("min_val", float("-inf"))
+                max_val = info.data.get("max_val", float("-inf"))
                 if v >= min_val and v <= max_val:
                     return v
                 else:
@@ -271,9 +271,9 @@ class FlowsheetExport(BaseModel):
 
     m: object = Field(default=None, exclude=True)
     obj: object = Field(default=None, exclude=True)
-    name: str = ""
-    description: str = ""
-    model_objects: Dict[str, ModelExport] = {}
+    name: Union[None, str] = Field(default="", validate_default=True)
+    description: Union[None, str] = Field(default="", validate_default=True)
+    exports: Dict[str, ModelExport] = {}
     version: int = 2
     requires_idaes_solver: bool = False
     dof: int = 0
@@ -281,26 +281,26 @@ class FlowsheetExport(BaseModel):
     build_options: Dict[str, ModelOption] = {}
 
     # set name dynamically from object
-    @validator("name", always=True)
+    @field_validator("name")
     @classmethod
-    def validate_name(cls, v, values):
+    def validate_name(cls, v, info: ValidationInfo):
         if not v:
             try:
-                v = values["obj"].name
+                v = info.data["obj"].name
             except (KeyError, AttributeError):
                 pass
             if not v:
                 v = "default"
         return v
 
-    @validator("description", always=True)
+    @field_validator("description")
     @classmethod
-    def validate_description(cls, v, values):
+    def validate_description(cls, v, info: ValidationInfo):
         if not v:
             try:
-                v = values["obj"].doc
+                v = info.data["obj"].doc
             except (KeyError, AttributeError):
-                v = f"{values['name']} flowsheet"
+                v = f"{info.data['name']} flowsheet"
         return v
 
     def add(self, *args, data: Union[dict, ModelExport] = None, **kwargs) -> object:
@@ -344,22 +344,22 @@ class FlowsheetExport(BaseModel):
             model_export = args[0]
         elif data is None:
             _log.debug(f"Create ModelExport from args: {kwargs}")
-            model_export = ModelExport.parse_obj(kwargs)
+            model_export = ModelExport.model_validate(kwargs)
         else:
             if isinstance(data, dict):
-                model_export = ModelExport.parse_obj(data)
+                model_export = ModelExport.model_validate(data)
             else:
                 model_export = data
         key = model_export.obj_key
-        if key in self.model_objects:
+        if key in self.exports:
             raise KeyError(
                 f"Adding ModelExport object failed: duplicate key '{key}' (model_export={model_export})"
             )
         if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
             _log.debug(
-                f"Adding ModelExport object with key={key}: {model_export.dict()}"
+                f"Adding ModelExport object with key={key}: {model_export.model_dump()}"
             )
-        self.model_objects[key] = model_export
+        self.exports[key] = model_export
         return model_export
 
     def from_csv(self, file: Union[str, Path], flowsheet):
@@ -496,10 +496,10 @@ class FlowsheetExport(BaseModel):
         csv_output_file = writer(output_file)
 
         # write header row
-        obj = next(iter(self.model_objects.values()))
+        obj = next(iter(self.exports.values()))
         values = ["obj", "ui_units"]
         col_idx_map = {}
-        for i, field_name in enumerate(obj.dict()):
+        for i, field_name in enumerate(obj.model_dump()):
             # add to mapping of field name to column number
             col_idx_map[field_name] = i + 2
             # add column name
@@ -509,14 +509,14 @@ class FlowsheetExport(BaseModel):
 
         # write a row for each object
         num = 0
-        for key, obj in self.model_objects.items():
+        for key, obj in self.exports.items():
             # initialize values list
             #   first 2 column values are object name and units
             obj_name = self._massage_object_name(key)
             units_str = self._massage_ui_units(str(obj.ui_units))
             values = [obj_name, units_str] + [""] * (ncol - 2)
             # add columns
-            for field_name, field_value in obj.dict().items():
+            for field_name, field_value in obj.model_dump().items():
                 values[col_idx_map[field_name]] = field_value
             # write row
             csv_output_file.writerow(values)
@@ -617,7 +617,7 @@ class FlowsheetInterface:
         Args:
             fs: An existing wrapper to a flowsheet object. If this is not provided,
                 then one will be constructed by passing the keyword arguments to
-                the built-in pydantic ``parse_obj()`` method
+                the built-in pydantic ``model_validate()`` method
                 of :class:`FlowsheetExport`.
             do_build: Function to call to build the flowsheet. It should build the
                 flowsheet model and return the `FlowsheetBlock`, which is typically
@@ -631,7 +631,7 @@ class FlowsheetInterface:
             **kwargs: See `fs` arg. If the `fs` arg *is* provided, these are ignored.
         """
         if fs is None:
-            self.fs_exp = FlowsheetExport.parse_obj(kwargs)
+            self.fs_exp = FlowsheetExport.model_validate(kwargs)
         else:
             self.fs_exp = fs
         self._actions = {}
@@ -709,7 +709,7 @@ class FlowsheetInterface:
         Returns:
             Serialized contained FlowsheetExport object
         """
-        return self.fs_exp.dict(exclude={"obj"})
+        return self.fs_exp.model_dump(exclude={"obj"})
 
     def load(self, data: Dict):
         """Load values from the data into corresponding variables in this
@@ -719,14 +719,14 @@ class FlowsheetInterface:
             data: The input flowsheet (probably deserialized from JSON)
         """
         u = pyo.units
-        fs = FlowsheetExport.parse_obj(data)  # new instance from data
+        fs = FlowsheetExport.model_validate(data)  # new instance from data
         # Set the value for each input variable
         missing = []
         # 'src' is the data source and 'dst' is this flowsheet (destination)
-        for key, src in fs.model_objects.items():
+        for key, src in fs.exports.items():
             # get corresponding exported variable
             try:
-                dst = self.fs_exp.model_objects[key]
+                dst = self.fs_exp.exports[key]
             except KeyError:
                 missing.append((key, src.name))
                 continue
@@ -806,7 +806,7 @@ class FlowsheetInterface:
             None
         """
 
-        # fs = FlowsheetExport.parse_obj(data)  # new instance from data
+        # fs = FlowsheetExport.model_validate(data)  # new instance from data
         self.fs_exp.build_options[option_name].value = new_option
 
         # # get function name from model options
@@ -847,8 +847,8 @@ class FlowsheetInterface:
                         "constructor or call `add_action(Actions.export, <function>)` "
                         "on FlowsheetInterface instance."
                     )
-                # clear model_objects dict, since duplicates not allowed
-                self.fs_exp.model_objects.clear()
+                # clear exports dict, since duplicates not allowed
+                self.fs_exp.exports.clear()
                 # use get_action() since run_action() will refuse to call it directly
                 self.get_action(Actions.export)(
                     exports=self.fs_exp, build_options=self.fs_exp.build_options
@@ -911,7 +911,7 @@ class FlowsheetInterface:
         _log.info("Exporting values from flowsheet model to UI")
         u = pyo.units
         self.fs_exp.dof = degrees_of_freedom(self.fs_exp.obj)
-        for key, mo in self.fs_exp.model_objects.items():
+        for key, mo in self.fs_exp.exports.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
             # print(f'{key} is being set to: {mo.value}')
             if hasattr(mo.obj, "bounds"):
@@ -945,7 +945,7 @@ class FlowsheetInterface:
         To set up a flowsheet interface for discovery, locate your Python package distribution's file (normally
         :file:`setup.py`, :file:`pyproject.toml`, or equivalent) and add an entry in the ``entry_points`` section.
 
-        For example, to add a flowsheet defined in :file:`watertap/examples/flowsheets/my_flowsheet.py`
+        For example, to add a flowsheet defined in :file:`watertap/flowsheets/flowsheets/my_flowsheet.py`
         so that it can be discovered with the name ``my_flowsheet`` wherever the ``watertap`` package is installed,
         the following should be added to WaterTAP's :file:`setup.py`::
 
@@ -955,7 +955,7 @@ class FlowsheetInterface:
                entry_points={
                    "watertap.flowsheets": [
                         # other flowsheet entry points
-                        "my_flowsheet = watertap.examples.flowsheets.my_flowsheet",
+                        "my_flowsheet = watertap.flowsheets.flowsheets.my_flowsheet",
                    ]
                }
            )

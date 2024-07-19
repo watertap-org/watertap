@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -17,7 +17,6 @@ from typing import Container, Optional, Callable
 import pytest
 from _pytest.nodes import Item
 from _pytest.config import Config
-from _pytest.config.argparsing import Parser
 
 
 class MarkerSpec(enum.Enum):
@@ -46,7 +45,7 @@ class MarkerSpec(enum.Enum):
 def _handle_requires_idaes_solver(
     solver: Optional = None, action: Optional[Callable[[str], None]] = pytest.xfail
 ) -> None:
-    from idaes.core.solvers import get_solver
+    from watertap.core.solvers import get_solver
     from idaes.config import bin_directory
 
     solver = solver or get_solver()
@@ -72,14 +71,3 @@ def pytest_runtest_setup(item: Item):
         # either by providing args to the marker
         # or by inspecting the current value of the `solver` fixture
         _handle_requires_idaes_solver()
-
-
-def pytest_addoption(parser: Parser):
-    parser.addoption(
-        "--edb-no-mock",
-        help="Force the `edb` fixture to connect to a running MongoDB instance "
-        "instead of falling back to mongomock",
-        action="store_true",
-        default=False,
-        dest="edb_no_mock",
-    )

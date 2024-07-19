@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -21,7 +21,7 @@ from pyomo.environ import (
 )
 
 from idaes.core import UnitModelBlockData
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.misc import add_object_reference
@@ -38,6 +38,7 @@ from .MD_channel_base import (
 from watertap.costing.unit_models.membrane_distillation import (
     cost_membrane_distillation,
 )
+from watertap.core.util.initialization import interval_initializer
 
 __author__ = "Elmira Shamlou"
 
@@ -51,11 +52,10 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         super().build()
 
-        self._make_MD_channel_control_volume("hot_ch", self.config.hot_ch)
+        self._make_MD_channel_control_volume("hot_ch", self.config, self.config.hot_ch)
 
         self.hot_ch.add_state_blocks(
             has_phase_equilibrium=False,
-            flow_direction=self.config.hot_ch.flow_direction,
             property_package_vapor=self.config.hot_ch.property_package_vapor,
             property_package_args_vapor=self.config.hot_ch.property_package_args_vapor,
         )
@@ -92,16 +92,20 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             temperature_polarization_type=self.config.hot_ch.temperature_polarization_type,
         )
 
-        self._make_MD_channel_control_volume("cold_ch", self.config.cold_ch)
+        try:
+            self.hot_ch.apply_transformation()
+        except AttributeError:
+            pass
+
+        self._make_MD_channel_control_volume(
+            "cold_ch", self.config, self.config.cold_ch
+        )
 
         self.cold_ch.add_state_blocks(
             has_phase_equilibrium=False,
-            flow_direction=self.config.cold_ch.flow_direction,
             property_package_vapor=self.config.cold_ch.property_package_vapor,
             property_package_args_vapor=self.config.cold_ch.property_package_args_vapor,
         )
-
-        # self.cold_ch.set_config(self.config.cold_ch)
 
         self.cold_ch.add_material_balances(
             balance_type=self.config.cold_ch.material_balance_type,
@@ -126,14 +130,37 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         # Concentration polarization constraint is not accounted for in the below method; it is
         # written later in the base model (eq_concentration_polarization)
-        self.cold_ch.add_concentration_polarization(
-            concentration_polarization_type=ConcentrationPolarizationType.none,
-            mass_transfer_coefficient=MassTransferCoefficient.none,
-        )
+        if hasattr(self.cold_ch.config.property_package, "solute_set"):
+            # If solute_set is defined, add concentration polarization configuration
+            self.cold_ch.add_concentration_polarization(
+                concentration_polarization_type=ConcentrationPolarizationType.none,
+                mass_transfer_coefficient=MassTransferCoefficient.none,
+            )
 
         self.cold_ch.add_temperature_polarization(
             temperature_polarization_type=self.config.cold_ch.temperature_polarization_type,
         )
+
+        try:
+            self.cold_ch.apply_transformation()
+        except AttributeError:
+            pass
+
+        for t in self.flowsheet().config.time:
+            for x in self.cold_ch.length_domain:
+                # Check if 'Vap' phase and 'H2O' component are defined in the property package
+                if (
+                    "Vap" in self.cold_ch.config.property_package.phase_list
+                    and "H2O" in self.cold_ch.config.property_package.component_list
+                ):
+                    # If so, fix the flow of 'H2O' in the 'Vap' phase to 0
+                    self.cold_ch.properties[t, x].flow_mass_phase_comp[
+                        "Vap", "H2O"
+                    ].fix(0)
+                    self.cold_ch.properties_interface[t, x].flow_mass_phase_comp[
+                        "Vap", "H2O"
+                    ].fix(0)
+
         add_object_reference(self, "length_domain", self.hot_ch.length_domain)
         add_object_reference(
             self, "difference_elements", self.hot_ch.difference_elements
@@ -149,6 +176,15 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         self._add_heat_flux()
         self._add_mass_flux()
+
+        if self.config.cold_ch.has_pressure_change:
+            self.cold_ch._add_deltaP(
+                pressure_change_type=self.config.cold_ch.pressure_change_type
+            )
+        if self.config.hot_ch.has_pressure_change:
+            self.hot_ch._add_deltaP(
+                pressure_change_type=self.config.hot_ch.pressure_change_type
+            )
 
         self.recovery_mass = Var(
             self.flowsheet().config.time,
@@ -601,6 +637,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
+        # pre-solve using interval arithmetic
+        interval_initializer(self)
+
         # solver
         opt = get_solver(solver, optarg)
 
@@ -661,9 +700,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "width"):
             var_dict["Membrane Width"] = self.width
 
-        expr_dict["Average Solute Flux (LMH)"] = self.flux_mass_avg[time_point] * 1000
-        expr_dict["Thermal efficiency (%)"] = self.thermal_efficiency[time_point] * 100
-        expr_dict["Effectiveness (%)"] = self.effectiveness[time_point] * 100
+        expr_dict["Average Solute Flux"] = self.flux_mass_avg[time_point]
+        expr_dict["Thermal efficiency (%)"] = self.thermal_efficiency[time_point]
+        expr_dict["Effectiveness (%)"] = self.effectiveness[time_point]
 
         return {"vars": var_dict, "exprs": expr_dict}
 
@@ -723,6 +762,20 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     self.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
                 )
                 iscale.set_scaling_factor(v, sf_flux_enth)
+            sf = iscale.get_scaling_factor(
+                self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+            )
+            iscale.set_scaling_factor(
+                self.cold_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"],
+                sf * 1000,
+            )
+            sf = iscale.get_scaling_factor(
+                self.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"]
+            )
+            iscale.set_scaling_factor(
+                self.hot_ch.properties_vapor[t, x].flow_mass_phase_comp["Vap", "H2O"],
+                sf * 1000,
+            )
 
         for (t, x), v in self.flux_conduction_heat.items():
             if iscale.get_scaling_factor(v) is None:

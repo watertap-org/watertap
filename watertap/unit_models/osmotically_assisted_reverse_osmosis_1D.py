@@ -1,15 +1,14 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+#################################################################################
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -209,8 +208,8 @@ class OsmoticallyAssistedReverseOsmosis1DData(
         )
         def eq_permeate_production(b, t, x, p, j):
             return (
-                -b.feed_side.mass_transfer_term[t, x, p, j]
-                == b.width * b.flux_mass_phase_comp[t, x, p, j]
+                -b.feed_side.mass_transfer_term[t, x, p, j] * b.length
+                == b.flux_mass_phase_comp[t, x, p, j] * b.area
             )
 
     def calculate_scaling_factors(self):

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -24,7 +24,27 @@ dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 db = Database()
 
-exclude_files = ["water_sources.yaml", "component_list.yaml", "default_case_study.yaml"]
+exclude_files = [
+    "water_sources.yaml",
+    "component_list.yaml",
+    "default_case_study.yaml",
+    # IEDO files
+    "amo_1595_case_study.yaml",
+    "amo_1690_case_study.yaml",
+    "biomembrane_filtration_global_costing.yaml",
+    "case_1617.yaml",
+    "GLSD_anaerobic_digestion_global_costing.yaml",
+    "groundwater_treatment_case_study.yaml",
+    "hrcs_case_1575.yaml",
+    "magprex_case_1575.yaml",
+    "metab_global_costing.yaml",
+    "peracetic_acid_case_study.yaml",
+    "suboxic_activated_sludge_process_global.yaml",
+    "supercritical_sludge_to_gas_global_costing.yaml",
+    "swine_wwt_global_costing.yaml",
+    "wastewater_default_case_study.yaml",
+]
+
 
 tech_list = []
 for f in os.listdir(dbpath):
@@ -136,7 +156,7 @@ def test_unit_parameter_files(tech):
 
         # Check for specific removal fractions
         if "removal_frac_mass_comp" in k.keys():
-            for (j, c_data) in k["removal_frac_mass_comp"].items():
+            for j, c_data in k["removal_frac_mass_comp"].items():
                 assert "units" in c_data.keys()
                 assert_units_equivalent(c_data["units"], units.dimensionless)
                 assert "value" in c_data.keys()

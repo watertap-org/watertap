@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-from watertap.property_models.coagulation_prop_pack import (
+from watertap.property_models.unit_specific.coagulation_prop_pack import (
     CoagulationParameterBlock,
     CoagulationStateBlock,
 )
@@ -33,11 +33,12 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
 
 solver = get_solver()
+
 
 # -----------------------------------------------------------------------------
 # Start test class

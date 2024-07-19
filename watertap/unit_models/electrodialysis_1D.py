@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -40,7 +40,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.solvers.get_solver import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -540,7 +540,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             initialize=0.7,
             bounds=(0.01, 1),
             units=pyunits.dimensionless,
-            doc='The prosity of spacer in the ED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
+            doc='The porosity of spacer in the ED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
         )
 
         # Material and Operational properties
@@ -1847,9 +1847,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
         def eq_Sc(self):
 
-            return (
-                self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
-            )
+            return self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
 
         @self.Constraint(
             doc="To calculate Sc",
@@ -1919,10 +1917,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     ):
                         return (
                             self.friction_factor
-                            == 4
-                            * 50.6
-                            * self.spacer_porosity**-7.06
-                            * self.N_Re**-1
+                            == 4 * 50.6 * self.spacer_porosity**-7.06 * self.N_Re**-1
                         )
                     elif (
                         self.config.friction_factor_method
@@ -1997,24 +1992,24 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     in self[k].diluate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].diluate.properties[set].flow_mol_phase_comp:
-                        self[k].diluate.properties[set].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self[k]
-                            .diluate.properties[(0.0, 0.0)]
-                            .flow_mol_phase_comp[ind]
+                        self[k].diluate.properties[set].flow_mol_phase_comp[ind] = (
+                            value(
+                                self[k]
+                                .diluate.properties[(0.0, 0.0)]
+                                .flow_mol_phase_comp[ind]
+                            )
                         )
                 if (
                     "flow_mass_phase_comp"
                     in self[k].diluate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].diluate.properties[set].flow_mass_phase_comp:
-                        self[k].diluate.properties[set].flow_mass_phase_comp[
-                            ind
-                        ] = value(
-                            self[k]
-                            .diluate.properties[(0.0, 0.0)]
-                            .flow_mass_phase_comp[ind]
+                        self[k].diluate.properties[set].flow_mass_phase_comp[ind] = (
+                            value(
+                                self[k]
+                                .diluate.properties[(0.0, 0.0)]
+                                .flow_mass_phase_comp[ind]
+                            )
                         )
                 if hasattr(self[k], "conc_mem_surf_mol_x"):
                     for mem in self[k].membrane_set:
@@ -2056,12 +2051,12 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     in self[k].concentrate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].concentrate.properties[set].flow_mol_phase_comp:
-                        self[k].concentrate.properties[set].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self[k]
-                            .concentrate.properties[(0.0, 0.0)]
-                            .flow_mol_phase_comp[ind]
+                        self[k].concentrate.properties[set].flow_mol_phase_comp[ind] = (
+                            value(
+                                self[k]
+                                .concentrate.properties[(0.0, 0.0)]
+                                .flow_mol_phase_comp[ind]
+                            )
                         )
                 if (
                     "flow_mass_phase_comp"
@@ -2868,17 +2863,17 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         return {
             "vars": {
-                "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[
+                "Total electrical power consumption": self.diluate.power_electrical_x[
                     time_point, self.diluate.length_domain.last()
                 ],
-                "Specific electrical power consumption, ED stack (kW*h/m**3)": self.specific_power_electrical[
+                "Specific electrical power consumption, ED stack": self.specific_power_electrical[
                     time_point
                 ],
                 "Water recovery by mass": self.recovery_mass_H2O[time_point],
-                "Channel inlet velocity, diluate (m/s)": self.velocity_diluate[
+                "Channel inlet velocity, diluate": self.velocity_diluate[
                     time_point, self.diluate.length_domain.first()
                 ],
-                "Channel inlet velocity, concentrate (m/s)": self.velocity_concentrate[
+                "Channel inlet velocity, concentrate": self.velocity_concentrate[
                     time_point, self.diluate.length_domain.first()
                 ],
             },

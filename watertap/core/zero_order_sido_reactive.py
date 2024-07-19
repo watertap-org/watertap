@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -17,7 +17,7 @@ reactions.
 from types import MethodType
 
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 
@@ -327,6 +327,37 @@ def build_sido_reactive(self):
     self._perf_var_dict["Reaction Extent"] = self.extent_of_reaction
 
     self._get_Q = MethodType(_get_Q_sidor, self)
+
+    if ("temperature" in self.properties_in[0].define_state_vars()) and (
+        self.config.isothermal
+    ):
+        _add_isothermal_constraints(self)
+    if ("pressure" in self.properties_in[0].define_state_vars()) and (
+        self.config.isobaric
+    ):
+        _add_isobaric_constraints(self)
+
+
+def _add_isothermal_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        ["byproduct", "treated"],
+        doc="Isothermal constraints",
+    )
+    def eq_isothermal(b, t, port):
+        obj = getattr(b, port)
+        return b.inlet.temperature[t] == obj.temperature[t]
+
+
+def _add_isobaric_constraints(blk):
+    @blk.Constraint(
+        blk.flowsheet().time,
+        ["byproduct", "treated"],
+        doc="Isobaric constraints",
+    )
+    def eq_isobaric(b, t, port):
+        obj = getattr(b, port)
+        return b.inlet.pressure[t] == obj.pressure[t]
 
 
 def initialize_sidor(

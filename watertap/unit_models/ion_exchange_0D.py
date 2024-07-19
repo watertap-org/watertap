@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -33,7 +33,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.solvers.get_solver import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
@@ -44,6 +44,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.ion_exchange import cost_ion_exchange
 
 __author__ = "Kurban Sitterley"
@@ -1053,7 +1054,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 self.target_ion_set, doc="Removed total mass of ion in equivalents"
             )
             def eq_mass_removed(b, j):
-                charge = prop_in.charge_comp[j]
+                charge = abs(prop_in.charge_comp[j])
                 return b.mass_removed[j] * charge == pyunits.convert(
                     b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol_tot,
                     to_units=pyunits.mol,
@@ -1256,6 +1257,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         init_log.info("Initialization Step 1c Complete.")
 
+        # pre-solve using interval arithmetic
+        interval_initializer(self)
+
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -1450,7 +1454,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Bed Depth"] = self.bed_depth
         var_dict["Col. Height to Diam. Ratio"] = self.col_height_to_diam_ratio
         var_dict["Bed Porosity"] = self.bed_porosity
-        var_dict["Service Flow Rate [BV/hr]"] = self.service_flow_rate
+        var_dict["Service Flow Rate"] = self.service_flow_rate
         var_dict["Bed Velocity"] = self.vel_bed
         var_dict["Resin Particle Diameter"] = self.resin_diam
         var_dict["Resin Bulk Density"] = self.resin_bulk_dens
@@ -1460,16 +1464,16 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Peclet Number (bed)"] = self.N_Pe_bed
         var_dict["Peclet Number (particle)"] = self.N_Pe_particle
         if self.config.isotherm == IsothermType.langmuir:
-            var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity
-            var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity
+            var_dict["Total Resin Capacity"] = self.resin_max_capacity
+            var_dict["Usable Resin Capacity"] = self.resin_eq_capacity
             var_dict["Number Transfer Units"] = self.num_transfer_units
             var_dict["Total Mass Removed [equivalents]"] = self.mass_removed[target_ion]
             var_dict["Dimensionless Time"] = self.dimensionless_time
             var_dict["Partition Ratio"] = self.partition_ratio
             var_dict[f"Langmuir Coeff. [{target_ion}]"] = self.langmuir[target_ion]
-            var_dict[
-                f"Fluid Mass Transfer Coeff. [{target_ion}]"
-            ] = self.fluid_mass_transfer_coeff[target_ion]
+            var_dict[f"Fluid Mass Transfer Coeff. [{target_ion}]"] = (
+                self.fluid_mass_transfer_coeff[target_ion]
+            )
         elif self.config.isotherm == IsothermType.freundlich:
             var_dict[f"BV at Breakthrough"] = self.bv
             var_dict[f"BV at 50% Breakthrough"] = self.bv_50

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -23,7 +23,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from idaes.core import UnitModelBlockData
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.misc import add_object_reference
@@ -36,7 +36,9 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
     TransportModel,
+    ModuleType,
 )
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.reverse_osmosis import cost_reverse_osmosis
 
 
@@ -100,7 +102,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
-            friction_factor=self.config.friction_factor,
         )
 
         self.feed_side.add_control_volume_isothermal_conditions()
@@ -204,9 +205,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, p, j: 0.4037 if j in solvent_set else 0.0033,
-            bounds=lambda b, t, p, j: (1e-2, 1 - 1e-6)
-            if j in solvent_set
-            else (1e-5, 1 - 1e-6),
+            bounds=lambda b, t, p, j: (
+                (1e-2, 1 - 1e-6) if j in solvent_set else (1e-5, 1 - 1e-6)
+            ),
             units=pyunits.dimensionless,
             doc="Mass-based component recovery",
         )
@@ -287,10 +288,24 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         if include_constraint:
-            # Membrane area equation
-            @self.Constraint(doc="Total Membrane area")
-            def eq_area(b):
-                return b.area == b.length * b.width
+            if self.config.module_type == ModuleType.flat_sheet:
+                # Membrane area equation for flat plate membranes
+                @self.Constraint(doc="Total Membrane area")
+                def eq_area(b):
+                    return b.area == b.length * b.width
+
+            elif self.config.module_type == ModuleType.spiral_wound:
+                # Membrane area equation
+                @self.Constraint(doc="Total Membrane area")
+                def eq_area(b):
+                    return b.area == b.length * 2 * b.width
+
+            else:
+                raise ConfigurationError(
+                    "Unsupported membrane module type: {}".format(
+                        self.config.module_type
+                    )
+                )
 
     def _add_flux_balance(self):
 
@@ -349,9 +364,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, x, p, j: 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b, t, x, p, j: (1e-4, 3e-2)
-            if j in solvent_set
-            else (1e-8, 1e-3),
+            bounds=lambda b, t, x, p, j: (
+                (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3)
+            ),
             units=units_meta("mass")
             * units_meta("length") ** -2
             * units_meta("time") ** -1,
@@ -616,6 +631,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
+        # pre-solve using interval arithmetic
+        interval_initializer(self)
+
         # Create solver
         opt = get_solver(solver, optarg)
 
@@ -684,30 +702,30 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 interface_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Inlet,Membrane-Interface "
-                ] = interface_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Inlet,Membrane-Interface "] = (
+                    interface_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 interface_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Outlet,Membrane-Interface "
-                ] = interface_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Outlet,Membrane-Interface "] = (
+                    interface_outlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 feed_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Inlet,Bulk"
-                ] = feed_inlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Inlet,Bulk"] = (
+                    feed_inlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 feed_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[
-                    f"{j} Concentration @Outlet,Bulk"
-                ] = feed_outlet.conc_mass_phase_comp["Liq", j]
+                var_dict[f"{j} Concentration @Outlet,Bulk"] = (
+                    feed_outlet.conc_mass_phase_comp["Liq", j]
+                )
             if (
                 permeate.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
@@ -719,9 +737,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             interface_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Osmotic Pressure @Outlet,Membrane-Interface "
-            ] = interface_outlet.pressure_osm_phase["Liq"]
+            var_dict["Osmotic Pressure @Outlet,Membrane-Interface "] = (
+                interface_outlet.pressure_osm_phase["Liq"]
+            )
         if (
             feed_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
@@ -733,9 +751,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             interface_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict[
-                "Osmotic Pressure @Inlet,Membrane-Interface"
-            ] = interface_inlet.pressure_osm_phase["Liq"]
+            var_dict["Osmotic Pressure @Inlet,Membrane-Interface"] = (
+                interface_inlet.pressure_osm_phase["Liq"]
+            )
         if (
             feed_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
@@ -757,20 +775,20 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             var_dict["Hydraulic Diameter"] = self.feed_side.dh
 
         if self.config.has_full_reporting:
-            expr_dict["Average Solvent Flux (LMH)"] = (
-                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
-            )
+            expr_dict["Average Solvent Mass Flux"] = self.flux_mass_phase_comp_avg[
+                time_point, "Liq", "H2O"
+            ]
             if hasattr(self.feed_side, "N_Re_avg"):
                 expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
                     time_point
                 ]
             for j in self.config.property_package.solute_set:
-                expr_dict[f"{j} Average Solute Flux (GMH)"] = (
-                    self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
+                expr_dict[f"{j} Average Solute Mass Flux"] = (
+                    self.flux_mass_phase_comp_avg[time_point, "Liq", j]
                 )
                 if hasattr(self.feed_side, "K_avg"):
-                    expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
-                        self.feed_side.K_avg[time_point, j] * 3.6e6
+                    expr_dict[f"{j} Average Mass Transfer Coefficient"] = (
+                        self.feed_side.K_avg[time_point, j]
                     )
 
         # TODO: add more vars

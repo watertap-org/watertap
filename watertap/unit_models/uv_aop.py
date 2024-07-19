@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -37,7 +37,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -49,6 +49,7 @@ from watertap.core import InitializationMixin
 from watertap.costing.unit_models.uv_aop import cost_uv_aop
 
 _log = idaeslog.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------
 class UVDoseType(Enum):
@@ -247,7 +248,12 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
             add_object_reference(self, "target_species", solute_set)
         elif self.config.target_species is not None:
             self.target_species = Set()
+            # TODO: consider logic that catches someone entering a single string for target
             for k in self.config.target_species:
+                if k not in solute_set:
+                    raise ConfigurationError(
+                        f"{k} cannot be a target_species because it is not listed in the solute_set."
+                    )
                 self.target_species.add(k)
             self.inert_species = component_set - self.target_species
         else:

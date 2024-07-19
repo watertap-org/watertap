@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -41,13 +41,14 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 __author__ = "Xiangyu Bi, Kejia Hu"
 
 solver = get_solver()
+
 
 # -----------------------------------------------------------------------------
 # Start test class
@@ -255,10 +256,10 @@ class TestElectrodialysisVoltageConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption"]
         ) == pytest.approx(3.06, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption"]
         ) == pytest.approx(0.202, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
@@ -505,10 +506,10 @@ class TestElectrodialysisCurrentConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption"]
         ) == pytest.approx(5.4, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption"]
         ) == pytest.approx(0.361, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
@@ -734,10 +735,10 @@ class TestElectrodialysis_withNeutralSPecies:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption"]
         ) == pytest.approx(5.41, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption"]
         ) == pytest.approx(0.361, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
@@ -957,10 +958,10 @@ class Test_ED_MembNonohm_On_ConstV:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption"]
         ) == pytest.approx(1.601, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption"]
         ) == pytest.approx(0.104, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
@@ -1182,10 +1183,10 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption"]
         ) == pytest.approx(1.4223, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption"]
         ) == pytest.approx(0.0921, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
@@ -1407,10 +1408,10 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption"]
         ) == pytest.approx(12.202, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption"]
         ) == pytest.approx(0.8157, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -70,14 +70,14 @@ class TestFlowsheetInterface:
     def test_build(self, data_post_build):
         data = data_post_build
         assert data
-        assert "model_objects" in data
+        assert "exports" in data
 
     @pytest.fixture
-    def model_objects(self, data_post_build):
-        return data_post_build["model_objects"]
+    def exports(self, data_post_build):
+        return data_post_build["exports"]
 
-    def test_model_objects(self, model_objects):
-        assert len(model_objects) > 0
+    def test_exports(self, exports):
+        assert len(exports) > 0
 
     @pytest.fixture
     def solve_results(self, fs_interface, data_post_build):

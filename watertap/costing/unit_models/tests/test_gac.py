@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -18,7 +18,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
     UnitModelCostingBlock,
 )
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 from watertap.costing import WaterTAPCosting
 from watertap.unit_models.tests.test_gac import build_crittenden
@@ -35,13 +35,6 @@ class TestGACCosting:
         m = build_crittenden()
         initialization_tester(m)
         solver.solve(m)
-
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
-
-        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.costing.cost_process()
-        m.fs.unit.costing.initialize()
 
         return m
 

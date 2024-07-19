@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -26,7 +26,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core import UnitModelCostingBlock
@@ -34,6 +34,10 @@ from idaes.core import UnitModelCostingBlock
 from watertap.unit_models.zero_order import CartridgeFiltrationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MaterialFlowBasis,
+)
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -325,3 +329,64 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit1) == 0
 
     assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+
+
+@pytest.mark.unit()
+def test_no_database():
+    """Verify that ZO models still instantiate successfully without database."""
+    m = ConcreteModel()
+
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["nonvolatile_toc", "tss"])
+
+    m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params)
+
+
+@pytest.mark.unit()
+def test_with_MCAS():
+    """Check compatibility of ZO model with MCAS."""
+    m = ConcreteModel()
+    m.db = Database()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = MCASParameterBlock(
+        solute_list=["nonvolatile_toc", "tss"],
+        ignore_neutral_charge=True,
+        material_flow_basis=MaterialFlowBasis.mass,
+        mw_data={"nonvolatile_toc": None, "tss": None},
+    )
+    m.fs.unit = CartridgeFiltrationZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "nonvolatile_toc"].fix(1)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "tss"].fix(1)
+    m.fs.unit.inlet.temperature.fix()
+    m.fs.unit.inlet.pressure.fix()
+
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert_optimal_termination(results)
+
+    m.fs.costing = ZeroOrderCosting()
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    assert isinstance(m.fs.costing.cartridge_filtration, Block)
+    assert isinstance(m.fs.costing.cartridge_filtration.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.cartridge_filtration.capital_b_parameter, Var)
+    assert isinstance(m.fs.costing.cartridge_filtration.reference_state, Var)
+
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
+
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert_optimal_termination(results)

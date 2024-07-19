@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -354,7 +354,7 @@ see property package for documentation.}""",
     CONFIG.declare("hot_ch", _CONFIG_Template(doc="hot channel config arguments"))
     CONFIG.declare("cold_ch", _CONFIG_Template(doc="cold channel config arguments"))
 
-    def _make_MD_channel_control_volume(self, name_ch, config):
+    def _make_MD_channel_control_volume(self, name_ch, common_config, config):
 
         if not isinstance(name_ch, str):
             raise TypeError(
@@ -388,6 +388,7 @@ see property package for documentation.}""",
             channel.add_geometry(
                 length_var=self.length,
                 width_var=self.width,
+                flow_direction=config.flow_direction,
             )
             if not hasattr(self, "eq_area"):
                 add_eq_area = True
@@ -395,7 +396,9 @@ see property package for documentation.}""",
                 add_eq_area = False
             self._add_area(include_constraint=add_eq_area)
         else:
-            channel.add_geometry(length_var=None, width_var=None)
+            channel.add_geometry(
+                length_var=None, width_var=None, flow_direction=config.flow_direction
+            )
             self._add_area(include_constraint=False)
 
     def _add_mass_transfer(self):
@@ -406,24 +409,30 @@ see property package for documentation.}""",
             doc="Mass transfer from feed to permeate",
         )
         def eq_connect_mass_transfer(b, t, p, j):
-            return (
-                b.cold_ch.mass_transfer_term[t, p, j]
-                == -b.hot_ch.mass_transfer_term[t, p, j]
-            )
+
+            if p == "Liq":
+                return (
+                    b.cold_ch.mass_transfer_term[t, "Liq", j]
+                    == -b.hot_ch.mass_transfer_term[t, "Liq", j]
+                )
+
+            else:
+                b.cold_ch.mass_transfer_term[t, p, j].fix(0)
+                return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.cold_ch.property_package.phase_list,
-            self.config.cold_ch.property_package.component_list,
+            self.config.hot_ch.property_package.phase_list,
+            self.config.hot_ch.property_package.component_list,
             doc="Permeate production",
         )
         def eq_permeate_production(b, t, p, j):
             if j == "H2O":
                 return (
-                    b.cold_ch.mass_transfer_term[t, p, j] == b.area * b.flux_mass_avg[t]
+                    b.hot_ch.mass_transfer_term[t, p, j] == -b.area * b.flux_mass_avg[t]
                 )
             else:
-                b.cold_ch.mass_transfer_term[t, p, j].fix(0)
+                b.hot_ch.mass_transfer_term[t, p, j].fix(0)
                 return Constraint.Skip
 
     def _add_heat_transfer(self):

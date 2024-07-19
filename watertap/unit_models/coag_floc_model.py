@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -34,17 +34,19 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.core.util.initialization import interval_initializer
 
 __author__ = "Austin Ladshaw"
 
 _log = idaeslog.getLogger(__name__)
+
 
 # Name of the unit model
 @declare_process_block_class("CoagulationFlocculation")
@@ -899,6 +901,8 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
 
+        interval_initializer(self)
+
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1279,9 +1283,9 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         t = time_point
         return {
             "vars": {
-                "Total Power Usage  (kW)": self.total_power[t],
-                "Rapid Mixing Power (kW)": self.rapid_mixing_power[t],
-                "Flocc Mixing Power (kW)": self.flocculation_power[t],
+                "Total Power Usage": self.total_power[t],
+                "Rapid Mixing Power": self.rapid_mixing_power[t],
+                "Flocc Mixing Power": self.flocculation_power[t],
             },
             "exprs": {},
             "params": {},

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -14,14 +14,16 @@ import pytest
 import pyomo.environ as pyo
 import idaes.core.util.scaling as iscale
 
-from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common.errors import ApplicationError
 from idaes.core.util.scaling import (
     set_scaling_factor,
     constraints_with_scale_factor_generator,
 )
-from idaes.core.solvers import get_solver
+from idaes.core.util.model_statistics import number_activated_objectives
+from watertap.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP, _pyomo_nl_writer_log
+
+import watertap.core.plugins.solvers as solver_module
 
 
 class TestIpoptWaterTAP:
@@ -39,8 +41,6 @@ class TestIpoptWaterTAP:
         set_scaling_factor(b.d, 1e6)
 
         b.o = pyo.Expression(expr=sum(b.a) ** 2)
-
-        m.o = pyo.Objective(expr=m.a + b.o)
 
         # references are tricky, could cause a variable
         # to be iterated over several times in
@@ -71,8 +71,18 @@ class TestIpoptWaterTAP:
         assert get_solver().__class__ is IpoptWaterTAP
 
     @pytest.mark.unit
+    @pytest.mark.requires_idaes_solver
+    def test_attribute_passthrough(self, s):
+        assert s.available()
+
+    @pytest.mark.unit
+    def test_attribute_nonpassthrough(self, s):
+        with pytest.raises(AttributeError, match=".*this_attribute_should_not_exist.*"):
+            s.this_attribute_should_not_exist
+
+    @pytest.mark.unit
     def test_presolve_scales_constraints_and_relaxes_bounds(self, m, s):
-        s._presolve(m, tee=True)
+        s._scale_constraints(m)
         for c, sf in s._scaling_cache:
             if c is m.b.d:
                 assert sf == 1e6
@@ -85,8 +95,6 @@ class TestIpoptWaterTAP:
         assert m.b.c[2] in cons_with_sf
         assert m.b.d in cons_with_sf
 
-        assert s._model is m
-
         assert m.a.lb == -0.5
         assert m.a.ub == 0.5
         assert m.b.a[1].lb == -10
@@ -97,20 +105,14 @@ class TestIpoptWaterTAP:
 
     @pytest.mark.unit
     def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
-        assert hasattr(s, "_postsolve")
-        # for the Pyomo implementation
-        try:
-            s._postsolve()
-        except AttributeError:
-            pass
+        s._reset_scaling_factors()
+        s._remove_dummy_objective()
 
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
 
         cons_with_sf = list(constraints_with_scale_factor_generator(m))
         assert cons_with_sf == [(m.b.d, 1e6)]
-
-        assert not hasattr(s, "_model")
 
     @pytest.mark.unit
     def test_option_absorption(self, m, s):
@@ -120,6 +122,7 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
         del s.options["ignore_variable_scaling"]
 
     @pytest.mark.unit
@@ -131,15 +134,6 @@ class TestIpoptWaterTAP:
         assert s._get_option("ignore_constraint_scaling", False) is False
 
     @pytest.mark.unit
-    def test_presolve_passthrough(self, m, s):
-        s.options["nlp_scaling_method"] = "gradient-based"
-        s._presolve(m, tee=True)
-        self._test_bounds(m)
-        assert not hasattr(s, "_scaling_cache")
-        assert _pyomo_nl_writer_log.filters == []
-        s.options["nlp_scaling_method"] = "user-scaling"
-
-    @pytest.mark.unit
     def test_passthrough_positive(self, m, s):
         s.options["nlp_scaling_method"] = "gradient-based"
         pyo.assert_optimal_termination(s.solve(m, tee=True))
@@ -147,6 +141,7 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
 
     @pytest.mark.unit
     def test_passthrough_negative(self, m, s):
@@ -159,68 +154,47 @@ class TestIpoptWaterTAP:
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
 
     @pytest.mark.unit
-    def test_presolve_incorrect_number_of_arguments(self, m, s):
+    def test_solve_incorrect_number_of_arguments(self, m, s):
         with pytest.raises(TypeError):
             s.solve()
-        with pytest.raises(TypeError):
-            s.solve(m, m)
 
     @pytest.mark.unit
-    def test_presolve_incorrect_argument_type(self, s):
-        with pytest.raises(TypeError):
-            s.solve("abc")
-
-    @pytest.mark.unit
-    def test_presolve_AMPL_evaluation_error(self, m, s):
+    def test_solve_AMPL_evaluation_error(self, m, s):
         m.a.value = 0
         with pytest.raises(RuntimeError):
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
         m.a.value = 1
 
     @pytest.mark.unit
     def test_presolve_ignore_AMPL_evaluation_error(self, m, s):
         m.a.value = 0
         s.options["halt_on_ampl_error"] = "no"
-        s._presolve(m)
+        s._scale_constraints(m)
         m.a.value = 1
         del s.options["halt_on_ampl_error"]
+        s._remove_dummy_objective()
 
     @pytest.mark.unit
-    def test_presolve_AMPL_evaluation_error_cleans_up(self, m, s):
+    def test_solve_AMPL_evaluation_error_cleans_up(self, m, s):
         m.a.value = 0
         with pytest.raises(RuntimeError):
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
+        assert number_activated_objectives(m) == 0
         m.a.value = 1
 
     @pytest.mark.unit
-    def test_presolve_ipopt_error_cleans_up(self, m, s):
-        IPOPT_presolve = IPOPT._presolve
-
-        class IpoptErrorException(Exception):
-            pass
-
-        def _bad_presolve(*args, **kwargs):
-            raise IpoptErrorException
-
-        IPOPT._presolve = _bad_presolve
-        with pytest.raises(IpoptErrorException):
-            s.solve(m)
-        self._test_bounds(m)
-        assert not hasattr(s, "_scaling_cache")
-        assert _pyomo_nl_writer_log.filters == []
-        IPOPT._presolve = IPOPT_presolve
-
-    @pytest.mark.unit
-    def test_presolve_constraint_autoscale_large_jac_error_cleans_up(self, m, s):
-        constraint_autoscale_large_jac = iscale.constraint_autoscale_large_jac
+    def test_solve_constraint_autoscale_large_jac_error_cleans_up(self, m, s):
+        constraint_autoscale_large_jac = solver_module._constraint_autoscale_large_jac
 
         class CALJErrorException(Exception):
             pass
@@ -228,35 +202,101 @@ class TestIpoptWaterTAP:
         def _bad_constraint_autoscale_large_jac(*args, **kwargs):
             raise CALJErrorException
 
-        iscale.constraint_autoscale_large_jac = _bad_constraint_autoscale_large_jac
+        solver_module._constraint_autoscale_large_jac = (
+            _bad_constraint_autoscale_large_jac
+        )
         with pytest.raises(CALJErrorException):
             s.solve(m)
         self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         assert _pyomo_nl_writer_log.filters == []
-        iscale.constraint_autoscale_large_jac = constraint_autoscale_large_jac
+        assert number_activated_objectives(m) == 0
+        solver_module._constraint_autoscale_large_jac = constraint_autoscale_large_jac
 
     @pytest.fixture(scope="class")
     def m2(self):
-        m = pyo.ConcreteModel()
-        m.factor = pyo.Param(initialize=1.0e-16, mutable=True)
-        m.x = pyo.Var(bounds=(0.5 * m.factor, 1.5 * m.factor), initialize=m.factor)
-        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        m.scaling_factor[m.x] = pyo.value(1.0 / m.factor)
-        m.o = pyo.Objective(expr=m.x / m.factor)
-        return m
+        m2 = pyo.ConcreteModel()
+        m2.b = b = pyo.Block()
+        b.factor = pyo.Param(initialize=1.0e-16, mutable=True)
+        b.x = pyo.Var(bounds=(0.5 * b.factor, 1.5 * b.factor), initialize=b.factor)
+        b.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        b.scaling_factor[b.x] = pyo.value(1.0 / b.factor)
+        b.o = pyo.Objective(expr=b.x / b.factor)
+
+        return m2
 
     @pytest.mark.unit
     def test_default_bound_relax_small(self, m2, s):
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(
+            5.000000024092977e-17, abs=0, rel=1e-8
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.xfail(
+        reason="Needs https://github.com/Pyomo/pyomo/pull/3295", strict=True
+    )
+    @pytest.mark.skipif(
+        not pyo.SolverFactory("cyipopt").available(exception_flag=False),
+        reason="cyipopt not available",
+    )
+    def test_cyipopt_bound_relax_small(self, m2):
+        s = pyo.SolverFactory("cyipopt-watertap")
+        m2.b.x.value = m2.b.factor
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.b.x) == pytest.approx(
+            5.000000024092977e-17, abs=0, rel=1e-8
+        )
 
     @pytest.mark.unit
     def test_default_bound_relax_big(self, m2, s):
-        m2.factor = 1.0e16
-        m2.x.value = 1.0e16
-        m2.x.lb = 0.5 * m2.factor
-        m2.x.ub = 1.5 * m2.factor
-        m2.scaling_factor[m2.x] = pyo.value(1.0 / m2.factor)
+        m2.b.factor = 1.0e16
+        m2.b.x.value = 1.0e16
+        m2.b.x.lb = 0.5 * m2.b.factor
+        m2.b.x.ub = 1.5 * m2.b.factor
+        m2.b.scaling_factor[m2.b.x] = pyo.value(1.0 / m2.b.factor)
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e15, abs=0, rel=1e-8)
+        assert pyo.value(m2.b.x) == pytest.approx(5.000000024092977e15, abs=0, rel=1e-8)
+
+    @pytest.mark.unit
+    @pytest.mark.skipif(
+        not pyo.SolverFactory("cyipopt").available(exception_flag=False),
+        reason="cyipopt not available",
+    )
+    def test_cyipopt_watertap_with_grey_box(self):
+        # This test runs the example in pynumero:
+        # pyomo/contrib/pynumero/examples/external_grey_box/react_example/maximize_cb_outputs.py
+        # with cyipopt-watertap, which uses an ExternalGreyBoxBlock
+        solver = pyo.SolverFactory("cyipopt-watertap")
+
+        from pyomo.contrib.pynumero.interfaces.external_grey_box import (
+            ExternalGreyBoxBlock,
+        )
+        from pyomo.contrib.pynumero.examples.external_grey_box.react_example.reactor_model_outputs import (
+            ReactorConcentrationsOutputModel,
+        )
+
+        # in this simple example, we will use an external grey box model representing
+        # a steady-state reactor, and solve for the space velocity that maximizes
+        # the concentration of component B coming out of the reactor
+        m = pyo.ConcreteModel()
+
+        # create a block to store the external reactor model
+        m.reactor = ExternalGreyBoxBlock(
+            external_model=ReactorConcentrationsOutputModel()
+        )
+
+        # The reaction rate constants and the feed concentration will
+        # be fixed for this example
+        m.k1con = pyo.Constraint(expr=m.reactor.inputs["k1"] == 5 / 6)
+        m.k2con = pyo.Constraint(expr=m.reactor.inputs["k2"] == 5 / 3)
+        m.k3con = pyo.Constraint(expr=m.reactor.inputs["k3"] == 1 / 6000)
+        m.cafcon = pyo.Constraint(expr=m.reactor.inputs["caf"] == 10000)
+
+        # add an objective function that maximizes the concentration
+        # of cb coming out of the reactor
+        m.obj = pyo.Objective(expr=m.reactor.outputs["cb"], sense=pyo.maximize)
+
+        solver.options["hessian_approximation"] = "limited-memory"
+        results = solver.solve(m, tee=True)
+        pyo.assert_optimal_termination(results)

@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -18,7 +18,7 @@ from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from pyomo.environ import (
     check_optimal_termination,
@@ -26,12 +26,17 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    assert_optimal_termination,
 )
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
 from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MaterialFlowBasis,
+)
 from watertap.core.zero_order_sido import (
     build_sido,
     initialize_sido,
@@ -219,7 +224,7 @@ class TestSIDO:
 
     @pytest.mark.component
     def test_conservation(self, model):
-        for (t, j) in model.fs.unit.inlet.flow_mass_comp.keys():
+        for t, j in model.fs.unit.inlet.flow_mass_comp.keys():
             assert (
                 abs(
                     value(
@@ -234,3 +239,32 @@ class TestSIDO:
     @pytest.mark.component
     def test_report(self, model):
         model.fs.unit.report()
+
+
+@pytest.mark.component()
+def test_with_MCAS():
+    """Check compatibility of ZO model with MCAS."""
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = MCASParameterBlock(
+        solute_list=["nonvolatile_toc", "tss"],
+        ignore_neutral_charge=True,
+        material_flow_basis=MaterialFlowBasis.mass,
+        mw_data={"nonvolatile_toc": None, "tss": None},
+    )
+    m.fs.unit = DerivedSIDO(property_package=m.fs.params)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "nonvolatile_toc"].fix(1)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "tss"].fix(1)
+    m.fs.unit.inlet.temperature.fix()
+    m.fs.unit.inlet.pressure.fix()
+
+    m.fs.unit.recovery_frac_mass_H2O.fix(0.8)
+    m.fs.unit.removal_frac_mass_comp[0, "nonvolatile_toc"].fix(0.1)
+    m.fs.unit.removal_frac_mass_comp[0, "tss"].fix(0.2)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert_optimal_termination(results)

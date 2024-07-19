@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -16,7 +16,9 @@ This module contains utility functions for initialization of WaterTAP models.
 
 __author__ = "Adam Atia"
 
-from pyomo.environ import check_optimal_termination
+from pyomo.environ import check_optimal_termination, ComponentMap, Var
+from pyomo.contrib.fbbt.fbbt import fbbt
+
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -136,3 +138,55 @@ def assert_no_degrees_of_freedom(blk):
 
     """
     check_dof(blk, True)
+
+
+def interval_initializer(
+    blk, feasibility_tol=1e-6, default_initial_value=0.0, logger=_log
+):
+    """
+    Improve the initialization of ``blk`` utilizing interval arithmetic.
+
+    Keyword Arguments:
+        blk : block to initialize
+        feasibility_tol : tolerance to use for FBBT (default: 1e-6)
+        default_initial_value: set uninitialized variables to this value (default: 0.0)
+        logger : logger to use (default: watertap.core.util.initialization)
+
+    Returns:
+        None
+
+    """
+
+    bound_cache = ComponentMap()
+
+    for v in blk.component_data_objects(Var, active=True, descend_into=True):
+        bound_cache[v] = v.bounds
+
+    fbbt(blk, feasibility_tol=feasibility_tol, deactivate_satisfied_constraints=False)
+
+    for v, bounds in bound_cache.items():
+        if v.value is None:
+            logger.info(
+                f"variable {v.name} has no initial value: setting to {default_initial_value}"
+            )
+            v.set_value(default_initial_value, skip_validation=True)
+        if v.lb is not None:
+            if v.lb == v.ub:
+                logger.debug(f"setting {v.name} to derived value {v.value}")
+                v.set_value(v.lb, skip_validation=True)
+                continue
+            if v.value < v.lb:
+                logger.debug(
+                    f"projecting {v.name} at value {v.value} onto derived lower bound {v.lb}"
+                )
+                v.set_value(v.lb, skip_validation=True)
+        if v.ub is not None:
+            if v.value > v.ub:
+                logger.debug(
+                    f"projecting {v.name} at value {v.value} onto derived upper bound {v.ub}"
+                )
+                v.set_value(v.ub, skip_validation=True)
+
+    for v, bounds in bound_cache.items():
+        # restore bounds to original
+        v.bounds = bounds

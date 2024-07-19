@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -188,8 +188,8 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         )
         def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
             return (
-                b.flux_mass_phase_comp[t, x, p, j] * b.width
-                == -b.feed_side.mass_transfer_term[t, x, p, j]
+                b.flux_mass_phase_comp[t, x, p, j] * b.area
+                == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length
             )
 
         # ==========================================================================

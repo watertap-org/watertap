@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -37,7 +37,7 @@ def cost_pressure_exchanger(blk):
         blk,
         blk.costing_package.pressure_exchanger.cost,
         pyo.units.convert(
-            blk.unit_model.low_pressure_side.properties_in[0].flow_vol,
+            blk.unit_model.feed_side.properties_in[0].flow_vol,
             (pyo.units.meter**3 / pyo.units.hours),
         ),
     )

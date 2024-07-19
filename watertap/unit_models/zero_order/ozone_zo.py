@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -126,9 +126,9 @@ class OzoneZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Ozone Contact Time (min)"] = self.contact_time
         self._perf_var_dict["Ozone CT Value ((mg*min)/L)"] = self.concentration_time
-        self._perf_var_dict[
-            "Ozone Mass Transfer Efficiency"
-        ] = self.mass_transfer_efficiency
+        self._perf_var_dict["Ozone Mass Transfer Efficiency"] = (
+            self.mass_transfer_efficiency
+        )
         self._perf_var_dict["Ozone Mass Flow (lb/hr)"] = self.ozone_flow_mass
         self._perf_var_dict["Ozone Unit Power Demand (kW)"] = self.electricity
 

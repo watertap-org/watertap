@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -17,6 +17,7 @@ from .membrane_channel_base import (
     MassTransferCoefficient,
     PressureChangeType,
     FrictionFactor,
+    ModuleType,
 )
 from .membrane_channel0d import MembraneChannel0DBlock
 from .membrane_channel1d import MembraneChannel1DBlock

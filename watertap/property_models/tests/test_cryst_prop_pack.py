@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-import watertap.property_models.cryst_prop_pack as props
+import watertap.property_models.unit_specific.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.models.properties.tests.test_harness import (
@@ -77,7 +77,7 @@ class TestDefaultNaClwaterProperty:
         ("dens_mass_solute", "Liq"): 3199.471,
         ("dens_mass_solute", "Sol"): 2115,
         ("dens_mass_phase", "Liq"): 1021.50,
-        ("dh_vap_mass_solvent", None): 2441.80,
+        ("dh_vap_mass_solvent", None): 2441.80e3,
         ("cp_mass_solvent", "Liq"): 4186.52,
         ("cp_mass_solvent", "Vap"): 1864.52,
         ("cp_mass_solute", "Sol"): 864.15,  # cp_mass_solute liquid ignored for now
@@ -89,11 +89,11 @@ class TestDefaultNaClwaterProperty:
         ("temperature_sat_solvent", None): 296.79,
         ("conc_mass_phase_comp", ("Liq", "NaCl")): 35.753,
         ("conc_mass_phase_comp", ("Liq", "H2O")): 985.753,
-        ("enth_mass_solvent", "Liq"): 104.9212,
-        ("enth_mass_solvent", "Vap"): 2546.7289,
-        ("enth_mass_solute", "Sol"): 21.4739,
-        ("enth_mass_phase", "Liq"): 101.0922,
-        ("dh_crystallization_mass_comp", "NaCl"): -520,
+        ("enth_mass_solvent", "Liq"): 104.9212e3,
+        ("enth_mass_solvent", "Vap"): 2546.7289e3,
+        ("enth_mass_solute", "Sol"): 21.4739e3,
+        ("enth_mass_phase", "Liq"): 101.0922e3,
+        ("dh_crystallization_mass_comp", "NaCl"): -520e3,
         ("mass_frac_phase_comp", ("Liq", "H2O")): 0.965,
         ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.035,
         ("mass_frac_phase_comp", ("Sol", "NaCl")): 1.0,
@@ -191,8 +191,8 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
             ("mole_frac_phase_comp", ("Liq", "NaCl")): 1.597e-2,
             ("cp_mass_solvent", "Liq"): 4186.52,
             ("cp_mass_phase", "Liq"): 3940.03,
-            ("enth_mass_solvent", "Liq"): 104.92,
-            ("enth_mass_phase", "Liq"): 99.45,
+            ("enth_mass_solvent", "Liq"): 104.92e3,
+            ("enth_mass_phase", "Liq"): 99.45e3,
         }
 
 
@@ -234,8 +234,8 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
             ("mole_frac_phase_comp", ("Liq", "NaCl")): 9.773e-2,
             ("cp_mass_solvent", "Liq"): 4186.52,
             ("cp_mass_phase", "Liq"): 3276.56,
-            ("enth_mass_solvent", "Liq"): 104.92,
-            ("enth_mass_phase", "Liq"): 68.78,
+            ("enth_mass_solvent", "Liq"): 104.92e3,
+            ("enth_mass_phase", "Liq"): 68.78e3,
         }
 
 
@@ -278,8 +278,8 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
             ("mole_frac_phase_comp", ("Liq", "NaCl")): 3.084e-4,
             ("cp_mass_solvent", "Liq"): 4186.52,
             ("cp_mass_phase", "Liq"): 4180.98,
-            ("enth_mass_solvent", "Liq"): 104.92,
-            ("enth_mass_phase", "Liq"): 104.40,
+            ("enth_mass_solvent", "Liq"): 104.92e3,
+            ("enth_mass_phase", "Liq"): 104.40e3,
         }
 
 
@@ -314,8 +314,8 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
             ("cp_mass_solute", "Sol"): 864.16,
             ("flow_vol_phase", "Sol"): 1 / 2115,  # mass floe / density
             ("cp_mass_solute", "Sol"): 864.16,
-            ("enth_mass_solute", "Sol"): 21.474,
-            ("dh_crystallization_mass_comp", "NaCl"): -520,
+            ("enth_mass_solute", "Sol"): 21.474e3,
+            ("dh_crystallization_mass_comp", "NaCl"): -520e3,
             ("flow_mol_phase_comp", ("Sol", "NaCl")): 1 / 58.44e-3,  # mass flow / mw
             ("mole_frac_phase_comp", ("Sol", "NaCl")): 1.0,
         }
@@ -349,7 +349,7 @@ class TestNaClPropertySolution_5(PropertyRegressionTest):
         self.regression_solution = {
             ("mass_frac_phase_comp", ("Vap", "H2O")): 1.0,
             ("dens_mass_solvent", "Vap"): 3.633,
-            ("dh_vap_mass_solvent", None): 2441.808,
+            ("dh_vap_mass_solvent", None): 2441.808e3,
             ("cp_mass_solvent", "Vap"): 1864.52,
             ("flow_vol_phase", "Vap"): 1 / 3.633,  # mass flow / density
             ("pressure_sat", None): 2905.28,
@@ -387,7 +387,7 @@ class TestNaClPropertySolution_6(PropertyRegressionTest):
             ("dens_mass_solute", "Liq"): 2645.21,
             ("dens_mass_solute", "Sol"): 2115,
             ("dens_mass_phase", "Liq"): 1171.53,
-            ("dh_vap_mass_solvent", None): 2382.08,
+            ("dh_vap_mass_solvent", None): 2382.08e3,
             ("cp_mass_solvent", "Liq"): 4180.92,
             ("cp_mass_solvent", "Vap"): 1871.21,
             ("cp_mass_solute", "Sol"): 873.34,
@@ -399,11 +399,11 @@ class TestNaClPropertySolution_6(PropertyRegressionTest):
             ("temperature_sat_solvent", None): 318.52,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 292.88,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 878.65,
-            ("enth_mass_solvent", "Liq"): 209.40,
-            ("enth_mass_solvent", "Vap"): 2591.48,
-            ("enth_mass_solute", "Sol"): 43.19,
-            ("enth_mass_phase", "Liq"): 152.36,
-            ("dh_crystallization_mass_comp", "NaCl"): -520,
+            ("enth_mass_solvent", "Liq"): 209.40e3,
+            ("enth_mass_solvent", "Vap"): 2591.48e3,
+            ("enth_mass_solute", "Sol"): 43.19e3,
+            ("enth_mass_phase", "Liq"): 152.36e3,
+            ("dh_crystallization_mass_comp", "NaCl"): -520e3,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.75,
             ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.25,
             ("mass_frac_phase_comp", ("Sol", "NaCl")): 1,
@@ -448,7 +448,7 @@ class TestNaClPropertySolution_7(PropertyRegressionTest):
             ("dens_mass_solute", "Liq"): 3073.05,
             ("dens_mass_solute", "Sol"): 2115,
             ("dens_mass_phase", "Liq"): 988.72,
-            ("dh_vap_mass_solvent", None): 2382.08,
+            ("dh_vap_mass_solvent", None): 2382.08e3,
             ("cp_mass_solvent", "Liq"): 4180.92,
             ("cp_mass_solvent", "Vap"): 1871.21,
             ("cp_mass_solute", "Sol"): 873.34,
@@ -460,11 +460,11 @@ class TestNaClPropertySolution_7(PropertyRegressionTest):
             ("temperature_sat_solvent", None): 323.55,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 0.9887,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 987.73,
-            ("enth_mass_solvent", "Liq"): 209.40,
-            ("enth_mass_solvent", "Vap"): 2591.48,
-            ("enth_mass_solute", "Sol"): 43.19,
-            ("enth_mass_phase", "Liq"): 208.81,
-            ("dh_crystallization_mass_comp", "NaCl"): -520,
+            ("enth_mass_solvent", "Liq"): 209.40e3,
+            ("enth_mass_solvent", "Vap"): 2591.48e3,
+            ("enth_mass_solute", "Sol"): 43.19e3,
+            ("enth_mass_phase", "Liq"): 208.81e3,
+            ("dh_crystallization_mass_comp", "NaCl"): -520e3,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.999,
             ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.001,
             ("mass_frac_phase_comp", ("Sol", "NaCl")): 1,
@@ -518,7 +518,7 @@ class TestNaClPropertySolution_8(PropertyRegressionTest):
             ("dens_mass_solute", "Liq"): 2847.63,
             ("dens_mass_solute", "Sol"): 2115,
             ("dens_mass_phase", "Liq"): 1157.91,
-            ("dh_vap_mass_solvent", None): 2453.66,
+            ("dh_vap_mass_solvent", None): 2453.66e3,
             ("cp_mass_solvent", "Liq"): 4189.43,
             ("cp_mass_solvent", "Vap"): 1863.46,
             ("cp_mass_solute", "Sol"): 862.16,
@@ -530,11 +530,11 @@ class TestNaClPropertySolution_8(PropertyRegressionTest):
             ("temperature_sat_solvent", None): 287.88,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 246.17,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 911.74,
-            ("enth_mass_solvent", "Liq"): 84.00,
-            ("enth_mass_solvent", "Vap"): 2537.66,
-            ("enth_mass_solute", "Sol"): 17.16,
-            ("enth_mass_phase", "Liq"): 59.03,
-            ("dh_crystallization_mass_comp", "NaCl"): -520,
+            ("enth_mass_solvent", "Liq"): 84.00e3,
+            ("enth_mass_solvent", "Vap"): 2537.66e3,
+            ("enth_mass_solute", "Sol"): 17.16e3,
+            ("enth_mass_phase", "Liq"): 59.03e3,
+            ("dh_crystallization_mass_comp", "NaCl"): -520e3,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.7874,
             ("mass_frac_phase_comp", ("Sol", "NaCl")): 1,
             ("mass_frac_phase_comp", ("Vap", "H2O")): 1,
@@ -588,7 +588,7 @@ class TestNaClPropertySolution_9(PropertyRegressionTest):
             ("dens_mass_solute", "Liq"): 2694.61,
             ("dens_mass_solute", "Sol"): 2115,
             ("dens_mass_phase", "Liq"): 1139.33,
-            ("dh_vap_mass_solvent", None): 2369.98,
+            ("dh_vap_mass_solvent", None): 2369.98e3,
             ("cp_mass_solvent", "Liq"): 4181.59,
             ("cp_mass_solvent", "Vap"): 1872.79,
             ("cp_mass_solute", "Sol"): 875.04,
@@ -600,11 +600,11 @@ class TestNaClPropertySolution_9(PropertyRegressionTest):
             ("temperature_sat_solvent", None): 324.47,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 242.22,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 897.107,
-            ("enth_mass_solvent", "Liq"): 230.30,
-            ("enth_mass_solvent", "Vap"): 2600.279,
-            ("enth_mass_solute", "Sol"): 47.57,
-            ("enth_mass_phase", "Liq"): 177.39,
-            ("dh_crystallization_mass_comp", "NaCl"): -520,
+            ("enth_mass_solvent", "Liq"): 230.30e3,
+            ("enth_mass_solvent", "Vap"): 2600.279e3,
+            ("enth_mass_solute", "Sol"): 47.57e3,
+            ("enth_mass_phase", "Liq"): 177.39e3,
+            ("dh_crystallization_mass_comp", "NaCl"): -520e3,
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.7874,
             ("mass_frac_phase_comp", ("Sol", "NaCl")): 1,
             ("mass_frac_phase_comp", ("Vap", "H2O")): 1,

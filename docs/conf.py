@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -31,13 +31,13 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "WaterTAP"
-copyright = "2020-2023, NAWI"
+copyright = "2020-2024, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "0.12.dev0"
+release = "1.1.dev0"
 # The short X.Y version
-version = "0.12.dev0"
+version = "1.1.dev0"
 # -- General configuration ---------------------------------------------------
 
 
@@ -95,6 +95,17 @@ html_logo = "_static/NAWI_logo.png"
 # pixels large.
 #
 html_favicon = "_static/favicon.ico"
+
+# intersphinx mapping to idaes
+intersphinx_mapping = {
+    "idaes": ("https://idaes-pse.readthedocs.io/en/stable/", None),
+    "parameter_sweep": ("https://parameter-sweep.readthedocs.io/en/latest/", None),
+}
+
+rst_epilog = """
+.. |Binder launch button| image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/watertap-org/watertap/main?labpath=tutorials%2F00-index.ipynb
+"""
 
 
 def run_apidoc(*args):

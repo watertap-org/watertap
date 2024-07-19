@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -71,6 +71,16 @@ class TransportModel(Enum):
     SKK = auto()
 
 
+class ModuleType(Enum):
+    """
+    flat_sheet: flat-sheet module configuration
+    spiral_wound: spiral-wound module configuration
+    """
+
+    flat_sheet = auto()
+    spiral_wound = auto()
+
+
 class PressureChangeType(Enum):
     """
     fixed_per_stage: pressure drop across membrane channel is a user-specified value
@@ -85,12 +95,11 @@ class PressureChangeType(Enum):
 
 class FrictionFactor(Enum):
     """
-    flat_sheet: Darcy's friction factor correlation by Guillen & Hoek
-    spiral_wound: Darcy's friction factor correlation by Schock & Miquel, 1987
+    default_by_module_type: Will revert FrictionFactor to either the Darcy's friction factor correlation
+    by Guillen & Hoek (flat-plate) or by Schock & Miquel (spiral-wound)
     """
 
-    flat_sheet = auto()
-    spiral_wound = auto()
+    default_by_module_type = auto()
 
 
 CONFIG_Template = ConfigDict()
@@ -262,6 +271,24 @@ CONFIG_Template.declare(
 )
 
 CONFIG_Template.declare(
+    "module_type",
+    ConfigValue(
+        default=ModuleType.flat_sheet,
+        domain=In(ModuleType),
+        description="Membrane geometry for flat-sheet or spiral-wound",
+        doc="""
+        Options to account for geometry differences between flat sheet and spiral wound membranes.
+
+        **default** - ``ModuleType.flat_sheet``
+
+        "``ModuleType.flat_sheet``", "Module type option for flat-sheet membrane modules"
+        "``ModuleType.spiral_wound``", "Module type option for spiral-wound membrane modules, this option accounts for how membranes in spiral-wound modules are folded which reduces the channel width by half"
+
+        """,
+    ),
+)
+
+CONFIG_Template.declare(
     "has_pressure_change",
     ConfigValue(
         default=False,
@@ -303,19 +330,18 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "friction_factor",
     ConfigValue(
-        default=FrictionFactor.flat_sheet,
+        default=FrictionFactor.default_by_module_type,
         domain=In(FrictionFactor),
         description="Darcy friction factor correlation",
         doc="""
         Options to account for friction factor correlations.
 
-        **default** - ``FrictionFactor.flat_sheet`` 
+        **default** - ``FrictionFactor.default_by_module_type`` 
 
     .. csv-table::
         :header: "Configuration Options", "Description"
 
-        "``FrictionFactor.flat_sheet``", "Friction factor correlation for flat-sheet membrane modules"
-        "``FrictionFactor.spiral_wound``", "Friction factor correlation for spiral-wound membranes"
+        "``FrictionFactor.default_by_module_type``", "Friction factor correlation that is specific to the supported membrane modules type"
     """,
     ),
 )
@@ -358,7 +384,8 @@ class MembraneChannelMixin:
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
         custom_term=None,
-        friction_factor=FrictionFactor.flat_sheet,
+        module_type=ModuleType.flat_sheet,
+        friction_factor=FrictionFactor.default_by_module_type,
     ):
         super().add_total_pressure_balances(
             has_pressure_change=has_pressure_change, custom_term=custom_term
@@ -378,7 +405,9 @@ class MembraneChannelMixin:
             self._add_pressure_change(pressure_change_type=pressure_change_type)
 
         if pressure_change_type == PressureChangeType.calculated:
-            self._add_calculated_pressure_change(friction_factor=friction_factor)
+            self._add_calculated_pressure_change(
+                module_type=module_type, friction_factor=friction_factor
+            )
 
     def add_interface_isothermal_conditions(self):
 
@@ -610,7 +639,7 @@ class MembraneChannelMixin:
         # `_add_calculated_pressure_change` *and/or*
         # `_add_calculated_mass_transfer_coefficient`.
         # Therefore, we add this simple guard against it being called twice.
-        if hasattr(self, "channel_height"):
+        if hasattr(self, "dh"):
             return
 
         if not hasattr(self, "width"):
@@ -629,14 +658,15 @@ class MembraneChannelMixin:
                 units=units_meta("length") ** 2,
                 doc="Cross sectional area",
             )
-
-        self.channel_height = Var(
-            initialize=1e-3,
-            bounds=(1e-4, 5e-3),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="membrane-channel height",
-        )
+        # in case channel_height is already constructed
+        if not hasattr(self, "channel_height"):
+            self.channel_height = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta("length"),
+                doc="membrane-channel height",
+            )
 
         self.dh = Var(
             initialize=1e-3,
@@ -710,7 +740,9 @@ class MembraneChannelMixin:
         )
 
     def _add_calculated_pressure_change(
-        self, friction_factor=FrictionFactor.flat_sheet
+        self,
+        module_type=ModuleType.flat_sheet,
+        friction_factor=FrictionFactor.default_by_module_type,
     ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
@@ -749,32 +781,35 @@ class MembraneChannelMixin:
             return b.velocity[t, x] * b.area == b.properties[t, x].flow_vol_phase["Liq"]
 
         ## ==========================================================================
-        # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
-        if friction_factor == FrictionFactor.flat_sheet:
+        if friction_factor == FrictionFactor.default_by_module_type:
+            # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
+            if module_type == ModuleType.flat_sheet:
 
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="Darcy friction factor constraint for flat sheet membranes",
-            )
-            def eq_friction_factor(b, t, x):
-                return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+                @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.length_domain,
+                    doc="Darcy friction factor constraint for flat sheet membranes",
+                )
+                def eq_friction_factor(b, t, x):
+                    return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[
+                        t, x
+                    ] == 189.3
 
-        # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
-        elif friction_factor == FrictionFactor.spiral_wound:
+            # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
+            elif module_type == ModuleType.spiral_wound:
 
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="Darcy friction factor constraint for spiral-wound membranes",
-            )
-            def eq_friction_factor(b, t, x):
-                return b.friction_factor_darcy[t, x] == 6.23 * b.N_Re[t, x] ** -0.3
+                @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.length_domain,
+                    doc="Darcy friction factor constraint for spiral-wound membranes",
+                )
+                def eq_friction_factor(b, t, x):
+                    return b.friction_factor_darcy[t, x] == 6.23 * b.N_Re[t, x] ** -0.3
 
+            else:
+                raise ConfigurationError(f"Unrecognized module_type type {module_type}")
         else:
-            raise ConfigurationError(
-                f"Unrecognized friction_factor type {friction_factor}"
-            )
+            pass
 
         ## ==========================================================================
         # Pressure change per unit length due to friction
@@ -1020,12 +1055,4 @@ def validate_membrane_config_args(unit):
                 unit.config.mass_transfer_coefficient,
                 unit.config.concentration_polarization_type,
             )
-        )
-
-    if (
-        unit.config.pressure_change_type != PressureChangeType.calculated
-        and unit.config.friction_factor != unit.config.get("friction_factor")._default
-    ):
-        raise ConfigurationError(
-            "\nChanging the 'friction_factor' will have no effect if the 'pressure_change_type' is not `PressureChangeType.calculated`"
         )

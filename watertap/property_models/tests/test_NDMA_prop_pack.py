@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -11,7 +11,7 @@
 #################################################################################
 
 import pytest
-import watertap.property_models.NDMA_prop_pack as props
+import watertap.property_models.unit_specific.NDMA_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -20,6 +20,7 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyRegressionTest,
     PropertyCalculateStateTest,
 )
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit

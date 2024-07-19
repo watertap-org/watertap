@@ -1,5 +1,5 @@
-###############################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -8,6 +8,9 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
+#################################################################################
+
+###############################################################################
 #
 # OLI Systems, Inc. Copyright © 2022, all rights reserved.
 #
@@ -41,7 +44,6 @@
 # derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
-
 import contextlib
 import os
 from pathlib import Path
@@ -54,8 +56,7 @@ from watertap.tools.oli_api.credentials import (
     CredentialManager,
     cryptography_available,
 )
-
-from pyomo.environ import units as pyunits
+import re
 
 
 @pytest.fixture(scope="session")
@@ -79,7 +80,10 @@ def auth_credentials() -> dict:
 
 @pytest.fixture(scope="function")
 def oliapi_instance(
-    tmp_path: Path, auth_credentials: dict, local_dbs_file: Path
+    tmp_path: Path,
+    auth_credentials: dict,
+    local_dbs_file: Path,
+    source_water: dict,
 ) -> OLIApi:
 
     if not cryptography_available:
@@ -92,7 +96,39 @@ def oliapi_instance(
     }
     credential_manager = CredentialManager(**credentials, test=True)
     with OLIApi(credential_manager, interactive_mode=False) as oliapi:
-        oliapi.get_dbs_file_id(str(local_dbs_file))
+        oliapi.upload_dbs_file(str(local_dbs_file))
+        oliapi.generate_dbs_file(source_water)
+        yield oliapi
+    with contextlib.suppress(FileNotFoundError):
+        cred_file_path.unlink()
+
+
+@pytest.fixture(scope="function")
+def oliapi_instance_with_invalid_phase(
+    tmp_path: Path,
+    auth_credentials: dict,
+    local_dbs_file: Path,
+    source_water: dict,
+) -> OLIApi:
+
+    if not cryptography_available:
+        pytest.skip(reason="cryptography module not available.")
+    cred_file_path = tmp_path / "pytest-credentials.txt"
+
+    credentials = {
+        **auth_credentials,
+        "config_file": cred_file_path,
+    }
+    credential_manager = CredentialManager(**credentials, test=True)
+    with OLIApi(credential_manager, interactive_mode=False) as oliapi:
+        oliapi.upload_dbs_file(str(local_dbs_file))
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "Failed DBS file generation. Unexpected phase(s): ['invalid_phase']"
+            ),
+        ):
+            oliapi.generate_dbs_file(source_water, phases=["invalid_phase"])
         yield oliapi
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
@@ -106,22 +142,4 @@ def flash_instance(scope="session"):
 
 @pytest.fixture
 def source_water(scope="session"):
-    return {
-        "temperature": 298.15,
-        "pressure": 101325,
-        "components": {
-            "Cl_-": 870,
-            "Na_+": 739,
-            "SO4_2-": 1011,
-            "Mg_2+": 90,
-            "Ca_2+": 258,
-            "K_+": 9,
-            "HCO3_-": 385,
-            "SiO2": 30,
-        },
-        "units": {
-            "temperature": pyunits.K,
-            "pressure": pyunits.Pa,
-            "components": pyunits.mg / pyunits.L,
-        },
-    }
+    return {"Cl_-": 1000, "Na_+": 1000}
