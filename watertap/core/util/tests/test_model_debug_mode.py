@@ -64,7 +64,7 @@ class IPythonComms:
 def test_debug_mode(tmp_path: Path):
     script = """
 import pyomo.environ as pyo
-from idaes.core.solvers import get_solver
+from watertap.core.solvers import get_solver
 
 from watertap.core.util.model_debug_mode import activate; activate()
 
@@ -80,6 +80,7 @@ if __name__ == '__main__':
 
     ipy = IPythonComms(
         statements=[
+            "import idaes",
             "assert isinstance(dt, idaes.core.util.model_diagnostics.DiagnosticsToolbox)",
             "assert isinstance(blk, pyo.Block)",
             "assert isinstance(blk.model(), pyo.ConcreteModel)",
