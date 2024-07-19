@@ -24,10 +24,10 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     set_operating_conditions,
     initialize_system,
     solve,
-    # add_costing,
+    add_costing,
 )
 
-# from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -816,254 +816,254 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
 
-    # # System costing
-    # exports.add(
-    #     obj=fs.costing.utilization_factor,
-    #     name="Utilization factor",
-    #     ui_units=pyunits.dimensionless,
-    #     display_units="fraction",
-    #     rounding=2,
-    #     description="Utilization factor - [annual use hours/total hours in year]",
-    #     is_input=True,
-    #     input_category="System costing",
-    #     is_output=False,
-    # )
-    # exports.add(
-    #     obj=fs.costing.TIC,
-    #     name="Practical investment factor",
-    #     ui_units=pyunits.dimensionless,
-    #     display_units="fraction",
-    #     rounding=1,
-    #     description="Practical investment factor - [total investment cost/direct "
-    #     "capital costs]",
-    #     is_input=True,
-    #     input_category="System costing",
-    #     is_output=False,
-    # )
-    # exports.add(
-    #     obj=fs.costing.plant_lifetime,
-    #     name="Plant lifetime",
-    #     ui_units=pyunits.year,
-    #     display_units="years",
-    #     rounding=1,
-    #     description="Plant lifetime",
-    #     is_input=True,
-    #     input_category="System costing",
-    #     is_output=False,
-    # )
-    # exports.add(
-    #     obj=fs.costing.wacc,
-    #     name="Discount rate",
-    #     ui_units=pyunits.dimensionless,
-    #     display_units="fraction",
-    #     rounding=2,
-    #     description="Discount rate used in calculating the capital annualization",
-    #     is_input=True,
-    #     input_category="System costing",
-    #     is_output=False,
-    # )
-    # exports.add(
-    #     obj=fs.costing.electricity_cost,
-    #     name="Electricity cost",
-    #     ui_units=fs.costing.base_currency / pyunits.kWh,
-    #     display_units="$/kWh",
-    #     rounding=3,
-    #     description="Electricity cost",
-    #     is_input=True,
-    #     input_category="System costing",
-    #     is_output=False,
-    # )
-    #
-    # # Cost metrics
-    # exports.add(
-    #     obj=fs.costing.LCOW,
-    #     name="Levelized cost of water",
-    #     ui_units=fs.costing.base_currency / pyunits.m**3,
-    #     display_units="$/m3",
-    #     rounding=3,
-    #     description="Levelized cost of water with respect to product water",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Cost metrics",
-    # )
-    # exports.add(
-    #     obj=fs.costing.total_operating_cost,
-    #     name="Total operating cost",
-    #     ui_units=fs.costing.base_currency / pyunits.yr,
-    #     display_units="$/yr",
-    #     rounding=3,
-    #     description="Total operating cost",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Cost metrics",
-    # )
-    # exports.add(
-    #     obj=fs.costing.total_capital_cost,
-    #     name="Total capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Total capital cost",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Cost metrics",
-    # )
-    # exports.add(
-    #     obj=fs.costing.total_annualized_cost,
-    #     name="Total annualized cost",
-    #     ui_units=fs.costing.base_currency / pyunits.yr,
-    #     display_units="$/yr",
-    #     rounding=3,
-    #     description="Total annualized cost",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Cost metrics",
-    # )
-    # exports.add(
-    #     obj=fs.costing.specific_energy_consumption,
-    #     name="Specific energy consumption",
-    #     ui_units=pyunits.kWh / pyunits.m**3,
-    #     display_units="kWh/m3",
-    #     rounding=3,
-    #     description="Specific energy consumption with respect to influent flowrate",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Cost metrics",
-    # )
-    #
-    # # Capital costs
-    # exports.add(
-    #     obj=fs.R1.costing.capital_cost,
-    #     name="Reactor 1 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of first reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R2.costing.capital_cost,
-    #     name="Reactor 2 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of second reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R3.costing.capital_cost,
-    #     name="Reactor 3 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of third reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R4.costing.capital_cost,
-    #     name="Reactor 4 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of fourth reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R5.costing.capital_cost,
-    #     name="Reactor 5 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of fifth reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R6.costing.capital_cost,
-    #     name="Reactor 6 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of sixth reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R7.costing.capital_cost,
-    #     name="Reactor 7 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of seventh reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.CL.costing.capital_cost,
-    #     name="Primary clarifier capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of primary clarifier",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.CL2.costing.capital_cost,
-    #     name="Secondary clarifier capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of secondary clarifier",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.AD.costing.capital_cost,
-    #     name="Anaerobic digester capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of anaerobic digester",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.dewater.costing.capital_cost,
-    #     name="Dewatering unit capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of dewatering",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.thickener.costing.capital_cost,
-    #     name="Thickener capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of thickener",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
+    # System costing
+    exports.add(
+        obj=fs.costing.utilization_factor,
+        name="Utilization factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Utilization factor - [annual use hours/total hours in year]",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.TIC,
+        name="Practical investment factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=1,
+        description="Practical investment factor - [total investment cost/direct "
+        "capital costs]",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.plant_lifetime,
+        name="Plant lifetime",
+        ui_units=pyunits.year,
+        display_units="years",
+        rounding=1,
+        description="Plant lifetime",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.wacc,
+        name="Discount rate",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Discount rate used in calculating the capital annualization",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.electricity_cost,
+        name="Electricity cost",
+        ui_units=fs.costing.base_currency / pyunits.kWh,
+        display_units="$/kWh",
+        rounding=3,
+        description="Electricity cost",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+
+    # Cost metrics
+    exports.add(
+        obj=fs.costing.LCOW,
+        name="Levelized cost of water",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="$/m3",
+        rounding=3,
+        description="Levelized cost of water with respect to product water",
+        is_input=False,
+        is_output=True,
+        output_category="Cost metrics",
+    )
+    exports.add(
+        obj=fs.costing.total_operating_cost,
+        name="Total operating cost",
+        ui_units=fs.costing.base_currency / pyunits.yr,
+        display_units="$/yr",
+        rounding=3,
+        description="Total operating cost",
+        is_input=False,
+        is_output=True,
+        output_category="Cost metrics",
+    )
+    exports.add(
+        obj=fs.costing.total_capital_cost,
+        name="Total capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Total capital cost",
+        is_input=False,
+        is_output=True,
+        output_category="Cost metrics",
+    )
+    exports.add(
+        obj=fs.costing.total_annualized_cost,
+        name="Total annualized cost",
+        ui_units=fs.costing.base_currency / pyunits.yr,
+        display_units="$/yr",
+        rounding=3,
+        description="Total annualized cost",
+        is_input=False,
+        is_output=True,
+        output_category="Cost metrics",
+    )
+    exports.add(
+        obj=fs.costing.specific_energy_consumption,
+        name="Specific energy consumption",
+        ui_units=pyunits.kWh / pyunits.m**3,
+        display_units="kWh/m3",
+        rounding=3,
+        description="Specific energy consumption with respect to influent flowrate",
+        is_input=False,
+        is_output=True,
+        output_category="Cost metrics",
+    )
+
+    # Capital costs
+    exports.add(
+        obj=fs.R1.costing.capital_cost,
+        name="Reactor 1 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of first reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R2.costing.capital_cost,
+        name="Reactor 2 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of second reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R3.costing.capital_cost,
+        name="Reactor 3 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of third reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R4.costing.capital_cost,
+        name="Reactor 4 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of fourth reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R5.costing.capital_cost,
+        name="Reactor 5 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of fifth reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R6.costing.capital_cost,
+        name="Reactor 6 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of sixth reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R7.costing.capital_cost,
+        name="Reactor 7 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of seventh reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.CL.costing.capital_cost,
+        name="Primary clarifier capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of primary clarifier",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.CL2.costing.capital_cost,
+        name="Secondary clarifier capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of secondary clarifier",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.AD.costing.capital_cost,
+        name="Anaerobic digester capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of anaerobic digester",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.dewater.costing.capital_cost,
+        name="Dewatering unit capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of dewatering",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.thickener.costing.capital_cost,
+        name="Thickener capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of thickener",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
 
     # Outlets
     exports.add(
@@ -3897,12 +3897,12 @@ def build_flowsheet(build_options=None, **kwargs):
         # Resolve with controls in place
         solve(m)
 
-        # add_costing(m)
-        # m.fs.costing.initialize()
-        #
-        # assert_degrees_of_freedom(m, 0)
-        #
-        # solve(m)
+        add_costing(m)
+        m.fs.costing.initialize()
+
+        assert_degrees_of_freedom(m, 0)
+
+        solve(m)
 
     else:
         m = build(bio_P=False)
@@ -3934,12 +3934,12 @@ def build_flowsheet(build_options=None, **kwargs):
         # Resolve with controls in place
         solve(m)
 
-        # add_costing(m)
-        # m.fs.costing.initialize()
-        #
-        # assert_degrees_of_freedom(m, 0)
-        #
-        # solve(m)
+        add_costing(m)
+        m.fs.costing.initialize()
+
+        assert_degrees_of_freedom(m, 0)
+
+        solve(m)
 
     return m
 
