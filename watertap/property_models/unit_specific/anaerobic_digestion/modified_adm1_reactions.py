@@ -206,6 +206,45 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             doc="Phosphorus content of component [kmole P/kg COD]",
         )
 
+        # Common parameters for both translator blocks
+        self.f_sI_xc = pyo.Param(
+            initialize=0,
+            units=pyo.units.dimensionless,
+            mutable=True,
+            doc="Soluble inerts from composites",
+        )
+        self.f_xI_xc = pyo.Param(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            mutable=True,
+            doc="Particulate inerts from composites",
+        )
+        self.f_ch_xc = pyo.Param(
+            initialize=0.275,
+            units=pyo.units.dimensionless,
+            mutable=True,
+            doc="Carbohydrates from composites",
+        )
+        self.f_pr_xc = pyo.Param(
+            initialize=0.275,
+            units=pyo.units.dimensionless,
+            mutable=True,
+            doc="Proteins from composites",
+        )
+        self.f_li_xc = pyo.Param(
+            initialize=0.35,
+            units=pyo.units.dimensionless,
+            mutable=True,
+            doc="Lipids from composites",
+        )
+
+        self.P_ch = pyo.Param(
+            initialize=0,
+            units=pyo.units.kmol / pyo.units.kg,
+            mutable=True,
+            doc="P content of X_ch",
+        )
+
         # TODO: Consider inheriting these parameters from ADM1 such that there is less repeated code
 
         # Stoichiometric Parameters (Table 1.1 and 2.1 in Flores-Alsina et al., 2016)

@@ -26,8 +26,6 @@ The translator degrees of freedom are the inlet feed state variables:
     * pressure
     * volumetric flowrate
     * solute compositions
-    * cations
-    * anions
 
 Ports
 -----
@@ -47,16 +45,25 @@ Sets
    "Inlet/outlet", ":math:`x`", "['in', 'out']"
    "Phases", ":math:`p`", "['Liq']"
    "Inlet Components", ":math:`j_{in}`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_IP', 'S_I', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'X_PHA', 'X_PP', 'X_PAO', 'S_K', 'S_Mg']"
-   "Ion", ":math:`j_{in}`", "['S_cat', 'S_an'] \  :sup:`1`"
    "Outlet Components", ":math:`j_{out}`", "['H2O', 'S_A', 'S_F', 'S_I', 'S_N2', 'S_NH4', 'S_NO3', 'S_O2', 'S_PO4', 'S_K', 'S_Mg', 'S_IC', 'X_AUT', 'X_H', 'X_I', 'X_PAO', 'X_PHA', 'X_PP', 'X_S']"
-   "Readily Biodegradable COD", ":math:`r1`", "['S_su', 'S_aa', 'S_fa']"
-   "Readily Biodegradable COD", ":math:`r2`", "['S_va', 'S_bu', 'S_pro', 'S_ac']"
-   "Slowly Biodegradable COD", ":math:`s`", "['X_ch', 'X_pr', 'X_li']"
-   "Unchanged Components", ":math:`u`", "['S_I', 'X_I', 'X_PP', 'X_PHA', 'S_K', 'S_Mg', 'S_IC']"
-   "Zero Flow Components", ":math:`z`", "['S_N2', 'S_NO3', 'S_O2', 'X_AUT', 'X_H', 'X_PAO']"
+   "Ion", ":math:`j_{in}`", "['S_cat', 'S_an'] \  :sup:`1`"
+   "Zero Flow Components", ":math:`z`", "['S_O2', 'S_N2', 'S_NO3', 'X_H', 'X_PAO', 'X_PP', 'X_PHA', 'X_AUT']"
 
 **Notes**
  :sup:`1` "Ion" is a subset of "Inlet Components" and uses the same symbol j_in.
+
+Parameters
+----------
+
+.. csv-table::
+   :header: "Description", "Symbol", "Parameter Name", "Value", "Units"
+
+   "Soluble inerts from composites", ":math:`f_{sI, xc}`", "f_sI_xc", 0, ":math:`\text{dimensionless}`"
+   "Particulate inerts from composites", ":math:`f_{xI, xc}`", "f_xI_xc", 0.1, ":math:`\text{dimensionless}`"
+   "Carbohydrates from composites", ":math:`f_{ch, xc}`", "f_ch_xc", 0.275, ":math:`\text{dimensionless}`"
+   "Proteins from composites", ":math:`f_{pr, xc}`", "f_pr_xc", 0.275, ":math:`\text{dimensionless}`"
+   "Lipids from composites", ":math:`f_{li, xc}`", "f_li_xc", 0.35, ":math:`\text{dimensionless}`"
+   "Phosphorus content of X_ch", ":math:`P_{ch}`", "P_ch", 0, ":math:`\text{dimensionless}`"
 
 .. _Translator_ADM1_ASM2d_equations:
 
@@ -69,15 +76,35 @@ Equations and Relationships
    "Volumetric flow equality", ":math:`F_{out} = F_{in}`"
    "Temperature balance", ":math:`T_{out} = T_{in}`"
    "Pressure balance", ":math:`P_{out} = P_{in}`"
-   "Fermentable substrate conversion", ":math:`S_{F, out} = Σ_{r1} C_{r1, in}`"
-   "Acetic acid conversion", ":math:`S_{A, out} = Σ_{r2} C_{r2, in}`"
-   "Unchanged component conversions", ":math:`C_{u, out} = C_{u, in}`"
-   "Ammonium conversion", ":math:`S_{NH4, out} = S_{IN, in}`"
-   "Phosphate conversion", ":math:`S_{PO4, out} = S_{IP, in}`"
-   "Biodegradable particulate organics conversion", ":math:`X_{S, out} = Σ_{s} C_{s, in}`"
    "Zero-flow component conversions", ":math:`C_{z, out} = 0`"
-
-
+   "Biomass concentration", ":math:`X_{bio} = X_{su, in} + X_{aa, in} + X_{fa, in} + X_{c4, in} + X_{pro, in} + X_{ac, in} + X_{h2, in} + X_{PAO, in}`"
+   "S_ac concentration", ":math:`S_{ac, 1} = S_{ac, in} + X_{PHA, in}`"
+   "S_IC concentration", ":math:`S_{IC, 1} = (X_{bio} * Ci[X_{su}]) - (X_{bio} * f_{sI, xc} * Ci[S_{I}]) - (X_{bio} * f_{ch, xc} * Ci[X_{ch}]) - (X_{bio} * f_{pr, xc} * Ci[X_{pr}]) - (X_{bio} * f_{li, xc} * Ci[X_{li}]) - (X_{bio} * f_{xI, xc} * Ci[X_{I}]) + (X_{PHA, in} * Ci[X_{PHA}]) - (X_{PHA, in} * Ci[S_{ac}])`"
+   "S_IN concentration", ":math:`S_{IN, 1} = (X_{bio} * Ci[X_{su}]) - (X_{bio} * f_{sI, xc} * Ni[S_{I}]) - (X_{bio} * f_{pr, xc} * Ni[X_{pr}]) - (X_{bio} * f_{xI, xc} * Ci[X_{I}])`"
+   "S_I concentration", ":math:`S_{I, 1} = S_{I, in} + (f_{sI, xc} * X_{bio})`"
+   "X_ch concentration", ":math:`X_{ch, 1} = X_{ch, in} + (f_{ch, xc} * X_{bio})`"
+   "X_pr concentration", ":math:`X_{pr, 1} = X_{pr, in} + (f_{pr, xc} * X_{bio})`"
+   "X_li concentration", ":math:`X_{li, 1} = X_{li, in} + (f_{li, xc} * X_{bio})`"
+   "X_I concentration", ":math:`S_{I, 1} = X_{I, in} + (f_{xI, xc} * X_{bio})`"
+   "S_IP concentration", ":math:`S_{IP, 1} = X_{PP, in} + (X_{bio} * Pi[X_{su}]) - (X_{bio} * f_{sI, xc} * Pi[S_{I}]) - (X_{bio} * f_{ch, xc} * P_ch) - (X_{bio} * f_{li, xc} * Pi[X_{li}]) - (X_{bio} * f_{xI, xc} * Pi[X_{I}])`"
+   "X_PHA concentration", ":math:`X_{PHA, 1} = 0`"
+   "X_PP concentration", ":math:`X_{PP, 1} = 0`"
+   "X_PAO concentration", ":math:`X_{PAO, 1} = 0`"
+   "S_IC concentration", ":math:`S_{IC, 2} = (X_{ch, 1} * Ci[X_{ch}]) + (X_{pr, 1} * Ci[X_{pr}]) + (X_{li, 1} * Ci[X_{li}]) - i_{CXS} * (X_{ch, 1} + X_{pr, 1} + X_{li, 1}) + (S_{su, in} * Ci[S_{su}]) + (S_{aa, in} * Ci[S_{aa}]) + (S_{fa, in} * Ci[S_{fa}]) - i_{CSF} * (S_{su, in} + S_{aa, in} + S_{fa, in}) + (S_{va, in} * Ci[S_{va}]) + (S_{bu, in} * Ci[S_{bu}]) + (S_{pro, in} * Ci[S_{pro}]) + (S_{AC, 1} * Ci[S_{ac}]) - i_{CSA} * (S_{va, in} + S_{bu, in} + S_{pro, in} + S_{ac, 1})`"
+   "S_IN concentration", ":math:`S_{IN, 2} = (X_{pr, 1} * Ni[X_{pr}])  - i_{NXS} * (X_{ch, 1} + X_{pr, 1} + X_{li, 1}) + (S_{aa, in} * Ni[S_{aa}]) - i_{NSF} * (S_{su, in} + S_{fa, in} + S_{va, in})`"
+   "S_IP concentration", ":math:`S_{IP, 2} = X_{PP, 1} + (X_{ch, 1} * P_ch) + (X_{li, 1} * Ni[X_{li}]) - i_{PXS} * (X_{ch, 1} + X_{pr, 1} + X_{li, 1}) - i_{PSF} * (S_{su, in} + S_{fa, in} + S_{va, in})`"
+   "S_K concentration", ":math:`S_{K, 2} = S_{K, in} + X_{PP, 1}`"
+   "S_Mg concentration", ":math:`S_{Mg, 2} = S_{Mg, in} + X_{PP, 1}`"
+   "S_F concentration", ":math:`S_{F, out} = S_{su, in} + S_{aa, in} + S_{fa, in}`"
+   "S_A concentration", ":math:`S_{A, out} = S_{va, in} + S_{bu, in} + S_{pro, in} + S_{ac, 1}`"
+   "S_I concentration", ":math:`S_{I, out} = S_{I, 1}`"
+   "S_NH4 concentration", ":math:`S_{NH4, out} = 31(S_{IN, in}/31 + S_{IN, 1} + S_{IN, 2})`"
+   "S_PO4 concentration", ":math:`S_{PO4, out} = 14(S_{IP, in}/14 + S_{IP, 1} + S_{IP, 2})`"
+   "S_IC concentration", ":math:`S_{IC, out} = 12(S_{IC, in}/12 + S_{IC, 1} + S_{IC, 2})`"
+   "X_I concentration", ":math:`X_{I, out} = X_{I, 1}`"
+   "X_S concentration", ":math:`X_{S, out} = X_{ch, 1} + X_{pr, 1} + X_{li, 1}`"
+   "S_K concentration", ":math:`S_{K, out} = S_{K, 2} * 39.1`"
+   "S_Mg concentration", ":math:`S_{Mg, out} = S_{Mg, 2} * 24.3`"
 
 Classes
 -------
