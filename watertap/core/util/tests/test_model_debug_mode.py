@@ -81,7 +81,7 @@ if __name__ == '__main__':
     ipy = IPythonComms(
         statements=[
             "assert isinstance(dt, idaes.core.util.model_diagnostics.DiagnosticsToolbox)",
-            "assert isinstance(blk, pyo.Blockkk)",
+            "assert isinstance(blk, pyo.Block)",
             "assert isinstance(blk.model(), pyo.ConcreteModel)",
         ],
         error_file_path=tmp_path / "errors.txt",
