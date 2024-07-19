@@ -25,11 +25,14 @@ pytest.importorskip(
 )
 
 
+_INDENT: str = " " * 4
+
+
 @dataclass
 class IPythonComms:
     statements: List[str]
     error_file_path: Path
-    message_when_no_errors: str = ""
+    message_when_no_errors: str = "NO ERRORS WHATSOEVER"
 
     def __post_init__(self):
         self.error_file_path.touch()
@@ -37,12 +40,11 @@ class IPythonComms:
     @cached_property
     def lines(self) -> List[str]:
         return [
+            f"to_print = r'''{self.message_when_no_errors}'''",
             "try:",
-            *[f"\t{smt}" for smt in self.statements],
+            *[f"{_INDENT}{smt}" for smt in self.statements],
             "except Exception as e:",
-            "\tto_print = str(e)",
-            "else:",
-            f"\tto_print = r'''{self.message_when_no_errors}'''",
+            f"{_INDENT}to_print = str(e)",
             f"print(to_print, file=open(r'{self.error_file_path}', 'w'))",
             "exit",
         ]
