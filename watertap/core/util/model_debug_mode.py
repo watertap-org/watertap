@@ -14,6 +14,7 @@ import idaes
 from idaes.core.util.exceptions import BurntToast
 from idaes.logger import solver_capture_off
 from watertap.core.plugins.solvers import create_debug_solver_wrapper
+import watertap.core.solvers as wt_solvers
 
 
 class _ModelDebugMode:
@@ -22,15 +23,17 @@ class _ModelDebugMode:
         self._prior_idaes_logger_capture_solver = None
 
     def activate(self):
-        _default_solver_config_value = idaes.cfg.get("default_solver")
-        self._prior_default_solver = _default_solver_config_value.value()
+        if self._prior_default_solver is not None:
+            if self._prior_idaes_logger_capture_solver is None:
+                raise BurntToast
+            # TODO: should we raise an error instead?
+            return
+        self._prior_default_solver = wt_solvers._default_solver
         # create a debug solver around the current default solver
         debug_solver_name = create_debug_solver_wrapper(self._prior_default_solver)
 
-        # reconfigure the default IDAES solver to use the debug wrapper
-        _default_solver_config_value.set_default_value(debug_solver_name)
-        if not _default_solver_config_value._userSet:
-            _default_solver_config_value.reset()
+        # reconfigure the default WaterTAP solver to use the debug wrapper
+        wt_solvers._default_solver = debug_solver_name
 
         # disable solver log capturing so the resulting notebook
         # can use the whole terminal screen
@@ -44,11 +47,8 @@ class _ModelDebugMode:
             # TODO: should we raise an error instead?
             return
 
-        # reconfigure the default IDAES solver to use the debug wrapper
-        _default_solver_config_value = idaes.cfg.get("default_solver")
-        _default_solver_config_value.set_default_value(self._prior_default_solver)
-        if not _default_solver_config_value._userSet:
-            _default_solver_config_value.reset()
+        # reconfigure the default WaterTAP solver to prior default
+        wt_solvers._default_solver = self._prior_default_solver
 
         idaes.cfg.logger_capture_solver = self._prior_idaes_logger_capture_solver
 
