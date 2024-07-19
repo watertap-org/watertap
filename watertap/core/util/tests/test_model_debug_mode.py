@@ -29,7 +29,7 @@ pytest.importorskip(
 class IPythonComms:
     statements: List[str]
     error_file_path: Path
-    message_when_no_errors: str = "NO ERRORS WHATSOEVER"
+    message_when_no_errors: str = ""
 
     def __post_init__(self):
         self.error_file_path.touch()
