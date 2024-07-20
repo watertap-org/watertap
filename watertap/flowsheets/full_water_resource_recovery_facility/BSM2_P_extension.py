@@ -26,6 +26,7 @@ from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
+    UnitModelBlockData,
 )
 from idaes.models.unit_models import (
     CSTR,
@@ -726,19 +727,9 @@ def add_costing(m):
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
-    iscale.set_scaling_factor(m.fs.R1.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R2.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R3.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R4.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R5.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R6.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.R7.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.CL.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.CL2.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.thickener.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.dewater.costing.capital_cost, 1e-5)
-
+    for block in m.fs.component_objects(pyo.Block, descend_into=True):
+        if isinstance(block, UnitModelBlockData) and hasattr(block, 'costing'):
+            iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
     iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
 
     iscale.calculate_scaling_factors(m.fs)
