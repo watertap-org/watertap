@@ -639,7 +639,7 @@ class MembraneChannelMixin:
         # `_add_calculated_pressure_change` *and/or*
         # `_add_calculated_mass_transfer_coefficient`.
         # Therefore, we add this simple guard against it being called twice.
-        if hasattr(self, "channel_height"):
+        if hasattr(self, "dh"):
             return
 
         if not hasattr(self, "width"):
@@ -658,14 +658,15 @@ class MembraneChannelMixin:
                 units=units_meta("length") ** 2,
                 doc="Cross sectional area",
             )
-
-        self.channel_height = Var(
-            initialize=1e-3,
-            bounds=(1e-4, 5e-3),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="membrane-channel height",
-        )
+        # in case channel_height is already constructed
+        if not hasattr(self, "channel_height"):
+            self.channel_height = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta("length"),
+                doc="membrane-channel height",
+            )
 
         self.dh = Var(
             initialize=1e-3,

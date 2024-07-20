@@ -126,6 +126,7 @@ class TestFullFlowsheetBioPFalse:
         )
 
 
+
 class TestFullFlowsheetBioPTrue:
     @pytest.fixture(scope="class")
     def system_frame(self):
@@ -216,3 +217,4 @@ class TestFullFlowsheetBioPTrue:
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             833724.746, rel=1e-3
         )
+

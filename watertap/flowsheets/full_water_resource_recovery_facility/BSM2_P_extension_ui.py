@@ -31,6 +31,11 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+# from watertap.core.util.initialization import assert_degrees_of_freedom
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
 
 def export_to_ui():
     """

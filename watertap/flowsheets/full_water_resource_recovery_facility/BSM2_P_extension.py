@@ -25,7 +25,7 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import (
     FlowsheetBlock,
-    UnitModelCostingBlock,
+    # UnitModelCostingBlock,
 )
 from idaes.models.unit_models import (
     CSTR,
@@ -76,12 +76,15 @@ from watertap.unit_models.thickener import (
     ActivatedSludgeModelType as thickener_type,
 )
 
-from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
-from watertap.costing import WaterTAPCosting
-from watertap.costing.unit_models.clarifier import (
-    cost_circular_clarifier,
-    cost_primary_clarifier,
-)
+from watertap.core.util.initialization import (
+    check_solve,
+    # assert_degrees_of_freedom
+
+# from watertap.costing import WaterTAPCosting
+# from watertap.costing.unit_models.clarifier import (
+#     cost_circular_clarifier,
+#     cost_primary_clarifier,
+# )
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -798,67 +801,144 @@ def display_costing(m):
     )
 
 
-def display_performance_metrics(m):
-    print(
-        "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
-        % pyo.value(m.fs.costing.specific_energy_consumption)
-    )
 
-    print(
-        "electricity consumption R5",
-        pyo.value(m.fs.R5.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption R6",
-        pyo.value(m.fs.R6.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R6.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption R7",
-        pyo.value(m.fs.R7.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.R7.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption primary clarifier",
-        pyo.value(m.fs.CL.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.CL.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption secondary clarifier",
-        pyo.value(m.fs.CL2.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.CL2.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption AD",
-        pyo.value(m.fs.AD.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.AD.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption dewatering Unit",
-        pyo.value(m.fs.dewater.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.dewater.electricity_consumption[0]),
-    )
-    print(
-        "electricity consumption thickening Unit",
-        pyo.value(m.fs.thickener.electricity_consumption[0]),
-        pyo.units.get_units(m.fs.thickener.electricity_consumption[0]),
-    )
-    print(
-        "Influent flow",
-        pyo.value(m.fs.FeedWater.flow_vol[0]),
-        pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
-    )
-    print(
-        "flow into R3",
-        pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
-        pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
-    )
-    print(
-        "flow into RADM",
-        pyo.value(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
-        pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
-    )
+
+# def display_costing(m):
+#     print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
+#
+#     print(
+#         "Total operating cost: %.2f $/yr" % pyo.value(m.fs.costing.total_operating_cost)
+#     )
+#     print("Total capital cost: %.2f $" % pyo.value(m.fs.costing.total_capital_cost))
+#
+#     print(
+#         "Total annualized cost: %.2f $/yr"
+#         % pyo.value(m.fs.costing.total_annualized_cost)
+#     )
+#
+#     print(
+#         "capital cost R1",
+#         pyo.value(m.fs.R1.costing.capital_cost),
+#         pyo.units.get_units(m.fs.R1.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost R2",
+#         pyo.value(m.fs.R2.costing.capital_cost),
+#         pyo.units.get_units(m.fs.R2.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost R3",
+#         pyo.value(m.fs.R3.costing.capital_cost),
+#         pyo.units.get_units(m.fs.R3.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost R4",
+#         pyo.value(m.fs.R4.costing.capital_cost),
+#         pyo.units.get_units(m.fs.R4.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost R5",
+#         pyo.value(m.fs.R5.costing.capital_cost),
+#         pyo.units.get_units(m.fs.R5.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost R6",
+#         pyo.value(m.fs.R6.costing.capital_cost),
+#         pyo.units.get_units(m.fs.R6.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost R7",
+#         pyo.value(m.fs.R7.costing.capital_cost),
+#         pyo.units.get_units(m.fs.R7.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost primary clarifier",
+#         pyo.value(m.fs.CL.costing.capital_cost),
+#         pyo.units.get_units(m.fs.CL.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost secondary clarifier",
+#         pyo.value(m.fs.CL2.costing.capital_cost),
+#         pyo.units.get_units(m.fs.CL2.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost AD",
+#         pyo.value(m.fs.AD.costing.capital_cost),
+#         pyo.units.get_units(m.fs.AD.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost dewatering Unit",
+#         pyo.value(m.fs.dewater.costing.capital_cost),
+#         pyo.units.get_units(m.fs.dewater.costing.capital_cost),
+#     )
+#     print(
+#         "capital cost thickener unit",
+#         pyo.value(m.fs.thickener.costing.capital_cost),
+#         pyo.units.get_units(m.fs.thickener.costing.capital_cost),
+#     )
+#
+#
+# def display_performance_metrics(m):
+#     print(
+#         "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
+#         % pyo.value(m.fs.costing.specific_energy_consumption)
+#     )
+#
+#     print(
+#         "electricity consumption R5",
+#         pyo.value(m.fs.R5.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.R5.electricity_consumption[0]),
+#     )
+#     print(
+#         "electricity consumption R6",
+#         pyo.value(m.fs.R6.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.R6.electricity_consumption[0]),
+#     )
+#     print(
+#         "electricity consumption R7",
+#         pyo.value(m.fs.R7.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.R7.electricity_consumption[0]),
+#     )
+#     print(
+#         "electricity consumption primary clarifier",
+#         pyo.value(m.fs.CL.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.CL.electricity_consumption[0]),
+#     )
+#     print(
+#         "electricity consumption secondary clarifier",
+#         pyo.value(m.fs.CL2.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.CL2.electricity_consumption[0]),
+#     )
+#     print(
+#         "electricity consumption AD",
+#         pyo.value(m.fs.AD.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.AD.electricity_consumption[0]),
+#     )
+#     print(
+#         "electricity consumption dewatering Unit",
+#         pyo.value(m.fs.dewater.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.dewater.electricity_consumption[0]),
+#     )
+#     print(
+#         "electricity consumption thickening Unit",
+#         pyo.value(m.fs.thickener.electricity_consumption[0]),
+#         pyo.units.get_units(m.fs.thickener.electricity_consumption[0]),
+#     )
+#     print(
+#         "Influent flow",
+#         pyo.value(m.fs.FeedWater.flow_vol[0]),
+#         pyo.units.get_units(m.fs.FeedWater.flow_vol[0]),
+#     )
+#     print(
+#         "flow into R3",
+#         pyo.value(m.fs.R3.control_volume.properties_in[0].flow_vol),
+#         pyo.units.get_units(m.fs.R3.control_volume.properties_in[0].flow_vol),
+#     )
+#     print(
+#         "flow into RADM",
+#         pyo.value(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
+#         pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
+#     )
 
 
 if __name__ == "__main__":
