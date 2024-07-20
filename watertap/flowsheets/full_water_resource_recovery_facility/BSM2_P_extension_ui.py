@@ -27,7 +27,7 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     add_costing,
 )
 
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, interval_initializer
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -3936,6 +3936,8 @@ def build_flowsheet(build_options=None, **kwargs):
 
         add_costing(m)
         m.fs.costing.initialize()
+
+        interval_initializer(m.fs.costing)
 
         assert_degrees_of_freedom(m, 0)
 
