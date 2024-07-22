@@ -3902,6 +3902,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         add_costing(m)
         m.fs.costing.initialize()
+        interval_initializer(m.fs.costing)
 
         interval_initializer(m.fs.costing)
 
