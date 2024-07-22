@@ -87,15 +87,53 @@ from watertap.core.util.initialization import (
 #     cost_primary_clarifier,
 # )
 
+from idaes.core.util.initialization import (
+    propagate_state as _pro_state,
+)
+from idaes.core.util import DiagnosticsToolbox
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+def propagate_state(arc):
+    _pro_state(arc)
+    print(arc.destination.name)
+    arc.destination.display()
 
 
 def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
 
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    # print("----------------   Re-scaling V1  ----------------")
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    # for x in badly_scaled_var_list:
+    #     if 1 < x[0].value < 10:
+    #         sf = 1
+    #     else:
+    #         power = round(pyo.log10(abs(x[0].value)))
+    #         sf = 1 / 10**power
+    #
+    #     iscale.set_scaling_factor(x[0], sf)
+
     initialize_system(m)
+
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+    dt.display_potential_evaluation_errors()
+
+    # print("----------------   Degen Hunter  ----------------")
+    # # Use of Degeneracy Hunter for troubleshooting model.
+    # m.obj = pyo.Objective(expr=0)
+    # solver = get_solver()
+    # solver.options["max_iter"] = 10000
+    # results = solver.solve(m, tee=True)
 
     results = solve(m)
 
@@ -106,6 +144,12 @@ def main(bio_P=False):
         logger=_log,
         fail_flag=True,
     )
+
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+    # dt.display_variables_at_or_outside_bounds()
+    # dt.display_variables_with_extreme_jacobians()
+    # dt.display_constraints_with_extreme_jacobians()
 
     # add_costing(m)
     # m.fs.costing.initialize()
@@ -320,13 +364,13 @@ def set_operating_conditions(m, bio_P=False):
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e3)
+                iscale.set_scaling_factor(var, 1e1)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            # if "conc_mass_comp" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
+            if "conc_mass_comp" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
 
     # Apply scaling
     scale_variables(m)
@@ -338,11 +382,27 @@ def initialize_system(m):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.select_tear_method = "heuristic"
+    seq.options.iterLim = 0
+
+    G = seq.create_graph(m)
+    # Uncomment this code to see tear set and initialization order
+    order = seq.calculation_order(G)
+    print("Initialization Order")
+    for o in order:
+        print(o[0].name)
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
+
+    # m.fs.FeedWater.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    # propagate_state(m.fs.stream_feed_translator)
+    # m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    # propagate_state(m.fs.stream_translator_AD)
+    # m.fs.AD.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    # propagate_state(m.fs.stream_AD_translator)
+    # m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
 
 def solve(m, solver=None):
@@ -355,7 +415,7 @@ def solve(m, solver=None):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
