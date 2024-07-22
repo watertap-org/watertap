@@ -3866,7 +3866,7 @@ def build_flowsheet(build_options=None, **kwargs):
     """
 
     if build_options is not None:
-        if build_options["BioP"].value:
+        if build_options["BioP"]:
             bioP = True
         else:
             bioP = False
@@ -3902,6 +3902,8 @@ def build_flowsheet(build_options=None, **kwargs):
 
         add_costing(m)
         m.fs.costing.initialize()
+
+        interval_initializer(m.fs.costing)
 
         assert_degrees_of_freedom(m, 0)
 
