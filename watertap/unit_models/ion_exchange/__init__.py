@@ -1,4 +1,5 @@
 from .ion_exchange_base import IonExchangeBaseData
+from .ion_exchange_cphsdm import IonExchangeCPHSDM
 from .ion_exchange_demin import IonExchangeDemin
 from .ion_exchange_clark import IonExchangeClark
 from .ion_exchange_thomas import IonExchangeThomas
