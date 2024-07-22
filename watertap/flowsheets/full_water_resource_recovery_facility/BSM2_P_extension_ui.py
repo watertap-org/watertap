@@ -3902,6 +3902,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         add_costing(m)
         m.fs.costing.initialize()
+        interval_initializer(m.fs.costing)
 
         assert_degrees_of_freedom(m, 0)
 
@@ -3940,7 +3941,7 @@ def build_flowsheet(build_options=None, **kwargs):
         add_costing(m)
         m.fs.costing.initialize()
 
-        # interval_initializer(m.fs.costing)
+        interval_initializer(m.fs.costing)
 
         assert_degrees_of_freedom(m, 0)
 
