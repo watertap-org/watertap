@@ -21,7 +21,13 @@ from scipy.optimize import curve_fit
 
 from .ion_exchange_clark import IonExchangeClark
 
-theta_title_dict = {"thomas_constant": "k$_{Th}$", "resin_max_capacity": "q$_{max}$"}
+theta_title_dict = {
+    "thomas_constant": "k$_{Th}$",
+    "resin_max_capacity": "q$_{max}$",
+    "freundlich_k": "K$_{Fr}$",
+    "freundlich_ninv": "1/n",
+    "surf_diff_coeff": "D$_S$",
+}
 
 
 def plot_theta(blk):
@@ -119,7 +125,7 @@ def plot_theta(blk):
     ylabe = "C/C$_0$, " + blk.compound.title()
     title = (
         f"Curve {blk.curve_id}:\n"
-        + blk.compound.title()
+        + blk.compound
         + ", "
         + blk.ref.replace("_", " ").title()
         + ", "

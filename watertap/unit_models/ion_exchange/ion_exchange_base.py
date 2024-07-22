@@ -14,6 +14,7 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Constraint, 
     Set,
     Var,
     check_optimal_termination,
@@ -33,7 +34,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from watertap.core.solvers import get_solver
+
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
@@ -44,6 +45,8 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.core.solvers import get_solver
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.ion_exchange import cost_ion_exchange
 
 __author__ = "Kurban Sitterley"
@@ -252,6 +255,15 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             default=IsothermType.langmuir,
             domain=In(IsothermType),
             description="Designates the isotherm type to use for equilibrium calculations",
+        ),
+    )
+
+    CONFIG.declare(
+        "add_steady_state_approximation",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Designates whether to add the variables and constraints necessary to estimate steady-state effluent concentration with trapezoid method.",
         ),
     )
 
@@ -488,9 +500,9 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         self.resin_density = Var(
-            initialize=0.7,
-            bounds=(0.65, 0.95),  # Perry's
-            units=pyunits.kg / pyunits.L,
+            initialize=700,
+            bounds=(500, 950),  # Perry's
+            units=pyunits.kg / pyunits.m**3,
             doc="Resin bulk density",
         )
 
@@ -550,12 +562,12 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             doc="Number of operational columns for ion exchange process",
         )
 
-        self.number_columns_redundant = Var(
-            initialize=1,
-            bounds=(0, None),
-            units=pyunits.dimensionless,
-            doc="Number of redundant columns for ion exchange process",
-        )
+        # self.number_columns_redundant = Var(
+        #     initialize=1,
+        #     bounds=(0, None),
+        #     units=pyunits.dimensionless,
+        #     doc="Number of redundant columns for ion exchange process",
+        # )
 
         self.breakthrough_time = Var(
             initialize=1e5,  # DOW, ~7 weeks max breakthru time
@@ -757,7 +769,8 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Total number of columns")
         def number_columns_total(b):
-            return b.number_columns + b.number_columns_redundant
+            return b.number_columns 
+            # + b.number_columns_redundant
 
         @self.Constraint(doc="Reynolds number")
         def eq_Re(b):  # Eq. 3.358, Inglezakis + Poulopoulos
@@ -781,9 +794,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Loading rate")
         def eq_loading_rate(b):
-            return b.loading_rate == pyunits.convert(
-                b.flow_per_column / b.bed_area, to_units=pyunits.m / pyunits.s
-            )
+            return b.loading_rate * b.bed_area == prop_in.flow_vol_phase["Liq"]
 
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
@@ -808,11 +819,111 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         # def eq_col_height_to_diam_ratio(b):
         #     return b.col_height_to_diam_ratio * b.bed_diameter == b.column_height
 
-        @self.Constraint(doc="Number of redundant columns")
-        def eq_number_columns_redundant(b):
-            return (
-                b.number_columns_redundant >= b.number_columns / b.redundant_column_freq
+        # @self.Constraint(doc="Number of redundant columns")
+        # def eq_number_columns_redundant(b):
+        #     return (
+        #         b.number_columns_redundant >= b.number_columns / b.redundant_column_freq
+        #     )
+
+    def add_ss_approximation(self, ix_model_type=None):
+
+        prop_in = self.process_flow.properties_in[0] 
+        self.num_traps = 5  # TODO: make CONFIG option
+        self.trap_disc = range(self.num_traps + 1)
+        self.trap_index = self.trap_disc[1:]
+
+        self.c_trap_min = Param(  # TODO: make CONFIG option
+            initialize=0.01,
+            mutable=True,
+            doc="Minimum relative breakthrough concentration for estimating area under curve",
+        )
+
+        self.c_traps = Var(
+            self.trap_disc,
+            initialize=0.5,
+            bounds=(0, 1),
+            units=pyunits.dimensionless,
+            doc="Normalized breakthrough concentrations for estimating area under breakthrough curve",
+        )
+        self.tb_traps = Var(
+            self.trap_disc,
+            initialize=1e6,
+            bounds=(0, None),
+            units=pyunits.second,
+            doc="Breakthrough times for estimating area under breakthrough curve",
+        )
+
+        self.traps = Var(
+            self.trap_index,
+            initialize=0.01,
+            bounds=(0, 1),
+            units=pyunits.dimensionless,
+            doc="Trapezoid areas for estimating area under breakthrough curve",
+        )
+
+        self.c_traps[0].fix(0)
+        self.tb_traps[0].fix(0)
+
+        self.c_norm_avg = Var(
+            self.target_component_set,
+            initialize=0.25,
+            bounds=(0, 2),
+            units=pyunits.dimensionless,
+            doc="Sum of trapezoid areas",
+        )
+
+        @self.Constraint(
+            self.target_component_set,
+            self.trap_index,
+            doc="Evenly spaced c_norm for trapezoids",
+        )
+        def eq_c_traps(b, j, k):
+            return b.c_traps[k] == b.c_trap_min + (b.trap_disc[k] - 1) * (
+                (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
             )
+
+        @self.Constraint(
+            self.trap_index,
+            doc="Breakthru time calc for trapezoids",
+        )
+        def eq_tb_traps(b, k):
+            if ix_model_type == "clark":
+                bv_traps = (b.tb_traps[k] * b.loading_rate) / b.bed_depth
+                left_side = (
+                    (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
+                    / (b.bv_50 * b.loading_rate)
+                ) * (b.bv_50 - bv_traps)
+
+                right_side = log(
+                    ((1 / b.c_traps[k]) ** (b.freundlich_n - 1) - 1)
+                    / (2 ** (b.freundlich_n - 1) - 1)
+                )
+                return left_side - right_side == 0
+            else:
+                return Constraint.Skip
+
+        @self.Constraint(self.trap_index, doc="Area of trapezoids")
+        def eq_traps(b, k):
+            return b.traps[k] == (b.tb_traps[k] - b.tb_traps[k - 1]) / b.tb_traps[
+                self.num_traps
+            ] * ((b.c_traps[k] + b.c_traps[k - 1]) / 2)
+
+        @self.Constraint(
+            self.target_component_set, doc="Average relative effluent concentration"
+        )
+        def eq_c_norm_avg(b, j):
+            return b.c_norm_avg[j] == sum(b.traps[k] for k in b.trap_index)
+
+        @self.Constraint(
+            self.target_component_set,
+            doc="CV mass transfer term",
+        )
+        def eq_mass_transfer_term(b, j):
+            return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
+                "Liq", j
+            ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
+
+
 
     def initialize_build(
         self,
@@ -842,7 +953,14 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        flags = self.process_flow.properties_in.initialize(
+        # flags = self.process_flow.properties_in.initialize(
+        #     outlvl=outlvl,
+        #     optarg=optarg,
+        #     solver=solver,
+        #     state_args=state_args,
+        #     hold_state=True,
+        # )
+        flags = self.process_flow.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -876,13 +994,13 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         #             state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
         #         )
 
-        self.process_flow.properties_out.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_out,
-        )
-        init_log.info("Initialization Step 1b Complete.")
+        # self.process_flow.properties_out.initialize(
+        #     outlvl=outlvl,
+        #     optarg=optarg,
+        #     solver=solver,
+        #     state_args=state_args_out,
+        # )
+        # init_log.info("Initialization Step 1b Complete.")
 
         state_args_regen = deepcopy(state_args)
 
@@ -894,6 +1012,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         init_log.info("Initialization Step 1c Complete.")
+        interval_initializer(self)
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
