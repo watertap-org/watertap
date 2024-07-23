@@ -378,31 +378,33 @@ def set_operating_conditions(m, bio_P=False):
 
 
 def initialize_system(m):
-    # Initialize flowsheet
-    # Apply sequential decomposition - 1 iteration should suffice
-    seq = SequentialDecomposition()
-    seq.options.select_tear_method = "heuristic"
-    seq.options.iterLim = 0
+    # # Initialize flowsheet
+    # # Apply sequential decomposition - 1 iteration should suffice
+    # seq = SequentialDecomposition()
+    # seq.options.select_tear_method = "heuristic"
+    # seq.options.iterLim = 0
+    #
+    # G = seq.create_graph(m)
+    # # Uncomment this code to see tear set and initialization order
+    # order = seq.calculation_order(G)
+    # print("Initialization Order")
+    # for o in order:
+    #     print(o[0].name)
+    #
+    # def function(unit):
+    #     unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    #
+    # seq.run(m, function)
 
-    G = seq.create_graph(m)
-    # Uncomment this code to see tear set and initialization order
-    order = seq.calculation_order(G)
-    print("Initialization Order")
-    for o in order:
-        print(o[0].name)
-
-    def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-
-    seq.run(m, function)
-
-    # m.fs.FeedWater.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    # propagate_state(m.fs.stream_feed_translator)
-    # m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    # propagate_state(m.fs.stream_translator_AD)
-    # m.fs.AD.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    # propagate_state(m.fs.stream_AD_translator)
-    # m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    m.fs.FeedWater.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    propagate_state(m.fs.stream_feed_translator)
+    m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    propagate_state(m.fs.stream_translator_AD)
+    m.fs.AD.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    propagate_state(m.fs.stream_AD_translator)
+    m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    propagate_state(m.fs.stream_translator_product)
+    m.fs.Treated.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
 
 def solve(m, solver=None):
