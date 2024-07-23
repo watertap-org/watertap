@@ -369,8 +369,8 @@ def set_operating_conditions(m, bio_P=False):
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+            # if "conc_mass_comp" in var.name:
+            #     iscale.set_scaling_factor(var, 1e2)
 
     # Apply scaling
     scale_variables(m)
@@ -423,6 +423,7 @@ if __name__ == "__main__":
         {
             "Feed": m.fs.FeedWater.outlet,
             "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            "AD inlet": m.fs.AD.inlet,
             # "R1": m.fs.R1.outlet,
             # "R2": m.fs.R2.outlet,
             # "R3": m.fs.R3.outlet,
