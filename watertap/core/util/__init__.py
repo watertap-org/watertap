@@ -15,4 +15,3 @@ from .initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
-from .model_debug_mode import create_debug_solver_wrapper
