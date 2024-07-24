@@ -442,11 +442,10 @@ class _BaseDebugSolverWrapper:
         print(
             f"The model has been loaded into an IDAES DiagnosticsToolbox instance called `dt`.\n"
         )
-        print("WARNING: If you ran your python file in an interactive window, this debugging mode will not work as intended. Be sure to run your python file in a terminal.")
+        print("WARNING: If you ran your python file in an interactive window, this debugging mode will not work as intended. Be sure to run your python file in a terminal.\n")
         from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
         dt = DiagnosticsToolbox(blk)
-        # dt.report_structural_issues()
         IPython.embed(colors="neutral")
 
         # activate the model debug mode

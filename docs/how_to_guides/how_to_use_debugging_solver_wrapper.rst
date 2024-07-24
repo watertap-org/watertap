@@ -67,12 +67,21 @@ Adding the aforementioned import to the module and calling `activate()` results 
      - termination condition: infeasible
      - message from solver: Ipopt 3.14.11\x3a Converged to a locally infeasible
         point. Problem may be infeasible.
+    
     Solver debugging mode: the block fs.bed_stack failed to solve.
-    fs.bed_stack is called `blk` in this context.
+    
+    fs.bed_stack can be called as `blk` in debugging mode.
+    
     The solver ipopt-watertap is available in the variable `solver`.
-    The Initial values have be restored into the block.
-    You can restore them anytime by calling `debug.restore_initial_values(blk)`.
+    
+    The initial values before the failed solve have been stored.
+    
+    You can restore these initial values at anytime by calling `debug.restore_initial_values(blk)`.
+    
     The model has been loaded into an IDAES DiagnosticsToolbox instance called `dt`.
+    
+    WARNING: If you ran your python file in an interactive window, this debugging mode will not work as intended. Be sure to run your python file in a terminal.
+    
     Python 3.10.9 (main, Jan 11 2023, 09:18:20) [Clang 14.0.6 ]
     Type 'copyright', 'credits' or 'license' for more information
     IPython 7.34.0 -- An enhanced Interactive Python. Type '?' for help.
