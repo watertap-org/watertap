@@ -9,17 +9,22 @@ Overview
 Debugging a failed initialization or solve can be cumbersome. 
 Further, it is often useful to have the model state (i.e., initial variable values) from before the solve failed.
 The debugging solver wrapper facilitates the following:
-(1) Stores initialization information before a solve
-(2) Upon a failed attempt to solve, the user is routed to an IPython notebook where the restored model state can be accessed, IDAES' DiagnosticToolbox is instantiated to probe the model, and the user can freely apply any other diagnostic utility functions to troubleshoot the problematic model. 
+(1) Stores initialization information before a failed solve
+(2) Upon a failed attempt to solve, the user is routed to an Interactive Python notebook where the restored model state can be accessed, IDAES' DiagnosticToolbox is instantiated to probe the model, and the user can freely apply any other diagnostic utility functions to troubleshoot the problematic model. 
 
 How To
 ------
 
-In a python module, the user would make a simple import:
+In a python module containing the model and script to solve that model, the user would make a simple import:
 
 .. testcode::
     import watertap.core.util.model_debug_mode import activate
     activate()
+
+
+.. warning::
+ 
+    If you ran your python file in an interactive window, this debugging mode will not work as intended. Be sure to run your python file in a terminal.
 
 Example behavior without debugging mode
 ---------------------------------------
