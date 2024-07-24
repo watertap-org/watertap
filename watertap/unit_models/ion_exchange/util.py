@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 from .ion_exchange_clark import IonExchangeClark
+from .ion_exchange_cphsdm import IonExchangeCPHSDM
 
 theta_title_dict = {
     "thomas_constant": "k$_{Th}$",
@@ -506,6 +507,9 @@ def save_output(blk, overwrite=True):
 
 def plot_initial_guess(blk):
 
+    
+    # textstr = "\n".join([stat_str] + theta_str)
+
     fig, ax = plt.subplots(figsize=blk.figsize)
     ax.scatter(
         blk.bv_pred_ig,
@@ -554,13 +558,14 @@ def plot_initial_guess(blk):
         alpha=0.25,
         # label="Influent",
     )
-    ax.plot(
-        [0, max(blk.bv_pred_ig + blk.bv_pred_ig_fake + blk.keep_bvs)],
-        [0.5, 0.5],
-        linestyle="-.",
-        alpha=0.25,
-        # label="Influent",
-    )
+    if blk.ix_model is IonExchangeClark:
+        ax.plot(
+            [0, max(blk.bv_pred_ig + blk.bv_pred_ig_fake + blk.keep_bvs)],
+            [0.5, 0.5],
+            linestyle="-.",
+            alpha=0.25,
+            # label="Influent",
+        )
 
     title = (
         f"Initial Guess - Curve {blk.curve_id}:\n"
@@ -600,6 +605,18 @@ def plot_initial_guess(blk):
             0.04,
             0.95,
             textstr,
+            verticalalignment="top",
+            transform=ax.transAxes,
+            bbox=boxprops,
+        )
+    if blk.ix_model is IonExchangeCPHSDM:
+        boxprops = dict(boxstyle="round", facecolor="wheat", alpha=0.25)
+        theta_str = [f"{theta_title_dict[k]}: {v:.2e}" for k, v in blk.initial_guess_dict.items()]
+        theta_str = "\n".join(["Initial Guess:"] + theta_str)
+        ax.text(
+            0.04,
+            0.95,
+            theta_str,
             verticalalignment="top",
             transform=ax.transAxes,
             bbox=boxprops,

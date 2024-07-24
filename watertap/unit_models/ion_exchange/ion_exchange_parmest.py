@@ -66,6 +66,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 min_st_surrogate = PysmoSurrogate.load_from_file(
     # surr_dir + "/min_st_pysmo_surr_linear.json",
     "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_2/trained_surrogate_models/min_st_pysmo_surr_linear.json"
+    # "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_2/trained_surrogate_models/min_st_pysmo_surr_spline.json"
 )
 throughput_surrogate = PysmoSurrogate.load_from_file(
     # surr_dir + "/throughput_pysmo_surr_linear.json",
@@ -80,13 +81,15 @@ def activate_surrogate(m):
     m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
     m.fs.min_st_surrogate.build_model(
         min_st_surrogate,
-        input_vars=[ix.freundlich_ninv, ix.N_Bi],
+        # input_vars=[ix.freundlich_ninv, ix.N_Bi],
+        input_vars=[ix.freundlich_ninv, ix.Bi],
         output_vars=[ix.min_N_St],
     )
     m.fs.throughput_surrogate = SurrogateBlock(concrete=True)
     m.fs.throughput_surrogate.build_model(
         throughput_surrogate,
-        input_vars=[ix.freundlich_ninv, ix.N_Bi, ix.c_norm],
+        # input_vars=[ix.freundlich_ninv, ix.N_Bi, ix.c_norm],
+        input_vars=[ix.freundlich_ninv, ix.Bi, ix.c_norm],
         output_vars=[ix.throughput],
     )
 
@@ -127,6 +130,7 @@ class IXParmest:
         figsize=(7, 5),
         just_plot_curve=False,
         save_directory=None,
+        solver=None,
     ):
 
         if input_data is None and data_file is None:
@@ -178,6 +182,10 @@ class IXParmest:
         self.use_all_data = use_all_data
         self.use_this_data = use_this_data
         self.diff_calculation = diff_calculation
+        if solver is None:
+            self.solver = get_solver()
+        else:
+            self.solver = solver
 
         self.all_figs = dict()  # dict for storing all figs
 
@@ -222,8 +230,9 @@ class IXParmest:
                 print("ix_model is Thomas")
                 self.thetas = ["thomas_constant", "resin_max_capacity"]
             if ix_model is IonExchangeCPHSDM:
-                print("ix_model ix CPHSDM")
-                raise ValueError("")
+                print("ix_model is CPHSDM")
+                # raise ValueError("")
+                self.thetas = ["freundlich_k", "freundlich_ninv", "resin_max_capacity"]
         else:
             self.thetas = thetas
 
@@ -319,6 +328,17 @@ class IXParmest:
         #         self.save_figs(overwrite=overwrite)
         #     self.save_output(overwrite=overwrite)
         #     self.save_results(overwrite=overwrite)
+    
+    def ix_cphsdm_init(self, m=None):
+
+        if m is None:
+            m = self.m
+
+        assert self.ix_model is IonExchangeCPHSDM
+        # activate_surrogate(m)
+        self.solve_it(m=m)
+        print(f"termination with surrogates {self.tc}")
+
 
     def rebuild(self):
         self.m = self.build_it()
@@ -337,6 +357,9 @@ class IXParmest:
             print("Initial build of model failed.\nTry a different initial guess.")
             print_infeasible_constraints(self.m)
             print_variables_close_to_bounds(self.m)
+        
+        if self.ix_model is IonExchangeCPHSDM:
+            self.ix_cphsdm_init()
 
     def estimate_bv50(self):
         def linear_fit(bv, slope, b):
@@ -419,12 +442,8 @@ class IXParmest:
         ix = m.fs.ix
 
         for cnorm in self.test_cnorms0:
+            print(f"testing initial guess with test data:\n\tC/C0 = {cnorm}...")
             ix.c_norm.fix(cnorm)
-            try:
-                ix.initialize()
-            except:
-                print_infeasible_constraints(ix)
-                pass
             self.solve_it(m=m)
             if self.tc == "optimal":
                 self.bv_pred_ig_fake.append(ix.bv())
@@ -438,13 +457,11 @@ class IXParmest:
         m = self.m.clone()
         ix = m.fs.ix
         for bv, cnorm in zip(self.keep_bvs[::-1], self.keep_cnorms[::-1]):
+            print(f"testing initial guess with actual data:\n\tBV = {bv}\n\tC/C0 = {cnorm}...")
             ix.bv.set_value(bv)
             ix.c_norm.fix(cnorm)
-            try:
-                ix.initialize()
-            except:
-                pass
             self.solve_it(m=m)
+            print(f"termination {self.tc}")
             if self.tc == "optimal":
                 self.bv_pred_ig.append(ix.bv())
                 self.cb_pred_ig.append(cnorm)
@@ -467,13 +484,13 @@ class IXParmest:
         self.c0 = df.c0.iloc[0]
 
         self.compound = df.compound.iloc[0]
-        self.flow_in = df.flow_in.iloc[0]  # m3/s
-        self.loading_rate = df.loading_rate.iloc[0]  # m/s
-        self.bed_depth = df.bed_depth.iloc[0] * pyunits.m
-        self.bed_diameter = df.bed_diam.iloc[0] * pyunits.m
-        self.bed_volume_total = df.bed_vol.iloc[0] * pyunits.m**3
+        self.flow_in = float(df.flow_in.iloc[0])  # m3/s
+        self.loading_rate = float(df.loading_rate.iloc[0])  # m/s
+        self.bed_depth = float(df.bed_depth.iloc[0]) * pyunits.m
+        self.bed_diameter = float(df.bed_diam.iloc[0]) * pyunits.m
+        self.bed_volume_total = float(df.bed_vol.iloc[0]) * pyunits.m**3
         self.resin = df.resin.iloc[0]
-        self.ebct_min = df.ebct.iloc[0]  # minutes
+        self.ebct_min = float(df.ebct.iloc[0])  # minutes
         self.ebct = pyunits.convert(
             self.ebct_min * pyunits.min, to_units=pyunits.second
         )
@@ -731,8 +748,11 @@ class IXParmest:
             ix.eq_Pe_p.deactivate()
             ix.eq_service_flow_rate.deactivate()
             ix.eq_column_height.deactivate()
+            ix.eq_Bi.deactivate()
+            ix.eq_bed_design.deactivate()
+            # ix.eq_surf_diff_coeff.deactivate()
 
-            activate_surrogate(m)
+            
 
             # ix.freundlich_ninv.fix(1)
             ix.number_columns.fix(1)
@@ -745,9 +765,33 @@ class IXParmest:
             ix.loading_rate.fix(self.loading_rate)
             ix.c_norm.fix(self.c_norm)
             ix.resin_porosity.fix(self.resin_data["particle_porosity"])
+            pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
+            # ix.initialize()
+            # activate_surrogate(m)
+
+            # self.solve_it(m=m)
+
+            # print(f"initial solve: {self.tc}")
+
+            # activate_surrogate(m)
+            # self.solve_it(m=m)
+            # print(f"solve with surrogates: {self.tc}")
+            ix.a0.set_value(3.12)
+            ix.a1.set_value(12.8)
+            ix.b0.set_value(0.8789)
+            ix.b1.set_value(0.15652)
+            ix.b2.set_value(0.5345)
+            ix.b3.set_value(0.00182175)
+            ix.b4.set_value(0.153044)
+
+
+
             # ix.process_flow.mass_transfer_term[(0.0, "Liq", self.target_component)].fix(1e-15)
         pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
 
+        for var, val in self.fix_vars_dict.items():
+            ixv = getattr(ix, var)
+            ixv.fix(val)
         return m
 
     def scale_it(self, m=None):
@@ -812,6 +856,24 @@ class IXParmest:
 
         if self.ix_model is IonExchangeThomas:
             constraint_scaling_transform(ix.eq_thomas[target_component], 1e-2)
+        
+        calculate_scaling_factors(m)
+        set_scaling_factor(ix.bed_volume, 1e4)
+        set_scaling_factor(ix.breakthrough_time, 1e-4)
+        set_scaling_factor(ix.bv, 1e-5)
+        set_scaling_factor(ix.c_eq, 1e6)
+        set_scaling_factor(ix.min_breakthrough_time, 1e-4)
+        set_scaling_factor(ix.spdfr, 1e2)
+        set_scaling_factor(ix.bed_area, 1e5)
+        set_scaling_factor(ix.solute_dist_param, 1e-4)
+        set_scaling_factor(ix.throughput, 1e-3)
+        set_scaling_factor(ix.vel_inter, 1e2)
+        set_scaling_factor(ix.t_contact, 1e2)
+        set_scaling_factor(ix.resin_density, 1 / self.resin_density)
+        set_scaling_factor(ix.c_norm, 10)
+        set_scaling_factor(ix.Bi, 0.1)
+
+
 
     def solve_it(self, m=None, solver="watertap", optarg=dict(), tee=False):
         """
@@ -822,12 +884,12 @@ class IXParmest:
         if m is None:
             m = self.m
 
-        if solver != "watertap":
-            self.solver = SolverFactory("ipopt")
-        else:
-            self.solver = get_solver()
-            for k, v in optarg.items():
-                self.solver.options[k] = v
+        # if solver != "watertap":
+        #     self.solver = SolverFactory("ipopt")
+        # else:
+        #     self.solver = get_solver()
+        for k, v in optarg.items():
+            self.solver.options[k] = v
         try:
             # Should never break a model run if an error is thrown
             self.results = self.solver.solve(m, tee=tee)
@@ -932,6 +994,8 @@ class IXParmest:
 
         self._calc_from_constr(m=self.m_theta)
         self.scale_it(m=self.m_theta)
+        # activate_surrogate(self.m_theta)
+        # self.ix_cphsdm_init(m=self.m_theta)
 
         try:
             ix.initialize()
@@ -1114,27 +1178,25 @@ class IXExperiment(Experiment):
         #     self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
 
     def create_model(self):
-        # self.model = self.ix_parmest_obj.m.clone()
-        # self.model = self.ix_parmest_obj.build_it()
-        self.model = self.ix_parmest_obj.build_func(**self.ix_parmest_obj.build_func_kwargs)
+        self.model = self.ix_parmest_obj.build_it()
 
     def finalize_model(self):
 
         model = self.model
         cb = value(
             pyunits.convert(
-                self.data_i.cb * self.ix_parmest_obj.conc_units,
+                float(self.data_i.cb) * self.ix_parmest_obj.conc_units,
                 to_units=pyunits.kg / pyunits.m**3,
             )
         )
 
         c0 = value(
             pyunits.convert(
-                self.data_i.c0 * self.ix_parmest_obj.conc_units,
+                float(self.data_i.c0) * self.ix_parmest_obj.conc_units,
                 to_units=pyunits.kg / pyunits.m**3,
             )
         )
-        bv = self.data_i.bv
+        bv = float(self.data_i.bv)
         self.c_norm = c_norm = cb / c0
         model.fs.ix.c_norm.fix(c_norm)
         model.fs.ix.bv.set_value(bv)
@@ -1142,12 +1204,20 @@ class IXExperiment(Experiment):
         self.ix_parmest_obj._fix_initial_guess(m=self.model)
         self.ix_parmest_obj._calc_from_constr(m=self.model)
         self.ix_parmest_obj.scale_it(m=self.model)
+        print(f"initializing parmest model for {c_norm}...\n")
         self.model.fs.ix.initialize()
+        self.ix_parmest_obj.ix_cphsdm_init(m=self.model)
         for k in self.ix_parmest_obj.initial_guess_dict.keys():
             ixv = getattr(self.model.fs.ix, k)
             ixv.unfix()
-        print(f"initializing parmest model for {c_norm}...\n")
-        self.model.fs.ix.initialize()
+        print(f"\ndof = {degrees_of_freedom(self.model)}")
+        # assert len(self.thetas) == degrees_of_freedom(self.model)
+        self.ix_parmest_obj.scale_it(m=self.model)
+
+        # try: 
+        #     self.model.fs.ix.initialize()
+        # except:
+        #     pass
 
         return model
 
