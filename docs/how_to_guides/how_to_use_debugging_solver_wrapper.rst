@@ -97,14 +97,14 @@ Adding the aforementioned import to the module and calling ``activate()`` result
 
 Check the model name with ``blk``:
 
-.. code-block:: terminal
+.. code-block:: shell
 
     In [1]: blk.name
     Out[1]: 'fs.bed_stack'
 
 Use the DiagnosticsToolbox (instantiated to ``dt``) to probe for structural issues in the model:
 
-.. code-block:: terminal
+.. code-block:: shell
 
     In [2]: dt.report_structural_issues()
     ====================================================================================
