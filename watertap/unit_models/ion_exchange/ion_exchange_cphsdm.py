@@ -37,7 +37,7 @@ __author__ = "Kurban Sitterley"
 
 
 @declare_process_block_class("IonExchangeCPHSDM")
-class IonExchangeCPData(IonExchangeBaseData):
+class IonExchangeCPHSDMData(IonExchangeBaseData):
     """
     Ion exchange constant-pattern homogeneous surface diffusion model (CPHSDM) model.
     """
@@ -186,12 +186,12 @@ class IonExchangeCPData(IonExchangeBaseData):
             doc="Schmidt number",  # correlations using Schmidt number valid in 0.7 < Sc < 1e4
         )
 
-        self.N_Sh = Var(
-            self.target_component_set,
-            initialize=30,
-            units=pyunits.dimensionless,
-            doc="Sherwood number",
-        )
+        # self.N_Sh = Var(
+        #     self.target_component_set,
+        #     initialize=30,
+        #     units=pyunits.dimensionless,
+        #     doc="Sherwood number",
+        # )
 
         self.resin_density_app = Var(
             initialize=1,
@@ -305,6 +305,52 @@ class IonExchangeCPData(IonExchangeBaseData):
                 prop_in.conc_mass_phase_comp["Liq", j] ** b.freundlich_ninv
             )
 
+        self.Bi = Var(
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.dimensionless,
+            doc="biot number take 2",
+        )
+
+
+        @self.Expression()
+        def Sh_lam(b):
+            return 0.664 * b.N_Sc[target_component] ** (1 / 3) * b.N_Re**0.5
+
+        @self.Expression()
+        def Sh_turb(b):
+            num = 0.037 * b.N_Re**0.8 * b.N_Sc[target_component]
+            denom = 1 + 2.443 * b.N_Re ** (-0.1) * (b.N_Sc[target_component] ** (2 / 3) - 1)
+            return num / denom
+
+        @self.Expression()
+        def Sh_p(b):
+            return 2 + (b.Sh_lam**2 + b.Sh_turb**2) ** 0.5
+
+        @self.Expression()
+        def Sh(b):
+            return (1 + 1.5 * (1 - b.bed_porosity)) * b.Sh_p
+
+        @self.Expression()
+        def Bi_p(b):
+            num = b.film_mass_transfer_coeff * (b.resin_diam / 2) * b.tortuosity
+            denom = prop_in.diffus_phase_comp["Liq", target_component] * b.resin_porosity
+            return pyunits.convert(num / denom,to_units=pyunits.dimensionless)
+
+        @self.Expression()
+        def Bi_s(b):
+            return b.Bi_p / b.spdfr
+
+        @self.Constraint()
+        def eq_Bi2(b):
+            return b.Bi == 1 / ((1 / b.Bi_p) + (1 / b.Bi_s))
+
+        @self.Expression()
+        def kf(b):
+            return (
+                prop_in.diffus_phase_comp["Liq", target_component] * b.shape_correction_factor * b.Sh
+            ) / b.resin_diam
+
         @self.Constraint(
             self.target_component_set,
             doc="Solute distribution parameter",
@@ -338,7 +384,8 @@ class IonExchangeCPData(IonExchangeBaseData):
             doc="Minimum Stanton number to achieve constant pattern solution"
         )
         def eq_min_number_st_cps(b):
-            return b.min_N_St == b.a0 * b.N_Bi + b.a1
+            # return b.min_N_St == b.a0 * b.N_Bi + b.a1
+            return b.min_N_St == b.a0 * b.Bi + b.a1
 
         @self.Constraint(
             doc="Minimum empty bed contact time to achieve constant pattern solution"
@@ -437,7 +484,6 @@ class IonExchangeCPData(IonExchangeBaseData):
                 * b.resin_porosity
                 * prop_in.conc_mass_phase_comp["Liq", j]
             )
-
         if self.config.add_steady_state_approximation:
             self.add_ss_approximation()
         else:
@@ -469,8 +515,8 @@ class IonExchangeCPData(IonExchangeBaseData):
         if iscale.get_scaling_factor(self.c_eq[target_component]) is None:
             iscale.set_scaling_factor(self.c_eq[target_component], 10)
 
-        if iscale.get_scaling_factor(self.N_Sh) is None:
-            iscale.set_scaling_factor(self.N_Sh, 1e-3)
+        # if iscale.get_scaling_factor(self.N_Sh) is None:
+        #     iscale.set_scaling_factor(self.N_Sh, 1e-3)
 
         if iscale.get_scaling_factor(self.N_Bi) is None:
             iscale.set_scaling_factor(self.N_Bi, 1e-1)
