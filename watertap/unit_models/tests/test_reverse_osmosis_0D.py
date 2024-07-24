@@ -9,13 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import (
-    ConcreteModel,
-    units as pyunits,
-    TransformationFactory,
-    assert_optimal_termination,
-    value,
-)
+from pyomo.environ import ConcreteModel, units as pyunits
 from pyomo.network import Port
 from idaes.core.solvers import petsc
 
@@ -997,21 +991,14 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         return m
-
-
+    
 @pytest.mark.unit
-@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
-def test_RO_dynamic_instantiation():
-    # TODO: add test to check exception for simplest RO0D with dynamics
-
+def test_RO_dynamic():
     m = ConcreteModel()
-    # m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], time_units=pyunits.s)
-    m.fs = FlowsheetBlock(
-        dynamic=True,
-        # time_set=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 10, 200],
-        time_set=list(np.linspace(0, 200, 21)),
-        time_units=pyunits.s,
-    )
+    m.fs = FlowsheetBlock(dynamic=True, 
+                          time_set=[0, 1],
+                          time_units=pyunits.minute
+                          )
 
     m.fs.properties = props.NaClParameterBlock()
 
@@ -1026,230 +1013,5 @@ def test_RO_dynamic_instantiation():
         module_type=ModuleType.spiral_wound,
     )
 
-    # adding conditional to toggle between steady state and dynamic cases and note DOF changes
-    if m.fs.config.dynamic:
-        time_nfe = len(m.fs.time) - 1
-        TransformationFactory("dae.finite_difference").apply_to(
-            m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
-        )
-
-    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "NaCl"].fix(0.035)
-    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "H2O"].fix(0.965)
-    m.fs.unit.inlet.pressure[:].fix(85e5)  # feed pressure (Pa)
-    m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure (Pa)
-    m.fs.unit.inlet.pressure[10].fix(50e5)  # feed pressure (Pa)
-    m.fs.unit.inlet.pressure[20].fix(50e5)  # feed pressure (Pa)
-
-    m.fs.unit.inlet.temperature[:].fix(298.15)  # feed temperature (K)
-
-    m.fs.unit.area.fix(50)  # membrane area (m^2)
-    m.fs.unit.A_comp.fix(4.166667e-12)  # membrane water permeability (m/Pa/s)
-    m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability (m/s)
-    m.fs.unit.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
-
-    m.fs.unit.feed_side.channel_height.fix(0.001)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.97)  # 85%
-    m.fs.unit.length.fix(16)
-
-    m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0.0
-    m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
-
-    assert not hasattr(m.fs.unit.feed_side, "energy_accumulation")
-
-    # Set scaling factors for component mass flowrates.
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
-    )
-
-    # Set scaling factor for membrane area.
-    iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
-
-    # Calculate scaling factors for all other variables.
-    iscale.calculate_scaling_factors(m)
-
-    print("before initialize dof = ", degrees_of_freedom(m.fs.unit))
-    m.fs.unit.initialize()
-    # m.fs.unit.feed_side.material_accumulation[0, :, :].unfix()
-
-    iscale.calculate_scaling_factors(m)
-
-    results = petsc.petsc_dae_by_time_element(
-        m,
-        time=m.fs.time,
-        keepfiles=True,
-        symbolic_solver_labels=True,
-        ts_options={
-            "--ts_type": "beuler",
-            # "-ts_arkimex_type": "1bee",
-            "--ts_dt": 0.1,
-            "--ts_rtol": 1e-3,
-            # "--ts_adapt_clip":"0.001,3600",
-            # "--ksp_monitor":"",
-            "--ts_adapt_dt_min": 1e-3,
-            "--ts_adapt_dt_max": 3600,
-            "--snes_type": "newtontr",
-            # "--ts_max_reject": 200,
-            "--ts_monitor": "",
-            "-ts_adapt_monitor": "",
-            # "--snes_monitor":"",
-            "-snes_converged_reason": "",
-            # "-ksp_monitor_true_residual": "",
-            # "-ksp_converged_reason": "",
-            # "-snes_test_jacobian": "",
-            "snes_grid_sequence": "",
-            "-pc_type": "lu",
-            # "-mat_view": "",
-            "--ts_save_trajectory": 1,
-            "--ts_trajectory_type": "visualization",
-            "--ts_max_snes_failures": 25,
-            # "--show_cl":"",
-            "-snes_max_it": 50,
-            "-snes_rtol": 0,
-            "-snes_stol": 0,
-            "-snes_atol": 1e-6,
-        },
-        skip_initial=False,
-        initial_solver="ipopt",
-        initial_solver_options={
-            "constr_viol_tol": 1e-8,
-            "nlp_scaling_method": "user-scaling",
-            "linear_solver": "ma27",
-            "OF_ma57_automatic_scaling": "yes",
-            "max_iter": 300,
-            "tol": 1e-8,
-            "halt_on_ampl_error": "no",
-        },
-    )
-    for result in results.results:
-        assert_optimal_termination(result)
-
-    # print(value(m.fs.unit.feed_side.properties_out[:].flow_mass_phase_comp['Liq','H2O']))
-    print(
-        "Flux H2O: ",
-        value(m.fs.unit.flux_mass_phase_comp_avg[:, "Liq", "H2O"]),
-    )
-    print(
-        "Flux NaCl: ",
-        value(m.fs.unit.flux_mass_phase_comp_avg[:, "Liq", "NaCl"]),
-    )
-    # assert False
-    traj = results.trajectory
-    time_set = m.fs.time.ordered_data()
-    tf = time_set[-1]
-    # print(str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"]))
-    # print(str(m.fs.unit.flux_mass_phase_comp_avg[tf, 'Liq', 'H2O']))
-    # print(traj.vecs)
-    # print('Flow vol:', m.fs.unit.feed_side.properties_out[:].flow_vol_phase['Liq'])
-    # print('Flow vol unit:', value(m.fs.unit.recovery_vol_phase[:, "Liq"]))
-    # assert False
-    print("1")
-    results_dict = {
-        "time": np.array(traj.time),
-        "feed.out.vol": np.array(  # m3/s
-            traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_vol_phase["Liq"])]
-        ),
-        "recovery": np.array(  #
-            traj.vecs[str(m.fs.unit.recovery_vol_phase[tf, "Liq"])]
-        ),
-        "feed.out.mass.NaCl": np.array(  # kg/s
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp[
-                        "Liq", "NaCl"
-                    ]
-                )
-            ]
-        ),
-        "feed.out.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp[
-                        "Liq", "NaCl"
-                    ]
-                )
-            ]
-        ),
-        "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_interface[
-                        tf, 0
-                    ].conc_mass_phase_comp["Liq", "NaCl"]
-                )
-            ]
-        ),
-        "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_interface[
-                        tf, 1
-                    ].conc_mass_phase_comp["Liq", "NaCl"]
-                )
-            ]
-        ),
-        "mixed_permeate.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"])
-            ]
-        ),
-        "flux_mass_phase_comp.H2O": 0.5  # kg/m2 s
-        * (
-            np.array(
-                traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 0, "Liq", "H2O"])]
-            )
-            + np.array(
-                traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 1, "Liq", "H2O"])]
-            )
-        ),
-    }
-    print("after results_dict")
-    for key, v in results_dict.items():
-        # Turn n by 1 arrays in into vectors
-        results_dict[key] = np.squeeze(v)
-    time = results_dict["time"]
-    # print(time)
-
-    fig = plt.figure(figsize=(16, 9))
-    # ax = fig.subplots(4, 2, sharex=True)
-    plt.subplot(4, 2, 1)
-    plt.plot(time, results_dict["feed.out.mass.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Feed Outlet $\dot{m}_{NaCl}$ (kg/s)", fontsize=9)
-    plt.subplot(4, 2, 2)
-    plt.plot(time, results_dict["feed.out.conc.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Brine Outlet $C_{NaCl}$ (kg/m$^3$ = g/L)", fontsize=9)
-    plt.subplot(4, 2, 3)
-    plt.plot(time, results_dict["feed.out.vol"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Outlet flow $\dot{V}$ (m$^3$/s)", fontsize=9)
-    plt.subplot(4, 2, 4)
-    plt.plot(time, results_dict["recovery"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Recovery", fontsize=9)
-    plt.subplot(4, 2, 5)
-    plt.plot(time, results_dict["feed.prop_int.0.conc.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Interface 0 $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
-    plt.subplot(4, 2, 6)
-    plt.plot(time, results_dict["feed.prop_int.1.conc.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Interface 1 $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
-    plt.subplot(4, 2, 7)
-    plt.plot(time, results_dict["mixed_permeate.conc.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Mixed permeate $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
-    plt.subplot(4, 2, 8)
-    plt.plot(time, results_dict["flux_mass_phase_comp.H2O"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Flux H2O $J_w$ (kg/m$^2$ s)", fontsize=9)
-    plt.tight_layout()
-    plt.savefig("test_plot.png", dpi=150)
-
-    print("Accumulation and holdup")
-    m.fs.unit.feed_side.material_accumulation.display()
     m.fs.unit.feed_side.material_holdup.display()
-    # m.fs.unit.flux_mass_phase_comp.display()
-    # m.fs.unit.mixed_permeate[190].conc_mass_phase_comp.display()
-    # m.fs.unit.mixed_permeate[200].conc_mass_phase_comp.display()
+    assert False
