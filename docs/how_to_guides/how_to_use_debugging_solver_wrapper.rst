@@ -19,9 +19,9 @@ How To
 
 In a python module containing the model and script to solve that model, the user would make a simple import:
 
-.. code-block::
+.. testcode::
 
-    import watertap.core.util.model_debug_mode import activate
+    from watertap.core.util.model_debug_mode import activate
     activate()
 
 
@@ -64,7 +64,7 @@ The example output below shows a problematic model that fails to initialize.
 
 Example behavior with debugging mode
 ---------------------------------------
-Adding the aforementioned import to the module and calling `activate()` results in the following printout:
+Adding the aforementioned import to the module and calling ``activate()`` results in the printout below:
 
 .. code-block:: text
 
