@@ -64,7 +64,7 @@ The example output below shows a problematic model that fails to initialize.
 
 Example behavior with debugging mode
 ---------------------------------------
-Adding the aforementioned import to the module and calling ``activate()`` results in the printout below:
+Adding the aforementioned import to the module and calling ``activate()`` results in the printout below before being routed to an Interactive Python window:
 
 .. code-block:: text
 
@@ -138,4 +138,4 @@ Use the DiagnosticsToolbox (instantiated to ``dt``) to probe for structural issu
 
     ====================================================================================
 
-Continue to probe and diagnose model infeasibility in this interactive window.
+Continue to probe and diagnose model infeasibility in this Interactive Python window.
