@@ -12,7 +12,7 @@ The debugging solver wrapper facilitates the following:
 
 (1) Stores initialization information before a failed solve
 
-(2) Upon a failed attempt to solve, the user is routed to an Interactive Python notebook where the restored model state can be accessed, `IDAES' DiagnosticToolbox <https://idaes-pse.readthedocs.io/en/stable/reference_guides/core/util/diagnostics/diagnostics_toolbox.html>` is instantiated to probe the model, and the user can freely apply any other diagnostic utility functions to troubleshoot the problematic model. 
+(2) Upon a failed attempt to solve, the user is routed to an Interactive Python notebook where the restored model state can be accessed, `IDAES' DiagnosticToolbox <https://idaes-pse.readthedocs.io/en/stable/reference_guides/core/util/diagnostics/diagnostics_toolbox.html>`_ is instantiated to probe the model, and the user can freely apply any other diagnostic utility functions to troubleshoot the problematic model. 
 
 How To
 ------
