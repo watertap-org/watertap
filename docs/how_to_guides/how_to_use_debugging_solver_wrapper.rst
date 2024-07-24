@@ -12,7 +12,7 @@ The debugging solver wrapper facilitates the following:
 
 (1) Stores initialization information before a failed solve
 
-(2) Upon a failed attempt to solve, the user is routed to an Interactive Python notebook where the restored model state can be accessed, IDAES' DiagnosticToolbox is instantiated to probe the model, and the user can freely apply any other diagnostic utility functions to troubleshoot the problematic model. 
+(2) Upon a failed attempt to solve, the user is routed to an Interactive Python notebook where the restored model state can be accessed, `IDAES' DiagnosticToolbox <https://idaes-pse.readthedocs.io/en/stable/reference_guides/core/util/diagnostics/diagnostics_toolbox.html>` is instantiated to probe the model, and the user can freely apply any other diagnostic utility functions to troubleshoot the problematic model. 
 
 How To
 ------
@@ -93,8 +93,18 @@ Adding the aforementioned import to the module and calling ``activate()`` result
     Type 'copyright', 'credits' or 'license' for more information
     IPython 7.34.0 -- An enhanced Interactive Python. Type '?' for help.
 
+    In [1]: 
+
+Check the model name with ``blk``:
+
+.. code-block:: terminal
+
     In [1]: blk.name
     Out[1]: 'fs.bed_stack'
+
+Use the DiagnosticsToolbox (instantiated to ``dt``) to probe for structural issues in the model:
+
+.. code-block:: terminal
 
     In [2]: dt.report_structural_issues()
     ====================================================================================
@@ -128,4 +138,4 @@ Adding the aforementioned import to the module and calling ``activate()`` result
 
     ====================================================================================
 
-    In [3]: 
+Continue to probe and diagnose model infeasibility in this interactive window.
