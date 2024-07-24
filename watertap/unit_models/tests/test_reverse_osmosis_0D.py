@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, units as pyunits
 from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
@@ -982,3 +982,27 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         return m
+    
+@pytest.mark.unit
+def test_RO_dynamic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=True, 
+                          time_set=[0, 1],
+                          time_units=pyunits.minute
+                          )
+
+    m.fs.properties = props.NaClParameterBlock()
+
+    m.fs.unit = ReverseOsmosis0D(
+        dynamic=True,
+        has_holdup=True,
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        pressure_change_type=PressureChangeType.calculated,
+        module_type=ModuleType.spiral_wound,
+    )
+
+    m.fs.unit.feed_side.material_holdup.display()
+    assert False
