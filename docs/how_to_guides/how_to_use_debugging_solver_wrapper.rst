@@ -9,7 +9,9 @@ Overview
 Debugging a failed initialization or solve can be cumbersome. 
 Further, it is often useful to have the model state (i.e., initial variable values) from before the solve failed.
 The debugging solver wrapper facilitates the following:
+
 (1) Stores initialization information before a failed solve
+
 (2) Upon a failed attempt to solve, the user is routed to an Interactive Python notebook where the restored model state can be accessed, IDAES' DiagnosticToolbox is instantiated to probe the model, and the user can freely apply any other diagnostic utility functions to troubleshoot the problematic model. 
 
 How To
@@ -17,21 +19,24 @@ How To
 
 In a python module containing the model and script to solve that model, the user would make a simple import:
 
-.. testcode::
+.. code-block::
+
     import watertap.core.util.model_debug_mode import activate
     activate()
 
 
 .. warning::
  
-    If you ran your python file in an interactive window, this debugging mode will not work as intended. Be sure to run your python file in a terminal.
+    If you ran your python file in an interactive window, this debugging mode may not work as expected. We recommend running your python file in a terminal.
 
 Example behavior without debugging mode
 ---------------------------------------
 
 The example output below shows a problematic model that fails to initialize.
 
-.. 2024-02-01 13:06:07 [DEBUG] idaes.solve.fs.bed_stack: EXIT: Converged to a point of local infeasibility. Problem may be infeasible.
+.. code-block:: text
+
+    2024-02-01 13:06:07 [DEBUG] idaes.solve.fs.bed_stack: EXIT: Converged to a point of local infeasibility. Problem may be infeasible.
     2024-02-01 13:06:07 [DEBUG] idaes.solve.fs.bed_stack: WARNING: Loading a SolverResults object with a warning status into
     2024-02-01 13:06:07 [DEBUG] idaes.solve.fs.bed_stack: model.name="fs.bed_stack";
     2024-02-01 13:06:07 [DEBUG] idaes.solve.fs.bed_stack:     - termination condition: infeasible
@@ -61,7 +66,9 @@ Example behavior with debugging mode
 ---------------------------------------
 Adding the aforementioned import to the module and calling `activate()` results in the following printout:
 
-..  EXIT: Converged to a point of local infeasibility. Problem may be infeasible.
+.. code-block:: text
+
+    EXIT: Converged to a point of local infeasibility. Problem may be infeasible.
     WARNING: Loading a SolverResults object with a warning status into
     model.name="fs.bed_stack";
      - termination condition: infeasible
