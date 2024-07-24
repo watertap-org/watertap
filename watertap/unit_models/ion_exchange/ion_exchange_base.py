@@ -562,12 +562,12 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             doc="Number of operational columns for ion exchange process",
         )
 
-        # self.number_columns_redundant = Var(
-        #     initialize=1,
-        #     bounds=(0, None),
-        #     units=pyunits.dimensionless,
-        #     doc="Number of redundant columns for ion exchange process",
-        # )
+        self.number_columns_redundant = Var(
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.dimensionless,
+            doc="Number of redundant columns for ion exchange process",
+        )
 
         self.breakthrough_time = Var(
             initialize=1e5,  # DOW, ~7 weeks max breakthru time
@@ -769,8 +769,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(doc="Total number of columns")
         def number_columns_total(b):
-            return b.number_columns 
-            # + b.number_columns_redundant
+            return b.number_columns + b.number_columns_redundant
 
         @self.Constraint(doc="Reynolds number")
         def eq_Re(b):  # Eq. 3.358, Inglezakis + Poulopoulos
