@@ -1001,3 +1001,12 @@ def test_RO_dynamic():
         pressure_change_type=PressureChangeType.calculated,
         module_type=ModuleType.spiral_wound,
     )
+
+    m.fs.unit2 = ReverseOsmosis0D(
+        dynamic=True,
+        has_holdup=True,
+        property_package=m.fs.properties,
+        has_pressure_change=False,
+        concentration_polarization_type=ConcentrationPolarizationType.none,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated.none,
+    )
