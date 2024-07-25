@@ -1011,7 +1011,17 @@ class MembraneChannelMixin:
 
 # helper for validating configuration arguments for this CV
 def validate_membrane_config_args(unit):
-
+    if unit.config.dynamic and unit.config.has_holdup:
+        if not (
+            (unit.config.pressure_change_type != PressureChangeType.fixed_per_stage)
+            or (
+                unit.config.mass_transfer_coefficient
+                == MassTransferCoefficient.calculated
+            )
+        ):
+            raise ConfigurationError(
+                f"dynamics=True and has_holdup=True will not work while pressure_change_type={unit.config.pressure_change_type} and mass_tranfer_coefficient={unit.config.mass_transfer_coefficient}\n. To enable dynamics, choose any other configuration option for pressure_change_type or mass_transfer_coefficient."
+            )
     if (
         unit.config.pressure_change_type is not PressureChangeType.fixed_per_stage
         and unit.config.has_pressure_change is False
