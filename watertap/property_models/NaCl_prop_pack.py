@@ -497,7 +497,19 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="State pressure",
         )
+        def material_density_expression(self, p, j):
+            if j == "H2O":
+                return self.params.dens_mass_solvent
+            else:
+                return self.conc_mass_phase_comp[p, j]
 
+        self.material_density_expression = Expression(
+            self.phase_list,
+            self.component_list,
+            rule=material_density_expression,
+            doc="Material density terms",
+        )
+        
     # -----------------------------------------------------------------------------
     # Property Methods
     def _mass_frac_phase_comp(self):
@@ -779,18 +791,8 @@ class NaClStateBlockData(StateBlockData):
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
-    def material_density_expression(self, p, j):
-        if j == "H2O":
-            return self.params.dens_mass_solvent
-        else:
-            return self.conc_mass_phase_comp[p, j]
+ 
 
-    self.material_density_expression = Expression(
-        self.phase_list,
-        self.component_list,
-        rule=material_density_expression,
-        doc="Material density terms",
-    )
     # TODO: add vapor pressure, specific heat, thermal conductivity,
     #   and heat of vaporization
 
