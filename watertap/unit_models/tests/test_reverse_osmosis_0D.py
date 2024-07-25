@@ -117,7 +117,7 @@ def test_default_config_and_build():
     # test statistics
     assert number_variables(m) == 135
     assert number_total_constraints(m) == 110
-    assert number_unused_variables(m) == 1
+    assert number_unused_variables(m) == 2
 
 
 def build():
