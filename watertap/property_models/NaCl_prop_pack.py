@@ -498,18 +498,18 @@ class NaClStateBlockData(StateBlockData):
             doc="State pressure",
         )
 
-        def material_density_expression(self, p, j):
-            if j == "H2O":
-                return self.params.dens_mass_solvent
-            else:
-                return self.conc_mass_phase_comp[p, j]
+        # def material_density_expression(self, p, j):
+        #     if j == "H2O":
+        #         return self.params.dens_mass_solvent
+        #     else:
+        #         return self.conc_mass_phase_comp[p, j]
 
-        self.material_density_expression = Expression(
-            self.phase_list,
-            self.component_list,
-            rule=material_density_expression,
-            doc="Material density terms",
-        )
+        # self.material_density_expression = Expression(
+        #     self.phase_list,
+        #     self.component_list,
+        #     rule=material_density_expression,
+        #     doc="Material density terms",
+        # )
 
     # -----------------------------------------------------------------------------
     # Property Methods
@@ -811,7 +811,10 @@ class NaClStateBlockData(StateBlockData):
     # TODO: make property package compatible with dynamics
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
-        return self.material_density_expression[p, j]
+        if j == "H2O":
+            return self.params.dens_mass_solvent
+        else:
+            return self.conc_mass_phase_comp[p, j]
 
     def get_energy_density_terms(self, p):
         """Create enthalpy density terms."""
