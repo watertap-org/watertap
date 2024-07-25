@@ -530,7 +530,13 @@ def set_operating_conditions(m):
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                # iscale.set_scaling_factor(var, 1e2)
+                if 1e-2 < var.value < 1:
+                    sf = 1
+                    iscale.set_scaling_factor(var, sf)
+                else:
+                    sf = 1e2
+                    iscale.set_scaling_factor(var, sf)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
