@@ -99,6 +99,14 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Molecular weight kg/mol",
         )
 
+        # Density of water at 25 C
+        self.dens_mass_solvent = Var(
+            within=Reals,
+            initialize=997,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density of water",
+        )
+
         # mass density parameters, eq 4 in Bartholomew
         dens_mass_param_dict = {"0": 995, "1": 756}
         self.dens_mass_param = Var(
@@ -771,6 +779,18 @@ class NaClStateBlockData(StateBlockData):
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
+    def material_density_expression(self, p, j):
+        if j == "H2O":
+            return self.params.dens_mass_solvent
+        else:
+            return self.conc_mass_phase_comp[p, j]
+
+    self.material_density_expression = Expression(
+        self.phase_list,
+        self.component_list,
+        rule=material_density_expression,
+        doc="Material density terms",
+    )
     # TODO: add vapor pressure, specific heat, thermal conductivity,
     #   and heat of vaporization
 
@@ -790,7 +810,7 @@ class NaClStateBlockData(StateBlockData):
     # TODO: make property package compatible with dynamics
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
-        return self.dens_mass_phase[p]
+        return self.material_density_expression(p, j)
 
     def get_energy_density_terms(self, p):
         """Create enthalpy density terms."""
