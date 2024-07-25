@@ -22,7 +22,7 @@ from idaes.core import (
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_1D import (
     OsmoticallyAssistedReverseOsmosis1D,
 )
-from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
+from watertap.unit_models.reverse_osmosis_base import TransportModel
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.core.solvers import get_solver
@@ -133,47 +133,51 @@ class TestOsmoticallyAssistedReverse1smosis(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         ] = 0.0202
-
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties_interface[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-            / m.fs.unit.feed_side.properties[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = value(
-            m.fs.unit.feed_side.cp_modulus[
-                0, m.fs.unit.difference_elements.first(), "NaCl"
-            ]
-        )
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-            / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = value(m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"])
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-            / m.fs.unit.permeate_side.properties[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = value(
-            m.fs.unit.permeate_side.cp_modulus[
-                0, m.fs.unit.difference_elements.first(), "NaCl"
-            ]
-        )
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[0, 1.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-            / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        ] = value(m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"])
         self.unit_solutions[m.fs.unit.feed_side.deltaP_stage[0]] = 0
         self.unit_solutions[m.fs.unit.permeate_side.deltaP_stage[0]] = 0
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 4": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, 1.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"],
+            },
+        }
 
         return m
 
@@ -278,34 +282,51 @@ class TestOsmoticallyAssistedReverseOsmosis_SKK(UnitTestHarness):
                 0, m.fs.unit.difference_elements.first(), "NaCl"
             ]
         )
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-            / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = value(m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"])
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-            / m.fs.unit.permeate_side.properties[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = value(
-            m.fs.unit.permeate_side.cp_modulus[
-                0, m.fs.unit.difference_elements.first(), "NaCl"
-            ]
-        )
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[0, 1.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-            / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        ] = value(m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"])
         self.unit_solutions[m.fs.unit.feed_side.deltaP_stage[0]] = 0
         self.unit_solutions[m.fs.unit.permeate_side.deltaP_stage[0]] = 0
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 4": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, 1.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"],
+            },
+        }
 
         return m
 
@@ -441,47 +462,51 @@ class TestOsmoticallyAssistedReverseOsmosis_SKK_CP_calculation_with_kf_calculati
                 0, x_interface_in
             ].conc_mass_phase_comp["Liq", "NaCl"]
         ] = 27.392
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties_interface[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-            / m.fs.unit.feed_side.properties[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-            - m.fs.unit.feed_side.cp_modulus[
-                0, m.fs.unit.difference_elements.first(), "NaCl"
-            ]
-        ] = 0
-
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-            / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
-            - m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]
-        ] = 0
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-            / m.fs.unit.permeate_side.properties[
-                0, m.fs.unit.difference_elements.first()
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-            - m.fs.unit.permeate_side.cp_modulus[
-                0, m.fs.unit.difference_elements.first(), "NaCl"
-            ]
-        ] = 0
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[0, 1.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-            / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-            - m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"]
-        ] = 0
         self.unit_solutions[m.fs.unit.feed_side.deltaP_stage[0]] = -197270.178
         self.unit_solutions[m.fs.unit.permeate_side.deltaP_stage[0]] = -109664.455
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 4": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, 1.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"],
+            },
+        }
 
         return m
 
@@ -624,6 +649,49 @@ class TestOsmoticallyAssistedReverseOsmosis_SKK_CP_calculation_with_kf_fixed(
         self.unit_solutions[m.fs.unit.permeate_side.cp_modulus[0, 0, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.permeate_side.cp_modulus[0, 1, "NaCl"]] = 0.9906
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 4": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, 1.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"],
+            },
+        }
+
         return m
 
 
@@ -746,6 +814,49 @@ class TestOsmoticallyAssistedReverseOsmosis_CP_calculation_with_kf_calculation(
                 0, x_interface_in
             ].conc_mass_phase_comp["Liq", "NaCl"]
         ] = 27.905
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 4": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, 1.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"],
+            },
+        }
 
         return m
 
@@ -876,6 +987,49 @@ class TestOsmoticallyAssistedReverseOsmosis_Pdrop_fixed_per_unit_length(
             ].conc_mass_phase_comp["Liq", "NaCl"]
         ] = 27.153
 
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 4": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, 1.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"],
+            },
+        }
+
         return m
 
 
@@ -1000,144 +1154,48 @@ class TestOsmoticallyAssistedReverseOsmosis_Pdrop_calculation(UnitTestHarness):
             ].conc_mass_phase_comp["Liq", "NaCl"]
         ] = 27.618
 
-        return m
-
-
-def build_Pdrop_spiral_wound_calculation():
-    """Testing 1D-OARO with PressureChangeType.calculated option."""
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.properties = props.NaClParameterBlock()
-
-    m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
-        property_package=m.fs.properties,
-        has_pressure_change=True,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        pressure_change_type=PressureChangeType.calculated,
-        module_type=ModuleType.spiral_wound,
-    )
-    # fully specify system
-    feed_flow_mass = 5 / 18
-    feed_mass_frac_NaCl = 0.075
-    feed_pressure = 65e5
-    feed_temperature = 273.15 + 25
-    membrane_area = 70
-    length = 35
-    A = 1e-12
-    B = 7.7e-8
-
-    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-    m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-        feed_flow_mass * feed_mass_frac_NaCl
-    )
-    m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-        feed_flow_mass * feed_mass_frac_H2O
-    )
-    m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-    m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
-
-    permeate_flow_mass = 0.33 * feed_flow_mass
-    permeate_mass_frac_NaCl = 0.1
-    permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
-    m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-        permeate_flow_mass * permeate_mass_frac_H2O
-    )
-    m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-        permeate_flow_mass * permeate_mass_frac_NaCl
-    )
-    m.fs.unit.permeate_inlet.pressure[0].fix(5e5)
-    m.fs.unit.permeate_inlet.temperature[0].fix(feed_temperature)
-
-    m.fs.unit.area.fix(membrane_area)
-    m.fs.unit.length.fix(length)
-    m.fs.unit.A_comp.fix(A)
-    m.fs.unit.B_comp.fix(B)
-    m.fs.unit.structural_parameter.fix(1200e-6)
-
-    m.fs.unit.permeate_side.channel_height.fix(0.002)
-    m.fs.unit.permeate_side.spacer_porosity.fix(0.97)
-    m.fs.unit.feed_side.channel_height.fix(0.002)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.97)
-
-    # scaling
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
-    )
-    calculate_scaling_factors(m)
-
-    return m
-
-
-class TestOsmoticallyAssistedReverseOsmosis_Pdrop_spiral_wound_calculation(
-    UnitTestHarness
-):
-    def configure(self):
-        m = build_Pdrop_spiral_wound_calculation()
-
-        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 0.0]] = 434.64
-        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 0.0]] = 0.1361
-        self.unit_solutions[m.fs.unit.feed_side.N_Re[0, 1.0]] = 317.794
-        self.unit_solutions[m.fs.unit.feed_side.velocity[0, 1.0]] = 0.1021
-        self.unit_solutions[m.fs.unit.permeate_side.N_Re[0, 0.0]] = 254.272
-        self.unit_solutions[m.fs.unit.permeate_side.velocity[0, 0.0]] = 0.07824
-        self.unit_solutions[m.fs.unit.permeate_side.N_Re[0, 1.0]] = 136.979
-        self.unit_solutions[m.fs.unit.permeate_side.velocity[0, 1.0]] = 0.04413
-
-        self.unit_solutions[m.fs.unit.feed_side.deltaP_stage[0]] = -77476.0524412
-        self.unit_solutions[m.fs.unit.permeate_side.deltaP_stage[0]] = -24177.6101955
-
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]] = (
-            9.419628912e-04
-        )
-        self.unit_solutions[m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]] = (
-            4.38572890e-06
-        )
-        self.unit_solutions[
-            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.1910
-        self.unit_solutions[
-            m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
-        ] = 0.02052
-
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 78.878
-
-        x_interface_in = m.fs.unit.length_domain.at(2)
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties_interface[
-                0, x_interface_in
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 85.616
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 103.670
-        self.unit_solutions[
-            m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        ] = 108.735
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 107.06
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[0, 1].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        ] = 53.136
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 62.415
-        self.unit_solutions[
-            m.fs.unit.permeate_side.properties_interface[
-                0, x_interface_in
-            ].conc_mass_phase_comp["Liq", "NaCl"]
-        ] = 28.036
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[
+                    0, m.fs.unit.difference_elements.first()
+                ].conc_mass_phase_comp["Liq", "NaCl"],
+                "out": m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ],
+            },
+            "Check 4": {
+                "in": m.fs.unit.permeate_side.properties_interface[
+                    0, 1.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"],
+            },
+        }
 
         return m
 

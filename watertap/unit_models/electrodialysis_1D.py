@@ -540,7 +540,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             initialize=0.7,
             bounds=(0.01, 1),
             units=pyunits.dimensionless,
-            doc='The prosity of spacer in the ED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
+            doc='The porosity of spacer in the ED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
         )
 
         # Material and Operational properties
@@ -2863,17 +2863,17 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         return {
             "vars": {
-                "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[
+                "Total electrical power consumption": self.diluate.power_electrical_x[
                     time_point, self.diluate.length_domain.last()
                 ],
-                "Specific electrical power consumption, ED stack (kW*h/m**3)": self.specific_power_electrical[
+                "Specific electrical power consumption, ED stack": self.specific_power_electrical[
                     time_point
                 ],
                 "Water recovery by mass": self.recovery_mass_H2O[time_point],
-                "Channel inlet velocity, diluate (m/s)": self.velocity_diluate[
+                "Channel inlet velocity, diluate": self.velocity_diluate[
                     time_point, self.diluate.length_domain.first()
                 ],
-                "Channel inlet velocity, concentrate (m/s)": self.velocity_concentrate[
+                "Channel inlet velocity, concentrate": self.velocity_concentrate[
                     time_point, self.diluate.length_domain.first()
                 ],
             },

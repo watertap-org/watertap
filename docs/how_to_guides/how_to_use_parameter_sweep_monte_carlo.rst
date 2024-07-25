@@ -28,13 +28,13 @@ As before, we begin by importing or explicitly programming any functions relatin
 
     # replace this with your own flowsheet module, e.g.
     # import my_flowsheet_module as mfm
-    import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
+    import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
 Once this is done, we import the parameter sweep tool and two different random sampling classes
 
 .. testcode::
 
-    from watertap.tools.parameter_sweep import parameter_sweep, UniformSample, NormalSample
+    from parameter_sweep import parameter_sweep, UniformSample, NormalSample
 
 The parameter sweep tool currently offers 6 classes that can be broadly categorized under the following 3 categroies:
 
@@ -132,4 +132,4 @@ which will parallelize the requested parameter sweep between 4 computational uni
 Module Documentation
 --------------------
 
-* :mod:`watertap.tools.parameter_sweep`
+* :mod:`parameter_sweep`
