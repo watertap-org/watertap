@@ -812,7 +812,7 @@ class NaClStateBlockData(StateBlockData):
     # TODO: make property package compatible with dynamics
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
-        return self.material_density_expression(p, j)
+        return self.material_density_expression[p, j]
 
     def get_energy_density_terms(self, p):
         """Create enthalpy density terms."""
