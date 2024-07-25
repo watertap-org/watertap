@@ -1001,5 +1001,3 @@ def test_RO_dynamic():
         pressure_change_type=PressureChangeType.calculated,
         module_type=ModuleType.spiral_wound,
     )
-
-
