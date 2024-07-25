@@ -996,9 +996,10 @@ def test_RO_dynamic():
         dynamic=True,
         has_holdup=True,
         property_package=m.fs.properties,
-        has_pressure_change=False,
+        has_pressure_change=True,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        pressure_change_type=PressureChangeType.calculated,
         module_type=ModuleType.spiral_wound,
     )
     m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.035)  # mass flow rate of NaCl (kg/s)
