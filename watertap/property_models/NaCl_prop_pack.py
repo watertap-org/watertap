@@ -498,21 +498,8 @@ class NaClStateBlockData(StateBlockData):
             doc="State pressure",
         )
 
-        # def material_density_expression(self, p, j):
-        #     if j == "H2O":
-        #         return self.params.dens_mass_solvent
-        #     else:
-        #         return self.conc_mass_phase_comp[p, j]
-
-        # self.material_density_expression = Expression(
-        #     self.phase_list,
-        #     self.component_list,
-        #     rule=material_density_expression,
-        #     doc="Material density terms",
-        # )
-
     # -----------------------------------------------------------------------------
-    # Property Methods
+    # On-demand Property Methods
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
