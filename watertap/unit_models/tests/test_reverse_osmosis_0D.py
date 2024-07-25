@@ -1002,5 +1002,4 @@ def test_RO_dynamic():
         module_type=ModuleType.spiral_wound,
     )
 
-    m.fs.unit.feed_side.material_holdup.display()
-    assert False
+
