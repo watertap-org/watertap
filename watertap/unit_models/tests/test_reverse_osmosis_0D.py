@@ -982,14 +982,12 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         return m
-    
+
+
 @pytest.mark.unit
 def test_RO_dynamic():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=True, 
-                          time_set=[0, 1],
-                          time_units=pyunits.minute
-                          )
+    m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.minute)
 
     m.fs.properties = props.NaClParameterBlock()
 
