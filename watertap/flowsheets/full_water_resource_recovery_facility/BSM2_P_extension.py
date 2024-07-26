@@ -96,6 +96,7 @@ _log = idaeslog.getLogger(__name__)
 def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
+    set_scaling(m, bio_P=bio_P)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -148,7 +149,7 @@ def main(bio_P=False):
     return m, results
 
 
-def build(bio_P=True):
+def build(bio_P=False):
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -521,16 +522,26 @@ def set_operating_conditions(m):
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
-    def scale_variables(m):
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-            if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-2)
-            if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
-            if "conc_mass_comp" in var.name:
-                # iscale.set_scaling_factor(var, 1e2)
+
+def set_scaling(m, bio_P=False):
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
+        if "temperature" in var.name:
+            iscale.set_scaling_factor(var, 1e-2)
+        if "pressure" in var.name:
+            iscale.set_scaling_factor(var, 1e-4)
+        if "conc_mass_comp" in var.name:
+            # iscale.set_scaling_factor(var, 1e2)
+            if bio_P:
+                iscale.set_scaling_factor(var, 1e2)
+                # if 6e-2 < var.value < 10:
+                #     sf = 1
+                #     iscale.set_scaling_factor(var, sf)
+                # else:
+                #     sf = 1e2
+                #     iscale.set_scaling_factor(var, sf)
+            else:
                 if 1e-2 < var.value < 1:
                     sf = 1
                     iscale.set_scaling_factor(var, sf)
@@ -550,11 +561,10 @@ def set_operating_conditions(m):
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
     # Apply scaling
-    scale_variables(m)
     iscale.calculate_scaling_factors(m.fs)
 
 
-def initialize_system(m, bio_P=True, solver=None):
+def initialize_system(m, bio_P=False):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
@@ -736,7 +746,7 @@ def add_costing(m):
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
             iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
-    iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
+    # iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
 
     iscale.calculate_scaling_factors(m.fs)
 
