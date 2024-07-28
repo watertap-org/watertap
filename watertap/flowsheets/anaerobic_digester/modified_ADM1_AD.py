@@ -196,43 +196,40 @@ def set_operating_conditions(m):
     m.fs.AD.inlet.temperature.fix(308.15 * pyo.units.K)
     m.fs.AD.inlet.pressure.fix(1 * pyo.units.atm)
 
-    # m.fs.AD.inlet.conc_mass_comp[0, "S_A"].fix(
-    #     0.0030000 * pyo.units.kg / pyo.units.m**3
-    # )
     m.fs.AD.inlet.conc_mass_comp[0, "S_I"].fix(0.057450 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "S_K"].fix(1.4070 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "S_Mg"].fix(1.0553 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "S_IC"].fix(1.1566 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "X_I"].fix(14.181 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_PAO"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_PHA"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_PP"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_PAO"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_PHA"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_PP"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
 
     m.fs.AD.inlet.conc_mass_comp[0, "S_su"].fix(0.10191 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "S_aa"].fix(
         0.044290 * pyo.units.kg / pyo.units.m**3
     )
-    m.fs.AD.inlet.conc_mass_comp[0, "S_fa"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "S_va"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "S_bu"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "S_pro"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "S_fa"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "S_va"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "S_bu"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "S_pro"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "S_ac"].fix(
         0.091810 * pyo.units.kg / pyo.units.m**3
     )
-    m.fs.AD.inlet.conc_mass_comp[0, "S_h2"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "S_h2"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "S_IN"].fix(1.7106 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "S_IP"].fix(4.5311 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "X_ch"].fix(10.296 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "X_pr"].fix(10.388 * pyo.units.kg / pyo.units.m**3)
     m.fs.AD.inlet.conc_mass_comp[0, "X_li"].fix(13.346 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_su"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_aa"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_fa"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_c4"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_pro"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_ac"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
-    m.fs.AD.inlet.conc_mass_comp[0, "X_h2"].fix(1e-10 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_su"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_aa"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_fa"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_c4"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_pro"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_ac"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
+    m.fs.AD.inlet.conc_mass_comp[0, "X_h2"].fix(1e-9 * pyo.units.kg / pyo.units.m**3)
 
     # AD
     m.fs.AD.volume_liquid.fix(3400)
@@ -247,8 +244,19 @@ def set_operating_conditions(m):
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            # if "conc_mass_comp" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
+            if "conc_mass_comp" in var.name:
+                if 1 < var.value < 1e1:
+                    sf = 1e0
+                    iscale.set_scaling_factor(var, sf)
+                elif 1e-2 < var.value < 1:
+                    sf = 1e1
+                    iscale.set_scaling_factor(var, sf)
+                # elif var.value <= 1e-9:
+                #     sf = 1e9
+                #     iscale.set_scaling_factor(var, sf)
+                else:
+                    sf = 1e2
+                    iscale.set_scaling_factor(var, sf)
 
     # Apply scaling
     scale_variables(m)

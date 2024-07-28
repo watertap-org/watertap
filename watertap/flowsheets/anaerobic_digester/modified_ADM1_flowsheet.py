@@ -110,23 +110,12 @@ def main(bio_P=False):
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
-    # print("----------------   Re-scaling V1  ----------------")
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # for x in badly_scaled_var_list:
-    #     if 1 < x[0].value < 10:
-    #         sf = 1
-    #     else:
-    #         power = round(pyo.log10(abs(x[0].value)))
-    #         sf = 1 / 10**power
-    #
-    #     iscale.set_scaling_factor(x[0], sf)
-
     initialize_system(m)
 
-    dt = DiagnosticsToolbox(m)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
-    dt.display_potential_evaluation_errors()
+    # dt = DiagnosticsToolbox(m)
+    # print("---Structural Issues---")
+    # dt.report_structural_issues()
+    # dt.display_potential_evaluation_errors()
 
     # print("----------------   Degen Hunter  ----------------")
     # # Use of Degeneracy Hunter for troubleshooting model.
@@ -145,8 +134,8 @@ def main(bio_P=False):
         fail_flag=True,
     )
 
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
+    # print("---Numerical Issues---")
+    # dt.report_numerical_issues()
     # dt.display_variables_at_or_outside_bounds()
     # dt.display_variables_with_extreme_jacobians()
     # dt.display_constraints_with_extreme_jacobians()
@@ -371,14 +360,20 @@ def set_operating_conditions(m, bio_P=False):
                 iscale.set_scaling_factor(var, 1e-4)
             if "conc_mass_comp" in var.name:
                 if bio_P:
-                    if 1e-2 < var.value < 1:
-                        sf = 1
+                    if var.value > 1:
+                        sf = 1e0
+                        iscale.set_scaling_factor(var, sf)
+                    elif 1e-2 < var.value < 1:
+                        sf = 1e1
                         iscale.set_scaling_factor(var, sf)
                     else:
                         sf = 1e2
                         iscale.set_scaling_factor(var, sf)
                 else:
-                    if 1e-2 < var.value < 1:
+                    if var.value > 1:
+                        sf = 1e0
+                        iscale.set_scaling_factor(var, sf)
+                    elif 1e-2 < var.value < 1:
                         sf = 1e1
                         iscale.set_scaling_factor(var, sf)
                     else:
