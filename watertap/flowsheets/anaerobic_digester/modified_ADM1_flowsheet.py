@@ -369,8 +369,21 @@ def set_operating_conditions(m, bio_P=False):
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            # if "conc_mass_comp" in var.name:
-            #     iscale.set_scaling_factor(var, 1e2)
+            if "conc_mass_comp" in var.name:
+                if bio_P:
+                    if 1e-2 < var.value < 1:
+                        sf = 1
+                        iscale.set_scaling_factor(var, sf)
+                    else:
+                        sf = 1e2
+                        iscale.set_scaling_factor(var, sf)
+                else:
+                    if 1e-2 < var.value < 1:
+                        sf = 1e1
+                        iscale.set_scaling_factor(var, sf)
+                    else:
+                        sf = 1e2
+                        iscale.set_scaling_factor(var, sf)
 
     # Apply scaling
     scale_variables(m)
