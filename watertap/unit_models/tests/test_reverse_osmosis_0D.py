@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from pyomo.environ import ConcreteModel, units as pyunits, TransformationFactory
+from pyomo.environ import ConcreteModel, units as pyunits, TransformationFactory
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
