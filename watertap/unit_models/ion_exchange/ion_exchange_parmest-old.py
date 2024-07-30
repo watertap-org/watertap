@@ -31,10 +31,6 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
     get_scaling_factor,
     constraint_scaling_transform,
-    set_variable_scaling_from_current_value,
-    badly_scaled_var_generator,
-    report_scaling_issues,
-    unset_scaling_factor,
 )
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
@@ -55,9 +51,7 @@ from watertap.unit_models.ion_exchange.util import (
     build_results_dict,
     results_dict_append,
     save_results,
-    make_results_df,
     save_output,
-    make_output_df,
     save_figs,
 )
 from watertap.core.solvers import get_solver
@@ -75,22 +69,23 @@ min_st_surrogate = PysmoSurrogate.load_from_file(
     # "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_2/trained_surrogate_models/min_st_pysmo_surr_spline.json"
 )
 throughput_surrogate = PysmoSurrogate.load_from_file(
+    # surr_dir + "/throughput_pysmo_surr_linear.json",
     "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_cphsdm/surrogates/throughput_pysmo_surr_linear.json"
 )
 mw_water = 0.018 * pyunits.kg / pyunits.mol
-
-
 class IXParmest:
     def __init__(
         self,
         curve_id=None,
         input_data=None,
-        ix_model=IonExchangeCPHSDM,
+        ix_model=IonExchangeClark,
+        build_func=None,
+        build_func_kwargs=dict(),
         regenerant="single_use",
         diff_calculation="HaydukLaudie",
         data_file=None,
         resin_data=dict(),
-        component_data=dict(),
+        compound_data=dict(),
         bv=None,
         cb=None,
         c_norm=None,
@@ -116,10 +111,7 @@ class IXParmest:
         just_plot_curve=False,
         save_directory=None,
         solver=None,
-        expr_sf=None,
-        rho=1000,  # kg/m3
-        c0_mol_flow_sf=None,
-        water_mol_flow_sf=None,
+        rho=1000, #kg/m3
     ):
 
         if input_data is None and data_file is None:
@@ -149,7 +141,6 @@ class IXParmest:
         self.input_data.set_index("point_id", inplace=True)
         self.filtered_data = deepcopy(self.input_data)
         self.filtered_data.sort_values("bv", inplace=True)
-        # self.filtered_data.dropna(inplace=True)
         self.ix_model = ix_model
         self.regenerant = regenerant
         self.fix_vars_dict = fix_vars_dict
@@ -161,15 +152,12 @@ class IXParmest:
         self.rho = rho * pyunits.kg / pyunits.m**3
 
         self.resin_data = resin_data
-        self.component_data = component_data
+        self.compound_data = compound_data
         self.parmest_kwargs = parmest_kwargs
         self.just_plot_curve = just_plot_curve
         self.use_all_data = use_all_data
         self.use_this_data = use_this_data
         self.diff_calculation = diff_calculation
-        self.c0_mol_flow_sf = c0_mol_flow_sf
-        self.water_mol_flow_sf = water_mol_flow_sf
-
         if solver is None:
             self.solver = get_solver()
         else:
@@ -209,7 +197,6 @@ class IXParmest:
         self.c0_min_thresh = c0_min_thresh
         self.c0_max_thresh = c0_max_thresh
         self.c_next_thresh = c_next_thresh
-        self.expr_sf = expr_sf
 
         if thetas is None:
             if ix_model is IonExchangeClark:
@@ -285,7 +272,6 @@ class IXParmest:
             return
 
         self.get_model_config()
-        # return
 
         self.rebuild()  # initial build of model
         # self.m0 = self.m.clone()  # intact initial build of model
@@ -318,7 +304,7 @@ class IXParmest:
         #         self.save_figs(overwrite=overwrite)
         #     self.save_output(overwrite=overwrite)
         #     self.save_results(overwrite=overwrite)
-
+    
     def activate_surrogate(self, m=None):
 
         if m is None:
@@ -326,7 +312,6 @@ class IXParmest:
         ix = m.fs.ix
         ix.eq_min_number_st_cps.deactivate()
         ix.eq_throughput.deactivate()
-
 
         m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
         m.fs.min_st_surrogate.build_model(
@@ -342,64 +327,60 @@ class IXParmest:
             # input_vars=[ix.freundlich_ninv, ix.Bi, ix.c_norm],
             output_vars=[ix.throughput],
         )
-        ix.N_Bi.setlb(0)
+
+
+    def ix_cphsdm_init(self, m=None):
+
+        if m is None:
+            m = self.m
+        assert self.ix_model is IonExchangeCPHSDM
+        self.activate_surrogate(m=m)
+
+        # return m 
+        # try:
+        self.solve_it(m=m)
+        print(f"termination with surrogates {self.tc}")
+        # except:
+        print_infeasible_constraints(m)
+
+
 
     def rebuild(self):
         self.m0 = self.build_init()
+
         self.m = self.m0.clone()
+        # self.m.fs.ix.initialize()
+
+        # self.m = self.build_func(**self.build_func_kwargs)
+        # self.ix = self._get_ix_blk()
         self._set_bounds()
-        print("set_bounds")
-        # self.m.fs.ix.N_Bi.display()
+        # self._fix_initial_guess()
         self._calc_from_constr()
         self.scale_it()
-        print("scale_it")
-        # self.m.fs.ix.N_Bi.display()
-        self.m.fs.ix.initialize()
-        print("initialize")
-        # self.m.fs.ix.N_Bi.display()
-        self.activate_surrogate()
-        print("activate_surrogate")
-        # self.m.fs.ix.N_Bi.display()
-        self.solve_it()
-        print(f"initial standard build termination {self.tc}")
-        self.build_design()
-        print("build_design")
-        # self.m.fs.ix.N_Bi.display()
-        self.solve_it()
-        print(f"initial design build termination {self.tc}")
-        print(f"dof for design build = {degrees_of_freedom(self.m)}")
+        # print(f"dof = {degrees_of_freedom(self.m)}")
+        # # assert degrees_of_freedom(self.m) == 0
+        # try:
+        #     self.ix.initialize()
+        # # except InitializationError:
+        # except:
+        #     print("Initial build of model failed.\nTry a different initial guess.")
+        #     print_infeasible_constraints(self.m)
+        #     print_variables_close_to_bounds(self.m)
+        
+        # if self.ix_model is IonExchangeCPHSDM:
+        #     self.ix_cphsdm_init()
 
-    def rebuild_test_theta(self):
-        self.m0 = self.build_init()
-        self.m = self.m0.clone()
-        self._set_bounds()
-        self._calc_from_constr()
-        self.scale_it()
-        self.m.fs.ix.initialize()
-        self.activate_surrogate()
-        # self.m.fs.ix.N_Bi.display()
-        self.solve_it()
-        print(f"initial standard build termination {self.tc}")
-        self.build_design()
-        for k, v in self.theta_dict.items():
-            ixv = getattr(self.m.fs.ix, k)
-            ixv.fix(v)
-        self.solve_it()
-        print(f"initial design build termination {self.tc}")
-        print(f"dof for design build = {degrees_of_freedom(self.m)}")
 
-    def test_initial_guess(
-        self, m=None, min_cnorm_ig=0.05, max_cnorm_ig=0.95, num_pts=7
-    ):
+    def test_initial_guess(self, min_cnorm_ig=0.05, max_cnorm_ig=0.95, num_pts=20):
         """
         Loops through the kept (bv, cb) pairs and runs the model
         with those values using initial_guess_dict
         """
         print("\nTesting initial guess\n")
 
-        # ix = self.ix
-        # self._fix_initial_guess()
-        # self._calc_from_constr()
+        ix = self.ix
+        self._fix_initial_guess()
+        self._calc_from_constr()
 
         self.test_cnorms0 = np.linspace(max_cnorm_ig, min_cnorm_ig, num_pts)
         self.bv_pred_ig_fake = []  # bv_pred_ig = Predicted BVs using initial guess
@@ -413,8 +394,7 @@ class IXParmest:
         self.cb_fail_ig = []
         self.flag = "test_initial_guess_fake"
 
-        if m is None:
-            m = self.m.clone()
+        m = self.m.clone()
 
         ix = m.fs.ix
 
@@ -431,13 +411,10 @@ class IXParmest:
             self.results_dict_append(ix_blk=ix)
 
         self.flag = "test_initial_guess"
-        if m is None:
-            m = self.m.clone()
+        m = self.m.clone()
         ix = m.fs.ix
         for bv, cnorm in zip(self.keep_bvs[::-1], self.keep_cnorms[::-1]):
-            print(
-                f"testing initial guess with actual data:\n\tBV = {bv}\n\tC/C0 = {cnorm}..."
-            )
+            print(f"testing initial guess with actual data:\n\tBV = {bv}\n\tC/C0 = {cnorm}...")
             ix.bv.set_value(bv)
             ix.c_norm.fix(cnorm)
             self.solve_it(m=m)
@@ -461,47 +438,47 @@ class IXParmest:
         # TODO: insert check for columns that should all have same value
 
         self.ref = df.ref.iloc[0]
-        self.c0 = float(df.c0.iloc[0])
-        # * pyunits.kg / pyunits.m**3 # kg/m3
+        self.c0 = df.c0.iloc[0]
 
-        self.component = df.component.iloc[0]
+        self.compound = df.compound.iloc[0]
         self.flow_in = float(df.flow_in.iloc[0])  # m3/s
         self.loading_rate = float(df.loading_rate.iloc[0])  # m/s
         self.bed_depth = float(df.bed_depth.iloc[0]) * pyunits.m
-        self.bed_diameter = float(df.bed_diameter.iloc[0]) * pyunits.m
-        self.bed_volume_total = float(df.bed_volume.iloc[0]) * pyunits.m**3
-        self.bed_volume = float(df.bed_volume.iloc[0]) * pyunits.m**3
+        self.bed_diameter = float(df.bed_diam.iloc[0]) * pyunits.m
+        self.bed_volume_total = float(df.bed_vol.iloc[0]) * pyunits.m**3
         self.resin = df.resin.iloc[0]
-        self.ebct_min = float(df.ebct_min.iloc[0])  # minutes
-        self.ebct = float(df.ebct.iloc[0])
-        # self.conc_units_str = df.conc_units.iloc[0]  # conc_mass_phase_comp units
-        # numer = getattr(pyunits, self.conc_units_str.split("/")[0])
-        # denom = getattr(pyunits, self.conc_units_str.split("/")[1])
-        # self.conc_units = numer / denom
-        # self.c0_kg_m3 = pyunits.convert(self.c0 * self.conc_units, to_units=pyunits.kg / pyunits.m**3)
+        self.ebct_min = float(df.ebct.iloc[0])  # minutes
+        self.ebct = pyunits.convert(
+            self.ebct_min * pyunits.min, to_units=pyunits.second
+        )
+        self.conc_units_str = df.conc_units.iloc[0]  # conc_mass_phase_comp units
+        numer = getattr(pyunits, self.conc_units_str.split("/")[0])
+        denom = getattr(pyunits, self.conc_units_str.split("/")[1])
+        self.conc_units = numer / denom
+        self.c0_kg_m3 = pyunits.convert(self.c0 * self.conc_units, to_units=pyunits.kg / pyunits.m**3)
 
-        self.target_component = self.component_data["name"]
-        self.charge = self.component_data["charge"]
-        self.mw = self.component_data["mw_comp"] * pyunits.kg / pyunits.mol
-        if "molar_vol" in self.component_data.keys():
-            self.molar_vol = self.component_data["molar_vol"]
-        self.diffusivity = self.component_data["diffusivity"]
+        self.target_component = self.compound_data["name"]
+        self.charge = self.compound_data["charge"]
+        self.mw = self.compound_data["mw_comp"] * pyunits.kg / pyunits.mol
+        if "molar_vol" in self.compound_data.keys():
+            self.molar_vol = self.compound_data["molar_vol"]
+        self.diffusivity = self.compound_data["diffusivity"]
         self.filter_data()
 
-        if self.expr_sf is None:
-            try:
-                if ((max(self.keep_bvs) - min(self.keep_bvs)) ** 2) > 0:
-                    self.expr_sf = 1 / ((max(self.keep_bvs) - min(self.keep_bvs)) ** 2)
-            except:
-                self.expr_sf = 1e-9
+        try:
+            if ((max(self.keep_bvs) - min(self.keep_bvs)) ** 2) > 0:
+                self.expr_sf = 1 / ((max(self.keep_bvs) - min(self.keep_bvs)) ** 2)
+        except:
+            self.expr_sf = 1e-9
 
         self.resin_density = self.resin_data["density"]
         self.resin_diam = self.resin_data["diameter"]
-        self.resin_porosity = self.resin_data["porosity"]
-        # self.bed_porosity = self.resin_data["porosity"]
+        self.bed_porosity = self.resin_data["porosity"]
 
     def get_model_config(self):
 
+        mw_water = 0.018 * pyunits.kg / pyunits.mol
+        rho = 1000 * pyunits.kg / pyunits.m**3
         if self.diff_calculation != "HaydukLaudie":
             self.ion_props = {
                 "solute_list": [self.target_component],
@@ -527,22 +504,20 @@ class IXParmest:
             self.loading_rate = self.bed_depth / value(self.ebct)
 
         self.c0_mol_flow = pyunits.convert(
-            (self.c0 * pyunits.kg / pyunits.m**3)
+            (self.c0 * self.conc_units)
             / self.mw
             * (self.flow_in * pyunits.m**3 / pyunits.s),
             to_units=pyunits.mol / pyunits.s,
         )
-        if self.c0_mol_flow_sf is None:
-            self.c0_mol_flow_sf = 1 / value(self.c0_mol_flow)
+        self.c0_mol_flow_sf = 1 / value(self.c0_mol_flow)
         self.water_mol_flow = pyunits.convert(
-            ((self.flow_in * pyunits.m**3 / pyunits.s) * self.rho) / mw_water,
+            ((self.flow_in * pyunits.m**3 / pyunits.s) * rho) / mw_water,
             to_units=pyunits.mol / pyunits.s,
         )
-        if self.water_mol_flow_sf is None:
-            self.water_mol_flow_sf = 1 / value(self.water_mol_flow)
+        self.water_mol_flow_sf = 1 / self.water_mol_flow()
 
         if self.cb is None:
-            self.cb = self.keep_cbs[-1]  # kg/m3
+            self.cb = self.keep_cbs[-1] * self.conc_units
         if self.c_norm is None:
             self.c_norm = self.keep_cnorms[-1]
         if self.bv is None:
@@ -578,27 +553,21 @@ class IXParmest:
         if self.use_all_data:
             print("use all data")
             tmp = df[df.c_norm != 0].copy()
-            tmp = tmp[tmp.c_norm < 1].copy()
-            self.keep_bvs = [bv for bv in tmp.bv.to_list() if not np.isnan(bv)]
-            self.keep_cbs = [cb for cb in tmp.cb.to_list() if not np.isnan(cb)]
-            self.data_filter = "use_all_data"
+            self.keep_bvs = tmp.bv.to_list()
+            self.keep_cbs = tmp.cb.to_list()
             # assert 0 not in self.keep_cbs
         elif self.use_this_data is not None:
             print("use this data")
             tmp = df.reset_index(drop=True)
             tmp = tmp.loc[self.use_this_data].copy()
-            self.keep_bvs = [bv for bv in tmp.bv.to_list() if not np.isnan(bv)]
-            self.keep_cbs = [cb for cb in tmp.cb.to_list() if not np.isnan(cb)]
-            self.data_filter = str(self.use_this_data)
+            self.keep_bvs = tmp.bv.to_list()
+            self.keep_cbs = tmp.cb.to_list()
             # assert 0 not in self.keep_cbs
 
         else:
             print("default filtering")
-            self.data_filter = "default_filtering"
 
             for i, cb in enumerate(self.all_cbs):
-                if np.isnan(cb):
-                    continue
                 # if cb > df.c0.iloc[0]:
                 #     self.excl_cbs.append(cb)
                 #     self.excl_bvs.append(self.all_bvs[i])
@@ -637,34 +606,14 @@ class IXParmest:
                         self.excl_bvs.append(self.all_bvs[i])
         assert 0 not in self.keep_cbs
 
-        self.keep_cnorms = [cb / self.c0 for cb in self.keep_cbs if not np.isnan(cb)]
-        self.excl_cnorms = [cb / self.c0 for cb in self.excl_cbs if not np.isnan(cb)]
-
+        self.keep_cnorms = [cb / self.c0 for cb in self.keep_cbs]
+        self.excl_cnorms = [cb / self.c0 for cb in self.excl_cbs]
+    
+    
     def build_init(self):
         """
         Method used to build IX model
         """
-
-        self.flow_in_init = 2e-8
-        self.c0_init = 4e-9
-        self.mw_init = 0.5 * pyunits.kg / pyunits.mol
-
-        if self.diff_calculation != "HaydukLaudie":
-            self.ion_props_init = {
-                "solute_list": [self.target_component],
-                "diffusivity_data": {("Liq", self.target_component): self.diffusivity},
-                "mw_data": {"H2O": mw_water, self.target_component: self.mw},
-                "charge": {self.target_component: self.charge},
-            }
-        else:
-            self.ion_props_init = {
-                "solute_list": [self.target_component],
-                "mw_data": {"H2O": mw_water, self.target_component: self.mw},
-                "diffus_calculation": self.diff_calculation,
-                "charge": {self.target_component: self.charge},
-                "molar_volume_data": {("Liq", self.target_component): self.molar_vol},
-            }
-
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = MCASParameterBlock(**self.ion_props)
@@ -672,19 +621,22 @@ class IXParmest:
         # m.fs.properties.dens_mass_const = 1000
 
         self.ix_config["property_package"] = m.fs.properties
+        self.flow_in_init = 2e-8
+        self.c0_init = 4e-9
+        self.mw_init = 0.5 * pyunits.kg / pyunits.mol
 
         self.c0_mol_flow_init = pyunits.convert(
             (self.c0_init * pyunits.kg / pyunits.m**3)
-            / self.mw
+            / self.mw_init
             * (self.flow_in_init * pyunits.m**3 / pyunits.s),
             to_units=pyunits.mol / pyunits.s,
         )
-        self.c0_mol_flow_sf_init = 1 / value(self.c0_mol_flow_init)
+        self.c0_mol_flow_sf_init = 1 / value(self.c0_mol_flow)
         self.water_mol_flow_init = pyunits.convert(
-            ((self.flow_in_init * pyunits.m**3 / pyunits.s) * self.rho) / mw_water,
+            ((self.flow_in * pyunits.m**3 / pyunits.s) * self.rho) / mw_water,
             to_units=pyunits.mol / pyunits.s,
         )
-        self.water_mol_flow_sf_init = 1 / self.water_mol_flow_init()
+        self.water_mol_flow_sf_init = 1 / self.water_mol_flow()
 
         m.fs.ix = ix = self.ix_model(**self.ix_config)
 
@@ -693,40 +645,34 @@ class IXParmest:
         pf = ix.process_flow
 
         m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp",
-            # self.c0_mol_flow_sf_init,
-            1e15,
+            self.c0_mol_flow_sf_init,
             index=("Liq", self.target_component),
         )
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp",
-            1e5,
-            # self.water_mol_flow_sf_init,
-            index=("Liq", "H2O"),
-        )
-        calculate_scaling_factors(m)
-        # pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
-        # ix.regeneration_stream[0].flow_mol_phase_comp["Liq", self.target_component].fix(0)
-        pf.properties_in[0].pressure.fix(101325)
-        pf.properties_in[0].temperature.fix(298)
-        pf.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].set_value(
-            self.water_mol_flow_init
-        )
-        pf.properties_in[0].flow_mol_phase_comp["Liq", self.target_component].set_value(
-            self.c0_mol_flow_init
+            "flow_mol_phase_comp", self.water_mol_flow_sf_init, index=("Liq", "H2O")
         )
 
-        pf.properties_in[0].conc_mass_phase_comp
-        pf.properties_in[0].flow_vol_phase
-        pf.properties_in.calculate_state(
-            var_args={
-                ("flow_vol_phase", "Liq"): self.flow_in_init,
-                ("conc_mass_phase_comp", ("Liq", self.target_component)): self.c0_init,
-            },
-            hold_state=True,
+        # c_in = pyunits.convert(
+        #     self.c0 * self.conc_units, to_units=pyunits.kg / pyunits.m**3
+        # )
+        # c_b = pyunits.convert(self.cb, to_units=pyunits.kg / pyunits.m**3)
+
+        # if self.c_norm is None:
+        #     self.c_norm = value(c_b / c_in)
+
+        pf.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(self.water_mol_flow_init)
+        pf.properties_in[0].flow_mol_phase_comp["Liq", self.target_component].fix(
+            self.c0_mol_flow_init
         )
-        # report_scaling_issues(m, prefix="\n")
+        pf.properties_in[0].pressure.fix(101325)
+        pf.properties_in[0].temperature.fix(298)
+        pf.properties_in[0].flow_vol_phase[...]
+        pf.properties_out[0].flow_vol_phase[...]
 
         if self.ix_model is IonExchangeClark:
             # Parameters set to force bed_depth == col_height
@@ -740,6 +686,7 @@ class IXParmest:
             # ix.c_breakthru[self.target_component].fix(value(c_b))
             ix.c_norm[self.target_component].fix(self.c_norm)
 
+
             ix.resin_density.fix(self.resin_density)
             ix.resin_diam.fix(self.resin_diam)
             ix.bed_porosity.fix(self.bed_porosity)
@@ -750,6 +697,10 @@ class IXParmest:
             ix.bv.set_value(self.bv)
             ix.loading_rate.set_value(self.loading_rate)
             ix.bed_volume_total.set_value(self.bed_volume_total)
+
+            for k, v in self.fix_vars_dict.items():
+                ixv = getattr(ix, k)
+                ixv.fix(v)
 
             # Since we are fitting data to C/C0,
             # we don't care about the steady-state effluent concentration, so deactivate them
@@ -768,7 +719,7 @@ class IXParmest:
             ix.eq_mass_transfer_term.deactivate()
 
         if self.ix_model is IonExchangeCPHSDM:
-            ix.eq_isothermal_regen_stream.deactivate()
+
             ix.eq_Pe_bed.deactivate()
             ix.eq_Pe_p.deactivate()
             ix.eq_service_flow_rate.deactivate()
@@ -777,7 +728,7 @@ class IXParmest:
 
             ix.number_columns.fix(1)
             ix.freundlich_ninv.fix(0.9)
-            ix.freundlich_k.fix(10)
+            ix.freundlich_k.fix(1)
             ix.surf_diff_coeff.fix(8e-15)
             ix.c_norm.fix(0.5)
 
@@ -786,122 +737,100 @@ class IXParmest:
             ix.shape_correction_factor.fix(1)
             ix.resin_density_app.fix(700)
             ix.ebct.fix(140)
+            # ix.ebct.fix(10)
             ix.bed_porosity.fix(0.4)
             ix.loading_rate.fix(0.003)
             ix.resin_porosity.fix(0.4)
+            # ix.bed_volume = 1e-6
             ix.resin_diam.fix(500e-6)
-# 				
-            ix.b0.set_value(0.86989825)
-            ix.b1.set_value(0.15652075)
-            ix.b2.set_value(0.53451525)
-            ix.b3.set_value(0.00182175)
-            ix.b4.set_value(0.15304425)
-            ix.a0.set_value(6.07)
-            ix.a1.set_value(21.31)
-            ix.add_ss_approximation()
-            self.deactivate_ss_approximation(m=m)
-# 6.07E+00	2.13E+01
+            # ix.loading_rate.fix(0.001)
+            # ix.bed_depth.fix(0.001)
+
             # ix.process_flow.mass_transfer_term[(0.0, "Liq", self.target_component)].fix(1e-15)
-        for k, v in self.fix_vars_dict.items():
-            print(f"\nfixing {k} to {v} for design...")
-            ixv = getattr(ix, k)
-            ixv.fix(v)
+        pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
+
+
         return m
-
-    def build_design(self, m=None):
-
-        if m is None:
-            m = self.m
-
-        self.ix = ix = m.fs.ix
-        pf = ix.process_flow
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp",
-        #     self.c0_mol_flow_sf,
-        #     # 1e15,
-        #     index=("Liq", self.target_component),
-        # )
-
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp",
-        #     # 1e5,
-        #     self.water_mol_flow_sf,
-        #     index=("Liq", "H2O"),
-        # )
-        pf.properties_in[0].flow_mol_phase_comp["Liq", self.target_component].unfix()
-        pf.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
-
-        pf.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].set_value(
-            self.water_mol_flow
-        )
-        pf.properties_in[0].flow_mol_phase_comp["Liq", self.target_component].set_value(
-            self.c0_mol_flow
-        )
-        set_scaling_factor(
-            pf.properties_in[0].flow_mol_phase_comp["Liq", self.target_component],
-            self.c0_mol_flow_sf,
-        )
-        set_scaling_factor(
-            pf.properties_in[0].flow_mol_phase_comp["Liq", "H2O"],
-            self.water_mol_flow_sf,
-        )
-        pf.properties_in.calculate_state(
-            var_args={
-                ("flow_vol_phase", "Liq"): self.flow_in,
-                ("conc_mass_phase_comp", ("Liq", self.target_component)): self.c0,
-            },
-            hold_state=True,
-        )
-
-        ix.loading_rate.fix(self.loading_rate)
-        ix.ebct.fix(self.ebct)
-        ix.resin_porosity.fix(self.resin_porosity)
-        ix.resin_diam.fix(self.resin_diam)
-        ix.resin_density_app.fix(self.resin_density)
-
-        self._fix_initial_guess(m=m)
-        self._calc_from_constr(m=m)
-
-        print(f"dof for design build = {degrees_of_freedom(m)}")
-
-        for k, v in self.fix_vars_dict.items():
-            print(f"\nfixing {k} to {v} for design...")
-            ixv = getattr(ix, k)
-            ixv.fix(v)
 
     def build_parmest(self):
+            pass
+        
 
-        self.m_pe = m = self.build_init()
-        ix = m.fs.ix
-        self._set_bounds(m=self.m_pe)
-        self._calc_from_constr(m=self.m_pe)
-        self.scale_it(m=self.m_pe)
-        ix.initialize()
-        self.activate_surrogate(m=self.m_pe)
-        # self.m_pe.fs.ix.N_Bi.display()
-        self.solve_it(m=self.m_pe)
-        self.build_design(m=self.m_pe)
-        self.solve_it(m=self.m_pe)
+        # if self.ix_model is IonExchangeCPHSDM:
 
-        return m
+        #     ix.eq_Pe_bed.deactivate()
+        #     ix.eq_Pe_p.deactivate()
+        #     ix.eq_service_flow_rate.deactivate()
+        #     ix.eq_column_height.deactivate()
+        #     # ix.eq_Bi.deactivate()
+        #     ix.eq_bed_design.deactivate()
+        #     # ix.eq_surf_diff_coeff.deactivate()
 
-    def deactivate_ss_approximation(self, m=None):
-        if m is None:
-            m = self.m
-        ix = m.fs.ix
-        ix.eq_tb_traps.deactivate()
-        ix.eq_c_traps.deactivate()
-        ix.eq_traps.deactivate()
-        ix.eq_c_norm_avg.deactivate()
-        for _, v in ix.tb_traps.items():
-            v.fix()
-        for _, v in ix.c_traps.items():
-            v.fix()
-        for _, v in ix.traps.items():
-            v.fix()
-        ix.c_norm_avg.fix(0.1)
-        ix.eq_mass_transfer_term.deactivate()
-        ix.process_flow.mass_transfer_term[0, "Liq", self.target_component].fix(0)
+            
+# initial_guess_dict = dict(
+#     freundlich_k=1,
+#     freundlich_ninv=1,
+#     surf_diff_coeff=8e-15
+# )
+# fix_vars_dict = dict(
+#     bed_porosity=0.4,
+#     ebct=10,
+#     resin_density_app=700,
+
+# )
+            # ix.freundlich_ninv.fix(1)
+            # ix.number_columns.fix(1)
+
+            # ix.freundlich_ninv.fix(0.9)
+            # ix.freundlich_k.fix(1)
+            # ix.surf_diff_coeff.fix(8e-15)
+
+            # ix.shape_correction_factor.fix(1)
+            # ix.tortuosity.fix(1)
+            # ix.shape_correction_factor.fix(1)
+            # ix.resin_density_app.fix(700)
+            # ix.ebct.fix(10)
+            # ix.bed_porosity.fix(0.4)
+
+
+
+            # ix.resin_density_app.fix(self.resin_density)
+            # ix.resin_diam.fix(self.resin_diam)
+            # ix.ebct.fix(self.ebct)
+            # ix.bed_porosity.fix(0.4)
+            # ix.loading_rate.fix(self.loading_rate)
+            # ix.c_norm.fix(self.c_norm)
+            # ix.resin_porosity.fix(self.resin_data["particle_porosity"])
+            # pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
+            # ix.initialize()
+            # activate_surrogate(m)
+
+            # self.solve_it(m=m)
+
+            # print(f"initial solve: {self.tc}")
+
+            # activate_surrogate(m)
+            # self.solve_it(m=m)
+            # print(f"solve with surrogates: {self.tc}")
+            # ix.a0.set_value(3.12)
+            # ix.a1.set_value(12.8)
+            # ix.b0.set_value(0.8789)
+            # ix.b1.set_value(0.15652)
+            # ix.b2.set_value(0.5345)
+            # ix.b3.set_value(0.00182175)
+            # ix.b4.set_value(0.153044)
+
+
+
+            # ix.process_flow.mass_transfer_term[(0.0, "Liq", self.target_component)].fix(1e-15)
+        # pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
+
+        # for var, val in self.fix_vars_dict.items():
+        #     ixv = getattr(ix, var)
+        #     ixv.fix(val)
+        # return m
+    
+
 
     def scale_it(self, m=None):
         """
@@ -909,50 +838,96 @@ class IXParmest:
         """
         if m is None:
             m = self.m
-
+            # ix = self.ix
+        # else:
+        #     ix = self._get_ix_blk(m=m)
         ix = m.fs.ix
-        for c in ix.component_objects(Var):
-            unset_scaling_factor(c)
 
+
+        target_component = ix.config.target_component
+        prop_out = ix.process_flow.properties_out[0]
         set_scaling_factor(
-            ix.process_flow.properties_in[0].flow_mol_phase_comp[
-                "Liq", self.target_component
-            ],
-            self.c0_mol_flow_sf,
+            prop_out.flow_mol_phase_comp["Liq", target_component], self.c0_mol_flow_sf
         )
         set_scaling_factor(
-            ix.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"],
-            self.water_mol_flow_sf,
+            prop_out.flow_mol_phase_comp["Liq", "H2O"], self.water_mol_flow_sf
         )
-        set_scaling_factor(ix.bed_depth, 1e2)
-        set_scaling_factor(ix.bed_diameter, 1e3)
-        set_scaling_factor(ix.bed_area, 1e5)
-        set_scaling_factor(ix.bed_volume, 1e6)
-        set_scaling_factor(ix.c_eq, 1e5)
 
         calculate_scaling_factors(m)
 
+        if self.autoscale_fixed:
+            for v in self._get_comp_list(ix, skip_list=["traps"]):
+                ixv = getattr(ix, v)
+                if ixv.is_indexed():
+                    for i, vv in ixv.items():
+                        if vv.is_fixed():
+                            if value(vv) == 0:
+                                continue
+                            sf = 1 / value(vv)
+                            set_scaling_factor(vv, sf)
+                else:
+                    if ixv.is_fixed():
+                        if value(ixv) == 0:
+                            continue
+                        sf = 1 / value(ixv)
+                        set_scaling_factor(ixv, sf)
+
+        if isinstance(self.scale_from_value, list):
+            for v in self.scale_from_value:
+                # print(v)
+                ixv = getattr(ix, v)
+                if ixv.is_indexed():
+                    for i, vv in ixv.items():
+                        if vv.is_fixed():
+                            if value(vv) == 0:
+                                continue
+                            sf = 1 / value(vv)
+                            if get_scaling_factor(vv) is None:
+                                set_scaling_factor(vv, sf)
+                else:
+                    if value(ixv) == 0:
+                        continue
+                    sf = 1 / value(ixv)
+                    if get_scaling_factor(ixv) is None:
+                        set_scaling_factor(ixv, sf)
+
         if self.ix_model is IonExchangeClark:
-            constraint_scaling_transform(ix.eq_clark[self.target_component], 1e-2)
+            constraint_scaling_transform(ix.eq_clark[target_component], 1e-2)
 
         if self.ix_model is IonExchangeThomas:
-            constraint_scaling_transform(ix.eq_thomas[self.target_component], 1e-2)
+            constraint_scaling_transform(ix.eq_thomas[target_component], 1e-2)
+        
+        calculate_scaling_factors(m)
+        set_scaling_factor(ix.bed_volume, 1e4)
+        set_scaling_factor(ix.breakthrough_time, 1e-4)
+        set_scaling_factor(ix.bv, 1e-5)
+        set_scaling_factor(ix.c_eq, 1e6)
+        set_scaling_factor(ix.min_breakthrough_time, 1e-4)
+        set_scaling_factor(ix.spdfr, 1e2)
+        set_scaling_factor(ix.bed_area, 1e5)
+        set_scaling_factor(ix.solute_dist_param, 1e-4)
+        set_scaling_factor(ix.throughput, 1e-3)
+        set_scaling_factor(ix.vel_inter, 1e2)
+        set_scaling_factor(ix.t_contact, 1e2)
+        set_scaling_factor(ix.resin_density, 1 / self.resin_density)
+        set_scaling_factor(ix.c_norm, 10)
+        set_scaling_factor(ix.Bi, 0.1)
 
-        # constraint_scaling_transform(ix.eq_gnielinski[self.target_component], 1e-4)
-        # constraint_scaling_transform(
-        #     ix.eq_solute_dist_param[self.target_component], 1e-2
-        # )
-        # constraint_scaling_transform(ix.eq_minimum_breakthrough_time, 1e-4)
-        # constraint_scaling_transform(ix.eq_Bi, 1e7)
-        # constraint_scaling_transform(ix.eq_Sc[self.target_component], 1e-4)
 
-    def solve_it(self, m=None, optarg=dict(), tee=False):
+
+    def solve_it(self, m=None, solver="watertap", optarg=dict(), tee=False):
         """
         Solve the model
+        Defaults to using watertap solver
         """
 
         if m is None:
             m = self.m
+
+        # if solver != "watertap":
+        #     self.solver = SolverFactory("ipopt")
+        # else:
+        #     self.solver = get_solver()
         for k, v in optarg.items():
             self.solver.options[k] = v
         try:
@@ -960,8 +935,6 @@ class IXParmest:
             self.results = self.solver.solve(m, tee=tee)
             self.tc = self.results.solver.termination_condition
         except:
-            print_infeasible_constraints(m)
-            print_variables_close_to_bounds(m)
             self.tc = "fail"
 
     def build_parmest_experiment_list(self):
@@ -987,18 +960,9 @@ class IXParmest:
 
         print(f"\nRunning parmest...")
 
-        def SSE(model):
-            """
-            Sum of squared error between `experiment_output` model and data values
-            """
-            expr = sum(
-                (y - y_hat) ** 2 for y, y_hat in model.experiment_outputs.items()
-            )
-            return expr * self.expr_sf
-
         self.build_parmest_experiment_list()
         self.pestimator = parmest.Estimator(
-            self.experiment_list, obj_function=SSE, **self.parmest_kwargs
+            self.experiment_list, obj_function="SSE", **self.parmest_kwargs
         )
         self.obj, self.parmest_theta = self.pestimator.theta_est()
         self.theta_dict = dict()
@@ -1007,14 +971,13 @@ class IXParmest:
 
     def test_theta(
         self,
-        m=None,
         min_test_cbs=None,
         max_test_cbs=0.99,
         min_test_cnorms=0.05,
         max_test_cnorms=0.95,
         min_test_bvs=None,
         max_test_bvs=None,
-        num_pts=9,
+        num_pts=20,
     ):
         """
         Test parmest param estimation
@@ -1061,30 +1024,42 @@ class IXParmest:
         # cb_pred_theta_test = Predicted Cb using theta and regularly spaced test data
         self.cnorm_pred_theta_test = []
         self.cnorm_fail_theta_test = []
-        if m is None:
-            self.rebuild_test_theta()
-            m = self.m
-        # self.ix = ix = self._get_ix_blk(m=self.m_theta)
-        # ix = m.fs.ix
-        # ix.initialize()
-        # self.activate_surrogate(m=m)
-        # self.solve_it(m=m)
-        # self.build_design(m=m)
-        # self.solve_it(m=m)
-        # for k, v in self.theta_dict.items():
-        #     ixv = getattr(m.fs.ix, k)
-        #     ixv.fix(v)
-        # m0 = m.clone()
-        ix = m.fs.ix
 
-        # assert degrees_of_freedom(self.m_theta) == 0
+        self.rebuild()
+        self.m_theta = self.m.clone()
+        self.ix = ix = self._get_ix_blk(m=self.m_theta)
+        for k, v in self.theta_dict.items():
+            ixv = getattr(ix, k)
+            ixv.fix(v)
+
+        self._calc_from_constr(m=self.m_theta)
+        self.scale_it(m=self.m_theta)
+        # activate_surrogate(self.m_theta)
+        # self.ix_cphsdm_init(m=self.m_theta)
+
+        try:
+            ix.initialize()
+        except:
+            # print_infeasible_constraints(ix)
+            pass
+
+        assert degrees_of_freedom(self.m_theta) == 0
 
         self.flag = "test_theta_fake"
-
+        m = self.m_theta.clone()
+        ix = m.fs.ix
         for bv, cnorm in zip(self.test_bvs, self.test_cnorms):
 
             ix.c_norm[self.target_component].fix(cnorm)
             ix.bv.set_value(bv)
+
+            try:
+                self._calc_from_constr(m=m)
+                ix.initialize()
+            except:
+                # print_infeasible_constraints(m)
+                pass
+
             assert degrees_of_freedom(m) == 0
             self.solve_it(m=m)
             if self.tc != "optimal":
@@ -1102,11 +1077,7 @@ class IXParmest:
         self.cnorm_fail_theta = []
 
         self.flag = "test_theta_real"
-        # m = self.m_theta.clone()
-        # ix = m.fs.ix
-        if m is None:
-            self.rebuild_test_theta()
-            m = self.m
+        m = self.m_theta.clone()
         ix = m.fs.ix
         for bv, cnorm in zip(self.keep_bvs[::-1], self.keep_cnorms[::-1]):
             if cnorm == 0:
@@ -1114,6 +1085,13 @@ class IXParmest:
 
             ix.c_norm[self.target_component].fix(cnorm)
             ix.bv.set_value(bv)
+            self._calc_from_constr(m=m)
+            # self.scale_it(m=self.m_theta)
+            try:
+                ix.initialize()
+            except:
+                # print_infeasible_constraints(m)
+                pass
 
             assert degrees_of_freedom(m) == 0
             self.solve_it(m=m)
@@ -1126,23 +1104,6 @@ class IXParmest:
                 self.cnorm_pred_theta.append(cnorm)
             self.results_dict_append(ix_blk=ix)
 
-        self.bv_error = [
-            pred - actual
-            for (pred, actual) in zip(self.bv_pred_theta, self.keep_bv_theta)
-        ]
-        self.bv_rel_error = [
-            (pred - actual) / actual
-            for (pred, actual) in zip(self.bv_pred_theta, self.keep_bv_theta)
-        ]
-        self.bv_abs_rel_error = [abs(e) for e in self.bv_rel_error]
-        self.bv_abs_error = [abs(e) for e in self.bv_error]
-        self.mean_absolute_error = np.mean(self.bv_abs_error)
-        self.sum_squared_error = sum(
-            [
-                (pred - actual) ** 2
-                for (pred, actual) in zip(self.bv_pred_theta, self.keep_bv_theta)
-            ]
-        )
         self.corr_matrix = np.corrcoef(self.keep_bv_theta, self.bv_pred_theta)
         corr = self.corr_matrix[0, 1]
         self.R_sq = corr**2
@@ -1153,14 +1114,8 @@ class IXParmest:
     def results_dict_append(self, **kwargs):
         results_dict_append(self, **kwargs)
 
-    def make_output_df(self):
-        make_output_df(self) 
-
     def save_output(self):
         save_output(self)
-
-    def make_results_df(self):
-        make_results_df(self)
 
     def save_results(self):
         save_results(self)
@@ -1200,12 +1155,8 @@ class IXParmest:
         ix = m.fs.ix
         if self.set_bounds_dict == "all":
             for v in ix.component_objects(Var):
-                # print(v.name)
                 v.setlb(None)
                 v.setub(None)
-                # v.display()
-                # if "N_Bi" in v.name:
-                #     v.display()
         else:
             for k, v in self.set_bounds_dict.items():
                 ixv = getattr(ix, k)
@@ -1230,11 +1181,8 @@ class IXParmest:
         # else:
         #     ix = self._get_ix_blk(m=m)
         ix = m.fs.ix
-        # print("calc_from_constr")
 
         for v, c in self.calc_from_constr_dict.items():
-            # print("\t", v, c)
-
             ixv = getattr(ix, v)
             ixc = getattr(ix, c)
             if ixc.is_indexed():
@@ -1243,7 +1191,6 @@ class IXParmest:
                         calculate_variable_from_constraint(ixv[i], ic)
                     else:
                         calculate_variable_from_constraint(ixv, ic)
-
             else:
                 calculate_variable_from_constraint(ixv, ixc)
 
@@ -1269,30 +1216,49 @@ class IXExperiment(Experiment):
         self.ix_parmest_obj = ix_parmest_obj
         self.model = None
         self.thetas = self.ix_parmest_obj.thetas
+        # if self.ix_parmest_obj.ix_model is IonExchangeClark:
+        #     self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
+        # if self.ix_parmest_obj.ix_model is IonExchangeThomas:
+        #     self.thetas = ["freundlich_n", "mass_transfer_coeff", "bv_50"]
 
     def create_model(self):
-        self.model = self.ix_parmest_obj.build_parmest()
+        self.model = self.ix_parmest_obj.build_it()
 
     def finalize_model(self):
 
         model = self.model
-        cb = float(self.data_i.cb)
-        c0 = float(self.data_i.c0)
+        cb = value(
+            pyunits.convert(
+                float(self.data_i.cb) * self.ix_parmest_obj.conc_units,
+                to_units=pyunits.kg / pyunits.m**3,
+            )
+        )
+
+        c0 = value(
+            pyunits.convert(
+                float(self.data_i.c0) * self.ix_parmest_obj.conc_units,
+                to_units=pyunits.kg / pyunits.m**3,
+            )
+        )
         bv = float(self.data_i.bv)
         self.c_norm = c_norm = cb / c0
         model.fs.ix.c_norm.fix(c_norm)
         model.fs.ix.bv.set_value(bv)
+        self.ix_parmest_obj._set_bounds(m=self.model)
+        self.ix_parmest_obj._fix_initial_guess(m=self.model)
+        self.ix_parmest_obj._calc_from_constr(m=self.model)
+        # self.ix_parmest_obj.scale_it(m=self.model)
         print(f"initializing parmest model for {c_norm}...\n")
-        self.ix_parmest_obj.solve_it(m=self.model)
-        print(f"parmest build termination {self.ix_parmest_obj.tc}")
+        self.model.fs.ix.initialize()
+        self.ix_parmest_obj.ix_cphsdm_init(m=self.model)
         for k in self.ix_parmest_obj.initial_guess_dict.keys():
             ixv = getattr(self.model.fs.ix, k)
             ixv.unfix()
         print(f"\ndof = {degrees_of_freedom(self.model)}")
         # assert len(self.thetas) == degrees_of_freedom(self.model)
-        # self.ix_parmest_obj.scale_it(m=self.model)
+        self.ix_parmest_obj.scale_it(m=self.model)
 
-        # try:
+        # try: 
         #     self.model.fs.ix.initialize()
         # except:
         #     pass
@@ -1328,72 +1294,312 @@ class IXExperiment(Experiment):
 
         return m
 
+    # def estimate_bv50(self):
+    #     def linear_fit(bv, slope, b):
+    #         return slope * bv + b
 
-##### OLD SCALING ROUTINE
+    #     def linear_inv(cb, slope, b):
+    #         return (cb - b) / slope
+
+    #     if not self.ix_model is IonExchangeClark:
+    #         raise ValueError("Can only use estimate_bv50 method if using Clark model.")
+
+    #     if not hasattr(self, "bv_pred_ig"):
+    #         self.test_initial_guess()
+
+    #     self.bv50_bvs = [
+    #         bv
+    #         for bv, cnorm in zip(self.keep_bvs, self.keep_cnorms)
+    #         if cnorm >= self.cb50_min_thresh
+    #     ]
+
+    #     self.bv50_cbs = [
+    #         cnorm for cnorm in self.keep_cnorms if cnorm >= self.cb50_min_thresh
+    #     ]
+
+    #     cb_50 = 0.5
+
+    #     self.bv50_fit_params, self.bv50_fit_cov = curve_fit(
+    #         linear_fit, self.bv50_bvs, self.bv50_cbs
+    #     )
+
+    #     self.bv50_slope, self.bv50_int = [*self.bv50_fit_params]
+
+    #     self.bv50_est = linear_inv(cb_50, self.bv50_slope, self.bv50_int)
+
+    #     self.bv50_orig = self.initial_guess_dict["bv_50"]
+    #     self.bv_pred_ig_orig = deepcopy(self.bv_pred_ig)
+    #     self.cb_pred_ig_orig = deepcopy(self.cb_pred_ig)
+
+    #     self.bv50_corr_matrix = np.corrcoef(
+    #         self.bv50_bvs, [self._linear_fit(bv) for bv in self.bv50_bvs]
+    #     )
+    #     corr = self.bv50_corr_matrix[0, 1]
+    #     self.bv50_R_sq = corr**2
+    #     if self.bv50_est > 100:
+    #         self.initial_guess_dict["bv_50"] = self.bv50_est
+    #     else:
+    #         self.initial_guess_dict["bv_50"] = self.bv50_orig
+    #     self.initial_guess_theta_dict = deepcopy(self.initial_guess_dict)
+    #     # rebuild model with new initial guess
+
+    #     self.rebuild()
+    #     self.test_initial_guess()
+        # self.plot_estimate_bv50()
+# ================ OLD BUILD FUNCTION
+
+#     def build_it(self):
+#         """
+#         Method used to build IX model
+#         """
+#         m = ConcreteModel()
+#         m.fs = FlowsheetBlock(dynamic=False)
+#         m.fs.properties = MCASParameterBlock(**self.ion_props)
+
+#         self.ix_config["property_package"] = m.fs.properties
+
+#         m.fs.ix = ix = self.ix_model(**self.ix_config)
+
+#         self._set_bounds(m=m)
+
+#         pf = ix.process_flow
+
+#         m.fs.properties.set_default_scaling(
+#             "flow_mol_phase_comp", 1, index=("Liq", "H2O")
+#         )
+#         m.fs.properties.set_default_scaling(
+#             "flow_mol_phase_comp",
+#             self.c0_mol_flow_sf,
+#             index=("Liq", self.target_component),
+#         )
+
+#         m.fs.properties.set_default_scaling(
+#             "flow_mol_phase_comp", self.water_mol_flow_sf, index=("Liq", "H2O")
+#         )
+
+#         c_in = pyunits.convert(
+#             self.c0 * self.conc_units, to_units=pyunits.kg / pyunits.m**3
+#         )
+#         c_b = pyunits.convert(self.cb, to_units=pyunits.kg / pyunits.m**3)
+
+#         if self.c_norm is None:
+#             self.c_norm = value(c_b / c_in)
+
+#         pf.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(self.water_mol_flow)
+#         pf.properties_in[0].flow_mol_phase_comp["Liq", self.target_component].fix(
+#             self.c0_mol_flow
+#         )
+#         pf.properties_in[0].pressure.fix(101325)
+#         pf.properties_in[0].temperature.fix(298)
+#         pf.properties_in[0].flow_vol_phase[...]
+#         pf.properties_out[0].flow_vol_phase[...]
+
+#         if self.ix_model is IonExchangeClark:
+#             # Parameters set to force bed_depth == col_height
+#             ix.underdrain_h.set_value(0)
+#             ix.distributor_h.set_value(0)
+#             if self.regenerant != "single_use":
+#                 ix.bed_expansion_frac_A.set_value(0)
+#                 ix.bw_rate.set_value(0)
+#             ix.number_columns.fix(1)
+
+#             # ix.c_breakthru[self.target_component].fix(value(c_b))
+#             ix.c_norm[self.target_component].fix(self.c_norm)
 
 
-# set_scaling_factor(
-#     prop_out.flow_mol_phase_comp["Liq", target_component], self.c0_mol_flow_sf
+#             ix.resin_density.fix(self.resin_density)
+#             ix.resin_diam.fix(self.resin_diam)
+#             ix.bed_porosity.fix(self.bed_porosity)
+#             ix.bed_depth.fix(self.bed_depth)
+#             ix.bed_diameter.fix(self.bed_diameter)
+
+#             # since we want to predict BV, we use .set_value() rather than .fix()
+#             ix.bv.set_value(self.bv)
+#             ix.loading_rate.set_value(self.loading_rate)
+#             ix.bed_volume_total.set_value(self.bed_volume_total)
+
+#             for k, v in self.fix_vars_dict.items():
+#                 ixv = getattr(ix, k)
+#                 ixv.fix(v)
+
+#             # Since we are fitting data to C/C0,
+#             # we don't care about the steady-state effluent concentration, so deactivate them
+#             # if self.ix_model is IonExchangeClark:
+#             ix.eq_tb_traps.deactivate()
+#             ix.eq_c_traps.deactivate()
+#             ix.eq_traps.deactivate()
+#             ix.eq_c_norm_avg.deactivate()
+#             for _, v in ix.tb_traps.items():
+#                 v.fix()
+#             for _, v in ix.c_traps.items():
+#                 v.fix()
+#             for _, v in ix.traps.items():
+#                 v.fix()
+#             ix.c_norm_avg.fix()
+#             ix.eq_mass_transfer_term.deactivate()
+
+#         if self.ix_model is IonExchangeCPHSDM:
+
+#             ix.eq_Pe_bed.deactivate()
+#             ix.eq_Pe_p.deactivate()
+#             ix.eq_service_flow_rate.deactivate()
+#             ix.eq_column_height.deactivate()
+#             # ix.eq_Bi.deactivate()
+#             ix.eq_bed_design.deactivate()
+#             # ix.eq_surf_diff_coeff.deactivate()
+
+            
+# # initial_guess_dict = dict(
+# #     freundlich_k=1,
+# #     freundlich_ninv=1,
+# #     surf_diff_coeff=8e-15
+# # )
+# # fix_vars_dict = dict(
+# #     bed_porosity=0.4,
+# #     ebct=10,
+# #     resin_density_app=700,
+
+# # )
+#             # ix.freundlich_ninv.fix(1)
+#             ix.number_columns.fix(1)
+
+#             ix.freundlich_ninv.fix(0.9)
+#             ix.freundlich_k.fix(1)
+#             ix.surf_diff_coeff.fix(8e-15)
+
+#             ix.shape_correction_factor.fix(1)
+#             ix.tortuosity.fix(1)
+#             ix.shape_correction_factor.fix(1)
+#             ix.resin_density_app.fix(700)
+#             ix.ebct.fix(10)
+#             ix.bed_porosity.fix(0.4)
+
+
+
+#             # ix.resin_density_app.fix(self.resin_density)
+#             # ix.resin_diam.fix(self.resin_diam)
+#             # ix.ebct.fix(self.ebct)
+#             # ix.bed_porosity.fix(0.4)
+#             # ix.loading_rate.fix(self.loading_rate)
+#             # ix.c_norm.fix(self.c_norm)
+#             # ix.resin_porosity.fix(self.resin_data["particle_porosity"])
+#             # pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
+#             # ix.initialize()
+#             # activate_surrogate(m)
+
+#             # self.solve_it(m=m)
+
+#             # print(f"initial solve: {self.tc}")
+
+#             # activate_surrogate(m)
+#             # self.solve_it(m=m)
+#             # print(f"solve with surrogates: {self.tc}")
+#             # ix.a0.set_value(3.12)
+#             # ix.a1.set_value(12.8)
+#             # ix.b0.set_value(0.8789)
+#             # ix.b1.set_value(0.15652)
+#             # ix.b2.set_value(0.5345)
+#             # ix.b3.set_value(0.00182175)
+#             # ix.b4.set_value(0.153044)
+
+
+
+#             # ix.process_flow.mass_transfer_term[(0.0, "Liq", self.target_component)].fix(1e-15)
+#         pf.mass_transfer_term[0, "Liq", self.target_component].fix(0)
+
+#         for var, val in self.fix_vars_dict.items():
+#             ixv = getattr(ix, var)
+#             ixv.fix(val)
+#         return m
+
+### ============ OLD PARMEST ROUTINE
+### Deprecated for Pyomo 6.7.2
+
+# self.theta_names = [
+#     "fs.ix.mass_transfer_coeff",
+#     "fs.ix.freundlich_n",
+#     "fs.ix.bv_50",
+# ]
+# self.theta_input = dict(
+#     zip(self.theta_names, self.initial_guess_theta_dict.values())
 # )
-# set_scaling_factor(
-#     prop_out.flow_mol_phase_comp["Liq", "H2O"], self.water_mol_flow_sf
+# self.theta_values = pd.DataFrame(
+#     data=[[v for v in self.initial_guess_theta_dict.values()]],
+#     columns=self.theta_names,
+# )
+# self.df_parmest = self.filtered_data[self.filtered_data.cb.isin(self.keep_cbs)]
+
+# def parmest_regression(data):
+#     """
+#     Build function that is passed to parmest
+#     """
+
+#     cb = pyunits.convert(
+#         data.cb.to_list()[0] * self.conc_units,
+#         to_units=pyunits.kg / pyunits.m**3,
+#     )()
+#     cb_p = data.cb.to_list()[0] * self.conc_units
+#     c0_p = self.c0 * self.conc_units
+#     cx = value(cb_p / c0_p)
+#     bv = data.bv.to_list()[0]
+
+#     print(
+#         f"\nPARMEST FOR:\n\t"
+#         f"CURVE = {self.curve_id}\n\t"
+#         f"REF = {self.ref}\n\t"
+#         f"COMPOUND = {self.compound}\n\t"
+#         f"BV = {bv}\n\t"
+#         f"C0 = {c0_p}\n\t"
+#         f"CB = {cb_p}\n\t"
+#         f"CNORM = {cx}\n\t"
+#     )
+
+#     m_parmest = self.m.clone()
+#     m_parmest.fs.ix.c_norm.fix(cx)
+#     m_parmest.fs.ix.bv.set_value(bv)
+#     self._calc_from_constr(m=m_parmest)
+#     self.scale_it(m=m_parmest)
+#     try:
+#         m_parmest.fs.ix.initialize()
+#     except:
+#         pass
+#     # Stores the instantiated model that is passed to parmest for debugging outside of the class
+#     self.m_parmest = m_parmest.clone()
+#     return m_parmest
+
+# def SSE(m, data):
+#     """
+#     Objective function for parmest to minimize
+#     We want the SSE of BV observed/predicted to be small
+#     """
+#     ix = self._get_ix_blk(m=m)
+#     expr = (float(data.bv.iloc[0]) - ix.bv) ** 2
+#     return expr * self.expr_sf  # expr_sf is the scaling factor for the SSE
+
+# self.pest = parmest.Estimator(
+#     parmest_regression,
+#     self.df_parmest,
+#     self.theta_names,
+#     SSE,
+#     tee=False,
+#     diagnostic_mode=False,
+#     solver_options={"max_iter": 10000},
+#     **self.parmest_kwargs,
 # )
 
-# set_variable_scaling_from_current_value(m, descend_into=True, overwrite=True)
+# self.pest.objective_at_theta(
+#     theta_values=self.theta_values, initialize_parmest_model=True
+# )
 
-# if self.autoscale_fixed:
-#     for v in self._get_comp_list(ix, skip_list=["traps"]):
-#         ixv = getattr(ix, v)
-#         if ixv.is_indexed():
-#             for i, vv in ixv.items():
-#                 if vv.is_fixed():
-#                     if value(vv) == 0:
-#                         continue
-#                     sf = 1 / value(vv)
-#                     set_scaling_factor(vv, sf)
-#         else:
-#             if ixv.is_fixed():
-#                 if value(ixv) == 0:
-#                     continue
-#                 sf = 1 / value(ixv)
-#                 set_scaling_factor(ixv, sf)
+# self.obj, self.theta = self.pest.theta_est()
 
-# if isinstance(self.scale_from_value, list):
-#     for v in self.scale_from_value:
-#         # print(v)
-#         ixv = getattr(ix, v)
-#         if ixv.is_indexed():
-#             for i, vv in ixv.items():
-#                 if vv.is_fixed():
-#                     if value(vv) == 0:
-#                         continue
-#                     sf = 1 / value(vv)
-#                     if get_scaling_factor(vv) is None:
-#                         set_scaling_factor(vv, sf)
-#         else:
-#             if value(ixv) == 0:
-#                 continue
-#             sf = 1 / value(ixv)
-#             if get_scaling_factor(ixv) is None:
-#                 set_scaling_factor(ixv, sf)
-# if self.ix_model is IonExchangeCPHSDM:
-#     bed_area = self.bed_volume() / self.bed_depth()
-#     vel_inter = self.loading_rate / 0.4
-#     t_contact = self.ebct * 0.4
-#     calculate_scaling_factors(m)
-# set_variable_scaling_from_current_value(ix.process_flow, descend_into=True, overwrite=True)
-#     set_scaling_factor(ix.bed_volume, 1 / self.bed_volume())
-#     # set_scaling_factor(ix.breakthrough_time, 1e-6)
-#     # set_scaling_factor(ix.bv, 1e-5)
-# set_scaling_factor(ix.c_eq, 1e5)
-#     # set_scaling_factor(ix.min_breakthrough_time, 1e-6)
-#     # set_scaling_factor(ix.spdfr, 1)
-#     # set_scaling_factor(ix.bed_area, 1 / bed_area)
-#     # set_scaling_factor(ix.bed_diameter, 1 / self.bed_diameter())
-#     # set_scaling_factor(ix.solute_dist_param, 1e-4)
-#     # set_scaling_factor(ix.throughput, 1e3)
-#     # set_scaling_factor(ix.vel_inter, 1 / vel_inter)
-#     # set_scaling_factor(ix.t_contact, 1 / t_contact)
-#     # set_scaling_factor(ix.resin_density_app, 1 / self.resin_density)
-#     # set_scaling_factor(ix.c_norm, 1 / self.c_norm)
-#     # set_scaling_factor(ix.Bi, 0.1)
+# self.theta_dict = dict(zip(self.initial_guess_theta_dict.keys(), [*self.theta]))
+
+# if hasattr(self, "results_dict"):
+#     for k, v in self.theta_dict.items():
+#         self.results_dict[f"{k}_theta"] = [
+#             v for _ in range(len(self.results_dict["curve_id"]))
+#         ]
+#     self.results_dict["obj"] = [
+#         self.obj for _ in range(len(self.results_dict["curve_id"]))
+#     ]

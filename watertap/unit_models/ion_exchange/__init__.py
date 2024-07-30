@@ -5,4 +5,4 @@ from .ion_exchange_clark import IonExchangeClark
 from .ion_exchange_thomas import IonExchangeThomas
 from .ion_exchange_constant_pattern import IonExchangeCP
 from .ion_exchange_multi_component import IonExchangeMultiComp
-from .ion_exchange_parmest import IXParmest
+from .ion_exchange_parmest import IXParmest, IXExperiment

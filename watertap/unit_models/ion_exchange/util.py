@@ -122,11 +122,11 @@ def plot_theta(blk):
             label="Infeasible",
         )
 
-    # ylabe = blk.compound.swapcase() + f" [{blk.conc_units_str}]"
-    ylabe = "C/C$_0$, " + blk.compound.title()
+    # ylabe = blk.component.swapcase() + f" [{blk.conc_units_str}]"
+    ylabe = "C/C$_0$, " + blk.component.title()
     title = (
-        f"Curve {blk.curve_id}:\n"
-        + blk.compound
+        f"PARMEST Results\nCurve {blk.curve_id}:\n"
+        + blk.component
         + ", "
         + blk.ref.replace("_", " ").title()
         + ", "
@@ -194,23 +194,23 @@ def plot_theta(blk):
     ax3.plot(blk.keep_bvs, blk.keep_bvs, linestyle=":", color="red", alpha=0.25)
     ax3.set_xlabel("Actual BV")
     ax3.set_ylabel("Predicted BV")
-    ax3.set_title(f"Curve {blk.curve_id} Parity")
+    ax3.set_title(f"PARMEST Results\nCurve {blk.curve_id} Parity")
     plt.tight_layout()
     blk.all_figs["theta_parity"] = {"fig": fig3, "ax": ax3}
 
     fig4, ax4 = plt.subplots(figsize=blk.figsize)
-    blk.bv_error = [
-        pred - actual for (pred, actual) in zip(blk.bv_pred_theta, blk.keep_bv_theta)
-    ]
-    blk.bv_rel_error = [
-        (pred - actual) / actual
-        for (pred, actual) in zip(blk.bv_pred_theta, blk.keep_bv_theta)
-    ]
+    # blk.bv_error = [
+    #     pred - actual for (pred, actual) in zip(blk.bv_pred_theta, blk.keep_bv_theta)
+    # ]
+    # blk.bv_rel_error = [
+    #     (pred - actual) / actual
+    #     for (pred, actual) in zip(blk.bv_pred_theta, blk.keep_bv_theta)
+    # ]
 
     ax4.scatter(blk.keep_bv_theta, blk.bv_rel_error, color="black")
     ax4.set_xlabel("Actual BV")
     ax4.set_ylabel("Relative Error")
-    ax4.set_title(f"Curve {blk.curve_id} Relative Error")
+    ax4.set_title(f"PARMEST Results\nCurve {blk.curve_id} Relative Error")
     plt.tight_layout()
 
     blk.all_figs["theta_relerror"] = {"fig": fig4, "ax": ax4}
@@ -237,13 +237,14 @@ def build_results_dict(
     blk.curve_deets = [
         "curve_id",
         "ref",
-        "compound",
+        # "component",
         "resin",
         # "resin_type",
         # "resin_func_group",
         "target_component",
-        "conc_units",
+        # "conc_units",
         "ebct_min",
+        "ebct", 
         "flow_in",
         "charge",
         "c0",
@@ -254,6 +255,9 @@ def build_results_dict(
         "cb50_min_thresh",
         "autoscale_fixed",
         "tc",
+        # "obj",
+        "data_filter",
+        # "flag"
     ]
 
     if ix_blk is None:
@@ -264,7 +268,10 @@ def build_results_dict(
     # assert isinstance(blk, IonExchange0D)
 
     for deet in blk.curve_deets:
-        blk.results_dict[deet] = []
+        if hasattr(blk, deet):
+            blk.results_dict[deet] = []
+        else:
+            continue
 
     for c in components:
         for v in ix_blk.component_objects(c):
@@ -304,15 +311,24 @@ def build_results_dict(
     for theta in blk.thetas:
         blk.results_dict[f"{theta}_theta"] = []
 
-    blk.results_dict["obj"] = []
+    
 
     # for k in blk.theta_initial_guess.keys():
     #     blk.results_dict[f"{k}_ig_theta"] = []
 
-    # for k in blk.calc_from_constr_dict.keys():
-    #     blk.results_dict[f"{k}_cfc"] = []
+    for k in blk.calc_from_constr_dict.keys():
+        blk.results_dict[f"{k}_cfc"] = []
+    
+    if isinstance(blk.set_bounds_dict, dict): 
+        for k in blk.set_bounds_dict.keys():
+            blk.results_dict[f"{k}_lb"] = []
+            blk.results_dict[f"{k}_ub"] = []
+    else:
+        blk.results_dict["set_bounds"] = list()
 
     blk.results_dict["flag"] = []
+    blk.results_dict["obj"] = []
+    blk.results_dict["data_filter"] = []
 
 
 def results_dict_append(blk, ix_blk=None, components=[Var, Expression]):
@@ -327,21 +343,22 @@ def results_dict_append(blk, ix_blk=None, components=[Var, Expression]):
 
     for deet in blk.curve_deets:
         # print(deet)
-        blk.results_dict[deet].append(getattr(blk, deet))
+        if hasattr(blk, deet):
+            blk.results_dict[deet].append(getattr(blk, deet))
 
-    for c in components:
+    # for c in components:
         # if c is Var:
-        for v in ix_blk.component_objects(c):
-            if v.is_indexed():
-                # idx = [*v._index_set]
-                for _, b in v.items():
-                    # for i in idx:
-                    if b.name in blk.results_dict.keys():
-                        blk.results_dict[b.name].append(value(b))
-            else:
-                if v.name in blk.results_dict.keys():
-                    # print(v.name, v())
-                    blk.results_dict[v.name].append(value(v))
+    for v in ix_blk.component_objects(components):
+        if v.is_indexed():
+            # idx = [*v._index_set]
+            for _, b in v.items():
+                # for i in idx:
+                if b.name in blk.results_dict.keys():
+                    blk.results_dict[b.name].append(value(b))
+        else:
+            if v.name in blk.results_dict.keys():
+                # print(v.name, v())
+                blk.results_dict[v.name].append(value(v))
 
     for k, v in blk.initial_guess_dict.items():
         blk.results_dict[f"{k}_ig"].append(v)
@@ -349,33 +366,30 @@ def results_dict_append(blk, ix_blk=None, components=[Var, Expression]):
     # for k, v in blk.theta_initial_guess.items():
     #     blk.results_dict[f"{k}_ig_theta"].append(v)
 
-    # for k, v in blk.calc_from_constr.items():
-    #     blk.results_dict[f"{k}_cfc"].append(v)
+    for k, v in blk.calc_from_constr_dict.items():
+        blk.results_dict[f"{k}_cfc"].append(v)
+    
+    if isinstance(blk.set_bounds_dict, dict): 
+        for k, v in blk.set_bounds_dict.items():
+            blk.results_dict[f"{k}_lb"].append(v[0])
+            blk.results_dict[f"{k}_ub"].append(v[1])
+    else:
+        blk.results_dict["set_bounds"].append("all")
 
     if hasattr(blk, "theta_dict"):
         for k, v in blk.theta_dict.items():
             blk.results_dict[f"{k}_theta"].append(v)
         blk.results_dict["obj"].append(blk.obj)
 
-    blk.results_dict["flag"].append(blk.flag)
+    # blk.results_dict["flag"].append(blk.flag)
+    # blk.results_dict["data_filter"].append(blk.data_filter)
 
-
-def save_results(blk, overwrite=True, results_filename=None):
-
-    if blk.save_directory is None:
-        raise ValueError("Must provide save directory to save results.")
+def make_results_df(blk): 
 
     blk.results_dict_save = deepcopy(blk.results_dict)
 
     for old_key, new_key in blk.v_name_map.items():
         blk.results_dict_save[new_key] = blk.results_dict_save.pop(old_key)
-
-    if results_filename is None:
-        blk.results_filename = (
-            f"{blk.save_directory}/results/curve{blk.curve_id}_results.csv"
-        )
-    else:
-        blk.results_filename = results_filename
 
     try:
         blk.df_results = pd.DataFrame.from_dict(blk.results_dict_save)
@@ -388,6 +402,19 @@ def save_results(blk, overwrite=True, results_filename=None):
                 blk.results_dict_save[k] = list(None for _ in range(col_length))
         blk.df_results = pd.DataFrame.from_dict(blk.results_dict_save)
 
+def save_results(blk, overwrite=True, results_filename=None):
+
+    if blk.save_directory is None:
+        raise ValueError("Must provide save directory to save results.")
+    if not hasattr(blk, "df_results"):
+        blk.make_results_df()
+        
+    if results_filename is None:
+        blk.results_filename = (
+            f"{blk.save_directory}/results/curve{blk.curve_id}_results.csv"
+        )
+    else:
+        blk.results_filename = results_filename
     if overwrite:
         blk.df_results.to_csv(blk.results_filename, index=False)
     elif not overwrite:
@@ -419,8 +446,7 @@ def save_figs(blk, overwrite=True, extension=None):
                 append += 1
             fig.savefig(fig_file, bbox_inches="tight")
 
-
-def save_output(blk, overwrite=True):
+def make_output_df(blk):
 
     if blk.save_directory is None:
         raise ValueError("Must provide save directory to save output.")
@@ -453,57 +479,81 @@ def save_output(blk, overwrite=True):
         "cb_fail_theta",
         "bv_error",
         "bv_rel_error",
+        "bv_abs_error",
+        "bv_abs_rel_error",
     ]
 
-    data_file_base = f"{blk.save_directory}/output/curve{blk.curve_id}_output.csv"
-    theta_file_base = f"{blk.save_directory}/theta/curve{blk.curve_id}_theta.csv"
+    scalar_datas = [
+        "c0_max_thresh",
+        "c0_min_thresh", 
+        "mean_absolute_error", 
+        "sum_squared_error",
+        "expr_sf", 
+        "obj"]
+
 
     if hasattr(blk, "theta_dict"):
         tmp_dict = dict()
         tmp_dict[blk.curve_id] = blk.theta_dict
         df_theta = pd.DataFrame.from_dict(tmp_dict).T
-        df_theta["loading_rate"] = blk.loading_rate
+        # df_theta["loading_rate"] = blk.loading_rate
         df_theta["curve_id"] = blk.curve_id
-        df_theta["c0"] = pyunits.convert(
-            blk.c0 * blk.conc_units, to_units=pyunits.kg / pyunits.m**3
-        )()
-        df_theta.to_csv(theta_file_base, index=False)
+        df_theta["c0"] = blk.c0
+        blk.df_theta = df_theta
 
     tmps = []
     for data in sorted(datas):
+        # print(data)
         if hasattr(blk, data):
             tmp = pd.DataFrame.from_dict({data: getattr(blk, data)})
             tmps.append(tmp)
 
-    blk.df_data = pd.concat(tmps, ignore_index=False, axis=1)
+    blk.df_output = pd.concat(tmps, ignore_index=False, axis=1)
 
     for k, v in blk.initial_guess_dict.items():
-        blk.df_data[f"{k}_ig"] = v
+        blk.df_output[f"{k}_ig"] = v
 
-    blk.df_data["c0_max_thresh"] = blk.c0_max_thresh
-    blk.df_data["c0_min_thresh"] = blk.c0_min_thresh
-    blk.df_data["use_all_data"] = blk.use_all_data
-    blk.df_data["use_this_data"] = blk.use_this_data
+    for data in sorted(scalar_datas):
+        print(data)
+        if hasattr(blk, data):
+            blk.df_output[data] = getattr(blk, data)
+    # blk.df_output["c0_max_thresh"] = blk.c0_max_thresh
+    # blk.df_output["c0_min_thresh"] = blk.c0_min_thresh
+    # blk.df_output["use_all_data"] = blk.use_all_data
+    # blk.df_output["use_this_data"] = blk.use_this_data
 
     for deet in blk.curve_deets:
         if hasattr(blk, deet):
-            blk.df_data[deet] = getattr(blk, deet)
+            blk.df_output[deet] = getattr(blk, deet)
 
     if hasattr(blk, "theta_dict"):
         for k, v in blk.theta_dict.items():
-            blk.df_data[f"{k}_theta"] = v
-        blk.df_data["obj"] = blk.obj
+            blk.df_output[f"{k}_theta"] = v
+        blk.df_output["obj"] = blk.obj
+
+def save_output(blk, overwrite=True):
+
+    if not hasattr(blk, "df_output"):
+        blk.make_output_df()
+
+    output_file_base = f"{blk.save_directory}/output/curve{blk.curve_id}_output.csv"
+    theta_file_base = f"{blk.save_directory}/theta/curve{blk.curve_id}_theta.csv"
+
+
+
+    blk.df_theta.to_csv(theta_file_base, index=False)
 
     if overwrite:
-        blk.df_data.to_csv(data_file_base, index=False)
+        blk.df_output.to_csv(output_file_base, index=False)
     elif not overwrite:
-        x = data_file_base.split(".csv")[0]
+        x = output_file_base.split(".csv")[0]
         append = 2
-        while os.path.exists(data_file_base):
-            data_file_base = x + f"_{append}.csv"
+        while os.path.exists(output_file_base):
+            output_file_base = x + f"_{append}.csv"
             append += 1
-        blk.df_data.to_csv(data_file_base, index=False)
+        blk.df_output.to_csv(output_file_base, index=False)
 
+        
 
 def plot_initial_guess(blk):
 
@@ -569,7 +619,7 @@ def plot_initial_guess(blk):
 
     title = (
         f"Initial Guess - Curve {blk.curve_id}:\n"
-        + blk.compound.title()
+        + blk.component
         + " "
         + blk.ref.replace("_", " ").title()
         + " "
@@ -577,8 +627,8 @@ def plot_initial_guess(blk):
         + f" EBCT = {blk.ebct_min} min"
     )
     ax.set_xlabel("BV")
-    # ylabe = blk.compound.swapcase() + f" [{blk.conc_units_str}]"
-    ylabe = "C/C$_0$" + blk.compound.title()
+    # ylabe = blk.component.swapcase() + f" [{blk.conc_units_str}]"
+    ylabe = "C/C$_0$" + blk.component
     ax.set_ylabel(ylabe)
     ax.set_title(title)
     ax.set_ylim([-0.01, 1.02])
@@ -639,7 +689,7 @@ def plot_estimate_bv50(blk):
 
     title = (
         f"BV50 Estimate Results Compare - Curve {blk.curve_id}:\n"
-        + blk.compound.title()
+        + blk.component.title()
         + " "
         + blk.ref.replace("_", " ").title()
         + " "
@@ -768,7 +818,7 @@ def plot_estimate_bv50(blk):
         bbox=boxprops,
     )
     ax.set_xlabel("BV")
-    ylabe = blk.compound.title() + f" [{blk.conc_units_str}]"
+    ylabe = blk.component.title() + f" [{blk.conc_units_str}]"
     ax.set_ylabel(ylabe)
     ax.set_title(title)
     ax.set_ylim([-0.01, 1.02])
@@ -834,7 +884,7 @@ def plot_curve(blk):
 
     title = (
         f"Data Used for Curve {blk.curve_id}\n"
-        + blk.compound.title()
+        + blk.component.title()
         + ", "
         + blk.ref.replace("_", " ").title()
         + ", "
@@ -842,8 +892,8 @@ def plot_curve(blk):
         + f", EBCT = {blk.ebct_min} min"
     )
     ax.set_xlabel("BV")
-    # ylabe = blk.compound.swapcase()
-    ylabe = "C/C$_0$, " + blk.compound.title()
+    # ylabe = blk.component.swapcase()
+    ylabe = "C/C$_0$, " + blk.component.title()
     ax.set_ylabel(ylabe)
     ax.set_title(title)
     # ax.set_ylim([-0.05, 1.02])
@@ -863,12 +913,12 @@ def plot_curve(blk):
 #     ax.plot(tmp.bv, tmp.c_norm, marker=".")
 #     ax.plot([0, tmp.bv.max()], [1, 1], linestyle=":")
 #     ax.set_title(
-#         f"Curve {blk.curve_id}: {blk.ref.replace('_', ' ').title()}, {blk.compound.upper()}"
+#         f"Curve {blk.curve_id}: {blk.ref.replace('_', ' ').title()}, {blk.component.upper()}"
 #     )
 
 #     # ax.set_ylim([-0.01, 1.02])
 #     ax.set_xlabel("BV")
-#     ax.set_ylabel(f"C/C$_0$ [{blk.compound.upper()}]")
+#     ax.set_ylabel(f"C/C$_0$ [{blk.component.upper()}]")
 #     blk.idx_labels = zip(
 #         tmp.bv.to_list(), tmp.c_norm.to_list(), tmp.index.to_list()
 #     )

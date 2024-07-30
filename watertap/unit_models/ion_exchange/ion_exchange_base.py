@@ -17,10 +17,11 @@ from pyomo.environ import (
     Constraint, 
     Set,
     Var,
-    check_optimal_termination,
     Param,
     Suffix,
     log,
+    NonNegativeReals,
+    check_optimal_termination,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -495,6 +496,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.resin_diam = Var(
             initialize=7e-4,
             bounds=(5e-4, 1.5e-3),  # Perry's
+            # domain=NonNegativeReals,
             units=pyunits.m,
             doc="Resin bead diameter",
         )
@@ -502,6 +504,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.resin_density = Var(
             initialize=700,
             bounds=(500, 950),  # Perry's
+            # domain=NonNegativeReals,
             units=pyunits.kg / pyunits.m**3,
             doc="Resin bulk density",
         )
@@ -509,6 +512,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_volume = Var(
             initialize=2,
             bounds=(0, None),
+            # domain=NonNegativeReals,
             units=pyunits.m**3,
             doc="Bed volume per column",
         )
@@ -516,6 +520,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_volume_total = Var(
             initialize=2,
             bounds=(0, None),
+            # domain=NonNegativeReals,
             units=pyunits.m**3,
             doc="Total bed volume",
         )
@@ -523,6 +528,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_depth = Var(
             initialize=1,
             bounds=(0.75, 2),  # EPA-WBS guidance
+            # domain=NonNegativeReals,
             units=pyunits.m,
             doc="Bed depth",
         )
@@ -530,6 +536,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_porosity = Var(
             initialize=0.4,
             bounds=(0.3, 0.8),
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Bed porosity",
         )
@@ -537,6 +544,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.column_height = Var(
             initialize=2,
             bounds=(0, 4.26),  # EPA-WBS guidance
+            # domain=NonNegativeReals,
             units=pyunits.m,
             doc="Column height",
         )
@@ -544,6 +552,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_diameter = Var(
             initialize=1,
             bounds=(0.75, 4.26),  # EPA-WBS guidance
+            # domain=NonNegativeReals,
             units=pyunits.m,
             doc="Column diameter",
         )
@@ -551,6 +560,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.col_height_to_diam_ratio = Var(
             initialize=1,
             bounds=(0, 100),
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
@@ -558,6 +568,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.number_columns = Var(
             initialize=2,
             bounds=(1, None),
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Number of operational columns for ion exchange process",
         )
@@ -565,6 +576,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.number_columns_redundant = Var(
             initialize=1,
             bounds=(0, None),
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Number of redundant columns for ion exchange process",
         )
@@ -572,6 +584,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.breakthrough_time = Var(
             initialize=1e5,  # DOW, ~7 weeks max breakthru time
             bounds=(0, None),
+            # domain=NonNegativeReals,
             units=pyunits.s,
             doc="Breakthrough time",
         )
@@ -579,6 +592,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bv = Var(  # BV
             initialize=1e5,
             bounds=(0, None),
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Bed volumes of feed at breakthru concentration",
         )
@@ -586,6 +600,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.ebct = Var(
             initialize=520,
             bounds=(90, None),
+            # domain=NonNegativeReals,
             units=pyunits.s,
             doc="Empty bed contact time",
         )
@@ -595,6 +610,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.loading_rate = Var(
             initialize=0.0086,
             bounds=(0, 0.01),  # MWH, Perry's, EPA-WBS
+            # domain=NonNegativeReals,
             units=pyunits.m / pyunits.s,
             doc="Superficial velocity through bed",
         )
@@ -602,6 +618,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.service_flow_rate = Var(
             initialize=10,
             bounds=(1, None),
+            # domain=NonNegativeReals,
             units=pyunits.hr**-1,
             doc="Service flow rate [BV/hr]",
         )
@@ -611,18 +628,21 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.N_Re = Var(
             initialize=4.3,
             bounds=(0.001, 60),  # Perry's - bounds relevant to N_Sh regression
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Reynolds number",
         )
 
         self.N_Pe_particle = Var(
             initialize=0.1,
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Peclet particle number",
         )
 
         self.N_Pe_bed = Var(
             initialize=1000,  # Inamuddin/Luqman - N_Pe_bed > ~100 considered to be plug flow
+            # domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Peclet bed number",
         )
@@ -1011,7 +1031,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         )
 
         init_log.info("Initialization Step 1c Complete.")
-        interval_initializer(self)
+        # interval_initializer(self)
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1053,7 +1073,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.resin_diam, 1e4)
 
         if iscale.get_scaling_factor(self.resin_density) is None:
-            iscale.set_scaling_factor(self.resin_density, 10)
+            iscale.set_scaling_factor(self.resin_density, 1e-3)
 
         if iscale.get_scaling_factor(self.bed_volume_total) is None:
             iscale.set_scaling_factor(self.bed_volume_total, 0.1)
