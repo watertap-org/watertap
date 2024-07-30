@@ -81,7 +81,7 @@ setup(
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         # *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
         "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/refs/heads/dynamic_cv0d.zip",
-        # "pyomo>=6.6.1",
+        "pyomo>=6.6.1",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep>=0.1.dev5",
