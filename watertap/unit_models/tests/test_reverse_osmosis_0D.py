@@ -1036,6 +1036,7 @@ def test_RO_dynamic_instantiation():
 
     m.fs.unit.feed_side.material_accumulation[0, 'Liq', 'H2O'].fix(0.01)
     
+    m.fs.unit.feed_side.material_holdup.display()
     assert_units_consistent(m)
     
     # Set scaling factors for component mass flowrates.
