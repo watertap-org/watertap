@@ -1022,9 +1022,7 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature (K)
     m.fs.unit.feed_side.properties_in[1.0].temperature.fix(298.15)  # K
     m.fs.unit.feed_side.properties_in[2.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[0.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[2.0].temperature.fix(298.15)  # K
+
     m.fs.unit.area.fix(50)  # membrane area (m^2)
     m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability (m/Pa/s)
     m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability (m/s)
