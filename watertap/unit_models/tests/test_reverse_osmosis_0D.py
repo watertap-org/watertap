@@ -25,6 +25,7 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
     degrees_of_freedom,
+    degrees_of_freedom,
 )
 import idaes.core.util.scaling as iscale
 from watertap.core import (
@@ -1012,20 +1013,26 @@ def test_RO_dynamic_instantiation():
         pressure_change_type=PressureChangeType.calculated,
         module_type=ModuleType.spiral_wound,
     )
-    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.035)  # mass flow rate of NaCl (kg/s)
-    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.965)   # mass flow rate of water (kg/s)
-    m.fs.unit.inlet.pressure[0].fix(50e5)                              # feed pressure (Pa)
-    m.fs.unit.inlet.temperature[0].fix(298.15)                         # feed temperature (K)
-    m.fs.unit.area.fix(50)                                             # membrane area (m^2)
-    m.fs.unit.A_comp.fix(4.2e-12)                                      # membrane water permeability (m/Pa/s)
-    m.fs.unit.B_comp.fix(3.5e-8)                                       # membrane salt permeability (m/s)
-    m.fs.unit.permeate.pressure[0.0].fix(101325)                         # permeate pressure (Pa)
-    m.fs.unit.permeate.pressure[1.0].fix(101325)                         # permeate pressure (Pa)
-    m.fs.unit.permeate.pressure[2.0].fix(101325)                         # permeate pressure (Pa)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        0.035
+    )  # mass flow rate of NaCl (kg/s)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        0.965
+    )  # mass flow rate of water (kg/s)
+    m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure (Pa)
+    m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature (K)
+    m.fs.unit.area.fix(50)  # membrane area (m^2)
+    m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability (m/Pa/s)
+    m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability (m/s)
+    m.fs.unit.permeate.pressure[0.0].fix(101325)  # permeate pressure (Pa)
+    m.fs.unit.permeate.pressure[1.0].fix(101325)  # permeate pressure (Pa)
+    m.fs.unit.permeate.pressure[2.0].fix(101325)  # permeate pressure (Pa)
 
     # Set scaling factors for component mass flowrates.
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    )
 
     # Set scaling factor for membrane area.
     iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
@@ -1033,17 +1040,27 @@ def test_RO_dynamic_instantiation():
     # Calculate scaling factors for all other variables.
     iscale.calculate_scaling_factors(m)
 
-    m.fs.unit.feed_side.properties_in[0.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_in[1.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_in[2.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_interface[0.0,0.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_interface[0.0,1.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_interface[1.0,0.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_interface[1.0,1.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_interface[2.0,0.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_interface[2.0,1.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_out[0.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_out[1.0].temperature.fix(298.15) # K
-    m.fs.unit.feed_side.properties_out[2.0].temperature.fix(298.15) # K
-    print('before initialize dof = ', degrees_of_freedom(m))
-    m.fs.unit.initialize() 
+    m.fs.unit.feed_side.properties_in[0.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_in[1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_in[2.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_interface[0.0, 0.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_interface[0.0, 1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_interface[1.0, 0.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_interface[1.0, 1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_interface[2.0, 0.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_interface[2.0, 1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_out[0.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_out[1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_out[2.0].temperature.fix(298.15)  # K
+    print("before initialize dof = ", degrees_of_freedom(m))
+    m.fs.unit.initialize()
+
+
+    m.fs.unit2 = ReverseOsmosis0D(
+        dynamic=True,
+        has_holdup=True,
+        property_package=m.fs.properties,
+        has_pressure_change=False,
+        concentration_polarization_type=ConcentrationPolarizationType.none,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated.none,
+    )
