@@ -13,6 +13,7 @@
 from copy import deepcopy
 from pyomo.common.collections import ComponentSet
 from pyomo.common.config import Bool, ConfigValue
+from pyomo.common.errors import InfeasibleConstraintException
 from pyomo.environ import (
     NonNegativeReals,
     Param,
@@ -632,20 +633,28 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             )
 
         # pre-solve using interval arithmetic
-        interval_initializer(self)
-
+        try:
+            interval_initializer(self)
+        except InfeasibleConstraintException as infeascon:
+            init_log.error(f"{infeascon}")
+        self.feed_side.display()
+        self.feed_side.material_holdup_calculation.pprint(verbose=True)
+        self.feed_side.material_holdup_calculation.display()
+        self.feed_side.material_accumulation.display()
+        self.feed_side.material_accumulation_disc_eq.pprint()
+        self.feed_side.material_holdup.display()
         # Create solver
         opt = get_solver(solver, optarg)
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
+            res = opt.solve(self, tee=True)
             # occasionally it might be worth retrying a solve
             if not check_optimal_termination(res):
                 init_log.warning(
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
-                res = opt.solve(self, tee=slc.tee)
+                res = opt.solve(self, tee=True)
         init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
         # release inlet state, in case this error is caught
 
@@ -866,6 +875,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solvent():  # scaling based on solvent flux equation
+                    [print(k,v) for k,v in self.feed_side.properties.items()]
                     sf = (
                         iscale.get_scaling_factor(self.A_comp[t, j])
                         * iscale.get_scaling_factor(self.dens_solvent)
