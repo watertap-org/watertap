@@ -80,7 +80,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         def eq_flow_vol_permeate(b, t, x):
             return (
                 b.permeate_side[t, x].flow_vol_phase["Liq"]
-                == b.mixed_permeate.properties_in[t].flow_vol_phase["Liq"]
+                == b.mixed_permeate[t].flow_vol_phase["Liq"]
             )
 
         @self.Expression(self.flowsheet().config.time, doc="Over pressure ratio")
@@ -129,7 +129,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         )
         def eq_connect_mass_transfer(b, t, p, j):
             return (
-                b.mixed_permeate.properties_in[t].get_material_flow_terms(p, j)
+                b.mixed_permeate[t].get_material_flow_terms(p, j)
                 == -b.feed_side.mass_transfer_term[t, p, j]
             )
 
@@ -142,7 +142,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         )
         def eq_permeate_production(b, t, p, j):
             return (
-                b.mixed_permeate.properties_in[t].get_material_flow_terms(p, j)
+                b.mixed_permeate[t].get_material_flow_terms(p, j)
                 == b.area * b.flux_mass_phase_comp_avg[t, p, j]
             )
 
