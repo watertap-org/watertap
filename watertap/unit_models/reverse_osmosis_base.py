@@ -631,9 +631,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
-        # pre-solve using interval arithmetic    
+        # pre-solve using interval arithmetic
         interval_initializer(self)
-        
+
         # Create solver
         opt = get_solver(solver, optarg)
 

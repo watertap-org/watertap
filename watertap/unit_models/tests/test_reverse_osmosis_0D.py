@@ -990,7 +990,7 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
 
 @pytest.mark.unit
 def test_RO_dynamic_instantiation():
-    #TODO: add test to check exception for simplest RO0D with dynamics
+    # TODO: add test to check exception for simplest RO0D with dynamics
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1, 2], time_units=pyunits.s)
@@ -1008,11 +1008,13 @@ def test_RO_dynamic_instantiation():
         module_type=ModuleType.spiral_wound,
     )
 
-    time_nfe = len(m.fs.time) -1
-    TransformationFactory("dae.finite_difference").apply_to(m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD")
-   
-    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(0.035) 
-    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0.965)  
+    time_nfe = len(m.fs.time) - 1
+    TransformationFactory("dae.finite_difference").apply_to(
+        m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
+    )
+
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(0.035)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0.965)
     m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure (Pa)
     m.fs.unit.inlet.pressure[1].fix(50e5)  # feed pressure (Pa)
     m.fs.unit.inlet.pressure[2].fix(50e5)  # feed pressure (Pa)
@@ -1034,11 +1036,12 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
     m.fs.unit.length.fix(16)
 
-    m.fs.unit.feed_side.material_accumulation[0, 'Liq', 'H2O'].fix(0.01)
-    
+    m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0
+    m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
+
     m.fs.unit.feed_side.material_holdup.display()
     assert_units_consistent(m)
-    
+
     # Set scaling factors for component mass flowrates.
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
@@ -1051,7 +1054,6 @@ def test_RO_dynamic_instantiation():
     # Calculate scaling factors for all other variables.
     iscale.calculate_scaling_factors(m)
 
+    print("before initialize dof = ", degrees_of_freedom(m.fs.unit))
 
-    print('before initialize dof = ', degrees_of_freedom(m.fs.unit))
-    
-    m.fs.unit.initialize() 
+    m.fs.unit.initialize()
