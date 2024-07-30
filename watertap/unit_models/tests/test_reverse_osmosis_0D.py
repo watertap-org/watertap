@@ -24,7 +24,7 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    degrees_of_freedom
+    degrees_of_freedom,
 )
 import idaes.core.util.scaling as iscale
 from watertap.core import (
@@ -1044,8 +1044,10 @@ def test_RO_dynamic_instantiation():
     assert_units_consistent(m)
 
     # Set scaling factors for component mass flowrates.
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    )
 
     # Set scaling factor for membrane area.
     iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
