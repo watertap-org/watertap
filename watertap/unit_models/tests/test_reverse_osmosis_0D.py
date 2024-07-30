@@ -1039,7 +1039,10 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0
     m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
 
+    assert not hasattr(m.fs.unit.feed_side, "energy_accumulation")
+
     m.fs.unit.feed_side.material_holdup.display()
+
     assert_units_consistent(m)
 
     # Set scaling factors for component mass flowrates.
