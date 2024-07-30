@@ -170,11 +170,14 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 b.mixed_permeate.properties_in[t].temperature
                 == b.feed_side.properties_interface[t, x].temperature
             )
-        
+
         @self.Constraint(self.flowsheet().config.time)
         def eq_isobaric_mixed_permeate(b, t):
-            return b.mixed_permeate.properties_in[t].pressure == b.mixed_permeate.properties_out[t].pressure
-        
+            return (
+                b.mixed_permeate.properties_in[t].pressure
+                == b.mixed_permeate.properties_out[t].pressure
+            )
+
         @self.Constraint(self.flowsheet().config.time)
         def eq_mixed_perm_vol(b, t):
             return b.mixed_permeate.volume[t] == b.feed_side.volume[t]
