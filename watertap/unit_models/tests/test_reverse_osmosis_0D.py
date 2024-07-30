@@ -9,8 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel, units as pyunits
+from pyomo.environ import ConcreteModel, units as pyunits, TransformationFactory
 from pyomo.network import Port
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -43,6 +45,7 @@ import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import pytest
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -987,6 +990,8 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
 
 @pytest.mark.unit
 def test_RO_dynamic_instantiation():
+    #TODO: add test to check exception for simplest RO0D with dynamics
+
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1, 2], time_units=pyunits.s)
 
@@ -1002,14 +1007,22 @@ def test_RO_dynamic_instantiation():
         pressure_change_type=PressureChangeType.calculated,
         module_type=ModuleType.spiral_wound,
     )
-    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-        0.035
-    )  # mass flow rate of NaCl (kg/s)
-    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-        0.965
-    )  # mass flow rate of water (kg/s)
+
+    time_nfe = len(m.fs.time) -1
+    TransformationFactory("dae.finite_difference").apply_to(m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD")
+   
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(0.035) 
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0.965)  
     m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure (Pa)
+    m.fs.unit.inlet.pressure[1].fix(50e5)  # feed pressure (Pa)
+    m.fs.unit.inlet.pressure[2].fix(50e5)  # feed pressure (Pa)
+
     m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature (K)
+    m.fs.unit.feed_side.properties_in[1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_in[2.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_out[0.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_out[1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_out[2.0].temperature.fix(298.15)  # K
     m.fs.unit.area.fix(50)  # membrane area (m^2)
     m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability (m/Pa/s)
     m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability (m/s)
@@ -1017,6 +1030,14 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.permeate.pressure[1.0].fix(101325)  # permeate pressure (Pa)
     m.fs.unit.permeate.pressure[2.0].fix(101325)  # permeate pressure (Pa)
 
+    m.fs.unit.feed_side.channel_height.fix(0.001)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.97)
+    m.fs.unit.length.fix(16)
+
+    m.fs.unit.feed_side.material_accumulation[0, 'Liq', 'H2O'].fix(0.01)
+    
+    assert_units_consistent(m)
+    
     # Set scaling factors for component mass flowrates.
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
@@ -1029,17 +1050,7 @@ def test_RO_dynamic_instantiation():
     # Calculate scaling factors for all other variables.
     iscale.calculate_scaling_factors(m)
 
-    m.fs.unit.feed_side.properties_in[0.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_in[1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_in[2.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_interface[0.0, 0.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_interface[0.0, 1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_interface[1.0, 0.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_interface[1.0, 1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_interface[2.0, 0.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_interface[2.0, 1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[0.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[2.0].temperature.fix(298.15)  # K
-    print("before initialize dof = ", degrees_of_freedom(m))
-    m.fs.unit.initialize()
+
+    print('before initialize dof = ', degrees_of_freedom(m.fs.unit))
+    
+    m.fs.unit.initialize() 
