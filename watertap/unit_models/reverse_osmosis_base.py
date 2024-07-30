@@ -195,7 +195,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         # Add Ports
         self.add_inlet_port(name="inlet", block=self.feed_side)
         self.add_outlet_port(name="retentate", block=self.feed_side)
-        # self.add_outlet_port(name="permeate", block=self.mixed_permeate)
+        self.add_outlet_port(name="permeate", block=self.mixed_permeate)
 
         @self.Constraint(
             self.flowsheet().config.time,
