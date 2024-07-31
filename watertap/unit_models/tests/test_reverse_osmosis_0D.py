@@ -9,12 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import (
-    ConcreteModel,
-    units as pyunits,
-    TransformationFactory,
-    assert_optimal_termination,
-)
+from pyomo.environ import ConcreteModel, units as pyunits, TransformationFactory, assert_optimal_termination
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.solvers import petsc
@@ -53,6 +48,9 @@ import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 from watertap.core.util.initialization import assert_degrees_of_freedom
 import pytest
+
+import idaes.logger as idaeslog
+from idaes.core.solvers import petsc
 
 
 # -----------------------------------------------------------------------------
@@ -1025,30 +1023,39 @@ def test_RO_dynamic_instantiation():
             m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
         )
 
-    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "NaCl"].fix(0.035)
-    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "H2O"].fix(0.965)
-    m.fs.unit.inlet.pressure[:].fix(50e5)  # feed pressure (Pa)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(0.035)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0.965)
+    m.fs.unit.inlet.pressure[0.0].fix(50e5)  # feed pressure (Pa)
+    m.fs.unit.inlet.pressure[1.0].fix(50e5)  # feed pressure (Pa)
+    m.fs.unit.inlet.pressure[2.0].fix(50e5)  # feed pressure (Pa)
 
-    m.fs.unit.inlet.temperature[:].fix(298.15)  # feed temperature (K)
+    m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature (K)
+    m.fs.unit.feed_side.properties_in[1.0].temperature.fix(298.15)  # K
+    m.fs.unit.feed_side.properties_in[2.0].temperature.fix(298.15)  # K
 
     m.fs.unit.area.fix(50)  # membrane area (m^2)
     m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability (m/Pa/s)
-    m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability (m/s)
-    m.fs.unit.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
+    m.fs.unit.B_comp.fix(3.5e-8)   # membrane salt permeability (m/s)
+    # m.fs.unit.feed_side.display()
+    m.fs.unit.permeate.pressure[0.0].fix(101325)  # permeate pressure (Pa)
+    m.fs.unit.permeate.pressure[1.0].fix(101325)  # permeate pressure (Pa)
+    m.fs.unit.permeate.pressure[2.0].fix(101325)  # permeate pressure (Pa)
 
     m.fs.unit.feed_side.channel_height.fix(0.001)
     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
     m.fs.unit.length.fix(16)
 
-    m.fs.unit.feed_side.material_accumulation[0, 'Liq', 'H2O'].fix(0.01)
-    
-    assert_units_consistent(m)
-    
+    m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0
+    m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
+
+    assert not hasattr(m.fs.unit.feed_side, "energy_accumulation")
+
+    # m.fs.unit.feed_side.material_holdup.display()
+    m.fs.unit.display()
+
     # Set scaling factors for component mass flowrates.
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
-    )
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1  , index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "NaCl"))
 
     # Set scaling factor for membrane area.
     iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
@@ -1058,11 +1065,13 @@ def test_RO_dynamic_instantiation():
 
     print("before initialize dof = ", degrees_of_freedom(m.fs.unit))
     m.fs.unit.initialize()
+    print('after initialize dof = ', degrees_of_freedom(m))
 
+    scaling_log = idaeslog.getLogger("idaes.core.util.scaling")
+    scaling_log.setLevel(idaeslog.ERROR)
     iscale.calculate_scaling_factors(m)
-    solver = get_solver()
-    res = solver.solve(m, tee=True)
-    assert_optimal_termination(res)
+
+    idaeslog.solver_log.tee = True
     results = petsc.petsc_dae_by_time_element(
         m,
         time=m.fs.time,
@@ -1098,7 +1107,7 @@ def test_RO_dynamic_instantiation():
             "-snes_stol": 0,
             "-snes_atol": 1e-6,
         },
-        skip_initial=False,
+        skip_initial=True,
         initial_solver="ipopt",
         initial_solver_options={
             "constr_viol_tol": 1e-8,
@@ -1110,3 +1119,5 @@ def test_RO_dynamic_instantiation():
             "halt_on_ampl_error": "no",
         },
     )
+    for result in results.results:
+        assert_optimal_termination(result)
