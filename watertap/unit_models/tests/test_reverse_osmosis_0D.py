@@ -1011,6 +1011,8 @@ def test_RO_dynamic_instantiation():
         module_type=ModuleType.spiral_wound,
     )
 
+    assert_units_consistent(m)
+
     time_nfe = len(m.fs.time) - 1
     TransformationFactory("dae.finite_difference").apply_to(
         m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
@@ -1042,9 +1044,6 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
 
     assert not hasattr(m.fs.unit.feed_side, "energy_accumulation")
-
-    # m.fs.unit.feed_side.material_holdup.display()
-    m.fs.unit.display()
 
     # Set scaling factors for component mass flowrates.
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1  , index=("Liq", "H2O"))
