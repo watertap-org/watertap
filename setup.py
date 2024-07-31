@@ -21,7 +21,9 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.5.0,<2.6.0rc0",  # from PyPI
+    # "idaes-pse>=2.5.0,<2.6.0rc0",  # from PyPI
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/refs/heads/dynamic_cv0d.zip",
+
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
@@ -88,6 +90,8 @@ setup(
         "pydantic >= 2, <3",
         "numpy",
         "importlib-resources",
+        "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/refs/heads/dynamic_cv0d.zip",
+
     ],
     extras_require={
         "testing": [
