@@ -995,6 +995,7 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_RO_dynamic_instantiation():
     # TODO: add test to check exception for simplest RO0D with dynamics
 
