@@ -9,10 +9,15 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel, units as pyunits, TransformationFactory
-from pyomo.environ import ConcreteModel, units as pyunits, TransformationFactory
+from pyomo.environ import (
+    ConcreteModel,
+    units as pyunits,
+    TransformationFactory,
+    assert_optimal_termination,
+)
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
+from idaes.core.solvers import petsc
 
 from idaes.core import (
     FlowsheetBlock,
@@ -46,6 +51,7 @@ from watertap.unit_models.reverse_osmosis_base import TransportModel
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.core.util.initialization import assert_degrees_of_freedom
 import pytest
 
 
@@ -1012,27 +1018,23 @@ def test_RO_dynamic_instantiation():
         module_type=ModuleType.spiral_wound,
     )
 
-    time_nfe = len(m.fs.time) -1
-    TransformationFactory("dae.finite_difference").apply_to(m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD")
-   
-    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(0.035) 
-    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0.965)  
-    m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure (Pa)
-    m.fs.unit.inlet.pressure[1].fix(50e5)  # feed pressure (Pa)
-    m.fs.unit.inlet.pressure[2].fix(50e5)  # feed pressure (Pa)
+    # adding conditional to toggle between steady state and dynamic cases and note DOF changes
+    if m.fs.config.dynamic:
+        time_nfe = len(m.fs.time) - 1
+        TransformationFactory("dae.finite_difference").apply_to(
+            m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
+        )
 
-    m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature (K)
-    m.fs.unit.feed_side.properties_in[1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_in[2.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[0.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[1.0].temperature.fix(298.15)  # K
-    m.fs.unit.feed_side.properties_out[2.0].temperature.fix(298.15)  # K
+    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "NaCl"].fix(0.035)
+    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "H2O"].fix(0.965)
+    m.fs.unit.inlet.pressure[:].fix(50e5)  # feed pressure (Pa)
+
+    m.fs.unit.inlet.temperature[:].fix(298.15)  # feed temperature (K)
+
     m.fs.unit.area.fix(50)  # membrane area (m^2)
     m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability (m/Pa/s)
     m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability (m/s)
-    m.fs.unit.permeate.pressure[0.0].fix(101325)  # permeate pressure (Pa)
-    m.fs.unit.permeate.pressure[1.0].fix(101325)  # permeate pressure (Pa)
-    m.fs.unit.permeate.pressure[2.0].fix(101325)  # permeate pressure (Pa)
+    m.fs.unit.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
 
     m.fs.unit.feed_side.channel_height.fix(0.001)
     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
@@ -1054,7 +1056,57 @@ def test_RO_dynamic_instantiation():
     # Calculate scaling factors for all other variables.
     iscale.calculate_scaling_factors(m)
 
+    print("before initialize dof = ", degrees_of_freedom(m.fs.unit))
+    m.fs.unit.initialize()
 
-    print('before initialize dof = ', degrees_of_freedom(m.fs.unit))
-    
-    m.fs.unit.initialize() 
+    iscale.calculate_scaling_factors(m)
+    solver = get_solver()
+    res = solver.solve(m, tee=True)
+    assert_optimal_termination(res)
+    results = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.fs.time,
+        keepfiles=True,
+        symbolic_solver_labels=True,
+        ts_options={
+            "--ts_type": "beuler",
+            # "-ts_arkimex_type": "1bee",
+            "--ts_dt": 0.1,
+            "--ts_rtol": 1e-3,
+            # "--ts_adapt_clip":"0.001,3600",
+            # "--ksp_monitor":"",
+            "--ts_adapt_dt_min": 1e-3,
+            "--ts_adapt_dt_max": 3600,
+            "--snes_type": "newtontr",
+            # "--ts_max_reject": 200,
+            "--ts_monitor": "",
+            "-ts_adapt_monitor": "",
+            # "--snes_monitor":"",
+            "-snes_converged_reason": "",
+            # "-ksp_monitor_true_residual": "",
+            # "-ksp_converged_reason": "",
+            # "-snes_test_jacobian": "",
+            "snes_grid_sequence": "",
+            "-pc_type": "lu",
+            # "-mat_view": "",
+            "--ts_save_trajectory": 1,
+            "--ts_trajectory_type": "visualization",
+            "--ts_max_snes_failures": 25,
+            # "--show_cl":"",
+            "-snes_max_it": 50,
+            "-snes_rtol": 0,
+            "-snes_stol": 0,
+            "-snes_atol": 1e-6,
+        },
+        skip_initial=False,
+        initial_solver="ipopt",
+        initial_solver_options={
+            "constr_viol_tol": 1e-8,
+            "nlp_scaling_method": "user-scaling",
+            "linear_solver": "ma27",
+            "OF_ma57_automatic_scaling": "yes",
+            "max_iter": 300,
+            "tol": 1e-8,
+            "halt_on_ampl_error": "no",
+        },
+    )
