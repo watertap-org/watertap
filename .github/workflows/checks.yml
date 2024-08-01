@@ -120,7 +120,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --verbose
+        idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
     - name: Add coverage report pytest options
       if: matrix.coverage
