@@ -9,9 +9,12 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel, units as pyunits, TransformationFactory, assert_optimal_termination
+from pyomo.environ import (
+    ConcreteModel,
+    units as pyunits,
+    TransformationFactory,
+)
 from pyomo.network import Port
-from pyomo.util.check_units import assert_units_consistent
 from idaes.core.solvers import petsc
 
 from idaes.core import (
@@ -46,7 +49,6 @@ from watertap.unit_models.reverse_osmosis_base import TransportModel
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-from watertap.core.util.initialization import assert_degrees_of_freedom
 import pytest
 
 import idaes.logger as idaeslog
