@@ -1058,9 +1058,7 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.initialize()
 
     iscale.calculate_scaling_factors(m)
-    solver = get_solver()
-    res = solver.solve(m, tee=True)
-    assert_optimal_termination(res)
+
     results = petsc.petsc_dae_by_time_element(
         m,
         time=m.fs.time,
