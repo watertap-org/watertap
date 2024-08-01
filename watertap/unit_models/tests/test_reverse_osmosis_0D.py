@@ -50,7 +50,6 @@ import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import pytest
 
-import idaes.logger as idaeslog
 from idaes.core.solvers import petsc
 
 
