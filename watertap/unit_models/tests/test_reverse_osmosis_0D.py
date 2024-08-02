@@ -13,6 +13,8 @@ from pyomo.environ import (
     ConcreteModel,
     units as pyunits,
     TransformationFactory,
+    assert_optimal_termination,
+    value
 )
 from pyomo.network import Port
 from idaes.core.solvers import petsc
@@ -1037,7 +1039,7 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
     m.fs.unit.length.fix(16)
 
-    m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0
+    # m.fs.unit.feed_side.material_accumulation[:, :, :].value = 1.0
     m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
 
     assert not hasattr(m.fs.unit.feed_side, "energy_accumulation")
@@ -1056,6 +1058,7 @@ def test_RO_dynamic_instantiation():
 
     print("before initialize dof = ", degrees_of_freedom(m.fs.unit))
     m.fs.unit.initialize()
+    m.fs.unit.feed_side.material_accumulation[0, :, :].unfix()
 
     iscale.calculate_scaling_factors(m)
 
@@ -1106,3 +1109,8 @@ def test_RO_dynamic_instantiation():
             "halt_on_ampl_error": "no",
         },
     )
+    for result in results.results:
+        assert_optimal_termination(result)
+    
+    print(value(m.fs.unit.feed_side.properties_out[:].pressure))
+    assert False
