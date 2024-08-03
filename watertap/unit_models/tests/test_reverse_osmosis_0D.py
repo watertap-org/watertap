@@ -54,6 +54,9 @@ import pytest
 
 from idaes.core.solvers import petsc
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -1039,7 +1042,7 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
     m.fs.unit.length.fix(16)
 
-    # m.fs.unit.feed_side.material_accumulation[:, :, :].value = 1.0
+    m.fs.unit.feed_side.material_accumulation[:, :, :].value = 1.0
     m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
 
     assert not hasattr(m.fs.unit.feed_side, "energy_accumulation")
@@ -1112,5 +1115,40 @@ def test_RO_dynamic_instantiation():
     for result in results.results:
         assert_optimal_termination(result)
     
-    print(value(m.fs.unit.feed_side.properties_out[:].pressure))
-    assert False
+    print(value(m.fs.unit.feed_side.properties_out[:].flow_mass_phase_comp['Liq','H2O']))
+
+    traj = results.trajectory
+    time_set = m.fs.time.ordered_data()
+    tf = time_set[-1]
+    print('b4 results_dict')
+    results_dict = {
+        "time": np.array(traj.time),
+        "outlet.flow_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','NaCl'])]),
+        "outlet.flow_mass_phase_comp.H2O": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','H2O'])]),
+        "outlet.conc_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp['Liq','NaCl'])]),
+        "outlet.pressure": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].pressure)])
+    }
+    # print(np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','H2O'])]))
+    print('after results_dict')
+    for key, v in results_dict.items():
+        # Turn n by 1 arrays in into vectors
+        results_dict[key] = np.squeeze(v)
+    time = results_dict["time"]
+    print(time)
+
+    fig = plt.figure(figsize=(16,9))
+    ax = fig.subplots(4, 1, sharex = True)
+    ax[0].plot(time, results_dict["outlet.flow_mass_phase_comp.NaCl"])
+    ax[1].plot(time, results_dict["outlet.flow_mass_phase_comp.H2O"])
+    ax[2].plot(time, results_dict["outlet.conc_mass_phase_comp.NaCl"])
+    ax[3].plot(time, results_dict["outlet.pressure"])
+    ax[0].set_xlim(time[0], time[-1])
+    # ax.set_ylim((0.65, 1.45))
+    ax[3].set_xlabel("Time (s)", fontsize=14)
+    ax[0].set_ylabel("Outlet NaCl mass flow rate kg/s", fontsize=9)
+    ax[1].set_ylabel("Outlet H2O mass flow rate kg/s", fontsize=9)
+    ax[2].set_ylabel("Outlet NaCl conc (kg/m3)", fontsize=9)
+    ax[3].set_ylabel("Outlet pressure (Pa)", fontsize=9)
+    
+    # ax.set_title("SOEC Voltage", fontsize=16)
+    plt.savefig("test_plot.png", dpi=150)
