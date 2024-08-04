@@ -151,12 +151,13 @@ class MDChannelMixin:
                 doc="No temperature polarization",
             )
             def eq_no_temp_pol(b, t, x):
-                if b._skip_element(x):
-                    return Constraint.Skip
-                return (
-                    b.properties_interface[t, x].temperature
-                    == b.properties[t, x].temperature
-                )
+                if hasattr(self, "properties_interface"):
+                    if b._skip_element(x):
+                        return Constraint.Skip
+                    return (
+                        b.properties_interface[t, x].temperature
+                        == b.properties[t, x].temperature
+                    )
 
             return self.eq_no_temp_pol
 
