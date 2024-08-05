@@ -440,12 +440,14 @@ see property package for documentation.}""",
                         == -b.hot_ch.mass_transfer_term[t, "Liq", j]
                     )
                 elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+
                     return (
-                        b.gap_ch.mass_transfer_term[t, "Liq", j]
-                        == -b.hot_ch.mass_transfer_term[t, "Liq", j]
+                        b.gap_ch.mass_transfer_term[t, "Liq", "H2O"]
+                        == -b.hot_ch.mass_transfer_term[t, "Liq", "H2O"]
                     )
+
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                    #b.cold_ch.mass_transfer_term[t, "Liq", j].fix(0)
+                    # b.cold_ch.mass_transfer_term[t, "Liq", j].fix(0)
                     return Constraint.Skip
 
             else:
@@ -500,7 +502,7 @@ see property package for documentation.}""",
                     b.cold_ch.heat[t]
                     == -b.hot_ch.heat[t]
                     - b.hot_ch.enthalpy_transfer[t]
-                    - b.gap_ch.heat[t]
+                    - b.gap_ch.enthalpy_transfer[t]
                 )
             elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                 return Constraint.Skip
