@@ -1005,7 +1005,9 @@ def test_RO_dynamic_instantiation():
     # TODO: add test to check exception for simplest RO0D with dynamics
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], time_units=pyunits.s)
+    # m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], time_units=pyunits.s)
+    m.fs = FlowsheetBlock(dynamic=True, time_set=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], time_units=pyunits.s)
+
 
     m.fs.properties = props.NaClParameterBlock()
 
@@ -1124,9 +1126,9 @@ def test_RO_dynamic_instantiation():
     print('b4 results_dict')
     results_dict = {
         "time": np.array(traj.time),
-        "outlet.flow_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','NaCl'])]),
+        "outlet.flow_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp['Liq','NaCl'])]),
         "outlet.flow_mass_phase_comp.H2O": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','H2O'])]),
-        "outlet.conc_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.permeate_side[tf, 1.0].conc_mass_phase_comp['Liq','NaCl'])]),
+        "outlet.conc_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp['Liq','NaCl'])]),
         "outlet.pressure": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].pressure)])
     }
     # print(np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','H2O'])]))
@@ -1146,10 +1148,10 @@ def test_RO_dynamic_instantiation():
     ax[0].set_xlim(time[0], time[-1])
     # ax.set_ylim((0.65, 1.45))
     ax[3].set_xlabel("Time (s)", fontsize=14)
-    ax[0].set_ylabel("Feed Outlet NaCl mass flow rate kg/s", fontsize=9)
-    ax[1].set_ylabel("Feed Outlet H2O mass flow rate kg/s", fontsize=9)
-    ax[2].set_ylabel("Permeate Outlet NaCl conc (kg/m3)", fontsize=9)
-    ax[3].set_ylabel("Outlet pressure (Pa)", fontsize=9)
+    ax[0].set_ylabel("Feed Outlet $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    ax[1].set_ylabel("Feed Outlet $\dot{m}_{H2O}$ kg/s", fontsize=9)
+    ax[2].set_ylabel("Permeate Outlet $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    ax[3].set_ylabel("Feed Outlet $P$ (Pa)", fontsize=9)
     
     # ax.set_title("SOEC Voltage", fontsize=16)
     plt.savefig("test_plot.png", dpi=150)
