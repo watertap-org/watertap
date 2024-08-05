@@ -14,7 +14,7 @@ from pyomo.environ import (
     units as pyunits,
     TransformationFactory,
     assert_optimal_termination,
-    value
+    value,
 )
 from pyomo.network import Port
 from idaes.core.solvers import petsc
@@ -1006,8 +1006,11 @@ def test_RO_dynamic_instantiation():
 
     m = ConcreteModel()
     # m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], time_units=pyunits.s)
-    m.fs = FlowsheetBlock(dynamic=True, time_set=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], time_units=pyunits.s)
-
+    m.fs = FlowsheetBlock(
+        dynamic=True,
+        time_set=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+        time_units=pyunits.s,
+    )
 
     m.fs.properties = props.NaClParameterBlock()
 
@@ -1116,31 +1119,56 @@ def test_RO_dynamic_instantiation():
     )
     for result in results.results:
         assert_optimal_termination(result)
-    
+
     # print(value(m.fs.unit.feed_side.properties_out[:].flow_mass_phase_comp['Liq','H2O']))
-    print('Permeate NaCl conc: ', value(m.fs.unit.permeate_side[:, :].conc_mass_phase_comp['Liq','NaCl']))
+    print(
+        "Permeate NaCl conc: ",
+        value(m.fs.unit.permeate_side[:, :].conc_mass_phase_comp["Liq", "NaCl"]),
+    )
     # assert False
     traj = results.trajectory
     time_set = m.fs.time.ordered_data()
     tf = time_set[-1]
-    print('b4 results_dict')
+    print("b4 results_dict")
     results_dict = {
         "time": np.array(traj.time),
-        "outlet.flow_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp['Liq','NaCl'])]),
-        "outlet.flow_mass_phase_comp.H2O": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','H2O'])]),
-        "outlet.conc_mass_phase_comp.NaCl": np.array(traj.vecs[str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp['Liq','NaCl'])]),
-        "outlet.pressure": np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].pressure)])
+        "outlet.flow_mass_phase_comp.NaCl": np.array(
+            traj.vecs[
+                str(
+                    m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp[
+                        "Liq", "NaCl"
+                    ]
+                )
+            ]
+        ),
+        "outlet.flow_mass_phase_comp.H2O": np.array(
+            traj.vecs[
+                str(
+                    m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp[
+                        "Liq", "H2O"
+                    ]
+                )
+            ]
+        ),
+        "outlet.conc_mass_phase_comp.NaCl": np.array(
+            traj.vecs[
+                str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"])
+            ]
+        ),
+        "outlet.pressure": np.array(
+            traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].pressure)]
+        ),
     }
     # print(np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','H2O'])]))
-    print('after results_dict')
+    print("after results_dict")
     for key, v in results_dict.items():
         # Turn n by 1 arrays in into vectors
         results_dict[key] = np.squeeze(v)
     time = results_dict["time"]
     print(time)
 
-    fig = plt.figure(figsize=(16,9))
-    ax = fig.subplots(4, 1, sharex = True)
+    fig = plt.figure(figsize=(16, 9))
+    ax = fig.subplots(4, 1, sharex=True)
     ax[0].plot(time, results_dict["outlet.flow_mass_phase_comp.NaCl"])
     ax[1].plot(time, results_dict["outlet.flow_mass_phase_comp.H2O"])
     ax[2].plot(time, results_dict["outlet.conc_mass_phase_comp.NaCl"])
@@ -1152,6 +1180,6 @@ def test_RO_dynamic_instantiation():
     ax[1].set_ylabel("Feed Outlet $\dot{m}_{H2O}$ kg/s", fontsize=9)
     ax[2].set_ylabel("Permeate Outlet $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
     ax[3].set_ylabel("Feed Outlet $P$ (Pa)", fontsize=9)
-    
+
     # ax.set_title("SOEC Voltage", fontsize=16)
     plt.savefig("test_plot.png", dpi=150)
