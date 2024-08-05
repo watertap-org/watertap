@@ -1132,7 +1132,16 @@ def test_RO_dynamic_instantiation():
     print("b4 results_dict")
     results_dict = {
         "time": np.array(traj.time),
-        "outlet.flow_mass_phase_comp.NaCl": np.array(
+        "feed.in.conc.NaCl": np.array(
+            traj.vecs[
+                str(
+                    m.fs.unit.feed_side.properties_in[tf].conc_mass_phase_comp[
+                        "Liq", "NaCl"
+                    ]
+                )
+            ]
+        ),
+        "feed.out.conc.NaCl": np.array(
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp[
@@ -1141,22 +1150,28 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "outlet.flow_mass_phase_comp.H2O": np.array(
+        "feed.prop_int.0.conc.NaCl": np.array(
             traj.vecs[
                 str(
-                    m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp[
-                        "Liq", "H2O"
-                    ]
+                    m.fs.unit.feed_side.properties_interface[
+                        tf, 0
+                    ].conc_mass_phase_comp["Liq", "NaCl"]
                 )
             ]
         ),
-        "outlet.conc_mass_phase_comp.NaCl": np.array(
+        "feed.prop_int.1.conc.NaCl": np.array(
+            traj.vecs[
+                str(
+                    m.fs.unit.feed_side.properties_interface[
+                        tf, 1
+                    ].conc_mass_phase_comp["Liq", "NaCl"]
+                )
+            ]
+        ),
+        "mixed_permeate.conc.NaCl": np.array(
             traj.vecs[
                 str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"])
             ]
-        ),
-        "outlet.pressure": np.array(
-            traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].pressure)]
         ),
     }
     # print(np.array(traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp['Liq','H2O'])]))
@@ -1168,18 +1183,22 @@ def test_RO_dynamic_instantiation():
     print(time)
 
     fig = plt.figure(figsize=(16, 9))
-    ax = fig.subplots(4, 1, sharex=True)
-    ax[0].plot(time, results_dict["outlet.flow_mass_phase_comp.NaCl"])
-    ax[1].plot(time, results_dict["outlet.flow_mass_phase_comp.H2O"])
-    ax[2].plot(time, results_dict["outlet.conc_mass_phase_comp.NaCl"])
-    ax[3].plot(time, results_dict["outlet.pressure"])
-    ax[0].set_xlim(time[0], time[-1])
-    # ax.set_ylim((0.65, 1.45))
-    ax[3].set_xlabel("Time (s)", fontsize=14)
-    ax[0].set_ylabel("Feed Outlet $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
-    ax[1].set_ylabel("Feed Outlet $\dot{m}_{H2O}$ kg/s", fontsize=9)
-    ax[2].set_ylabel("Permeate Outlet $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
-    ax[3].set_ylabel("Feed Outlet $P$ (Pa)", fontsize=9)
-
-    # ax.set_title("SOEC Voltage", fontsize=16)
+    # ax = fig.subplots(3, 2, sharex=True)
+    plt.subplot(3, 2, 1)
+    plt.plot(time, results_dict["feed.in.conc.NaCl"])
+    plt.ylabel("Feed Inlet $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    plt.subplot(3, 2, 2)
+    plt.plot(time, results_dict["feed.out.conc.NaCl"])
+    plt.ylabel("Brine Outlet $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    plt.subplot(3, 2, 3)
+    plt.plot(time, results_dict["feed.prop_int.0.conc.NaCl"])
+    plt.ylabel("Interface 0 $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    plt.subplot(3, 2, 4)
+    plt.plot(time, results_dict["feed.prop_int.1.conc.NaCl"])
+    plt.ylabel("Interface 1 $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    plt.subplot(3, 1, 3)
+    plt.plot(time, results_dict["mixed_permeate.conc.NaCl"])
+    plt.ylabel("Mixed permeate $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    plt.xlabel("Time (s)", fontsize=14)
+    plt.tight_layout()
     plt.savefig("test_plot.png", dpi=150)
