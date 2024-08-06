@@ -98,7 +98,6 @@ class DensityCalculation(Enum):
     seawater = auto()  # seawater correlation for TDS from Sharqawy
     # TODO: add laliberte mixing correlation and/or ideal aqueous solution rule
 
-
 class DiffusivityCalculation(Enum):
     none = auto()
     HaydukLaudie = auto()
@@ -643,6 +642,8 @@ class MCASParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "mw_comp": {"method": "_mw_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
+                "enth_mass_phase": {"method": "_enth_mass_phase"},
+                "enth_flow": {"method": "_enth_flow"}
             }
         )
 
@@ -1911,6 +1912,71 @@ class MCASStateBlockData(StateBlockData):
             )
             return
 
+    def _enth_mass_phase(self):
+        self.enth_mass_phase = Var(
+            self.params.phase_list,
+            initialize=1e6,
+            bounds=(1, 1e9),
+            units=pyunits.J * pyunits.kg**-1,
+            doc="Specific enthalpy",
+        )
+
+        # Nayar et al. (2016), eq. 25 and 26, 10-120 C, 0-120 g/kg, 0-12 MPa
+        def rule_enth_mass_phase(b, p):
+            # temperature in degC, but pyunits in K
+            t = b.temperature - 273.15 * pyunits.K
+            S_kg_kg = b.mass_frac_phase_comp[p, "TDS"]
+            S_g_kg = S_kg_kg * 1000
+            P = b.pressure - 101325 * pyunits.Pa
+            P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
+
+            h_w = (
+                b.params.enth_mass_param_C1
+                + b.params.enth_mass_param_C2 * t
+                + b.params.enth_mass_param_C3 * t**2
+                + b.params.enth_mass_param_C4 * t**3
+            )
+            h_sw0 = h_w - S_kg_kg * (
+                b.params.enth_mass_param_B1
+                + b.params.enth_mass_param_B2 * S_kg_kg
+                + b.params.enth_mass_param_B3 * S_kg_kg**2
+                + b.params.enth_mass_param_B4 * S_kg_kg**3
+                + b.params.enth_mass_param_B5 * t
+                + b.params.enth_mass_param_B6 * t**2
+                + b.params.enth_mass_param_B7 * t**3
+                + b.params.enth_mass_param_B8 * S_kg_kg * t
+                + b.params.enth_mass_param_B9 * S_kg_kg**2 * t
+                + b.params.enth_mass_param_B10 * S_kg_kg * t**2
+            )
+            h_sw = h_sw0 + P_MPa * (
+                b.params.enth_mass_param_A1
+                + b.params.enth_mass_param_A2 * t
+                + b.params.enth_mass_param_A3 * t**2
+                + b.params.enth_mass_param_A4 * t**3
+                + S_g_kg
+                * (
+                    +b.params.enth_mass_param_A5
+                    + b.params.enth_mass_param_A6 * t
+                    + b.params.enth_mass_param_A7 * t**2
+                    + b.params.enth_mass_param_A8 * t**3
+                )
+            )
+            return b.enth_mass_phase[p] == h_sw
+
+        self.eq_enth_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_enth_mass_phase
+        )
+
+    def _enth_flow(self):
+        # enthalpy flow expression for get_enthalpy_flow_terms method
+
+        def rule_enth_flow(b):  # enthalpy flow [J/s]
+            return (
+                sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+                * b.enth_mass_phase["Liq"]
+            )
+
+        self.enth_flow = Expression(rule=rule_enth_flow)
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
