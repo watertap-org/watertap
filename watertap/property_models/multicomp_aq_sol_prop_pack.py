@@ -617,6 +617,8 @@ class MCASParameterData(PhysicalParameterBlock):
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("diffus_phase_comp", 1e10, index="Liq")
         self.set_default_scaling("visc_k_phase", 1e6, index="Liq")
+        self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
+
 
     @classmethod
     def define_metadata(cls, obj):
@@ -643,7 +645,6 @@ class MCASParameterData(PhysicalParameterBlock):
                 "mw_comp": {"method": "_mw_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "enth_flow": {"method": "_enth_flow"}
             }
         )
 
@@ -657,6 +658,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
                 "debye_huckel_constant": {"method": "_debye_huckel_constant"},
+                "enth_flow": {"method": "_enth_flow"},
                 "ionic_strength_molal": {"method": "_ionic_strength_molal"},
                 "molar_volume_phase_comp": {"method": "_molar_volume_phase_comp"},
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
@@ -896,7 +898,15 @@ class _MCASStateBlock(StateBlock):
                     )
                 else:
                     self[k].total_dissolved_solids = 0
-
+            
+            if self[k].is_property_constructed("enth_mass_phase"):
+                if hasattr(self[k], "eq_enth_mass_phase"):
+                    calculate_variable_from_constraint(
+                        self[k].enth_mass_phase["Liq"],
+                        self[k].eq_enth_mass_phase["Liq"],
+                    )
+                else:
+                    self[k].total_dissolved_solids = 0
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
             dof = degrees_of_freedom(self[k])
@@ -1913,6 +1923,149 @@ class MCASStateBlockData(StateBlockData):
             return
 
     def _enth_mass_phase(self):
+        params = self.params
+                # specific enthalpy parameters, 10-120 C, 0-120 g/kg, 0-12 MPa
+        # Table 9 in Nayar et al. (2016)
+        enth_mass_units = pyunits.J / pyunits.kg
+        P_inv_units = pyunits.MPa**-1
+        t_inv_units = pyunits.K**-1
+
+        params.enth_mass_param_A1 = Var(
+            within=Reals,
+            initialize=996.7767,
+            units=enth_mass_units * P_inv_units,
+            doc="Specific enthalpy parameter A1",
+        )
+        params.enth_mass_param_A2 = Var(
+            within=Reals,
+            initialize=-3.2406,
+            units=enth_mass_units * P_inv_units * t_inv_units,
+            doc="Specific enthalpy parameter A2",
+        )
+        params.enth_mass_param_A3 = Var(
+            within=Reals,
+            initialize=0.0127,
+            units=enth_mass_units * P_inv_units * t_inv_units**2,
+            doc="Specific enthalpy parameter A3",
+        )
+        params.enth_mass_param_A4 = Var(
+            within=Reals,
+            initialize=-4.7723e-5,
+            units=enth_mass_units * P_inv_units * t_inv_units**3,
+            doc="Specific enthalpy parameter A4",
+        )
+        params.enth_mass_param_A5 = Var(
+            within=Reals,
+            initialize=-1.1748,
+            units=enth_mass_units * P_inv_units,
+            doc="Specific enthalpy parameter A5",
+        )
+        params.enth_mass_param_A6 = Var(
+            within=Reals,
+            initialize=0.01169,
+            units=enth_mass_units * P_inv_units * t_inv_units,
+            doc="Specific enthalpy parameter A6",
+        )
+        params.enth_mass_param_A7 = Var(
+            within=Reals,
+            initialize=-2.6185e-5,
+            units=enth_mass_units * P_inv_units * t_inv_units**2,
+            doc="Specific enthalpy parameter A7",
+        )
+        params.enth_mass_param_A8 = Var(
+            within=Reals,
+            initialize=7.0661e-8,
+            units=enth_mass_units * P_inv_units * t_inv_units**3,
+            doc="Specific enthalpy parameter A8",
+        )
+        params.enth_mass_param_B1 = Var(
+            within=Reals,
+            initialize=-2.34825e4,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter B1",
+        )
+        params.enth_mass_param_B2 = Var(
+            within=Reals,
+            initialize=3.15183e5,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter B2",
+        )
+        params.enth_mass_param_B3 = Var(
+            within=Reals,
+            initialize=2.80269e6,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter B3",
+        )
+        params.enth_mass_param_B4 = Var(
+            within=Reals,
+            initialize=-1.44606e7,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter B4",
+        )
+        params.enth_mass_param_B5 = Var(
+            within=Reals,
+            initialize=7.82607e3,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter B5",
+        )
+        params.enth_mass_param_B6 = Var(
+            within=Reals,
+            initialize=-4.41733,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter B6",
+        )
+        params.enth_mass_param_B7 = Var(
+            within=Reals,
+            initialize=2.1394e-1,
+            units=enth_mass_units * t_inv_units**3,
+            doc="Specific enthalpy parameter B7",
+        )
+        params.enth_mass_param_B8 = Var(
+            within=Reals,
+            initialize=-1.99108e4,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter B8",
+        )
+        params.enth_mass_param_B9 = Var(
+            within=Reals,
+            initialize=2.77846e4,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter B9",
+        )
+        params.enth_mass_param_B10 = Var(
+            within=Reals,
+            initialize=9.72801,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter B10",
+        )
+        params.enth_mass_param_C1 = Var(
+            within=Reals,
+            initialize=141.355,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter C1",
+        )
+        params.enth_mass_param_C2 = Var(
+            within=Reals,
+            initialize=4202.07,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter C2",
+        )
+        params.enth_mass_param_C3 = Var(
+            within=Reals,
+            initialize=-0.535,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter C3",
+        )
+        params.enth_mass_param_C4 = Var(
+            within=Reals,
+            initialize=0.004,
+            units=enth_mass_units * t_inv_units**3,
+            doc="Specific enthalpy parameter C4",
+        )
+
+        for v in params.component_objects(Var):
+            v.fix()
+
         self.enth_mass_phase = Var(
             self.params.phase_list,
             initialize=1e6,
@@ -1925,7 +2078,7 @@ class MCASStateBlockData(StateBlockData):
         def rule_enth_mass_phase(b, p):
             # temperature in degC, but pyunits in K
             t = b.temperature - 273.15 * pyunits.K
-            S_kg_kg = b.mass_frac_phase_comp[p, "TDS"]
+            S_kg_kg = pyunits.convert(b.total_dissolved_solids, to_units=pyunits.kg/pyunits.m**3) / b.dens_mass_phase[p]
             S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
@@ -2509,6 +2662,10 @@ class MCASStateBlockData(StateBlockData):
                 else:
                     sf = 1 / value(self.total_dissolved_solids)
                 iscale.set_scaling_factor(self.total_dissolved_solids, sf)
+        
+        # if self.is_property_constructed("enth_mass_phase"):
+        #     for v in self.enth_mass_phase.values():
+
         # transforming constraints
         transform_property_constraints(self)
 
