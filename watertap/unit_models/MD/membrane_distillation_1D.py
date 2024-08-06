@@ -515,18 +515,18 @@ see property package for documentation.}""",
                     )
                 elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
                     return (
-                        b.gap_ch.mass_transfer_term[t, "Liq", j]
-                        == -b.hot_ch.mass_transfer_term[t, "Liq", j]
+                        b.gap_ch.mass_transfer_term[t, x, "Liq", "H2O"]
+                        == -b.hot_ch.mass_transfer_term[t, x, "Liq", "H2O"]
                     )
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                    b.cold_ch.mass_transfer_term[t, x, "Liq", j].fix(0)
+                    # b.cold_ch.mass_transfer_term[t, x, "Liq", j].fix(0)
                     return Constraint.Skip
             else:
                 if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                     b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                    b.gap_ch.mass_transfer_term[t, p, j].fix(0)
+                    b.gap_ch.mass_transfer_term[t, x, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                     return (
@@ -562,14 +562,7 @@ see property package for documentation.}""",
             doc="Conductive heat transfer to cold channel",
         )
         def eq_conductive_heat_transfer_hot(b, t, x):
-            if self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                return (
-                    b.hot_ch.heat[t, x]
-                    == -b.width * b.flux_conduction_heat[t, x]
-                    - b.width * b.vapor_exp_heat[t, x]
-                )
-            else:
-                return b.hot_ch.heat[t, x] == -b.width * b.flux_conduction_heat[t, x]
+            return b.hot_ch.heat[t, x] == -b.width * b.flux_conduction_heat[t, x]
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -584,7 +577,7 @@ see property package for documentation.}""",
                     b.cold_ch.heat[t, x]
                     == -b.hot_ch.heat[t, x]
                     - b.hot_ch.enthalpy_transfer[t, x]
-                    - b.gap_ch.heat[t, x]
+                    - b.gap_ch.enthalpy_transfer[t, x]
                 )
             elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                 return Constraint.Skip

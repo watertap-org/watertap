@@ -246,6 +246,21 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                             "Vap", "H2O"
                         ].fix(0)
 
+        if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+            for t in self.flowsheet().config.time:
+                for x in self.cold_ch.length_domain:
+                    if (
+                        "Vap" in self.cold_ch.config.property_package.phase_list
+                        and "H2O" in self.cold_ch.config.property_package.component_list
+                    ):
+
+                        self.cold_ch.properties[t, x].flow_mass_phase_comp[
+                            "Liq", "H2O"
+                        ].fix(0)
+                        self.cold_ch.properties[
+                            t, self.cold_ch.length_domain.first()
+                        ].flow_mass_phase_comp["Vap", "H2O"].fix(0)
+
         # gap channel
         # modification required for AGMD
         if self.config.MD_configuration_Type in [
@@ -293,6 +308,9 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
             for t in self.flowsheet().config.time:
                 for x in self.gap_ch.length_domain:
+                    self.gap_ch.properties[
+                        t, self.gap_ch.length_domain.first()
+                    ].flow_mass_phase_comp["Liq", "H2O"].fix(0)
                     # Check if 'Vap' phase and 'H2O' component are defined in the property package
                     if (
                         "Vap" in self.gap_ch.config.property_package.phase_list
