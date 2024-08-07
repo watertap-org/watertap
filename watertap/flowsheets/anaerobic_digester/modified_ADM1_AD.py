@@ -106,27 +106,26 @@ def main():
     m = build()
     set_operating_conditions(m)
 
+    initialize_system(m)
+
+    print("----------------   Re-scaling V1  ----------------")
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
+    for x in badly_scaled_var_list:
+        if 1 < x[0].value < 10:
+            sf = 1
+        else:
+            power = round(pyo.log10(abs(x[0].value)))
+            sf = 1 / 10**power
+        iscale.set_scaling_factor(x[0], sf)
+
     badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
-    # print("----------------   Re-scaling V1  ----------------")
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # for x in badly_scaled_var_list:
-    #     if 1 < x[0].value < 10:
-    #         sf = 1
-    #     else:
-    #         power = round(pyo.log10(abs(x[0].value)))
-    #         sf = 1 / 10**power
-    #
-    #     iscale.set_scaling_factor(x[0], sf)
-
-    initialize_system(m)
-
-    dt = DiagnosticsToolbox(m)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
-    dt.display_potential_evaluation_errors()
+    # dt = DiagnosticsToolbox(m)
+    # print("---Structural Issues---")
+    # dt.report_structural_issues()
+    # dt.display_potential_evaluation_errors()
 
     # print("----------------   Degen Hunter  ----------------")
     # # Use of Degeneracy Hunter for troubleshooting model.
@@ -239,21 +238,19 @@ def set_operating_conditions(m):
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+                iscale.set_scaling_factor(var, 1e3)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
             if "conc_mass_comp" in var.name:
-                if 1 < var.value < 1e1:
+                iscale.set_scaling_factor(var, 1e2)
+                if var.value >= 1:
                     sf = 1e0
                     iscale.set_scaling_factor(var, sf)
                 elif 1e-2 < var.value < 1:
                     sf = 1e1
                     iscale.set_scaling_factor(var, sf)
-                # elif var.value <= 1e-9:
-                #     sf = 1e9
-                #     iscale.set_scaling_factor(var, sf)
                 else:
                     sf = 1e2
                     iscale.set_scaling_factor(var, sf)

@@ -86,6 +86,7 @@ _log = idaeslog.getLogger(__name__)
 def main(has_electroNP=False):
     m = build_flowsheet(has_electroNP=has_electroNP)
     set_operating_conditions(m)
+
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
@@ -513,15 +514,28 @@ def set_operating_conditions(m):
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e0)
+                if var.value > 1e-1:
+                    sf = 1e0
+                    iscale.set_scaling_factor(var, sf)
+                else:
+                    sf = 1e3
+                    iscale.set_scaling_factor(var, sf)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
-            if "electroNP.mixed_state[0.0].conc_mass_comp[S_PO4]" in var.name:
-                iscale.set_scaling_factor(var, 1e0)
+                if var.value > 1:
+                    sf = 1e0
+                    iscale.set_scaling_factor(var, sf)
+                elif 1e-2 < var.value < 1:
+                    sf = 1e1
+                    iscale.set_scaling_factor(var, sf)
+                else:
+                    sf = 1e2
+                    iscale.set_scaling_factor(var, sf)
+            # if "electroNP.mixed_state[0.0].conc_mass_comp[S_PO4]" in var.name:
+            #     iscale.set_scaling_factor(var, 1e0)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -607,27 +621,79 @@ def initialize_system(m, has_electroNP=False):
             "pressure": {0: 101325},
         }
 
-    else:
         tear_guesses = {
-            "flow_vol": {0: 1.237},
+            "flow_vol": {0: 1.2366},
             "conc_mass_comp": {
                 (0, "S_A"): 0.00046,
                 (0, "S_F"): 0.00041,
-                (0, "S_I"): 0.05745,
+                (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.025,
-                (0, "S_NH4"): 0.032,
+                (0, "S_NH4"): 0.024,
+                (0, "S_NO3"): 1e-9,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 0.10,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.020,
+                (0, "S_IC"): 0.13,
+                (0, "X_AUT"): 1e-9,
+                (0, "X_H"): 3.3,
+                (0, "X_I"): 3.05,
+                (0, "X_PAO"): 3.8,
+                (0, "X_PHA"): 0.094,
+                (0, "X_PP"): 1.2,
+                (0, "X_S"): 0.056,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses2 = {
+            "flow_vol": {0: 0.003},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.096,
+                (0, "S_F"): 0.15,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.034,
+                (0, "S_NO3"): 1e-9,
+                (0, "S_O2"): 0.0014,
+                (0, "S_PO4"): 0.024,
+                (0, "S_K"): 0.38,
+                (0, "S_Mg"): 0.024,
+                (0, "S_IC"): 0.075,
+                (0, "X_AUT"): 1e-9,
+                (0, "X_H"): 22,
+                (0, "X_I"): 11,
+                (0, "X_PAO"): 11,
+                (0, "X_PHA"): 0.0068,
+                (0, "X_PP"): 3.0,
+                (0, "X_S"): 3.8,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+    else:
+        tear_guesses = {
+            "flow_vol": {0: 1.2367},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.0005,
+                (0, "S_F"): 0.0004,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.025,
+                (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 1e-9,
                 (0, "S_O2"): 0.00192,
-                (0, "S_PO4"): 0.843,
-                (0, "S_K"): 0.370,
+                (0, "S_PO4"): 0.84,
+                (0, "S_K"): 0.37,
                 (0, "S_Mg"): 0.020,
-                (0, "S_IC"): 0.127,
+                (0, "S_IC"): 0.13,
                 (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 3.31,
+                (0, "X_H"): 3.3,
                 (0, "X_I"): 3.05,
                 (0, "X_PAO"): 3.80,
                 (0, "X_PHA"): 0.093,
-                (0, "X_PP"): 1.26,
+                (0, "X_PP"): 1.3,
                 (0, "X_S"): 0.056,
             },
             "temperature": {0: 308.15},
@@ -639,22 +705,22 @@ def initialize_system(m, has_electroNP=False):
             "conc_mass_comp": {
                 (0, "S_A"): 0.095,
                 (0, "S_F"): 0.15,
-                (0, "S_I"): 0.05745,
+                (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.025,
                 (0, "S_NH4"): 0.041,
                 (0, "S_NO3"): 1e-9,
                 (0, "S_O2"): 0.0014,
-                (0, "S_PO4"): 0.857,
-                (0, "S_K"): 0.376,
+                (0, "S_PO4"): 0.86,
+                (0, "S_K"): 0.38,
                 (0, "S_Mg"): 0.024,
                 (0, "S_IC"): 0.075,
                 (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 22.3,
-                (0, "X_I"): 10.8,
-                (0, "X_PAO"): 11.3,
+                (0, "X_H"): 22,
+                (0, "X_I"): 11,
+                (0, "X_PAO"): 11,
                 (0, "X_PHA"): 0.0057,
-                (0, "X_PP"): 3.09,
-                (0, "X_S"): 3.81,
+                (0, "X_PP"): 3.1,
+                (0, "X_S"): 3.8,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -681,25 +747,25 @@ def solve(m, solver=None):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(has_electroNP=False)
+    m, results = main(has_electroNP=True)
     if m.fs.has_electroNP is False:
         stream_table = create_stream_table_dataframe(
             {
                 "Feed": m.fs.FeedWater.outlet,
                 "R3 inlet": m.fs.R3.inlet,
                 "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-                "R1": m.fs.R1.outlet,
-                "R2": m.fs.R2.outlet,
-                "R3": m.fs.R3.outlet,
-                "R4": m.fs.R4.outlet,
-                "R5": m.fs.R5.outlet,
-                "R6": m.fs.R6.outlet,
-                "R7": m.fs.R7.outlet,
-                "thickener outlet": m.fs.thickener.underflow,
-                "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
-                "dewater outlet": m.fs.dewater.overflow,
-                "Treated water": m.fs.Treated.inlet,
-                "Sludge": m.fs.Sludge.inlet,
+                # "R1": m.fs.R1.outlet,
+                # "R2": m.fs.R2.outlet,
+                # "R3": m.fs.R3.outlet,
+                # "R4": m.fs.R4.outlet,
+                # "R5": m.fs.R5.outlet,
+                # "R6": m.fs.R6.outlet,
+                # "R7": m.fs.R7.outlet,
+                # "thickener outlet": m.fs.thickener.underflow,
+                # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
+                # "dewater outlet": m.fs.dewater.overflow,
+                # "Treated water": m.fs.Treated.inlet,
+                # "Sludge": m.fs.Sludge.inlet,
             },
             time_point=0,
         )
@@ -709,20 +775,20 @@ if __name__ == "__main__":
                 "Feed": m.fs.FeedWater.outlet,
                 "R3 inlet": m.fs.R3.inlet,
                 "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-                "R1": m.fs.R1.outlet,
-                "R2": m.fs.R2.outlet,
-                "R3": m.fs.R3.outlet,
-                "R4": m.fs.R4.outlet,
-                "R5": m.fs.R5.outlet,
-                "R6": m.fs.R6.outlet,
-                "R7": m.fs.R7.outlet,
-                "thickener outlet": m.fs.thickener.underflow,
-                "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
-                "dewater outlet": m.fs.dewater.overflow,
-                "electroNP treated": m.fs.electroNP.treated,
-                "electroNP byproduct": m.fs.electroNP.byproduct,
-                "Treated water": m.fs.Treated.inlet,
-                "Sludge": m.fs.Sludge.inlet,
+                # "R1": m.fs.R1.outlet,
+                # "R2": m.fs.R2.outlet,
+                # "R3": m.fs.R3.outlet,
+                # "R4": m.fs.R4.outlet,
+                # "R5": m.fs.R5.outlet,
+                # "R6": m.fs.R6.outlet,
+                # "R7": m.fs.R7.outlet,
+                # "thickener outlet": m.fs.thickener.underflow,
+                # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
+                # "dewater outlet": m.fs.dewater.overflow,
+                # "electroNP treated": m.fs.electroNP.treated,
+                # "electroNP byproduct": m.fs.electroNP.byproduct,
+                # "Treated water": m.fs.Treated.inlet,
+                # "Sludge": m.fs.Sludge.inlet,
             },
             time_point=0,
         )

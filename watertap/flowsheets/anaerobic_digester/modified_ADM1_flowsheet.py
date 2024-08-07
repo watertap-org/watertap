@@ -106,11 +106,26 @@ def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
 
+    print("----------------   scaling V0  ----------------")
     badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     initialize_system(m)
+
+    # print("----------------   Re-scaling V1  ----------------")
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
+    # for x in badly_scaled_var_list:
+    #     if 1 < x[0].value < 10:
+    #         sf = 1
+    #     else:
+    #         power = round(pyo.log10(abs(x[0].value)))
+    #         sf = 1 / 10**power
+    #     iscale.set_scaling_factor(x[0], sf)
+    #
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     # dt = DiagnosticsToolbox(m)
     # print("---Structural Issues---")
@@ -357,28 +372,17 @@ def set_operating_conditions(m, bio_P=False):
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
+                iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                if bio_P:
-                    if var.value > 1:
-                        sf = 1e0
-                        iscale.set_scaling_factor(var, sf)
-                    elif 1e-2 < var.value < 1:
-                        sf = 1e1
-                        iscale.set_scaling_factor(var, sf)
-                    else:
-                        sf = 1e2
-                        iscale.set_scaling_factor(var, sf)
+                if var.value > 1:
+                    sf = 1e0
+                    iscale.set_scaling_factor(var, sf)
+                elif 1e-2 < var.value < 1:
+                    sf = 1e1
+                    iscale.set_scaling_factor(var, sf)
                 else:
-                    if var.value > 1:
-                        sf = 1e0
-                        iscale.set_scaling_factor(var, sf)
-                    elif 1e-2 < var.value < 1:
-                        sf = 1e1
-                        iscale.set_scaling_factor(var, sf)
-                    else:
-                        sf = 1e2
-                        iscale.set_scaling_factor(var, sf)
+                    sf = 1e2
+                    iscale.set_scaling_factor(var, sf)
 
     # Apply scaling
     scale_variables(m)
