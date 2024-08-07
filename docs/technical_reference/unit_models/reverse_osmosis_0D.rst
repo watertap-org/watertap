@@ -70,6 +70,7 @@ Variables
    "Observed solute rejection", ":math:`r_j`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
    "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
+   "Feed-channel volume", ":math:`V_{f}`", "feed_side.volume", "[t]", ":math:`\text{m}^3`"
 
 The following variables are only built when specific configuration key-value pairs are selected.
 
@@ -159,6 +160,7 @@ Equations
    "Solvent flux across membrane (SKK)", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - \sigma(\pi_{f}-\pi_{p}))`"
    "Solute flux across membrane (solution-diffusion)", ":math:`J_{solute} = B(C_{f} - C_{p})`"
    "Solute flux across membrane (SKK)", ":math:`J_{solute} = B(C_{f} - C_{p}) + (1 - \sigma)\frac{J_{solvent}}{\rho_{solvent}}C_{f}`"
+   "Alpha (SKK)", ":math:`\alpha = \frac{1 - \sigma}{B}`" 
    "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
    "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
    "Permeate-side solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
@@ -174,12 +176,13 @@ Equations
    "Membrane area (spiral-wound)",":math:`A_m = 2LW`"
    "Pressure drop",":math:`ΔP = (\frac{ΔP}{Δx})_{avg}L`"
    "Feed-channel velocity",":math:`v_f = Q_f/A_c`"
-   "Friction factor",":math:`f = 0.42+\frac{189.3}{Re}`"
+   "Feed-channel volume", ":math:`V_{f} = LWh_{ch}`"
+   "Friction factor (flat-plate)",":math:`f = 0.42+\frac{189.3}{Re}`"
+   "Friction factor (spiral-wound)",":math:`f = \frac{6.23}{Re^{0.3}}`"
    "Pressure drop per unit length",":math:`\frac{ΔP}{Δx} = \frac{1}{2d_h}f\rho v_f^{2}`"
    "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
    "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
    "Observed solute rejection", ":math:`r_j = 1 - \frac{C_{p,mix}}{C_{f,in}}`" 
-   "Alpha", ":math:`\alpha = \frac{1 - \sigma}{B}`" 
 
 Class Documentation
 -------------------
