@@ -115,24 +115,24 @@ def main(bio_P=False):
 
     results = solve(m)
 
-    # # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-    # m.fs.R5.KLa.fix(240)
-    # m.fs.R6.KLa.fix(240)
-    # m.fs.R7.KLa.fix(84)
-    # m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    #
-    # # Resolve with controls in place
-    # results = solve(m)
-    #
-    # pyo.assert_optimal_termination(results)
-    # check_solve(
-    #     results,
-    #     checkpoint="re-solve with controls in place",
-    #     logger=_log,
-    #     fail_flag=True,
-    # )
+    # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
+    m.fs.R5.KLa.fix(240)
+    m.fs.R6.KLa.fix(240)
+    m.fs.R7.KLa.fix(84)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+
+    # Resolve with controls in place
+    results = solve(m)
+
+    pyo.assert_optimal_termination(results)
+    check_solve(
+        results,
+        checkpoint="re-solve with controls in place",
+        logger=_log,
+        fail_flag=True,
+    )
 
     # add_costing(m)
     # m.fs.costing.initialize()
@@ -527,8 +527,35 @@ def set_operating_conditions(m):
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
-    # m.fs.activated_sludge = (m.fs.FeedWater, m.fs.MX2, m.fs.MX3, m.fs.CL, m.fs.MX1, m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5, m.fs.R6, m.fs.R7, m.fs.SP1, m.fs.CL2, m.fs.SP2, m.fs.P1, m.fs.Treated)
-    # m.fs.anaerobic_digestion = (m.fs.thickener, m.fs.MX4, m.fs.translator_asm2d_adm1, m.fs.AD, m.fs.translator_adm1_asm2d, m.fs.dewater, m.fs.Sludge)
+    # TODO: Tested for scaling
+    # m.fs.activated_sludge = (
+    #     m.fs.FeedWater,
+    #     m.fs.MX2,
+    #     m.fs.MX3,
+    #     m.fs.CL,
+    #     m.fs.MX1,
+    #     m.fs.R1,
+    #     m.fs.R2,
+    #     m.fs.R3,
+    #     m.fs.R4,
+    #     m.fs.R5,
+    #     m.fs.R6,
+    #     m.fs.R7,
+    #     m.fs.SP1,
+    #     m.fs.CL2,
+    #     m.fs.SP2,
+    #     m.fs.P1,
+    #     m.fs.Treated,
+    # )
+    # m.fs.anaerobic_digestion = (
+    #     m.fs.thickener,
+    #     m.fs.MX4,
+    #     m.fs.translator_asm2d_adm1,
+    #     m.fs.AD,
+    #     m.fs.translator_adm1_asm2d,
+    #     m.fs.dewater,
+    #     m.fs.Sludge,
+    # )
 
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -586,58 +613,6 @@ def initialize_system(m, bio_P=False, solver=None):
         print(o[0].name)
 
     if bio_P:
-        # tear_guesses = {
-        #     "flow_vol": {0: 1.237},
-        #     "conc_mass_comp": {
-        #         (0, "S_A"): 0.0005,
-        #         (0, "S_F"): 0.00046,
-        #         (0, "S_I"): 0.05745,
-        #         (0, "S_N2"): 0.025,
-        #         (0, "S_NH4"): 0.03,
-        #         (0, "S_NO3"): 1e-9,
-        #         (0, "S_O2"): 0.00192,
-        #         (0, "S_PO4"): 0.010,
-        #         (0, "S_K"): 0.37,
-        #         (0, "S_Mg"): 0.024,
-        #         (0, "S_IC"): 0.13,
-        #         (0, "X_AUT"): 1e-9,
-        #         (0, "X_H"): 3.40,
-        #         (0, "X_I"): 3.13,
-        #         (0, "X_PAO"): 4.14,
-        #         (0, "X_PHA"): 0.10,
-        #         (0, "X_PP"): 1.32,
-        #         (0, "X_S"): 0.059,
-        #     },
-        #     "temperature": {0: 308.15},
-        #     "pressure": {0: 101325},
-        # }
-        #
-        # tear_guesses2 = {
-        #     "flow_vol": {0: 0.003},
-        #     "conc_mass_comp": {
-        #         (0, "S_A"): 0.1,
-        #         (0, "S_F"): 0.16,
-        #         (0, "S_I"): 0.05745,
-        #         (0, "S_N2"): 0.025,
-        #         (0, "S_NH4"): 0.04,
-        #         (0, "S_NO3"): 1e-9,
-        #         (0, "S_O2"): 0.0014,
-        #         (0, "S_PO4"): 0.026,
-        #         (0, "S_K"): 0.38,
-        #         (0, "S_Mg"): 0.028,
-        #         (0, "S_IC"): 0.075,
-        #         (0, "X_AUT"): 1e-9,
-        #         (0, "X_H"): 22.0,
-        #         (0, "X_I"): 10.8,
-        #         (0, "X_PAO"): 11.8,
-        #         (0, "X_PHA"): 0.0072,
-        #         (0, "X_PP"): 3.17,
-        #         (0, "X_S"): 3.71,
-        #     },
-        #     "temperature": {0: 308.15},
-        #     "pressure": {0: 101325},
-        # }
-
         tear_guesses = {
             "flow_vol": {0: 1.237},
             "conc_mass_comp": {
@@ -742,110 +717,6 @@ def initialize_system(m, bio_P=False, solver=None):
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
         }
-        #
-        # tear_guesses = {
-        #     "flow_vol": {0: 1.2367},
-        #     "conc_mass_comp": {
-        #         (0, "S_A"): 0.000464,
-        #         (0, "S_F"): 0.000407,
-        #         (0, "S_I"): 0.05745,
-        #         (0, "S_N2"): 0.0249,
-        #         (0, "S_NH4"): 0.0316,
-        #         (0, "S_NO3"): 1e-9,
-        #         (0, "S_O2"): 0.00192,
-        #         (0, "S_PO4"): 0.843,
-        #         (0, "S_K"): 0.370,
-        #         (0, "S_Mg"): 0.0205,
-        #         (0, "S_IC"): 0.128,
-        #         (0, "X_AUT"): 1e-9,
-        #         (0, "X_H"): 3.31,
-        #         (0, "X_I"): 3.05,
-        #         (0, "X_PAO"): 3.80,
-        #         (0, "X_PHA"): 0.0931,
-        #         (0, "X_PP"): 1.26,
-        #         (0, "X_S"): 0.0562,
-        #     },
-        #     "temperature": {0: 308.15},
-        #     "pressure": {0: 101325},
-        # }
-        #
-        # tear_guesses2 = {
-        #     "flow_vol": {0: 0.003},
-        #     "conc_mass_comp": {
-        #         (0, "S_A"): 0.0955,
-        #         (0, "S_F"): 0.146,
-        #         (0, "S_I"): 0.05745,
-        #         (0, "S_N2"): 0.0249,
-        #         (0, "S_NH4"): 0.0413,
-        #         (0, "S_NO3"): 1e-9,
-        #         (0, "S_O2"): 0.00138,
-        #         (0, "S_PO4"): 0.857,
-        #         (0, "S_K"): 0.376,
-        #         (0, "S_Mg"): 0.0244,
-        #         (0, "S_IC"): 0.0756,
-        #         (0, "X_AUT"): 1e-9,
-        #         (0, "X_H"): 22.3,
-        #         (0, "X_I"): 10.8,
-        #         (0, "X_PAO"): 11.3,
-        #         (0, "X_PHA"): 0.00565,
-        #         (0, "X_PP"): 3.09,
-        #         (0, "X_S"): 3.81,
-        #     },
-        #     "temperature": {0: 308.15},
-        #     "pressure": {0: 101325},
-        # }
-        #
-        # tear_guesses = {
-        #     "flow_vol": {0: 1.2367},
-        #     "conc_mass_comp": {
-        #         (0, "S_A"): 0.00046,
-        #         (0, "S_F"): 0.00041,
-        #         (0, "S_I"): 0.057,
-        #         (0, "S_N2"): 0.025,
-        #         (0, "S_NH4"): 0.032,
-        #         (0, "S_NO3"): 1e-9,
-        #         (0, "S_O2"): 0.0019,
-        #         (0, "S_PO4"): 0.84,
-        #         (0, "S_K"): 0.37,
-        #         (0, "S_Mg"): 0.021,
-        #         (0, "S_IC"): 0.13,
-        #         (0, "X_AUT"): 1e-9,
-        #         (0, "X_H"): 3.3,
-        #         (0, "X_I"): 3.1,
-        #         (0, "X_PAO"): 3.8,
-        #         (0, "X_PHA"): 0.093,
-        #         (0, "X_PP"): 1.3,
-        #         (0, "X_S"): 0.056,
-        #     },
-        #     "temperature": {0: 308.15},
-        #     "pressure": {0: 101325},
-        # }
-        #
-        # tear_guesses2 = {
-        #     "flow_vol": {0: 0.003},
-        #     "conc_mass_comp": {
-        #         (0, "S_A"): 0.095,
-        #         (0, "S_F"): 0.15,
-        #         (0, "S_I"): 0.05745,
-        #         (0, "S_N2"): 0.025,
-        #         (0, "S_NH4"): 0.041,
-        #         (0, "S_NO3"): 1e-9,
-        #         (0, "S_O2"): 0.0014,
-        #         (0, "S_PO4"): 0.86,
-        #         (0, "S_K"): 0.38,
-        #         (0, "S_Mg"): 0.024,
-        #         (0, "S_IC"): 0.076,
-        #         (0, "X_AUT"): 1e-9,
-        #         (0, "X_H"): 22,
-        #         (0, "X_I"): 11,
-        #         (0, "X_PAO"): 11,
-        #         (0, "X_PHA"): 0.0057,
-        #         (0, "X_PP"): 3.1,
-        #         (0, "X_S"): 3.8,
-        #     },
-        #     "temperature": {0: 308.15},
-        #     "pressure": {0: 101325},
-        # }
 
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
@@ -1048,13 +919,13 @@ def solve(m, solver=None):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            "R3 inlet": m.fs.R3.inlet,
-            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            # "R3 inlet": m.fs.R3.inlet,
+            # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
             "R1": m.fs.R1.outlet,
             "R2": m.fs.R2.outlet,
             "R3": m.fs.R3.outlet,
