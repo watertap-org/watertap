@@ -251,6 +251,8 @@ def build_results_dict(
         "expr_sf",
         "c0_min_thresh",
         "c0_max_thresh",
+        "max_zero",
+        "min_one",
         "c_next_thresh",
         "cb50_min_thresh",
         "autoscale_fixed",
@@ -499,6 +501,12 @@ def make_output_df(blk):
         # df_theta["loading_rate"] = blk.loading_rate
         df_theta["curve_id"] = blk.curve_id
         df_theta["c0"] = blk.c0
+        df_theta["target_component"] = blk.target_component
+        df_theta["ref"] = blk.ref
+        df_theta["sum_squared_error"] = blk.sum_squared_error
+        df_theta["mean_absolute_error"] = blk.mean_absolute_error
+        df_theta["obj"] = blk.obj
+        df_theta["expr_sf"] = blk.expr_sf
         blk.df_theta = df_theta
 
     tmps = []
@@ -864,6 +872,12 @@ def plot_curve(blk):
     ax.scatter(
         blk.excl_bvs, blk.excl_cnorms, marker="x", color="k", label="Excluded Data"
     )
+
+    if blk.just_plot_curve:
+        point_labels = blk.filtered_data.reset_index().index.to_list()
+        for i, bv, cnorm in zip(point_labels, blk.filtered_data.bv.to_list(), blk.filtered_data.c_norm.to_list()):
+            # ax.annotate(f"{cnorm:.3f}\n{i}")
+            ax.text(bv, cnorm, i)
 
     # if len(modified_dropped) > 0:
     #     md = blk.input_data.loc[modified_dropped]

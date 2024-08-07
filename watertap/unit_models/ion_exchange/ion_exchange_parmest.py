@@ -120,6 +120,7 @@ class IXParmest:
         rho=1000,  # kg/m3
         c0_mol_flow_sf=None,
         water_mol_flow_sf=None,
+        tee=False,
     ):
 
         if input_data is None and data_file is None:
@@ -168,6 +169,7 @@ class IXParmest:
         self.use_this_data = use_this_data
         self.diff_calculation = diff_calculation
         self.c0_mol_flow_sf = c0_mol_flow_sf
+        self.tee = tee
         self.water_mol_flow_sf = water_mol_flow_sf
 
         if solver is None:
@@ -282,6 +284,8 @@ class IXParmest:
         self.get_curve_conditions()
         if self.just_plot_curve:
             self.plot_curve()
+            tmp = self.input_data.reset_index()
+            print(tmp.index.to_list())
             return
 
         self.get_model_config()
@@ -777,14 +781,15 @@ class IXParmest:
 
             ix.number_columns.fix(1)
             ix.freundlich_ninv.fix(0.9)
-            ix.freundlich_k.fix(10)
-            ix.surf_diff_coeff.fix(8e-15)
+            ix.freundlich_k.fix(1)
+            ix.surf_diff_coeff.fix(1e-13)
             ix.c_norm.fix(0.5)
 
             ix.shape_correction_factor.fix(1)
             ix.tortuosity.fix(1)
             ix.shape_correction_factor.fix(1)
-            ix.resin_density_app.fix(700)
+            # ix.resin_density_app.fix(700)
+            ix.resin_density.fix(700)
             ix.ebct.fix(140)
             ix.bed_porosity.fix(0.4)
             ix.loading_rate.fix(0.003)
@@ -857,7 +862,8 @@ class IXParmest:
         ix.ebct.fix(self.ebct)
         ix.resin_porosity.fix(self.resin_porosity)
         ix.resin_diam.fix(self.resin_diam)
-        ix.resin_density_app.fix(self.resin_density)
+        # ix.resin_density_app.fix(self.resin_density)
+        ix.resin_density.fix(self.resin_density)
 
         self._fix_initial_guess(m=m)
         self._calc_from_constr(m=m)
@@ -882,6 +888,7 @@ class IXParmest:
         self.solve_it(m=self.m_pe)
         self.build_design(m=self.m_pe)
         self.solve_it(m=self.m_pe)
+        set_scaling_factor(self.m_pe.fs.ix.bv, 1e-5)
 
         return m
 
@@ -946,7 +953,7 @@ class IXParmest:
         # constraint_scaling_transform(ix.eq_Bi, 1e7)
         # constraint_scaling_transform(ix.eq_Sc[self.target_component], 1e-4)
 
-    def solve_it(self, m=None, optarg=dict(), tee=False):
+    def solve_it(self, m=None, optarg=dict()):
         """
         Solve the model
         """
@@ -957,7 +964,7 @@ class IXParmest:
             self.solver.options[k] = v
         try:
             # Should never break a model run if an error is thrown
-            self.results = self.solver.solve(m, tee=tee)
+            self.results = self.solver.solve(m, tee=self.tee)
             self.tc = self.results.solver.termination_condition
         except:
             print_infeasible_constraints(m)
