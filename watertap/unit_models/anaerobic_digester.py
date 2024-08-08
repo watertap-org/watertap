@@ -854,12 +854,6 @@ see reaction package for documentation.}""",
             iscale.set_scaling_factor(
                 self.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], sf
             )
-            # iscale.set_scaling_factor(
-            #     self.liquid_phase.properties_out[0].conc_mass_comp["S_IP"], 1e-5
-            # )
-            # iscale.set_scaling_factor(
-            #     self.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], 1e-5
-            # )
 
         for t, v in self.flow_vol_vap.items():
             iscale.constraint_scaling_transform(
