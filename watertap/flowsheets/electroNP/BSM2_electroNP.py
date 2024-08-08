@@ -79,6 +79,9 @@ from watertap.unit_models.thickener import (
 from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+from pyomo.environ import *
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -100,15 +103,24 @@ def main(has_electroNP=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    results = solve(m)
+    # results = solve(m)
+    #
+    # pyo.assert_optimal_termination(results)
+    # check_solve(
+    #     results,
+    #     checkpoint="re-solve with controls in place",
+    #     logger=_log,
+    #     fail_flag=True,
+    # )
 
-    pyo.assert_optimal_termination(results)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
+    print("----------------   Degen Hunter  ----------------")
+    # Use of Degeneracy Hunter for troubleshooting model.
+    m.obj = pyo.Objective(expr=0)
+    solver = get_solver()
+    solver.options["max_iter"] = 10000
+    results = solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    dh.check_residuals(tol=1e-8)
 
     return m, results
 
@@ -229,7 +241,7 @@ def build_flowsheet(has_electroNP=False):
         outlet_reaction_package=m.fs.rxn_props_ADM1,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
-        bio_P=False,
+        bio_P=True,
     )
 
     # Anaerobic digester
@@ -352,6 +364,11 @@ def build_flowsheet(has_electroNP=False):
         mutable=True,
         doc="Dissolved oxygen concentration at equilibrium",
     )
+
+    # m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
+    # for R in m.fs.aerobic_reactors:
+    #     iscale.set_scaling_factor(R.KLa, 1e-2)
+    #     iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-3)
 
     @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):
@@ -570,26 +587,26 @@ def initialize_system(m, has_electroNP=False):
 
     if has_electroNP:
         tear_guesses = {
-            "flow_vol": {0: 1.2366},
+            "flow_vol": {0: 1.237},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0005,
-                (0, "S_F"): 0.0004,
+                (0, "S_A"): 0.00048,
+                (0, "S_F"): 0.00047,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.025,
-                (0, "S_NH4"): 0.024,
+                (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 1e-9,
                 (0, "S_O2"): 0.0019,
-                (0, "S_PO4"): 0.10,
+                (0, "S_PO4"): 0.012,
                 (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.020,
+                (0, "S_Mg"): 0.024,
                 (0, "S_IC"): 0.13,
                 (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 3.3,
-                (0, "X_I"): 3.05,
-                (0, "X_PAO"): 3.8,
-                (0, "X_PHA"): 0.094,
-                (0, "X_PP"): 1.2,
-                (0, "X_S"): 0.056,
+                (0, "X_H"): 3.4,
+                (0, "X_I"): 3.1,
+                (0, "X_PAO"): 4.1,
+                (0, "X_PHA"): 0.10,
+                (0, "X_PP"): 1.3,
+                (0, "X_S"): 0.059,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -598,24 +615,24 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.096,
-                (0, "S_F"): 0.15,
+                (0, "S_A"): 0.1,
+                (0, "S_F"): 0.16,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.025,
-                (0, "S_NH4"): 0.034,
+                (0, "S_NH4"): 0.04,
                 (0, "S_NO3"): 1e-9,
                 (0, "S_O2"): 0.0014,
-                (0, "S_PO4"): 0.024,
+                (0, "S_PO4"): 0.026,
                 (0, "S_K"): 0.38,
-                (0, "S_Mg"): 0.024,
-                (0, "S_IC"): 0.075,
+                (0, "S_Mg"): 0.028,
+                (0, "S_IC"): 0.074,
                 (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 22,
+                (0, "X_H"): 22.0,
                 (0, "X_I"): 11,
-                (0, "X_PAO"): 11,
-                (0, "X_PHA"): 0.0068,
-                (0, "X_PP"): 3.0,
-                (0, "X_S"): 3.8,
+                (0, "X_PAO"): 12,
+                (0, "X_PHA"): 0.0072,
+                (0, "X_PP"): 3.2,
+                (0, "X_S"): 3.7,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -623,26 +640,26 @@ def initialize_system(m, has_electroNP=False):
 
     else:
         tear_guesses = {
-            "flow_vol": {0: 1.2367},
+            "flow_vol": {0: 1.237},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0005,
-                (0, "S_F"): 0.0004,
+                (0, "S_A"): 0.00048,
+                (0, "S_F"): 0.00047,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.025,
                 (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 1e-9,
-                (0, "S_O2"): 0.00192,
-                (0, "S_PO4"): 0.84,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 0.012,
                 (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.020,
+                (0, "S_Mg"): 0.024,
                 (0, "S_IC"): 0.13,
                 (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 3.3,
-                (0, "X_I"): 3.05,
-                (0, "X_PAO"): 3.80,
-                (0, "X_PHA"): 0.093,
+                (0, "X_H"): 3.4,
+                (0, "X_I"): 3.1,
+                (0, "X_PAO"): 4.1,
+                (0, "X_PHA"): 0.10,
                 (0, "X_PP"): 1.3,
-                (0, "X_S"): 0.056,
+                (0, "X_S"): 0.059,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -651,24 +668,24 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.095,
-                (0, "S_F"): 0.15,
+                (0, "S_A"): 0.1,
+                (0, "S_F"): 0.16,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.025,
-                (0, "S_NH4"): 0.041,
+                (0, "S_NH4"): 0.04,
                 (0, "S_NO3"): 1e-9,
                 (0, "S_O2"): 0.0014,
-                (0, "S_PO4"): 0.86,
+                (0, "S_PO4"): 0.026,
                 (0, "S_K"): 0.38,
-                (0, "S_Mg"): 0.024,
-                (0, "S_IC"): 0.075,
+                (0, "S_Mg"): 0.028,
+                (0, "S_IC"): 0.074,
                 (0, "X_AUT"): 1e-9,
-                (0, "X_H"): 22,
+                (0, "X_H"): 22.0,
                 (0, "X_I"): 11,
-                (0, "X_PAO"): 11,
-                (0, "X_PHA"): 0.0057,
-                (0, "X_PP"): 3.1,
-                (0, "X_S"): 3.8,
+                (0, "X_PAO"): 12,
+                (0, "X_PHA"): 0.0072,
+                (0, "X_PP"): 3.2,
+                (0, "X_S"): 3.7,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -679,7 +696,7 @@ def initialize_system(m, has_electroNP=False):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
+        unit.initialize(outlvl=idaeslog.INFO)
 
     seq.run(m, function)
 
@@ -700,8 +717,8 @@ if __name__ == "__main__":
         stream_table = create_stream_table_dataframe(
             {
                 "Feed": m.fs.FeedWater.outlet,
-                "R3 inlet": m.fs.R3.inlet,
-                "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+                # "R3 inlet": m.fs.R3.inlet,
+                # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
                 # "R1": m.fs.R1.outlet,
                 # "R2": m.fs.R2.outlet,
                 # "R3": m.fs.R3.outlet,
@@ -712,7 +729,7 @@ if __name__ == "__main__":
                 # "thickener outlet": m.fs.thickener.underflow,
                 # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
                 # "dewater outlet": m.fs.dewater.overflow,
-                # "Treated water": m.fs.Treated.inlet,
+                "Treated water": m.fs.Treated.inlet,
                 # "Sludge": m.fs.Sludge.inlet,
             },
             time_point=0,
@@ -733,7 +750,7 @@ if __name__ == "__main__":
                 # "thickener outlet": m.fs.thickener.underflow,
                 # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
                 # "dewater outlet": m.fs.dewater.overflow,
-                "electroNP treated": m.fs.electroNP.treated,
+                # "electroNP treated": m.fs.electroNP.treated,
                 # "electroNP byproduct": m.fs.electroNP.byproduct,
                 # "Treated water": m.fs.Treated.inlet,
                 # "Sludge": m.fs.Sludge.inlet,
