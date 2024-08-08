@@ -35,7 +35,6 @@ from idaes.models.unit_models import (
     Mixer,
     PressureChanger,
 )
-from idaes.models.unit_models.separator import SplittingType
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -44,8 +43,6 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
-from watertap.unit_models.cstr_injection import CSTR_Injection
-from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
@@ -64,18 +61,8 @@ from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reac
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
 )
-from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 from watertap.unit_models.anaerobic_digester import AD
-from watertap.unit_models.dewatering import (
-    DewateringUnit,
-    ActivatedSludgeModelType as dewater_type,
-)
-from watertap.unit_models.thickener import (
-    Thickener,
-    ActivatedSludgeModelType as thickener_type,
-)
-
 from watertap.core.util.initialization import (
     check_solve,
     # assert_degrees_of_freedom
@@ -154,17 +141,6 @@ def main(bio_P=False):
     # dt.display_variables_at_or_outside_bounds()
     # dt.display_variables_with_extreme_jacobians()
     # dt.display_constraints_with_extreme_jacobians()
-
-    # add_costing(m)
-    # m.fs.costing.initialize()
-    #
-    # assert_degrees_of_freedom(m, 0)
-    #
-    # results = solve(m)
-    # pyo.assert_optimal_termination(results)
-    #
-    # display_costing(m)
-    # display_performance_metrics(m)
 
     return m, results
 
@@ -390,24 +366,7 @@ def set_operating_conditions(m, bio_P=False):
 
 
 def initialize_system(m):
-    # # Initialize flowsheet
-    # # Apply sequential decomposition - 1 iteration should suffice
-    # seq = SequentialDecomposition()
-    # seq.options.select_tear_method = "heuristic"
-    # seq.options.iterLim = 0
-    #
-    # G = seq.create_graph(m)
-    # # Uncomment this code to see tear set and initialization order
-    # order = seq.calculation_order(G)
-    # print("Initialization Order")
-    # for o in order:
-    #     print(o[0].name)
-    #
-    # def function(unit):
-    #     unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    #
-    # seq.run(m, function)
-
+    # Initialize flowsheet
     m.fs.FeedWater.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
     propagate_state(m.fs.stream_feed_translator)
     m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
@@ -434,20 +393,9 @@ if __name__ == "__main__":
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-            "AD inlet": m.fs.AD.inlet,
-            # "R1": m.fs.R1.outlet,
-            # "R2": m.fs.R2.outlet,
-            # "R3": m.fs.R3.outlet,
-            # "R4": m.fs.R4.outlet,
-            # "R5": m.fs.R5.outlet,
-            # "R6": m.fs.R6.outlet,
-            # "R7": m.fs.R7.outlet,
-            # "thickener outlet": m.fs.thickener.underflow,
-            # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
-            # "dewater outlet": m.fs.dewater.overflow,
-            # "Treated water": m.fs.Treated.inlet,
-            # "Sludge": m.fs.Sludge.inlet,
+            # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            # "AD inlet": m.fs.AD.inlet,
+            "Treated water": m.fs.Treated.inlet,
         },
         time_point=0,
     )
