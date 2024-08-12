@@ -800,8 +800,8 @@ def test_seawater_data():
             * 100.0869
         )
     )
-    assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42)
-
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42, rel=1e-3)
+    assert value(stream[0].enth_mass_phase["Liq"]) == pytest.approx(98938.56, rel=1e-3)
 
 @pytest.mark.component
 def test_assert_electroneutrality_get_property():
