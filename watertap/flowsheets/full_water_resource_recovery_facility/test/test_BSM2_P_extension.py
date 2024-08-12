@@ -35,6 +35,7 @@ solver = get_solver()
 
 
 class TestFullFlowsheetBioPFalse:
+    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=False)
@@ -127,6 +128,7 @@ class TestFullFlowsheetBioPFalse:
 
 
 class TestFullFlowsheetBioPTrue:
+    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=True)

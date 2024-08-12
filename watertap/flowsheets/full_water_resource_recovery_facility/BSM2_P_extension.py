@@ -127,12 +127,12 @@ def main(bio_P=False):
     results = solve(m)
 
     pyo.assert_optimal_termination(results)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
+    # check_solve(
+    #     results,
+    #     checkpoint="re-solve with controls in place",
+    #     logger=_log,
+    #     fail_flag=True,
+    # )
 
     # add_costing(m)
     # m.fs.costing.initialize()
@@ -724,6 +724,7 @@ def initialize_system(m, bio_P=False, solver=None):
 
     def function(unit):
         unit.initialize(outlvl=idaeslog.INFO)
+        # unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
 

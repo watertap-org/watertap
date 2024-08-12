@@ -80,6 +80,7 @@ from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 
 from idaes.core.util.model_diagnostics import DegeneracyHunter
+from idaes.core.util import DiagnosticsToolbox
 from pyomo.environ import *
 
 # Set up logger
@@ -121,6 +122,16 @@ def main(has_electroNP=False):
     results = solver.solve(m, tee=True)
     dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
     dh.check_residuals(tol=1e-8)
+
+    print("----------------   Diagnostic Toolbox  ----------------")
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+    # dt.display_potential_evaluation_errors()
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+    dt.display_constraints_with_large_residuals()
+    dt.display_variables_at_or_outside_bounds()
 
     return m, results
 
@@ -633,6 +644,110 @@ def initialize_system(m, has_electroNP=False):
                 (0, "X_PHA"): 0.0072,
                 (0, "X_PP"): 3.2,
                 (0, "X_S"): 3.7,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses = {
+            "flow_vol": {0: 1.2276},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.00075,
+                (0, "S_F"): 0.00033,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.043,
+                (0, "S_NH4"): 0.0065,
+                (0, "S_NO3"): 0.0047,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 8.5e-05,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.020,
+                (0, "S_IC"): 0.069,
+                (0, "X_AUT"): 0.091,
+                (0, "X_H"): 2.9,
+                (0, "X_I"): 2.6,
+                (0, "X_PAO"): 0.92,
+                (0, "X_PHA"): 0.020,
+                (0, "X_PP"): 0.0625,
+                (0, "X_S"): 0.040,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses2 = {
+            "flow_vol": {0: 0.0022664},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.063,
+                (0, "S_F"): 0.028,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.030,
+                (0, "S_NH4"): 0.022,
+                (0, "S_NO3"): 0.00195,
+                (0, "S_O2"): 0.0008,
+                (0, "S_PO4"): 4.7e-05,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.020,
+                (0, "S_IC"): 0.025,
+                (0, "X_AUT"): 0.295,
+                (0, "X_H"): 28,
+                (0, "X_I"): 13,
+                (0, "X_PAO"): 5.6,
+                (0, "X_PHA"): 0.009,
+                (0, "X_PP"): 0.20,
+                (0, "X_S"): 5.0,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses = {
+            "flow_vol": {0: 1.2276},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.00075,
+                (0, "S_F"): 0.00033,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.043,
+                (0, "S_NH4"): 0.0065,
+                (0, "S_NO3"): 0.0047,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 8.5e-05,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.020,
+                (0, "S_IC"): 0.069,
+                (0, "X_AUT"): 0.091,
+                (0, "X_H"): 2.9,
+                (0, "X_I"): 2.6,
+                (0, "X_PAO"): 0.92,
+                (0, "X_PHA"): 0.020,
+                (0, "X_PP"): 0.0625,
+                (0, "X_S"): 0.040,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses2 = {
+            "flow_vol": {0: 0.0022664},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.063,
+                (0, "S_F"): 0.028,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.030,
+                (0, "S_NH4"): 0.022,
+                (0, "S_NO3"): 0.00195,
+                (0, "S_O2"): 0.0008,
+                (0, "S_PO4"): 4.7e-05,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.020,
+                (0, "S_IC"): 0.025,
+                (0, "X_AUT"): 0.295,
+                (0, "X_H"): 28,
+                (0, "X_I"): 13,
+                (0, "X_PAO"): 5.6,
+                (0, "X_PHA"): 0.009,
+                (0, "X_PP"): 0.20,
+                (0, "X_S"): 5.0,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
