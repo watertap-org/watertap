@@ -1048,7 +1048,7 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
 
     m.fs.unit.feed_side.channel_height.fix(0.001)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.97) # 85%
+    m.fs.unit.feed_side.spacer_porosity.fix(0.97)  # 85%
     m.fs.unit.length.fix(16)
 
     m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0.0
@@ -1146,21 +1146,13 @@ def test_RO_dynamic_instantiation():
     print("1")
     results_dict = {
         "time": np.array(traj.time),
-        "feed.out.vol": np.array( # m3/s
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_out[tf].flow_vol_phase['Liq']
-                )
-            ]
+        "feed.out.vol": np.array(  # m3/s
+            traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_vol_phase["Liq"])]
         ),
-        "recovery": np.array( #
-            traj.vecs[
-                str(
-                    m.fs.unit.recovery_vol_phase[tf, "Liq"]
-                )
-            ]
+        "recovery": np.array(  #
+            traj.vecs[str(m.fs.unit.recovery_vol_phase[tf, "Liq"])]
         ),
-        "feed.out.mass.NaCl": np.array( # kg/s
+        "feed.out.mass.NaCl": np.array(  # kg/s
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp[
@@ -1169,7 +1161,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.out.conc.NaCl": np.array( # kg/m3
+        "feed.out.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp[
@@ -1178,7 +1170,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.0.conc.NaCl": np.array( # kg/m3
+        "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
@@ -1187,7 +1179,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.1.conc.NaCl": np.array( # kg/m3
+        "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
@@ -1196,12 +1188,12 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "mixed_permeate.conc.NaCl": np.array( # kg/m3
+        "mixed_permeate.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"])
             ]
         ),
-        "flux_mass_phase_comp.H2O": 0.5 # kg/m2 s
+        "flux_mass_phase_comp.H2O": 0.5  # kg/m2 s
         * (
             np.array(
                 traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 0, "Liq", "H2O"])]
