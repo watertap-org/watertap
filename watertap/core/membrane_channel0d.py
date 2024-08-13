@@ -117,7 +117,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         self.length_domain = Set(ordered=True, initialize=(0.0, 1.0))
         add_object_reference(self, "difference_elements", self.length_domain)
 
-        self._set_nfe()     
+        self._set_nfe()
 
         self._add_interface_stateblock(has_phase_equilibrium)
 
@@ -136,7 +136,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             for t in self.flowsheet().config.time
             for x in [0.0, 1.0]
         }
-    
+
     def apply_transformation(self):
         pass
 
