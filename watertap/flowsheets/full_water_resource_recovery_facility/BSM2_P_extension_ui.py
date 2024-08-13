@@ -1013,28 +1013,28 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     #     is_output=True,
     #     output_category="Capital costs",
     # )
-    exports.add(
-        obj=fs.CL.costing.capital_cost,
-        name="Primary clarifier capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of primary clarifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.CL2.costing.capital_cost,
-        name="Secondary clarifier capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of secondary clarifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    # exports.add(
+    #     obj=fs.CL.costing.capital_cost,
+    #     name="Primary clarifier capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of primary clarifier",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.CL2.costing.capital_cost,
+    #     name="Secondary clarifier capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of secondary clarifier",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
     exports.add(
         obj=fs.AD.costing.capital_cost,
         name="Anaerobic digester capital cost",
@@ -3905,7 +3905,7 @@ def build_flowsheet(build_options=None, **kwargs):
         add_costing(m)
         m.fs.costing.initialize()
 
-        interval_initializer(m.fs.costing)
+        # interval_initializer(m.fs.costing)
 
         assert_degrees_of_freedom(m, 0)
 
@@ -3945,7 +3945,7 @@ def build_flowsheet(build_options=None, **kwargs):
         add_costing(m)
         m.fs.costing.initialize()
 
-        interval_initializer(m.fs.costing)
+        # interval_initializer(m.fs.costing)
 
         assert_degrees_of_freedom(m, 0)
 
