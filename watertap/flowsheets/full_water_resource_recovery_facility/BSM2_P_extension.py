@@ -718,16 +718,16 @@ def add_costing(m):
     # m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.R6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.R7.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.CL.costing = UnitModelCostingBlock(
-    #     flowsheet_costing_block=m.fs.costing,
-    #     costing_method=cost_primary_clarifier,
-    # )
+    m.fs.CL.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_primary_clarifier,
+    )
 
-    # m.fs.CL2.costing = UnitModelCostingBlock(
-    #     flowsheet_costing_block=m.fs.costing,
-    #     costing_method=cost_circular_clarifier,
-    # )
-    #
+    m.fs.CL2.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_circular_clarifier,
+    )
+
     m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.dewater.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.thickener.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)

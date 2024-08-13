@@ -21,6 +21,7 @@ from watertap.ui.fsapi import FlowsheetInterface
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
+    set_scaling,
     set_operating_conditions,
     initialize_system,
     solve,
@@ -1012,28 +1013,28 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     #     is_output=True,
     #     output_category="Capital costs",
     # )
-    # exports.add(
-    #     obj=fs.CL.costing.capital_cost,
-    #     name="Primary clarifier capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of primary clarifier",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.CL2.costing.capital_cost,
-    #     name="Secondary clarifier capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of secondary clarifier",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
+    exports.add(
+        obj=fs.CL.costing.capital_cost,
+        name="Primary clarifier capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of primary clarifier",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.CL2.costing.capital_cost,
+        name="Secondary clarifier capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of secondary clarifier",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
     exports.add(
         obj=fs.AD.costing.capital_cost,
         name="Anaerobic digester capital cost",
@@ -3874,6 +3875,7 @@ def build_flowsheet(build_options=None, **kwargs):
         m = build(bio_P=bioP)
 
         set_operating_conditions(m)
+        set_scaling(m, bio_P=bioP)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -3913,6 +3915,7 @@ def build_flowsheet(build_options=None, **kwargs):
         m = build(bio_P=False)
 
         set_operating_conditions(m)
+        set_scaling(m, bio_P=False)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
