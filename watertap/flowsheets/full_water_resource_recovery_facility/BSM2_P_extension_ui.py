@@ -935,105 +935,105 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Capital costs
-    exports.add(
-        obj=fs.R1.costing.capital_cost,
-        name="Reactor 1 capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of first reactor in activated sludge process",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.R2.costing.capital_cost,
-        name="Reactor 2 capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of second reactor in activated sludge process",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.R3.costing.capital_cost,
-        name="Reactor 3 capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of third reactor in activated sludge process",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.R4.costing.capital_cost,
-        name="Reactor 4 capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of fourth reactor in activated sludge process",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.R5.costing.capital_cost,
-        name="Reactor 5 capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of fifth reactor in activated sludge process",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.R6.costing.capital_cost,
-        name="Reactor 6 capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of sixth reactor in activated sludge process",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.R7.costing.capital_cost,
-        name="Reactor 7 capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of seventh reactor in activated sludge process",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.CL.costing.capital_cost,
-        name="Primary clarifier capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of primary clarifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.CL2.costing.capital_cost,
-        name="Secondary clarifier capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of secondary clarifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    # exports.add(
+    #     obj=fs.R1.costing.capital_cost,
+    #     name="Reactor 1 capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of first reactor in activated sludge process",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.R2.costing.capital_cost,
+    #     name="Reactor 2 capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of second reactor in activated sludge process",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.R3.costing.capital_cost,
+    #     name="Reactor 3 capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of third reactor in activated sludge process",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.R4.costing.capital_cost,
+    #     name="Reactor 4 capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of fourth reactor in activated sludge process",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.R5.costing.capital_cost,
+    #     name="Reactor 5 capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of fifth reactor in activated sludge process",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.R6.costing.capital_cost,
+    #     name="Reactor 6 capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of sixth reactor in activated sludge process",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.R7.costing.capital_cost,
+    #     name="Reactor 7 capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of seventh reactor in activated sludge process",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.CL.costing.capital_cost,
+    #     name="Primary clarifier capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of primary clarifier",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.CL2.costing.capital_cost,
+    #     name="Secondary clarifier capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of secondary clarifier",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
     exports.add(
         obj=fs.AD.costing.capital_cost,
         name="Anaerobic digester capital cost",
@@ -1045,28 +1045,28 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Capital costs",
     )
-    exports.add(
-        obj=fs.dewater.costing.capital_cost,
-        name="Dewatering unit capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of dewatering",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.thickener.costing.capital_cost,
-        name="Thickener capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of thickener",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    # exports.add(
+    #     obj=fs.dewater.costing.capital_cost,
+    #     name="Dewatering unit capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of dewatering",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.thickener.costing.capital_cost,
+    #     name="Thickener capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of thickener",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
 
     # Outlets
     exports.add(

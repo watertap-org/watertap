@@ -143,8 +143,8 @@ def main(bio_P=False):
 
     pyo.assert_optimal_termination(results)
 
-    display_costing(m)
-    display_performance_metrics(m)
+    # display_costing(m)
+    # display_performance_metrics(m)
 
     return m, results
 
@@ -711,26 +711,26 @@ def add_costing(m):
     m.fs.costing.base_currency = pyo.units.USD_2020
 
     # Costing Blocks
-    m.fs.R1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.R7.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.CL.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing,
-        costing_method=cost_primary_clarifier,
-    )
+    # m.fs.R1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.R2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.R3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.R4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.R6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.R7.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.CL.costing = UnitModelCostingBlock(
+    #     flowsheet_costing_block=m.fs.costing,
+    #     costing_method=cost_primary_clarifier,
+    # )
 
-    m.fs.CL2.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing,
-        costing_method=cost_circular_clarifier,
-    )
-
+    # m.fs.CL2.costing = UnitModelCostingBlock(
+    #     flowsheet_costing_block=m.fs.costing,
+    #     costing_method=cost_circular_clarifier,
+    # )
+    #
     m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.dewater.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.thickener.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.dewater.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.thickener.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # TODO: Leaving out mixer costs; consider including later
 
