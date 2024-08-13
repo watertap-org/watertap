@@ -117,45 +117,26 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         self.length_domain = Set(ordered=True, initialize=(0.0, 1.0))
         add_object_reference(self, "difference_elements", self.length_domain)
 
-        self._set_nfe()
+        self._set_nfe()     
 
+        self._add_interface_stateblock(has_phase_equilibrium)
+
+    @property
+    def properties(self):
         if self._flow_direction == FlowDirection.forward:
-            add_object_reference(
-                self,
-                "properties",
-                {
-                    **{
-                        (t, 0.0): self.properties_in[t]
-                        for t in self.flowsheet().config.time
-                    },
-                    **{
-                        (t, 1.0): self.properties_out[t]
-                        for t in self.flowsheet().config.time
-                    },
-                },
-            )
+            xin = 0.0
         elif self._flow_direction == FlowDirection.backward:
-            add_object_reference(
-                self,
-                "properties",
-                {
-                    **{
-                        (t, 0): self.properties_out[t]
-                        for t in self.flowsheet().config.time
-                    },
-                    **{
-                        (t, 1): self.properties_in[t]
-                        for t in self.flowsheet().config.time
-                    },
-                },
-            )
+            xin = 1.0
         else:
             raise ConfigurationError(
                 "FlowDirection must be set to FlowDirection.forward or FlowDirection.backward."
             )
-
-        self._add_interface_stateblock(has_phase_equilibrium)
-
+        return {
+            (t, x): (self.properties_in[t] if x == xin else self.properties_out[t])
+            for t in self.flowsheet().config.time
+            for x in [0.0, 1.0]
+        }
+    
     def apply_transformation(self):
         pass
 
