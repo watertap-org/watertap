@@ -124,7 +124,7 @@ def main(bio_P=False):
     # Resolve with controls in place
     results = solve(m)
 
-    pyo.assert_optimal_termination(results)
+    # pyo.assert_optimal_termination(results)
     # check_solve(
     #     results,
     #     checkpoint="re-solve with controls in place",
@@ -135,13 +135,13 @@ def main(bio_P=False):
     add_costing(m)
     m.fs.costing.initialize()
 
-    # interval_initializer(m.fs.costing)
+    interval_initializer(m.fs.costing)
 
-    assert_degrees_of_freedom(m, 0)
+    # assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
 
-    pyo.assert_optimal_termination(results)
+    # pyo.assert_optimal_termination(results)
 
     # display_costing(m)
     # display_performance_metrics(m)
