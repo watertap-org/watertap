@@ -934,7 +934,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Cost metrics",
     )
-
+    #
     # Capital costs
     # exports.add(
     #     obj=fs.R1.costing.capital_cost,
