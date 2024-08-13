@@ -819,121 +819,121 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
 
-    # System costing
-    exports.add(
-        obj=fs.costing.utilization_factor,
-        name="Utilization factor",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Utilization factor - [annual use hours/total hours in year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.TIC,
-        name="Practical investment factor",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=1,
-        description="Practical investment factor - [total investment cost/direct "
-        "capital costs]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.plant_lifetime,
-        name="Plant lifetime",
-        ui_units=pyunits.year,
-        display_units="years",
-        rounding=1,
-        description="Plant lifetime",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.wacc,
-        name="Discount rate",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Discount rate used in calculating the capital annualization",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.electricity_cost,
-        name="Electricity cost",
-        ui_units=fs.costing.base_currency / pyunits.kWh,
-        display_units="$/kWh",
-        rounding=3,
-        description="Electricity cost",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-
-    # Cost metrics
-    exports.add(
-        obj=fs.costing.LCOW,
-        name="Levelized cost of water",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3",
-        rounding=3,
-        description="Levelized cost of water with respect to product water",
-        is_input=False,
-        is_output=True,
-        output_category="Cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.total_operating_cost,
-        name="Total operating cost",
-        ui_units=fs.costing.base_currency / pyunits.yr,
-        display_units="$/yr",
-        rounding=3,
-        description="Total operating cost",
-        is_input=False,
-        is_output=True,
-        output_category="Cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.total_capital_cost,
-        name="Total capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Total capital cost",
-        is_input=False,
-        is_output=True,
-        output_category="Cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.total_annualized_cost,
-        name="Total annualized cost",
-        ui_units=fs.costing.base_currency / pyunits.yr,
-        display_units="$/yr",
-        rounding=3,
-        description="Total annualized cost",
-        is_input=False,
-        is_output=True,
-        output_category="Cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.specific_energy_consumption,
-        name="Specific energy consumption",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
-        rounding=3,
-        description="Specific energy consumption with respect to influent flowrate",
-        is_input=False,
-        is_output=True,
-        output_category="Cost metrics",
-    )
-
+    # # System costing
+    # exports.add(
+    #     obj=fs.costing.utilization_factor,
+    #     name="Utilization factor",
+    #     ui_units=pyunits.dimensionless,
+    #     display_units="fraction",
+    #     rounding=2,
+    #     description="Utilization factor - [annual use hours/total hours in year]",
+    #     is_input=True,
+    #     input_category="System costing",
+    #     is_output=False,
+    # )
+    # exports.add(
+    #     obj=fs.costing.TIC,
+    #     name="Practical investment factor",
+    #     ui_units=pyunits.dimensionless,
+    #     display_units="fraction",
+    #     rounding=1,
+    #     description="Practical investment factor - [total investment cost/direct "
+    #     "capital costs]",
+    #     is_input=True,
+    #     input_category="System costing",
+    #     is_output=False,
+    # )
+    # exports.add(
+    #     obj=fs.costing.plant_lifetime,
+    #     name="Plant lifetime",
+    #     ui_units=pyunits.year,
+    #     display_units="years",
+    #     rounding=1,
+    #     description="Plant lifetime",
+    #     is_input=True,
+    #     input_category="System costing",
+    #     is_output=False,
+    # )
+    # exports.add(
+    #     obj=fs.costing.wacc,
+    #     name="Discount rate",
+    #     ui_units=pyunits.dimensionless,
+    #     display_units="fraction",
+    #     rounding=2,
+    #     description="Discount rate used in calculating the capital annualization",
+    #     is_input=True,
+    #     input_category="System costing",
+    #     is_output=False,
+    # )
+    # exports.add(
+    #     obj=fs.costing.electricity_cost,
+    #     name="Electricity cost",
+    #     ui_units=fs.costing.base_currency / pyunits.kWh,
+    #     display_units="$/kWh",
+    #     rounding=3,
+    #     description="Electricity cost",
+    #     is_input=True,
+    #     input_category="System costing",
+    #     is_output=False,
+    # )
+    #
+    # # Cost metrics
+    # exports.add(
+    #     obj=fs.costing.LCOW,
+    #     name="Levelized cost of water",
+    #     ui_units=fs.costing.base_currency / pyunits.m**3,
+    #     display_units="$/m3",
+    #     rounding=3,
+    #     description="Levelized cost of water with respect to product water",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Cost metrics",
+    # )
+    # exports.add(
+    #     obj=fs.costing.total_operating_cost,
+    #     name="Total operating cost",
+    #     ui_units=fs.costing.base_currency / pyunits.yr,
+    #     display_units="$/yr",
+    #     rounding=3,
+    #     description="Total operating cost",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Cost metrics",
+    # )
+    # exports.add(
+    #     obj=fs.costing.total_capital_cost,
+    #     name="Total capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Total capital cost",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Cost metrics",
+    # )
+    # exports.add(
+    #     obj=fs.costing.total_annualized_cost,
+    #     name="Total annualized cost",
+    #     ui_units=fs.costing.base_currency / pyunits.yr,
+    #     display_units="$/yr",
+    #     rounding=3,
+    #     description="Total annualized cost",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Cost metrics",
+    # )
+    # exports.add(
+    #     obj=fs.costing.specific_energy_consumption,
+    #     name="Specific energy consumption",
+    #     ui_units=pyunits.kWh / pyunits.m**3,
+    #     display_units="kWh/m3",
+    #     rounding=3,
+    #     description="Specific energy consumption with respect to influent flowrate",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Cost metrics",
+    # )
+    #
     # Capital costs
     # exports.add(
     #     obj=fs.R1.costing.capital_cost,
@@ -1034,17 +1034,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     #     is_output=True,
     #     output_category="Capital costs",
     # )
-    exports.add(
-        obj=fs.AD.costing.capital_cost,
-        name="Anaerobic digester capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of anaerobic digester",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    # exports.add(
+    #     obj=fs.AD.costing.capital_cost,
+    #     name="Anaerobic digester capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of anaerobic digester",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
     # exports.add(
     #     obj=fs.dewater.costing.capital_cost,
     #     name="Dewatering unit capital cost",
