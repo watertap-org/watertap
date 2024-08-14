@@ -121,6 +121,8 @@ class IXParmest:
         c0_mol_flow_sf=None,
         water_mol_flow_sf=None,
         tee=False,
+        scale_var_dict=dict(),
+        scale_constr_dict=dict()
     ):
 
         if input_data is None and data_file is None:
@@ -171,6 +173,9 @@ class IXParmest:
         self.c0_mol_flow_sf = c0_mol_flow_sf
         self.tee = tee
         self.water_mol_flow_sf = water_mol_flow_sf
+
+        self.scale_var_dict = scale_var_dict
+        self.scale_constr_dict = scale_constr_dict
 
         if solver is None:
             self.solver = get_solver()
@@ -346,7 +351,7 @@ class IXParmest:
             # input_vars=[ix.freundlich_ninv, ix.Bi, ix.c_norm],
             output_vars=[ix.throughput],
         )
-        ix.N_Bi.setlb(0)
+        # ix.N_Bi.setlb(0)
 
     def rebuild(self):
         self.m0 = self.build_init()
@@ -938,6 +943,22 @@ class IXParmest:
         set_scaling_factor(ix.c_eq, 1e5)
 
         calculate_scaling_factors(m)
+
+        for v, sf in self.scale_var_dict.items():
+            ixv = getattr(ix, v)
+            if ixv.is_indexed():
+                for _, ixvi in ixv.items():
+                    set_scaling_factor(ixvi, sf)
+            else:
+                set_scaling_factor(ixv, sf)
+
+        for c, sf in self.scale_constr_dict.items():
+            ixc = getattr(ix, c)
+            if ixc.is_indexed():
+                for _, ixci in ixc.items():
+                    constraint_scaling_transform(ixci, sf)
+            else:
+                constraint_scaling_transform(ixc, sf)
 
         if self.ix_model is IonExchangeClark:
             constraint_scaling_transform(ix.eq_clark[self.target_component], 1e-2)
