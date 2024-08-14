@@ -45,19 +45,19 @@ class Not0Or1Error(KeyError):
 
 class _0DPropertyHelper(collections.abc.Mapping):
     """
-    Class to make obj.properties_in and obj.properties_out
-    like obj.properties from a 1D model.
+    Class to make blk.properties_in and blk.properties_out
+    like blk.properties from a 1D model.
     """
 
-    def __init__(self, obj, reverse=False):
-        self.obj = weakref.ref(obj)
+    def __init__(self, blk, reverse=False):
+        self._blk_ref = weakref.ref(blk)
         if reverse:
             self._get_property_x = self._get_property_x_backward
         else:
             self._get_property_x = self._get_property_x_forward
 
     def __len__(self):
-        return len(self.obj().properties_in) + len(self.obj().properties_out)
+        return len(self.blk.properties_in) + len(self.blk.properties_out)
 
     def __iter__(self):
         for t in self._get_property_x(0):
@@ -115,19 +115,23 @@ class _0DPropertyHelper(collections.abc.Mapping):
         yield from self._get_property_x(0).values()
         yield from self._get_property_x(1).values()
 
+    @property
+    def blk(self):
+        return self._blk_ref()
+
     def _get_property_x_forward(self, x):
         if x == 0:
-            return self.obj().properties_in
+            return self.blk.properties_in
         elif x == 1:
-            return self.obj().properties_out
+            return self.blk.properties_out
         else:
             raise Not0Or1Error
 
     def _get_property_x_backward(self, x):
         if x == 1:
-            return self.obj().properties_in
+            return self.blk.properties_in
         elif x == 0:
-            return self.obj().properties_out
+            return self.blk.properties_out
         else:
             raise Not0Or1Error
 
