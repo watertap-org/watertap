@@ -11,6 +11,7 @@
 #################################################################################
 
 import collections
+import weakref
 
 from pyomo.environ import (
     NegativeReals,
@@ -49,14 +50,14 @@ class _0DPropertyHelper(collections.abc.Mapping):
     """
 
     def __init__(self, obj, reverse=False):
-        self.obj = obj
+        self.obj = weakref.ref(obj)
         if reverse:
             self._get_property_x = self._get_property_x_backward
         else:
             self._get_property_x = self._get_property_x_forward
 
     def __len__(self):
-        return len(self.obj.properties_in) + len(self.obj.properties_out)
+        return len(self.obj().properties_in) + len(self.obj().properties_out)
 
     def __iter__(self):
         for t in self._get_property_x(0):
@@ -116,17 +117,17 @@ class _0DPropertyHelper(collections.abc.Mapping):
 
     def _get_property_x_forward(self, x):
         if x == 0:
-            return self.obj.properties_in
+            return self.obj().properties_in
         elif x == 1:
-            return self.obj.properties_out
+            return self.obj().properties_out
         else:
             raise Not0Or1Error
 
     def _get_property_x_backward(self, x):
         if x == 1:
-            return self.obj.properties_in
+            return self.obj().properties_in
         elif x == 0:
-            return self.obj.properties_out
+            return self.obj().properties_out
         else:
             raise Not0Or1Error
 
