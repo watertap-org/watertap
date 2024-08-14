@@ -71,6 +71,56 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
             regen.get_material_flow_terms("Liq", j).fix(0)
 
+        # self.a0 = Var(
+        #     initialize=1,
+        #     bounds=(0, None),
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="Stanton equation parameter 0",
+        # )
+        # self.a1 = Var(
+        #     initialize=1,
+        #     bounds=(0, None),
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="Stanton equation parameter 1",
+        # )
+        # self.b0 = Var(
+        #     initialize=0.1,
+        #     bounds=(0, None),
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="throughput equation parameter 0",
+        # )
+        # self.b1 = Var(
+        #     initialize=0.1,
+        #     bounds=(0, None),
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="throughput equation parameter 1",
+        # )
+        # self.b2 = Var(
+        #     initialize=0.1,
+        #     bounds=(0, None),
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="throughput equation parameter 2",
+        # )
+        # self.b3 = Var(
+        #     initialize=0.1,
+        #     bounds=(0, None),
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="throughput equation parameter 3",
+        # )
+        # self.b4 = Var(
+        #     initialize=0.1,
+        #     bounds=(0, None),
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="throughput equation parameter 4",
+        # )
+
         self.a0 = Param(
             initialize=0.8,
             mutable=True,
@@ -191,8 +241,8 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         self.N_Sc = Var(
             self.target_component_set,
             initialize=700,
-            bounds=(0, None),
-            # domain=NonNegativeReals,
+            bounds=(1e-5, None),
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Schmidt number",  # correlations using Schmidt number valid in 0.7 < Sc < 1e4
         )
@@ -206,7 +256,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         self.resin_density_app = Var(
             initialize=1,
-            bounds=(0, None),
+            bounds=(1, None),
             # domain=NonNegativeReals,
             units=pyunits.kg / pyunits.m**3,
             doc="Resin apparent density",
@@ -276,13 +326,13 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             doc="Tortuosity of the path that the adsorbate must take as compared to the radius",
         )
 
-        self.spdfr = Var(
-            initialize=1,
-            bounds=(0, None),
-            # domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Surface-to-pore diffusion flux ratio (SPDFR)",
-        )
+        # self.spdfr = Var(
+        #     initialize=1,
+        #     bounds=(0, None),
+        #     # domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc="Surface-to-pore diffusion flux ratio (SPDFR)",
+        # )
 
         self.del_component(self.t_contact)
         self.t_contact = Var(
@@ -377,7 +427,20 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                 prop_in.diffus_phase_comp["Liq", target_component] * b.resin_porosity
             )
             return pyunits.convert(num / denom, to_units=pyunits.dimensionless)
-
+        
+        @self.Expression(doc="Surface diffusion parameter")
+        def spdfr(b):
+            return (
+                b.surf_diff_coeff
+                * b.tortuosity
+                * b.c_eq[target_component]
+                * b.resin_density_app
+            ) / (
+                prop_in.diffus_phase_comp["Liq", target_component]
+                * b.resin_porosity
+                * prop_in.conc_mass_phase_comp["Liq", target_component]
+            )
+        
         @self.Expression()
         def Bi_s(b):
             return b.Bi_p / b.spdfr
@@ -476,8 +539,8 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         @self.Constraint(doc="Bed volumes at breakthrough")
         def eq_bv(b):
-            # return b.breakthrough_time * b.loading_rate == b.bv * b.bed_depth
-            return b.bv * b.t_contact == b.breakthrough_time * b.bed_porosity
+            return b.breakthrough_time * b.loading_rate == b.bv * b.bed_depth
+            # return b.bv * b.t_contact == b.breakthrough_time * b.bed_porosity
 
         # @self.Constraint(doc="bed volumes treated")
         # def eq_bed_volumes_treated(b):
@@ -512,25 +575,25 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             doc="Fluid film mass transfer rate from the Gnielinski correlation",
         )
         def eq_gnielinski(b, j):
-            return 1 == (b.film_mass_transfer_coeff * b.resin_diam) / (
+            return (
                 b.shape_correction_factor
                 * (1 + 1.5 * (1 - b.bed_porosity))
                 * prop_in.diffus_phase_comp["Liq", j]
                 * (2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc[j] ** (1 / 3)))
-            )
+            ) == (b.film_mass_transfer_coeff * b.resin_diam)
 
-        @self.Constraint(
-            self.target_component_set,
-            doc="Surface diffusion parameter",
-        )
-        def eq_surf_diff_coeff(b, j):
-            return (
-                b.surf_diff_coeff * b.tortuosity * b.c_eq[j] * b.resin_density_app
-                == b.spdfr
-                * prop_in.diffus_phase_comp["Liq", j]
-                * b.resin_porosity
-                * prop_in.conc_mass_phase_comp["Liq", j]
-            )
+        # @self.Constraint(
+        #     self.target_component_set,
+        #     doc="Surface diffusion parametexr",
+        # )
+        # def eq_surf_diff_coeff(b, j):
+        #     return (
+        #         b.surf_diff_coeff * b.tortuosity * b.c_eq[j] * b.resin_density_app
+        #         == b.spdfr
+        #         * prop_in.diffus_phase_comp["Liq", j]
+        #         * b.resin_porosity
+        #         * prop_in.conc_mass_phase_comp["Liq", j]
+        #     )
 
         if self.config.add_steady_state_approximation:
             self.add_ss_approximation()
@@ -580,7 +643,8 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             iscale.set_scaling_factor(self.c_norm[target_component], 10)
 
         # if iscale.get_scaling_factor(self.c_eq[target_component]) is None:
-        iscale.set_scaling_factor(self.c_eq[target_component], sf_conc * 1e-2)
+        # iscale.set_scaling_factor(self.c_eq[target_component], sf_conc * 1e-2)
+        iscale.set_scaling_factor(self.c_eq[target_component], 1)
 
         # if iscale.get_scaling_factor(self.N_Sh) is None:
         #     iscale.set_scaling_factor(self.N_Sh, 1e-3)
@@ -616,17 +680,22 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             iscale.set_scaling_factor(self.resin_porosity, 1)
 
         if iscale.get_scaling_factor(self.tortuosity) is None:
-            iscale.set_scaling_factor(self.tortuosity, 1e2)
+            iscale.set_scaling_factor(self.tortuosity, 1)
 
-        if iscale.get_scaling_factor(self.spdfr) is None:
-            iscale.set_scaling_factor(self.spdfr, 1)
+        # if iscale.get_scaling_factor(self.spdfr) is None:
+        #     iscale.set_scaling_factor(self.spdfr, 1)
 
         # if iscale.get_scaling_factor(self.bed_volume) is None:
-        iscale.set_scaling_factor(self.bed_volume, sf_volume * 1e-2)
+        # iscale.set_scaling_factor(self.bed_volume, sf_volume * 1e-2)
 
-        iscale.set_scaling_factor(self.bed_diameter, sf_volume * 1e-2)
+        # iscale.set_scaling_factor(self.bed_diameter, sf_volume * 1e-2)
 
-        iscale.set_scaling_factor(self.bed_area, sf_volume * 1e-2)
+        # iscale.set_scaling_factor(self.bed_area, sf_volume * 1e-2)
+        iscale.set_scaling_factor(self.bed_volume, 1)
+
+        iscale.set_scaling_factor(self.bed_diameter, 1)
+
+        iscale.set_scaling_factor(self.bed_area, 1)
 
         if iscale.get_scaling_factor(self.bed_area) is None:
             iscale.set_scaling_factor(self.bed_area, 1e2)
@@ -642,6 +711,22 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         if iscale.get_scaling_factor(self.vel_inter) is None:
             iscale.set_scaling_factor(self.vel_inter, 1e3)
+
+
+        # if iscale.get_scaling_factor(self.bed_area) is None:
+        #     iscale.set_scaling_factor(self.bed_area, 1)
+
+        # if iscale.get_scaling_factor(self.solute_dist_param) is None:
+        #     iscale.set_scaling_factor(self.solute_dist_param, 1)
+
+        # if iscale.get_scaling_factor(self.throughput) is None:
+        #     iscale.set_scaling_factor(self.throughput, 1)
+
+        # if iscale.get_scaling_factor(self.t_contact) is None:
+        #     iscale.set_scaling_factor(self.t_contact, 1)
+
+        # if iscale.get_scaling_factor(self.vel_inter) is None:
+        #     iscale.set_scaling_factor(self.vel_inter, 1)
 
         # if self.config.isotherm == IsothermType.langmuir:
         #     var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity

@@ -628,7 +628,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.N_Re = Var(
             initialize=4.3,
             bounds=(0.001, 60),  # Perry's - bounds relevant to N_Sh regression
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Reynolds number",
         )
