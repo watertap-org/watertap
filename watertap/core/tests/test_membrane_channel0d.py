@@ -58,6 +58,14 @@ class Test0DPropertyHelper:
         assert (5, 0) in model.properties_forward
         assert (5, 1) in model.properties_forward
 
+        assert (11, 0) not in model.properties_backward
+        assert (11, 1) not in model.properties_backward
+        assert (11, 0.5) not in model.properties_backward
+        assert (5, 0.5) not in model.properties_backward
+
+        assert (5, 0) in model.properties_backward
+        assert (5, 1) in model.properties_backward
+
     @pytest.mark.unit
     def test_getitem(self, model):
         assert model.properties_forward[5, 0] is model.properties_in[5]
@@ -107,6 +115,8 @@ class Test0DPropertyHelper:
             model.properties_forward[5]
         with pytest.raises(IndexError):
             model.properties_forward[slice(0, 10, 2), 0]
+        with pytest.raises(IndexError):
+            model.properties_forward[5, slice(0, 2, 1)]
 
     @pytest.mark.unit
     def test_keys(self, model):
