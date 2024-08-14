@@ -1013,17 +1013,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     #     is_output=True,
     #     output_category="Capital costs",
     # )
-    # exports.add(
-    #     obj=fs.CL.costing.capital_cost,
-    #     name="Primary clarifier capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of primary clarifier",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
+    exports.add(
+        obj=fs.CL.costing.capital_cost,
+        name="Primary clarifier capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of primary clarifier",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
     # exports.add(
     #     obj=fs.CL2.costing.capital_cost,
     #     name="Secondary clarifier capital cost",
@@ -1035,17 +1035,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     #     is_output=True,
     #     output_category="Capital costs",
     # )
-    exports.add(
-        obj=fs.AD.costing.capital_cost,
-        name="Anaerobic digester capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of anaerobic digester",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    # exports.add(
+    #     obj=fs.AD.costing.capital_cost,
+    #     name="Anaerobic digester capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of anaerobic digester",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
     # exports.add(
     #     obj=fs.dewater.costing.capital_cost,
     #     name="Dewatering unit capital cost",

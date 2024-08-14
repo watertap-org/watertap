@@ -117,12 +117,12 @@ class TestFullFlowsheetBioPFalse:
         m = system_frame
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.0534878, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.0581958, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            2686176.34, rel=1e-3
+            3050794.78, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            99480.65, rel=1e-3
+            95418.59, rel=1e-3
         )
 
 
@@ -209,10 +209,10 @@ class TestFullFlowsheetBioPTrue:
         m = system_frame
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.055052, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.058198, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            2762093.77, rel=1e-3
+            3050911.62, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            102656.58, rel=1e-3
+            95422.31, rel=1e-3
         )

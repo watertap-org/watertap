@@ -124,24 +124,24 @@ def main(bio_P=False):
     # Resolve with controls in place
     results = solve(m)
 
-    # pyo.assert_optimal_termination(results)
-    # check_solve(
-    #     results,
-    #     checkpoint="re-solve with controls in place",
-    #     logger=_log,
-    #     fail_flag=True,
-    # )
+    pyo.assert_optimal_termination(results)
+    check_solve(
+        results,
+        checkpoint="re-solve with controls in place",
+        logger=_log,
+        fail_flag=True,
+    )
 
     add_costing(m)
     m.fs.costing.initialize()
 
     interval_initializer(m.fs.costing)
 
-    # assert_degrees_of_freedom(m, 0)
+    assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
 
-    # pyo.assert_optimal_termination(results)
+    pyo.assert_optimal_termination(results)
 
     # display_costing(m)
     # display_performance_metrics(m)
@@ -718,17 +718,17 @@ def add_costing(m):
     # m.fs.R5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.R6.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.R7.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    # m.fs.CL.costing = UnitModelCostingBlock(
-    #     flowsheet_costing_block=m.fs.costing,
-    #     costing_method=cost_primary_clarifier,
-    # )
-    #
+    m.fs.CL.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_primary_clarifier,
+    )
+
     # m.fs.CL2.costing = UnitModelCostingBlock(
     #     flowsheet_costing_block=m.fs.costing,
     #     costing_method=cost_circular_clarifier,
     # )
 
-    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.dewater.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     # m.fs.thickener.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
@@ -891,7 +891,7 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
