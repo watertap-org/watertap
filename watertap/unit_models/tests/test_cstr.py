@@ -270,12 +270,13 @@ class TestInitializers:
         m.fs.unit.volume[0].fix(1.5e-03)
         m.fs.unit.heat_duty[0].fix(0)
         m.fs.unit.deltaP[0].fix(0)
-
+        iscale.calculate_scaling_factors(m)
         return m
 
     @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer()
+        
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
