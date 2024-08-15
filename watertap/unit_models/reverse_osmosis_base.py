@@ -875,7 +875,6 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solvent():  # scaling based on solvent flux equation
-                    [print(k,v) for k,v in self.feed_side.properties.items()]
                     sf = (
                         iscale.get_scaling_factor(self.A_comp[t, j])
                         * iscale.get_scaling_factor(self.dens_solvent)

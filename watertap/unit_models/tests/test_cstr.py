@@ -275,9 +275,7 @@ class TestInitializers:
 
     @pytest.mark.component
     def test_general_hierarchical(self, model):
-        initializer = SingleControlVolumeUnitInitializer(
-            block_solver_writer_config={"linear_presolve": False}
-        )
+        initializer = SingleControlVolumeUnitInitializer()
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
