@@ -1187,6 +1187,15 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
+        "feed.in.mass.NaCl": np.array( # kg/s
+            traj.vecs[
+                str(
+                    m.fs.unit.feed_side.properties_in[tf].flow_mass_phase_comp[
+                        "Liq", "NaCl"
+                    ]
+                )
+            ]
+        ),
         "feed.out.mass.NaCl": np.array( # kg/s
             traj.vecs[
                 str(
@@ -1230,6 +1239,11 @@ def test_RO_dynamic_instantiation():
                         tf, 1
                     ].conc_mass_phase_comp["Liq", "NaCl"]
                 )
+            ]
+        ),
+        "mixed_permeate.mass.NaCl": np.array( # kg/s
+            traj.vecs[
+                str(m.fs.unit.mixed_permeate[tf].flow_mass_phase_comp["Liq", "NaCl"])
             ]
         ),
         "mixed_permeate.conc.NaCl": np.array( # kg/m3
@@ -1297,6 +1311,13 @@ def test_RO_dynamic_instantiation():
     print("Accumulation and holdup")
     m.fs.unit.feed_side.material_accumulation.display()
     m.fs.unit.feed_side.material_holdup.display()
+
+    # print('VFR balance (L/min): ', results_dict["feed.in.vol"] - results_dict["feed.out.vol"] - results_dict["mixed_permeate.vol"])
+    # print('NaCl balance (kg/s): ', results_dict["feed.in.mass.NaCl"] - results_dict["feed.out.mass.NaCl"] - results_dict["mixed_permeate.mass.NaCl"])
+    print(results_dict["feed.in.mass.NaCl"])
+    print(results_dict["feed.out.mass.NaCl"])
+    print(results_dict["mixed_permeate.mass.NaCl"])
+    assert False
     # m.fs.unit.flux_mass_phase_comp.display()
     # m.fs.unit.mixed_permeate[190].conc_mass_phase_comp.display()
     # m.fs.unit.mixed_permeate[200].conc_mass_phase_comp.display()
