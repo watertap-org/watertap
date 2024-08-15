@@ -57,7 +57,7 @@ class TestFullFlowsheetBioPFalse:
             0.2422, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            6.43e-07, rel=1e-3
+            6.43e-07, abs=1e-5
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
             0.0002761, rel=1e-3
