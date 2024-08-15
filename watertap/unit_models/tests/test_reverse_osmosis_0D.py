@@ -994,10 +994,11 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         return m
-    
+
+
 @pytest.mark.unit
 def test_RO_dynamic_instantiation():
-    #TODO: add test to check exception for simplest RO0D with dynamics
+    # TODO: add test to check exception for simplest RO0D with dynamics
 
     m = ConcreteModel()
     # m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], time_units=pyunits.s)
@@ -1027,29 +1028,39 @@ def test_RO_dynamic_instantiation():
         TransformationFactory("dae.finite_difference").apply_to(
             m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
         )
-    
+
     NaCl_g_per_L_basis = 39
-    NaCl_kg_per_L_basis = NaCl_g_per_L_basis*1e-3
-    h2o_kg_per_L_basis = 1-NaCl_kg_per_L_basis # 0.96
-    desired_feed_flow_start = 22/60 # 22 L/min to kg/s
-    NaCl_kg_per_L_start = desired_feed_flow_start/(h2o_kg_per_L_basis/NaCl_kg_per_L_basis + 1)
-    h2o_kg_per_L_start = NaCl_kg_per_L_start*h2o_kg_per_L_basis/NaCl_kg_per_L_basis
-    desired_feed_flow_end = 24/60 # 22 L/min to kg/s
-    NaCl_kg_per_L_end = desired_feed_flow_end/(h2o_kg_per_L_basis/NaCl_kg_per_L_basis + 1)
-    h2o_kg_per_L_end = NaCl_kg_per_L_end*h2o_kg_per_L_basis/NaCl_kg_per_L_basis
+    NaCl_kg_per_L_basis = NaCl_g_per_L_basis * 1e-3
+    h2o_kg_per_L_basis = 1 - NaCl_kg_per_L_basis  # 0.96
+    desired_feed_flow_start = 22 / 60  # 22 L/min to kg/s
+    NaCl_kg_per_L_start = desired_feed_flow_start / (
+        h2o_kg_per_L_basis / NaCl_kg_per_L_basis + 1
+    )
+    h2o_kg_per_L_start = NaCl_kg_per_L_start * h2o_kg_per_L_basis / NaCl_kg_per_L_basis
+    desired_feed_flow_end = 24 / 60  # 22 L/min to kg/s
+    NaCl_kg_per_L_end = desired_feed_flow_end / (
+        h2o_kg_per_L_basis / NaCl_kg_per_L_basis + 1
+    )
+    h2o_kg_per_L_end = NaCl_kg_per_L_end * h2o_kg_per_L_basis / NaCl_kg_per_L_basis
     ramp_gradient_NaCl = NaCl_kg_per_L_end - NaCl_kg_per_L_start
     ramp_gradient_h2o = h2o_kg_per_L_end - h2o_kg_per_L_start
     # print(NaCl_kg_per_L_start, h2o_kg_per_L_start, NaCl_kg_per_L_end, h2o_kg_per_L_end)
     m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "NaCl"].fix(NaCl_kg_per_L_end)
     m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "H2O"].fix(h2o_kg_per_L_end)
-    m.fs.unit.inlet.pressure[ :].fix(900*6895)  # feed pressure (Pa)
+    m.fs.unit.inlet.pressure[:].fix(900 * 6895)  # feed pressure (Pa)
     for i in range(61):
         m.fs.unit.inlet.flow_mass_phase_comp[i, "Liq", "NaCl"].fix(NaCl_kg_per_L_start)
         m.fs.unit.inlet.flow_mass_phase_comp[i, "Liq", "H2O"].fix(h2o_kg_per_L_start)
-        m.fs.unit.inlet.flow_mass_phase_comp[60+i, "Liq", "NaCl"].fix(NaCl_kg_per_L_start+ramp_gradient_NaCl/60*i)
-        m.fs.unit.inlet.flow_mass_phase_comp[60+i, "Liq", "H2O"].fix(h2o_kg_per_L_start+ramp_gradient_h2o/60*i)
-        m.fs.unit.inlet.pressure[i].fix(800*6895)  # feed pressure (Pa)
-        m.fs.unit.inlet.pressure[60+i].fix((800+100/60*i)*6895)  # feed pressure (Pa)
+        m.fs.unit.inlet.flow_mass_phase_comp[60 + i, "Liq", "NaCl"].fix(
+            NaCl_kg_per_L_start + ramp_gradient_NaCl / 60 * i
+        )
+        m.fs.unit.inlet.flow_mass_phase_comp[60 + i, "Liq", "H2O"].fix(
+            h2o_kg_per_L_start + ramp_gradient_h2o / 60 * i
+        )
+        m.fs.unit.inlet.pressure[i].fix(800 * 6895)  # feed pressure (Pa)
+        m.fs.unit.inlet.pressure[60 + i].fix(
+            (800 + 100 / 60 * i) * 6895
+        )  # feed pressure (Pa)
 
     m.fs.unit.inlet.temperature[:].fix(293.15)  # feed temperature (K)
 
@@ -1057,10 +1068,10 @@ def test_RO_dynamic_instantiation():
     m.fs.unit.A_comp.fix(3.75e-12)  # membrane water permeability (m/Pa/s)
     m.fs.unit.B_comp.fix(3e-8)  # membrane salt permeability (m/s)
     m.fs.unit.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
-    
+
     m.fs.unit.feed_side.channel_height.fix(0.001)
-    m.fs.unit.feed_side.spacer_porosity.fix(0.729) # 72.9%
-    m.fs.unit.length.fix(1.016 - 2*0.0267) # m
+    m.fs.unit.feed_side.spacer_porosity.fix(0.729)  # 72.9%
+    m.fs.unit.length.fix(1.016 - 2 * 0.0267)  # m
 
     m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0
     m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
@@ -1159,35 +1170,22 @@ def test_RO_dynamic_instantiation():
     print("1")
     results_dict = {
         "time": np.array(traj.time),
-        "feed.out.vol": 60000*np.array( # L/min
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_out[tf].flow_vol_phase['Liq']
-                )
-            ]
+        "feed.out.vol": 60000
+        * np.array(  # L/min
+            traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_vol_phase["Liq"])]
         ),
-        "feed.in.vol": 60000*np.array( # L/min
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_in[tf].flow_vol_phase['Liq']
-                )
-            ]
+        "feed.in.vol": 60000
+        * np.array(  # L/min
+            traj.vecs[str(m.fs.unit.feed_side.properties_in[tf].flow_vol_phase["Liq"])]
         ),
-        "mixed_permeate.vol": 60000*np.array( #
-            traj.vecs[
-                str(
-                    m.fs.unit.mixed_permeate[tf].flow_vol_phase['Liq']
-                )
-            ]
+        "mixed_permeate.vol": 60000
+        * np.array(  #
+            traj.vecs[str(m.fs.unit.mixed_permeate[tf].flow_vol_phase["Liq"])]
         ),
-        "recovery": np.array( #
-            traj.vecs[
-                str(
-                    m.fs.unit.recovery_vol_phase[tf, "Liq"]
-                )
-            ]
+        "recovery": np.array(  #
+            traj.vecs[str(m.fs.unit.recovery_vol_phase[tf, "Liq"])]
         ),
-        "feed.in.mass.NaCl": np.array( # kg/s
+        "feed.in.mass.NaCl": np.array(  # kg/s
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_in[tf].flow_mass_phase_comp[
@@ -1196,7 +1194,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.out.mass.NaCl": np.array( # kg/s
+        "feed.out.mass.NaCl": np.array(  # kg/s
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp[
@@ -1205,7 +1203,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.in.conc.NaCl": np.array( # kg/m3
+        "feed.in.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_in[tf].conc_mass_phase_comp[
@@ -1214,7 +1212,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.out.conc.NaCl": np.array( # kg/m3
+        "feed.out.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp[
@@ -1223,7 +1221,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.0.conc.NaCl": np.array( # kg/m3
+        "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
@@ -1232,7 +1230,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.1.conc.NaCl": np.array( # kg/m3
+        "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
@@ -1241,17 +1239,18 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "mixed_permeate.mass.NaCl": np.array( # kg/s
+        "mixed_permeate.mass.NaCl": np.array(  # kg/s
             traj.vecs[
                 str(m.fs.unit.mixed_permeate[tf].flow_mass_phase_comp["Liq", "NaCl"])
             ]
         ),
-        "mixed_permeate.conc.NaCl": np.array( # kg/m3
+        "mixed_permeate.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"])
             ]
         ),
-        "flux_mass_phase_comp.H2O": 3600*0.5 # LMH
+        "flux_mass_phase_comp.H2O": 3600
+        * 0.5  # LMH
         * (
             np.array(
                 traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 0, "Liq", "H2O"])]
@@ -1305,7 +1304,7 @@ def test_RO_dynamic_instantiation():
     plt.tight_layout()
     plt.savefig("test_plot.png", dpi=150)
 
-    with open('model_results.p', 'wb') as fp:
+    with open("model_results.p", "wb") as fp:
         pickle.dump(results_dict, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
     print("Accumulation and holdup")
