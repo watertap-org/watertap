@@ -13,6 +13,7 @@ from pyomo.environ import (
     ConcreteModel,
     units as pyunits,
     TransformationFactory,
+    assert_optimal_termination
 )
 from pyomo.network import Port
 from idaes.core.solvers import petsc
