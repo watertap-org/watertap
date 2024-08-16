@@ -3,6 +3,8 @@ Getting Started
 
 The following sections provide information on how to setup your Conda environment and install WaterTAP on your macOS, Linux, or Windows computer.
 
+If you want to use the WaterTAP graphical user interface, you do not need to install the source code. See the :ref:`UI Install` page for details.
+
 Using Conda environments
 ------------------------
 

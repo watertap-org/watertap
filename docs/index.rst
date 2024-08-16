@@ -32,6 +32,7 @@ Content
    :maxdepth: 2
 
    getting_started
+   ui_install
    tutorials/index
    how_to_guides/index
    technical_reference/index
