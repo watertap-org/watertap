@@ -2125,6 +2125,16 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Inhibition function related to secondary substrate; inhibit uptake when inorganic nitrogen S_IN~ 0",
         )
 
+        def rule_I_IN_lim_log(self):
+            return -pyo.log(
+                1 + self.params.K_S_IN / (self.conc_mass_comp_ref["S_IN"] / mw_n)
+            )
+
+        self.I_IN_lim_log = pyo.Expression(
+            rule=rule_I_IN_lim_log,
+            doc="Inhibition function related to secondary substrate; inhibit uptake when inorganic nitrogen S_IN~ 0",
+        )
+
         def rule_I_IP_lim(self):
             return 1 / (
                 1 + self.params.K_S_IP / (self.conc_mass_comp_ref["S_IP"] / mw_p)
@@ -2132,6 +2142,16 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.I_IP_lim = pyo.Expression(
             rule=rule_I_IP_lim,
+            doc="Inhibition function related to secondary substrate; inhibit uptake when inorganic phosphorus S_IP~ 0",
+        )
+
+        def rule_I_IP_lim_log(self):
+            return -pyo.log(
+                1 + self.params.K_S_IP / (self.conc_mass_comp_ref["S_IP"] / mw_p)
+            )
+
+        self.I_IP_lim_log = pyo.Expression(
+            rule=rule_I_IP_lim_log,
             doc="Inhibition function related to secondary substrate; inhibit uptake when inorganic phosphorus S_IP~ 0",
         )
 
@@ -2143,6 +2163,14 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="hydrogen inhibition attributed to long chain fatty acids",
         )
 
+        def rule_I_h2_fa_log(self):
+            return -pyo.log(1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_fa)
+
+        self.I_h2_fa_log = pyo.Expression(
+            rule=rule_I_h2_fa_log,
+            doc="hydrogen inhibition attributed to long chain fatty acids",
+        )
+
         def rule_I_h2_c4(self):
             return 1 / (1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_c4)
 
@@ -2151,11 +2179,29 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="hydrogen inhibition attributed to valerate and butyrate uptake",
         )
 
+        def rule_I_h2_c4_log(self):
+            return -pyo.log(1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_c4)
+
+        self.I_h2_c4_log = pyo.Expression(
+            rule=rule_I_h2_c4_log,
+            doc="hydrogen inhibition attributed to valerate and butyrate uptake",
+        )
+
         def rule_I_h2_pro(self):
             return 1 / (1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_pro)
 
         self.I_h2_pro = pyo.Expression(
             rule=rule_I_h2_pro,
+            doc="hydrogen inhibition attributed to propionate uptake",
+        )
+
+        def rule_I_h2_pro_log(self):
+            return -pyo.log(
+                1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_pro
+            )
+
+        self.I_h2_pro_log = pyo.Expression(
+            rule=rule_I_h2_pro_log,
             doc="hydrogen inhibition attributed to propionate uptake",
         )
 
@@ -2197,6 +2243,13 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         self.I_nh3 = pyo.Expression(
             rule=rule_I_nh3, doc="ammonia inibition attributed to acetate uptake"
+        )
+
+        def rule_I_nh3_log(self):
+            return -pyo.log(1 + self.conc_mol_nh3 / self.params.K_I_nh3)
+
+        self.I_nh3_log = pyo.Expression(
+            rule=rule_I_nh3_log, doc="ammonia inibition attributed to acetate uptake"
         )
 
         def rule_I_pH_aa(self):
@@ -2244,53 +2297,50 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         def rule_I(self, r):
             if r == "R4" or r == "R5":
-                return (
-                    self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_IP_lim
-                )
+                return self.I_pH_aa + self.I_IN_lim_log + self.I_IP_lim_log
             elif r == "R6":
                 return (
-                    self.I[r]
-                    == pyo.exp(self.I_pH_aa)
-                    * self.I_IN_lim
-                    * self.I_h2_fa
-                    * self.I_IP_lim
+                    self.I_pH_aa
+                    + self.I_IN_lim_log
+                    + self.I_h2_fa_log
+                    + self.I_IP_lim_log
                 )
             elif r == "R7" or r == "R8":
                 return (
-                    self.I[r]
-                    == pyo.exp(self.I_pH_aa)
-                    * self.I_IN_lim
-                    * self.I_h2_c4
-                    * self.I_IP_lim
+                    self.I_pH_aa
+                    + self.I_IN_lim_log
+                    + self.I_h2_c4_log
+                    + self.I_IP_lim_log
                 )
             elif r == "R9":
                 return (
-                    self.I[r]
-                    == pyo.exp(self.I_pH_aa)
-                    * self.I_IN_lim
-                    * self.I_h2_pro
-                    * self.I_IP_lim
+                    self.I_pH_aa
+                    + self.I_IN_lim_log
+                    + self.I_h2_pro_log
+                    + self.I_IP_lim_log
                 )
             elif r == "R10":
                 return (
-                    self.I[r]
-                    == pyo.exp(self.I_pH_ac)
-                    * self.I_IN_lim
-                    * self.I_nh3
-                    * self.I_IP_lim
+                    self.I_pH_ac
+                    + self.I_IN_lim_log
+                    + self.I_nh3_log
+                    + self.I_IP_lim_log
                 )
             elif r == "R11":
-                return (
-                    self.I[r] == pyo.exp(self.I_pH_h2) * self.I_IN_lim * self.I_IP_lim
-                )
+                return self.I_pH_h2 + self.I_IN_lim_log + self.I_IP_lim_log
             else:
-                return self.I[r] == 1.0
+                return 0.0
 
-        self.I_fun = pyo.Constraint(
+        self.I_log = pyo.Expression(
             self.params.rate_reaction_idx,
             rule=rule_I,
             doc="Process inhibition functions",
         )
+
+        def rule_I_expr(self, r):
+            return pyo.exp(self.I_log[r])
+
+        self.I = pyo.Expression(self.params.rate_reaction_idx, rule=rule_I_expr)
 
         try:
 
