@@ -21,11 +21,11 @@ If you are a Linux user, you will need to use the `GitHub <https://github.com/wa
 For Windows x64 or Mac OSX on Apple Silicon (ARM64), choose from the versions listed below and click on the link corresponding to your operating system. This will download an installation file. Open the installation file to install the software.
 
 * Version 1.0.0 (2024-08-15)
-    - `Windows <https://github.com/watertap-org/watertap-ui/releases/download/24.08.13/WaterTAP-UI_24.08.15_win64.exe>`_
-    - `MacOSX ARM64 <https://github.com/watertap-org/watertap-ui/releases/download/24.08.13/WaterTAP-UI-24.8.15-arm64.dmg>`_
+    - `Windows v1.0.0 <https://github.com/watertap-org/watertap-ui/releases/download/24.08.13/WaterTAP-UI_24.08.15_win64.exe>`_
+    - `MacOSX ARM64 v1.0.0 <https://github.com/watertap-org/watertap-ui/releases/download/24.08.13/WaterTAP-UI-24.8.15-arm64.dmg>`_
 * Version 0.12.0 (2024-03-29)
-    - `Windows <https://github.com/watertap-org/watertap/releases/download/0.12.0/WaterTAP-UI-24.03.29-win64.exe>`_
-    - `MacOSX ARM64 <https://github.com/watertap-org/watertap/releases/download/0.12.0/WaterTAP-UI-24.03.29-arm64.dmg>`_
+    - `Windows v0.12.0 <https://github.com/watertap-org/watertap/releases/download/0.12.0/WaterTAP-UI-24.03.29-win64.exe>`_
+    - `MacOSX ARM64 v0.12.0 <https://github.com/watertap-org/watertap/releases/download/0.12.0/WaterTAP-UI-24.03.29-arm64.dmg>`_
 * Version 0.11.0 (2024-01-26)
-   - `Windows <https://github.com/watertap-org/watertap/releases/download/0.11.0/WaterTAP-UI_24.01.26_win64.exe>`_
-   - `MacOSX ARM64 <https://github.com/watertap-org/watertap/releases/download/0.11.0/WaterTAP-UI-24.1.26-arm64.dmg>`_
+   - `Windows v0.11.0 <https://github.com/watertap-org/watertap/releases/download/0.11.0/WaterTAP-UI_24.01.26_win64.exe>`_
+   - `MacOSX ARM64 v0.11.0 <https://github.com/watertap-org/watertap/releases/download/0.11.0/WaterTAP-UI-24.1.26-arm64.dmg>`_
