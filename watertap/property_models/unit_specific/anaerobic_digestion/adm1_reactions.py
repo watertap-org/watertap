@@ -1228,13 +1228,13 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
-        self.I = pyo.Var(
-            self.params.rate_reaction_idx,
-            initialize=1,
-            bounds=(1e-8, 10),
-            doc="Process inhibition term",
-            units=pyo.units.dimensionless,
-        )
+        # self.I_log = pyo.Var(
+        #    self.params.rate_reaction_idx,
+        #    initialize=0,
+        #    bounds=(None, None),
+        #    doc="Process inhibition term",
+        #    units=pyo.units.dimensionless,
+        # )
         self.pKW = pyo.Var(
             initialize=14,
             units=pyo.units.dimensionless,
@@ -1491,11 +1491,29 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Inhibition function related to secondary substrate; inhibit uptake when inorganic nitrogen S_IN~ 0",
         )
 
+        def rule_I_IN_lim_log(self):
+            return -pyo.log(
+                1 + self.params.K_S_IN / (self.conc_mass_comp_ref["S_IN"] / mw_n)
+            )
+
+        self.I_IN_lim_log = pyo.Expression(
+            rule=rule_I_IN_lim_log,
+            doc="Inhibition function related to secondary substrate; inhibit uptake when inorganic nitrogen S_IN~ 0",
+        )
+
         def rule_I_h2_fa(self):
             return 1 / (1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_fa)
 
         self.I_h2_fa = pyo.Expression(
             rule=rule_I_h2_fa,
+            doc="hydrogen inhibition attributed to long chain fatty acids",
+        )
+
+        def rule_I_h2_fa_log(self):
+            return -pyo.log(1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_fa)
+
+        self.I_h2_fa_log = pyo.Expression(
+            rule=rule_I_h2_fa_log,
             doc="hydrogen inhibition attributed to long chain fatty acids",
         )
 
@@ -1507,6 +1525,14 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="hydrogen inhibition attributed to valerate and butyrate uptake",
         )
 
+        def rule_I_h2_c4_log(self):
+            return -pyo.log(1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_c4)
+
+        self.I_h2_c4_log = pyo.Expression(
+            rule=rule_I_h2_c4_log,
+            doc="hydrogen inhibition attributed to valerate and butyrate uptake",
+        )
+
         def rule_I_h2_pro(self):
             return 1 / (1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_pro)
 
@@ -1515,11 +1541,28 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="hydrogen inhibition attributed to propionate uptake",
         )
 
+        def rule_I_h2_pro_log(self):
+            return -pyo.log(
+                1 + self.conc_mass_comp_ref["S_h2"] / self.params.K_I_h2_pro
+            )
+
+        self.I_h2_pro_log = pyo.Expression(
+            rule=rule_I_h2_pro_log,
+            doc="hydrogen inhibition attributed to propionate uptake",
+        )
+
         def rule_I_nh3(self):
             return 1 / (1 + self.conc_mol_nh3 / self.params.K_I_nh3)
 
         self.I_nh3 = pyo.Expression(
             rule=rule_I_nh3, doc="ammonia inibition attributed to acetate uptake"
+        )
+
+        def rule_I_nh3_log(self):
+            return -pyo.log(1 + self.conc_mol_nh3 / self.params.K_I_nh3)
+
+        self.I_nh3_log = pyo.Expression(
+            rule=rule_I_nh3_log, doc="ammonia inibition attributed to acetate uptake"
         )
 
         def rule_I_pH_aa(self):
@@ -1567,192 +1610,324 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
 
         def rule_I(self, r):
             if r == "R5" or r == "R6":
-                return self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim
+                return self.I_pH_aa + self.I_IN_lim_log
             elif r == "R7":
-                return self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_h2_fa
+                return self.I_pH_aa + self.I_IN_lim_log + self.I_h2_fa_log
             elif r == "R8" or r == "R9":
-                return self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_h2_c4
+                return self.I_pH_aa + self.I_IN_lim_log + self.I_h2_c4_log
             elif r == "R10":
-                return (
-                    self.I[r] == pyo.exp(self.I_pH_aa) * self.I_IN_lim * self.I_h2_pro
-                )
+                return self.I_pH_aa + self.I_IN_lim_log + self.I_h2_pro_log
             elif r == "R11":
-                return self.I[r] == pyo.exp(self.I_pH_ac) * self.I_IN_lim * self.I_nh3
+                return self.I_pH_ac + self.I_IN_lim_log + self.I_nh3_log
             elif r == "R12":
-                return self.I[r] == pyo.exp(self.I_pH_h2) * self.I_IN_lim
+                return self.I_pH_h2 + self.I_IN_lim_log
             else:
-                return self.I[r] == 1.0
+                return 0.0
 
-        self.I_fun = pyo.Constraint(
+        self.I_log = pyo.Expression(
             self.params.rate_reaction_idx,
             rule=rule_I,
             doc="Process inhibition functions",
         )
 
-        try:
+        def rule_I_expr(self, r):
+            return pyo.exp(self.I_log[r])
+
+        self.I = pyo.Expression(self.params.rate_reaction_idx, rule=rule_I_expr)
+
+        # try:
+        if True:
 
             def rate_expression_rule(b, r):
+                reaction_rate_units = pyo.units.kg / pyo.units.m**3 / pyo.units.s
                 if r == "R1":
                     # R1:  Disintegration
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_dis * b.conc_mass_comp_ref["X_c"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_dis * b.conc_mass_comp_ref["X_c"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R2":
                     # R2: Hydrolysis of carbohydrates
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_hyd_ch * b.conc_mass_comp_ref["X_ch"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_hyd_ch * b.conc_mass_comp_ref["X_ch"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R3":
                     # R3: Hydrolysis of proteins
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_hyd_pr * b.conc_mass_comp_ref["X_pr"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_hyd_pr * b.conc_mass_comp_ref["X_pr"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R4":
                     # R4: Hydrolysis of lipids
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_hyd_li * b.conc_mass_comp_ref["X_li"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_hyd_li * b.conc_mass_comp_ref["X_li"],
+                                to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                            )
+                            * pyo.units.s
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
                     )
                 elif r == "R5":
                     # R5: Uptake of sugars
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_su
-                        * b.conc_mass_comp_ref["S_su"]
-                        / (b.params.K_S_su + b.conc_mass_comp_ref["S_su"])
-                        * b.conc_mass_comp_ref["X_su"]
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_su * b.conc_mass_comp_ref["S_su"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_su + b.conc_mass_comp_ref["S_su"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            (b.conc_mass_comp_ref["X_su"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + b.I_log[r]
                     )
                 elif r == "R6":
                     # R6: Uptake of amino acids
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_aa
-                        * b.conc_mass_comp_ref["S_aa"]
-                        / (b.params.K_S_aa + b.conc_mass_comp_ref["S_aa"])
-                        * b.conc_mass_comp_ref["X_aa"]
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_aa * b.conc_mass_comp_ref["S_aa"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_aa + b.conc_mass_comp_ref["S_aa"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["X_aa"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        + b.I_log[r]
                     )
                 elif r == "R7":
                     # R7: Uptake of long chain fatty acids (LCFAs)
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_fa
-                        * b.conc_mass_comp_ref["S_fa"]
-                        / (b.params.K_S_fa + b.conc_mass_comp_ref["S_fa"])
-                        * b.conc_mass_comp_ref["X_fa"]
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_fa * b.conc_mass_comp_ref["S_fa"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_fa + b.conc_mass_comp_ref["S_fa"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["X_fa"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        + b.I_log[r]
                     )
                 elif r == "R8":
                     # R8: Uptake of valerate
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_c4
-                        * b.conc_mass_comp_ref["S_va"]
-                        / (b.params.K_S_c4 + b.conc_mass_comp_ref["S_va"])
-                        * b.conc_mass_comp_ref["X_c4"]
-                        * (
-                            b.conc_mass_comp_ref["S_va"]
-                            / (
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_c4 * b.conc_mass_comp_ref["S_va"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_c4 + b.conc_mass_comp_ref["S_va"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["X_c4"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["S_va"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        - pyo.log(
+                            (
                                 b.conc_mass_comp_ref["S_va"]
                                 + b.conc_mass_comp_ref["S_bu"]
                                 + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
+                            * pyo.units.m**3
+                            / pyo.units.kg
                         )
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        + b.I_log[r]
                     )
                 elif r == "R9":
                     # R9:  Uptake of butyrate
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_c4
-                        * b.conc_mass_comp_ref["S_bu"]
-                        / (b.params.K_S_c4 + b.conc_mass_comp_ref["S_bu"])
-                        * b.conc_mass_comp_ref["X_c4"]
-                        * (
-                            b.conc_mass_comp_ref["S_bu"]
-                            / (
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_c4 * b.conc_mass_comp_ref["S_bu"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_c4 + b.conc_mass_comp_ref["S_bu"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["X_c4"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["S_bu"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        - pyo.log(
+                            (
                                 b.conc_mass_comp_ref["S_va"]
                                 + b.conc_mass_comp_ref["S_bu"]
                                 + 1e-10 * pyo.units.kg / pyo.units.m**3
                             )
+                            * pyo.units.m**3
+                            / pyo.units.kg
                         )
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        + b.I_log[r]
                     )
                 elif r == "R10":
                     # R10: Uptake of propionate
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_pro
-                        * b.conc_mass_comp_ref["S_pro"]
-                        / (b.params.K_S_pro + b.conc_mass_comp_ref["S_pro"])
-                        * b.conc_mass_comp_ref["X_pro"]
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_pro * b.conc_mass_comp_ref["S_pro"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_pro + b.conc_mass_comp_ref["S_pro"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["X_pro"]
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + b.I_log[r]
                     )
                 elif r == "R11":
                     # R11: Uptake of acetate
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_ac
-                        * b.conc_mass_comp_ref["S_ac"]
-                        / (b.params.K_S_ac + b.conc_mass_comp_ref["S_ac"])
-                        * b.conc_mass_comp_ref["X_ac"]
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_ac * b.conc_mass_comp_ref["S_ac"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_ac + b.conc_mass_comp_ref["S_ac"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["X_ac"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        + b.I_log[r]
                     )
                 elif r == "R12":
                     # R12: Uptake of hydrogen
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_m_h2
-                        * b.conc_mass_comp_ref["S_h2"]
-                        / (b.params.K_S_h2 + b.conc_mass_comp_ref["S_h2"])
-                        * b.conc_mass_comp_ref["X_h2"]
-                        * b.I[r],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == (
+                        pyo.log(
+                            pyo.units.convert(
+                                b.params.k_m_h2 * b.conc_mass_comp_ref["S_h2"],
+                                to_units=reaction_rate_units,
+                            )
+                            / reaction_rate_units
+                        )
+                        - pyo.log(
+                            (b.params.K_S_h2 + b.conc_mass_comp_ref["S_h2"])
+                            * pyo.units.m**3
+                            / pyo.units.kg
+                        )
+                        + pyo.log(
+                            b.conc_mass_comp_ref["X_h2"] * pyo.units.m**3 / pyo.units.kg
+                        )
+                        + b.I_log[r]
                     )
                 elif r == "R13":
                     # R13: Decay of X_su
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_dec_X_su * b.conc_mass_comp_ref["X_su"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_dec_X_su * b.conc_mass_comp_ref["X_su"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R14":
                     # R14: Decay of X_aa
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_dec_X_aa * b.conc_mass_comp_ref["X_aa"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_dec_X_aa * b.conc_mass_comp_ref["X_aa"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R15":
                     # R15: Decay of X_fa
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_dec_X_fa * b.conc_mass_comp_ref["X_fa"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_dec_X_fa * b.conc_mass_comp_ref["X_fa"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R16":
                     # R16: Decay of X_c4
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_dec_X_c4 * b.conc_mass_comp_ref["X_c4"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_dec_X_c4 * b.conc_mass_comp_ref["X_c4"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R17":
                     # R17: Decay of X_pro
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_dec_X_pro * b.conc_mass_comp_ref["X_pro"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_dec_X_pro * b.conc_mass_comp_ref["X_pro"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R18":
                     # R18: Decay of X_ac
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_dec_X_ac * b.conc_mass_comp_ref["X_ac"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
+                        pyo.units.convert(
+                            b.params.k_dec_X_ac * b.conc_mass_comp_ref["X_ac"],
+                            to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                        )
+                        / reaction_rate_units
                     )
                 elif r == "R19":
                     # R19: Decay of X_h2
-                    return b.reaction_rate[r] == (
+                    return pyo.log(b.reaction_rate[r] / reaction_rate_units) == pyo.log(
                         pyo.units.convert(b.params.k_dec_X_h2, to_units=1 / pyo.units.s)
                         * b.conc_mass_comp_ref["X_h2"]
+                        / reaction_rate_units
                     )
                 else:
                     raise BurntToast()
@@ -1763,16 +1938,16 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 doc="ADM1 rate expressions",
             )
 
-        except AttributeError:
-            # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.reaction_rate)
-            self.del_component(self.rate_expression)
-            raise
+        # except AttributeError:
+        #    # If constraint fails, clean up so that DAE can try again later
+        #    self.del_component(self.reaction_rate)
+        #    self.del_component(self.rate_expression)
+        #    raise
 
         for i, c in self.rates.items():
             iscale.set_scaling_factor(self.reaction_rate[i], 1 / c)
 
-        iscale.set_scaling_factor(self.I, 1e1)
+        iscale.set_scaling_factor(self.I_log, 1e0)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)
@@ -1792,12 +1967,3 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-
-        for i, c in self.rate_expression.items():
-            iscale.constraint_scaling_transform(
-                c,
-                iscale.get_scaling_factor(
-                    self.reaction_rate[i], default=1, warning=True
-                ),
-                overwrite=True,
-            )
