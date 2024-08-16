@@ -1228,13 +1228,6 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
-        # self.I_log = pyo.Var(
-        #    self.params.rate_reaction_idx,
-        #    initialize=0,
-        #    bounds=(None, None),
-        #    doc="Process inhibition term",
-        #    units=pyo.units.dimensionless,
-        # )
         self.pKW = pyo.Var(
             initialize=14,
             units=pyo.units.dimensionless,
@@ -1818,7 +1811,6 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         for i, c in self.rates.items():
             iscale.set_scaling_factor(self.reaction_rate[i], 1 / c)
 
-        iscale.set_scaling_factor(self.I_log, 1e0)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)
