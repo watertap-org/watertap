@@ -2334,13 +2334,17 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         self.I_log = pyo.Expression(
             self.params.rate_reaction_idx,
             rule=rule_I,
-            doc="Process inhibition functions",
+            doc="log of Process inhibition functions",
         )
 
         def rule_I_expr(self, r):
             return pyo.exp(self.I_log[r])
 
-        self.I = pyo.Expression(self.params.rate_reaction_idx, rule=rule_I_expr)
+        self.I = pyo.Expression(
+            self.params.rate_reaction_idx,
+            rule=rule_I_expr,
+            doc="Process inhibition functions",
+        )
 
         try:
 
