@@ -1831,13 +1831,6 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
-        self.I = pyo.Var(
-            self.params.rate_reaction_idx,
-            initialize=1,
-            bounds=(1e-8, 10),
-            doc="Process inhibition term",
-            units=pyo.units.dimensionless,
-        )
         self.pKW = pyo.Var(
             initialize=14,
             units=pyo.units.dimensionless,
