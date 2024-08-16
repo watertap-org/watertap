@@ -2627,7 +2627,6 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         for i, c in self.rates.items():
             iscale.set_scaling_factor(self.reaction_rate[i], 1 / c)
 
-        iscale.set_scaling_factor(self.I, 1e1)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)
