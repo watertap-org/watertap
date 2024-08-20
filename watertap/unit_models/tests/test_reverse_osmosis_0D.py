@@ -31,7 +31,6 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
     degrees_of_freedom,
-    degrees_of_freedom,
 )
 import idaes.core.util.scaling as iscale
 from watertap.core import (
@@ -1224,7 +1223,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.0.conc.NaCl": np.array( # kg/m3
+        "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
@@ -1233,7 +1232,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.1.conc.NaCl": np.array( # kg/m3
+        "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
@@ -1319,7 +1318,7 @@ def test_RO_dynamic_instantiation():
     print(results_dict["feed.in.mass.NaCl"])
     print(results_dict["feed.out.mass.NaCl"])
     print(results_dict["mixed_permeate.mass.NaCl"])
-    
+
     # m.fs.unit.flux_mass_phase_comp.display()
     # m.fs.unit.mixed_permeate[190].conc_mass_phase_comp.display()
     # m.fs.unit.mixed_permeate[200].conc_mass_phase_comp.display()
