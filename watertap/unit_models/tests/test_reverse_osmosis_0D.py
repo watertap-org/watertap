@@ -14,6 +14,7 @@ from pyomo.environ import (
     units as pyunits,
     TransformationFactory,
     assert_optimal_termination,
+    value,
 )
 from pyomo.network import Port
 from idaes.core.solvers import petsc
@@ -53,6 +54,8 @@ from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import pytest, pickle
 
 from idaes.core.solvers import petsc
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 # -----------------------------------------------------------------------------
@@ -1316,7 +1319,7 @@ def test_RO_dynamic_instantiation():
     print(results_dict["feed.in.mass.NaCl"])
     print(results_dict["feed.out.mass.NaCl"])
     print(results_dict["mixed_permeate.mass.NaCl"])
-    assert False
+    
     # m.fs.unit.flux_mass_phase_comp.display()
     # m.fs.unit.mixed_permeate[190].conc_mass_phase_comp.display()
     # m.fs.unit.mixed_permeate[200].conc_mass_phase_comp.display()
