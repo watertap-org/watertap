@@ -633,22 +633,22 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             )
 
         # pre-solve using interval arithmetic
-        try:
-            interval_initializer(self)
-        except InfeasibleConstraintException as infeascon:
-            init_log.error(f"{infeascon}")
-        self.feed_side.display()
-        self.feed_side.material_holdup_calculation.pprint(verbose=True)
-        self.feed_side.material_holdup_calculation.display()
-        self.feed_side.material_accumulation.display()
-        self.feed_side.material_accumulation_disc_eq.pprint()
-        self.feed_side.material_holdup.display()
+        # try:
+        interval_initializer(self)
+        # except InfeasibleConstraintException as infeascon:
+        #     init_log.error(f"{infeascon}")
+        # self.feed_side.display()
+        # self.feed_side.material_holdup_calculation.pprint(verbose=True)
+        # self.feed_side.material_holdup_calculation.display()
+        # self.feed_side.material_accumulation.display()
+        # self.feed_side.material_accumulation_disc_eq.pprint()
+        # self.feed_side.material_holdup.display()
         # Create solver
         opt = get_solver(solver, optarg)
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=True)
+            res = opt.solve(self, tee=slc)
             # occasionally it might be worth retrying a solve
             if not check_optimal_termination(res):
                 init_log.warning(

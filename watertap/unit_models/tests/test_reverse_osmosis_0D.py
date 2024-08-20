@@ -1221,7 +1221,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
+        "feed.prop_int.0.conc.NaCl": np.array( # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
@@ -1230,7 +1230,7 @@ def test_RO_dynamic_instantiation():
                 )
             ]
         ),
-        "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
+        "feed.prop_int.1.conc.NaCl": np.array( # kg/m3
             traj.vecs[
                 str(
                     m.fs.unit.feed_side.properties_interface[
