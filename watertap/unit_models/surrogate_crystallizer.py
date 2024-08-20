@@ -46,7 +46,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom, check_s
 
 # import watertap.property_models.cryst_prop_pack as props2
 import watertap.property_models.water_prop_pack as props3
-from watertap_oli.examples.second_demo.components.surrogate_crystallizer_costing import (
+from watertap.costing.unit_models.surrogate_crystallizer import (
     cost_surrogate_crystallizer,
 )
 
