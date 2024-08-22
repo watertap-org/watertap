@@ -72,8 +72,8 @@ def main():
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
-    optimize_set_up(m)
-    solve(m, solver=solver)
+    #optimize_set_up(m)
+    #solve(m, solver=solver)
 
     #print("\n***---optimization results---***")
     #display_system(m)
@@ -230,13 +230,16 @@ def build():
     m.fs.s08 = Arc(source=m.fs.tb_vapor.outlet, destination=m.fs.condenser.hot_side_inlet)
    
     m.fs.s09 = Arc(source=m.fs.condenser.cold_side_outlet, destination=m.fs.chiller.inlet)
+    
+
     m.fs.s10 = Arc(source=m.fs.condenser.hot_side_outlet, destination=m.fs.distillate.inlet)
 
+   
     m.fs.eq_equal_temperature = Constraint(
-        expr=m.fs.chiller.control_volume.properties_out[0].temperature
-        == m.fs.condenser.cold_side.properties_in[0].temperature
+        expr=m.fs.chiller.control_volume.heat[0]
+        == m.fs.condenser.cold_side.heat[0]
     )
-
+    
     
     TransformationFactory("network.expand_arcs").apply_to(m)
     add_costs(m)
@@ -284,7 +287,7 @@ def add_costs(m):
     m.fs.chiller.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
        costing_method=cost_heater_chiller,
-        costing_method_arguments={"HC_type": "chiller"},
+       costing_method_arguments={"HC_type": "chiller"},
     )
 
     m.fs.condenser.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -303,10 +306,10 @@ def set_operating_conditions(m):
     m.fs.feed.temperature[0].fix(273.15 + 20)
 
 
-    m.fs.crystallizer.inlet.temperature[0].set_value(273.15 + 50 )
+    m.fs.crystallizer.inlet.temperature[0].fix(273.15 + 100 )
     m.fs.crystallizer.solids.flow_mass_phase_comp[0, "Sol", "NaCl"].fix(0.1)
     m.fs.heater.overall_heat_transfer_coefficient.fix(2e3)
-    m.fs.heater.area.fix(10)
+    m.fs.heater.area.set_value(10)
 
     # Fix
     m.fs.crystallizer.crystal_growth_rate.fix()
@@ -366,6 +369,7 @@ def initialize_system(m, solver=None, verbose=True):
     propagate_state(m.fs.s02)
     m.fs.heater.initialize()
     m.fs.heater.cold_side_inlet.unfix()
+    m.fs.heater.area.unfix()
     propagate_state(m.fs.s03)
     propagate_state(m.fs.s04)
     m.fs.crystallizer.inlet.flow_mass_phase_comp[0,"Liq", "H2O"] = m.fs.heater.cold_side_outlet.flow_mass_phase_comp[0,"Liq", "H2O"].value
@@ -382,11 +386,14 @@ def initialize_system(m, solver=None, verbose=True):
     
     m.fs.condenser.initialize()
     m.fs.condenser.hot_side_inlet.unfix()
+    m.fs.condenser.hot_side_inlet.flow_mass_phase_comp[0,"Vap", "H2O"].fix()
+
     
     propagate_state(m.fs.s09)
-    m.fs.chiller.initialize()
+    #m.fs.chiller.initialize()
     propagate_state(m.fs.s10)
     m.fs.distillate.initialize()
+    print("DOF final:", degrees_of_freedom(m.fs))
     m.fs.costing.initialize()
 
    
@@ -395,11 +402,13 @@ def initialize_system(m, solver=None, verbose=True):
 def optimize_set_up(m):
     # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
-
-    m.fs.heater.area.unfix()
-    m.fs.heater.area.setlb(1)
-    m.fs.heater.area.setub(750)
     
+    m.fs.crystallizer.inlet.temperature.unfix()
+    m.fs.crystallizer.inlet.temperature.setlb(273.15 +50)
+    m.fs.crystallizer.inlet.temperature.setub(273.15 +55)
+    m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].lb = 400
+    m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].set_value(800)
+    print("DOF final optimization:", degrees_of_freedom(m.fs))
     # additional constraints
     Temperature_rise = 10e5
     m.fs.eq_heater_temperature_rise = Constraint(
