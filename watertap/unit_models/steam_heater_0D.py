@@ -22,6 +22,7 @@ from watertap.costing.unit_models.heat_exchanger import (
 )
 from enum import Enum, auto
 from pyomo.common.config import ConfigValue
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 _log = idaeslog.getLogger(__name__)
@@ -154,12 +155,15 @@ class SteamHeater0DData(HeatExchangerData):
             self.hot_side_inlet.fix()
             self.cold_side_inlet.fix()
             self.cold_side_outlet.unfix()
+            self.area.unfix()
+           
 
             super().initialize_build(*args, **kwargs)
             self.area.unfix()
             self.cold_side_outlet.temperature[0].fix(cold_side_outlet_temperature)
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"]
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix()
+            for j in self.cold_side.config.property_package.solute_set:
+                self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j]
+                self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j].fix()
 
             for j in self.cold_side.config.property_package.component_list:
                 self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", j].unfix()
@@ -176,9 +180,6 @@ class SteamHeater0DData(HeatExchangerData):
                     idaeslog.condition(res)
                 )
             )
-
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
-            self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
 
             opt = get_solver(solver, optarg)
 
