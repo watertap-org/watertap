@@ -87,7 +87,6 @@ from watertap.core.util.initialization import (
 #     cost_primary_clarifier,
 # )
 
-
 from idaes.core.util.model_diagnostics import DegeneracyHunter
 from idaes.core.util import DiagnosticsToolbox
 

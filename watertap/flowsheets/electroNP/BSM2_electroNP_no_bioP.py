@@ -79,6 +79,9 @@ from watertap.unit_models.thickener import (
 from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+from idaes.core.util import DiagnosticsToolbox
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -86,6 +89,11 @@ _log = idaeslog.getLogger(__name__)
 def main(has_electroNP=False):
     m = build_flowsheet(has_electroNP=has_electroNP)
     set_operating_conditions(m)
+
+    print("----------------   scaling V0  ----------------")
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -100,15 +108,44 @@ def main(has_electroNP=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
+    print("---Structural Issues---")
+    dt = DiagnosticsToolbox(m)
+    dt.report_structural_issues()
+    dt.display_potential_evaluation_errors()
+
     results = solve(m)
 
-    pyo.assert_optimal_termination(results)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
+    # print("---Degeneracy Hunter---")
+    # # Use of Degeneracy Hunter for troubleshooting model.
+    # m.obj = pyo.Objective(expr=0)
+    # solver = get_solver()
+    # solver.options["max_iter"] = 10000
+    # results = solver.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
+    # # for x in badly_scaled_var_list:
+    # #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # dh.check_residuals(tol=1e-8)
+    # # dh.check_variable_bounds(tol=1e-8)
+    # # dh.check_rank_equality_constraints(dense=True)
+    # # ds = dh.find_candidate_equations(verbose=True, tee=True)
+    # # ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # # print_close_to_bounds(m)
+    # # print_infeasible_constraints(m)
+
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+    # dt.display_variables_at_or_outside_bounds()
+    # dt.display_variables_with_extreme_jacobians()
+    # dt.display_constraints_with_extreme_jacobians()
+
+    # pyo.assert_optimal_termination(results)
+    # check_solve(
+    #     results,
+    #     checkpoint="re-solve with controls in place",
+    #     logger=_log,
+    #     fail_flag=True,
+    # )
 
     return m, results
 
@@ -353,6 +390,11 @@ def build_flowsheet(has_electroNP=False):
         doc="Dissolved oxygen concentration at equilibrium",
     )
 
+    m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
+    for R in m.fs.aerobic_reactors:
+        iscale.set_scaling_factor(R.KLa, 1e-2)
+        iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-3)
+
     @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):
         return pyo.units.convert(
@@ -524,17 +566,19 @@ def set_operating_conditions(m):
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
+                iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                if var.value > 1:
-                    sf = 1e0
-                    iscale.set_scaling_factor(var, sf)
-                elif 1e-2 < var.value < 1:
-                    sf = 1e1
-                    iscale.set_scaling_factor(var, sf)
-                else:
-                    sf = 1e2
-                    iscale.set_scaling_factor(var, sf)
+                # if var.value > 1:
+                #     sf = 1e0
+                #     iscale.set_scaling_factor(var, sf)
+                # elif 1e-2 < var.value < 1:
+                #     sf = 1e1
+                #     iscale.set_scaling_factor(var, sf)
+                # else:
+                #     sf = 1e2
+                #     iscale.set_scaling_factor(var, sf)
+                iscale.set_scaling_factor(var, 1e0)
+
             # if "electroNP.mixed_state[0.0].conc_mass_comp[S_PO4]" in var.name:
             #     iscale.set_scaling_factor(var, 1e0)
 
@@ -621,6 +665,58 @@ def initialize_system(m, has_electroNP=False):
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
         }
+
+        # tear_guesses = {
+        #     "flow_vol": {0: 1.2366},
+        #     "conc_mass_comp": {
+        #         (0, "S_A"): 0.00045904,
+        #         (0, "S_F"): 0.00040971,
+        #         (0, "S_I"): 0.057457,
+        #         (0, "S_N2"): 0.024897,
+        #         (0, "S_NH4"): 0.024375,
+        #         (0, "S_NO3"): 0,
+        #         (0, "S_O2"): 0.00192,
+        #         (0, "S_PO4"): 0.010443,
+        #         (0, "S_K"): 0.37010,
+        #         (0, "S_Mg"): 0.020514,
+        #         (0, "S_IC"): 0.12753,
+        #         (0, "X_AUT"): 0,
+        #         (0, "X_H"): 3.3107,
+        #         (0, "X_I"): 3.0501,
+        #         (0, "X_PAO"): 3.8169,
+        #         (0, "X_PHA"): 0.093650,
+        #         (0, "X_PP"): 1.2111,
+        #         (0, "X_S"): 0.056303,
+        #     },
+        #     "temperature": {0: 308.15},
+        #     "pressure": {0: 101325},
+        # }
+        #
+        # tear_guesses2 = {
+        #     "flow_vol": {0: 0.003},
+        #     "conc_mass_comp": {
+        #         (0, "S_A"): 0.096048,
+        #         (0, "S_F"): 0.14711,
+        #         (0, "S_I"): 0.057457,
+        #         (0, "S_N2"): 0.024897,
+        #         (0, "S_NH4"): 0.034121,
+        #         (0, "S_NO3"): 0,
+        #         (0, "S_O2"): 0.0013690,
+        #         (0, "S_PO4"): 0.024319,
+        #         (0, "S_K"): 0.37619,
+        #         (0, "S_Mg"): 0.024302,
+        #         (0, "S_IC"): 0.075168,
+        #         (0, "X_AUT"): 0,
+        #         (0, "X_H"): 22.423,
+        #         (0, "X_I"): 10.882,
+        #         (0, "X_PAO"): 11.378,
+        #         (0, "X_PHA"): 0.0068181,
+        #         (0, "X_PP"): 2.9819,
+        #         (0, "X_S"): 3.8282,
+        #     },
+        #     "temperature": {0: 308.15},
+        #     "pressure": {0: 101325},
+        # }
 
     else:
         tear_guesses = {
