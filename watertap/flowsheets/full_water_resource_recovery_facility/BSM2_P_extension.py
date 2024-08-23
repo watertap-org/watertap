@@ -548,7 +548,7 @@ def initialize_system(m, bio_P=True, solver=None):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 5
+    seq.options.iterLim = 1
     seq.options.tear_set = [m.fs.stream5, m.fs.stream10adm]
 
     G = seq.create_graph(m)
@@ -678,7 +678,7 @@ def initialize_system(m, bio_P=True, solver=None):
 
 def solve(m, solver=None):
     if solver is None:
-        solver = get_solver()
+        solver = get_solver(options={"tol": 1e-09})
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)

@@ -574,7 +574,7 @@ def add_reactor_volume_equalities(m):
 
 def solve(blk, solver=None, tee=False):
     if solver is None:
-        solver = get_solver()
+        solver = get_solver(options={"tol": 1e-09})
     results = solver.solve(blk, tee=tee)
     pyo.assert_optimal_termination(results)
     return results
