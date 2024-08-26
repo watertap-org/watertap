@@ -592,29 +592,29 @@ def set_operating_conditions(m):
 
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+            if "flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e0)
+                # if var.value > 1e-1:
+                #     sf = 1e0
+                #     iscale.set_scaling_factor(var, sf)
+                # else:
+                #     sf = 1e3
+                #     iscale.set_scaling_factor(var, sf)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-            # if "flow_vol" in var.name:
-            #     if var.value > 1e-1:
-            #         sf = 1e0
-            #         iscale.set_scaling_factor(var, sf)
-            #     else:
-            #         sf = 1e3
-            #         iscale.set_scaling_factor(var, sf)
+                iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                if var.value > 1:
-                    sf = 1e0
-                    iscale.set_scaling_factor(var, sf)
-                elif 1e-2 < var.value < 1:
-                    sf = 1e1
-                    iscale.set_scaling_factor(var, sf)
-                else:
-                    sf = 1e2
-                    iscale.set_scaling_factor(var, sf)
+                # if var.value > 1:
+                #     sf = 1e0
+                #     iscale.set_scaling_factor(var, sf)
+                # elif 1e-2 < var.value < 1:
+                #     sf = 1e1
+                #     iscale.set_scaling_factor(var, sf)
+                # else:
+                #     sf = 1e2
+                #     iscale.set_scaling_factor(var, sf)
+                iscale.set_scaling_factor(var, 1e1)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -747,6 +747,59 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_PHA"): 0.0072,
                 (0, "X_PP"): 3.2,
                 (0, "X_S"): 3.7,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        # fixed scaling
+        tear_guesses = {
+            "flow_vol": {0: 1.2368},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.0006,
+                (0, "S_F"): 0.0004,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.045,
+                (0, "S_NH4"): 0.0075,
+                (0, "S_NO3"): 0.003,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 0.011,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.023,
+                (0, "S_IC"): 0.13,
+                (0, "X_AUT"): 0.10,
+                (0, "X_H"): 3.6,
+                (0, "X_I"): 3.2,
+                (0, "X_PAO"): 3.6,
+                (0, "X_PHA"): 0.094,
+                (0, "X_PP"): 1.16,
+                (0, "X_S"): 0.059,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses2 = {
+            "flow_vol": {0: 0.003},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.10,
+                (0, "S_F"): 0.16,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.036,
+                (0, "S_NH4"): 0.03,
+                (0, "S_NO3"): 0.002,
+                (0, "S_O2"): 0.0013,
+                (0, "S_PO4"): 0.024,
+                (0, "S_K"): 0.38,
+                (0, "S_Mg"): 0.027,
+                (0, "S_IC"): 0.072,
+                (0, "X_AUT"): 0.25,
+                (0, "X_H"): 23.0,
+                (0, "X_I"): 11.3,
+                (0, "X_PAO"): 10.8,
+                (0, "X_PHA"): 0.0058,
+                (0, "X_PP"): 2.9,
+                (0, "X_S"): 3.8,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -904,6 +957,59 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_PHA"): 0.0057,
                 (0, "X_PP"): 3.1,
                 (0, "X_S"): 3.8,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        # fixed scaling
+        tear_guesses = {
+            "flow_vol": {0: 1.2368},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.0006,
+                (0, "S_F"): 0.0004,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.047,
+                (0, "S_NH4"): 0.0075,
+                (0, "S_NO3"): 0.003,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 0.73,
+                (0, "S_K"): 0.37,
+                (0, "S_Mg"): 0.020,
+                (0, "S_IC"): 0.13,
+                (0, "X_AUT"): 0.11,
+                (0, "X_H"): 3.5,
+                (0, "X_I"): 3.2,
+                (0, "X_PAO"): 3.2,
+                (0, "X_PHA"): 0.084,
+                (0, "X_PP"): 1.07,
+                (0, "X_S"): 0.057,
+            },
+            "temperature": {0: 308.15},
+            "pressure": {0: 101325},
+        }
+
+        tear_guesses2 = {
+            "flow_vol": {0: 0.003},
+            "conc_mass_comp": {
+                (0, "S_A"): 0.097,
+                (0, "S_F"): 0.15,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.036,
+                (0, "S_NH4"): 0.03,
+                (0, "S_NO3"): 0.002,
+                (0, "S_O2"): 0.0013,
+                (0, "S_PO4"): 0.74,
+                (0, "S_K"): 0.38,
+                (0, "S_Mg"): 0.024,
+                (0, "S_IC"): 0.075,
+                (0, "X_AUT"): 0.28,
+                (0, "X_H"): 23.4,
+                (0, "X_I"): 11.4,
+                (0, "X_PAO"): 10.1,
+                (0, "X_PHA"): 0.0044,
+                (0, "X_PP"): 2.7,
+                (0, "X_S"): 3.9,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -1116,8 +1222,8 @@ if __name__ == "__main__":
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            "R3 inlet": m.fs.R3.inlet,
-            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            # "R3 inlet": m.fs.R3.inlet,
+            # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
             # "R1": m.fs.R1.outlet,
             # "R2": m.fs.R2.outlet,
             # "R3": m.fs.R3.outlet,
