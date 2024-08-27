@@ -142,16 +142,16 @@ def main(bio_P=False):
     # # print_close_to_bounds(m)
     # # print_infeasible_constraints(m)
 
-    # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-    m.fs.R5.KLa.fix(240)
-    m.fs.R6.KLa.fix(240)
-    m.fs.R7.KLa.fix(84)
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-
-    # Resolve with controls in place
-    results = solve(m)
+    # # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
+    # m.fs.R5.KLa.fix(240)
+    # m.fs.R6.KLa.fix(240)
+    # m.fs.R7.KLa.fix(84)
+    # m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    #
+    # # Resolve with controls in place
+    # results = solve(m)
 
     pyo.assert_optimal_termination(results)
     check_solve(
@@ -1217,13 +1217,13 @@ def solve(m, solver=None):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
             # "R3 inlet": m.fs.R3.inlet,
-            # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
             # "R1": m.fs.R1.outlet,
             # "R2": m.fs.R2.outlet,
             # "R3": m.fs.R3.outlet,

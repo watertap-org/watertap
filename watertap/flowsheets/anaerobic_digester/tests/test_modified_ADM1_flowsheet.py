@@ -58,10 +58,10 @@ class TestADM1BioPFalse:
             0.003, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            8.3487, rel=1e-3
+            8.4935, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-            21.742, rel=1e-3
+            22.163, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
             0.05745, rel=1e-3
@@ -71,7 +71,7 @@ class TestADM1BioPFalse:
         ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-        ) == pytest.approx(2.0118, rel=1e-3)
+        ) == pytest.approx(2.0167, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
         ) == pytest.approx(0, abs=1e-6)
@@ -80,16 +80,16 @@ class TestADM1BioPFalse:
         ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(74.264, rel=1e-3)
+        ) == pytest.approx(65.479, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-            1.1584, rel=1e-2
+            1.0654, rel=1e-2
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-        ) == pytest.approx(0.80665, rel=1e-3)
+        ) == pytest.approx(0.71312, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(1.1925, rel=1e-3)
+        ) == pytest.approx(1.2023, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
         ) == pytest.approx(0, abs=1e-6)
@@ -97,7 +97,7 @@ class TestADM1BioPFalse:
             0, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            14.257, rel=1e-3
+            14.875, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
@@ -109,7 +109,7 @@ class TestADM1BioPFalse:
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
         ) == pytest.approx(0, abs=1e-6)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            3.5803, rel=1e-3
+            3.3158, rel=1e-3
         )
 
 
@@ -137,10 +137,10 @@ class TestADM1BioPTrue:
             0.003, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            9.0805, rel=1e-3
+            9.1528, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-            23.680, rel=1e-3
+            23.908, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
             0.05745, rel=1e-3
@@ -150,7 +150,7 @@ class TestADM1BioPTrue:
         ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-        ) == pytest.approx(1.9643, rel=1e-3)
+        ) == pytest.approx(1.9658, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
         ) == pytest.approx(0, abs=1e-6)
@@ -159,16 +159,16 @@ class TestADM1BioPTrue:
         ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(4.5236, rel=1e-3)
+        ) == pytest.approx(4.0233, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-            1.4070, rel=1e-2
+            1.2776, rel=1e-2
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-        ) == pytest.approx(1.0553, rel=1e-3)
+        ) == pytest.approx(0.92538, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(0.62436, rel=1e-3)
+        ) == pytest.approx(0.63549, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
         ) == pytest.approx(0, abs=1e-6)
@@ -176,7 +176,7 @@ class TestADM1BioPTrue:
             0, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            14.264, rel=1e-3
+            14.881, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
@@ -188,5 +188,5 @@ class TestADM1BioPTrue:
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
         ) == pytest.approx(0, abs=1e-6)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.85148, rel=1e-3
+            0.85963, rel=1e-3
         )

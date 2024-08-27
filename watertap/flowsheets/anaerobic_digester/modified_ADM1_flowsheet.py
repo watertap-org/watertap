@@ -222,118 +222,119 @@ def set_operating_conditions(m, bio_P=False):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(0.003 * pyo.units.m**3 / pyo.units.s)
+    # m.fs.FeedWater.flow_vol.fix(0.0029338 * pyo.units.m ** 3 / pyo.units.s)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
 
     if bio_P is True:
         m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(
-            0.10034 * pyo.units.kg / pyo.units.m**3
+            0.10149 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(
-            0.16118 * pyo.units.kg / pyo.units.m**3
+            0.16194 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(
             0.057450 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(
-            0.024884 * pyo.units.kg / pyo.units.m**3
+            0.035564 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(
-            0.040029 * pyo.units.kg / pyo.units.m**3
+            0.028441 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(
-            1e-9 * pyo.units.kg / pyo.units.m**3
+            0.0019361 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(
-            0.0014165 * pyo.units.kg / pyo.units.m**3
+            0.0013728 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(
-            0.026112 * pyo.units.kg / pyo.units.m**3
+            0.024301 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(
-            0.37917 * pyo.units.kg / pyo.units.m**3
+            0.37885 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(
-            0.027692 * pyo.units.kg / pyo.units.m**3
+            0.026905 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(
-            0.075367 * pyo.units.kg / pyo.units.m**3
+            0.072407 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(
-            1e-9 * pyo.units.kg / pyo.units.m**3
+            0.24933 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(
-            22.038 * pyo.units.kg / pyo.units.m**3
+            22.977 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(
-            10.794 * pyo.units.kg / pyo.units.m**3
+            11.291 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
-            11.858 * pyo.units.kg / pyo.units.m**3
+            10.774 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(
-            0.0071834 * pyo.units.kg / pyo.units.m**3
+            0.0057883 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(
-            3.1705 * pyo.units.kg / pyo.units.m**3
+            2.8615 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(
-            3.7082 * pyo.units.kg / pyo.units.m**3
+            3.8008 * pyo.units.kg / pyo.units.m**3
         )
     else:
         m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(
-            0.095485 * pyo.units.kg / pyo.units.m**3
+            0.097604 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(
-            0.14620 * pyo.units.kg / pyo.units.m**3
+            0.14920 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(
             0.057450 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(
-            0.024893 * pyo.units.kg / pyo.units.m**3
+            0.036043 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(
-            0.041267 * pyo.units.kg / pyo.units.m**3
+            0.029005 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(
-            1e-9 * pyo.units.kg / pyo.units.m**3
+            0.0021103 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(
-            0.0013782 * pyo.units.kg / pyo.units.m**3
+            0.0013285 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(
-            0.85735 * pyo.units.kg / pyo.units.m**3
+            0.74146 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_K"].fix(
-            0.37612 * pyo.units.kg / pyo.units.m**3
+            0.37626 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_Mg"].fix(
-            0.024419 * pyo.units.kg / pyo.units.m**3
+            0.024023 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(
-            0.074737 * pyo.units.kg / pyo.units.m**3
+            0.073753 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(
-            1e-9 * pyo.units.kg / pyo.units.m**3
+            0.27593 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(
-            22.310 * pyo.units.kg / pyo.units.m**3
+            23.397 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(
-            10.823 * pyo.units.kg / pyo.units.m**3
+            11.414 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
-            11.268 * pyo.units.kg / pyo.units.m**3
+            10.142 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(
-            0.0056535 * pyo.units.kg / pyo.units.m**3
+            0.0044135 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(
-            3.0925 * pyo.units.kg / pyo.units.m**3
+            2.7040 * pyo.units.kg / pyo.units.m**3
         )
         m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(
-            3.8081 * pyo.units.kg / pyo.units.m**3
+            3.9110 * pyo.units.kg / pyo.units.m**3
         )
 
     # AD
@@ -344,21 +345,22 @@ def set_operating_conditions(m, bio_P=False):
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+                iscale.set_scaling_factor(var, 1e0)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                if var.value > 1:
-                    sf = 1e0
-                    iscale.set_scaling_factor(var, sf)
-                elif 1e-2 < var.value < 1:
-                    sf = 1e1
-                    iscale.set_scaling_factor(var, sf)
-                else:
-                    sf = 1e2
-                    iscale.set_scaling_factor(var, sf)
+                # if var.value > 1:
+                #     sf = 1e0
+                #     iscale.set_scaling_factor(var, sf)
+                # elif 1e-2 < var.value < 1:
+                #     sf = 1e1
+                #     iscale.set_scaling_factor(var, sf)
+                # else:
+                #     sf = 1e2
+                #     iscale.set_scaling_factor(var, sf)
+                iscale.set_scaling_factor(var, 1e1)
 
     # Apply scaling
     scale_variables(m)
