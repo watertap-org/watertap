@@ -142,16 +142,16 @@ def main(bio_P=False):
     # # print_close_to_bounds(m)
     # # print_infeasible_constraints(m)
 
-    # # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-    # m.fs.R5.KLa.fix(240)
-    # m.fs.R6.KLa.fix(240)
-    # m.fs.R7.KLa.fix(84)
-    # m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    #
-    # # Resolve with controls in place
-    # results = solve(m)
+    # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
+    m.fs.R5.KLa.fix(240)
+    m.fs.R6.KLa.fix(240)
+    m.fs.R7.KLa.fix(84)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+
+    # Resolve with controls in place
+    results = solve(m)
 
     pyo.assert_optimal_termination(results)
     check_solve(
