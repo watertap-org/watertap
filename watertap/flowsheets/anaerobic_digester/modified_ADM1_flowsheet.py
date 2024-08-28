@@ -68,16 +68,10 @@ from watertap.core.util.initialization import (
     # assert_degrees_of_freedom
 )
 
-# from watertap.costing import WaterTAPCosting
-# from watertap.costing.unit_models.clarifier import (
-#     cost_circular_clarifier,
-#     cost_primary_clarifier,
-# )
 
 from idaes.core.util.initialization import (
     propagate_state as _pro_state,
 )
-from idaes.core.util import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -93,38 +87,7 @@ def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
 
-    print("----------------   scaling V0  ----------------")
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
     initialize_system(m)
-
-    # print("----------------   Re-scaling V1  ----------------")
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
-    # for x in badly_scaled_var_list:
-    #     if 1 < x[0].value < 10:
-    #         sf = 1
-    #     else:
-    #         power = round(pyo.log10(abs(x[0].value)))
-    #         sf = 1 / 10**power
-    #     iscale.set_scaling_factor(x[0], sf)
-    #
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e1, small=1e-1)
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    # dt = DiagnosticsToolbox(m)
-    # print("---Structural Issues---")
-    # dt.report_structural_issues()
-    # dt.display_potential_evaluation_errors()
-
-    # print("----------------   Degen Hunter  ----------------")
-    # # Use of Degeneracy Hunter for troubleshooting model.
-    # m.obj = pyo.Objective(expr=0)
-    # solver = get_solver()
-    # solver.options["max_iter"] = 10000
-    # results = solver.solve(m, tee=True)
 
     results = solve(m)
 
@@ -135,12 +98,6 @@ def main(bio_P=False):
         logger=_log,
         fail_flag=True,
     )
-
-    # print("---Numerical Issues---")
-    # dt.report_numerical_issues()
-    # dt.display_variables_at_or_outside_bounds()
-    # dt.display_variables_with_extreme_jacobians()
-    # dt.display_constraints_with_extreme_jacobians()
 
     return m, results
 
@@ -351,15 +308,6 @@ def set_operating_conditions(m, bio_P=False):
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                # if var.value > 1:
-                #     sf = 1e0
-                #     iscale.set_scaling_factor(var, sf)
-                # elif 1e-2 < var.value < 1:
-                #     sf = 1e1
-                #     iscale.set_scaling_factor(var, sf)
-                # else:
-                #     sf = 1e2
-                #     iscale.set_scaling_factor(var, sf)
                 iscale.set_scaling_factor(var, 1e1)
 
     # Apply scaling
@@ -395,8 +343,8 @@ if __name__ == "__main__":
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
-            # "AD inlet": m.fs.AD.inlet,
+            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+            "AD inlet": m.fs.AD.inlet,
             "Treated water": m.fs.Treated.inlet,
         },
         time_point=0,
