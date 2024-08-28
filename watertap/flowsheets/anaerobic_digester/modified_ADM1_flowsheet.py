@@ -21,19 +21,15 @@ but comprises different specifications for default values than BSM2.
 __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
 import pyomo.environ as pyo
-from pyomo.network import Arc, SequentialDecomposition
+from pyomo.network import Arc
 
 from idaes.core import (
     FlowsheetBlock,
     # UnitModelCostingBlock,
 )
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
-    Separator,
     Product,
-    Mixer,
-    PressureChanger,
 )
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
