@@ -62,7 +62,8 @@ from idaes.core.util.config import (
 import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 from watertap.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+
+# from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
