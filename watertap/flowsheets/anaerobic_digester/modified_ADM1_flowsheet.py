@@ -61,7 +61,6 @@ from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_AS
 from watertap.unit_models.anaerobic_digester import AD
 from watertap.core.util.initialization import (
     check_solve,
-    # assert_degrees_of_freedom
 )
 
 
@@ -175,7 +174,6 @@ def set_operating_conditions(m, bio_P=False):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(0.003 * pyo.units.m**3 / pyo.units.s)
-    # m.fs.FeedWater.flow_vol.fix(0.0029338 * pyo.units.m ** 3 / pyo.units.s)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
 
@@ -328,7 +326,7 @@ def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
     results = solver.solve(m, tee=True)
-    # pyo.assert_optimal_termination(results)
+    pyo.assert_optimal_termination(results)
     return results
 
 

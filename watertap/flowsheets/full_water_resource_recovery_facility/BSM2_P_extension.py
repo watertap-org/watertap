@@ -675,7 +675,6 @@ def initialize_system(m, bio_P=False, solver=None):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        # unit.initialize(outlvl=idaeslog.INFO)
         unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
@@ -877,8 +876,6 @@ if __name__ == "__main__":
     stream_table = create_stream_table_dataframe(
         {
             "Feed": m.fs.FeedWater.outlet,
-            # "R3 inlet": m.fs.R3.inlet,
-            # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
             "R1": m.fs.R1.outlet,
             "R2": m.fs.R2.outlet,
             "R3": m.fs.R3.outlet,

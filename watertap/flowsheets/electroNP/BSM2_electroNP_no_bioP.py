@@ -669,7 +669,6 @@ def initialize_system(m, has_electroNP=False):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        # unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-2})
         unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
