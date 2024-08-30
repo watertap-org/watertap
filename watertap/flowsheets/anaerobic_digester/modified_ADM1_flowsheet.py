@@ -21,7 +21,7 @@ but comprises different specifications for default values than BSM2.
 __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
 import pyomo.environ as pyo
-from pyomo.network import Arc
+from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import (
     FlowsheetBlock,
@@ -311,15 +311,13 @@ def set_operating_conditions(m, bio_P=False):
 
 def initialize_system(m):
     # Initialize flowsheet
-    m.fs.FeedWater.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    propagate_state(m.fs.stream_feed_translator)
-    m.fs.translator_asm2d_adm1.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    propagate_state(m.fs.stream_translator_AD)
-    m.fs.AD.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    propagate_state(m.fs.stream_AD_translator)
-    m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
-    propagate_state(m.fs.stream_translator_product)
-    m.fs.Treated.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+    seq = SequentialDecomposition()
+    seq.options.tear_set = []
+
+    def function(unit):
+        unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+
+    seq.run(m, function)
 
 
 def solve(m, solver=None):
