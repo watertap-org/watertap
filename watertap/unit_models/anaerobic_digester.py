@@ -63,7 +63,7 @@ import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 from watertap.core.solvers import get_solver
 
-# from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -968,11 +968,11 @@ see reaction package for documentation.}""",
             optarg = {}
 
         # Check DOF
-        # if degrees_of_freedom(self) != 0:
-        #     raise InitializationError(
-        #         f"{self.name} degrees of freedom were not 0 at the beginning "
-        #         f"of initialization. DoF = {degrees_of_freedom(self)}"
-        #     )
+        if degrees_of_freedom(self) != 0:
+            raise InitializationError(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
+            )
 
         # Set solver options
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
