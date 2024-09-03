@@ -1468,10 +1468,10 @@ def display_costing(m):
 
     print(f"\nTotal Externalities: {externalities:.4f} M$/year")
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
-    print(f"Dye disposal cost: {-1*ddc: .4f} USD/year")
-    print(f"Brine disposal cost: {-1*bdc: .4f} USD/year")
+    print(f"Dye disposal cost: {ddc: .4f} USD/year")
+    print(f"Brine disposal cost: {bdc: .4f} USD/year")
     if hasattr(m.fs, "pretreatment"):
-        print(f"Sludge disposal cost: {-1*sdc: .4f} USD/year")
+        print(f"Sludge disposal cost: {sdc: .4f} USD/year")
     else:
         pass
 
@@ -1479,16 +1479,18 @@ def display_costing(m):
     print(f"Normalized Capital Cost: {capex_norm:.4f} $/m3feed/hr")
     print(f"Opex Fraction of Annual Cost:{opex_fraction : .4f} %")
 
-    print(f"Levelized cost of treatment with revenue: {lcot:.4f} $/m3 feed")
-    print(f"Levelized cost of treatment without revenue: {lcot_wo_rev:.4f} $/m3 feed")
+    print(f"Levelized cost of treatment with externalities: {lcot:.4f} $/m3 feed")
+    print(
+        f"Levelized cost of treatment without externalities: {lcot_wo_rev:.4f} $/m3 feed"
+    )
     if (
         hasattr(m.fs, "desalination")
         or hasattr(m.fs, "gac")
         or hasattr(m.fs, "dewaterer")
     ):
-        print(f"Levelized cost of water with revenue: {lcow:.4f} $/m3 permeate")
+        print(f"Levelized cost of water with externalities: {lcow:.4f} $/m3 permeate")
         print(
-            f"Levelized cost of water without revenue: {lcow_wo_rev:.4f} $/m3 permeate"
+            f"Levelized cost of water without externalities: {lcow_wo_rev:.4f} $/m3 permeate"
         )
     else:
         pass
