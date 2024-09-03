@@ -513,7 +513,7 @@ def initialize_system(m):
     # initialize nf
     seq.run(dye_sep, lambda u: u.initialize())
 
-    if hasattr(m.fs, "dewater"):
+    if hasattr(m.fs, "dewaterer"):
         seq.run(m.fs.dewaterer, lambda u: u.initialize())
         propagate_state(m.fs.s01)
     elif hasattr(m.fs, "gac"):
@@ -716,9 +716,19 @@ def add_costing(m):
             ),
             doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
         )
-    else:
+    elif hasattr(m.fs, "dewaterer") or hasattr(m.fs, "gac"):
+        m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
+        m.fs.ro_costing.base_currency = pyunits.USD_2020
+
+        m.fs.ro_costing.cost_process()
+
         m.fs.specific_energy_intensity = Expression(
             expr=(m.fs.zo_costing.electricity_intensity),
+            doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
+        )
+    else:
+        m.fs.specific_energy_intensity = Expression(
+            expr=m.fs.zo_costing.electricity_intensity,
             doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
         )
 
@@ -841,7 +851,11 @@ def add_costing(m):
         )
 
     # Combine results from costing packages and calculate overall metrics
-    if hasattr(m.fs, "desalination"):
+    if (
+        hasattr(m.fs, "desalination")
+        or hasattr(m.fs, "dewaterer")
+        or hasattr(m.fs, "gac")
+    ):
 
         @m.fs.Expression(doc="Total capital cost of the treatment train")
         def total_capital_cost(b):
@@ -859,7 +873,11 @@ def add_costing(m):
                 m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
             )
 
-    if hasattr(m.fs, "desalination"):
+    if (
+        hasattr(m.fs, "desalination")
+        or hasattr(m.fs, "dewaterer")
+        or hasattr(m.fs, "gac")
+    ):
 
         @m.fs.Expression(doc="Total operating cost of the treatment train")
         def total_operating_cost(b):
@@ -1068,7 +1086,7 @@ def display_results(m):
 
     m.fs.dye_separation.P1.report()
     m.fs.dye_separation.nanofiltration.report()
-    if hasattr(m.fs, "gac"):
+    if hasattr(m.fs, "desalination"):
         m.fs.desalination.RO.report()
 
     print("\nStreams:")
@@ -1313,7 +1331,11 @@ def display_costing(m):
             )
         )
 
-    if hasattr(m.fs, "desalination"):
+    if (
+        hasattr(m.fs, "desalination")
+        or hasattr(m.fs, "dewaterer")
+        or hasattr(m.fs, "gac")
+    ):
         ro_opex = value(
             pyunits.convert(
                 m.fs.ro_costing.total_operating_cost,
@@ -1435,7 +1457,11 @@ def display_costing(m):
     else:
         pass
     print(f"Nanofiltration (r-HGO) Operating Cost: {nf_opex:.4f} $/yr")
-    if hasattr(m.fs, "desalination"):
+    if (
+        hasattr(m.fs, "desalination")
+        or hasattr(m.fs, "dewaterer")
+        or hasattr(m.fs, "gac")
+    ):
         print(f"Reverse Osmosis Operating Cost: {ro_opex:.4f} $/yr")
     else:
         pass
