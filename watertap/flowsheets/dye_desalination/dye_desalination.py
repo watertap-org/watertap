@@ -99,7 +99,7 @@ _log = idaeslog.getLogger(__name__)
 def main():
     m = build(
         RO_1D=True,
-        include_RO=False,
+        include_RO=True,
         include_pretreatment=False,
         include_dewatering=False,
         include_gac=False,
@@ -1465,10 +1465,7 @@ def display_costing(m):
     print(f"\nTotal Externalities: {externalities:.4f} M$/year")
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
     print(f"Dye disposal cost: {ddc: .4f} USD/year")
-    if hasattr(m.fs, "desalination"):
-        print(f"Brine disposal cost: {bdc: .4f} USD/year")
-    else:
-        print(f"Brine revenue: {bdc: .4f} USD/year")
+    print(f"Brine disposal cost: {bdc: .4f} USD/year")
     if hasattr(m.fs, "pretreatment"):
         print(f"Sludge disposal cost: {sdc: .4f} USD/year")
     else:
