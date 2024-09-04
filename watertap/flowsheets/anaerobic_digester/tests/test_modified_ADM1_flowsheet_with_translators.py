@@ -26,7 +26,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.flowsheets.anaerobic_digester.modified_ADM1_flowsheet import (
+from watertap.flowsheets.anaerobic_digester.modified_ADM1_flowsheet_with_translators import (
     main,
 )
 from watertap.core.solvers import get_solver
