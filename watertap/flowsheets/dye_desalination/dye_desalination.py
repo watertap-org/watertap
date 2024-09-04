@@ -99,7 +99,7 @@ _log = idaeslog.getLogger(__name__)
 def main():
     m = build(
         RO_1D=True,
-        include_RO=True,
+        include_RO=False,
         include_pretreatment=False,
         include_dewatering=False,
         include_gac=False,
@@ -627,6 +627,8 @@ def add_costing(m):
 
     m.fs.zo_costing = ZeroOrderCosting(case_study_definition=source_file)
     m.fs.ro_costing = WaterTAPCosting()
+    m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
+    m.fs.ro_costing.base_currency = pyunits.USD_2020
 
     # cost nanofiltration module and pump
     if hasattr(m.fs, "pretreatment"):
@@ -702,9 +704,6 @@ def add_costing(m):
             costing_method_arguments={"cost_electricity_flow": True},
         )
 
-        m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
-        m.fs.ro_costing.base_currency = pyunits.USD_2020
-
         m.fs.ro_costing.cost_process()
 
         m.fs.ro_costing.add_specific_energy_consumption(feed_flowrate)
@@ -717,13 +716,10 @@ def add_costing(m):
             doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
         )
     elif hasattr(m.fs, "dewaterer") or hasattr(m.fs, "gac"):
-        m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
-        m.fs.ro_costing.base_currency = pyunits.USD_2020
-
         m.fs.ro_costing.cost_process()
 
         m.fs.specific_energy_intensity = Expression(
-            expr=(m.fs.zo_costing.electricity_intensity),
+            expr=m.fs.zo_costing.electricity_intensity,
             doc="Specific energy consumption of the treatment train on a feed flowrate basis [kWh/m3]",
         )
     else:
@@ -1469,7 +1465,10 @@ def display_costing(m):
     print(f"\nTotal Externalities: {externalities:.4f} M$/year")
     print(f"Water recovery revenue: {wrr: .4f} USD/year")
     print(f"Dye disposal cost: {ddc: .4f} USD/year")
-    print(f"Brine disposal cost: {bdc: .4f} USD/year")
+    if hasattr(m.fs, "desalination"):
+        print(f"Brine disposal cost: {bdc: .4f} USD/year")
+    else:
+        print(f"Brine revenue: {bdc: .4f} USD/year")
     if hasattr(m.fs, "pretreatment"):
         print(f"Sludge disposal cost: {sdc: .4f} USD/year")
     else:
