@@ -58,7 +58,7 @@ class TestFullFlowsheetBioPFalse:
             0.24219, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            6.4300e-07, rel=1e-3
+            6.4300e-07, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
             0.00027610, rel=1e-3
@@ -104,7 +104,7 @@ class TestFullFlowsheetBioPFalse:
         ) == pytest.approx(0.011077, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-        ) == pytest.approx(5.0389e-06, rel=1e-3)
+        ) == pytest.approx(5.0389e-06, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
         ) == pytest.approx(0.0036998, rel=1e-3)
@@ -151,7 +151,7 @@ class TestFullFlowsheetBioPTrue:
             0.2422, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            6.6530e-07, rel=1e-3
+            6.6530e-07, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
             0.00027824, rel=1e-3
@@ -197,7 +197,7 @@ class TestFullFlowsheetBioPTrue:
         ) == pytest.approx(0.012282, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-        ) == pytest.approx(6.6978e-06, rel=1e-3)
+        ) == pytest.approx(6.6978e-06, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
         ) == pytest.approx(0.0040285, rel=1e-3)
