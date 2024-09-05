@@ -512,8 +512,9 @@ def set_operating_conditions(m):
             0.044 * pyo.units.kWh / pyo.units.kg
         )
         m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
-        m.fs.electroNP.P_removal = 0.95
-        m.fs.electroNP.N_removal = 0.3
+        P_removal = 0.95
+        m.fs.electroNP.P_removal = P_removal
+        m.fs.electroNP.N_removal = 0.3 * P_removal
         m.fs.electroNP.frac_mass_H2O_treated[0].fix(0.99)
 
     def scale_variables(m):
@@ -559,26 +560,27 @@ def initialize_system(m, has_electroNP=False):
         print(o[0].name)
 
     if has_electroNP:
+        # P_removal = 0.65 - 0.95
         tear_guesses = {
             "flow_vol": {0: 1.2366},
             "conc_mass_comp": {
                 (0, "S_A"): 0.0006,
                 (0, "S_F"): 0.0004,
                 (0, "S_I"): 0.057,
-                (0, "S_N2"): 0.042,
-                (0, "S_NH4"): 0.0063,
+                (0, "S_N2"): 0.04,
+                (0, "S_NH4"): 0.006,
                 (0, "S_NO3"): 0.002,
                 (0, "S_O2"): 0.0019,
-                (0, "S_PO4"): 0.0097,
+                (0, "S_PO4"): 0.09,
                 (0, "S_K"): 0.37,
                 (0, "S_Mg"): 0.020,
                 (0, "S_IC"): 0.13,
-                (0, "X_AUT"): 0.084,
-                (0, "X_H"): 3.45,
-                (0, "X_I"): 3.13,
+                (0, "X_AUT"): 0.085,
+                (0, "X_H"): 3.5,
+                (0, "X_I"): 3.1,
                 (0, "X_PAO"): 3.4,
                 (0, "X_PHA"): 0.087,
-                (0, "X_PP"): 1.09,
+                (0, "X_PP"): 1.1,
                 (0, "X_S"): 0.057,
             },
             "temperature": {0: 308.15},
@@ -588,20 +590,20 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.097,
+                (0, "S_A"): 0.1,
                 (0, "S_F"): 0.15,
                 (0, "S_I"): 0.057,
-                (0, "S_N2"): 0.033,
+                (0, "S_N2"): 0.034,
                 (0, "S_NH4"): 0.025,
                 (0, "S_NO3"): 0.0015,
                 (0, "S_O2"): 0.0013,
-                (0, "S_PO4"): 0.023,
+                (0, "S_PO4"): 0.1,
                 (0, "S_K"): 0.38,
                 (0, "S_Mg"): 0.024,
-                (0, "S_IC"): 0.075,
+                (0, "S_IC"): 0.074,
                 (0, "X_AUT"): 0.21,
-                (0, "X_H"): 23.1,
-                (0, "X_I"): 11.3,
+                (0, "X_H"): 23,
+                (0, "X_I"): 11,
                 (0, "X_PAO"): 10.5,
                 (0, "X_PHA"): 0.006,
                 (0, "X_PP"): 2.7,
@@ -711,8 +713,8 @@ if __name__ == "__main__":
         stream_table = create_stream_table_dataframe(
             {
                 "Feed": m.fs.FeedWater.outlet,
-                "R3 inlet": m.fs.R3.inlet,
-                "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
+                # "R3 inlet": m.fs.R3.inlet,
+                # "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
                 # "R1": m.fs.R1.outlet,
                 # "R2": m.fs.R2.outlet,
                 # "R3": m.fs.R3.outlet,
@@ -723,7 +725,7 @@ if __name__ == "__main__":
                 # "thickener outlet": m.fs.thickener.underflow,
                 # "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
                 # "dewater outlet": m.fs.dewater.overflow,
-                # "electroNP treated": m.fs.electroNP.treated,
+                "electroNP treated": m.fs.electroNP.treated,
                 # "electroNP byproduct": m.fs.electroNP.byproduct,
                 # "Treated water": m.fs.Treated.inlet,
                 # "Sludge": m.fs.Sludge.inlet,
