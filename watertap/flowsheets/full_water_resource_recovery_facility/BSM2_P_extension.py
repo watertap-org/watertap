@@ -87,6 +87,9 @@ from watertap.core.util.initialization import (
 #     cost_primary_clarifier,
 # )
 
+from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.model_diagnostics import SVDToolbox
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -101,12 +104,30 @@ def main(bio_P=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print(
+        "----------------   badly_scaled_var_list b4 initialization  ----------------"
+    )
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
     initialize_system(m, bio_P=bio_P)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print(
+        "----------------   badly_scaled_var_list after initialization  ----------------"
+    )
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     results = solve(m)
 
@@ -120,6 +141,17 @@ def main(bio_P=False):
 
     # Resolve with controls in place
     results = solve(m)
+
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list after solve  ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    print("---SVD Analysis Before Costing---")
+    svd_analysis(m)
 
     pyo.assert_optimal_termination(results)
     check_solve(
@@ -678,6 +710,13 @@ def initialize_system(m, bio_P=False, solver=None):
         unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
+
+
+def svd_analysis(m):
+    print("---SVD Analysis---")
+    svd = SVDToolbox(m)
+    svd.run_svd_analysis()
+    svd.display_underdetermined_variables_and_constraints()
 
 
 def solve(m, solver=None):
