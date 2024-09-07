@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.11'
       - name: Install Black
         # unlike the other jobs, we don't need to install WaterTAP and/or all the dev dependencies,
         # but we still want to specify the Black version to use in requirements-dev.txt for local development
@@ -61,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.11'
       - name: Install dev dependencies
         run: |
           pip install -r requirements-dev.txt
@@ -78,7 +78,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
           - '3.9'
           - '3.10'
           - '3.11'
@@ -179,7 +178,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
+          - '3.9'
           - '3.11'
         os:
           - linux
@@ -233,7 +232,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
+          - '3.9'
           - '3.11'
         os:
           - linux
@@ -284,7 +283,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
+          - '3.9'
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
