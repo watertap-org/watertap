@@ -21,7 +21,6 @@ from watertap.ui.fsapi import FlowsheetInterface
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
-    set_scaling,
     set_operating_conditions,
     initialize_system,
     solve,
@@ -934,85 +933,85 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Cost metrics",
     )
-    #
+
     # Capital costs
-    # exports.add(
-    #     obj=fs.R1.costing.capital_cost,
-    #     name="Reactor 1 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of first reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R2.costing.capital_cost,
-    #     name="Reactor 2 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of second reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R3.costing.capital_cost,
-    #     name="Reactor 3 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of third reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R4.costing.capital_cost,
-    #     name="Reactor 4 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of fourth reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R5.costing.capital_cost,
-    #     name="Reactor 5 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of fifth reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R6.costing.capital_cost,
-    #     name="Reactor 6 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of sixth reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
-    # exports.add(
-    #     obj=fs.R7.costing.capital_cost,
-    #     name="Reactor 7 capital cost",
-    #     ui_units=fs.costing.base_currency,
-    #     display_units="$",
-    #     rounding=3,
-    #     description="Capital cost of seventh reactor in activated sludge process",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Capital costs",
-    # )
+    exports.add(
+        obj=fs.R1.costing.capital_cost,
+        name="Reactor 1 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of first reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R2.costing.capital_cost,
+        name="Reactor 2 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of second reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R3.costing.capital_cost,
+        name="Reactor 3 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of third reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R4.costing.capital_cost,
+        name="Reactor 4 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of fourth reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R5.costing.capital_cost,
+        name="Reactor 5 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of fifth reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R6.costing.capital_cost,
+        name="Reactor 6 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of sixth reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.R7.costing.capital_cost,
+        name="Reactor 7 capital cost",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=3,
+        description="Capital cost of seventh reactor in activated sludge process",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
     exports.add(
         obj=fs.CL.costing.capital_cost,
         name="Primary clarifier capital cost",
@@ -3875,7 +3874,6 @@ def build_flowsheet(build_options=None, **kwargs):
         m = build(bio_P=bioP)
 
         set_operating_conditions(m)
-        set_scaling(m, bio_P=bioP)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -3915,7 +3913,6 @@ def build_flowsheet(build_options=None, **kwargs):
         m = build(bio_P=False)
 
         set_operating_conditions(m)
-        set_scaling(m, bio_P=False)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -3945,7 +3942,7 @@ def build_flowsheet(build_options=None, **kwargs):
         add_costing(m)
         m.fs.costing.initialize()
 
-        # interval_initializer(m.fs.costing)
+        interval_initializer(m.fs.costing)
 
         assert_degrees_of_freedom(m, 0)
 
