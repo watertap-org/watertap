@@ -112,19 +112,19 @@ class TestFullFlowsheetBioPFalse:
             0.00021570, rel=1e-3
         )
 
-    # @pytest.mark.requires_idaes_solver
-    # @pytest.mark.component
-    # def test_costing(self, system_frame):
-    #     m = system_frame
-    #
-    #     # check costing
-    #     assert value(m.fs.costing.LCOW) == pytest.approx(0.469988, rel=1e-3)
-    #     assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-    #         24033383.02, rel=1e-3
-    #     )
-    #     assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-    #         831075.961, rel=1e-3
-    #     )
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_costing(self, system_frame):
+        m = system_frame
+
+        # check costing
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.468069, rel=1e-3)
+        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
+            23935727.742, rel=1e-3
+        )
+        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
+            827635.25, rel=1e-3
+        )
 
 
 class TestFullFlowsheetBioPTrue:
@@ -205,16 +205,16 @@ class TestFullFlowsheetBioPTrue:
             0.00022424, rel=1e-3
         )
 
-    # @pytest.mark.requires_idaes_solver
-    # @pytest.mark.component
-    # def test_costing(self, system_frame):
-    #     m = system_frame
-    #
-    #     # check costing
-    #     assert value(m.fs.costing.LCOW) == pytest.approx(0.47146, rel=1e-3)
-    #     assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-    #         24108366.80, rel=1e-3
-    #     )
-    #     assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-    #         833724.746, rel=1e-3
-    #     )
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_costing(self, system_frame):
+        m = system_frame
+
+        # check costing
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.469711, rel=1e-3)
+        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
+            24019261.867, rel=1e-3
+        )
+        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
+            830582.94, rel=1e-3
+        )
