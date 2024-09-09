@@ -733,7 +733,6 @@ def add_costing(m):
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
             iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
-    # iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
 
 
 def display_costing(m):
