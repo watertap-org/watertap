@@ -629,6 +629,7 @@ def add_costing(m):
     m.fs.ro_costing = WaterTAPCosting()
     m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
     m.fs.ro_costing.base_currency = pyunits.USD_2020
+    m.fs.ro_costing.utilization_factor.fix(0.85)
 
     # cost nanofiltration module and pump
     if hasattr(m.fs, "pretreatment"):
@@ -666,9 +667,11 @@ def add_costing(m):
             flowsheet_costing_block=m.fs.ro_costing,
             costing_method_arguments={"contactor_type": "gravity"},
         )
-        m.fs.ro_costing.gac_gravity.regen_frac.fix(0.7)
         m.fs.ro_costing.gac_gravity.num_contactors_op.fix(1)
         m.fs.ro_costing.gac_gravity.num_contactors_redundant.fix(1)
+        # Values from project team
+        m.fs.ro_costing.gac_gravity.regen_frac.fix(0)
+        m.fs.ro_costing.gac_gravity.makeup_unit_cost.fix(1)
     else:
         pass
 
@@ -1492,6 +1495,30 @@ def display_costing(m):
         pass
 
     print(f"Specific energy intensity: {sec:.3f} kWh/m3 feed")
+
+    # ro_elec = value(m.fs.ro_costing.aggregate_flow_costs["electricity"])
+    zo_elec = value(m.fs.zo_costing.aggregate_flow_costs["electricity"])
+
+    # print(f"RO Electricity: {ro_elec}")
+    # print(f"ZO Electricity: {zo_elec}")
+
+    ro_vopex = value(m.fs.ro_costing.total_variable_operating_cost)
+    zo_vopex = value(m.fs.zo_costing.total_variable_operating_cost)
+
+    print(f"RO VOPEX: {ro_vopex}")
+    # print(f"ZO VOPEX: {zo_vopex}")
+
+    ro_fopex = value(m.fs.ro_costing.total_fixed_operating_cost)
+    zo_fopex = value(m.fs.zo_costing.total_fixed_operating_cost)
+
+    print(f"RO FOPEX: {ro_fopex}")
+    # print(f"ZO FOPEX: {zo_fopex}")
+
+    ro_mlc = value(m.fs.ro_costing.maintenance_labor_chemical_operating_cost)
+    zo_mlc = value(m.fs.zo_costing.maintenance_labor_chemical_operating_cost)
+
+    print(f"RO MLC: {ro_mlc}")
+    # print(f"ZO MLC: {zo_mlc}")
 
 
 if __name__ == "__main__":
