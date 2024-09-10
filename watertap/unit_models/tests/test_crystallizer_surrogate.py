@@ -142,7 +142,6 @@ def test_rbf_surrogate():
     m.fs.cryst = SurrogateCrystallizer(
         property_package=m.fs.cryst_prop_feed,
         vapor_property_package=m.fs.water_properties_vapor,
-        input_ion_list=input_ions,
         solids_ions_dict=solids_list,
     )
 
@@ -254,7 +253,3 @@ def test_rbf_surrogate():
     assert_optimal_termination(res)
     m.fs.cryst.report()
 
-
-# if __name__ == "__main__":
-#     surrogate_model = 'RBF' #"NN"  # 'RBF'
-#     main(surrogate_model)

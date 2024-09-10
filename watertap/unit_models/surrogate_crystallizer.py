@@ -138,15 +138,6 @@ see property package for documentation.}""",
         ),
     )
     CONFIG.declare(
-        "input_ion_list",
-        ConfigValue(
-            default={},
-            domain=list,
-            description="Input ions",
-            doc="""list of ions in feed""",
-        ),
-    )
-    CONFIG.declare(
         "solids_ions_dict",
         ConfigValue(
             default={},
@@ -165,23 +156,20 @@ see property package for documentation.}""",
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        self.ion_list = Set(
-            initialize=self.config.input_ion_list
-        )  # Could extract from property package
         self.solids_list = Set(initialize=self.config.solids_ions_dict.keys())
 
         # Add ion in solid ratios as parameters
         dict1 = dict()
         for m in self.solids_list:
-            for p in self.ion_list:
+            for p in self.config.property_package.ion_set:
                 dict1[m, p] = float(
                     self.config.solids_ions_dict[m][p]
                     if p in self.config.solids_ions_dict[m]
                     else 0.0
                 )
-        self.mwc = Param(self.solids_list, self.ion_list, initialize=dict1)
+        self.mwc = Param(self.solids_list, self.config.property_package.ion_set, initialize=dict1)
 
-        # Add pther variables
+        # Add other variables
         self.temperature_operating = Var(
             initialize=298.15,
             domain=NonNegativeReals,
@@ -204,7 +192,7 @@ see property package for documentation.}""",
             doc="Crystallizer percentage of water evaporation",
         )
         self.S = Var(
-            self.ion_list,
+            self.config.property_package.ion_set,
             initialize=0,
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
@@ -367,7 +355,7 @@ see property package for documentation.}""",
                     (b.mwc[q, j] * b.properties_in[0].params.mw_comp[j])
                     / sum(
                         b.mwc[q, j] * b.properties_in[0].params.mw_comp[j]
-                        for j in b.ion_list
+                        for j in b.config.property_package.ion_set
                     )
                     * b.mixed_solids[q]
                     for q in b.solids_list
@@ -488,7 +476,6 @@ see property package for documentation.}""",
             else:
                 state_args_vapor[k] = state_dict_vapor[k].value
         for p in self.config.vapor_property_package.phase_list:
-            # for j in self.ion_list:
             if p == "Vap":
                 state_args_vapor["flow_mass_phase_comp"][p, "H2O"] = state_args[
                     "flow_mass_phase_comp"
@@ -505,31 +492,13 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=True)  # slc.tee)
-        # res = fsTools.standard_solve(self, tee=True, check_close_to_bounds=True)
-        # self.display()
-        # self.report()
+            res = opt.solve(self, tee=slc.tee)
+
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
         self.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        # from pyomo.util.infeasible import (
-        #     log_active_constraints,
-        #     log_close_to_bounds,
-        #     log_infeasible_bounds,
-        #     log_infeasible_constraints,
-        # )
-        # from pyomo.common.log import LoggingIntercept
-        # import logging
-        # from io import StringIO
-
-        # output = StringIO()
-        # with LoggingIntercept(output, "pyomo.util.infeasible", logging.INFO):
-        #     log_infeasible_constraints(self)
-        # print(output.getvalue().splitlines())
-
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
