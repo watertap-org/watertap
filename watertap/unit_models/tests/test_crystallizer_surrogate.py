@@ -10,6 +10,7 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
+from idaes.core.util.exceptions import ConfigurationError
 from watertap.property_models.water_prop_pack import WaterParameterBlock
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
@@ -50,7 +51,7 @@ def add_crystallizer_rbf_model(
     try:
         assert set(list(blk.solids_list)).issubset(surrogate_outputs.keys())
     except AssertionError:
-        raise (
+        raise ConfigurationError(
             "List of solids provided in crystallizer model must match surrogate output keys for solids. Please check."
         )
 
