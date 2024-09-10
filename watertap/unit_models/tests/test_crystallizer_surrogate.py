@@ -15,13 +15,16 @@ from pyomo.environ import (
     units as pyunits,
     Block,
     SolverFactory,
-    assert_optimal_termination
+    assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 import watertap.property_models.seawater_prop_pack as props
-from watertap.property_models.water_prop_pack import WaterParameterBlock 
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock, MaterialFlowBasis
+from watertap.property_models.water_prop_pack import WaterParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MaterialFlowBasis,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
@@ -32,7 +35,8 @@ from idaes.core.surrogate.pysmo_surrogate import (
     PysmoRBFTrainer,
     PysmoSurrogate,
 )
-from watertap.unit_models.surrogate_crystallizer import SurrogateCrystallizer 
+from watertap.unit_models.surrogate_crystallizer import SurrogateCrystallizer
+
 # add_crystallizer_nn_model
 
 from idaes.core import UnitModelCostingBlock
@@ -79,9 +83,7 @@ def add_crystallizer_rbf_model(
         surrogate_directory = os.path.dirname(os.path.abspath(__file__))
 
         current_surrogate_filename = (
-            f"{surrogate_directory}\\"
-            + filename[sm]
-            + r".json"
+            f"{surrogate_directory}\\" + filename[sm] + r".json"
         )
         current_surrogate = PysmoSurrogate.load_from_file(current_surrogate_filename)
         getattr(blk, block_name).build_model(
@@ -122,7 +124,6 @@ def test_rbf_surrogate():
 
     # Use property package from WT softening work
 
-
     # # These names need to match the model names
     input_ions = ["Cl_-", "Na_+", "SO4_2-", "Mg_2+", "Ca_2+", "K_+", "HCO3_-"]
     solids_list = {
@@ -134,8 +135,8 @@ def test_rbf_surrogate():
     m.fs.cryst_prop_feed = MCASParameterBlock(
         solute_list=input_ions,
         material_flow_basis=MaterialFlowBasis.mass,
-        )
-    
+    )
+
     m.fs.water_properties_vapor = WaterParameterBlock()
 
     # Create crystallizer framework
@@ -208,7 +209,7 @@ def test_rbf_surrogate():
     }
 
     # if surrogate_model_form == "RBF":
-       
+
     add_crystallizer_rbf_model(
         m.fs.cryst,
         surrogate_inputs_with_bounds=surrogate_inputs,
@@ -252,4 +253,3 @@ def test_rbf_surrogate():
     res = solver.solve(m, tee=True)
     assert_optimal_termination(res)
     m.fs.cryst.report()
-

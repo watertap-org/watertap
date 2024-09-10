@@ -149,7 +149,6 @@ see property package for documentation.}""",
 
     def build(self):
 
-
         # Call UnitModel.build to setup dynamics
         super().build()
 
@@ -167,7 +166,9 @@ see property package for documentation.}""",
                     if p in self.config.solids_ions_dict[m]
                     else 0.0
                 )
-        self.mwc = Param(self.solids_list, self.config.property_package.ion_set, initialize=dict1)
+        self.mwc = Param(
+            self.solids_list, self.config.property_package.ion_set, initialize=dict1
+        )
 
         # Add other variables
         self.temperature_operating = Var(
@@ -255,10 +256,12 @@ see property package for documentation.}""",
         tmp_dict2["has_phase_equilibrium"] = False
         tmp_dict2["parameters"] = self.config.vapor_property_package
         tmp_dict["defined_state"] = False
-        self.properties_out_vapor = self.config.vapor_property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of vapor outlet",
-            **tmp_dict2,
+        self.properties_out_vapor = (
+            self.config.vapor_property_package.state_block_class(
+                self.flowsheet().config.time,
+                doc="Material properties of vapor outlet",
+                **tmp_dict2,
+            )
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks
@@ -268,7 +271,7 @@ see property package for documentation.}""",
 
         # Add constraints
         # 1. Fix empty flows:
-        
+
         for p in self.config.vapor_property_package.phase_list:
             if p == "Liq":
                 self.properties_out_vapor[0].flow_mass_phase_comp[p, "H2O"].fix(0.0)

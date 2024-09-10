@@ -98,6 +98,7 @@ class DensityCalculation(Enum):
     seawater = auto()  # seawater correlation for TDS from Sharqawy
     # TODO: add laliberte mixing correlation and/or ideal aqueous solution rule
 
+
 class DiffusivityCalculation(Enum):
     none = auto()
     HaydukLaudie = auto()
@@ -619,7 +620,6 @@ class MCASParameterData(PhysicalParameterBlock):
         self.set_default_scaling("visc_k_phase", 1e6, index="Liq")
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
 
-
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -898,7 +898,7 @@ class _MCASStateBlock(StateBlock):
                     )
                 else:
                     self[k].total_dissolved_solids = 0
-            
+
             if self[k].is_property_constructed("enth_mass_phase"):
                 if hasattr(self[k], "eq_enth_mass_phase"):
                     calculate_variable_from_constraint(
@@ -2078,7 +2078,12 @@ class MCASStateBlockData(StateBlockData):
         def rule_enth_mass_phase(b, p):
             # temperature in degC, but pyunits in K
             t = b.temperature - 273.15 * pyunits.K
-            S_kg_kg = pyunits.convert(b.total_dissolved_solids, to_units=pyunits.kg/pyunits.m**3) / b.dens_mass_phase[p]
+            S_kg_kg = (
+                pyunits.convert(
+                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
+                )
+                / b.dens_mass_phase[p]
+            )
             S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
@@ -2130,6 +2135,7 @@ class MCASStateBlockData(StateBlockData):
             )
 
         self.enth_flow = Expression(rule=rule_enth_flow)
+
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
@@ -2662,7 +2668,7 @@ class MCASStateBlockData(StateBlockData):
                 else:
                     sf = 1 / value(self.total_dissolved_solids)
                 iscale.set_scaling_factor(self.total_dissolved_solids, sf)
-        
+
         # if self.is_property_constructed("enth_mass_phase"):
         #     for v in self.enth_mass_phase.values():
 
