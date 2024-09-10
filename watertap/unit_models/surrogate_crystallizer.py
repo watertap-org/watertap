@@ -53,7 +53,7 @@ from watertap.costing.unit_models.surrogate_crystallizer import (
 
 _log = idaeslog.getLogger(__name__)
 
-__author__ = "Oluwamayowa Amusat"
+__author__ = "Oluwamayowa Amusat, Adam Atia"
 
 
 @declare_process_block_class("SurrogateCrystallizer")
@@ -157,11 +157,7 @@ see property package for documentation.}""",
     )
 
     def build(self):
-        # Need to define any additional property packages before calling the build function
-        if self.config.vapor_property_package is None:
-            self.config.vapor_property_package = props3.WaterParameterBlock()
-        else:
-            pass
+
 
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -284,7 +280,7 @@ see property package for documentation.}""",
 
         # Add constraints
         # 1. Fix empty flows:
-        self.S["H2O"].fix(0.0)
+        
         for p in self.config.vapor_property_package.phase_list:
             if p == "Liq":
                 self.properties_out_vapor[0].flow_mass_phase_comp[p, "H2O"].fix(0.0)
@@ -321,7 +317,7 @@ see property package for documentation.}""",
                         b.properties_out_vapor[0].flow_mass_phase_comp[p, j]
                         for p in self.config.vapor_property_package.phase_list
                     )
-                    + b.S[j]
+                    # + b.S[j]
                 )
 
         # 3. Temperature and pressure balances:
@@ -393,7 +389,7 @@ see property package for documentation.}""",
                     b.properties_out_liq[0].flow_mass_phase_comp[p, j]
                     for p in self.config.property_package.phase_list
                 )
-                for j in self.ion_list
+                for j in self.config.property_package.component_list
             )
 
         @self.Constraint(
@@ -492,13 +488,13 @@ see property package for documentation.}""",
             else:
                 state_args_vapor[k] = state_dict_vapor[k].value
         for p in self.config.vapor_property_package.phase_list:
-            for j in self.ion_list:
-                if p == "Vap":
-                    state_args_vapor["flow_mass_phase_comp"][p, "H2O"] = state_args[
-                        "flow_mass_phase_comp"
-                    ]["Liq", "H2O"]
-                else:
-                    state_args_vapor["flow_mass_phase_comp"][p, "H2O"] = 0
+            # for j in self.ion_list:
+            if p == "Vap":
+                state_args_vapor["flow_mass_phase_comp"][p, "H2O"] = state_args[
+                    "flow_mass_phase_comp"
+                ]["Liq", "H2O"]
+            else:
+                state_args_vapor["flow_mass_phase_comp"][p, "H2O"] = 0
         self.properties_out_vapor.initialize(
             outlvl=outlvl,
             optarg=optarg,

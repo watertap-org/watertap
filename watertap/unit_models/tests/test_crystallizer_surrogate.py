@@ -1,4 +1,5 @@
 import json
+import os
 import pandas as pd
 from pyomo.environ import (
     ConcreteModel,
@@ -14,14 +15,13 @@ from pyomo.environ import (
     units as pyunits,
     Block,
     SolverFactory,
+    assert_optimal_termination
 )
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 import watertap.property_models.seawater_prop_pack as props
-
-# from watertap_oli.examples.second_demo.components.feed_cases import build_prop
-# from watertap_oli.examples.second_demo.components.feed_cases_modified import build_prop
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+from watertap.property_models.water_prop_pack import WaterParameterBlock 
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock, MaterialFlowBasis
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
@@ -37,6 +37,9 @@ from watertap.unit_models.surrogate_crystallizer import SurrogateCrystallizer
 
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
+import pytest
+
+__author__ = "Oluwamayowa Amusat, Adam Atia"
 
 
 def add_crystallizer_rbf_model(
@@ -50,10 +53,10 @@ def add_crystallizer_rbf_model(
     ##############################################################################################################
     crystallizer_inputs = [
         surrogate_inputs_with_bounds[k]["flowsheet_var"]
-        for (k, v) in surrogate_inputs_with_bounds.items()
+        for k in surrogate_inputs_with_bounds.keys()
     ]
     crystallizer_outputs = [
-        surrogate_outputs[k]["flowsheet_var"] for (k, v) in surrogate_outputs.items()
+        surrogate_outputs[k]["flowsheet_var"] for k in surrogate_outputs.keys()
     ]
 
     try:
@@ -73,8 +76,10 @@ def add_crystallizer_rbf_model(
     for sm in range(0, len(filename)):
         block_name = "crystallizer_surrogate" + "_" + filename[sm]
         blk.add_component(block_name, SurrogateBlock(concrete=True))
+        surrogate_directory = os.path.dirname(os.path.abspath(__file__))
+
         current_surrogate_filename = (
-            r"C:\Users\OOAmusat-II\Desktop\NAWI\WATERTAP\Phreeqc\crystallization\\"
+            f"{surrogate_directory}\\"
             + filename[sm]
             + r".json"
         )
@@ -109,7 +114,7 @@ def add_crystallizer_rbf_model(
     )
 
 
-def main(surrogate_model_form):
+def test_rbf_surrogate():
     m = ConcreteModel()
     m.case = "BGW1"
     m.fs = FlowsheetBlock(dynamic=False)
@@ -119,7 +124,7 @@ def main(surrogate_model_form):
 
 
     # # These names need to match the model names
-    input_ions = ["Cl_-", "Na_+", "SO4_2-", "Mg_2+", "Ca_2+", "K_+", "HCO3_-", "H2O"]
+    input_ions = ["Cl_-", "Na_+", "SO4_2-", "Mg_2+", "Ca_2+", "K_+", "HCO3_-"]
     solids_list = {
         "Calcite_g": {"Ca_2+": 1, "HCO3_-": 1},
         "Anhydrite_g": {"Ca_2+": 1, "SO4_2-": 1},
@@ -128,13 +133,19 @@ def main(surrogate_model_form):
     }
     m.fs.cryst_prop_feed = MCASParameterBlock(
         solute_list=input_ions,
+        material_flow_basis=MaterialFlowBasis.mass,
         )
+    
+    m.fs.water_properties_vapor = WaterParameterBlock()
+
     # Create crystallizer framework
     m.fs.cryst = SurrogateCrystallizer(
         property_package=m.fs.cryst_prop_feed,
+        vapor_property_package=m.fs.water_properties_vapor,
         input_ion_list=input_ions,
         solids_ions_dict=solids_list,
     )
+
     print(
         "Degrees of freedom of crystallizer model with undefined feed",
         degrees_of_freedom(m),
@@ -155,7 +166,7 @@ def main(surrogate_model_form):
     }
 
     g_to_kg = 1e-3
-    for i in input_ions:
+    for i in m.fs.cryst_prop_feed.component_list:
         if i == "H2O":
             m.fs.cryst.inlet.flow_mass_phase_comp[0.0, "Liq", i].fix(
                 feed["water_content_kg"]
@@ -197,26 +208,26 @@ def main(surrogate_model_form):
         "Halite_g": {"flowsheet_var": m.fs.o5, "Solid": True},
     }
 
-    if surrogate_model_form == "RBF":
-        print("\nRBF models selected.\n")
-        add_crystallizer_rbf_model(
-            m.fs.cryst,
-            surrogate_inputs_with_bounds=surrogate_inputs,
-            surrogate_outputs=surrogate_outputs,
-            surrogate_to_flowsheet_basis_ratio=1,
-        )
-    elif surrogate_model_form == "NN":
-        print("\nNN models selected.\n")
-        add_crystallizer_nn_model(
-            m.fs.cryst,
-            surrogate_inputs_with_bounds=surrogate_inputs,
-            surrogate_outputs=surrogate_outputs,
-            path_to_onnx_model=r"C:\Users\OOAmusat-II\Desktop\NAWI\WATERTAP\Phreeqc\crystallization\NN_40_NL_3_sigmoid_WD_1e-06_LR_0.01_testing.onnx",
-            path_to_offsetscaler_json=r"C:\Users\OOAmusat-II\Desktop\NAWI\WATERTAP\Phreeqc\crystallization\scalingfile_testing.json",
-            surrogate_to_flowsheet_basis_ratio=1,
-        )
-    else:
-        raise ValueError('"surrogate_model_form" must be "RBF" or "NN"')
+    # if surrogate_model_form == "RBF":
+       
+    add_crystallizer_rbf_model(
+        m.fs.cryst,
+        surrogate_inputs_with_bounds=surrogate_inputs,
+        surrogate_outputs=surrogate_outputs,
+        surrogate_to_flowsheet_basis_ratio=1,
+    )
+    # elif surrogate_model_form == "NN":
+    #     print("\nNN models selected.\n")
+    #     add_crystallizer_nn_model(
+    #         m.fs.cryst,
+    #         surrogate_inputs_with_bounds=surrogate_inputs,
+    #         surrogate_outputs=surrogate_outputs,
+    #         path_to_onnx_model=r"C:\Users\OOAmusat-II\Desktop\NAWI\WATERTAP\Phreeqc\crystallization\NN_40_NL_3_sigmoid_WD_1e-06_LR_0.01_testing.onnx",
+    #         path_to_offsetscaler_json=r"C:\Users\OOAmusat-II\Desktop\NAWI\WATERTAP\Phreeqc\crystallization\scalingfile_testing.json",
+    #         surrogate_to_flowsheet_basis_ratio=1,
+    #     )
+    # else:
+    #     raise ValueError('"surrogate_model_form" must be "RBF" or "NN"')
 
     # Costing
     m.fs.costing = WaterTAPCosting()
@@ -238,10 +249,12 @@ def main(surrogate_model_form):
     assert degrees_of_freedom(m) == 0
     m.fs.cryst.initialize(outlvl=idaeslog.DEBUG)
     solver = SolverFactory("ipopt")
+
     res = solver.solve(m, tee=True)
+    assert_optimal_termination(res)
     m.fs.cryst.report()
 
 
-if __name__ == "__main__":
-    surrogate_model = "NN"  # 'RBF'
-    main(surrogate_model)
+# if __name__ == "__main__":
+#     surrogate_model = 'RBF' #"NN"  # 'RBF'
+#     main(surrogate_model)
