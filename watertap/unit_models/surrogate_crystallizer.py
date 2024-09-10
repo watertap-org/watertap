@@ -32,24 +32,13 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.surrogate.surrogate_block import SurrogateBlock
-from idaes.core.surrogate.keras_surrogate import KerasSurrogate
-from idaes.core.surrogate.sampling.scaling import OffsetScaler
-from idaes.core.util.model_statistics import degrees_of_freedom
-
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
-
-# import watertap.property_models.cryst_prop_pack as props2
-import watertap.property_models.water_prop_pack as props3
 from watertap.costing.unit_models.surrogate_crystallizer import (
     cost_surrogate_crystallizer,
 )
-
 
 _log = idaeslog.getLogger(__name__)
 
