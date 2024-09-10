@@ -10,7 +10,6 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
-import watertap.property_models.seawater_prop_pack as props
 from watertap.property_models.water_prop_pack import WaterParameterBlock
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
@@ -99,6 +98,7 @@ def add_crystallizer_rbf_model(
             to_units=pyunits.Pa,
         )
     )
+
 
 @pytest.mark.component
 def test_rbf_surrogate():
