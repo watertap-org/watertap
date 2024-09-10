@@ -1,19 +1,10 @@
-import json
 import os
-import pandas as pd
+import pytest
 from pyomo.environ import (
     ConcreteModel,
-    value,
     Var,
     Constraint,
-    Expression,
-    Objective,
-    Param,
-    Reals,
-    NonNegativeReals,
-    TransformationFactory,
     units as pyunits,
-    Block,
     SolverFactory,
     assert_optimal_termination,
 )
@@ -30,18 +21,12 @@ import idaes.logger as idaeslog
 
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.pysmo_surrogate import (
-    PysmoPolyTrainer,
-    PysmoKrigingTrainer,
-    PysmoRBFTrainer,
     PysmoSurrogate,
 )
 from watertap.unit_models.surrogate_crystallizer import SurrogateCrystallizer
 
-# add_crystallizer_nn_model
-
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
-import pytest
 
 __author__ = "Oluwamayowa Amusat, Adam Atia"
 
@@ -115,16 +100,12 @@ def add_crystallizer_rbf_model(
         )
     )
 
-
+@pytest.mark.component
 def test_rbf_surrogate():
     m = ConcreteModel()
     m.case = "BGW1"
     m.fs = FlowsheetBlock(dynamic=False)
-    surrogate_feed_basis = 100  # in kg or kg/s
 
-    # Use property package from WT softening work
-
-    # # These names need to match the model names
     input_ions = ["Cl_-", "Na_+", "SO4_2-", "Mg_2+", "Ca_2+", "K_+", "HCO3_-"]
     solids_list = {
         "Calcite_g": {"Ca_2+": 1, "HCO3_-": 1},
