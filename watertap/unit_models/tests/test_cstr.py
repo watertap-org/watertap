@@ -30,6 +30,7 @@ from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
+from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.unit_models.cstr import CSTR
 from watertap.costing import WaterTAPCosting
 
@@ -52,6 +53,7 @@ from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -270,6 +272,7 @@ class TestInitializers:
         m.fs.unit.volume[0].fix(1.5e-03)
         m.fs.unit.heat_duty[0].fix(0)
         m.fs.unit.deltaP[0].fix(0)
+
         iscale.calculate_scaling_factors(m)
         return m
 
@@ -279,7 +282,7 @@ class TestInitializers:
             writer_config={"linear_presolve": False}
         )
 
-        initializer.initialize(model.fs.unit)
+        initializer.initialize(model.fs.unit, output_level=idaeslog.DEBUG)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
