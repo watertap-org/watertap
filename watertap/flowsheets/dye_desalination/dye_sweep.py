@@ -9,8 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import os
 from parameter_sweep import LinearSample, parameter_sweep
-import watertap.flowsheets.dye_desalination.dye_desalination as dye_desalination_withRO
+import watertap.flowsheets.dye_desalination.dye_desalination as dye_desal
+from watertap.tools.parameter_sweep.sweep_visualizer import line_plot, contour_plot
 
 
 def set_up_sensitivity(m):
@@ -21,7 +23,7 @@ def set_up_sensitivity(m):
 
     # choose the right flowsheet and if ro is enabled add lcow
     outputs["LCOW"] = m.fs.LCOW
-    opt_function = dye_desalination_withRO.solve
+    opt_function = dye_desal.solve
 
     optimize_kwargs = {"fail_flag": False}
     return outputs, optimize_kwargs, opt_function
@@ -38,7 +40,7 @@ def run_analysis(case_num=8, nx=11, interpolate_nan_outputs=True, output_filenam
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
 
     # select flowsheet
-    m = dye_desalination_withRO.main()[0]
+    m = dye_desal.main()[0]
 
     # set up sensitivities
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
@@ -264,5 +266,159 @@ def run_analysis(case_num=8, nx=11, interpolate_nan_outputs=True, output_filenam
     return global_results, sweep_params, m
 
 
+def merge_path(filename):
+    source_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
+    return source_path
+
+
+def visualize_results(
+    case_num,
+    plot_type,
+    xlabel,
+    ylabel,
+    xunit=None,
+    yunit=None,
+    zlabel=None,
+    zunit=None,
+    levels=None,
+    cmap=None,
+    isolines=None,
+):
+    data_file = merge_path("interpolated_sensitivity_" + str(case_num) + ".csv")
+    if plot_type == "line":
+        fig, ax = line_plot(data_file, xlabel, ylabel, xunit, yunit)
+
+    elif plot_type == "contour":
+        fig, ax = contour_plot(
+            data_file,
+            xlabel,
+            ylabel,
+            zlabel,
+            xunit,
+            yunit,
+            zunit,
+            levels=levels,
+            cmap=cmap,
+            isolines=isolines,
+        )
+    else:
+        raise ValueError("Plot type not yet implemented")
+    return fig, ax
+
+
+def main(case_num, nx=11, interpolate_nan_outputs=True, withRO=True):
+    # when from the command line
+    case_num = int(case_num)
+    nx = int(nx)
+    interpolate_nan_outputs = bool(interpolate_nan_outputs)
+
+    # comm, rank, num_procs = _init_mpi()
+
+    global_results, sweep_params, m = run_analysis(
+        case_num, nx, interpolate_nan_outputs
+    )
+    # print(global_results)
+
+    # visualize results
+
+    # case 8
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# membrane_cost",
+    #     ylabel="water_permeability",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("Membrane Cost ($/m2)")
+    # ax.set_ylabel("Water Permeability (LMH/bar)")
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 9
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# membrane_cost",
+    #     ylabel="dye_removal",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("Membrane Cost ($/m2)")
+    # ax.set_ylabel("Dye Removal Fraction")
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 10
+    # Note: Set motor efficiency to 1 in flowsheet before running this (dye_sep.P1.eta_motor.fix(1))
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# electricity_cost",
+    #     ylabel="pump_efficiency",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("Electricity Cost ($/kWh)")
+    # ax.set_ylabel("Pump Efficiency")
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 11
+    # Note: Generate 3 LCOT colorbar plots, each with different values of product water (0.05, 0.5, and $5/m3)
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# waste_disposal_cost",
+    #     ylabel="dye_disposal_cost",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("Waste Disposal Cost ($/m3)")
+    # ax.set_ylabel("Dye Disposal Cost ($/m3)")
+    # ax.set_xlim([1, 10])
+    # ax.set_ylim([120, 150])
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 17
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# NF_water_recovery",
+    #     ylabel="dye_disposal_cost",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("NF Water Recovery Fraction")
+    # ax.set_ylabel("Dye Disposal Cost ($/m3)")
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 18
+    # fig, ax = visualize_results(
+    #     case_num,
+    #     plot_type="contour",
+    #     xlabel="# NF_water_recovery",
+    #     ylabel="NF_water_permeability",
+    #     zlabel="LCOT",
+    #     cmap="GnBu",
+    # )
+    # ax.set_xlabel("NF Water Recovery Fraction")
+    # ax.set_ylabel("NF Water Permeability (LMH/bar)")
+    # ax.set_title("LCOT ($/m3)")
+
+    # case 19
+    fig, ax = visualize_results(
+        case_num,
+        plot_type="contour",
+        xlabel="# NF_water_recovery",
+        ylabel="NF_dye_rejection",
+        zlabel="LCOT",
+        cmap="GnBu",
+    )
+    ax.set_xlabel("NF Water Recovery Fraction")
+    ax.set_ylabel("NF Dye Rejection Fraction")
+    ax.set_title("LCOT ($/m3)")
+
+    return global_results, m
+
+
 if __name__ == "__main__":
-    results, sweep_params, m = run_analysis()
+    results, model = main(case_num=19, nx=11)
+    # results, sweep_params, m = run_analysis()
