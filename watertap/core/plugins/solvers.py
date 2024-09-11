@@ -432,20 +432,22 @@ class _BaseDebugSolverWrapper:
         debug = self
 
         # else there was a problem
-        print(f"Solver debugging mode: the block {blk.name} failed to solve.")
-        print(f"{blk.name} is called `blk` in this context.")
-        print(f"The solver {solver.name} is available in the variable `solver`.")
-        print(f"The Initial values have be restored into the block.")
+        print(f"\nSolver debugging mode: the block {blk.name} failed to solve.\n")
+        print(f"{blk.name} can be called as `blk` in debugging mode.\n")
+        print(f"The solver {solver.name} is available in the variable `solver`.\n")
+        print(f"The initial values before the failed solve have been stored.\n")
         print(
-            f"You can restore them anytime by calling `debug.restore_initial_values(blk)`."
+            f"You can restore these initial values at anytime by calling `debug.restore_initial_values(blk)`\n."
         )
         print(
-            f"The model has been loaded into an IDAES DiagnosticsToolbox instance called `dt`."
+            f"The model has been loaded into an IDAES DiagnosticsToolbox instance called `dt`.\n"
+        )
+        print(
+            "WARNING: If you ran your python file in an interactive window, this debugging mode will not work as intended. Be sure to run your python file in a terminal.\n"
         )
         from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
         dt = DiagnosticsToolbox(blk)
-        # dt.report_structural_issues()
         IPython.embed(colors="neutral")
 
         # activate the model debug mode
