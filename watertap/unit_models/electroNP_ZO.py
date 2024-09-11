@@ -252,7 +252,7 @@ class ElectroNPZOdata(SeparatorData):
                     elif j == "S_NH4":
                         sf = 1
                     else:
-                        sf = 1
+                        sf = 1e7
             iscale.set_scaling_factor(v, sf)
 
         for t, v in self.electricity.items():

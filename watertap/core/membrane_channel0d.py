@@ -10,16 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import collections
-import weakref
-
 from pyomo.environ import (
     NegativeReals,
     NonNegativeReals,
     Set,
     Var,
 )
-from pyomo.core.base.indexed_component import slicer_types
 from idaes.core import (
     declare_process_block_class,
     FlowDirection,
@@ -37,111 +33,6 @@ from watertap.core.membrane_channel_base import (
 )
 
 CONFIG_Template = Base_CONFIG_Template()
-
-
-class Not0Or1Error(KeyError):
-    pass
-
-
-class _0DPropertyHelper(collections.abc.Mapping):
-    """
-    Class to make blk.properties_in and blk.properties_out
-    like blk.properties from a 1D model.
-    """
-
-    def __init__(self, blk, reverse=False):
-        self._blk_ref = weakref.ref(blk)
-        if reverse:
-            self._get_property_x = self._get_property_x_backward
-        else:
-            self._get_property_x = self._get_property_x_forward
-
-    def __len__(self):
-        return len(self.blk.properties_in) + len(self.blk.properties_out)
-
-    def __iter__(self):
-        for t in self._get_property_x(0):
-            yield (t, 0)
-        for t in self._get_property_x(1):
-            yield (t, 1)
-
-    def __contains__(self, index):
-        idx0 = index[0]
-        idx1 = index[1]
-        try:
-            return idx0 in self._get_property_x(idx1)
-        except Not0Or1Error:
-            return False
-
-    def __getitem__(self, index):
-        if index is Ellipsis:
-            return (_ for _ in self._props_in_out(index))
-        try:
-            index_len = len(index)
-        except:
-            raise KeyError(index)
-        if index_len != 2:
-            raise KeyError(index)
-        idx0 = index[0]
-        idx1 = index[1]
-        if type(idx1) in slicer_types:
-            if isinstance(idx1, slice):
-                if (
-                    idx1.start is not None
-                    or idx1.stop is not None
-                    or idx1.step is not None
-                ):
-                    raise IndexError("Indexed components only support simple slices")
-            return (_ for _ in self._props_in_out(idx0))
-        try:
-            props = self._get_property_x(idx1)
-            return props[idx0]
-        except Not0Or1Error:
-            raise KeyError(index)
-
-    def keys(self):
-        for t in self._get_property_x(0).keys():
-            yield (t, 0)
-        for t in self._get_property_x(1).keys():
-            yield (t, 1)
-
-    def items(self):
-        for t, v in self._get_property_x(0).items():
-            yield (t, 0, v)
-        for t, v in self._get_property_x(1).items():
-            yield (t, 1, v)
-
-    def values(self):
-        yield from self._get_property_x(0).values()
-        yield from self._get_property_x(1).values()
-
-    @property
-    def blk(self):
-        return self._blk_ref()
-
-    def _get_property_x_forward(self, x):
-        if x == 0:
-            return self.blk.properties_in
-        elif x == 1:
-            return self.blk.properties_out
-        else:
-            raise Not0Or1Error
-
-    def _get_property_x_backward(self, x):
-        if x == 1:
-            return self.blk.properties_in
-        elif x == 0:
-            return self.blk.properties_out
-        else:
-            raise Not0Or1Error
-
-    def _props_in_out(self, idx0):
-        if type(idx0) in slicer_types:
-            yield from self._get_property_x(0)[idx0]
-            yield from self._get_property_x(1)[idx0]
-        else:
-            yield self._get_property_x(0)[idx0]
-            yield self._get_property_x(1)[idx0]
 
 
 @declare_process_block_class("MembraneChannel0DBlock")
@@ -229,9 +120,35 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         self._set_nfe()
 
         if self._flow_direction == FlowDirection.forward:
-            self.properties = _0DPropertyHelper(self, reverse=False)
+            add_object_reference(
+                self,
+                "properties",
+                {
+                    **{
+                        (t, 0.0): self.properties_in[t]
+                        for t in self.flowsheet().config.time
+                    },
+                    **{
+                        (t, 1.0): self.properties_out[t]
+                        for t in self.flowsheet().config.time
+                    },
+                },
+            )
         elif self._flow_direction == FlowDirection.backward:
-            self.properties = _0DPropertyHelper(self, reverse=True)
+            add_object_reference(
+                self,
+                "properties",
+                {
+                    **{
+                        (t, 0): self.properties_out[t]
+                        for t in self.flowsheet().config.time
+                    },
+                    **{
+                        (t, 1): self.properties_in[t]
+                        for t in self.flowsheet().config.time
+                    },
+                },
+            )
         else:
             raise ConfigurationError(
                 "FlowDirection must be set to FlowDirection.forward or FlowDirection.backward."
