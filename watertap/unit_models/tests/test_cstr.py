@@ -53,6 +53,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 import idaes.logger as idaeslog
+
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
