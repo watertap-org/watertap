@@ -11,17 +11,14 @@
 #################################################################################
 from pyomo.environ import (
     ConcreteModel,
-    TerminationCondition,
 )
 from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
     Objective,
-    Var,
-    NonNegativeReals,
     TransformationFactory,
-    units as pyunits,
+   
     check_optimal_termination,
 )
 from pyomo.network import Arc
@@ -31,7 +28,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
     propagate_state,
 )
-from pyomo.util.check_units import assert_units_consistent
+from watertap.unit_models.pressure_changer import Pump
+from watertap.costing.unit_models.pump import (
+    cost_pump,
+)
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -44,13 +44,8 @@ from idaes.core import UnitModelCostingBlock
 from watertap.property_models.unit_specific import cryst_prop_pack as props
 from watertap.unit_models.Crystallizer_revised import Crystallization
 from watertap.costing import WaterTAPCosting, CrystallizerCostType
-
-from io import StringIO
-from pyomo.util.infeasible import (
-    log_infeasible_constraints,
-)
 from watertap.unit_models.steam_heater_0D import SteamHeater0D, Mode
-from idaes.models.unit_models import Heater, Separator, Mixer, Product, Feed
+from idaes.models.unit_models import  Mixer, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.core.solvers import get_solver
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
@@ -63,9 +58,7 @@ from watertap.unit_models.mvc.components import Compressor
 from watertap.property_models.unit_specific import cryst_prop_pack as props
 import watertap.property_models.water_prop_pack as props_w
 import watertap.property_models.NaCl_T_dep_prop_pack as props_nacl
-from pyomo.common.log import LoggingIntercept
 from idaes.models.unit_models.translator import Translator
-import logging
 from watertap.core.util.model_debug_mode import activate
 activate()
 
@@ -80,15 +73,12 @@ def main():
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
-    #optimize_set_up(m)
+    optimize_set_up(m)
 
-    #interval_initializer(m)
-    #solve(m, solver=solver)
+    solve(m, solver=solver)
 
-    #print("\n***---optimization results---***")
-    #display_system(m)
-    #display_design(m)
-    #display_state(m)
+    display_system(m)
+   
 
     return m
 
@@ -133,6 +123,8 @@ def build():
     )
     m.fs.mixer.pressure_equality_constraints[0, 2].deactivate()
     m.fs.compressor = Compressor(property_package=m.fs.properties_vapor)
+
+    m.fs.pump = Pump(property_package=m.fs.properties_nacl)
 
     m.fs.tb_vapor = Translator(
         inlet_property_package=m.fs.properties,
@@ -211,12 +203,16 @@ def build():
     @m.fs.tb_recycle.Constraint()
     def eq_pressure(blk):
         return blk.properties_in[0].pressure == blk.properties_out[0].pressure
+    
+    m.fs.eq_heater_temperature_rise = Constraint(
+           expr=m.fs.feed.flow_mass_phase_comp[0,"Liq", "NaCl"] == m.fs.crystallizer.solids.flow_mass_phase_comp[0,"Sol", "NaCl"] )
 
 
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.mixer.feed)
-    m.fs.s02 = Arc(source=m.fs.mixer.outlet, destination=m.fs.heater.cold_side_inlet)
+    m.fs.s11 = Arc(source=m.fs.mixer.outlet, destination=m.fs.pump.inlet)
+    m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.heater.cold_side_inlet)
     m.fs.s03 = Arc(source=m.fs.heater.cold_side_outlet, destination=m.fs.tb_heater_to_cryst.inlet)
     m.fs.s04 = Arc(source=m.fs.tb_heater_to_cryst.outlet, destination=m.fs.crystallizer.inlet)
     m.fs.s05 = Arc(source=m.fs.crystallizer.outlet, destination=m.fs.tb_recycle.inlet)
@@ -268,6 +264,11 @@ def add_costs(m):
 
     m.fs.compressor.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing
+   )
+    m.fs.pump.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=cost_pump,
+        costing_method_arguments={"pump_type": "low_pressure"},
     )
 
 
@@ -285,26 +286,29 @@ def set_operating_conditions(m):
     m.fs.feed.temperature[0].fix(273.15 + 20)
 
 
-    m.fs.crystallizer.inlet.temperature[0].fix(273.15 + 50 )
-    m.fs.crystallizer.solids.flow_mass_phase_comp[0, "Sol", "NaCl"].fix(0.1)
+    m.fs.crystallizer.temperature_operating.set_value(273.15 + 50 )
     m.fs.heater.overall_heat_transfer_coefficient.fix(2e3)
-    #m.fs.heater.area.fix(10)
+ 
 
     # Fix
     m.fs.crystallizer.crystal_growth_rate.fix()
     m.fs.crystallizer.souders_brown_constant.fix()
     m.fs.crystallizer.crystal_median_length.fix()
 
-    m.fs.heater.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].set_value(1)
    
 
     m.fs.crystallizer.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].set_value(13.5119 *10 )
     m.fs.crystallizer.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].set_value(38.9326 * 10 )
-    #m.fs.crystallizer.inlet.temperature[0].set_value(273.15 + 80)
+    m.fs.crystallizer.inlet.temperature[0].fix(273.15 + 100)
+    m.fs.heater.cold_side_outlet.temperature[0].set_value(273.15 + 200)
     m.fs.crystallizer.inlet.pressure[0].set_value(101325)
 
-    m.fs.compressor.pressure_ratio.set_value(2)
+    m.fs.compressor.pressure_ratio.set_value(1.5)
     m.fs.compressor.efficiency.fix(0.8)
+    m.fs.compressor.pressure_ratio.setub(3)
+
+    m.fs.pump.deltaP.fix(100000)
+    m.fs.pump.efficiency_pump.fix(0.8)
 
     
     
@@ -344,10 +348,17 @@ def initialize_system(m, solver=None, verbose=True):
     m.fs.mixer.initialize()
     m.fs.mixer.pressure_equality_constraints[0, 2].deactivate()
     print(f"DOF: {degrees_of_freedom(m)}")
+
+    propagate_state(m.fs.s11)
+    m.fs.pump.initialize()
+
     propagate_state(m.fs.s02)
     propagate_state(m.fs.s09)
     m.fs.heater.initialize()
-    #m.fs.heater.cold_side_inlet.unfix()
+    m.fs.heater.cold_side_inlet.unfix()
+    m.fs.heater.hot_side_inlet.unfix()
+    print(f"DOF heater: {degrees_of_freedom(m)}")
+   
     propagate_state(m.fs.s03)
     propagate_state(m.fs.s04)
     m.fs.crystallizer.inlet.flow_mass_phase_comp[0,"Liq", "H2O"] = m.fs.heater.cold_side_outlet.flow_mass_phase_comp[0,"Liq", "H2O"].value
@@ -359,6 +370,13 @@ def initialize_system(m, solver=None, verbose=True):
     propagate_state(m.fs.s10)
     m.fs.distillate.initialize()
     print("DOF final:", degrees_of_freedom(m.fs))
+    propagate_state(m.fs.s07)
+    propagate_state(m.fs.s08)
+    m.fs.compressor.inlet.flow_mass_phase_comp[0,"Liq", "H2O"] = m.fs.crystallizer.vapor.flow_mass_phase_comp[0,"Liq", "H2O"].value
+    m.fs.compressor.inlet.flow_mass_phase_comp[0,"Vap", "H2O"] = m.fs.crystallizer.vapor.flow_mass_phase_comp[0,"Vap", "H2O"].value
+    m.fs.compressor.inlet.temperature[0] = m.fs.crystallizer.vapor.temperature[0].value
+    m.fs.compressor.inlet.pressure[0] = m.fs.crystallizer.vapor.pressure[0].value
+    m.fs.compressor.initialize()
     m.fs.costing.initialize()
     
 
@@ -366,25 +384,34 @@ def initialize_system(m, solver=None, verbose=True):
 def optimize_set_up(m):
     # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+
+    m.fs.crystallizer.temperature_operating.unfix()
+    m.fs.crystallizer.temperature_operating.setlb(273.15 +30)
+    m.fs.crystallizer.temperature_operating.setub(273.15 +120)
     
-    m.fs.crystallizer.inlet.temperature.unfix()
-    m.fs.crystallizer.inlet.temperature.setlb(273.15 +50)
-    m.fs.crystallizer.inlet.temperature.setub(273.15 +55)
-    #m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].lb = 400
-    m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].set_value(800)
-    print("DOF final optimization:", degrees_of_freedom(m.fs))
+    m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].lb = 100
+    m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].set_value(500)
+
+    
     # additional constraints
     Temperature_rise = 4
     m.fs.eq_heater_temperature_rise = Constraint(
-        expr=m.fs.heater.cold_side_outlet.temperature[0] - m.fs.heater.cold_side_inlet.temperature[0] <= Temperature_rise)
-
-    #assert_degrees_of_freedom(m, 6)
+           expr=m.fs.heater.cold_side_outlet.temperature[0] - m.fs.heater.cold_side_inlet.temperature[0] <= 5)
 
 
 def optimize(m, solver=None):
     # --solve---
     return solve(m, solver=solver)
    
+def display_system(m):
+    print("Inlet temperature:", m.fs.crystallizer.inlet.temperature[0].value)
+    print("operating temperature:", m.fs.crystallizer.temperature_operating.value)
+    print("pressure ratio:", m.fs.compressor.pressure_ratio.value)
+    print("recycle H2O:", m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].value)
+    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
+    print("Inlet temperature heater:", m.fs.heater.cold_side_inlet.temperature[0].value)
+    print("outlet temperature heater:", m.fs.heater.cold_side_outlet.temperature[0].value)
+  
 
 if __name__ == "__main__":
     m = main()
