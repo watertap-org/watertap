@@ -219,7 +219,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --verbose
+        idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
     - name: Run pytest
       run: |
@@ -264,7 +264,7 @@ jobs:
         pip show idaes-pse
         echo '::endgroup::'
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --verbose
+        idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
     - name: Install Jupyter kernel
       run: |
