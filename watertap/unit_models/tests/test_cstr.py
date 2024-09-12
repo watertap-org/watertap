@@ -30,7 +30,6 @@ from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.unit_models.cstr import CSTR
 from watertap.costing import WaterTAPCosting
 
