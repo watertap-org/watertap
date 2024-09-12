@@ -16,6 +16,7 @@ import pyomo.environ as pyo
 import idaes.core as idc
 
 from watertap.costing.watertap_costing_package import WaterTAPCosting
+import watertap.flowsheets.lsrro.lsrro as lsrro
 
 
 @pytest.mark.component
@@ -134,3 +135,27 @@ def test_watertap_costing_package():
     m.fs.costing.capital_recovery_factor.fix()
     # no error, wacc, capital_recovery_factor fixed
     m.fs.costing.initialize()
+
+
+@pytest.mark.component
+def test_LCOW_breakdowns():
+    m = lsrro.build()
+    m.fs.costing.initialize()
+
+    total_LCOW = pyo.value(m.fs.costing.LCOW)
+
+    summed_aggregates = pyo.value(
+        sum(m.fs.costing.LCOW_aggregate_direct_capex.values())
+        + sum(m.fs.costing.LCOW_aggregate_indirect_capex.values())
+        + sum(m.fs.costing.LCOW_aggregate_fixed_opex.values())
+        + sum(m.fs.costing.LCOW_aggregate_variable_opex.values())
+    )
+    assert pytest.approx(total_LCOW) == summed_aggregates
+
+    summed_components = pyo.value(
+        sum(m.fs.costing.LCOW_component_direct_capex.values())
+        + sum(m.fs.costing.LCOW_component_indirect_capex.values())
+        + sum(m.fs.costing.LCOW_component_fixed_opex.values())
+        + sum(m.fs.costing.LCOW_component_variable_opex.values())
+    )
+    assert pytest.approx(total_LCOW) == summed_components
