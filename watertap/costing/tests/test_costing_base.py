@@ -140,6 +140,10 @@ def test_watertap_costing_package():
 @pytest.mark.component
 def test_LCOW_breakdowns():
     m = lsrro.build()
+
+    m.fs.BoosterPumps[:].control_volume.work[0.0].value = 42e6
+    m.fs.EnergyRecoveryDevices[:].control_volume.work[0.0].value = -42e6
+
     m.fs.costing.initialize()
 
     total_LCOW = pyo.value(m.fs.costing.LCOW)
@@ -149,6 +153,7 @@ def test_LCOW_breakdowns():
         + sum(m.fs.costing.LCOW_aggregate_indirect_capex.values())
         + sum(m.fs.costing.LCOW_aggregate_fixed_opex.values())
         + sum(m.fs.costing.LCOW_aggregate_variable_opex.values())
+        - m.fs.costing.LCOW_aggregate_variable_opex["electricity"]
     )
     assert pytest.approx(total_LCOW) == summed_aggregates
 
