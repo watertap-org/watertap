@@ -210,6 +210,86 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             doc="ISS fractional content of biomass",
         )
 
+        # EQI parameters
+        self.i_NSF = pyo.Var(
+            initialize=0.03352,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of fermentable substrate, S_F, [kg N/kg COD]",
+        )
+        self.i_NSI = pyo.Var(
+            initialize=0.06003,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of inert soluble COD S_I, [kg N/kg COD]",
+        )
+        self.i_NXI = pyo.Var(
+            initialize=0.06003,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of inert particulate COD X_I, [kg N/kg COD]",
+        )
+        self.i_NXS = pyo.Var(
+            initialize=0.03352,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of slowly biodegradable substrate X_S, [kg N/kg COD]",
+        )
+        self.i_NBM = pyo.Var(
+            initialize=0.08615,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of biomass, X_H, X_PAO, X_AUT, [kg N/kg COD]",
+        )
+        self.f_SI = pyo.Var(
+            initialize=0.00,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
+        )
+        self.f_XIH = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD generated in lysis of X_H, [kg COD/kg COD]",
+        )
+        self.f_XIP = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD generated in lysis of X_PAO and X_PHA, [kg COD/kg COD]",
+        )
+        self.f_XIA = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD generated in lysis of X_AUT, [kg COD/kg COD]",
+        )
+        self.i_PSF = pyo.Var(
+            initialize=0.00559,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of fermentable substrate, S_F, [kg P/kg COD]",
+        )
+        self.i_PXI = pyo.Var(
+            initialize=0.00649,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of inert particulate COD X_I, [kg P/kg COD]",
+        )
+        self.i_PXS = pyo.Var(
+            initialize=0.00559,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of slowly biodegradable substrate X_S, [kg P/kg COD]",
+        )
+        self.i_PBM = pyo.Var(
+            initialize=0.02154,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
+        )
+
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
@@ -442,9 +522,89 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         )
 
         def rule_TSS(b):
-            return b.TSS == b.VSS + b.ISS
+            return b.TSS == b.conc_mass_comp["X_H"]
 
         self.eq_TSS = pyo.Constraint(rule=rule_TSS)
+
+    def _COD(self):
+        self.COD = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Chemical oxygen demand",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        def rule_COD(b):
+            return (
+                b.COD
+                == b.conc_mass_comp["S_F"]
+                + b.conc_mass_comp["S_A"]
+                + b.conc_mass_comp["S_I"]
+                + b.conc_mass_comp["X_I"]
+                + b.conc_mass_comp["X_S"]
+                + b.conc_mass_comp["X_H"]
+                + b.conc_mass_comp["X_PAO"]
+                + b.conc_mass_comp["X_PHA"]
+                + b.conc_mass_comp["X_AUT"]
+            )
+
+        self.eq_COD = pyo.Constraint(rule=rule_COD)
+
+        def rule_SNKj(b):
+            return b.SNKj == b.conc_mass_comp[
+                "S_NH4"
+            ] + b.params.i_NSF * b.conc_mass_comp[
+                "S_F"
+            ] + b.params.i_NSI * b.conc_mass_comp[
+                "S_I"
+            ] + b.params.i_NXI * b.conc_mass_comp[
+                "X_I"
+            ] + b.params.i_NXS * b.conc_mass_comp[
+                "X_S"
+            ] + b.params.i_NBM * (
+                b.conc_mass_comp["X_H"]
+                + b.conc_mass_comp["X_PAO"]
+                + b.conc_mass_comp["X_AUT"]
+            )
+
+        self.eq_SNKj = pyo.Constraint(rule=rule_SNKj)
+
+        def rule_BOD5(b):
+            return b.BOD5 == 0.25 * (
+                b.conc_mass_comp["S_F"]
+                + b.conc_mass_comp["S_A"]
+                + (1 - b.params.f_SI) * b.conc_mass_comp["X_S"]
+                + (1 - b.params.f_XIH) * b.conc_mass_comp["X_H"]
+                + (1 - b.params.f_XIP)
+                * (b.conc_mass_comp["X_PAO"] + b.conc_mass_comp["X_PHA"])
+                + (1 - b.params.f_XIA) * b.conc_mass_comp["X_AUT"]
+            )
+
+        self.eq_BOD5 = pyo.Constraint(rule=rule_BOD5)
+
+        def rule_SP_organic(b):
+            return b.SP_organic == b.conc_mass_comp[
+                "X_PP"
+            ] + b.params.i_PSF * b.conc_mass_comp[
+                "S_F"
+            ] + b.params.i_PSI * b.conc_mass_comp[
+                "S_I"
+            ] + b.params.i_PXI * b.conc_mass_comp[
+                "X_I"
+            ] + b.params.i_PXS * b.conc_mass_comp[
+                "X_S"
+            ] + b.params.i_PBM * (
+                b.conc_mass_comp["X_H"]
+                + b.conc_mass_comp["X_PAO"]
+                + b.conc_mass_comp["X_AUT"]
+            )
+
+        self.eq_SP_organic = pyo.Constraint(rule=rule_SP_organic)
+
+        def rule_SP_inorganic(b):
+            return b.SP_inorganic == b.conc_mass_comp["S_PO4"]
+
+        self.eq_SP_inorganic = pyo.Constraint(rule=rule_SP_inorganic)
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
