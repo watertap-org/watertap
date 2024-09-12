@@ -9,7 +9,8 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "description", ":math:`Symbol_{example}`", "parameter_name", "1", ":math:`\text{dimensionless}`"
+   "Membrane replacement factor", ":math:`f_{replace}`", "``factor_membrane_replacement``", "0.2", ":math:`\text{yr}^{-1}`"
+   "Membrane cost", ":math:`C_{mem}`", "``membrane_unit_cost``", "56", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
@@ -17,38 +18,28 @@ Costing Method Variables
 The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_membrane_distillation` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "description", ":math:`Symbol_{example}`", "variable_name", "1", ":math:`\text{dimensionless}`"
+   "Membrane area", ":math:`A_{mem}`", "``area``", "None", ":math:`\text{m}^2`"
 
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Describe capital costs..keep it concise where possible
+The capital cost is dependent upon the membrane area, :math:`A_{mem}`, as shown in the equations below.
 
     .. math::
 
-        C_{cap,tot} = C_{cap,example1}+C_{cap,example2}+C_{cap,other}
+        C_{cap,tot} = A_{mem} * C_{mem}
 
-    .. math::
-
-        C_{cap,example1} = fill in equation for each component in total capex equation
-
- 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Describe operating/maintenance costs..keep it concise where possible
+The fixed operating cost is proportional to the membrane capital cost, adjusted by the membrane replacement factor.
 
     .. math::
 
-        C_{op,tot} = C_{op,example1}+C_{op,example2}+C_{op,other}
+        C_{op,tot} = f_{replace} * C_{mem} * A_{mem}
 
-    .. math::
-
-        C_{op,example1} = fill in equation for each component in total opex equation
-
- 
 Code Documentation
 ------------------
 
@@ -56,4 +47,5 @@ Code Documentation
 
 References
 ----------
-Aim to include at least one reference in most cases, but delete this section if no references used for cost relationships/default values
+
+Shamlou, E., Vidic, R., & Khanna, V. (2022). Optimization-based modeling and economic comparison of membrane distillation configurations for application in shale gas produced water treatment. Desalination, 526, 115513.

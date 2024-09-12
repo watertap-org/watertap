@@ -105,7 +105,7 @@ Scaling for the ASM1 property package has yet to be implemented.
 
 Class Documentation
 -------------------
-.. currentmodule:: watertap.property_models.activated_sludge.asm1_properties
+.. currentmodule:: watertap.property_models.unit_specific.activated_sludge.asm1_properties
 
 .. autoclass:: ASM1ParameterBlock
     :members:
@@ -123,7 +123,7 @@ Class Documentation
     :members:
     :noindex:
 
-.. currentmodule:: watertap.property_models.activated_sludge.asm1_reactions
+.. currentmodule:: watertap.property_models.unit_specific.activated_sludge.asm1_reactions
 
 .. autoclass:: ASM1ReactionParameterBlock
     :members:

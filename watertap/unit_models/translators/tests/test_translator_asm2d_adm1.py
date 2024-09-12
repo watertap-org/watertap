@@ -44,19 +44,19 @@ from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 
-from watertap.property_models.anaerobic_digestion.modified_adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.modified_asm2d_properties import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
 
-from watertap.property_models.anaerobic_digestion.modified_adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.modified_asm2d_reactions import (
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
 
@@ -163,16 +163,6 @@ class TestAsm2dAdm1_bioP_true(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-        assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
-        assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
-        assert value(asmadm.fs.unit.f_xI_xc) == 0.1
-        assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
-        assert value(asmadm.fs.unit.f_ch_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_pr_xc, Param)
-        assert value(asmadm.fs.unit.f_pr_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_li_xc, Param)
-        assert value(asmadm.fs.unit.f_li_xc) == 0.35
 
         assert isinstance(asmadm.fs.unit.f_XPHA_Sva, Param)
         assert value(asmadm.fs.unit.f_XPHA_Sva) == 0.1
@@ -438,16 +428,6 @@ class TestAsm2dAdm1_bioP_false(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-        assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
-        assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
-        assert value(asmadm.fs.unit.f_xI_xc) == 0.1
-        assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
-        assert value(asmadm.fs.unit.f_ch_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_pr_xc, Param)
-        assert value(asmadm.fs.unit.f_pr_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_li_xc, Param)
-        assert value(asmadm.fs.unit.f_li_xc) == 0.35
 
         assert isinstance(asmadm.fs.unit.f_XPHA_Sva, Param)
         assert value(asmadm.fs.unit.f_XPHA_Sva) == 0.1

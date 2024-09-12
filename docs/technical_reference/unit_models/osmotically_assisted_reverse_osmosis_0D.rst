@@ -4,7 +4,7 @@ This osmotically assisted reverse osmosis (OARO) unit model
    * is 0-dimensional
    * supports a single liquid phase only
    * supports steady-state only
-   * supports flat-sheet and spiral-wound module designs
+   * supports flat-sheet module designs
    * is based on the solution-diffusion model and film theory
    * assumes isothermal conditions
    * assumes the feed-side flows in the forward direction
@@ -178,8 +178,7 @@ Equations
    "Reynolds number",":math:`Re = \frac{\rho v_f d_h}{\mu}`"
    "Hydraulic diameter",":math:`d_h = \frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
    "Cross-sectional area",":math:`A_c = h_{ch}W\epsilon_{sp}`"
-   "Membrane area (flat-plate)",":math:`A_m = LW`"
-   "Membrane area (spiral-wound)",":math:`A_m = 2LW`"
+   "Membrane area",":math:`A_m = LW`"
    "Pressure drop",":math:`ΔP = (\frac{ΔP}{Δx})_{avg}L`"
    "Feed-channel velocity",":math:`v_f = Q_f/A_c`"
    "Friction factor",":math:`f = 0.42+\frac{189.3}{Re}`"

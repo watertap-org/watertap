@@ -10,31 +10,114 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from pyomo.environ import ConcreteModel
-
-from watertap.core.solvers import get_solver
-
-from idaes.core import FlowsheetBlock
-
+from pyomo.network import Port
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    StateBlock,
+)
+from idaes.core.util.model_statistics import (
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
 import idaes.core.util.scaling as iscale
-
+from watertap.core import (
+    MembraneChannel0DBlock,
+    FrictionFactor,
+    ModuleType,
+)
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
-
-from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
+from watertap.core.solvers import get_solver
+from watertap.unit_models.reverse_osmosis_base import TransportModel
 
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+import pytest
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_default_config_and_build():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = props.NaClParameterBlock()
+    m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
+
+    assert len(m.fs.unit.config) == 15
+    config_keys = [
+        "dynamic",
+        "has_holdup",
+        "property_package",
+        "property_package_args",
+        "material_balance_type",
+        "energy_balance_type",
+        "momentum_balance_type",
+        "concentration_polarization_type",
+        "mass_transfer_coefficient",
+        "transport_model",
+        "module_type",
+        "has_pressure_change",
+        "pressure_change_type",
+        "friction_factor",
+        "has_full_reporting",
+    ]
+
+    for key in m.fs.unit.config:
+        assert key in config_keys
+
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
+    assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+    assert not m.fs.unit.config.has_pressure_change
+    assert m.fs.unit.config.property_package is m.fs.properties
+    assert (
+        m.fs.unit.config.concentration_polarization_type
+        == ConcentrationPolarizationType.calculated
+    )
+    assert (
+        m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+    )
+    assert m.fs.unit.config.pressure_change_type == PressureChangeType.fixed_per_stage
+    assert m.fs.unit.config.transport_model == TransportModel.SD
+    assert m.fs.unit.config.friction_factor == FrictionFactor.default_by_module_type
+    assert m.fs.unit.config.module_type == ModuleType.flat_sheet
+    assert not m.fs.unit.config.has_full_reporting
+    # test ports
+    port_lst = ["inlet", "retentate", "permeate"]
+    for port_str in port_lst:
+        port = getattr(m.fs.unit, port_str)
+        assert isinstance(port, Port)
+        # number of state variables for NaCl property package
+        assert len(port.vars) == 3
+
+    # test feed-side control volume and associated stateblocks
+    assert isinstance(m.fs.unit.feed_side, MembraneChannel0DBlock)
+    assert isinstance(m.fs.unit.permeate_side, StateBlock)
+    assert isinstance(m.fs.unit.mixed_permeate, StateBlock)
+    assert (
+        str(m.fs.unit.permeate_side.index_set())
+        == "fs._time*fs.unit.feed_side.length_domain"
+    )
+    # test statistics
+    assert number_variables(m) == 134
+    assert number_total_constraints(m) == 110
+    assert number_unused_variables(m) == 1
 
 
 def build():
@@ -107,6 +190,45 @@ class TestReverseOsmosis0D(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 0, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.deltaP[0]] = -3e5
+
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 0.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": flow_mass_inlet,
+                "out": flow_mass_retentate + flow_mass_permeate,
+            },
+        }
 
         return m
 
@@ -184,6 +306,44 @@ class TestReverseOsmosis0D_SKK(UnitTestHarness):
         self.unit_solutions[m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]] = 1.1
         self.unit_solutions[m.fs.unit.deltaP[0]] = -3e5
 
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 0.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": flow_mass_inlet,
+                "out": flow_mass_retentate + flow_mass_permeate,
+            },
+        }
         return m
 
 
@@ -268,6 +428,45 @@ class TestReverseOsmosis0D_kf_fixed(UnitTestHarness):
                 "Liq", "NaCl"
             ]
         ] = 50.20324317
+
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 0.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": flow_mass_inlet,
+                "out": flow_mass_retentate + flow_mass_permeate,
+            },
+        }
 
         return m
 
@@ -359,6 +558,44 @@ class TestReverseOsmosis0D_kf_calculated(UnitTestHarness):
             ]
         ] = 49.9360425
 
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 0.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": flow_mass_inlet,
+                "out": flow_mass_retentate + flow_mass_permeate,
+            },
+        }
         return m
 
 
@@ -447,6 +684,45 @@ class TestReverseOsmosis0D_p_drop_calculation(UnitTestHarness):
                 "Liq", "NaCl"
             ]
         ] = 76.3246904
+
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 0.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": flow_mass_inlet,
+                "out": flow_mass_retentate + flow_mass_permeate,
+            },
+        }
 
         return m
 
@@ -537,6 +813,45 @@ class TestReverseOsmosis0D_p_drop_fixed_per_unit_length(UnitTestHarness):
         ] = 49.936042
         self.unit_solutions[m.fs.unit.deltaP[0]] = -3e5
 
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 0.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": flow_mass_inlet,
+                "out": flow_mass_retentate + flow_mass_permeate,
+            },
+        }
+
         return m
 
 
@@ -626,5 +941,44 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
                 "Liq", "NaCl"
             ]
         ] = 75.1415897247
+
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 0.0
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.feed_side.properties_interface[
+                    0, 1
+                ].conc_mass_phase_comp["Liq", "NaCl"]
+                / m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ],
+                "out": m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"],
+            },
+            "Check 3": {
+                "in": flow_mass_inlet,
+                "out": flow_mass_retentate + flow_mass_permeate,
+            },
+        }
 
         return m

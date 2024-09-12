@@ -40,6 +40,7 @@ from watertap.core.membrane_channel_base import (
 )
 
 from watertap.core import InitializationMixin
+from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.osmotically_assisted_reverse_osmosis import (
     cost_osmotically_assisted_reverse_osmosis,
 )
@@ -349,12 +350,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                     @self.Constraint(doc="Total Membrane area")
                     def eq_area(b):
                         return b.area == b.length * b.width
-
-                elif self.config.module_type == ModuleType.spiral_wound:
-                    # Membrane area equation
-                    @self.Constraint(doc="Total Membrane area")
-                    def eq_area(b):
-                        return b.area == b.length * 2 * b.width
 
                 else:
                     raise ConfigurationError(
@@ -666,6 +661,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # Create solver
         opt = get_solver(solver, optarg)
+
+        interval_initializer(self)
 
         # Solve unit *without* flux equation
         self.eq_flux_mass.deactivate()
