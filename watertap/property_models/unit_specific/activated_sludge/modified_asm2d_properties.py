@@ -522,7 +522,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         )
 
         def rule_TSS(b):
-            return b.TSS == b.conc_mass_comp["X_H"]
+            return b.TSS == b.VSS + b.ISS
 
         self.eq_TSS = pyo.Constraint(rule=rule_TSS)
 
