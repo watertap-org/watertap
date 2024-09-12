@@ -68,8 +68,8 @@ import watertap.property_models.NaCl_T_dep_prop_pack as props_nacl
 from pyomo.common.log import LoggingIntercept
 from idaes.models.unit_models.translator import Translator
 import logging
-#from watertap.core.util.model_debug_mode import activate
-#activate()
+from watertap.core.util.model_debug_mode import activate
+activate()
 
 
 
@@ -219,9 +219,7 @@ def build():
     
     
     m.fs.eq_heater_temperature_rise = Constraint(
-           expr=m.fs.feed.flow_mass_phase_comp[0,"Liq", "NaCl"] == m.fs.crystallizer.solids.flow_mass_phase_comp[0,"Sol", "NaCl"] )
-    
-    
+           expr=m.fs.heater.cold_side_outlet.temperature[0] - m.fs.heater.cold_side_inlet.temperature[0] == 4 * pyunits.K)
 
 
     # performance expressions
@@ -311,7 +309,7 @@ def set_operating_conditions(m):
 
     m.fs.heater.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].set_value(30)
     m.fs.heater.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0)
-    m.fs.heater.hot_side_inlet.temperature.fix(273.15 + 70)
+    m.fs.heater.hot_side_inlet.temperature.fix(273.15 + 170)
     m.fs.heater.cold_side_outlet.temperature.fix(273.15 + 54)
     
     m.fs.heater.hot_side_inlet.pressure[0].fix(201325)
@@ -321,16 +319,9 @@ def set_operating_conditions(m):
     #m.fs.crystallizer.inlet.temperature[0].set_value(273.15 + 80)
     m.fs.crystallizer.inlet.pressure[0].set_value(101325)
 
-    #m.fs.crystallizer.inlet.temperature.setlb(273.15 +50)
-    #m.fs.crystallizer.inlet.temperature.setub(273.15 +55)
-    #m.fs.crystallizer.outlet.temperature.setlb(273.15 +50)
-    #m.fs.crystallizer.outlet.temperature.setub(273.15 +55)
     m.fs.heater.area.setlb(10)
-
-
     
-    
-    print("DOF finaleee:", degrees_of_freedom(m.fs))
+    print("DOF final:", degrees_of_freedom(m.fs))
 
 def solve(blk, solver=None, tee=True):
     if solver is None:
@@ -401,31 +392,25 @@ def optimize_set_up(m):
     m.fs.heater.cold_side_outlet.temperature.unfix()
     m.fs.heater.cold_side_outlet.temperature.setlb(273.15 +50)
     m.fs.heater.cold_side_outlet.temperature.setub(273.15 +55)
-    #m.fs.crystallizer.outlet.temperature.setlb(273.15 +50)
-    #m.fs.crystallizer.outlet.temperature.setub(273.15 +55)
+  
     m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].lb = 300
     m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].set_value(400)
-
-   
     
-    # additional constraints
-    Temperature_rise = 4
-    m.fs.eq_heater_temperature_rise = Constraint(
-           expr=m.fs.heater.cold_side_outlet.temperature[0] - m.fs.heater.cold_side_inlet.temperature[0] <= 4)
 
-    #assert_degrees_of_freedom(m, 6)
+    print("DOF final 2:", degrees_of_freedom(m.fs))
 
 
 def optimize(m, solver=None):
     # --solve---
     return solve(m, solver=solver)
 def display_system(m):
-    print("Inlet temperature:", m.fs.crystallizer.inlet.temperature[0].value)
+    print("Crystalizer Inlet temperature:", m.fs.crystallizer.inlet.temperature[0].value)
     print("operating temperature:", m.fs.crystallizer.temperature_operating.value)
-    print("recycle:", m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].value)
+    print("recycle :", m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].value)
     print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
     print("steam:", m.fs.heater.hot_side_inlet.flow_mass_phase_comp[0,"Vap", "H2O"].value)
     print("heater area:", m.fs.heater.area.value)
+
    
 
 

@@ -146,11 +146,13 @@ class SteamHeater0DData(HeatExchangerData):
             self.cold_side_inlet.fix()
             #self.hot_side_outlet.unfix()
             #self.cold_side_outlet.unfix()
+            #self.cold_side_outlet.temperature.fix()
             # condenser mode without cooling water estimation
             self.outlet_liquid_mass_balance.deactivate()
             self.outlet_pressure_sat.deactivate()
             super().initialize_build(*args, **kwargs)
             opt = get_solver(solver, optarg)
+            #self.cold_side_outlet.temperature.unfix()
 
             self.outlet_liquid_mass_balance.activate()
             self.outlet_pressure_sat.activate()
@@ -171,7 +173,7 @@ class SteamHeater0DData(HeatExchangerData):
             # condenser mode without cooling water estimation
             #self.outlet_liquid_mass_balance.deactivate()
             #self.outlet_pressure_sat.deactivate()
-           
+            print(f"DOF 2: {degrees_of_freedom(self)}")
 
             super().initialize_build(*args, **kwargs)
             self.area.unfix()

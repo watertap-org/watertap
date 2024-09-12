@@ -41,6 +41,7 @@ import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
 from watertap.costing.unit_models.crystallizer import cost_crystallizer
+from watertap.core.util.initialization import interval_initializer
 
 _log = idaeslog.getLogger(__name__)
 
@@ -486,8 +487,6 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             return b.magma_circulation_flow_vol * dens_cp_avg == pyunits.convert(
                 b.work_mechanical[0], to_units=pyunits.J / pyunits.s
             )
-
-        
         
 
         # 8. Suspension density
@@ -612,7 +611,6 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             hold_state=True,
         )
         init_log.info_high("Initialization Step 1 Complete.")
-        #self.inlet.temperature[0].unfix()
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # Set state_args from inlet state
@@ -630,22 +628,19 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        state_args_out = deepcopy(state_args)
-        state_args_out["temperature"] = state_args["temperature"] 
-
         self.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_out,
+            state_args=state_args,
         )
 
-        state_args_solids = deepcopy(state_args_out)
+        state_args_solids = deepcopy(state_args)
         for p, j in self.properties_solids.phase_component_set:
             if p == "Sol":
                 state_args_solids["flow_mass_phase_comp"][p, j] = state_args[
                     "flow_mass_phase_comp"
-                ]["Liq", j] 
+                ]["Liq", j]
             elif p == "Liq" or p == "Vap":
                 state_args_solids["flow_mass_phase_comp"][p, j] = 1e-8
         self.properties_solids.initialize(
@@ -655,12 +650,12 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_solids,
         )
 
-        state_args_vapor = deepcopy(state_args_out)
+        state_args_vapor = deepcopy(state_args)
         for p, j in self.properties_vapor.phase_component_set:
             if p == "Vap":
                 state_args_vapor["flow_mass_phase_comp"][p, j] = state_args[
                     "flow_mass_phase_comp"
-                ]["Liq", j] 
+                ]["Liq", j]
             elif p == "Liq" or p == "Sol":
                 state_args_vapor["flow_mass_phase_comp"][p, j] = 1e-8
         self.properties_vapor.initialize(
@@ -670,6 +665,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_vapor,
         )
         init_log.info_high("Initialization Step 2 Complete.")
+
+        interval_initializer(self)
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -682,7 +679,6 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
