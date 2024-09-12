@@ -275,6 +275,7 @@ class TestInitializers:
         iscale.calculate_scaling_factors(m)
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer(
