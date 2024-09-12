@@ -153,6 +153,8 @@ def test_LCOW_breakdowns():
         + sum(m.fs.costing.LCOW_aggregate_indirect_capex.values())
         + sum(m.fs.costing.LCOW_aggregate_fixed_opex.values())
         + sum(m.fs.costing.LCOW_aggregate_variable_opex.values())
+        # electricity is counted both in the aggregate variable opex
+        # per unit and per flow, so it is double-counted in this sum
         - m.fs.costing.LCOW_aggregate_variable_opex["electricity"]
     )
     assert pytest.approx(total_LCOW) == summed_aggregates
@@ -164,3 +166,9 @@ def test_LCOW_breakdowns():
         + sum(m.fs.costing.LCOW_component_variable_opex.values())
     )
     assert pytest.approx(total_LCOW) == summed_components
+
+    sec = pyo.value(m.fs.costing.specific_energy_consumption)
+    summed_sec = pyo.value(
+        sum(m.fs.costing.specific_energy_consumption_component.values())
+    )
+    assert pytest.approx(sec) == summed_sec

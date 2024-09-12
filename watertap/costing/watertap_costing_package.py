@@ -17,7 +17,7 @@ from pyomo.core.expr.visitor import identify_variables
 
 from idaes.core.base.costing_base import register_idaes_currency_units
 
-from idaes.core import declare_process_block_class
+from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
 
 from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
@@ -238,14 +238,19 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # can't be sure which variable controls the flow, so return None
         return None
 
-    def _find_flow_unit_name(self, flow_expr, variable_opex_lcows):
+    def _find_flow_unit_name(self, flow_expr, variable_opex_lcows=None):
         """
         Try to find a unit already in variable_opex_lcows to which `flow_expr` is attached.
         """
         blk = self._get_flow_expr_var(flow_expr).parent_block()
         while blk is not None:
-            if blk.name in variable_opex_lcows:
-                return blk.name
+            if variable_opex_lcows is not None:
+                if blk.name in variable_opex_lcows:
+                    return blk.name
+            else:
+                if UnitModelBlockData in blk.__class__.__mro__:
+                    return blk.name
+
             blk = blk.parent_block()
         return None
 
@@ -281,6 +286,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr),
                 doc=f"Specific energy consumption based on flow {flow_rate.name}",
             ),
+        )
+        self._add_flow_component_breakdowns(
+            "electricity", name, flow_rate, utilization_factor=1.0, period=pyo.units.hr
         )
 
     def add_annual_water_production(self, flow_rate, name="annual_water_production"):
@@ -337,6 +345,64 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
+        self._add_flow_component_breakdowns(
+            "electricity",
+            name,
+            flow_rate,
+            period=pyo.units.hr,
+            utilization_factor=1.0,
+            multiplier=self.electrical_carbon_intensity,
+        )
+
+    def _add_flow_component_breakdowns(
+        self,
+        flow_name,
+        name,
+        flow_rate,
+        period=None,
+        utilization_factor=None,
+        multiplier=1.0,
+    ):
+        """
+        Add per-component breakdowns for specific `flow_name` consumption with base-name `name`
+        at `flow_rate`.
+        Optional `multiplier` for the flow and period specification (default is 1 hour),
+        and specified `utilization_factor` (default is self.utilization_factor).
+        """
+        if utilization_factor is None:
+            utilization_factor = self.utilization_factor
+        if period is None:
+            period = self.base_period
+        denominator = (
+            pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / period)
+            * utilization_factor
+        )
+        f_units = pyo.units.get_units(getattr(self, f"aggregate_flow_{flow_name}"))
+
+        try:
+            flows = self._registered_flows[flow_name]
+        except KeyError:
+            raise RuntimeError(f"Unrecognized flow_name {flow_name}.")
+
+        specific_flow_consumption = pyo.Expression(
+            pyo.Any,
+            doc=f"Specific {flow_name} consumption by component",
+            initialize=0.0 * period * f_units / pyo.units.m**3,
+        )
+        self.add_component(name + "_component", specific_flow_consumption)
+
+        for flow_expr in flows:
+            flow_std = pyo.units.convert(flow_expr, to_units=f_units)
+            unit_name = self._find_flow_unit_name(flow_expr)
+            if unit_name is not None:
+                specific_flow_consumption[unit_name] += (
+                    flow_std * utilization_factor
+                ) / denominator
+                continue
+            flow_name = self._get_flow_name(flow_expr)
+            specific_flow_consumption[flow_name] += (
+                flow_std * utilization_factor
+            ) / denominator
 
     def build_process_costs(self):
         """
