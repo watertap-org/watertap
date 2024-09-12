@@ -109,7 +109,7 @@ jobs:
         pip install -r requirements-dev.txt
         echo '::endgroup::'
         echo '::group::Output of "conda install -c conda-forge cyipopt" command'
-        conda install -c conda-forge cyipopt "numpy<2"
+        conda install -c conda-forge cyipopt
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
