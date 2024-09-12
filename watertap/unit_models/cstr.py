@@ -68,8 +68,9 @@ class CSTRData(CSTRIDAESData):
 
         def CSTR_retention_time_rule(self, t):
             return (
-                self.hydraulic_retention_time[t] * self.control_volume.properties_in[t].flow_vol
-                == self.volume[t] 
+                self.hydraulic_retention_time[t]
+                * self.control_volume.properties_in[t].flow_vol
+                == self.volume[t]
             )
 
         self.CSTR_retention_time = Constraint(
