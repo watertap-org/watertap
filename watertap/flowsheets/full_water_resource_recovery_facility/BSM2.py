@@ -526,35 +526,34 @@ def setup_optimization(m, reactor_volume_equalities=False):
     add_effluent_violations(m)
 
 
-def add_effluent_violations(m):
-    # TODO: update "m" to blk; change ref to m.fs.Treated instead of CL1 effluent
-    m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.TSS_max.fix()
+def add_effluent_violations(blk):
+    blk.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.TSS_max.fix()
 
-    @m.fs.Constraint(m.fs.time)
+    @blk.fs.Constraint(blk.fs.time)
     def eq_TSS_max(self, t):
-        return m.fs.CL1.effluent_state[0].TSS <= m.fs.TSS_max
+        return blk.fs.Treated.properties[0].TSS <= blk.fs.TSS_max
 
-    m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.COD_max.fix()
+    blk.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.COD_max.fix()
 
-    @m.fs.Constraint(m.fs.time)
+    @blk.fs.Constraint(blk.fs.time)
     def eq_COD_max(self, t):
-        return m.fs.CL1.effluent_state[0].COD <= m.fs.COD_max
+        return blk.fs.Treated.properties[0].COD <= blk.fs.COD_max
 
-    m.fs.totalN_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.totalN_max.fix()
+    blk.fs.totalN_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.totalN_max.fix()
 
-    @m.fs.Constraint(m.fs.time)
+    @blk.fs.Constraint(blk.fs.time)
     def eq_totalN_max(self, t):
-        return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max
+        return blk.fs.Treated.properties[0].Total_N <= blk.fs.totalN_max
 
-    m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
-    m.fs.BOD5_max.fix()
+    blk.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.BOD5_max.fix()
 
-    @m.fs.Constraint(m.fs.time)
+    @blk.fs.Constraint(blk.fs.time)
     def eq_BOD5_max(self, t):
-        return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
+        return blk.fs.Treated.properties[0].BOD5["effluent"] <= blk.fs.BOD5_max
 
 
 def add_reactor_volume_equalities(m):

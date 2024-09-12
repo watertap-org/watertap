@@ -120,7 +120,7 @@ def main(bio_P=False):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
-    # Resolve with controls in place
+    # Re-solve with controls in place
     results = solve(m)
 
     pyo.assert_optimal_termination(results)
@@ -130,6 +130,10 @@ def main(bio_P=False):
         logger=_log,
         fail_flag=True,
     )
+
+    # Re-solve with effluent violation constraints
+    add_effluent_violations(m)
+    results = solve(m)
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -691,6 +695,54 @@ def solve(m, solver=None):
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
     return results
+
+
+def add_effluent_violations(blk):
+    # TODO: Revisit the max effluent concentration values
+
+    # Max value taken from Flores-Alsina Excel
+    blk.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.TSS_max.fix()
+
+    @blk.fs.Constraint(blk.fs.time)
+    def eq_TSS_max(self, t):
+        return blk.fs.Treated.properties[0].TSS <= blk.fs.TSS_max
+
+    # Max value carried over from BSM2
+    blk.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.COD_max.fix()
+
+    @blk.fs.Constraint(blk.fs.time)
+    def eq_COD_max(self, t):
+        return blk.fs.Treated.properties[0].COD <= blk.fs.COD_max
+
+    # Max value taken from Flores-Alsina Excel
+    blk.fs.SNKj_max = pyo.Var(initialize=0.004, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.SNKj_max.fix()
+
+    @blk.fs.Constraint(blk.fs.time)
+    def eq_SNKj_max(self, t):
+        return blk.fs.Treated.properties[0].SNKj <= blk.fs.SNKj_max
+
+    # Max value carried over from BSM2
+    blk.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.BOD5_max.fix()
+
+    @blk.fs.Constraint(blk.fs.time)
+    def eq_BOD5_max(self, t):
+        return blk.fs.Treated.properties[0].BOD5 <= blk.fs.BOD5_max
+
+    # Max value taken from Flores-Alsina Excel
+    blk.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
+    blk.fs.total_P_max.fix()
+
+    @blk.fs.Constraint(blk.fs.time)
+    def eq_total_P_max(self, t):
+        return (
+            blk.fs.Treated.properties[0].SP_organic
+            + blk.fs.Treated.properties[0].SP_inorganic
+            <= blk.fs.total_P_max
+        )
 
 
 def add_costing(m):
