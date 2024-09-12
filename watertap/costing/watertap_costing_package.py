@@ -242,7 +242,10 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         """
         Try to find a unit already in variable_opex_lcows to which `flow_expr` is attached.
         """
-        blk = self._get_flow_expr_var(flow_expr).parent_block()
+        variable = self._get_flow_expr_var(flow_expr)
+        if variable is None:
+            return None
+        blk = variable.parent_block()
         while blk is not None:
             if variable_opex_lcows is not None:
                 if blk.name in variable_opex_lcows:
