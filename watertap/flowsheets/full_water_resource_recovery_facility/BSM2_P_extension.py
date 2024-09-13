@@ -716,16 +716,21 @@ def setup_optimization(m, reactor_volume_equalities=False):
         # reactor.volume.setub(2000)
     if reactor_volume_equalities:
         add_reactor_volume_equalities(m)
+
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].setub(8e-3)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
 
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].setub(8e-3)
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
 
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(8e-3)
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
 
-    # Unfix fraction of outflow from reactor 5 that goes to recycle
+    # m.fs.R5.injection[:, :, :].unfix()
+    # m.fs.R6.injection[:, :, :].unfix()
+    # m.fs.R7.injection[:, :, :].unfix()
+
+    # Unfix fraction of outflow from reactor 7 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].unfix()
     # m.fs.SP1.split_fraction[:, "underflow"].setlb(0.45)
     m.fs.SP2.split_fraction[:, "recycle"].unfix()
