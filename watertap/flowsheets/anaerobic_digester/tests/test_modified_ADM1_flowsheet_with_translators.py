@@ -26,7 +26,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
+from watertap.flowsheets.anaerobic_digester.modified_ADM1_flowsheet_with_translators import (
     main,
 )
 from watertap.core.solvers import get_solver
@@ -34,7 +34,7 @@ from watertap.core.solvers import get_solver
 solver = get_solver()
 
 
-class TestFullFlowsheetBioPFalse:
+class TestADM1BioPFalse:
     @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
@@ -55,79 +55,65 @@ class TestFullFlowsheetBioPFalse:
         m = system_frame
 
         assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-            0.24219, rel=1e-3
+            0.003, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            6.4300e-07, abs=1e-6
+            8.4935, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-            0.00027610, rel=1e-3
+            22.163, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.057450, rel=1e-3
+            0.05745, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
-        ) == pytest.approx(0.052060, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-        ) == pytest.approx(0.00017686, rel=1e-3)
+        ) == pytest.approx(2.0167, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
-        ) == pytest.approx(0.0060483, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-        ) == pytest.approx(0.0076767, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.65267, rel=1e-3)
+        ) == pytest.approx(65.479, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-            0.36810, rel=1e-3
+            1.0654, rel=1e-2
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-        ) == pytest.approx(0.018654, rel=1e-3)
+        ) == pytest.approx(0.71312, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(0.15148, rel=1e-3)
+        ) == pytest.approx(1.2023, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
-        ) == pytest.approx(0.00041597, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
-            0.013371, rel=1e-3
+            0, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.012360, rel=1e-3
+            14.875, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
-        ) == pytest.approx(0.011077, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-        ) == pytest.approx(5.0389e-06, abs=1e-6)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
-        ) == pytest.approx(0.0036998, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00021570, rel=1e-3
-        )
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.468069, rel=1e-3)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            23935727.742, rel=1e-3
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            827635.25, rel=1e-3
+            3.3158, rel=1e-3
         )
 
 
-class TestFullFlowsheetBioPTrue:
+class TestADM1BioPTrue:
     @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
@@ -148,73 +134,59 @@ class TestFullFlowsheetBioPTrue:
         m = system_frame
 
         assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-            0.2422, rel=1e-3
+            0.003, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            6.6530e-07, abs=1e-6
+            9.1528, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-            0.00027824, rel=1e-3
+            23.908, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.057450, rel=1e-3
+            0.05745, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
-        ) == pytest.approx(0.050224, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-        ) == pytest.approx(0.00019157, rel=1e-3)
+        ) == pytest.approx(1.9658, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
-        ) == pytest.approx(0.0055542, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-        ) == pytest.approx(0.0076580, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.0026406, rel=1e-3)
+        ) == pytest.approx(4.0233, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-            0.36984, rel=1e-3
+            1.2776, rel=1e-2
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-        ) == pytest.approx(0.020860, rel=1e-3)
+        ) == pytest.approx(0.92538, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(0.15191, rel=1e-3)
+        ) == pytest.approx(0.63549, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
-        ) == pytest.approx(0.00038907, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
-            0.013578, rel=1e-3
+            0, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.012569, rel=1e-3
+            14.881, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
-        ) == pytest.approx(0.012282, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-        ) == pytest.approx(6.6978e-06, abs=1e-6)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
-        ) == pytest.approx(0.0040285, rel=1e-3)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00022424, rel=1e-3
-        )
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.469711, rel=1e-3)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            24019261.867, rel=1e-3
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            830582.94, rel=1e-3
+            0.85963, rel=1e-3
         )
