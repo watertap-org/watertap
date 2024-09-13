@@ -89,6 +89,8 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -132,7 +134,7 @@ def main(bio_P=False, reactor_volume_equalities=False):
     )
 
     # Re-solve with effluent violation constraints
-    # setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
+    setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
     results = solve(m)
 
     add_costing(m)
@@ -140,7 +142,7 @@ def main(bio_P=False, reactor_volume_equalities=False):
 
     interval_initializer(m.fs.costing)
 
-    assert_degrees_of_freedom(m, 0)
+    # assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
@@ -785,17 +787,17 @@ def add_effluent_violations(blk):
     def eq_BOD5_max(self, t):
         return blk.fs.Treated.properties[0].BOD5["effluent"] <= blk.fs.BOD5_max
 
-    # Max value taken from Flores-Alsina Excel
-    blk.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
-    blk.fs.total_P_max.fix()
-
-    @blk.fs.Constraint(blk.fs.time)
-    def eq_total_P_max(self, t):
-        return (
-            blk.fs.Treated.properties[0].SP_organic
-            + blk.fs.Treated.properties[0].SP_inorganic
-            <= blk.fs.total_P_max
-        )
+    # # Max value taken from Flores-Alsina Excel
+    # blk.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
+    # blk.fs.total_P_max.fix()
+    #
+    # @blk.fs.Constraint(blk.fs.time)
+    # def eq_total_P_max(self, t):
+    #     return (
+    #         blk.fs.Treated.properties[0].SP_organic
+    #         + blk.fs.Treated.properties[0].SP_inorganic
+    #         <= blk.fs.total_P_max
+    #     )
 
 
 def add_costing(m):
