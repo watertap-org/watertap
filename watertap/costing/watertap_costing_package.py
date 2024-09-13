@@ -16,17 +16,19 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.expr.visitor import identify_variables
 
 from idaes.core.base.costing_base import register_idaes_currency_units
-
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
-
 from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
-from watertap.core.util.misc import is_constant_up_to_units
 
+import idaes.logger as idaeslog
+
+from watertap.core.util.misc import is_constant_up_to_units
 from watertap.costing.unit_models.mixer import cost_mixer
 from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
 from watertap.costing.unit_models.cstr import cost_cstr
 from watertap.costing.unit_models.heater_chiller import cost_heater_chiller
+
+_log = idaeslog.getLogger(__name__)
 
 
 class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
@@ -85,18 +87,22 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         direct_capex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         indirect_capex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         fixed_opex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         variable_opex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by component",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         self.add_component(name + "_component_direct_capex", direct_capex_lcows)
         self.add_component(name + "_component_indirect_capex", indirect_capex_lcows)
@@ -106,18 +112,22 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         agg_direct_capex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         agg_indirect_capex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         agg_fixed_opex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         agg_variable_opex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by unit type",
+            initialize=0 * c_units / pyo.units.m**3,
         )
         self.add_component(name + "_aggregate_direct_capex", agg_direct_capex_lcows)
         self.add_component(name + "_aggregate_indirect_capex", agg_indirect_capex_lcows)
@@ -167,14 +177,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             unit_model_class = (
                 u.unit_model.parent_component().process_block_class().__name__
             )
-            if unit_model_class not in agg_direct_capex_lcows:
-                agg_direct_capex_lcows[unit_model_class] = 0 * c_units / pyo.units.m**3
-                agg_indirect_capex_lcows[unit_model_class] = (
-                    0 * c_units / pyo.units.m**3
-                )
-                agg_fixed_opex_lcows[unit_model_class] = 0 * c_units / pyo.units.m**3
-                agg_variable_opex_lcows[unit_model_class] = 0 * c_units / pyo.units.m**3
-
             agg_direct_capex_lcows[unit_model_class] += direct_capex_lcows[
                 u.unit_model.name
             ]
@@ -206,12 +208,20 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 flow_cost = pyo.units.convert(
                     flow_expr * cost_var, to_units=c_units / t_units
                 )
-                unit_name = self._find_flow_unit_name(flow_expr, variable_opex_lcows)
-                if unit_name is not None:
-                    variable_opex_lcows[unit_name] += (
+                unit = self._find_flow_unit(flow_expr)
+                if unit is not None:
+                    if unit.name not in variable_opex_lcows:
+                        unit_model_class = (
+                            unit.parent_component().process_block_class().__name__
+                        )
+                        agg_variable_opex_lcows[
+                            unit_model_class
+                        ] += variable_opex_lcows[unit.name]
+                    variable_opex_lcows[unit.name] += (
                         flow_cost * self.utilization_factor
                     ) / denominator
                     continue
+                _log.warning(f"Could not find unique unit for flow {flow_expr}")
                 flow_name = self._get_flow_name(flow_expr)
                 if flow_name in variable_opex_lcows:
                     raise RuntimeError(
@@ -222,42 +232,36 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 ) / denominator
 
     @staticmethod
-    def _get_flow_expr_var(flow_expr):
-        """
-        Try to find the variable associated with the flow flow_expr.
-        This will attempt to get the specific variable determining the flow.
-        """
-        variables = list(identify_variables(flow_expr, include_fixed=True))
-        if len(variables) == 1:
-            # only one variable, assume it's the variable controlling this flow
-            return variables[0]
-        variables = list(identify_variables(flow_expr, include_fixed=False))
-        if len(variables) == 1:
-            # only one variable, assume it's the variable controlling this flow
-            return variables[0]
-        # can't be sure which variable controls the flow, so return None
-        return None
+    def _find_flow_unit(flow_expr):
+        variables = identify_variables(flow_expr, include_fixed=True)
+        unit = WaterTAPCostingBlockData._find_flow_unit_variables(variables)
+        return unit
 
-    def _find_flow_unit_name(self, flow_expr, variable_opex_lcows=None):
+    @staticmethod
+    def _find_flow_unit_variables(variables):
         """
-        Try to find a unit already in variable_opex_lcows to which `flow_expr` is attached.
+        Try to find a unit model uniquely associated with the iterable
+        of variables `variables`.
         """
-        variable = self._get_flow_expr_var(flow_expr)
-        if variable is None:
-            return None
-        blk = variable.parent_block()
-        while blk is not None:
-            if variable_opex_lcows is not None:
-                if blk.name in variable_opex_lcows:
-                    return blk.name
-            else:
+        unit = None
+        for v in variables:
+            blk = v.parent_block()
+            while blk is not None:
                 if UnitModelBlockData in blk.__class__.__mro__:
-                    return blk.name
+                    if unit is None:
+                        unit = blk
+                        break
+                    elif blk is unit:
+                        break
+                    else:
+                        # blk is unit model but not *this* unit,
+                        # so we have an inconsistency
+                        return None
+                blk = blk.parent_block()
+        return unit
 
-            blk = blk.parent_block()
-        return None
-
-    def _get_flow_name(self, flow_expr):
+    @staticmethod
+    def _get_flow_name(flow_expr):
         """
         Get a standardized name for a specific flow expression.
 
@@ -265,9 +269,15 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         but failing that will return a string representation of the entire
         expression.
         """
-        variable = self._get_flow_expr_var(flow_expr)
-        if variable is not None:
-            return str(variable)
+        variables = list(identify_variables(flow_expr, include_fixed=False))
+        if not variables:
+            # No unfixed variables
+            variables = list(identify_variables(flow_expr, include_fixed=True))
+        # If we found a single variable for the flow_expr, just return the
+        # variable name. Otherwise return a string representing the whole
+        # expression.
+        if len(variables) == 1:
+            return str(variables[0])
         return str(flow_expr)
 
     def add_specific_energy_consumption(
@@ -396,12 +406,13 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         for flow_expr in flows:
             flow_std = pyo.units.convert(flow_expr, to_units=f_units)
-            unit_name = self._find_flow_unit_name(flow_expr)
-            if unit_name is not None:
-                specific_flow_consumption[unit_name] += (
+            unit = self._find_flow_unit(flow_expr)
+            if unit is not None:
+                specific_flow_consumption[unit.name] += (
                     flow_std * utilization_factor
                 ) / denominator
                 continue
+            _log.warning(f"Could not find unique unit for flow {flow_expr}")
             flow_name = self._get_flow_name(flow_expr)
             specific_flow_consumption[flow_name] += (
                 flow_std * utilization_factor
