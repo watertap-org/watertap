@@ -1803,6 +1803,7 @@ class Test_ED_pressure_drop_components:
         # Test ed_m0
         ed_m[0].fs.unit.pressure_drop.fix(40000)
         iscale.calculate_scaling_factors(ed_m[0])
+        ed_m[0].fs.unit.display()
         assert degrees_of_freedom(ed_m[0]) == 0
         initialization_tester(ed_m[0], outlvl=idaeslog.DEBUG)
         badly_scaled_var_values = {
@@ -1811,9 +1812,9 @@ class Test_ED_pressure_drop_components:
         assert not badly_scaled_var_values
         results = solver.solve(ed_m[0])
         assert_optimal_termination(results)
-        assert value(ed_m[0].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            67200, rel=1e-3
-        )
+        assert value(
+            ed_m[0].fs.unit.pressure_drop_total["diluate", 0]
+        ) == pytest.approx(67200, rel=1e-3)
 
         # Test ed_m2
         ed_m[1].fs.unit.diffus_mass.fix(1.6e-9)
@@ -1824,13 +1825,15 @@ class Test_ED_pressure_drop_components:
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
-        assert value(ed_m[1].fs.unit.pressure_drop[0]) == pytest.approx(
-            21280.815, rel=1e-3
-        )
+        assert value(
+            ed_m[1].fs.unit.pressure_drop[
+                "diluate", 0, ed_m[1].fs.unit.difference_elements.first()
+            ]
+        ) == pytest.approx(21280.815, rel=1e-3)
 
-        assert value(ed_m[1].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            35751.769, rel=1e-3
-        )
+        assert value(
+            ed_m[1].fs.unit.pressure_drop_total["diluate", 0]
+        ) == pytest.approx(35751.769, rel=1e-3)
 
         # Test ed_m3
         ed_m[2].fs.unit.diffus_mass.fix(1.6e-9)
@@ -1840,13 +1843,13 @@ class Test_ED_pressure_drop_components:
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
         assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
-        assert value(ed_m[2].fs.unit.pressure_drop[0]) == pytest.approx(
+        assert value(ed_m[2].fs.unit.pressure_drop["diluate", 0, 0]) == pytest.approx(
             13670.276, rel=1e-3
         )
 
-        assert value(ed_m[2].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            22966.063, rel=1e-3
-        )
+        assert value(
+            ed_m[2].fs.unit.pressure_drop_total["diluate", 0]
+        ) == pytest.approx(22966.063, rel=1e-3)
 
         # Test ed_m4
         ed_m[3].fs.unit.diffus_mass.fix(1.6e-9)
@@ -1860,9 +1863,9 @@ class Test_ED_pressure_drop_components:
             6424.825, rel=1e-3
         )
 
-        assert value(ed_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            10793.706, rel=1e-3
-        )
+        assert value(
+            ed_m[3].fs.unit.pressure_drop_total["diluate", 0]
+        ) == pytest.approx(10793.706, rel=1e-3)
 
         # Test ed_m5
         ed_m[4].fs.unit.diffus_mass.fix(1.6e-9)
@@ -1874,13 +1877,13 @@ class Test_ED_pressure_drop_components:
         assert_optimal_termination(results)
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
 
-        assert value(ed_m[4].fs.unit.pressure_drop[0]) == pytest.approx(
+        assert value(ed_m[4].fs.unit.pressure_drop["diluate", 0, 0]) == pytest.approx(
             4450.722, rel=1e-3
         )
 
-        assert value(ed_m[4].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            7477.213, rel=1e-3
-        )
+        assert value(
+            ed_m[4].fs.unit.pressure_drop_total["diluate", 0]
+        ) == pytest.approx(7477.213, rel=1e-3)
 
         # Test ed_m6
         ed_m[5].fs.unit.diffus_mass.fix(1.6e-9)
@@ -1895,12 +1898,12 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[5].fs.unit.outlet_diluate.pressure[0]) == pytest.approx(
             178659.214, rel=1e-3
         )
-        assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
+        assert value(ed_m[5].fs.unit.pressure_drop["diluate", 0, 0]) == pytest.approx(
             13491.540, rel=1e-3
         )
-        assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            22665.786, rel=1e-3
-        )
+        assert value(
+            ed_m[5].fs.unit.pressure_drop_total["diluate", 0]
+        ) == pytest.approx(22665.786, rel=1e-3)
 
     @pytest.mark.unit
     def test_deltaP_configerr(self):
