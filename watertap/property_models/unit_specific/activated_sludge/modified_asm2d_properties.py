@@ -325,6 +325,8 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
                 "COD": {"method": "_COD"},
                 "SNKj": {"method": "_SNKj"},
                 "BOD5": {"method": "_BOD5"},
+                "SP_organic": {"method": "_SP_organic"},
+                "SP_inorganic": {"method": "_SP_inorganic"},
             }
         )
         obj.add_default_units(
@@ -612,6 +614,44 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.eq_BOD5 = pyo.Constraint(["raw", "effluent"], rule=rule_BOD5)
 
+    def _SP_organic(self):
+        self.SP_organic = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Organic phosphorus",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        def rule_SP_organic(b):
+            return b.SP_organic == (
+                b.conc_mass_comp["X_PP"]
+                + b.params.i_PSF * b.conc_mass_comp["S_F"]
+                + b.params.i_PSI * b.conc_mass_comp["S_I"]
+                + b.params.i_PXI * b.conc_mass_comp["X_I"]
+                + b.params.i_PXS * b.conc_mass_comp["X_S"]
+                + b.params.i_PBM
+                * (
+                    b.conc_mass_comp["X_H"]
+                    + b.conc_mass_comp["X_PAO"]
+                    + b.conc_mass_comp["X_AUT"]
+                )
+            )
+
+        self.eq_SP_organic = pyo.Constraint(rule=rule_SP_organic)
+
+    def _SP_inorganic(self):
+        self.SP_inorganic = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Inorganic phosphorus",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        def rule_SP_inorganic(b):
+            return b.SP_inorganic == b.conc_mass_comp["S_PO4"]
+
+        self.eq_SP_inorganic = pyo.Constraint(rule=rule_SP_inorganic)
+
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
             return self.flow_vol * self.params.dens_mass
@@ -691,3 +731,11 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         if self.is_property_constructed("BOD5"):
             if iscale.get_scaling_factor(self.BOD5) is None:
                 iscale.set_scaling_factor(self.BOD5, 1)
+
+        if self.is_property_constructed("SP_organic"):
+            if iscale.get_scaling_factor(self.SP_organic) is None:
+                iscale.set_scaling_factor(self.SP_organic, 1)
+
+        if self.is_property_constructed("SP_inorganic"):
+            if iscale.get_scaling_factor(self.SP_inorganic) is None:
+                iscale.set_scaling_factor(self.SP_inorganic, 1)
