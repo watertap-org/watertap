@@ -134,8 +134,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.add_component(name + "_aggregate_fixed_opex", agg_fixed_opex_lcows)
         self.add_component(name + "_aggregate_variable_opex", agg_variable_opex_lcows)
         for u in self._registered_unit_costing:
-            direct_capex_numerator = 0 * c_units / self.base_period
-            indirect_capex_numerator = 0 * c_units / self.base_period
+            direct_capex_numerator = 0 * c_units / t_units
+            indirect_capex_numerator = 0 * c_units / t_units
             fixed_opex_numerator = 0 * c_units / t_units
             variable_opex_numerator = 0 * c_units / t_units
             if hasattr(u, "capital_cost"):
@@ -225,7 +225,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 flow_name = self._get_flow_name(flow_expr)
                 if flow_name in variable_opex_lcows:
                     raise RuntimeError(
-                        f"Found unit model named {flow_name} but need to name flow {flow} for {name+'_aggregate_variable_opex'}"
+                        f"Found unit model named {flow_name} but need to name flow {flow_expr} for {name+'_aggregate_variable_opex'}"
                     )
                 variable_opex_lcows[flow_name] = (
                     flow_cost * self.utilization_factor
@@ -233,6 +233,10 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
     @staticmethod
     def _find_flow_unit(flow_expr):
+        """
+        Attempts to identify a unit model associated with the flow expression
+        `flow_expr`. Returns the unit model if found, otherwise returns `None`.
+        """
         variables = identify_variables(flow_expr, include_fixed=True)
         unit = WaterTAPCostingBlockData._find_flow_unit_variables(variables)
         return unit
@@ -409,13 +413,13 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             unit = self._find_flow_unit(flow_expr)
             if unit is not None:
                 specific_flow_consumption[unit.name] += (
-                    flow_std * utilization_factor
+                    flow_std * utilization_factor * multiplier
                 ) / denominator
                 continue
             _log.warning(f"Could not find unique unit for flow {flow_expr}")
             flow_name = self._get_flow_name(flow_expr)
             specific_flow_consumption[flow_name] += (
-                flow_std * utilization_factor
+                flow_std * utilization_factor * multiplier
             ) / denominator
 
     def build_process_costs(self):
