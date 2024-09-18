@@ -263,23 +263,23 @@ class TestStateBlock(object):
 
         metadata = model.params.get_metadata().properties
 
-        # # check that properties are not built if not demanded
-        # for v in metadata.list_supported_properties():
-        #     if metadata[v.name].method is not None:
-        #         if model.props[1].is_property_constructed(v.name):
-        #             raise PropertyAttributeError(
-        #                 "Property {v_name} is an on-demand property, but was found "
-        #                 "on the stateblock without being demanded".format(v_name=v.name)
-        #             )
-        #
-        # # check that properties are built if demanded
-        # for v in metadata.list_supported_properties():
-        #     if metadata[v.name].method is not None:
-        #         if not hasattr(model.props[1], v.name):
-        #             raise PropertyAttributeError(
-        #                 "Property {v_name} is an on-demand property, but was not built "
-        #                 "when demanded".format(v_name=v.name)
-        #             )
+        # check that properties are not built if not demanded
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if model.props[1].is_property_constructed(v.name):
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was found "
+                        "on the stateblock without being demanded".format(v_name=v.name)
+                    )
+
+        # check that properties are built if demanded
+        for v in metadata.list_supported_properties():
+            if metadata[v.name].method is not None:
+                if not hasattr(model.props[1], v.name):
+                    raise PropertyAttributeError(
+                        "Property {v_name} is an on-demand property, but was not built "
+                        "when demanded".format(v_name=v.name)
+                    )
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
