@@ -95,7 +95,7 @@ from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=False, reactor_volume_equalities=False):
+def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
 
@@ -133,9 +133,7 @@ def main(bio_P=False, reactor_volume_equalities=False):
         fail_flag=True,
     )
 
-    # Re-solve with effluent violation constraints
-    setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-    results = solve(m)
+    # results = solve(m)
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -533,12 +531,12 @@ def set_operating_conditions(m):
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
     # Touch treated properties
-    m.fs.Treated.properties[0].TSS
-    m.fs.Treated.properties[0].COD
-    m.fs.Treated.properties[0].BOD5
-    m.fs.Treated.properties[0].SNKj
-    m.fs.Treated.properties[0].SP_organic
-    m.fs.Treated.properties[0].SP_inorganic
+    # m.fs.Treated.properties[0].TSS
+    # m.fs.Treated.properties[0].COD
+    # m.fs.Treated.properties[0].BOD5
+    # m.fs.Treated.properties[0].SNKj
+    # m.fs.Treated.properties[0].SP_organic
+    # m.fs.Treated.properties[0].SP_inorganic
 
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -705,104 +703,6 @@ def solve(m, solver=None):
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
     return results
-
-
-def setup_optimization(m, reactor_volume_equalities=False):
-
-    for i in ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]:
-        reactor = getattr(m.fs, i)
-        reactor.volume.unfix()
-        reactor.volume.setlb(1)
-        # reactor.volume.setub(2000)
-    if reactor_volume_equalities:
-        add_reactor_volume_equalities(m)
-
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
-
-    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
-
-    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
-
-    # m.fs.R5.injection[:, :, :].unfix()
-    # m.fs.R6.injection[:, :, :].unfix()
-    # m.fs.R7.injection[:, :, :].unfix()
-
-    # Unfix fraction of outflow from reactor 7 that goes to recycle
-    m.fs.SP1.split_fraction[:, "underflow"].unfix()
-    # m.fs.SP1.split_fraction[:, "underflow"].setlb(0.45)
-    m.fs.SP2.split_fraction[:, "recycle"].unfix()
-
-    add_effluent_violations(m)
-
-
-def add_reactor_volume_equalities(m):
-    # TODO: These constraints were applied for initial optimization of AS reactor volumes; otherwise, volumes drive towards lower bound. Revisit
-    @m.fs.Constraint(m.fs.time)
-    def Vol_1(self, t):
-        return m.fs.R1.volume[0] == m.fs.R2.volume[0]
-
-    @m.fs.Constraint(m.fs.time)
-    def Vol_2(self, t):
-        return m.fs.R3.volume[0] == m.fs.R4.volume[0]
-
-    @m.fs.Constraint(m.fs.time)
-    def Vol_3(self, t):
-        return m.fs.R5.volume[0] == m.fs.R6.volume[0]
-
-    @m.fs.Constraint(m.fs.time)
-    def Vol_4(self, t):
-        return m.fs.R7.volume[0] >= m.fs.R6.volume[0] * 0.5
-
-
-def add_effluent_violations(blk):
-    # TODO: Revisit the max effluent concentration values
-
-    # Max value taken from Flores-Alsina Excel
-    blk.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
-    blk.fs.TSS_max.fix()
-
-    @blk.fs.Constraint(blk.fs.time)
-    def eq_TSS_max(self, t):
-        return blk.fs.Treated.properties[0].TSS <= blk.fs.TSS_max
-
-    # Max value carried over from BSM2
-    blk.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
-    blk.fs.COD_max.fix()
-
-    @blk.fs.Constraint(blk.fs.time)
-    def eq_COD_max(self, t):
-        return blk.fs.Treated.properties[0].COD <= blk.fs.COD_max
-
-    # Max value taken from Flores-Alsina Excel
-    blk.fs.SNKj_max = pyo.Var(initialize=0.004, units=pyo.units.kg / pyo.units.m**3)
-    blk.fs.SNKj_max.fix()
-
-    @blk.fs.Constraint(blk.fs.time)
-    def eq_SNKj_max(self, t):
-        return blk.fs.Treated.properties[0].SNKj <= blk.fs.SNKj_max
-
-    # Max value carried over from BSM2
-    blk.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
-    blk.fs.BOD5_max.fix()
-
-    @blk.fs.Constraint(blk.fs.time)
-    def eq_BOD5_max(self, t):
-        return blk.fs.Treated.properties[0].BOD5["effluent"] <= blk.fs.BOD5_max
-
-    # # Max value taken from Flores-Alsina Excel
-    # blk.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
-    # blk.fs.total_P_max.fix()
-    #
-    # @blk.fs.Constraint(blk.fs.time)
-    # def eq_total_P_max(self, t):
-    #     return (
-    #         blk.fs.Treated.properties[0].SP_organic
-    #         + blk.fs.Treated.properties[0].SP_inorganic
-    #         <= blk.fs.total_P_max
-    #     )
 
 
 def add_costing(m):
@@ -986,17 +886,17 @@ def display_performance_metrics(m):
 
     TSS = pyo.value(m.fs.Treated.properties[0].TSS)
     COD = pyo.value(m.fs.Treated.properties[0].COD)
-    BOD = pyo.value(m.fs.Treated.properties[0].BOD5["effluent"])
-    SNKj = pyo.value(m.fs.Treated.properties[0].SNKj)
-    sp_org = pyo.value(m.fs.Treated.properties[0].SP_organic)
-    sp_inorg = pyo.value(m.fs.Treated.properties[0].SP_inorganic)
+    # BOD = pyo.value(m.fs.Treated.properties[0].BOD5["effluent"])
+    # SNKj = pyo.value(m.fs.Treated.properties[0].SNKj)
+    # sp_org = pyo.value(m.fs.Treated.properties[0].SP_organic)
+    # sp_inorg = pyo.value(m.fs.Treated.properties[0].SP_inorganic)
 
     print(f"TSS Concentration: {TSS}")
     print(f"COD Concentration: {COD}")
-    print(f"BOD Concentration: {BOD}")
-    print(f"SNKj Concentration: {SNKj}")
-    print(f"SP Organic Concentration: {sp_org}")
-    print(f"SP Inorganic Concentration: {sp_inorg}")
+    # print(f"BOD Concentration: {BOD}")
+    # print(f"SNKj Concentration: {SNKj}")
+    # print(f"SP Organic Concentration: {sp_org}")
+    # print(f"SP Inorganic Concentration: {sp_inorg}")
 
 
 if __name__ == "__main__":
