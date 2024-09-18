@@ -395,6 +395,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             * utilization_factor
         )
         f_units = pyo.units.get_units(getattr(self, f"aggregate_flow_{flow_name}"))
+        c_units = f_units * pyo.units.get_units(multiplier)
 
         try:
             flows = self._registered_flows[flow_name]
@@ -404,7 +405,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         specific_flow_consumption = pyo.Expression(
             pyo.Any,
             doc=f"Specific {flow_name} consumption by component",
-            initialize=0.0 * period * f_units / pyo.units.m**3,
+            initialize=0.0 * period * c_units / pyo.units.m**3,
         )
         self.add_component(name + "_component", specific_flow_consumption)
 
