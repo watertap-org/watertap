@@ -135,7 +135,7 @@ def main(bio_P=False, reactor_volume_equalities=False):
 
     # Re-solve with effluent violation constraints
     # setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-    # results = solve(m)
+    results = solve(m)
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -626,7 +626,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_AUT"): 0.25,
                 (0, "X_H"): 23.0,
                 (0, "X_I"): 11.3,
-                (0, "X_PAO"): 10.8,
+                (0, "X_PAO"): 10.9,
                 (0, "X_PHA"): 0.0058,
                 (0, "X_PP"): 2.9,
                 (0, "X_S"): 3.8,
@@ -718,13 +718,13 @@ def setup_optimization(m, reactor_volume_equalities=False):
         add_reactor_volume_equalities(m)
 
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].setub(8e-3)
 
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].setub(8e-3)
 
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(8e-3)
 
     # m.fs.R5.injection[:, :, :].unfix()
     # m.fs.R6.injection[:, :, :].unfix()
@@ -1051,7 +1051,7 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
