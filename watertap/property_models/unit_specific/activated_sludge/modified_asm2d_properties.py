@@ -295,6 +295,13 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
         )
+        self.BOD5_factor = pyo.Param(
+            ["raw", "effluent"],
+            initialize={"raw": 0.65, "effluent": 0.25},
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Conversion factor for BOD5",
+        )
 
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
@@ -317,6 +324,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
                 "TSS": {"method": "_TSS"},
                 "COD": {"method": "_COD"},
                 "SNKj": {"method": "_SNKj"},
+                "BOD5": {"method": "_BOD5"},
             }
         )
         obj.add_default_units(
@@ -567,20 +575,42 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         def rule_SNKj(b):
             return b.SNKj == (
-                self.conc_mass_comp["S_NH4"]
-                + self.params.i_NSF * self.conc_mass_comp["S_F"]
-                + self.params.i_NSI * self.conc_mass_comp["S_I"]
-                + self.params.i_NXI * self.conc_mass_comp["X_I"]
-                + self.params.i_NXS * self.conc_mass_comp["X_S"]
-                + self.params.i_NBM
+                b.conc_mass_comp["S_NH4"]
+                + b.params.i_NSF * b.conc_mass_comp["S_F"]
+                + b.params.i_NSI * b.conc_mass_comp["S_I"]
+                + b.params.i_NXI * b.conc_mass_comp["X_I"]
+                + b.params.i_NXS * b.conc_mass_comp["X_S"]
+                + b.params.i_NBM
                 * (
-                    self.conc_mass_comp["X_H"]
-                    + self.conc_mass_comp["X_PAO"]
-                    + self.conc_mass_comp["X_AUT"]
+                    b.conc_mass_comp["X_H"]
+                    + b.conc_mass_comp["X_PAO"]
+                    + b.conc_mass_comp["X_AUT"]
                 )
             )
 
         self.eq_SNKj = pyo.Constraint(rule=rule_SNKj)
+
+    def _BOD5(self):
+        self.BOD5 = pyo.Var(
+            ["raw", "effluent"],
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Five-day biological oxygen demand",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        def rule_BOD5(b, i):
+            return b.BOD5[i] == b.params.BOD5_factor[i] * (
+                b.conc_mass_comp["S_F"]
+                + b.conc_mass_comp["S_A"]
+                + (1 - b.params.f_SI) * b.conc_mass_comp["X_S"]
+                + (1 - b.params.f_XIH) * b.conc_mass_comp["X_H"]
+                + (1 - b.params.f_XIP)
+                * (b.conc_mass_comp["X_PAO"] + b.conc_mass_comp["X_PHA"])
+                + (1 - b.params.f_XIA) * b.conc_mass_comp["X_AUT"]
+            )
+
+        self.eq_BOD5 = pyo.Constraint(["raw", "effluent"], rule=rule_BOD5)
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
@@ -657,3 +687,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         if self.is_property_constructed("SNKj"):
             if iscale.get_scaling_factor(self.SNKj) is None:
                 iscale.set_scaling_factor(self.SNKj, 1)
+
+        if self.is_property_constructed("BOD5"):
+            if iscale.get_scaling_factor(self.BOD5) is None:
+                iscale.set_scaling_factor(self.BOD5, 1)
