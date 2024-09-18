@@ -134,8 +134,8 @@ def main(bio_P=False, reactor_volume_equalities=False):
     )
 
     # Re-solve with effluent violation constraints
-    setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-    results = solve(m)
+    # setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
+    # results = solve(m)
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -984,24 +984,74 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
     )
 
-    TSS = pyo.value(m.fs.Treated.properties[0].TSS)
-    COD = pyo.value(m.fs.Treated.properties[0].COD)
-    BOD = pyo.value(m.fs.Treated.properties[0].BOD5["effluent"])
-    SNKj = pyo.value(m.fs.Treated.properties[0].SNKj)
-    sp_org = pyo.value(m.fs.Treated.properties[0].SP_organic)
-    sp_inorg = pyo.value(m.fs.Treated.properties[0].SP_inorganic)
+    print("---- Feed Metrics----")
+    print(
+        "Feed TSS concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TSS),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TSS),
+    )
+    print(
+        "Feed COD concentration",
+        pyo.value(m.fs.FeedWater.properties[0].COD),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.FeedWater.properties[0].BOD5["effluent"]),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].BOD5["effluent"]),
+    )
+    print(
+        "SNKj concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SNKj),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SNKj),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_inorganic),
+    )
 
-    print(f"TSS Concentration: {TSS}")
-    print(f"COD Concentration: {COD}")
-    print(f"BOD Concentration: {BOD}")
-    print(f"SNKj Concentration: {SNKj}")
-    print(f"SP Organic Concentration: {sp_org}")
-    print(f"SP Inorganic Concentration: {sp_inorg}")
+    print("---- Effluent Metrics----")
+    print(
+        "TSS concentration",
+        pyo.value(m.fs.Treated.properties[0].TSS),
+        pyo.units.get_units(m.fs.Treated.properties[0].TSS),
+    )
+    print(
+        "COD concentration",
+        pyo.value(m.fs.Treated.properties[0].COD),
+        pyo.units.get_units(m.fs.Treated.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.Treated.properties[0].BOD5["effluent"]),
+        pyo.units.get_units(m.fs.Treated.properties[0].BOD5["effluent"]),
+    )
+    print(
+        "SNKj concentration",
+        pyo.value(m.fs.Treated.properties[0].SNKj),
+        pyo.units.get_units(m.fs.Treated.properties[0].SNKj),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_inorganic),
+    )
 
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
