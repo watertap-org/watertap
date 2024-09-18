@@ -13,9 +13,14 @@
 Thermophysical property package to be used in conjunction with modified ASM2d reactions.
 
 Reference:
-X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+[1] X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
 Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
+
+[2] K. Solon, X. Flores-Alsina, C. Kazadi Mbamba, D. Ikumi, E.I.P. Volcke, C. Vaneeckhaute, G. Ekama,
+P.A. Vanrolleghem, D.J. Batstone, K.V. Gernaey, U. Jeppsson, Plant-wide modelling of phosphorus transformations in
+wastewater treatment systems: Impacts of control and operational strategies, Water Research. 113 (2017) 97-110
+https://www.sciencedirect.com/science/article/pii/S0043135417300829
 
 """
 
