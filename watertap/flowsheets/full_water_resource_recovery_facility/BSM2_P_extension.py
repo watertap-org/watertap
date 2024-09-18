@@ -89,7 +89,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -133,14 +132,12 @@ def main(bio_P=False):
         fail_flag=True,
     )
 
-    # results = solve(m)
-
     add_costing(m)
     m.fs.costing.initialize()
 
     interval_initializer(m.fs.costing)
 
-    # assert_degrees_of_freedom(m, 0)
+    assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
