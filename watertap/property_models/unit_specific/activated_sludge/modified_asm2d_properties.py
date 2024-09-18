@@ -210,6 +210,92 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             doc="ISS fractional content of biomass",
         )
 
+        # Effluent Quality Index (EQI) parameters [2]
+        self.i_NSF = pyo.Var(
+            initialize=0.03352,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of fermentable substrate, S_F, [kg N/kg COD]",
+        )
+        self.i_NSI = pyo.Var(
+            initialize=0.06003,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of inert soluble COD S_I, [kg N/kg COD]",
+        )
+        self.i_NXI = pyo.Var(
+            initialize=0.06003,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of inert particulate COD X_I, [kg N/kg COD]",
+        )
+        self.i_NXS = pyo.Var(
+            initialize=0.03352,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of slowly biodegradable substrate X_S, [kg N/kg COD]",
+        )
+        self.i_NBM = pyo.Var(
+            initialize=0.08615,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N content of biomass, X_H, X_PAO, X_AUT, [kg N/kg COD]",
+        )
+        self.f_SI = pyo.Var(
+            initialize=0.00,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
+        )
+        self.f_XIH = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD generated in lysis of X_H, [kg COD/kg COD]",
+        )
+        self.f_XIP = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD generated in lysis of X_PAO and X_PHA, [kg COD/kg COD]",
+        )
+        self.f_XIA = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD generated in lysis of X_AUT, [kg COD/kg COD]",
+        )
+        self.i_PSF = pyo.Var(
+            initialize=0.00559,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of fermentable substrate, S_F, [kg P/kg COD]",
+        )
+        self.i_PSI = pyo.Var(
+            initialize=0.00649,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of inert soluble COD S_I, [kg P/kg COD]",
+        )
+        self.i_PXI = pyo.Var(
+            initialize=0.00649,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of inert particulate COD X_I, [kg P/kg COD]",
+        )
+        self.i_PXS = pyo.Var(
+            initialize=0.00559,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of slowly biodegradable substrate X_S, [kg P/kg COD]",
+        )
+        self.i_PBM = pyo.Var(
+            initialize=0.02154,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
+        )
+
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
@@ -230,6 +316,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
                 "ISS": {"method": "_ISS"},
                 "TSS": {"method": "_TSS"},
                 "COD": {"method": "_COD"},
+                "SNKj": {"method": "_SNKj"},
             }
         )
         obj.add_default_units(
@@ -470,6 +557,31 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.eq_COD = pyo.Constraint(rule=rule_COD)
 
+    def _SNKj(self):
+        self.SNKj = pyo.Var(
+            initialize=1,
+            domain=pyo.NonNegativeReals,
+            doc="Kjeldahl nitrogen",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+
+        def rule_SNKj(b):
+            return b.SNKj == (
+                self.conc_mass_comp["S_NH4"]
+                + self.params.i_NSF * self.conc_mass_comp["S_F"]
+                + self.params.i_NSI * self.conc_mass_comp["S_I"]
+                + self.params.i_NXI * self.conc_mass_comp["X_I"]
+                + self.params.i_NXS * self.conc_mass_comp["X_S"]
+                + self.params.i_NBM
+                * (
+                    self.conc_mass_comp["X_H"]
+                    + self.conc_mass_comp["X_PAO"]
+                    + self.conc_mass_comp["X_AUT"]
+                )
+            )
+
+        self.eq_SNKj = pyo.Constraint(rule=rule_SNKj)
+
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
             return self.flow_vol * self.params.dens_mass
@@ -541,3 +653,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         if self.is_property_constructed("COD"):
             if iscale.get_scaling_factor(self.COD) is None:
                 iscale.set_scaling_factor(self.COD, 1)
+
+        if self.is_property_constructed("SNKj"):
+            if iscale.get_scaling_factor(self.SNKj) is None:
+                iscale.set_scaling_factor(self.SNKj, 1)

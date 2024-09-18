@@ -887,14 +887,14 @@ def display_performance_metrics(m):
     TSS = pyo.value(m.fs.Treated.properties[0].TSS)
     COD = pyo.value(m.fs.Treated.properties[0].COD)
     # BOD = pyo.value(m.fs.Treated.properties[0].BOD5["effluent"])
-    # SNKj = pyo.value(m.fs.Treated.properties[0].SNKj)
+    SNKj = pyo.value(m.fs.Treated.properties[0].SNKj)
     # sp_org = pyo.value(m.fs.Treated.properties[0].SP_organic)
     # sp_inorg = pyo.value(m.fs.Treated.properties[0].SP_inorganic)
 
     print(f"TSS Concentration: {TSS}")
     print(f"COD Concentration: {COD}")
     # print(f"BOD Concentration: {BOD}")
-    # print(f"SNKj Concentration: {SNKj}")
+    print(f"SNKj Concentration: {SNKj}")
     # print(f"SP Organic Concentration: {sp_org}")
     # print(f"SP Inorganic Concentration: {sp_inorg}")
 
