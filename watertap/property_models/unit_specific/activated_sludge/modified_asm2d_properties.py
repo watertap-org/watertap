@@ -503,32 +503,6 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.VSS = pyo.Expression(rule=_VSS, doc="Volatile suspended solids")
 
-        # On-demand properties
-        # def _VSS(self):
-        #     self.VSS = pyo.Var(
-        #         initialize=1,
-        #         domain=pyo.NonNegativeReals,
-        #         doc="Volatile suspended solids",
-        #         units=pyo.units.kg / pyo.units.m**3,
-        #     )
-        #
-        #     # TODO: X_SRB not included yet in biomass term summation
-        #     def rule_VSS(b):
-        #         return (
-        #             b.VSS
-        #             == b.conc_mass_comp["X_I"] / b.params.CODtoVSS_XI
-        #             + b.conc_mass_comp["X_S"] / b.params.CODtoVSS_XS
-        #             + (
-        #                 b.conc_mass_comp["X_H"]
-        #                 + b.conc_mass_comp["X_PAO"]
-        #                 + b.conc_mass_comp["X_AUT"]
-        #             )
-        #             / b.params.CODtoVSS_XBM
-        #             + b.conc_mass_comp["X_PHA"] / b.params.CODtoVSS_XPHA
-        #         )
-        #
-        #     self.eq_VSS = pyo.Constraint(rule=rule_VSS)
-
         def _ISS(self):
             iss = (
                 self.params.f_ISS_BM
@@ -544,48 +518,11 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.ISS = pyo.Expression(rule=_ISS, doc="Inorganic suspended solids")
 
-        # def _ISS(self):
-        #     self.ISS = pyo.Var(
-        #         initialize=1,
-        #         domain=pyo.NonNegativeReals,
-        #         doc="Inorganic suspended solids",
-        #         units=pyo.units.kg / pyo.units.m**3,
-        #     )
-        #
-        #     # TODO: Several HFO and other terms omitted since not included yet.
-        #     def rule_ISS(b):
-        #         return (
-        #             b.ISS
-        #             == b.params.f_ISS_BM
-        #             * (
-        #                 b.conc_mass_comp["X_H"]
-        #                 + b.conc_mass_comp["X_PAO"]
-        #                 + b.conc_mass_comp["X_AUT"]
-        #             )
-        #             / b.params.CODtoVSS_XBM
-        #             + b.params.ISS_P * b.conc_mass_comp["X_PP"]
-        #         )
-        #
-        #     self.eq_ISS = pyo.Constraint(rule=rule_ISS)
-
         def _TSS(self):
             tss = self.VSS + self.ISS
             return tss
 
         self.TSS = pyo.Expression(rule=_TSS, doc="Total suspended solids")
-
-        # def _TSS(self):
-        #     self.TSS = pyo.Var(
-        #     initialize=1,
-        #     domain=pyo.NonNegativeReals,
-        #     doc="Total suspended solids",
-        #     units=pyo.units.kg / pyo.units.m**3,
-        # )
-        #
-        # def rule_TSS(b):
-        #     return b.TSS == b.VSS + b.ISS
-        #
-        # self.eq_TSS = pyo.Constraint(rule=rule_TSS)
 
         def _COD(self):
             cod = (
@@ -602,30 +539,6 @@ class ModifiedASM2dStateBlockData(StateBlockData):
             return cod
 
         self.COD = pyo.Expression(rule=_COD, doc="Chemical oxygen demand")
-
-        # def _COD(self):
-        #     self.COD = pyo.Var(
-        #         initialize=1,
-        #         domain=pyo.NonNegativeReals,
-        #         doc="Chemical oxygen demand",
-        #         units=pyo.units.kg / pyo.units.m**3,
-        #     )
-        #
-        #     def rule_COD(b):
-        #         return (
-        #             b.COD
-        #             == b.conc_mass_comp["S_F"]
-        #             + b.conc_mass_comp["S_A"]
-        #             + b.conc_mass_comp["S_I"]
-        #             + b.conc_mass_comp["X_I"]
-        #             + b.conc_mass_comp["X_S"]
-        #             + b.conc_mass_comp["X_H"]
-        #             + b.conc_mass_comp["X_PAO"]
-        #             + b.conc_mass_comp["X_PHA"]
-        #             + b.conc_mass_comp["X_AUT"]
-        #         )
-        #
-        #     self.eq_COD = pyo.Constraint(rule=rule_COD)
 
         def _SNKj(self):
             snkj = (
@@ -645,32 +558,12 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.SNKj = pyo.Expression(rule=_SNKj, doc="Kjeldahl nitrogen")
 
-        # def _SNKj(self):
-        #     self.SNKj = pyo.Var(
-        #         initialize=1,
-        #         domain=pyo.NonNegativeReals,
-        #         doc="Kjeldahl nitrogen",
-        #         units=pyo.units.kg / pyo.units.m ** 3,
-        #     )
-        #
-        #     def rule_SNKj(b):
-        #         return b.SNKj == b.conc_mass_comp[
-        #             "S_NH4"
-        #         ] + b.params.i_NSF * b.conc_mass_comp[
-        #             "S_F"
-        #         ] + b.params.i_NSI * b.conc_mass_comp[
-        #             "S_I"
-        #         ] + b.params.i_NXI * b.conc_mass_comp[
-        #             "X_I"
-        #         ] + b.params.i_NXS * b.conc_mass_comp[
-        #             "X_S"
-        #         ] + b.params.i_NBM * (
-        #             b.conc_mass_comp["X_H"]
-        #             + b.conc_mass_comp["X_PAO"]
-        #             + b.conc_mass_comp["X_AUT"]
-        #         )
-        #
-        #     self.eq_SNKj = pyo.Constraint(rule=rule_SNKj)
+        def _SNOX(self):
+            snox = self.conc_mass_comp["S_NO3"]
+
+            return snox
+
+        self.SNOX = pyo.Expression(rule=_SNOX, doc="Nitrogen oxide")
 
         def _BOD5(self, i):
             bod5 = (
@@ -688,30 +581,6 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         self.BOD5 = pyo.Expression(
             ["raw", "effluent"], rule=_BOD5, doc="Five-day biological oxygen demand"
         )
-
-        # def _BOD5(self):
-        #     self.BOD5 = pyo.Var(
-        #         ["raw", "effluent"],
-        #         initialize=1,
-        #         domain=pyo.NonNegativeReals,
-        #         doc="Five-day biological oxygen demand",
-        #         units=pyo.units.kg / pyo.units.m ** 3,
-        #     )
-        #
-        #     def rule_BOD5(b, i):
-        #         bod5 = (
-        #             b.conc_mass_comp["S_F"]
-        #             + b.conc_mass_comp["S_A"]
-        #             + (1 - b.params.f_SI) * b.conc_mass_comp["X_S"]
-        #             + (1 - b.params.f_XIH) * b.conc_mass_comp["X_H"]
-        #             + (1 - b.params.f_XIP)
-        #             * (b.conc_mass_comp["X_PAO"] + b.conc_mass_comp["X_PHA"])
-        #             + (1 - b.params.f_XIA) * b.conc_mass_comp["X_AUT"]
-        #         )
-        #
-        #         return self.params.BOD5_factor[i] * bod5
-        #
-        #     self.eq_BOD5 = pyo.Constraint(rule=rule_BOD5)
 
         def _SP_organic(self):
             sp_organic = (
@@ -731,33 +600,6 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.SP_organic = pyo.Expression(rule=_SP_organic, doc="Organic phosphorus")
 
-        # def _SP_organic(self):
-        #     self.SP_organic = pyo.Var(
-        #         initialize=1,
-        #         domain=pyo.NonNegativeReals,
-        #         doc="Organic phosphorus",
-        #         units=pyo.units.kg / pyo.units.m ** 3,
-        #     )
-        #
-        #     def rule_SP_organic(b):
-        #         return b.SP_organic == b.conc_mass_comp[
-        #             "X_PP"
-        #         ] + b.params.i_PSF * b.conc_mass_comp[
-        #             "S_F"
-        #         ] + b.params.i_PSI * b.conc_mass_comp[
-        #             "S_I"
-        #         ] + b.params.i_PXI * b.conc_mass_comp[
-        #             "X_I"
-        #         ] + b.params.i_PXS * b.conc_mass_comp[
-        #             "X_S"
-        #         ] + b.params.i_PBM * (
-        #             b.conc_mass_comp["X_H"]
-        #             + b.conc_mass_comp["X_PAO"]
-        #             + b.conc_mass_comp["X_AUT"]
-        #         )
-        #
-        #     self.eq_SP_organic = pyo.Constraint(rule=rule_SP_organic)
-
         def _SP_inorganic(self):
             sp_inorganic = self.conc_mass_comp["S_PO4"]
             return sp_inorganic
@@ -765,18 +607,6 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         self.SP_inorganic = pyo.Expression(
             rule=_SP_inorganic, doc="Inorganic phosphorus"
         )
-
-    # def _SP_inorganic(self):
-    #     self.SP_inorganic = pyo.Var(
-    #         initialize=1,
-    #         domain=pyo.NonNegativeReals,
-    #         doc="Inorganic phosphorus",
-    #         units=pyo.units.kg / pyo.units.m ** 3,
-    #     )
-    #     def rule_SP_inorganic(b):
-    #         return b.SP_inorganic == b.conc_mass_comp["S_PO4"]
-    #
-    #     self.eq_SP_inorganic = pyo.Constraint(rule=rule_SP_inorganic)
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
