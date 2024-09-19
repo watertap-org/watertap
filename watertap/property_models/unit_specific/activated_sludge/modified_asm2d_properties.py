@@ -666,36 +666,36 @@ class ModifiedASM2dStateBlockData(StateBlockData):
         # TODO: revisit scaling of these new on-demand props
         if self.is_property_constructed("VSS"):
             if iscale.get_scaling_factor(self.VSS) is None:
-                iscale.set_scaling_factor(self.VSS, 1)
+                iscale.set_scaling_factor(self.VSS, 1e1)
 
         if self.is_property_constructed("ISS"):
             if iscale.get_scaling_factor(self.ISS) is None:
-                iscale.set_scaling_factor(self.ISS, 1)
+                iscale.set_scaling_factor(self.ISS, 1e1)
 
         if self.is_property_constructed("TSS"):
             if iscale.get_scaling_factor(self.TSS) is None:
-                iscale.set_scaling_factor(self.TSS, 1)
+                iscale.set_scaling_factor(self.TSS, 1e1)
 
         if self.is_property_constructed("COD"):
             if iscale.get_scaling_factor(self.COD) is None:
-                iscale.set_scaling_factor(self.COD, 1)
+                iscale.set_scaling_factor(self.COD, 1e1)
 
         if self.is_property_constructed("BOD5"):
             if iscale.get_scaling_factor(self.BOD5) is None:
-                iscale.set_scaling_factor(self.BOD5, 1)
+                iscale.set_scaling_factor(self.BOD5, 1e2)
 
         if self.is_property_constructed("SNKj"):
             if iscale.get_scaling_factor(self.SNKj) is None:
-                iscale.set_scaling_factor(self.SNKj, 1)
+                iscale.set_scaling_factor(self.SNKj, 1e3)
 
         if self.is_property_constructed("SNOX"):
             if iscale.get_scaling_factor(self.SNOX) is None:
-                iscale.set_scaling_factor(self.SNOX, 1)
+                iscale.set_scaling_factor(self.SNOX, 1e3)
 
         if self.is_property_constructed("SP_organic"):
             if iscale.get_scaling_factor(self.SP_organic) is None:
-                iscale.set_scaling_factor(self.SP_organic, 1)
+                iscale.set_scaling_factor(self.SP_organic, 1e3)
 
         if self.is_property_constructed("SP_inorganic"):
             if iscale.get_scaling_factor(self.SP_inorganic) is None:
-                iscale.set_scaling_factor(self.SP_inorganic, 1)
+                iscale.set_scaling_factor(self.SP_inorganic, 1e1)

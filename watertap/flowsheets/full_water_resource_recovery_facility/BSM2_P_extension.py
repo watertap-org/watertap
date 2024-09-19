@@ -902,6 +902,11 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.FeedWater.properties[0].SNKj),
     )
     print(
+        "SNOX concentration",
+        pyo.value(m.fs.Treated.properties[0].SNOX),
+        pyo.units.get_units(m.fs.Treated.properties[0].SNOX),
+    )
+    print(
         "Organic phosphorus concentration",
         pyo.value(m.fs.FeedWater.properties[0].SP_organic),
         pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
