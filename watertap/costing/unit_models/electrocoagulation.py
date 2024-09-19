@@ -1,13 +1,8 @@
 import pyomo.environ as pyo
-from watertap.costing.util import register_costing_parameter_block
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
     make_fixed_operating_cost_var,
-)
-from watertap.unit_models.electrocoagulation import (
-    ElectrodeMaterial,
-    ReactorMaterial,
 )
 
 # Costing equations from:
@@ -112,7 +107,7 @@ def build_aluminum_plate_cost_param_block(blk):
         mutable=True,
         doc="Cost of aluminum plate per kg",
     )
-    costing.add_defined_flow("aluminum", blk.cost)
+    costing.register_flow_type("aluminum", blk.cost)
 
 
 def build_iron_plate_cost_param_block(blk):
@@ -123,7 +118,7 @@ def build_iron_plate_cost_param_block(blk):
         mutable=True,
         doc="Cost of iron plate per kg",
     )
-    costing.add_defined_flow("iron", blk.cost)
+    costing.register_flow_type("iron", blk.cost)
 
 
 @register_costing_parameter_block(
@@ -142,16 +137,18 @@ def cost_electrocoagulation(blk):
 
     ec_params = blk.costing_package.electrocoagulation
     make_capital_cost_var(blk)
+    blk.costing_package.add_cost_factor(blk, "TPEC")
     make_fixed_operating_cost_var(blk)
 
     ec = blk.unit_model
-    comps = ec.config.property_package.solute_set
+
     flow_mgd = pyo.units.convert(
         ec.properties_in[0].flow_vol, to_units=pyo.units.Mgallons / pyo.units.day
     )
     flow_m3_yr = pyo.units.convert(
         ec.properties_in[0].flow_vol, to_units=pyo.units.m**3 / pyo.units.year
     )
+
     blk.annual_sludge_flow = pyo.units.convert(
         sum(
             ec.properties_waste[0].flow_mass_phase_comp["Liq", j] if j != "H2O" else 0
@@ -224,16 +221,16 @@ def cost_electrocoagulation(blk):
         doc="Annual administration + lab cost",
     )
 
-    if ec.config.reactor_material is ReactorMaterial.pvc:
+    if ec.config.reactor_material == "pvc":
         ec_params.ec_reactor_cap_material_coeff.fix(0.062)
 
-    elif ec.config.reactor_material is ReactorMaterial.stainless_steel:
+    elif ec.config.reactor_material == "stainless_steel":
         ec_params.ec_reactor_cap_material_coeff.fix(3.4)
 
-    if ec.config.electrode_material is ElectrodeMaterial.aluminum:
+    if ec.config.electrode_material == "aluminum":
         ec_params.electrode_material_cost.fix(2.23)
 
-    elif ec.config.electrode_material is ElectrodeMaterial.iron:
+    elif ec.config.electrode_material == "iron":
         ec_params.electrode_material_cost.fix(3.41)
 
     blk.number_EC_reactors_constr = pyo.Constraint(
