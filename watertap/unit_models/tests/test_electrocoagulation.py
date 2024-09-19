@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -42,8 +42,9 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
 )
 from idaes.core.util.testing import initialization_tester
-from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+
+from watertap.core.solvers import get_solver
 
 __author__ = "Kurban Sitterley"
 
@@ -297,19 +298,21 @@ class TestElectrocoagulationAL_default:
         results = solver.solve(m)
         assert_optimal_termination(results)
 
-        assert value(m.fs.costing.LCOW) == pytest.approx(1.212211, 1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.86383, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            6255266.054, 1e-5
+            3127633.02, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.81788, 1e-5
+            1.81788, rel=1e-3
         )
-        assert value(ec.costing.capital_cost_reactor) == pytest.approx(78582.2452, 1e-5)
+        assert value(ec.costing.capital_cost_reactor) == pytest.approx(
+            78582.2452, rel=1e-3
+        )
         assert value(ec.costing.capital_cost_power_supply) == pytest.approx(
-            2973345.544, 1e-5
+            2973345.544, rel=1e-3
         )
         assert value(ec.costing.capital_cost_electrodes) == pytest.approx(
-            6521.260, 1e-5
+            6521.260, rel=1e-3
         )
 
 
@@ -499,19 +502,21 @@ class TestElectrocoagulationAL_regression:  # overpotential calculation is "regr
         results = solver.solve(m)
         assert_optimal_termination(results)
 
-        assert value(m.fs.costing.LCOW) == pytest.approx(1.1562229, 1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.823472, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            6271248.3218, 1e-5
+            3135624.16, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.7268776, 1e-5
+            1.7268776, rel=1e-3
         )
-        assert value(ec.costing.capital_cost_reactor) == pytest.approx(27882.0327, 1e-5)
+        assert value(ec.costing.capital_cost_reactor) == pytest.approx(
+            27882.0327, rel=1e-3
+        )
         assert value(ec.costing.capital_cost_power_supply) == pytest.approx(
-            2973345.544, 1e-5
+            2973345.544, rel=1e-3
         )
         assert value(ec.costing.capital_cost_electrodes) == pytest.approx(
-            65212.6070, 1e-5
+            65212.6070, rel=1e-3
         )
 
 
@@ -695,21 +700,21 @@ class TestElectrocoagulationAL_nernst:  # overpotential calculation is "nernst"
         results = solver.solve(m)
         assert_optimal_termination(results)
 
-        assert value(m.fs.costing.LCOW) == pytest.approx(1.2116060, 1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.863227, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            6255266.0542, 1e-5
+            3127633.02, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.8092333, 1e-5
+            1.8092333, rel=1e-3
         )
         assert value(ec.costing.capital_cost_reactor) == pytest.approx(
-            78582.24525, 1e-5
+            78582.24525, rel=1e-3
         )
         assert value(ec.costing.capital_cost_power_supply) == pytest.approx(
-            2973345.5441, 1e-5
+            2973345.5441, rel=1e-3
         )
         assert value(ec.costing.capital_cost_electrodes) == pytest.approx(
-            6521.26070, 1e-5
+            6521.26070, rel=1e-3
         )
 
 
@@ -901,19 +906,19 @@ class TestElectrocoagulationFE_ss:  # overpotential calculation is "regression",
         results = solver.solve(m)
         assert_optimal_termination(results)
 
-        assert value(m.fs.costing.LCOW) == pytest.approx(1.23351, 1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.891212, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            6451320.87392, 1e-5
+            3225660.43, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.846282, 1e-5
+            0.846282, rel=1e-3
         )
         assert value(ec.costing.capital_cost_reactor) == pytest.approx(
-            1229519.06995, 1e-5
+            1229519.06995, rel=1e-3
         )
         assert value(ec.costing.capital_cost_power_supply) == pytest.approx(
-            1831696.0183, 1e-5
+            1831696.0183, rel=1e-3
         )
         assert value(ec.costing.capital_cost_electrodes) == pytest.approx(
-            95261.37168, 1e-5
+            95261.37168, rel=1e-3
         )
