@@ -30,7 +30,6 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
@@ -40,6 +39,8 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.core.solvers import get_solver
+from watertap.costing.unit_models.electrocoagulation import cost_electrocoagulation
 
 __author__ = "Kurban Sitterley, Abdiel Lugo"
 
@@ -515,9 +516,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                     cd * pyunits.cm**2 / pyunits.milliampere,
                     to_units=pyunits.dimensionless,
                 )
-                ea_tot = pyunits.convert(
-                    b.electrode_area_total, to_units=pyunits.cm**2
-                )
+                ea_tot = pyunits.convert(b.electrode_area_total, to_units=pyunits.cm**2)
                 return b.overpotential == pyunits.convert(
                     (
                         (
@@ -611,9 +610,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             @self.Expression(doc="Cathode overpotential")
             def cathode_overpotential(b):
                 cecd_dimensionless = pyunits.convert(
-                    b.cathodic_exchange_current_density
-                    * pyunits.m**2
-                    / pyunits.ampere,
+                    b.cathodic_exchange_current_density * pyunits.m**2 / pyunits.ampere,
                     to_units=pyunits.dimensionless,
                 )
                 cd_dimensionless = pyunits.convert(
@@ -962,3 +959,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         var_dict = {}
 
         return {"vars": var_dict}
+
+    @property
+    def default_costing_method(self):
+        return cost_electrocoagulation
