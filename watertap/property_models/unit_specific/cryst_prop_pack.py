@@ -797,6 +797,45 @@ class NaClParameterData(PhysicalParameterBlock):
             doc="Solution enthalpy parameter E5",
         )
 
+        # Specific volume parameters, computed from Affandi expression (Eq 5)
+
+        self.sp_vol_phase_param_A1 = Var(
+            within=Reals,
+            initialize=-7.75883,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A1",
+        )
+        self.sp_vol_phase_param_A2 = Var(
+            within=Reals,
+            initialize=3.23753,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A2",
+        )
+        self.sp_vol_phase_param_A3 = Var(
+            within=Reals,
+            initialize=2.05755,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A3",
+        )
+        self.sp_vol_phase_param_A4 = Var(
+            within=Reals,
+            initialize=-0.06052,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A4",
+        )
+        self.sp_vol_phase_param_A5 = Var(
+            within=Reals,
+            initialize=0.00529,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A5",
+        )
+        self.temperature_crit = Var(
+            within=Reals,
+            initialize=647.096,
+            units=pyunits.degK,
+            doc="Critical temperature of steam",
+        )
+
         for v in self.component_objects(Var):
             v.fix()
 
@@ -863,6 +902,7 @@ class NaClParameterData(PhysicalParameterBlock):
                 "solubility_mass_frac_phase_comp": {
                     "method": "_solubility_mass_frac_phase_comp"
                 },
+                "specific_vol_phase": {"method": "_specific_vol_phase"},
             }
         )
 
@@ -1751,7 +1791,7 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_enth_mass_solute(b, p):
             ############################
-            # Shomate equation for molar enthalpy ofNaCl, NIST
+            # Shomate equation for molar enthalpy of NaCl, NIST
             # Note: Tref is 298 K, so changing the Tref to 273 K to match IAPWS is necessary.
             # Computation formula for reference temperature change:
             #    Enthalpy at T relative to 273 K = Enthalpy change relative to 298 K + (Enthalpy at 298 K - Enthalpy at 273 K)
@@ -1799,7 +1839,7 @@ class NaClStateBlockData(StateBlockData):
         self.eq_enth_mass_solute = Constraint(["Sol"], rule=rule_enth_mass_solute)
 
     # 20. Total enthalpy flow for any stream: adds up the enthalpies for the solid, liquid and vapour phases
-    # Assumes no NaCl is vapour stream or water in crystals
+    # Assumes no NaCl in vapour stream or water in crystals
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
 
@@ -1860,6 +1900,30 @@ class NaClStateBlockData(StateBlockData):
         self.eq_mole_frac_phase_comp = Constraint(
             self.phase_component_set, rule=rule_mole_frac_phase_comp
         )
+
+    def _specific_vol_phase(self):
+        self.specific_vol_phase = Var(
+            ["Vap"],
+            initialize=100,
+            bounds=(0, None),
+            units=pyunits.m**3 / pyunits.kg,
+            doc="Specific volume of steam",
+        )
+
+        def rule_specific_vol_phase(b, p):
+            t_red = self.temperature / self.params.temperature_crit
+            log_sp_vol = (
+                self.params.sp_vol_phase_param_A1
+                + self.params.sp_vol_phase_param_A2 * (log(1 / t_red)) ** 0.4
+                + self.params.sp_vol_phase_param_A3 / (t_red**2)
+                + self.params.sp_vol_phase_param_A4 / (t_red**4)
+                + self.params.sp_vol_phase_param_A5 / (t_red**5)
+            )
+            return (
+                b.specific_vol_phase[p] == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
+            )
+
+        self.eq_specific_vol_phase = Constraint(["Vap"], rule=rule_specific_vol_phase)
 
     # -----------------------------------------------------------------------------
     # Boilerplate Methods
@@ -1936,6 +2000,10 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed("solubility_mass_frac_phase_comp"):
             if iscale.get_scaling_factor(self.solubility_mass_frac_phase_comp) is None:
                 iscale.set_scaling_factor(self.solubility_mass_frac_phase_comp, 1e0)
+
+        if self.is_property_constructed("specific_vol_phase"):
+            if iscale.get_scaling_factor(self.specific_vol_phase["Vap"]) is None:
+                iscale.set_scaling_factor(self.specific_vol_phase["Vap"], 0.1)
 
         # Scaling for flow_vol_phase: scaled as scale of dominant component in phase / density of phase
         if self.is_property_constructed("flow_vol_phase"):
@@ -2137,6 +2205,7 @@ class NaClStateBlockData(StateBlockData):
             "enth_mass_solute",
             "cp_mass_solvent",
             "cp_mass_solute",
+            "specific_vol_phase",
         ]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
