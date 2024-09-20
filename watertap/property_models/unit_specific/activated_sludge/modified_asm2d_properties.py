@@ -329,6 +329,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
                 "TSS": {"method": "_TSS"},
                 "COD": {"method": "_COD"},
                 "SNKj": {"method": "_SNKj"},
+                "SNOX": {"method": "_SNOX"},
                 "BOD5": {"method": "_BOD5"},
                 "SP_organic": {"method": "_SP_organic"},
                 "SP_inorganic": {"method": "_SP_inorganic"},
