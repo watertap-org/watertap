@@ -329,7 +329,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
                 "TSS": {"method": "_TSS"},
                 "COD": {"method": "_COD"},
                 "SNKj": {"method": "_SNKj"},
-                # "SNOX": {"method": "_SNOX"},
+                "SNOX": {"method": "_SNOX"},
                 "BOD5": {"method": "_BOD5"},
                 "SP_organic": {"method": "_SP_organic"},
                 "SP_inorganic": {"method": "_SP_inorganic"},
@@ -559,12 +559,12 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.SNKj = pyo.Expression(rule=_SNKj, doc="Kjeldahl nitrogen")
 
-        # def _SNOX(self):
-        #     snox = self.conc_mass_comp["S_NO3"]
-        #
-        #     return snox
-        #
-        # self.SNOX = pyo.Expression(rule=_SNOX, doc="Nitrogen oxide")
+        def _SNOX(self):
+            snox = self.conc_mass_comp["S_NO3"]
+
+            return snox
+
+        self.SNOX = pyo.Expression(rule=_SNOX, doc="Nitrogen oxide")
 
         def _BOD5(self, i):
             bod5 = (
@@ -689,9 +689,9 @@ class ModifiedASM2dStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.SNKj) is None:
                 iscale.set_scaling_factor(self.SNKj, 1e3)
 
-        # if self.is_property_constructed("SNOX"):
-        #     if iscale.get_scaling_factor(self.SNOX) is None:
-        #         iscale.set_scaling_factor(self.SNOX, 1e3)
+        if self.is_property_constructed("SNOX"):
+            if iscale.get_scaling_factor(self.SNOX) is None:
+                iscale.set_scaling_factor(self.SNOX, 1e3)
 
         if self.is_property_constructed("SP_organic"):
             if iscale.get_scaling_factor(self.SP_organic) is None:
