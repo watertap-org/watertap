@@ -273,6 +273,7 @@ class TestInitializers:
 
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer()
