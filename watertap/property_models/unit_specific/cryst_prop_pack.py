@@ -832,10 +832,6 @@ class NaClParameterData(PhysicalParameterBlock):
                 "flow_mass_phase_comp": {"method": None},
                 "temperature": {"method": None},
                 "pressure": {"method": None},
-                "solubility_mass_phase_comp": {"method": "_solubility_mass_phase_comp"},
-                "solubility_mass_frac_phase_comp": {
-                    "method": "_solubility_mass_frac_phase_comp"
-                },
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
@@ -844,9 +840,6 @@ class NaClParameterData(PhysicalParameterBlock):
                 "pressure_sat": {"method": "_pressure_sat"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "dh_crystallization_mass_comp": {
-                    "method": "_dh_crystallization_mass_comp"
-                },
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
             }
@@ -857,12 +850,19 @@ class NaClParameterData(PhysicalParameterBlock):
                 "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "dens_mass_solute": {"method": "_dens_mass_solute"},
                 "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
+                "dh_crystallization_mass_comp": {
+                    "method": "_dh_crystallization_mass_comp"
+                },
                 "cp_mass_solvent": {"method": "_cp_mass_solvent"},
                 "cp_mass_solute": {"method": "_cp_mass_solute"},
                 "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
                 "enth_mass_solvent": {"method": "_enth_mass_solvent"},
                 "enth_mass_solute": {"method": "_enth_mass_solute"},
                 "enth_flow": {"method": "_enth_flow"},
+                "solubility_mass_phase_comp": {"method": "_solubility_mass_phase_comp"},
+                "solubility_mass_frac_phase_comp": {
+                    "method": "_solubility_mass_frac_phase_comp"
+                },
             }
         )
 
