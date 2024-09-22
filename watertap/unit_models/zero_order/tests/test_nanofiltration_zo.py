@@ -483,8 +483,8 @@ def test_costing_non_default_subtype():
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
     assert isinstance(m.fs.costing.nanofiltration, Block)
-    assert isinstance(m.fs.unit.costing.variable_operating_cost, Var)
-    assert isinstance(m.fs.unit.costing.variable_operating_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.fixed_operating_cost, Var)
+    assert isinstance(m.fs.unit.costing.fixed_operating_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
@@ -499,5 +499,5 @@ def test_costing_non_default_subtype():
     assert pytest.approx(40657.003417, rel=1e-5) == value(m.fs.unit.area)
     assert pytest.approx(2.03285, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
     assert pytest.approx(0.406570, rel=1e-5) == value(
-        m.fs.unit.costing.variable_operating_cost
+        m.fs.unit.costing.fixed_operating_cost
     )
