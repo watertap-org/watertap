@@ -779,7 +779,7 @@ def add_costing(m):
     else:
         pass
 
-    if hasattr(m.fs, "dewaterer") or hasattr(m.fs, "gac"):
+    if hasattr(m.fs, "dewaterer"):
         m.fs.dye_disposal_cost = Expression(
             expr=(
                 m.fs.zo_costing.utilization_factor
