@@ -526,15 +526,6 @@ def set_operating_conditions(m):
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
-    # Touch treated properties
-    m.fs.Treated.properties[0].TSS
-    m.fs.Treated.properties[0].COD
-    m.fs.Treated.properties[0].BOD5
-    m.fs.Treated.properties[0].SNKj
-    m.fs.Treated.properties[0].SNOX
-    m.fs.Treated.properties[0].SP_organic
-    m.fs.Treated.properties[0].SP_inorganic
-
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
