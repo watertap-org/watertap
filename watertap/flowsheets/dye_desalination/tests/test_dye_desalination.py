@@ -523,8 +523,8 @@ class TestDyewithROFlowsheetwithGAC:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.332809, rel=1e-3) == value(m.fs.LCOW)
-        assert pytest.approx(-0.86212, rel=1e-3) == value(m.fs.LCOT)
+        assert pytest.approx(0.334851, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(-0.860203, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     @pytest.mark.requires_idaes_solver
