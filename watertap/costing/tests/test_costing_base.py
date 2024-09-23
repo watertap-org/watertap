@@ -12,6 +12,7 @@
 
 import pytest
 
+from pyomo.util.check_units import assert_units_consistent
 import pyomo.environ as pyo
 import idaes.core as idc
 
@@ -138,11 +139,17 @@ def test_watertap_costing_package():
 
 
 @pytest.mark.component
-def test_LCOW_breakdowns():
+def test_breakdowns():
     m = lsrro.build()
 
     m.fs.BoosterPumps[:].control_volume.work[0.0].value = 42e6
     m.fs.EnergyRecoveryDevices[:].control_volume.work[0.0].value = -42e6
+
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
+
+    assert_units_consistent(m)
 
     m.fs.costing.initialize()
 
@@ -172,3 +179,9 @@ def test_LCOW_breakdowns():
         sum(m.fs.costing.specific_energy_consumption_component.values())
     )
     assert pytest.approx(sec) == summed_sec
+
+    seci = pyo.value(m.fs.costing.specific_electrical_carbon_intensity)
+    summed_seci = pyo.value(
+        sum(m.fs.costing.specific_electrical_carbon_intensity_component.values())
+    )
+    assert pytest.approx(seci) == summed_seci
