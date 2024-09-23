@@ -9,7 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import os
 from parameter_sweep import LinearSample, parameter_sweep
 import watertap.flowsheets.dye_desalination.dye_desalination as dye_desal
 
