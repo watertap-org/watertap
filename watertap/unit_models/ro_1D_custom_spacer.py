@@ -47,9 +47,7 @@ _log.setLevel(idaeslog.DEBUG)
 
 
 @declare_process_block_class("ReverseOsmosis1DCustomSpacer")
-class ReverseOsmosis1DCustomSpacerData(
-    ReverseOsmosisBaseData, CustomSpacer
-):
+class ReverseOsmosis1DCustomSpacerData(ReverseOsmosisBaseData, CustomSpacer):
     CONFIG = CONFIG_Template
     _add_has_full_reporting(config_obj=CONFIG)
     _add_spacer_config(CONFIG=CONFIG)
