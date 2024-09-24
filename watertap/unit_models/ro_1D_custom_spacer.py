@@ -22,7 +22,7 @@ from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 from pyomo.core import value
 
-from analysisWaterTAP.flowsheets.ro_spacer_optimization.custom_ro_base.custom_spacer_base import (
+from watertap.core.custom_spacer_base import (
     _add_spacer_config,
     CustomSpacer,
     SpacerType,
@@ -35,7 +35,6 @@ from watertap.unit_models.reverse_osmosis_base import (
 )
 from watertap.core.membrane_channel1d import CONFIG_Template
 from idaes.core.util import scaling as iscale
-from idaes.core.util.tables import create_stream_table_dataframe
 from pyomo.common.formatting import tabular_writer
 from idaes.core.util.units_of_measurement import report_quantity
 

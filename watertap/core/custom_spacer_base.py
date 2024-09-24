@@ -9,7 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import numpy as np  # Required for tracking the spacer performance variables
 from enum import Enum, auto
 from pyomo.core.expr.numeric_expr import sin as pysin
 from pyomo.core.expr.numeric_expr import cos as pycos
