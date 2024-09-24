@@ -10,6 +10,9 @@ defined_flows:
   dye_disposal:
     value: 120
     units: USD_2020/m**3
+  dye_recovery:
+    value: 0.12
+    units: USD_2020/m**3
   dewatered_dye_disposal:
     value: 110
     units: USD_2020/m**3
