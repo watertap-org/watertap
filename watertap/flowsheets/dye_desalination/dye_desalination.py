@@ -1595,5 +1595,5 @@ if __name__ == "__main__":
         include_dewatering=False,
         include_gac=False,
         dye_revenue=False,
-        brine_revenue=True,
+        brine_revenue=False,
     )
