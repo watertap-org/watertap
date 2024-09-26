@@ -989,20 +989,32 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
                     to_units=pyunits.USD_2020 / pyunits.year,
                 )
             elif dye_revenue:
-                return pyunits.convert(
-                    m.fs.brine_cost,
-                    to_units=pyunits.USD_2020 / pyunits.year,
-                )
+                if value(m.fs.brine_cost) > 0:
+                    return pyunits.convert(
+                        m.fs.brine_cost,
+                        to_units=pyunits.USD_2020 / pyunits.year,
+                    )
+                else:
+                    return pyunits.convert(
+                        0 * pyunits.USD_2020 / pyunits.year,
+                        to_units=pyunits.USD_2020 / pyunits.year,
+                    )
             elif brine_revenue:
                 return pyunits.convert(
                     m.fs.dye_cost,
                     to_units=pyunits.USD_2020 / pyunits.year,
                 )
             else:
-                return pyunits.convert(
-                    m.fs.dye_cost + m.fs.brine_cost,
-                    to_units=pyunits.USD_2020 / pyunits.year,
-                )
+                if value(m.fs.brine_cost) > 0:
+                    return pyunits.convert(
+                        m.fs.dye_cost + m.fs.brine_cost,
+                        to_units=pyunits.USD_2020 / pyunits.year,
+                    )
+                else:
+                    return pyunits.convert(
+                        m.fs.dye_cost,
+                        to_units=pyunits.USD_2020 / pyunits.year,
+                    )
 
     @m.fs.Expression(
         doc="Levelized cost of treatment with respect to volumetric feed flow"
@@ -1027,6 +1039,7 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
         return (
             b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
+            + b.external_cost
         ) / (
             pyunits.convert(
                 b.feed.properties[0].flow_vol,
