@@ -16,7 +16,6 @@ from pyomo.environ import (
     Var,
     Param,
     Suffix,
-    NonNegativeReals,
     Reals,
     Reference,
     TransformationFactory,
