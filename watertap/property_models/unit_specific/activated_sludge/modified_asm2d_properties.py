@@ -683,11 +683,11 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         if self.is_property_constructed("BOD5"):
             if iscale.get_scaling_factor(self.BOD5) is None:
-                iscale.set_scaling_factor(self.BOD5, 1e2)
+                iscale.set_scaling_factor(self.BOD5, 1e1)
 
         if self.is_property_constructed("SNKj"):
             if iscale.get_scaling_factor(self.SNKj) is None:
-                iscale.set_scaling_factor(self.SNKj, 1e3)
+                iscale.set_scaling_factor(self.SNKj, 1e2)
 
         if self.is_property_constructed("SNOX"):
             if iscale.get_scaling_factor(self.SNOX) is None:
@@ -695,7 +695,7 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         if self.is_property_constructed("SP_organic"):
             if iscale.get_scaling_factor(self.SP_organic) is None:
-                iscale.set_scaling_factor(self.SP_organic, 1e3)
+                iscale.set_scaling_factor(self.SP_organic, 1e2)
 
         if self.is_property_constructed("SP_inorganic"):
             if iscale.get_scaling_factor(self.SP_inorganic) is None:
