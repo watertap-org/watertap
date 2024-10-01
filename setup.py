@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.1.dev0",
+    version="1.1.0rc0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -78,7 +78,7 @@ setup(
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
-        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        *SPECIAL_DEPENDENCIES_FOR_RELEASE,
         "pyomo>=6.6.1",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
