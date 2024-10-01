@@ -562,6 +562,7 @@ class Actions(str, Enum):
     solve = "solve"
     export = "_export"
     diagram = "diagram"
+    initialize = "initialize"
 
 
 class FlowsheetCategory(str, Enum):
@@ -607,6 +608,7 @@ class FlowsheetInterface:
         do_build: Callable = None,
         do_export: Callable = None,
         do_solve: Callable = None,
+        do_initialize: Callable = None,
         get_diagram: Callable = None,
         category: FlowsheetCategory = None,
         custom_do_param_sweep_kwargs: Dict = None,
@@ -639,10 +641,13 @@ class FlowsheetInterface:
             (do_export, "export"),
             (do_build, "build"),
             (do_solve, "solve"),
+            (do_initialize, "intitialize"),
         ):
             if arg:
                 if not callable(arg):
                     raise TypeError(f"'do_{name}' argument must be callable")
+                self.add_action(getattr(Actions, name), arg)
+            elif name == "initialize":
                 self.add_action(getattr(Actions, name), arg)
             else:
                 raise ValueError(f"'do_{name}' argument is required")
@@ -854,7 +859,7 @@ class FlowsheetInterface:
                     exports=self.fs_exp, build_options=self.fs_exp.build_options
                 )
                 result = None
-            elif action_name == Actions.diagram:
+            elif action_name == Actions.diagram or action_name == Actions.initialize:
                 self._actions[action_name] = action_func
                 return
             elif self.fs_exp.obj is None:
