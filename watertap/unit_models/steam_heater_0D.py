@@ -171,8 +171,8 @@ class SteamHeater0DData(HeatExchangerData):
             #self.hot_side_outlet.unfix()
             self.cold_side_outlet.temperature.unfix()
             # condenser mode without cooling water estimation
-            #self.outlet_liquid_mass_balance.deactivate()
-            #self.outlet_pressure_sat.deactivate()
+            self.outlet_liquid_mass_balance.deactivate()
+            self.outlet_pressure_sat.deactivate()
             print(f"DOF 2: {degrees_of_freedom(self)}")
 
             super().initialize_build(*args, **kwargs)
