@@ -40,8 +40,8 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
-from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.crystallizer import cost_crystallizer
+from watertap.core.util.initialization import interval_initializer
 
 _log = idaeslog.getLogger(__name__)
 
@@ -122,7 +122,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # Add unit variables
-
+        """
         self.approach_temperature_heat_exchanger = Param(
             initialize=4,
             units=pyunits.K,
@@ -130,6 +130,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             Lewis et al. suggests 1-2 degC but use 5degC in example; Tavare example used 4 degC.\
             Default is 4 degC",
         )
+        """
 
         # ====== Crystallizer sizing parameters ================= #
         self.dimensionless_crystal_length = Param(
@@ -186,14 +187,14 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
         self.pressure_operating = Var(
             initialize=1e3,
-            bounds=(0.001, 1e6),
+            bounds=(0.001, 2e6),
             units=pyunits.Pa,
             doc="Operating pressure of the crystallizer.",
         )
 
         self.dens_mass_magma = Var(
             initialize=250,
-            bounds=(1, 5000),
+            bounds=(0.01, 5000),
             units=pyunits.kg / pyunits.m**3,
             doc="Magma density, i.e. mass of crystals per unit volume of suspension",
         )
@@ -204,15 +205,15 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             units=pyunits.kg / pyunits.m**3,
             doc="Suspension density, i.e. density of solid-liquid mixture before separation",
         )
-
-        self.work_mechanical = Var(
-            self.flowsheet().config.time,
-            initialize=1e5,
-            bounds=(-5e6, 5e6),
-            units=pyunits.kJ / pyunits.s,
-            doc="Crystallizer thermal energy requirement",
-        )
-
+        """
+            self.work_mechanical = Var(
+                self.flowsheet().config.time,
+                initialize=1e5,
+                bounds=(-5e6, 5e6),
+                units=pyunits.kJ / pyunits.s,
+                doc="Crystallizer thermal energy requirement",
+            )
+        """
         self.diameter_crystallizer = Var(
             initialize=3,
             bounds=(0, 25),
@@ -228,15 +229,18 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         )
 
         self.height_crystallizer = Var(
-            initialize=3, bounds=(0, 25), units=pyunits.m, doc="Crystallizer height"
+            initialize=3, bounds=(0, 30), units=pyunits.m, doc="Crystallizer height"
         )
 
-        self.magma_circulation_flow_vol = Var(
-            initialize=1,
-            bounds=(0, 100),
-            units=pyunits.m**3 / pyunits.s,
-            doc="Minimum circulation flow rate through crystallizer heat exchanger",
-        )
+
+        """
+            self.magma_circulation_flow_vol = Var(
+                initialize=1,
+                bounds=(0, 100),
+                units=pyunits.m**3 / pyunits.s,
+                doc="Minimum circulation flow rate through crystallizer heat exchanger",
+            )
+        """
 
         self.relative_supersaturation = Var(
             solute_set, initialize=0.1, bounds=(0, 100), units=pyunits.dimensionless
@@ -333,31 +337,32 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             else:
                 return Constraint.Skip
 
-        # 3. Performance equations
-        # (a) based on yield
-        @self.Constraint(
-            self.config.property_package.component_list,
-            doc="Component salt yield equation",
-        )
-        def eq_removal_balance(b, j):
-            if j in solvent_set:
-                return Constraint.Skip
-            else:
-                return (
-                    b.properties_in[0].flow_mass_phase_comp["Liq", j]
-                    * b.crystallization_yield[j]
-                    == b.properties_in[0].flow_mass_phase_comp["Liq", j]
-                    - b.properties_out[0].flow_mass_phase_comp["Liq", j]
-                )
-
+        """
+            # 3. Performance equations
+            # (a) based on yield
+            @self.Constraint(
+                self.config.property_package.component_list,
+                doc="Component salt yield equation",
+            )
+            def eq_removal_balance(b, j):
+                if j in solvent_set:
+                    return Constraint.Skip
+                else:
+                    return (
+                        b.properties_in[0].flow_mass_phase_comp["Liq", j]
+                        * b.crystallization_yield[j]
+                        == b.properties_in[0].flow_mass_phase_comp["Liq", j]
+                        - b.properties_out[0].flow_mass_phase_comp["Liq", j]
+                    )
+        
         # (b) Volumetric fraction constraint
         @self.Constraint(doc="Solid volumetric fraction in outlet: constraint, 1-E")
         def eq_vol_fraction_solids(b):
-            return self.product_volumetric_solids_fraction == b.properties_solids[
-                0
-            ].flow_vol / (
+            return self.product_volumetric_solids_fraction * (
                 b.properties_solids[0].flow_vol + b.properties_out[0].flow_vol
-            )
+            )== b.properties_solids[
+                0
+            ].flow_vol 
 
         # (c) Magma density constraint
         @self.Constraint(doc="Slurry magma density")
@@ -368,37 +373,41 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 * self.product_volumetric_solids_fraction
             )
 
-        # (d) Operating pressure constraint
-        @self.Constraint(doc="Operating pressure constraint")
-        def eq_operating_pressure_constraint(b):
-            return self.pressure_operating - b.properties_out[0].pressure_sat == 0
-
         # (e) Relative supersaturation
         @self.Constraint(
             solute_set,
             doc="Relative supersaturation created via evaporation, g/g (solution)",
         )
-        def eq_relative_supersaturation(b, j):
-            #  mass_frac_after_evap = SOLIDS IN + LIQUID IN - VAPOUR OUT
-            mass_frac_after_evap = b.properties_in[0].flow_mass_phase_comp["Liq", j] / (
-                sum(
-                    b.properties_in[0].flow_mass_phase_comp["Liq", k]
-                    for k in solute_set
+
+            def eq_relative_supersaturation(b, j):
+        # Calculate the mass of solute j after evaporation
+        #### change the naming
+                mass_after_evap = b.properties_in[0].flow_mass_phase_comp["Liq", j]
+
+                # Calculate the total mass of liquid phase components after evaporation
+                total_mass_after_evap = (
+                    sum(
+                        b.properties_in[0].flow_mass_phase_comp["Liq", k]
+                        for k in b.config.property_package.solute_set
+                    )
+                    + b.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
+                    - b.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
                 )
-                + b.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
-                - b.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
-            )
-            # return (b.relative_supersaturation[j] * b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j] ==
-            # (mass_frac_after_evap - b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j])
-            # )
-            return (
-                b.relative_supersaturation[j]
-                == (
-                    mass_frac_after_evap
-                    - b.properties_out[0].solubility_mass_frac_phase_comp["Liq", j]
-                )
-                / b.properties_out[0].solubility_mass_frac_phase_comp["Liq", j]
-            )
+
+                return (
+                    b.relative_supersaturation[j] * b.properties_out[0].solubility_mass_frac_phase_comp["Liq", j] * total_mass_after_evap
+                    == (
+                        mass_after_evap
+                        - b.properties_out[0].solubility_mass_frac_phase_comp["Liq", j] * total_mass_after_evap
+                    ))
+"""
+        # (d) Operating pressure constraint
+        @self.Constraint(doc="Operating pressure constraint")
+        def eq_operating_pressure_constraint(b):
+            return self.pressure_operating  == b.properties_out[0].pressure_sat
+
+        
+
 
         # 4. Fix flows of empty solid, liquid and vapour streams
         # (i) Fix solids: liquid and vapour flows must be zero
@@ -425,11 +434,9 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 - b.properties_out[0].enth_flow
                 - b.properties_vapor[0].enth_flow
                 - b.properties_solids[0].enth_flow
-                + pyunits.convert(
-                    self.work_mechanical[0], to_units=pyunits.J / pyunits.s
-                )
+                #+ self.work_mechanical[0]
                 - sum(
-                    b.properties_solids[0].flow_mass_phase_comp["Sol", j]
+                   b.properties_solids[0].flow_mass_phase_comp["Sol", j]
                     * b.properties_solids[0].dh_crystallization_mass_comp[j]
                     for j in solute_set
                 )
@@ -440,11 +447,11 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         # TO-DO: Figure out actual liquid and solid pressures.
         @self.Constraint()
         def eq_p_con1(b):
-            return self.pressure_operating == b.properties_out[0].pressure
+            return b.properties_out[0].pressure_sat == b.properties_out[0].pressure
 
         @self.Constraint()
         def eq_p_con2(b):
-            return self.pressure_operating == b.properties_solids[0].pressure
+            return b.properties_out[0].pressure_sat == b.properties_solids[0].pressure
 
         @self.Constraint()
         def eq_p_con3(b):
@@ -461,6 +468,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         @self.Constraint()
         def eq_T_con3(b):
             return self.temperature_operating == b.properties_out[0].temperature
+        
+        """
 
         # 7. Heat exchanger minimum circulation flow rate calculations - see Lewis et al. or Tavare et al.
         @self.Constraint(
@@ -478,6 +487,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             return b.magma_circulation_flow_vol * dens_cp_avg == pyunits.convert(
                 b.work_mechanical[0], to_units=pyunits.J / pyunits.s
             )
+        
 
         # 8. Suspension density
         @self.Constraint(doc="Slurry density calculation")
@@ -536,9 +546,9 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         # 12. Minimum crystallizer height
         @self.Constraint(doc="Slurry height based on crystallizer diameter")
         def eq_slurry_height_constraint(b):
-            return self.height_slurry == 4 * b.volume_suspension / (
+            return self.height_slurry * (
                 Constants.pi * b.diameter_crystallizer**2
-            )
+            )== 4 * b.volume_suspension 
 
         @self.Expression(
             doc="Recommended height of vapor space (0.75*D) based on Tavares et. al."
@@ -561,6 +571,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             return self.height_crystallizer == 0.5 * (
                 a + b + ((a - b) ** 2 + eps**2) ** 0.5
             )
+
+            """
 
     def initialize_build(
         self,
@@ -667,7 +679,6 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
@@ -687,7 +698,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             self.height_crystallizer, 1
         )  # H/D ratio maximum is about 1.5, so same scaling as diameter
         iscale.set_scaling_factor(self.height_slurry, 1)  # Same scaling as diameter
-        iscale.set_scaling_factor(self.magma_circulation_flow_vol, 1)
+        #iscale.set_scaling_factor(self.magma_circulation_flow_vol, 1)
         iscale.set_scaling_factor(self.relative_supersaturation, 10)
         iscale.set_scaling_factor(self.t_res, 1)  # Residence time is in hours
         iscale.set_scaling_factor(
@@ -708,15 +719,20 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(
             self.dens_mass_slurry, 1e-3
         )  # scaling factor of dens_mass_phase['Liq']
-        kj_to_j = 1e3
-        iscale.set_scaling_factor(
-            self.work_mechanical[0],
-            iscale.get_scaling_factor(
-                self.properties_in[0].flow_mass_phase_comp["Vap", "H2O"]
-            )
-            * iscale.get_scaling_factor(self.properties_in[0].enth_mass_solvent["Vap"])
-            * kj_to_j,
-        )
+        #iscale.set_scaling_factor(
+         #   self.work_mechanical[0],
+          #  iscale.get_scaling_factor(
+           #     self.properties_in[0].flow_mass_phase_comp["Vap", "H2O"]
+            #)
+            #* iscale.get_scaling_factor(self.properties_in[0].enth_mass_solvent["Vap"]),
+        #)
+        iscale.set_scaling_factor(self.properties_in[0].enth_flow, 1e-3)
+        iscale.set_scaling_factor(self.properties_out[0].enth_flow, 1e-3)
+        iscale.set_scaling_factor(self.properties_vapor[0].enth_flow, 1e-3)
+        iscale.set_scaling_factor(self.properties_solids[0].enth_flow, 1e-3)
+        iscale.set_scaling_factor(self.properties_in[0.0].pressure, 1e3)
+
+
 
         # transforming constraints
         for ind, c in self.eq_T_con1.items():
@@ -752,29 +768,21 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         for j, c in self.eq_solubility_massfrac_equality_constraint.items():
             iscale.constraint_scaling_transform(c, 1e0)
 
-        for j, c in self.eq_dens_magma.items():
-            iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.dens_mass_magma)
-            )
+        #for j, c in self.eq_dens_magma.items():
+          #  iscale.constraint_scaling_transform(
+            #    c, iscale.get_scaling_factor(self.dens_mass_magma)
+            #)
 
-        for j, c in self.eq_removal_balance.items():
-            sf = iscale.get_scaling_factor(
-                self.properties_in[0].flow_mass_phase_comp["Liq", j]
-            )
-            iscale.constraint_scaling_transform(c, sf)
+        #for j, c in self.eq_removal_balance.items():
+          #  sf = iscale.get_scaling_factor(
+           #     self.properties_in[0].flow_mass_phase_comp["Liq", j]
+           # )
+          #  iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_enthalpy_balance.items():
-            sf = iscale.get_scaling_factor(
-                self.properties_out[0].flow_mass_phase_comp["Vap", "H2O"]
-            )
-            sw = iscale.get_scaling_factor(
-                self.properties_out[0].enth_mass_solvent["Vap"]
-            )
-            iscale.constraint_scaling_transform(c, sf * sw)
+            sf = iscale.get_scaling_factor(self.properties_in[0].enth_flow)
+            iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_minimum_hex_circulation_rate_constraint.items():
-            sf = iscale.get_scaling_factor(self.work_mechanical[0])
-            iscale.constraint_scaling_transform(c, sf * 1e-3)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -789,20 +797,22 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        var_dict["Operating Temperature"] = self.temperature_operating
-        var_dict["Operating Pressure"] = self.pressure_operating
-        var_dict["Magma density of solution"] = self.dens_mass_magma
-        var_dict["Slurry density"] = self.dens_mass_slurry
-        var_dict["Heat requirement"] = self.work_mechanical[time_point]
-        var_dict["Crystallizer diameter"] = self.diameter_crystallizer
-        var_dict["Magma circulation flow rate"] = self.magma_circulation_flow_vol
+        var_dict["Operating Temperature (K)"] = self.temperature_operating
+        var_dict["Operating Pressure (Pa)"] = self.pressure_operating
+        var_dict["Magma density of solution (Kg/m**3)"] = self.dens_mass_magma
+        var_dict["Slurry density (Kg/m3)"] = self.dens_mass_slurry
+        #var_dict["Heat requirement"] = self.work_mechanical[time_point]
+        var_dict["Crystallizer diameter (m)"] = self.diameter_crystallizer
+        #var_dict["Magma circulation flow rate (m**3/s)"] = (
+           # self.magma_circulation_flow_vol
+       # )
         var_dict["Vol. frac. of solids in suspension, 1-E"] = (
             self.product_volumetric_solids_fraction
         )
         var_dict["Residence time"] = self.t_res
-        var_dict["Crystallizer minimum active volume"] = self.volume_suspension
-        var_dict["Suspension height in crystallizer"] = self.height_slurry
-        var_dict["Crystallizer height"] = self.height_crystallizer
+        var_dict["Crystallizer minimum active volume (m**3)"] = self.volume_suspension
+        var_dict["Suspension height in crystallizer (m)"] = self.height_slurry
+        var_dict["Crystallizer height (m)"] = self.height_crystallizer
 
         for j in self.config.property_package.solute_set:
             yield_mem_name = f"{j} yield (fraction)"

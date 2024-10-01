@@ -42,7 +42,7 @@ from watertap.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models.unit_specific import cryst_prop_pack as props
-from watertap.unit_models.Crystallizer_revised import Crystallization
+from watertap.unit_models.crystallizer import Crystallization
 from watertap.costing import WaterTAPCosting, CrystallizerCostType
 from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
