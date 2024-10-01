@@ -161,12 +161,11 @@ class TestElectrocoagulationAL_default:
                 ("flow_vol_phase", "Liq"): flow_in,
                 ("conc_mass_phase_comp", ("Liq", "TDS")): tds_conc,
                 ("conc_mass_phase_comp", ("Liq", "Al_3+")): ec_target_dose,
+                ("temperature", None): 298,
+                ("pressure", None): 101325,
             },
             hold_state=True,
         )
-
-        ec.properties_in[0].pressure.fix(101325)
-        ec.properties_in[0].temperature.fix(298)
 
         ec.electrode_thick.fix(0.001)
         ec.current_density.fix(300)
@@ -266,20 +265,20 @@ class TestElectrocoagulationAL_default:
         assert value(
             ec.properties_waste[0].flow_mol_phase_comp["Liq", "Al_3+"]
         ) == pytest.approx(0.1136397, rel=5e-3)
-        assert value(ec.ohmic_resistance) == pytest.approx(0.00028260, rel=5e-3)
-        assert value(ec.charge_loading_rate) == pytest.approx(646.29756, rel=5e-3)
-        assert value(ec.electrode_area_total) == pytest.approx(94.35944, rel=5e-3)
-        assert value(ec.applied_current) == pytest.approx(28307.833, rel=5e-3)
-        assert value(ec.power_required) == pytest.approx(268.9244, rel=5e-3)
-        assert value(ec.cell_voltage) == pytest.approx(9.4999999, rel=5e-3)
+        assert value(ec.ohmic_resistance) == pytest.approx(0.00028260, rel=1e-3)
+        assert value(ec.charge_loading_rate) == pytest.approx(646.2, rel=1e-3)
+        assert value(ec.electrode_area_total) == pytest.approx(94.3, rel=1e-3)
+        assert value(ec.applied_current) == pytest.approx(28307.8, rel=1e-3)
+        assert value(ec.power_required) == pytest.approx(268.92, rel=1e-3)
+        assert value(ec.cell_voltage) == pytest.approx(9.499, rel=1e-3)
 
         ## test mass balance
         for c in comps:
-            assert value(
+            assert pytest.approx(value(
                 ec.properties_in[0].flow_mass_phase_comp["Liq", c]
                 - ec.properties_out[0].flow_mass_phase_comp["Liq", c]
                 - ec.properties_waste[0].flow_mass_phase_comp["Liq", c]
-            ) == pytest.approx(0, rel=5e-3)
+            ), rel=5e-3) == 0
 
     @pytest.mark.component
     def test_ec_al_default_costing(self, ec_al_default):
