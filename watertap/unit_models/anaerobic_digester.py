@@ -796,8 +796,8 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.KH_ch4, 1e2)
         iscale.set_scaling_factor(self.KH_h2, 1e2)
         iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
-        iscale.set_scaling_factor(self.volume_AD, 1e-1)
-        iscale.set_scaling_factor(self.volume_vapor, 1e-1)
+        iscale.set_scaling_factor(self.volume_AD, 1e-2)
+        iscale.set_scaling_factor(self.volume_vapor, 1e-2)
         iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
         iscale.set_scaling_factor(self.liquid_phase.mass_transfer_term, 1e2)
         iscale.set_scaling_factor(self.liquid_phase.heat, 1e0)
@@ -806,7 +806,7 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
         iscale.set_scaling_factor(self.electricity_consumption, 1e0)
         for i, c in self.ad_performance_eqn.items():
-            iscale.constraint_scaling_transform(c, 1e0)
+            iscale.constraint_scaling_transform(c, 1e2)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
