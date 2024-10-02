@@ -99,7 +99,7 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['bpem']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 1
    "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`I`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
    "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega m^2`", 1
-   "Cell pair number", ":math:`n`", "cell_pair_num", "None", "dimensionless", 1
+   "Cell number", ":math:`n`", "cell_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
    "Shadow factor", ":math:`\xi`", "shadow_factor", "None", "dimensionless", 1
    "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:`m` ", 1
@@ -287,7 +287,7 @@ Nomenclature
    ":math:`I`", "Current", ":math:`A`"
    ":math:`i`", "Current density", ":math:`A m^{-2}`"
    ":math:`U`", "Voltage over a stack", ":math:`V`"
-   ":math:`n`", "Cell pair number", "dimensionless"
+   ":math:`n`", "Cell number", "dimensionless"
    ":math:`\xi`", "Current utilization coefficient (including ion diffusion and water electroosmosis)", "dimensionless"
    ":math:`z`", "Ion charge", "dimensionless"
    ":math:`F`", "Faraday constant", ":math:`C\ mol^{-1}`"
