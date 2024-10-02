@@ -548,6 +548,10 @@ def set_operating_conditions(m):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
+    iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e1)
+
     # Apply scaling
     scale_variables(m)
     iscale.calculate_scaling_factors(m)

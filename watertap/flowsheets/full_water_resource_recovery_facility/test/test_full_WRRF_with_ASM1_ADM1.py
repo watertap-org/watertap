@@ -32,7 +32,6 @@ from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import scaling as iscale
 
 import watertap.flowsheets.full_water_resource_recovery_facility.BSM2 as BSM2
 
@@ -158,9 +157,6 @@ class TestFullFlowsheet_with_equal_reactor_vols:
     def system_frame(self):
         m = BSM2.build()
         BSM2.set_operating_conditions(m)
-        iscale.set_scaling_factor(m.fs.RADM.KH_co2, 1e2)
-        iscale.set_scaling_factor(m.fs.RADM.KH_ch4, 1e2)
-        iscale.set_scaling_factor(m.fs.RADM.KH_h2, 1e2)
         for mx in m.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
