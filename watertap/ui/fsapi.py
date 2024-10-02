@@ -707,6 +707,22 @@ class FlowsheetInterface:
             return self.run_action(Actions.diagram, **kwargs)
         else:
             return None
+        
+    def initialize(self, **kwargs):
+        """Return diagram image name.
+
+        Args:
+            **kwargs: User-defined values
+
+        Returns:
+            Return image file name if get_diagram function is callable. Otherwise, return none
+        """
+        if self.get_action(Actions.initialize) is not None:
+            print(f"running initialize")
+            return self.run_action(Actions.initialize, **kwargs)
+        else:
+            print(f"initialize is none")
+            return None
 
     def dict(self) -> Dict:
         """Serialize.
