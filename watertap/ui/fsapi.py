@@ -641,7 +641,7 @@ class FlowsheetInterface:
             (do_export, "export"),
             (do_build, "build"),
             (do_solve, "solve"),
-            (do_initialize, "intitialize"),
+            (do_initialize, "initialize"),
         ):
             if arg:
                 if not callable(arg):
@@ -708,8 +708,8 @@ class FlowsheetInterface:
         else:
             return None
         
-    def initialize(self, **kwargs):
-        """Return diagram image name.
+    def initialize(self, *args, **kwargs):
+        """Run initialize function.
 
         Args:
             **kwargs: User-defined values
@@ -718,10 +718,8 @@ class FlowsheetInterface:
             Return image file name if get_diagram function is callable. Otherwise, return none
         """
         if self.get_action(Actions.initialize) is not None:
-            print(f"running initialize")
-            return self.run_action(Actions.initialize, **kwargs)
+            return self.run_action(Actions.initialize, *args, **kwargs)
         else:
-            print(f"initialize is none")
             return None
 
     def dict(self) -> Dict:
@@ -913,7 +911,7 @@ class FlowsheetInterface:
         """
         return self._actions[name]
 
-    def run_action(self, name, **kwargs):
+    def run_action(self, name, *args, **kwargs):
         """Run the named action."""
         func = self.get_action(name)
         if name.startswith("_"):
@@ -921,7 +919,7 @@ class FlowsheetInterface:
                 f"Refusing to call '{name}' action directly since its "
                 f"name begins with an underscore"
             )
-        return func(**kwargs)
+        return func(*args, **kwargs)
 
     def export_values(self):
         """Copy current values in underlying Pyomo model into exported model.
