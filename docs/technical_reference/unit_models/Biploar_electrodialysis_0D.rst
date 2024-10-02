@@ -267,8 +267,7 @@ paper is by Wright et. al., 2018 (*References*).
 
 **Note**
 
- :sup:`1` We assumed a constant linear velocity (in the cell length direction), :math:`v`, in both channels and along
-the flow path. This :math:`v` is calculated based on the average of inlet and outlet volumetric flow rate.
+ :sup:`1` We assumed a constant linear velocity (in the cell length direction), :math:`v`, in both channels and along the flow path. This :math:`v` is calculated based on the average of inlet and outlet volumetric flow rate.
 
 Nomenclature
 ------------
