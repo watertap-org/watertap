@@ -11,12 +11,11 @@
 #################################################################################
 import numpy as np
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 import pytest
 from idaes.core import (
     FlowsheetBlock,
 )
-from idaes.core.util.constants import Constants
+
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from pyomo.environ import (
@@ -36,7 +35,6 @@ from watertap.unit_models.Bipolar_Electrodialysis_0D import (
 from watertap.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
-# from watertap.unit_models.electrodialysis_0D import LimitingCurrentDensitybpemMethod
 
 __author__ = "Johnson Dhanasekaran"
 
@@ -170,7 +168,7 @@ class Test_catalyst:
 
             iscale.calculate_scaling_factors(m.fs)
             assert degrees_of_freedom(m) == 0
-            initialization_tester(m, outlvl=idaeslog.DEBUG)
+            initialization_tester(m)
             results = solver.solve(m)
             assert_optimal_termination(results)
             if indx < 2:
@@ -339,7 +337,7 @@ class Test_limiting_parameters:
         # Test computing limiting current in  bipolar membrane
         iscale.calculate_scaling_factors(check_m[0])
         assert degrees_of_freedom(check_m[0]) == 0
-        initialization_tester(check_m[0], outlvl=idaeslog.DEBUG)
+        initialization_tester(check_m[0])
         results = solver.solve(check_m[0])
         assert_optimal_termination(results)
         assert value(check_m[0].fs.unit.current_dens_lim_bpem[0]) == pytest.approx(
@@ -349,7 +347,7 @@ class Test_limiting_parameters:
         # Test computing limiting current and potential barrier to water splitting in  bipolar membrane
         iscale.calculate_scaling_factors(check_m[1])
         assert degrees_of_freedom(check_m[1]) == 0
-        initialization_tester(check_m[1], outlvl=idaeslog.DEBUG)
+        initialization_tester(check_m[1])
         results = solver.solve(check_m[1])
         assert_optimal_termination(results)
         assert value(check_m[0].fs.unit.current_dens_lim_bpem[0]) == pytest.approx(
@@ -657,7 +655,7 @@ class Test_BPED_pressure_drop_components:
         bped_m[0].fs.unit.pressure_drop.fix(1e4)
         iscale.calculate_scaling_factors(bped_m[0])
         assert degrees_of_freedom(bped_m[0]) == 0
-        initialization_tester(bped_m[0], outlvl=idaeslog.DEBUG)
+        initialization_tester(bped_m[0])
         results = solver.solve(bped_m[0])
         assert_optimal_termination(results)
         assert value(bped_m[0].fs.unit.pressure_drop_total[0]) == pytest.approx(
@@ -671,7 +669,7 @@ class Test_BPED_pressure_drop_components:
         bped_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(bped_m[1])
         assert degrees_of_freedom(bped_m[1]) == 0
-        initialization_tester(bped_m[1], outlvl=idaeslog.DEBUG)
+        initialization_tester(bped_m[1])
         results = solver.solve(bped_m[1])
         assert_optimal_termination(results)
         assert value(bped_m[1].fs.unit.N_Re) == pytest.approx(9.491, rel=1e-3)
@@ -688,7 +686,7 @@ class Test_BPED_pressure_drop_components:
         bped_m[2].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(bped_m[2])
         assert degrees_of_freedom(bped_m[2]) == 0
-        initialization_tester(bped_m[2], outlvl=idaeslog.DEBUG)
+        initialization_tester(bped_m[2])
         results = solver.solve(bped_m[2])
         assert_optimal_termination(results)
         assert value(bped_m[2].fs.unit.N_Re) == pytest.approx(9.491, rel=1e-3)
@@ -705,7 +703,7 @@ class Test_BPED_pressure_drop_components:
         bped_m[3].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(bped_m[3])
         assert degrees_of_freedom(bped_m[3]) == 0
-        initialization_tester(bped_m[3], outlvl=idaeslog.DEBUG)
+        initialization_tester(bped_m[3])
         results = solver.solve(bped_m[3])
         assert_optimal_termination(results)
         assert value(bped_m[3].fs.unit.N_Re) == pytest.approx(9.491, rel=1e-3)
@@ -723,7 +721,7 @@ class Test_BPED_pressure_drop_components:
         bped_m[4].fs.unit.hydraulic_diameter.fix(1e-3)
         iscale.calculate_scaling_factors(bped_m[4])
         assert degrees_of_freedom(bped_m[4]) == 0
-        initialization_tester(bped_m[4], outlvl=idaeslog.DEBUG)
+        initialization_tester(bped_m[4])
         results = solver.solve(bped_m[4])
         assert_optimal_termination(results)
         assert value(bped_m[4].fs.unit.N_Re) == pytest.approx(21.235, rel=1e-3)
@@ -741,7 +739,7 @@ class Test_BPED_pressure_drop_components:
         bped_m[5].fs.unit.spacer_specific_area.fix(10700)
         iscale.calculate_scaling_factors(bped_m[5])
         assert degrees_of_freedom(bped_m[5]) == 0
-        initialization_tester(bped_m[5], outlvl=idaeslog.DEBUG)
+        initialization_tester(bped_m[5])
         iscale.calculate_scaling_factors(bped_m[5])
         results = solver.solve(bped_m[5])
         assert_optimal_termination(results)

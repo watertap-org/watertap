@@ -112,14 +112,12 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
 **Note**
  :sup:`1` DOF number takes account of the indices of the corresponding parameter.
 
- :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the
-"Constant_Current" or "Constant_Voltage" treatment mode
+ :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant_Current" or "Constant_Voltage" treatment mode
 
 
 Solution component information
 ------------------------------
-To fully construct solution properties, users need to provide basic component information of the feed solution to use
-this model. Below is a sample:
+To fully construct solution properties, users need to provide basic component information of the feed solution to use this model. Below is a sample:
 
 .. code-block::
 
