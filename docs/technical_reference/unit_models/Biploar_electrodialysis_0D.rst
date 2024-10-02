@@ -1,5 +1,5 @@
 Bipolar Electrodialysis (0D)
-====================
+============================
 
 Introduction
 ------------
@@ -313,6 +313,11 @@ Nomenclature
    ":math:`out`", "Outlet",
    ":math:`acidate`", "Cation exchange side of bipolar membrane",
    ":math:`basate`", "Anion exchange side of bipolar membrane",
+
+Class Documentation
+-------------------
+
+* :mod:`watertap.unit_models.Bipolar_Electrodialysis_0D`
 
 References
 ----------
