@@ -533,28 +533,28 @@ def add_effluent_violations(m):
 
     @m.fs.Constraint(m.fs.time)
     def eq_TSS_max(self, t):
-        return m.fs.CL1.effluent_state[0].TSS <= m.fs.TSS_max
+        return m.fs.Treated.properties[0].TSS <= m.fs.TSS_max
 
     m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
     m.fs.COD_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_COD_max(self, t):
-        return m.fs.CL1.effluent_state[0].COD <= m.fs.COD_max
+        return m.fs.Treated.properties.COD <= m.fs.COD_max
 
     m.fs.totalN_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
     m.fs.totalN_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_totalN_max(self, t):
-        return m.fs.CL1.effluent_state[0].Total_N <= m.fs.totalN_max
+        return m.fs.Treated.properties.Total_N <= m.fs.totalN_max
 
     m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
     m.fs.BOD5_max.fix()
 
     @m.fs.Constraint(m.fs.time)
     def eq_BOD5_max(self, t):
-        return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
+        return m.fs.Treated.properties.BOD5["effluent"] <= m.fs.BOD5_max
 
 
 def add_reactor_volume_equalities(m):
