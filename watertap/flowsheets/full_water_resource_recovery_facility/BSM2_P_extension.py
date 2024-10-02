@@ -885,8 +885,8 @@ def display_performance_metrics(m):
     )
     print(
         "BOD5 concentration",
-        pyo.value(m.fs.FeedWater.properties[0].BOD5["effluent"]),
-        pyo.units.get_units(m.fs.FeedWater.properties[0].BOD5["effluent"]),
+        pyo.value(m.fs.FeedWater.properties[0].BOD5["raw"]),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].BOD5["raw"]),
     )
     print(
         "SNKj concentration",
