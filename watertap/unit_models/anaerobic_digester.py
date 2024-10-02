@@ -792,9 +792,9 @@ see reaction package for documentation.}""",
         # Set references to balance terms at unit level
         self.heat_duty = Reference(self.liquid_phase.heat[:])
 
-        iscale.set_scaling_factor(self.KH_co2, 1e2)
-        iscale.set_scaling_factor(self.KH_ch4, 1e2)
-        iscale.set_scaling_factor(self.KH_h2, 1e2)
+        iscale.set_scaling_factor(self.KH_co2, 1e1)
+        iscale.set_scaling_factor(self.KH_ch4, 1e1)
+        iscale.set_scaling_factor(self.KH_h2, 1e1)
         iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
         iscale.set_scaling_factor(self.volume_AD, 1e-2)
         iscale.set_scaling_factor(self.volume_vapor, 1e-2)
