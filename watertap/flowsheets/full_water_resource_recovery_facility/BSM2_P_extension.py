@@ -893,14 +893,14 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.FeedWater.properties[0].BOD5["raw"]),
     )
     print(
-        "SNKj concentration",
-        pyo.value(m.fs.FeedWater.properties[0].SNKj),
-        pyo.units.get_units(m.fs.FeedWater.properties[0].SNKj),
+        "TKN concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TKN),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TKN),
     )
     print(
         "SNOX concentration",
-        pyo.value(m.fs.Treated.properties[0].SNOX),
-        pyo.units.get_units(m.fs.Treated.properties[0].SNOX),
+        pyo.value(m.fs.FeedWater.properties[0].SNOX),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
     )
     print(
         "Organic phosphorus concentration",
@@ -930,9 +930,9 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.Treated.properties[0].BOD5["effluent"]),
     )
     print(
-        "SNKj concentration",
-        pyo.value(m.fs.Treated.properties[0].SNKj),
-        pyo.units.get_units(m.fs.Treated.properties[0].SNKj),
+        "TKN concentration",
+        pyo.value(m.fs.Treated.properties[0].TKN),
+        pyo.units.get_units(m.fs.Treated.properties[0].TKN),
     )
     print(
         "SNOX concentration",
