@@ -79,7 +79,6 @@ from watertap.unit_models.thickener import (
 
 from watertap.core.util.initialization import (
     check_solve,
-    assert_degrees_of_freedom,
     interval_initializer,
 )
 
@@ -139,8 +138,6 @@ def main(bio_P=False, reactor_volume_equalities=False):
     m.fs.costing.initialize()
 
     interval_initializer(m.fs.costing)
-
-    # assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
