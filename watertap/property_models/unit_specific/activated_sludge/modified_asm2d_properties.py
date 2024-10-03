@@ -327,7 +327,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
                 "ISS": {"method": "_ISS"},
                 "TSS": {"method": "_TSS"},
                 "COD": {"method": "_COD"},
-                "SNKj": {"method": "_SNKj"},
+                "TKN": {"method": "_TKN"},
                 "SNOX": {"method": "_SNOX"},
                 "BOD5": {"method": "_BOD5"},
                 "SP_organic": {"method": "_SP_organic"},
@@ -540,8 +540,8 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.COD = pyo.Expression(rule=_COD, doc="Chemical oxygen demand")
 
-        def _SNKj(self):
-            snkj = (
+        def _TKN(self):
+            tkn = (
                 self.conc_mass_comp["S_NH4"]
                 + self.params.i_NSF * self.conc_mass_comp["S_F"]
                 + self.params.i_NSI * self.conc_mass_comp["S_I"]
@@ -554,9 +554,9 @@ class ModifiedASM2dStateBlockData(StateBlockData):
                     + self.conc_mass_comp["X_AUT"]
                 )
             )
-            return snkj
+            return tkn
 
-        self.SNKj = pyo.Expression(rule=_SNKj, doc="Kjeldahl nitrogen")
+        self.TKN = pyo.Expression(rule=_TKN, doc="Kjeldahl nitrogen")
 
         def _SNOX(self):
             snox = self.conc_mass_comp["S_NO3"]
