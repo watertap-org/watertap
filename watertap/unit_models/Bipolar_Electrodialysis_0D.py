@@ -195,15 +195,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "operation_mode",
-        ConfigValue(
-            default=ElectricalOperationMode.Constant_Current,
-            domain=In(ElectricalOperationMode),
-            description="The electrical operation mode. To be selected between Constant Current and Constant Voltage",
-        ),
-    )
-
-    CONFIG.declare(
         "limiting_current_density_method_bpem",
         ConfigValue(
             default=LimitingCurrentDensitybpemMethod.InitialValue,
@@ -254,20 +245,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
         ConfigValue(
             default=0.5,
             description="Limiting current density data input for bipolar membrane",
-        ),
-    )
-    CONFIG.declare(
-        "salt_input_cem",
-        ConfigValue(
-            default=100,
-            description="Specified salt concentration on acid (C.E.M side) channel of the bipolar membrane",
-        ),
-    )
-    CONFIG.declare(
-        "salt_input_aem",
-        ConfigValue(
-            default=100,
-            description="Specified salt concentration on base (A.E.M side) channel of the bipolar membrane",
         ),
     )
 
