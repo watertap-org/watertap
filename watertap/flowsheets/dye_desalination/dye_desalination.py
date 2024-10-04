@@ -1575,30 +1575,6 @@ def display_costing(m):
 
     print(f"Specific energy intensity: {sec:.3f} kWh/m3 feed")
 
-    # ro_elec = value(m.fs.ro_costing.aggregate_flow_costs["electricity"])
-    # zo_elec = value(m.fs.zo_costing.aggregate_flow_costs["electricity"])
-    #
-    # print(f"RO Electricity: {ro_elec}")
-    # print(f"ZO Electricity: {zo_elec}")
-    #
-    # ro_vopex = value(m.fs.ro_costing.total_variable_operating_cost)
-    # zo_vopex = value(m.fs.zo_costing.total_variable_operating_cost)
-    #
-    # print(f"RO VOPEX: {ro_vopex}")
-    # print(f"ZO VOPEX: {zo_vopex}")
-    #
-    # ro_fopex = value(m.fs.ro_costing.total_fixed_operating_cost)
-    # zo_fopex = value(m.fs.zo_costing.total_fixed_operating_cost)
-    #
-    # print(f"RO FOPEX: {ro_fopex}")
-    # print(f"ZO FOPEX: {zo_fopex}")
-
-    # ro_mlc = value(m.fs.ro_costing.maintenance_labor_chemical_operating_cost)
-    # zo_mlc = value(m.fs.zo_costing.maintenance_labor_chemical_operating_cost)
-    #
-    # print(f"RO MLC: {ro_mlc}")
-    # print(f"ZO MLC: {zo_mlc}")
-
 
 if __name__ == "__main__":
     model, results = main(
