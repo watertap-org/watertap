@@ -1,0 +1,59 @@
+{
+   "feed": [
+      "properties[0].flow_vol_phase[Liq]",
+      "properties[0].conc_mass_phase_comp[Liq,NaCl]"
+   ],
+   "P1": [
+      "control_volume.properties_in[0].pressure",
+      "control_volume.properties_out[0].pressure",
+      "control_volume.properties_out[0].flow_vol_phase[Liq]"
+   ],
+   "P2": [
+      "control_volume.properties_in[0].pressure",
+      "control_volume.properties_out[0].pressure",
+      "control_volume.properties_out[0].flow_vol_phase[Liq]"
+   ],
+   "M1": [
+      "inlet_1_state[0].flow_vol_phase[Liq]",
+      "inlet_1_state[0].conc_mass_phase_comp[Liq,NaCl]",
+      "inlet_2_state[0].flow_vol_phase[Liq]",
+      "inlet_2_state[0].conc_mass_phase_comp[Liq,NaCl]",
+      "mixed_state[0].flow_vol_phase[Liq]",
+      "mixed_state[0].conc_mass_phase_comp[Liq,NaCl]",
+      "mixed_state[0].pressure"
+   ],
+   "RO": [
+      "area",
+      "length",
+      "width",
+      "A_comp[0,H2O]",
+      "B_comp[0,NaCl]",
+      "feed_side.channel_height",
+      "feed_side.spacer_porosity",
+      "feed_side.properties_in[0].flow_vol_phase[Liq]",
+      "feed_side.properties_out[0].flow_vol_phase[Liq]",
+      "feed_side.properties_in[0].conc_mass_phase_comp[Liq,NaCl]",
+      "feed_side.properties_out[0].conc_mass_phase_comp[Liq,NaCl]",
+      "mixed_permeate[0].flow_vol_phase[Liq]",
+      "mixed_permeate[0].conc_mass_phase_comp[Liq,NaCl]",
+      "recovery_vol_phase[0,Liq]",
+      "feed_side.velocity[0,0]",
+      "rejection_phase_comp[0,Liq,NaCl]"
+   ],
+   "costing": [
+      "aggregate_capital_cost",
+      "aggregate_fixed_operating_cost",
+      "aggregate_variable_operating_cost",
+      "aggregate_flow_electricity",
+      "aggregate_flow_costs[electricity]",
+      "aggregate_direct_capital_cost",
+      "total_capital_cost",
+      "total_operating_cost",
+      "maintenance_labor_chemical_operating_cost",
+      "total_fixed_operating_cost",
+      "total_variable_operating_cost",
+      "total_annualized_cost",
+      "LCOW",
+      "SEC"
+   ]
+}
