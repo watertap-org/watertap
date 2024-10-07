@@ -70,6 +70,10 @@ def get_variable_pairs(t1, t2):
             t2.fs.recirc.properties[0].flow_mass_phase_comp["Liq", "H2O"],
             t1.fs.disposal.properties[0].flow_mass_phase_comp["Liq", "H2O"],
         ),
+        # (
+        #     t2.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"],
+        #     t1.fs.feed.properties[0].flow_vol_phase["Liq"],
+        # ),
         (
             t2.fs.recirc.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
             t1.fs.disposal.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
@@ -83,7 +87,6 @@ def get_variable_pairs(t1, t2):
 
 
 class CCRO:
-
     """
     CCRO multiperiod model for validation and comparison against dynamic version.
 
@@ -100,13 +103,13 @@ class CCRO:
         self,
         feed_conc=None,  # feed concentration is constant
         feed_flow=None,  # feed flow rate is constant
-        reject_conc_start=None, # L/min
-        reject_flow=None, # L/min
+        reject_conc_start=None,  # L/min
+        reject_flow=None,  # L/min
         water_recovery=None,
         n_time_points=3,
-        temperature_start=None, # degC
-        p1_pressure_start=None, # psi
-        p2_pressure_start=None, # psi
+        temperature_start=None,  # degC
+        p1_pressure_start=None,  # psi
+        p2_pressure_start=None,  # psi
         p1_eff=0.8,
         p2_eff=0.8,
         rho=1000,
@@ -486,16 +489,24 @@ class CCRO:
         """
         if m is None:
             m = self.m
-        m.fs.feed_flow_vol_water.unfix()
-        m.fs.feed_flow_mass_water.unfix()
-        m.fs.RO.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-            self.inlet_flow_mass_water
-        )
+        # m.fs.feed_flow_vol_water.unfix()
+        # m.fs.feed_flow_mass_water.unfix()
+        # m.fs.RO.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        #     self.inlet_flow_mass_water
+        # )
         m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+        # m.fs.recov_constr = Constraint(expr=m.fs.RO.recovery_vol_phase[0, "Liq"] >= self.water_recovery)
+        # m.fs.eq_flow_eq = Constraint(
+        #     expr=m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"]
+        #     == m.fs.feed.properties[0].flow_vol_phase["Liq"]
+        # )
         m.fs.P1.control_volume.properties_out[0].pressure.unfix()
         m.fs.P2.control_volume.properties_out[0].pressure.unfix()
 
         if time_idx > 0:
+            # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+            # m.fs.P1.control_volume.properties_out[0].pressure.unfix()
+            # m.fs.P2.control_volume.properties_out[0].pressure.unfix()
             m.fs.recirc.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
             m.fs.recirc.properties[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
             m.fs.recirc.properties[0].pressure.unfix()
