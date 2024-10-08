@@ -5,6 +5,7 @@ from idaes.core.solvers import petsc
 import idaes.core.util.scaling as iscale
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.initialization import propagate_state
 from watertap.core.solvers import get_solver
 from pyomo.network import Arc
 
@@ -55,7 +56,7 @@ def main():
     # build, set, and initialize
     m = build()
     set_operating_conditions(m)
-    initialize_system(m, solver=solver)
+    initialize_system(m)
 
     assert_optimal_termination(solve(m, solver=solver))
 
@@ -84,6 +85,7 @@ def build():
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.mixer = Mixer(
         property_package=m.fs.properties,
+        has_holdup=False,
         momentum_mixing_type=MomentumMixingType.equality,
         inlet_list=["feed", "recycle"],
     )
@@ -105,12 +107,12 @@ def build():
     )
 
     # connections
-    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-    m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.mixer.feed)
-    m.fs.s03 = Arc(source=m.fs.mixer.outlet, destination=m.fs.RO.inlet)
-    m.fs.s04 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-    m.fs.s05 = Arc(source=m.fs.RO.retentate, destination=m.fs.P2.inlet)
-    m.fs.s06 = Arc(source=m.fs.P2.outlet, destination=m.fs.mixer.recycle)
+    m.fs.s1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+    m.fs.s2 = Arc(source=m.fs.P1.outlet, destination=m.fs.mixer.feed)
+    m.fs.s3 = Arc(source=m.fs.mixer.outlet, destination=m.fs.RO.inlet)
+    m.fs.s4 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+    m.fs.s5 = Arc(source=m.fs.RO.retentate, destination=m.fs.P2.inlet)
+    m.fs.s6 = Arc(source=m.fs.P2.outlet, destination=m.fs.mixer.recycle)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -185,7 +187,7 @@ def set_operating_conditions(
     m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
     # num_time_points = 2
     # time_set = np.linspace(0, 1400, num_time_points+1)
-    m.fs.P1.control_volume.properties_out[0].pressure.fix(250 * pyunits.psi)
+    m.fs.P1.control_volume.properties_out[0].pressure.fix(275 * pyunits.psi)
     # for i in range(len(time_set+1)):
     #     m.fs.P1.control_volume.properties_out[time_set[i]].pressure.fix(
     #         (250 + 1400/num_time_points * 1/7 * i) * 6895
@@ -289,16 +291,59 @@ def solve_dynamic(m):
     for result in results.results:
         assert_optimal_termination(result)
 
-def initialize_system(m, solver=None):
-    if solver is None:
-        solver = get_solver()
-    optarg = solver.options
+def initialize_mixer(m, guess=True):
+    if guess:
+        recovery_guess = 0.9
+        m.fs.mixer.recycle_state[0.0].flow_mass_phase_comp["Liq", "H2O"].fix(
+            (1 - recovery_guess) * 0.9985
+        )
+        m.fs.mixer.recycle_state[0.0].flow_mass_phase_comp["Liq", "NaCl"].fix(
+            0.0015 / (1 - recovery_guess)
+        )
+    m.fs.mixer.initialize()
+    m.fs.mixer.recycle_state[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+    m.fs.mixer.recycle_state[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
 
-    # ---initialize RO---
-    m.fs.RO.initialize(optarg=optarg)
+def do_forward_initialization_pass(m, pass_num=1):
+    # initialize unit by unit
+    m.fs.feed.initialize()
+    propagate_state(m.fs.s1)
 
-    # ---initialize feed block---
-    m.fs.feed.initialize(optarg=optarg)
+    # m.fs.product.initialize()
+    # propagate_state(m.fs.s5)
+
+    m.fs.P1.outlet.pressure.fix(50e5)
+    m.fs.P1.initialize()
+    m.fs.P1.outlet.pressure.unfix()
+    propagate_state(m.fs.s2)
+
+    if pass_num > 0:
+        m.fs.M1.initialize()
+    else:
+        initialize_mixer(m)
+    m.fs.mixer.initialize()
+    propagate_state(m.fs.s3)
+
+    m.fs.RO.inlet.pressure.fix(20 * 1e5)
+    m.fs.RO.initialize()
+    m.fs.RO.inlet.pressure.unfix()
+    
+    propagate_state(m.fs.s4)
+    propagate_state(m.fs.s5)
+
+    m.fs.P2.initialize()
+    propagate_state(m.fs.s6)
+
+    m.fs.product.initialize()
+    propagate_state(m.fs.s5)
+
+
+def initialize_system(m):
+    # initialize unit by unit
+    for idx, init_pass in enumerate(range(1)):
+        print(f"\n\nINITIALIZATION PASS {idx+1}\n\n")
+        do_forward_initialization_pass(m, pass_num=idx)
+        print_results(m)
 
 if __name__ == "__main__":
     m = main()
