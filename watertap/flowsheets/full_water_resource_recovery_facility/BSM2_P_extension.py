@@ -759,20 +759,12 @@ def add_effluent_violations(m, bio_P=False):
         expr=m.fs.Treated.properties[0].TSS <= m.fs.TSS_max
     )
 
-    # @m.fs.Constraint(m.fs.time)
-    # def eq_TSS_max(self, t):
-    #     return m.fs.Treated.properties[0].TSS <= m.fs.TSS_max
-
     m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
     m.fs.COD_max.fix()
 
     m.fs.eq_cod_max = pyo.Constraint(
         expr=m.fs.Treated.properties[0].COD <= m.fs.COD_max
     )
-
-    # @m.fs.Constraint(m.fs.time)
-    # def eq_COD_max(self, t):
-    #     return m.fs.Treated.properties[0].COD <= m.fs.COD_max
 
     m.fs.total_N_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
     m.fs.total_N_max.fix()
@@ -782,13 +774,6 @@ def add_effluent_violations(m, bio_P=False):
         <= m.fs.total_N_max
     )
 
-    # @m.fs.Constraint(m.fs.time)
-    # def eq_total_N_max(self, t):
-    #     return (
-    #         m.fs.Treated.properties[0].TKN + m.fs.Treated.properties[0].SNOX
-    #         <= m.fs.total_N_max
-    #     )
-
     m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
     m.fs.BOD5_max.fix()
 
@@ -796,26 +781,11 @@ def add_effluent_violations(m, bio_P=False):
         expr=m.fs.Treated.properties[0].BOD5["effluent"] <= m.fs.BOD5_max
     )
 
-    # @m.fs.Constraint(m.fs.time)
-    # def eq_BOD5_max(self, t):
-    #     return m.fs.Treated.properties[0].BOD5["effluent"] <= m.fs.BOD5_max
-
-    # m.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
-    # m.fs.total_P_max.fix()
-    #
-    # @m.fs.Constraint(m.fs.time)
-    # def eq_total_P_max(self, t):
-    #     return (
-    #         m.fs.Treated.properties[0].SP_organic
-    #         + m.fs.Treated.properties[0].SP_inorganic
-    #         <= m.fs.total_P_max
-    #     )
-    # TODO: Play around with bio_P=True scaling factors
     if bio_P:
         iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e2)
         iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e0)
-        iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1e2)
-        iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e0)
+        iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1e1)
+        iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e3)
     else:
         iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e1)
         iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e1)
