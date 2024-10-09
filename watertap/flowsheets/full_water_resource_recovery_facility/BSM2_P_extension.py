@@ -92,6 +92,16 @@ from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
+from idaes.core.util import DiagnosticsToolbox
+
+# from watertap.flowsheets.full_water_resource_recovery_facility.custom_scaling_base import (
+#     CustomScalerBase,
+#     ConstraintScalingScheme,
+# )
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -149,6 +159,10 @@ def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
+
+    dt = DiagnosticsToolbox(m)
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
 
     display_costing(m)
     display_performance_metrics(m)
@@ -792,16 +806,52 @@ def add_effluent_violations(m, bio_P=False):
     #     expr=m.fs.Treated.properties[0].SP_organic + m.fs.Treated.properties[0].SP_inorganic <= m.fs.total_P_max
     # )
 
+    sb = CustomScalerBase()
+
     if bio_P:
+        # sb.scale_constraint_by_nominal_derivative_norm(
+        #     m.fs.eq_tss_max,
+        #     norm=3,
+        #     overwrite=True
+        # )
+        # sb.scale_constraint_by_nominal_derivative_norm(
+        #     m.fs.eq_cod_max,
+        #     norm=3,
+        #     overwrite=True
+        # )
+        # sb.scale_constraint_by_nominal_derivative_norm(
+        #     m.fs.eq_total_N_max,
+        #     norm=3,
+        #     overwrite=True
+        # )
+        # sb.scale_constraint_by_nominal_derivative_norm(
+        #     m.fs.eq_BOD5_max,
+        #     norm=3,
+        #     overwrite=True
+        # )
         iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e2)
         iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e0)
         iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1e1)
         iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e3)
     else:
-        iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e1)
-        iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e1)
-        iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1)
-        iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e2)
+        sb.scale_constraint_by_nominal_value(
+            m.fs.eq_tss_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
+        )
+        sb.scale_constraint_by_nominal_value(
+            m.fs.eq_cod_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
+        )
+        sb.scale_constraint_by_nominal_value(
+            m.fs.eq_total_N_max,
+            scheme=ConstraintScalingScheme.inverseRSS,
+            overwrite=True,
+        )
+        sb.scale_constraint_by_nominal_value(
+            m.fs.eq_BOD5_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
+        )
+        # iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e1)
+        # iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e1)
+        # iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1)
+        # iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e2)
 
 
 def add_costing(m):
