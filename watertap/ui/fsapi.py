@@ -873,9 +873,12 @@ class FlowsheetInterface:
                     exports=self.fs_exp, build_options=self.fs_exp.build_options
                 )
                 result = None
-            elif action_name == Actions.diagram or action_name == Actions.initialize:
+            elif action_name == Actions.diagram:
                 self._actions[action_name] = action_func
                 return
+            elif action_name == Actions.initialize:
+                _log.debug(f"initializing")
+                result = action_func(self.fs_exp.m)
             elif self.fs_exp.obj is None:
                 raise RuntimeError(
                     f"Cannot run any flowsheet action (except "
@@ -891,7 +894,7 @@ class FlowsheetInterface:
                     if not pyo.check_optimal_termination(result):
                         raise RuntimeError(f"Solve failed: {result}")
             # Sync model with exported values
-            if action_name in (Actions.build, Actions.solve):
+            if action_name in (Actions.build, Actions.solve, Actions.initialize):
                 self.export_values()
             return result
 
