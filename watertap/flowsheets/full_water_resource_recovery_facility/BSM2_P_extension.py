@@ -10,11 +10,16 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Flowsheet example full Water Resource Recovery Facility
+Flowsheet example of full Water Resource Recovery Facility
 (WRRF; a.k.a., wastewater treatment plant) with ASM2d and ADM1 with P extension.
 
 The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
 but comprises different specifications for default values than BSM2.
+
+Reference:
+X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
+Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
 
 # Some more information about this module
@@ -781,6 +786,15 @@ def add_effluent_violations(m, bio_P=False):
         expr=m.fs.Treated.properties[0].BOD5["effluent"] <= m.fs.BOD5_max
     )
 
+    # Effluent phosphorus constraint is too stringent
+    # This constraint was violated 100% of the operating time in the Flores-Alsina simulation
+    # m.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
+    # m.fs.total_P_max.fix()
+    #
+    # m.fs.eq_total_P_max = pyo.Constraint(
+    #     expr=m.fs.Treated.properties[0].SP_organic + m.fs.Treated.properties[0].SP_inorganic <= m.fs.total_P_max
+    # )
+
     if bio_P:
         iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e2)
         iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e0)
@@ -999,6 +1013,11 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
     )
     print(
+        "Total nitrogen concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TKN + m.fs.FeedWater.properties[0].SNOX),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
+    )
+    print(
         "Organic phosphorus concentration",
         pyo.value(m.fs.FeedWater.properties[0].SP_organic),
         pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
@@ -1007,6 +1026,14 @@ def display_performance_metrics(m):
         "Inorganic phosphorus concentration",
         pyo.value(m.fs.FeedWater.properties[0].SP_inorganic),
         pyo.units.get_units(m.fs.FeedWater.properties[0].SP_inorganic),
+    )
+    print(
+        "Total phosphorus concentration",
+        pyo.value(
+            m.fs.FeedWater.properties[0].SP_organic
+            + m.fs.FeedWater.properties[0].SP_inorganic
+        ),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
     )
 
     print("---- Effluent Metrics----")
@@ -1061,7 +1088,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
