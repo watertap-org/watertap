@@ -715,7 +715,7 @@ class FlowsheetInterface:
             **kwargs: User-defined values
 
         Returns:
-            Return image file name if get_diagram function is callable. Otherwise, return none
+            Return value of the underlying initialization function. Otherwise, return none
         """
         if self.get_action(Actions.initialize) is not None:
             return self.run_action(Actions.initialize, *args, **kwargs)
