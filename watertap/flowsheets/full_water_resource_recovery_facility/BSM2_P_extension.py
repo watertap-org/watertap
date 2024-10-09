@@ -97,7 +97,7 @@ from watertap.costing.unit_models.clarifier import (
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=False, reactor_volume_equalities=False):
+def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
 
@@ -135,11 +135,12 @@ def main(bio_P=False, reactor_volume_equalities=False):
         fail_flag=True,
     )
 
-    # Re-solve with effluent violation constraints
-    setup_optimization(
-        m, reactor_volume_equalities=reactor_volume_equalities, bio_P=bio_P
-    )
-    results = solve(m)
+    if has_effluent_constraints:
+        # Re-solve with effluent violation constraints
+        setup_optimization(
+            m, reactor_volume_equalities=reactor_volume_equalities, bio_P=bio_P
+        )
+        results = solve(m)
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -724,10 +725,6 @@ def setup_optimization(m, reactor_volume_equalities=False, bio_P=False):
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
 
-    # m.fs.R5.injection[:, :, :].unfix()
-    # m.fs.R6.injection[:, :, :].unfix()
-    # m.fs.R7.injection[:, :, :].unfix()
-
     # Unfix fraction of outflow from reactor 7 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].unfix()
     # m.fs.SP1.split_fraction[:, "underflow"].setlb(0.45)
@@ -1088,7 +1085,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=False, has_effluent_constraints=True)
 
     stream_table = create_stream_table_dataframe(
         {
