@@ -707,7 +707,7 @@ class FlowsheetInterface:
             return self.run_action(Actions.diagram, **kwargs)
         else:
             return None
-        
+
     def initialize(self, *args, **kwargs):
         """Run initialize function.
 
