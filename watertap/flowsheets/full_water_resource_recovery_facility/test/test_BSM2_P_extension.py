@@ -25,6 +25,7 @@ from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.scaling.scaling_base import ScalerBase
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
@@ -225,7 +226,7 @@ class TestFullFlowsheetBioPTrue:
     @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, res = main(bio_P=True)
+        m, res = main(bio_P=True, has_effluent_constraints=False)
         m.results = res
         return m
 
