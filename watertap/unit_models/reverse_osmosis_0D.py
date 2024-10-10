@@ -51,8 +51,8 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
     def _add_feed_side_membrane_channel_and_geometry(self):
         # Build membrane channel control volume
         self.feed_side = MembraneChannel0DBlock(
-            dynamic=False,
-            has_holdup=False,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
