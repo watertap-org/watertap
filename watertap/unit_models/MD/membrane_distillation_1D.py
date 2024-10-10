@@ -40,6 +40,7 @@ from .MD_channel_base import (
 from .MD_channel_1D import MDChannel1DBlock
 from .membrane_distillation_base import (
     MembraneDistillationBaseData,
+    MDconfigurationType,
 )
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
@@ -358,8 +359,30 @@ see property package for documentation.}""",
 
     CONFIG.declare("hot_ch", _CONFIG_Template(doc="hot channel config arguments"))
     CONFIG.declare("cold_ch", _CONFIG_Template(doc="cold channel config arguments"))
+    CONFIG.declare("gap_ch", _CONFIG_Template(doc="cold channel config arguments"))
 
     # Common config args for both sides
+
+    CONFIG.declare(
+        "MD_configuration_Type",
+        ConfigValue(
+            default=MDconfigurationType.DCMD,
+            domain=In(MDconfigurationType),
+            description="Options for selecting membrane distillation process configurations",
+            doc="""
+            Options for selecting membrane distillation process configurations
+         **default** - ``TemperaturePolarizationType.calculated``
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``MDconfigurationType.DCMD``", "Direct Contact Membrane Distillation"
+            "``MDconfigurationType.VMD``", "Vacuum Membrane Distillation"
+            "``MDconfigurationType.PGMD_CGMD``", "Permeate Gap or Coductive Gap Membrane Distillation"
+            "``MDconfigurationType.AGMD``", "Air Gap Membrane Distillation"
+        """,
+        ),
+    )
 
     CONFIG.declare(
         "area_definition",
@@ -485,13 +508,31 @@ see property package for documentation.}""",
         def eq_connect_mass_transfer(b, t, x, p, j):
 
             if p == "Liq":
-                return (
-                    b.cold_ch.mass_transfer_term[t, x, p, j]
-                    == -b.hot_ch.mass_transfer_term[t, x, p, j]
-                )
+                if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                    return (
+                        b.cold_ch.mass_transfer_term[t, x, p, j]
+                        == -b.hot_ch.mass_transfer_term[t, x, p, j]
+                    )
+                elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                    return (
+                        b.gap_ch.mass_transfer_term[t, x, "Liq", "H2O"]
+                        == -b.hot_ch.mass_transfer_term[t, x, "Liq", "H2O"]
+                    )
+                elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                    # b.cold_ch.mass_transfer_term[t, x, "Liq", j].fix(0)
+                    return Constraint.Skip
             else:
-                b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
-                return Constraint.Skip
+                if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                    b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
+                    return Constraint.Skip
+                elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                    b.gap_ch.mass_transfer_term[t, x, p, j].fix(0)
+                    return Constraint.Skip
+                elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                    return (
+                        b.cold_ch.mass_transfer_term[t, x, p, j]
+                        == -b.hot_ch.mass_transfer_term[t, x, "Liq", j]
+                    )
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -529,7 +570,30 @@ see property package for documentation.}""",
             doc="Conductive heat transfer to cold channel",
         )
         def eq_conductive_heat_transfer_cold(b, t, x):
-            return b.cold_ch.heat[t, x] == -b.hot_ch.heat[t, x]
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return b.cold_ch.heat[t, x] == -b.hot_ch.heat[t, x]
+            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.cold_ch.heat[t, x]
+                    == -b.hot_ch.heat[t, x]
+                    - b.hot_ch.enthalpy_transfer[t, x]
+                    - b.gap_ch.enthalpy_transfer[t, x]
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="Connecting the cold channel conductive heat transfer to conductive heat across the gap",
+        )
+        def eq_conductive_heat_transfer_gap(b, t, x):
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.cold_ch.heat[t, x] == b.flux_conduction_heat_gap[t, x] * b.width
+                )
+            else:
+                return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -545,4 +609,17 @@ see property package for documentation.}""",
             doc="Enthalpy heat transfer to the cold channel",
         )
         def eq_enthalpy_transfer_cold(b, t, x):
-            return b.cold_ch.enthalpy_transfer[t, x] == b.width * b.flux_enth_cold[t, x]
+            if self.config.MD_configuration_Type in [
+                MDconfigurationType.DCMD,
+                MDconfigurationType.VMD,
+            ]:
+                return (
+                    b.cold_ch.enthalpy_transfer[t, x]
+                    == b.width * b.flux_enth_cold[t, x]
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.gap_ch.enthalpy_transfer[t, x] == b.width * b.flux_enth_cold[t, x]
+                )
+            else:
+                return Constraint.Skip

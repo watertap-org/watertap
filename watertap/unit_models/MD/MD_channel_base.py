@@ -121,9 +121,14 @@ class MDChannelMixin:
             doc="Pressure at interface",
         )
         def eq_equal_pressure_interface(b, t, x):
-            if b._skip_element(x):
+            if hasattr(self, "properties_interface"):
+                if b._skip_element(x):
+                    return Constraint.Skip
+                return (
+                    b.properties_interface[t, x].pressure == b.properties[t, x].pressure
+                )
+            else:
                 return Constraint.Skip
-            return b.properties_interface[t, x].pressure == b.properties[t, x].pressure
 
         if has_pressure_change:
             self._add_pressure_change(pressure_change_type=pressure_change_type)
@@ -146,12 +151,13 @@ class MDChannelMixin:
                 doc="No temperature polarization",
             )
             def eq_no_temp_pol(b, t, x):
-                if b._skip_element(x):
-                    return Constraint.Skip
-                return (
-                    b.properties_interface[t, x].temperature
-                    == b.properties[t, x].temperature
-                )
+                if hasattr(self, "properties_interface"):
+                    if b._skip_element(x):
+                        return Constraint.Skip
+                    return (
+                        b.properties_interface[t, x].temperature
+                        == b.properties[t, x].temperature
+                    )
 
             return self.eq_no_temp_pol
 
