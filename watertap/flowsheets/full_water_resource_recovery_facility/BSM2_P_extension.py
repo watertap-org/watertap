@@ -50,6 +50,11 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
+
 from watertap.unit_models.cstr_injection import CSTR_Injection
 from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
@@ -92,15 +97,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
-from idaes.core.util import DiagnosticsToolbox
-
-from idaes.core.scaling.custom_scaler_base import (
-    CustomScalerBase,
-    ConstraintScalingScheme,
-)
-
-# from idaes.core.scaling.scaling_base import ScalerBase
-# from idaes.core.scaling.autoscaling import AutoScaler
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -158,10 +154,6 @@ def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
-
-    dt = DiagnosticsToolbox(m)
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
 
     display_costing(m)
     display_performance_metrics(m)
@@ -806,28 +798,26 @@ def add_effluent_violations(m, bio_P=False):
     # )
 
     csb = CustomScalerBase()
-    sb = ScalerBase()
-    auto = AutoScaler()
 
     if bio_P:
         # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_tss_max,
-        #     scheme=ConstraintScalingScheme.inverseRSS,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
         #     overwrite=True
         # )
         # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_cod_max,
-        #     scheme=ConstraintScalingScheme.inverseRSS,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
         #     overwrite=True
         # )
         # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_total_N_max,
-        #     scheme=ConstraintScalingScheme.inverseRSS,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
         #     overwrite=True
         # )
         # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_BOD5_max,
-        #     scheme=ConstraintScalingScheme.inverseRSS,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
         #     overwrite=True
         # )
         # -------------------------------------------------------------------------
