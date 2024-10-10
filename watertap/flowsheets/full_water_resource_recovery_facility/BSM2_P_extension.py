@@ -10,11 +10,16 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Flowsheet example full Water Resource Recovery Facility
+Flowsheet example of full Water Resource Recovery Facility
 (WRRF; a.k.a., wastewater treatment plant) with ASM2d and ADM1 with P extension.
 
 The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
 but comprises different specifications for default values than BSM2.
+
+Reference:
+X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
+Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
 
 # Some more information about this module
@@ -45,6 +50,11 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
+
 from watertap.unit_models.cstr_injection import CSTR_Injection
 from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
@@ -79,7 +89,6 @@ from watertap.unit_models.thickener import (
 
 from watertap.core.util.initialization import (
     check_solve,
-    assert_degrees_of_freedom,
     interval_initializer,
 )
 
@@ -93,7 +102,7 @@ from watertap.costing.unit_models.clarifier import (
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=False):
+def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
 
@@ -131,12 +140,17 @@ def main(bio_P=False):
         fail_flag=True,
     )
 
+    if has_effluent_constraints:
+        # Re-solve with effluent violation constraints
+        setup_optimization(
+            m, reactor_volume_equalities=reactor_volume_equalities, bio_P=bio_P
+        )
+        results = solve(m)
+
     add_costing(m)
     m.fs.costing.initialize()
 
     interval_initializer(m.fs.costing)
-
-    assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
@@ -697,6 +711,166 @@ def solve(m, solver=None):
     return results
 
 
+def setup_optimization(m, reactor_volume_equalities=False, bio_P=False):
+
+    for i in ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]:
+        reactor = getattr(m.fs, i)
+        reactor.volume.unfix()
+        reactor.volume.setlb(1)
+        # reactor.volume.setub(2000)
+    if reactor_volume_equalities:
+        add_reactor_volume_equalities(m)
+
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+
+    # Unfix fraction of outflow from reactor 7 that goes to recycle
+    m.fs.SP1.split_fraction[:, "underflow"].unfix()
+    # m.fs.SP1.split_fraction[:, "underflow"].setlb(0.45)
+    m.fs.SP2.split_fraction[:, "recycle"].unfix()
+
+    add_effluent_violations(m, bio_P=bio_P)
+
+
+def add_reactor_volume_equalities(m):
+    # TODO: These constraints were applied for initial optimization of AS reactor volumes; otherwise, volumes drive towards lower bound. Revisit
+    @m.fs.Constraint(m.fs.time)
+    def Vol_1(self, t):
+        return m.fs.R1.volume[0] == m.fs.R2.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_2(self, t):
+        return m.fs.R3.volume[0] == m.fs.R4.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_3(self, t):
+        return m.fs.R5.volume[0] == m.fs.R6.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_4(self, t):
+        return m.fs.R7.volume[0] >= m.fs.R6.volume[0] * 0.5
+
+
+def add_effluent_violations(m, bio_P=False):
+
+    m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.TSS_max.fix()
+
+    m.fs.eq_tss_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].TSS <= m.fs.TSS_max
+    )
+
+    m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.COD_max.fix()
+
+    m.fs.eq_cod_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].COD <= m.fs.COD_max
+    )
+
+    m.fs.total_N_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.total_N_max.fix()
+
+    m.fs.eq_total_N_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].TKN + m.fs.Treated.properties[0].SNOX
+        <= m.fs.total_N_max
+    )
+
+    m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.BOD5_max.fix()
+
+    m.fs.eq_BOD5_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].BOD5["effluent"] <= m.fs.BOD5_max
+    )
+
+    # Effluent phosphorus constraint is too stringent
+    # This constraint was violated 100% of the operating time in the Flores-Alsina simulation
+    # m.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
+    # m.fs.total_P_max.fix()
+    #
+    # m.fs.eq_total_P_max = pyo.Constraint(
+    #     expr=m.fs.Treated.properties[0].SP_organic + m.fs.Treated.properties[0].SP_inorganic <= m.fs.total_P_max
+    # )
+
+    csb = CustomScalerBase()
+
+    if bio_P:
+        # csb.scale_constraint_by_nominal_value(
+        #     m.fs.eq_tss_max,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
+        #     overwrite=True
+        # )
+        # csb.scale_constraint_by_nominal_value(
+        #     m.fs.eq_cod_max,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
+        #     overwrite=True
+        # )
+        # csb.scale_constraint_by_nominal_value(
+        #     m.fs.eq_total_N_max,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
+        #     overwrite=True
+        # )
+        # csb.scale_constraint_by_nominal_value(
+        #     m.fs.eq_BOD5_max,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
+        #     overwrite=True
+        # )
+        # -------------------------------------------------------------------------
+
+        iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e2)
+        iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e0)
+        iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1e1)
+        iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e3)
+    else:
+        csb.scale_constraint_by_nominal_value(
+            m.fs.eq_tss_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
+        )
+        csb.scale_constraint_by_nominal_value(
+            m.fs.eq_cod_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
+        )
+        csb.scale_constraint_by_nominal_value(
+            m.fs.eq_total_N_max,
+            scheme=ConstraintScalingScheme.inverseRSS,
+            overwrite=True,
+        )
+        csb.scale_constraint_by_nominal_value(
+            m.fs.eq_BOD5_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
+        )
+        # -----------------------------------------------------------------------------------------------
+
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_tss_max,
+        #     scaling_factor=2.4266924637229854,
+        #     overwrite=True
+        # )
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_cod_max,
+        #     scaling_factor=3.1622776601683786,
+        #     overwrite=True
+        # )
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_total_N_max,
+        #     scaling_factor=6.9603734991178206,
+        #     overwrite=True
+        # )
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_BOD5_max,
+        #     scaling_factor=14.907119849998594,
+        #     overwrite=True
+        # )
+        # ------------------------------------------------------------------------------
+
+        # iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e1)
+        # iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e1)
+        # iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1)
+        # iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e2)
+
+
 def add_costing(m):
     m.fs.costing = WaterTAPCosting()
     m.fs.costing.base_currency = pyo.units.USD_2020
@@ -903,6 +1077,11 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
     )
     print(
+        "Total nitrogen concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TKN + m.fs.FeedWater.properties[0].SNOX),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
+    )
+    print(
         "Organic phosphorus concentration",
         pyo.value(m.fs.FeedWater.properties[0].SP_organic),
         pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
@@ -911,6 +1090,14 @@ def display_performance_metrics(m):
         "Inorganic phosphorus concentration",
         pyo.value(m.fs.FeedWater.properties[0].SP_inorganic),
         pyo.units.get_units(m.fs.FeedWater.properties[0].SP_inorganic),
+    )
+    print(
+        "Total phosphorus concentration",
+        pyo.value(
+            m.fs.FeedWater.properties[0].SP_organic
+            + m.fs.FeedWater.properties[0].SP_inorganic
+        ),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
     )
 
     print("---- Effluent Metrics----")
@@ -940,6 +1127,11 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.Treated.properties[0].SNOX),
     )
     print(
+        "Total nitrogen concentration",
+        pyo.value(m.fs.Treated.properties[0].TKN + m.fs.Treated.properties[0].SNOX),
+        pyo.units.get_units(m.fs.Treated.properties[0].SNOX),
+    )
+    print(
         "Organic phosphorus concentration",
         pyo.value(m.fs.Treated.properties[0].SP_organic),
         pyo.units.get_units(m.fs.Treated.properties[0].SP_organic),
@@ -949,10 +1141,18 @@ def display_performance_metrics(m):
         pyo.value(m.fs.Treated.properties[0].SP_inorganic),
         pyo.units.get_units(m.fs.Treated.properties[0].SP_inorganic),
     )
+    print(
+        "Total phosphorus concentration",
+        pyo.value(
+            m.fs.Treated.properties[0].SP_organic
+            + m.fs.Treated.properties[0].SP_inorganic
+        ),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_organic),
+    )
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=False, has_effluent_constraints=True)
 
     stream_table = create_stream_table_dataframe(
         {
