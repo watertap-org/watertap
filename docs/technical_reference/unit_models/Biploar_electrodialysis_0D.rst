@@ -6,7 +6,7 @@ Introduction
 
 Bipolar electrodialysis, an electrochemical separation technology, has primarily been used to generate acids and bases
 from waste salts produced in water purification. By providing in-situ access to valuable raw materials bipolar membranes can
-significantly reduce the total cost of the operation.  This cell stack is shown in Figure 1 with **basate** and **acidate** channels, that produce base and acid
+significantly reduce the total cost of the operation.  This cell stack is shown in Figure 1 with **basic** and **acidic** channels, that produce base and acid
 respectively. More overview of the bipolar
 electrodialysis technology can be found in the *References*.
 
@@ -17,13 +17,13 @@ electrodialysis technology can be found in the *References*.
     Figure 1. Schematic representation of a bipolar electrodialysis unit
 
 
-One bipolar membrane along with the **Acidate** and **Basate** channels can thus be treated as a modelling unit that can
+One bipolar membrane along with the **acidic** and **basic** channels can thus be treated as a modelling unit that can
 multiply to larger-scale systems. The presented bipolar electrodialysis model establishes mathematical descriptions of
 ion and water transport across the membrane along with water splitting. Modelled transfer mechanisms include
 electrical migration, diffusion of ions, osmosis, electroosmosis, and water splitting. The following are the key
 assumptions made:
 
-* The **Acidate** and **Basate** side channels have identical geometry.
+* The **acidic** and **basic** side channels have identical geometry.
 * For each channel, component fluxes are uniform in the bulk solutions (the 0-dimensional assumption)  and are set as the average of inlet and outlet of each channel.
 * Steady state: all variables are independent on time.
 * Co-current flow operation. 
@@ -35,20 +35,20 @@ assumptions made:
 Control Volumes
 ---------------
 
-This model has two control volumes for the acidate and basate channels.
+This model has two control volumes for the acidic and basic channels.
 
-* **Acidate** channel
-* **Basate** side channel
+* **acidic** channel
+* **basic** side channel
 
 Ports
 -----
 
 On the two control volumes, this model provides four ports (Pyomo notation in parenthesis):
 
-* inlet_acidate (inlet)
-* outlet_acidate (outlet)
-* inlet_basate (inlet)
-* outlet_basate (outlet)
+* inlet_acidic (inlet)
+* outlet_acidic (outlet)
+* inlet_basic (inlet)
+* outlet_basic (outlet)
 
 Sets
 ----
@@ -89,12 +89,12 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
 .. csv-table:: **Table 2.** List of Degree of Freedom (DOF)
    :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number \ :sup:`1`"
 
-   "Temperature, inlet_acidate", ":math:`T^acidate`", "temperature", "None", ":math:`K`", 1
-   "Temperature, inlet_basate", ":math:`T^basate`", "temperature", "None", ":math:`K`", 1
-   "Pressure, inlet_acidate",":math:`p^acidate`", "temperature", "None", ":math:`Pa`", 1
-   "Pressure, inlet_basate",":math:`p^basate`", "temperature", "None", ":math:`Pa`", 1
-   "Component molar flow rate, inlet_acidate", ":math:`N_{j,in}^{acidate}`", "flow_mol_phase_comp", "[t], ['Liq'], ['H\ :sub:`2`\O', 'Na\ :sup:`+`', '\Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']", ":math:`mol \, s^{-1}`", 5
-   "Component molar flow rate, inlet_basate", ":math:`N_{j, in}^{basate}`", "flow_mol_phase_comp", "[t], ['Liq'], ['H\ :sub:`2`\O', 'Na\ :sup:`+`', '\Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']", ":math:`mol \, s^{-1}`", 5
+   "Temperature, inlet_acidic", ":math:`T^acidic`", "temperature", "None", ":math:`K`", 1
+   "Temperature, inlet_basic", ":math:`T^basic`", "temperature", "None", ":math:`K`", 1
+   "Pressure, inlet_acidic",":math:`p^acidic`", "temperature", "None", ":math:`Pa`", 1
+   "Pressure, inlet_basic",":math:`p^basic`", "temperature", "None", ":math:`Pa`", 1
+   "Component molar flow rate, inlet_acidic", ":math:`N_{j,in}^{acidic}`", "flow_mol_phase_comp", "[t], ['Liq'], ['H\ :sub:`2`\O', 'Na\ :sup:`+`', '\Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']", ":math:`mol \, s^{-1}`", 5
+   "Component molar flow rate, inlet_basic", ":math:`N_{j, in}^{basic}`", "flow_mol_phase_comp", "[t], ['Liq'], ['H\ :sub:`2`\O', 'Na\ :sup:`+`', '\Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']", ":math:`mol \, s^{-1}`", 5
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['bpem']", "dimensionless", 1
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['bpem']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 1
    "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`I`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
@@ -103,7 +103,7 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
    "Shadow factor", ":math:`\xi`", "shadow_factor", "None", "dimensionless", 1
    "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:`m` ", 1
-   "Membrane areal resistance", ":math:`r`", "membrane_surface_resistance", "['acidate', 'basate']", ":math:`\Omega m^2`", 2
+   "Membrane areal resistance", ":math:`r`", "membrane_surface_resistance", "['acidic', 'basic']", ":math:`\Omega m^2`", 2
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
    "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['bpem']", ":math:`m`", 1
@@ -158,14 +158,14 @@ The Mass balance equations are summarized in **Table3**. Further details on thes
 .. csv-table:: **Table 3** Mass Balance Equations
    :header: "Description", "Equation", "Index set"
 
-   "Component mass balance", ":math:`N_{j, in}^{acidate \: or\:  basate}-N_{j, out}^{acidate\: or\:  basate}+J_j^{acidate\: or\:  basate} bl=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-} '\right]`"
-   "mass transfer flux, basate, solute", ":math:`J_j^{C} = -t_j^{bpem}\frac{\xi i_{lim}}{ z_j F}`", ":math:`j \in \left['{Na_+} ', '{Cl^-} '\right]`"
-   "mass transfer flux, acidate, Water ions", ":math:`J_j^{C} = \frac{i - i_{lim}}{ z_j F}`", ":math:`j \in \left['{H^+} '\right]`"
-   "mass transfer flux, acidate, Water ions", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{OH^-} '\right]`"
-   "mass transfer flux, basate, Water ions", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{H^+} '\right]`"
-   "mass transfer flux, basate, Water ions", ":math:`J_j^{C} = -\frac{i - i_{lim}}{ z_j F}`", ":math:`j \in \left['{OH^-} '\right]`"
-   "mass transfer flux, acidate H\ :sub:`2`\ O", ":math:`J_j^{C} = t_w^{bpem} \left(\frac{i}{F}\right)+\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, basate, H\ :sub:`2`\ O", ":math:`J_j^{C} = -t_w^{bpem} \left(\frac{i}{F}\right)-\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "Component mass balance", ":math:`N_{j, in}^{acidic \: or\:  basic}-N_{j, out}^{acidic\: or\:  basic}+J_j^{acidic\: or\:  basic} bl=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-} '\right]`"
+   "mass transfer flux, basic, solute", ":math:`J_j^{C} = -t_j^{bpem}\frac{\xi i_{lim}}{ z_j F}`", ":math:`j \in \left['{Na_+} ', '{Cl^-} '\right]`"
+   "mass transfer flux, acidic, Water ions", ":math:`J_j^{C} = \frac{i - i_{lim}}{ z_j F}`", ":math:`j \in \left['{H^+} '\right]`"
+   "mass transfer flux, acidic, Water ions", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{OH^-} '\right]`"
+   "mass transfer flux, basic, Water ions", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{H^+} '\right]`"
+   "mass transfer flux, basic, Water ions", ":math:`J_j^{C} = -\frac{i - i_{lim}}{ z_j F}`", ":math:`j \in \left['{OH^-} '\right]`"
+   "mass transfer flux, acidic H\ :sub:`2`\ O", ":math:`J_j^{C} = t_w^{bpem} \left(\frac{i}{F}\right)+\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, basic, H\ :sub:`2`\ O", ":math:`J_j^{C} = -t_w^{bpem} \left(\frac{i}{F}\right)-\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
 
 Overcoming the limiting current corresponds to a potential barrier (:math:`U_{diss}`) gives the relationship :math:`U =  i r_{tot}+ U_{diss}`.
 
@@ -176,14 +176,14 @@ Both the current durrent density and potential barrier must be specified, via
 respectively, in the water splitting mode of operation. They can either be user inputs ``InitialValue``, with ``limiting_current_density_data``
 in :math:`A/m^2` and ``limiting_potential_data`` in volts. There is also an option to have these critical quantities computed. For this ``Empirical`` is chosen.
 
-The limiting current is computed as :math:`i_{lim} = D F (C_{acidate}+C_{basate})^2 / (\sigma \delta)`. The potential barrier
+The limiting current is computed as :math:`i_{lim} = D F (C_{acidic}+C_{basic})^2 / (\sigma \delta)`. The potential barrier
 calculation involves kinetics of water splitting. The rate of proton/hydroxide ion formation per unit volume is given as
 :math:`R_{H^+/OH^-} = [k_2(0)f(E)C_{H_2O}-k_r C_{H^+}C_{OH^-} ]`. A majority of the production occurs within the small
 depletion region :math:`\lambda`, thus the flux is :math:`R_{H^+/OH^-} /\lambda`. When this flux is :math:`0.1 i_{lim}`
 the barrier is assumed to be crossed, and the corresponding :math:`E=E_{crit}=U_{diss} \lambda` determines the potential barrier.
 
 The quantities :math:`C_{H_2 O}, C_{H^+}, C_{OH^-}` are the water proton and hydroxyl concentration in
-:math:`mol\, m^{-3}` and are taken to be constants. :math:`f(E)` is the second Wien effect driven enhanacidateent of the
+:math:`mol\, m^{-3}` and are taken to be constants. :math:`f(E)` is the second Wien effect driven enhanacidicent of the
 dissociation rate under applied electric field. It requires as input temperature and relative permittivity (:math:`\epsilon_r`).
 To close the model :math:`\lambda = E_{crit} \epsilon_0 \epsilon_r / (F \sigma)`
 
@@ -193,8 +193,8 @@ To close the model :math:`\lambda = E_{crit} \epsilon_0 \epsilon_r / (F \sigma)`
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Diffusivity", ":math:`D`", "diffus_mass", "[bpem]", ":math:`m^2 s^{-1}`"
-   "Salt concentration, basate side ", ":math:`C_{basate}`", "salt_conc_basate", "[bpem]",":math:`mol m^{-3}`"
-   "Salt concentration, acidate side ", ":math:`C_{acidate}`", "salt_conc_acidate", "[bpem]",":math:`mol m^{-3}`"
+   "Salt concentration, basic side ", ":math:`C_{basic}`", "salt_conc_basic", "[bpem]",":math:`mol m^{-3}`"
+   "Salt concentration, acidic side ", ":math:`C_{acidic}`", "salt_conc_acidic", "[bpem]",":math:`mol m^{-3}`"
    "Membrane Fixed charge ", ":math:`\sigma`", "membrane_fixed_charge", "[bpem]",":math:`mol m^{-3}`"
    "Dissociation rate constant, zero electric field ", ":math:`k_2(0)`", "kd_zero", "[bpem]",":math:`s^{-1}`"
    "Recombination rate constant ", ":math:`k_r`", "k_r", "[bpem]",":math:`L^1 mol^{-1} s^{-1}`"
@@ -205,10 +205,10 @@ To close the model :math:`\lambda = E_{crit} \epsilon_0 \epsilon_r / (F \sigma)`
 
    "Current density", ":math:`i =  \frac{I}{bl}`"
    "Ohm's Law", ":math:`U =  i r_{tot}`"
-   "Resistance calculation", ":math:`r_{tot}=n\left(r^{acidate}+r^{basate}\right)+r_{el}`"
+   "Resistance calculation", ":math:`r_{tot}=n\left(r^{acidic}+r^{basic}\right)+r_{el}`"
    "Electrical power consumption", ":math:`P=UI`"
    "Water-production-specific power consumption", ":math:`P_Q=\frac{UI}{3.6\times 10^6 nQ_{out}^D}`"
-   "Overall current efficiency", ":math:`I\eta=\sum_{j \in[cation]}{\left[\left(N_{j,in}^basate-N_{j,out}^basate\right)z_j F\right]}`"
+   "Overall current efficiency", ":math:`I\eta=\sum_{j \in[cation]}{\left[\left(N_{j,in}^basic-N_{j,out}^basic\right)z_j F\right]}`"
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
@@ -226,9 +226,9 @@ Thus the fluxes become,
 .. csv-table:: **Table 6** Mass Balance Equations
    :header: "Description", "Equation", "Index set"
 
-   "mass transfer flux, acidate/basate, Water ions", ":math:`J_j^{C} = J_{diss}`", ":math:`j \in \left['{H^+, OH^-} '\right]`"
-   "mass transfer flux, acidate H\ :sub:`2`\ O", ":math:`J_j^{C} = t_w^{bpem} \left(\frac{i}{F}\right)+\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right) -  J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, basate, H\ :sub:`2`\ O", ":math:`J_j^{C} = -t_w^{bpem} \left(\frac{i}{F}\right)-\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right) -  J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, acidic/basic, Water ions", ":math:`J_j^{C} = J_{diss}`", ":math:`j \in \left['{H^+, OH^-} '\right]`"
+   "mass transfer flux, acidic H\ :sub:`2`\ O", ":math:`J_j^{C} = t_w^{bpem} \left(\frac{i}{F}\right)+\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right) -  J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, basic, H\ :sub:`2`\ O", ":math:`J_j^{C} = -t_w^{bpem} \left(\frac{i}{F}\right)-\left(L^{bpem} \right)\left(p_{osm}^CEM-p_{osm}^AEM \right)\left(\frac{\rho_w}{M_w}\right) -  J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
 
 .. csv-table:: **Table 7.** DOF for water splitting with catalyst
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -311,8 +311,8 @@ Nomenclature
    ":math:`j`", "Component index",
    ":math:`in`", "Inlet",
    ":math:`out`", "Outlet",
-   ":math:`acidate`", "Cation exchange side of bipolar membrane",
-   ":math:`basate`", "Anion exchange side of bipolar membrane",
+   ":math:`acidic`", "Cation exchange side of bipolar membrane",
+   ":math:`basic`", "Anion exchange side of bipolar membrane",
 
 Class Documentation
 -------------------

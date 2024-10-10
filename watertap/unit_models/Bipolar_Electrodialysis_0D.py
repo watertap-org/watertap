@@ -514,7 +514,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             bounds=(0, 1000),
             domain=NonNegativeReals,
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
-            doc="Acidate-volume-flow-rate-specific electrical power consumption",
+            doc="acidic-volume-flow-rate-specific electrical power consumption",
         )
         self.recovery_mass_H2O = Var(
             self.flowsheet().time,
@@ -536,13 +536,13 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.kg * pyunits.second**-1,
             doc="Base prodcued",
         )
-        self.velocity_basate = Var(
+        self.velocity_basic = Var(
             self.flowsheet().time,
             initialize=0.01,
             units=pyunits.meter * pyunits.second**-1,
             doc="Linear velocity of flow in the base channel of the bipolar membrane",
         )
-        self.velocity_acidate = Var(
+        self.velocity_acidic = Var(
             self.flowsheet().time,
             initialize=0.01,
             units=pyunits.meter * pyunits.second**-1,
@@ -682,63 +682,63 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
         )
 
         # Build control volume for the base channel of the bipolar channel
-        self.basate = ControlVolume0DBlock(
+        self.basic = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
-        self.basate.add_state_blocks(has_phase_equilibrium=False)
-        self.basate.add_material_balances(
+        self.basic.add_state_blocks(has_phase_equilibrium=False)
+        self.basic.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
-        self.basate.add_energy_balances(
+        self.basic.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_enthalpy_transfer=False,
         )
 
         if self.config.is_isothermal:
-            self.basate.add_isothermal_assumption()
-        self.basate.add_momentum_balances(
+            self.basic.add_isothermal_assumption()
+        self.basic.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change,
         )
         # Build control volume for the acid channel of the bipolar membrane channel
-        self.acidate = ControlVolume0DBlock(
+        self.acidic = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
-        self.acidate.add_state_blocks(has_phase_equilibrium=False)
-        self.acidate.add_material_balances(
+        self.acidic.add_state_blocks(has_phase_equilibrium=False)
+        self.acidic.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
-        self.acidate.add_energy_balances(
+        self.acidic.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_enthalpy_transfer=False,
         )
 
         if self.config.is_isothermal:
-            self.acidate.add_isothermal_assumption()
-        self.acidate.add_momentum_balances(
+            self.acidic.add_isothermal_assumption()
+        self.acidic.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change,
         )
 
-        # den_mass and visc_d in acidate and basate channels are the same
+        # den_mass and visc_d in acidic and basic channels are the same
         add_object_reference(
-            self, "dens_mass", self.acidate.properties_in[0].dens_mass_phase["Liq"]
+            self, "dens_mass", self.acidic.properties_in[0].dens_mass_phase["Liq"]
         )
         add_object_reference(
-            self, "visc_d", self.acidate.properties_in[0].visc_d_phase["Liq"]
+            self, "visc_d", self.acidic.properties_in[0].visc_d_phase["Liq"]
         )
 
         # Add ports (creates inlets and outlets for each channel)
-        self.add_inlet_port(name="inlet_basate", block=self.basate)
-        self.add_outlet_port(name="outlet_basate", block=self.basate)
-        self.add_inlet_port(name="inlet_acidate", block=self.acidate)
-        self.add_outlet_port(name="outlet_acidate", block=self.acidate)
+        self.add_inlet_port(name="inlet_basic", block=self.basic)
+        self.add_outlet_port(name="outlet_basic", block=self.basic)
+        self.add_inlet_port(name="inlet_acidic", block=self.acidic)
+        self.add_outlet_port(name="outlet_acidic", block=self.acidic)
 
         # extension options
         if self.config.has_catalyst == True:
@@ -754,16 +754,16 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 doc="Pressure drop expression as calculated by the pressure drop data, "
                 "base channel of the bipolar membrane.",
             )
-            def eq_deltaP_basate(self, t):
-                return self.basate.deltaP[t] == -self.pressure_drop_total[t]
+            def eq_deltaP_basic(self, t):
+                return self.basic.deltaP[t] == -self.pressure_drop_total[t]
 
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Pressure drop expression as calculated by the pressure drop data,"
                 "  acid channel of the bipolar membrane.",
             )
-            def eq_deltaP_acidate(self, t):
-                return self.acidate.deltaP[t] == -self.pressure_drop_total[t]
+            def eq_deltaP_acidic(self, t):
+                return self.acidic.deltaP[t] == -self.pressure_drop_total[t]
 
         elif self.config.pressure_drop_method == PressureDropMethod.none and (
             not self.config.has_pressure_change
@@ -782,12 +782,12 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             doc="Calculate flow velocity in a single base (A.E.M side) channel of the bipolar membrane channel,"
             " based on the average of inlet and outlet",
         )
-        def eq_get_velocity_basate(self, t):
-            return self.velocity_basate[
+        def eq_get_velocity_basic(self, t):
+            return self.velocity_basic[
                 t
             ] * self.cell_width * self.shadow_factor * self.channel_height * self.spacer_porosity * self.cell_num == 0.5 * (
-                self.basate.properties_in[0].flow_vol_phase["Liq"]
-                + self.basate.properties_out[0].flow_vol_phase["Liq"]
+                self.basic.properties_in[0].flow_vol_phase["Liq"]
+                + self.basic.properties_out[0].flow_vol_phase["Liq"]
             )
 
         @self.Constraint(
@@ -795,12 +795,12 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             doc="Calculate flow velocity in a single acid (C.E.M side) channel of the bipolar membrane channel,"
             " based on the average of inlet and outlet",
         )
-        def eq_get_velocity_acidate(self, t):
-            return self.velocity_acidate[
+        def eq_get_velocity_acidic(self, t):
+            return self.velocity_acidic[
                 t
             ] * self.cell_width * self.shadow_factor * self.channel_height * self.spacer_porosity * self.cell_num == 0.5 * (
-                self.acidate.properties_in[0].flow_vol_phase["Liq"]
-                + self.acidate.properties_out[0].flow_vol_phase["Liq"]
+                self.acidic.properties_in[0].flow_vol_phase["Liq"]
+                + self.acidic.properties_out[0].flow_vol_phase["Liq"]
             )
 
         @self.Constraint(
@@ -894,7 +894,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                         return (
                             Constants.vacuum_electric_permittivity
                             * self.relative_permittivity["bpem"] ** 2
-                            * self.basate.properties_in[t].temperature ** 2
+                            * self.basic.properties_in[t].temperature ** 2
                             * Constants.avogadro_number
                             * Constants.elemental_charge
                         ) / (
@@ -911,7 +911,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     field_generated = (
                         self.elec_field_non_dim[t]
                         * self.relative_permittivity["bpem"]
-                        * self.basate.properties_in[t].temperature ** 2
+                        * self.basic.properties_in[t].temperature ** 2
                         / const
                     )
 
@@ -948,14 +948,14 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 * (
                     0.5**-1
                     * (
-                        self.basate.properties_in[t].elec_cond_phase["Liq"]
-                        + self.basate.properties_out[t].elec_cond_phase["Liq"]
+                        self.basic.properties_in[t].elec_cond_phase["Liq"]
+                        + self.basic.properties_out[t].elec_cond_phase["Liq"]
                     )
                     ** -1
                     + 0.5**-1
                     * (
-                        self.acidate.properties_in[t].elec_cond_phase["Liq"]
-                        + self.acidate.properties_out[t].elec_cond_phase["Liq"]
+                        self.acidic.properties_in[t].elec_cond_phase["Liq"]
+                        + self.acidic.properties_out[t].elec_cond_phase["Liq"]
                     )
                     ** -1
                 )
@@ -1216,8 +1216,8 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 ] == self.water_density / self.config.property_package.mw_comp[j] * (
                     self.water_permeability_membrane["bpem"]
                 ) * (
-                    self.basate.properties_in[t].pressure_osm_phase[p]
-                    - self.acidate.properties_in[t].pressure_osm_phase[p]
+                    self.basic.properties_in[t].pressure_osm_phase[p]
+                    - self.acidic.properties_in[t].pressure_osm_phase[p]
                 )
 
             else:
@@ -1239,8 +1239,8 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 ] == self.water_density / self.config.property_package.mw_comp[j] * (
                     self.water_permeability_membrane["bpem"]
                 ) * (
-                    self.basate.properties_out[t].pressure_osm_phase[p]
-                    - self.acidate.properties_out[t].pressure_osm_phase[p]
+                    self.basic.properties_out[t].pressure_osm_phase[p]
+                    - self.acidic.properties_out[t].pressure_osm_phase[p]
                 )
 
             else:
@@ -1256,9 +1256,9 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.component_list,
             doc="Mass transfer term for the base channel (A.E.M Side) of the bipolar membrane",
         )
-        def eq_mass_transfer_term_basate(self, t, p, j):
+        def eq_mass_transfer_term_basic(self, t, p, j):
             return (
-                self.basate.mass_transfer_term[t, p, j]
+                self.basic.mass_transfer_term[t, p, j]
                 == 0.5
                 * (
                     self.generation_aem_flux_in[t, p, j]
@@ -1279,9 +1279,9 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.component_list,
             doc="Mass transfer term for the acid channel (C.E.M Side) of the bipolar membrane channel",
         )
-        def eq_mass_transfer_term_acidate(self, t, p, j):
+        def eq_mass_transfer_term_acidic(self, t, p, j):
             return (
-                self.acidate.mass_transfer_term[t, p, j]
+                self.acidic.mass_transfer_term[t, p, j]
                 == 0.5
                 * (
                     self.generation_cem_flux_in[t, p, j]
@@ -1300,24 +1300,24 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             doc="Evaluate Base produced",
         )
-        def eq_product_basate(self, t):
+        def eq_product_basic(self, t):
             conc_unit = 1 * pyunits.mole * pyunits.second**-1
             product_net_loc = 0 * pyunits.kg * pyunits.second**-1
 
             for j in self.config.property_package.cation_set:
                 if not j == "H_+":
                     product_in_loc = smooth_min(
-                        self.basate.properties_in[t].flow_mol_phase_comp["Liq", j]
+                        self.basic.properties_in[t].flow_mol_phase_comp["Liq", j]
                         / conc_unit,
-                        self.basate.properties_in[t].flow_mol_phase_comp["Liq", "OH_-"]
+                        self.basic.properties_in[t].flow_mol_phase_comp["Liq", "OH_-"]
                         / conc_unit
                         / self.config.property_package.charge_comp[j],
                     )
 
                     product_out_loc = smooth_min(
-                        self.basate.properties_out[t].flow_mol_phase_comp["Liq", j]
+                        self.basic.properties_out[t].flow_mol_phase_comp["Liq", j]
                         / conc_unit,
-                        self.basate.properties_out[t].flow_mol_phase_comp["Liq", "OH_-"]
+                        self.basic.properties_out[t].flow_mol_phase_comp["Liq", "OH_-"]
                         / conc_unit
                         / self.config.property_package.charge_comp[j],
                     )
@@ -1339,24 +1339,24 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             doc="Evaluate Acid produced",
         )
-        def eq_product_acidate(self, t):
+        def eq_product_acidic(self, t):
             conc_unit = 1 * pyunits.mole * pyunits.second**-1
             product_net_loc = 0 * pyunits.kg * pyunits.second**-1
 
             for j in self.config.property_package.anion_set:
                 if not j == "OH_-":
                     product_in_loc = smooth_min(
-                        self.acidate.properties_in[t].flow_mol_phase_comp["Liq", j]
+                        self.acidic.properties_in[t].flow_mol_phase_comp["Liq", j]
                         / conc_unit,
-                        self.acidate.properties_in[t].flow_mol_phase_comp["Liq", "H_+"]
+                        self.acidic.properties_in[t].flow_mol_phase_comp["Liq", "H_+"]
                         / conc_unit
                         / (-self.config.property_package.charge_comp[j]),
                     )
 
                     product_out_loc = smooth_min(
-                        self.acidate.properties_out[t].flow_mol_phase_comp["Liq", j]
+                        self.acidic.properties_out[t].flow_mol_phase_comp["Liq", j]
                         / conc_unit,
-                        self.acidate.properties_out[t].flow_mol_phase_comp["Liq", "H_+"]
+                        self.acidic.properties_out[t].flow_mol_phase_comp["Liq", "H_+"]
                         / conc_unit
                         / (-self.config.property_package.charge_comp[j]),
                     )
@@ -1392,7 +1392,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     self.specific_power_electrical[t],
                     pyunits.watt * pyunits.second * pyunits.meter**-3,
                 )
-                * self.acidate.properties_out[t].flow_vol_phase["Liq"]
+                * self.acidic.properties_out[t].flow_vol_phase["Liq"]
                 == self.current[t] * self.voltage[t]
             )
 
@@ -1404,9 +1404,9 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             return (
                 self.current_efficiency[t] * self.current[t] * self.cell_num
                 == sum(
-                    self.acidate.properties_in[t].flow_mol_phase_comp["Liq", j]
+                    self.acidic.properties_in[t].flow_mol_phase_comp["Liq", j]
                     * self.config.property_package.charge_comp[j]
-                    - self.acidate.properties_out[t].flow_mol_phase_comp["Liq", j]
+                    - self.acidic.properties_out[t].flow_mol_phase_comp["Liq", j]
                     * self.config.property_package.charge_comp[j]
                     for j in self.config.property_package.cation_set
                 )
@@ -1421,10 +1421,10 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             return (
                 self.recovery_mass_H2O[t]
                 * (
-                    self.acidate.properties_in[t].flow_mass_phase_comp["Liq", "H2O"]
-                    + self.basate.properties_in[t].flow_mass_phase_comp["Liq", "H2O"]
+                    self.acidic.properties_in[t].flow_mass_phase_comp["Liq", "H2O"]
+                    + self.basic.properties_in[t].flow_mass_phase_comp["Liq", "H2O"]
                 )
-                == self.acidate.properties_out[t].flow_mass_phase_comp["Liq", "H2O"]
+                == self.acidic.properties_out[t].flow_mass_phase_comp["Liq", "H2O"]
             )
 
     # Catalyst action:
@@ -1480,7 +1480,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             doc="Calculate the non-dimensional potential drop across the depletion region",
         )
         def eq_potential_membrane_bpem_non_dim(self, t):
-            return self.elec_field_non_dim[t] == const * self.basate.properties_in[
+            return self.elec_field_non_dim[t] == const * self.basic.properties_in[
                 t
             ].temperature ** -2 * self.relative_permittivity["bpem"] ** -1 * sqrt(
                 (
@@ -1598,7 +1598,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             return (
                 self.N_Re
                 == self.dens_mass
-                * self.velocity_acidate[0]
+                * self.velocity_acidic[0]
                 * self.hydraulic_diameter
                 * self.visc_d**-1
             )
@@ -1655,7 +1655,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     self.pressure_drop_total[t]
                     == self.dens_mass
                     * self.friction_factor
-                    * self.velocity_acidate[0] ** 2
+                    * self.velocity_acidic[0] ** 2
                     * 0.5
                     * self.hydraulic_diameter**-1
                     * self.cell_length
@@ -1729,16 +1729,16 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
         # Set the outlet has the same intial condition of the inlet.
         for k in self.keys():
             for j in self[k].config.property_package.component_list:
-                self[k].basate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
-                    self[k].basate.properties_in[0].flow_mol_phase_comp["Liq", j]
+                self[k].basic.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
+                    self[k].basic.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
-                self[k].acidate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
-                    self[k].acidate.properties_in[0].flow_mol_phase_comp["Liq", j]
+                self[k].acidic.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
+                    self[k].acidic.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
 
         # ---------------------------------------------------------------------
-        # Initialize concentrate_basate_side block
-        flags_basate = self.basate.initialize(
+        # Initialize concentrate_basic_side block
+        flags_basic = self.basic.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1747,8 +1747,8 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 2 Complete.")
         # ---------------------------------------------------------------------
-        # Initialize concentrate_acidate_side block
-        flags_acidate = self.acidate.initialize(
+        # Initialize concentrate_acidic_side block
+        flags_acidic = self.acidic.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1763,9 +1763,9 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release state
-        self.basate.release_state(flags_basate, outlvl)
+        self.basic.release_state(flags_basic, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        self.acidate.release_state(flags_acidate, outlvl)
+        self.acidic.release_state(flags_acidic, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
@@ -1823,10 +1823,10 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             for j in self.config.property_package.anion_set:
                 sf = smooth_min(
                     iscale.get_scaling_factor(
-                        self.acidate.properties_in[0].flow_mass_phase_comp["Liq", j]
+                        self.acidic.properties_in[0].flow_mass_phase_comp["Liq", j]
                     ),
                     iscale.get_scaling_factor(
-                        self.acidate.properties_in[0].flow_mass_phase_comp["Liq", "H_+"]
+                        self.acidic.properties_in[0].flow_mass_phase_comp["Liq", "H_+"]
                     ),
                 )
 
@@ -1839,10 +1839,10 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             for j in self.config.property_package.cation_set:
                 sf = smooth_min(
                     iscale.get_scaling_factor(
-                        self.basate.properties_in[0].flow_mass_phase_comp["Liq", j]
+                        self.basic.properties_in[0].flow_mass_phase_comp["Liq", j]
                     ),
                     iscale.get_scaling_factor(
-                        self.basate.properties_in[0].flow_mass_phase_comp["Liq", "OH_-"]
+                        self.basic.properties_in[0].flow_mass_phase_comp["Liq", "OH_-"]
                     ),
                 )
 
@@ -2053,7 +2053,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     * 0.018
                     * iscale.get_scaling_factor(self.water_permeability_membrane)
                     * iscale.get_scaling_factor(
-                        self.acidate.properties_in[ind[0]].pressure_osm_phase[ind[1]]
+                        self.acidic.properties_in[ind[0]].pressure_osm_phase[ind[1]]
                     )
                 )
             else:
@@ -2066,7 +2066,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     * 0.018
                     * iscale.get_scaling_factor(self.water_permeability_membrane)
                     * iscale.get_scaling_factor(
-                        self.acidate.properties_out[ind[0]].pressure_osm_phase[ind[1]]
+                        self.acidic.properties_out[ind[0]].pressure_osm_phase[ind[1]]
                     )
                 )
             else:
@@ -2074,7 +2074,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
             iscale.set_scaling_factor(self.nonelec_bpem_flux_out[ind], sf)
 
-        for ind in self.acidate.mass_transfer_term:
+        for ind in self.acidic.mass_transfer_term:
             if ind[2] == "H_+":
                 sf = iscale.get_scaling_factor(self.generation_cem_flux_in[ind])
             else:
@@ -2091,9 +2091,9 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 * iscale.get_scaling_factor(self.cell_length)
                 * iscale.get_scaling_factor(self.cell_num)
             )
-            iscale.set_scaling_factor(self.acidate.mass_transfer_term[ind], sf)
+            iscale.set_scaling_factor(self.acidic.mass_transfer_term[ind], sf)
         #
-        for ind in self.basate.mass_transfer_term:
+        for ind in self.basic.mass_transfer_term:
             if ind[2] == "OH_-":
                 sf = iscale.get_scaling_factor(self.generation_aem_flux_in[ind])
             else:
@@ -2110,7 +2110,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 * iscale.get_scaling_factor(self.cell_length)
                 * iscale.get_scaling_factor(self.cell_num)
             )
-            iscale.set_scaling_factor(self.basate.mass_transfer_term[ind], sf)
+            iscale.set_scaling_factor(self.basic.mass_transfer_term[ind], sf)
 
         for ind, c in self.specific_power_electrical.items():
             iscale.set_scaling_factor(
@@ -2119,19 +2119,19 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 * iscale.get_scaling_factor(self.current[ind])
                 * iscale.get_scaling_factor(self.voltage[ind])
                 * iscale.get_scaling_factor(
-                    self.acidate.properties_out[ind].flow_vol_phase["Liq"]
+                    self.acidic.properties_out[ind].flow_vol_phase["Liq"]
                 )
                 ** -1,
             )
 
-        for ind in self.velocity_basate:
+        for ind in self.velocity_basic:
             if (
-                iscale.get_scaling_factor(self.velocity_basate[ind], warning=False)
+                iscale.get_scaling_factor(self.velocity_basic[ind], warning=False)
                 is None
             ):
                 sf = (
                     iscale.get_scaling_factor(
-                        self.basate.properties_in[ind].flow_vol_phase["Liq"]
+                        self.basic.properties_in[ind].flow_vol_phase["Liq"]
                     )
                     * iscale.get_scaling_factor(self.cell_width) ** -1
                     * iscale.get_scaling_factor(self.shadow_factor) ** -1
@@ -2140,16 +2140,16 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     * iscale.get_scaling_factor(self.cell_num) ** -1
                 )
 
-                iscale.set_scaling_factor(self.velocity_basate[ind], sf)
+                iscale.set_scaling_factor(self.velocity_basic[ind], sf)
 
-        for ind in self.velocity_acidate:
+        for ind in self.velocity_acidic:
             if (
-                iscale.get_scaling_factor(self.velocity_acidate[ind], warning=False)
+                iscale.get_scaling_factor(self.velocity_acidic[ind], warning=False)
                 is None
             ):
                 sf = (
                     iscale.get_scaling_factor(
-                        self.acidate.properties_in[ind].flow_vol_phase["Liq"]
+                        self.acidic.properties_in[ind].flow_vol_phase["Liq"]
                     )
                     * iscale.get_scaling_factor(self.cell_width) ** -1
                     * iscale.get_scaling_factor(self.shadow_factor) ** -1
@@ -2158,7 +2158,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     * iscale.get_scaling_factor(self.cell_num) ** -1
                 )
 
-                iscale.set_scaling_factor(self.velocity_acidate[ind], sf)
+                iscale.set_scaling_factor(self.velocity_acidic[ind], sf)
 
         if hasattr(self, "spacer_specific_area") and (
             iscale.get_scaling_factor(self.spacer_specific_area, warning=True) is None
@@ -2173,7 +2173,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
         ):
             sf = (
                 iscale.get_scaling_factor(self.dens_mass)
-                * iscale.get_scaling_factor(self.velocity_acidate[0])
+                * iscale.get_scaling_factor(self.velocity_acidic[0])
                 * iscale.get_scaling_factor(self.hydraulic_diameter)
                 * iscale.get_scaling_factor(self.visc_d) ** -1
             )
@@ -2220,7 +2220,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 sf = (
                     iscale.get_scaling_factor(self.dens_mass)
                     * iscale.get_scaling_factor(self.friction_factor)
-                    * iscale.get_scaling_factor(self.velocity_acidate[0]) ** 2
+                    * iscale.get_scaling_factor(self.velocity_acidic[0]) ** 2
                     * 2
                     * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
                 )
@@ -2235,7 +2235,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 sf = (
                     iscale.get_scaling_factor(self.dens_mass)
                     * iscale.get_scaling_factor(self.friction_factor)
-                    * iscale.get_scaling_factor(self.velocity_acidate[0]) ** 2
+                    * iscale.get_scaling_factor(self.velocity_acidic[0]) ** 2
                     * 2
                     * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
                     * iscale.get_scaling_factor(self.cell_length)
@@ -2304,7 +2304,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 c, iscale.get_scaling_factor(self.nonelec_bpem_flux_out[ind])
             )
 
-        for ind, c in self.eq_mass_transfer_term_basate.items():
+        for ind, c in self.eq_mass_transfer_term_basic.items():
             iscale.constraint_scaling_transform(
                 c,
                 min(
@@ -2321,7 +2321,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 * iscale.get_scaling_factor(self.cell_length)
                 * iscale.get_scaling_factor(self.cell_num),
             )
-        for ind, c in self.eq_mass_transfer_term_acidate.items():
+        for ind, c in self.eq_mass_transfer_term_acidic.items():
             iscale.constraint_scaling_transform(
                 c,
                 min(
@@ -2343,7 +2343,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
-                    self.acidate.properties_out[ind].flow_mass_phase_comp["Liq", "H2O"]
+                    self.acidic.properties_out[ind].flow_mass_phase_comp["Liq", "H2O"]
                 ),
             )
 
@@ -2358,7 +2358,7 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 c,
                 iscale.get_scaling_factor(self.specific_power_electrical[ind])
                 * iscale.get_scaling_factor(
-                    self.acidate.properties_out[ind].flow_vol_phase["Liq"]
+                    self.acidic.properties_out[ind].flow_vol_phase["Liq"]
                 ),
             )
         # for ind, c in self.eq_current_efficiency.items():
@@ -2369,10 +2369,10 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "base channel of the bipolar membrane Channel Inlet": self.inlet_basate,
-                "acid channel of the bipolar membrane Channel Inlet": self.inlet_acidate,
-                "base channel of the bipolar membrane Channel Outlet": self.outlet_basate,
-                "acid channel of the bipolar membrane Channel Outlet": self.outlet_acidate,
+                "base channel of the bipolar membrane Channel Inlet": self.inlet_basic,
+                "acid channel of the bipolar membrane Channel Inlet": self.inlet_acidic,
+                "base channel of the bipolar membrane Channel Outlet": self.outlet_basic,
+                "acid channel of the bipolar membrane Channel Outlet": self.outlet_acidic,
             },
             time_point=time_point,
         )

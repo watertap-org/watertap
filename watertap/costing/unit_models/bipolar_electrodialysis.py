@@ -119,7 +119,7 @@ def cost_bipolar_electrodialysis(
 def cost_bipolar_electrodialysis_stack(blk):
     """
     Generic function for costing the stack in an electrodialysis unit.
-    Assumes the unit_model has a `cell_pair_num`, `cell_width`, and `cell_length`
+    Assumes the unit_model has a `cell_num`, `cell_width`, and `cell_length`
     set of variables used to size the total membrane area.
 
     """
@@ -135,7 +135,7 @@ def cost_bipolar_electrodialysis_stack(blk):
                     blk.costing_package.bipolar_electrodialysis.membrane_capital_cost
                     * (
                         4
-                        * blk.unit_model.cell_pair_num
+                        * blk.unit_model.cell_num
                         * blk.unit_model.cell_width
                         * blk.unit_model.cell_length
                     )
@@ -154,7 +154,7 @@ def cost_bipolar_electrodialysis_stack(blk):
                 blk.costing_package.bipolar_electrodialysis.membrane_capital_cost
                 * (
                     4
-                    * blk.unit_model.cell_pair_num
+                    * blk.unit_model.cell_num
                     * blk.unit_model.cell_width
                     * blk.unit_model.cell_length
                 )
@@ -170,7 +170,7 @@ def cost_bipolar_electrodialysis_stack(blk):
             * blk.costing_package.bipolar_electrodialysis.membrane_capital_cost
             * (
                 4
-                * blk.unit_model.cell_pair_num
+                * blk.unit_model.cell_num
                 * blk.unit_model.cell_width
                 * blk.unit_model.cell_length
             )
