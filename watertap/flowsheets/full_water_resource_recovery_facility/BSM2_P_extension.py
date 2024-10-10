@@ -94,14 +94,13 @@ from watertap.costing.unit_models.clarifier import (
 )
 from idaes.core.util import DiagnosticsToolbox
 
-# from watertap.flowsheets.full_water_resource_recovery_facility.custom_scaling_base import (
-#     CustomScalerBase,
-#     ConstraintScalingScheme,
-# )
 from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
 )
+
+# from idaes.core.scaling.scaling_base import ScalerBase
+# from idaes.core.scaling.autoscaling import AutoScaler
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -806,48 +805,76 @@ def add_effluent_violations(m, bio_P=False):
     #     expr=m.fs.Treated.properties[0].SP_organic + m.fs.Treated.properties[0].SP_inorganic <= m.fs.total_P_max
     # )
 
-    sb = CustomScalerBase()
+    csb = CustomScalerBase()
+    sb = ScalerBase()
+    auto = AutoScaler()
 
     if bio_P:
-        # sb.scale_constraint_by_nominal_derivative_norm(
+        # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_tss_max,
-        #     norm=3,
+        #     scheme=ConstraintScalingScheme.inverseRSS,
         #     overwrite=True
         # )
-        # sb.scale_constraint_by_nominal_derivative_norm(
+        # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_cod_max,
-        #     norm=3,
+        #     scheme=ConstraintScalingScheme.inverseRSS,
         #     overwrite=True
         # )
-        # sb.scale_constraint_by_nominal_derivative_norm(
+        # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_total_N_max,
-        #     norm=3,
+        #     scheme=ConstraintScalingScheme.inverseRSS,
         #     overwrite=True
         # )
-        # sb.scale_constraint_by_nominal_derivative_norm(
+        # csb.scale_constraint_by_nominal_value(
         #     m.fs.eq_BOD5_max,
-        #     norm=3,
+        #     scheme=ConstraintScalingScheme.inverseRSS,
         #     overwrite=True
         # )
+        # -------------------------------------------------------------------------
+
         iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e2)
         iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e0)
         iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1e1)
         iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e3)
     else:
-        sb.scale_constraint_by_nominal_value(
+        csb.scale_constraint_by_nominal_value(
             m.fs.eq_tss_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
         )
-        sb.scale_constraint_by_nominal_value(
+        csb.scale_constraint_by_nominal_value(
             m.fs.eq_cod_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
         )
-        sb.scale_constraint_by_nominal_value(
+        csb.scale_constraint_by_nominal_value(
             m.fs.eq_total_N_max,
             scheme=ConstraintScalingScheme.inverseRSS,
             overwrite=True,
         )
-        sb.scale_constraint_by_nominal_value(
+        csb.scale_constraint_by_nominal_value(
             m.fs.eq_BOD5_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
         )
+        # -----------------------------------------------------------------------------------------------
+
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_tss_max,
+        #     scaling_factor=2.4266924637229854,
+        #     overwrite=True
+        # )
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_cod_max,
+        #     scaling_factor=3.1622776601683786,
+        #     overwrite=True
+        # )
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_total_N_max,
+        #     scaling_factor=6.9603734991178206,
+        #     overwrite=True
+        # )
+        # sb.set_constraint_scaling_factor(
+        #     m.fs.eq_BOD5_max,
+        #     scaling_factor=14.907119849998594,
+        #     overwrite=True
+        # )
+        # ------------------------------------------------------------------------------
+
         # iscale.constraint_scaling_transform(m.fs.eq_tss_max, 1e1)
         # iscale.constraint_scaling_transform(m.fs.eq_cod_max, 1e1)
         # iscale.constraint_scaling_transform(m.fs.eq_total_N_max, 1)
