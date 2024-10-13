@@ -598,7 +598,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                 self.reagent_list,
                 doc="Mol generation from dissolution",
             )
-            def eq_dissolution_mol_flow(b, t, r):
+            def eq_flow_mol_reagent(b, t, r):
                 return b.flow_mass_reagent[r] / b.mw_reagent[r] == b.flow_mol_reagent[r]
 
             @self.Constraint(
@@ -670,7 +670,7 @@ class StoichiometricReactorData(UnitModelBlockData):
                 self.precipitate_list,
                 doc="Mol generation from precipitation",
             )
-            def eq_precipitation_mol_flow(b, t, p):
+            def eq_flow_mol_precipitate(b, t, p):
                 return (
                     b.flow_mass_precipitate[p] / b.mw_precipitate[p]
                     == b.flow_mol_precipitate[p]
@@ -883,10 +883,8 @@ class StoichiometricReactorData(UnitModelBlockData):
                 if iscale.get_scaling_factor(self.flow_mol_reagent[r]) is None:
                     sf = iscale.get_scaling_factor(self.flow_mass_reagent[r])
                     sf = sf / iscale.get_scaling_factor(self.mw_reagent[r])
-                    print(r, sf, iscale.get_scaling_factor(self.mw_reagent[r]))
-
                     iscale.set_scaling_factor(self.flow_mol_reagent[r], sf)
-            for (t, r), con in self.eq_dissolution_mol_flow.items():
+            for (t, r), con in self.eq_flow_mol_reagent.items():
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_reagent[r], default=1, warning=True
                 )
@@ -923,13 +921,13 @@ class StoichiometricReactorData(UnitModelBlockData):
                         iscale.set_scaling_factor(self.flow_mass_precipitate[p], sf)
                 if iscale.get_scaling_factor(self.flow_mol_precipitate[p]) is None:
                     sf = iscale.get_scaling_factor(self.flow_mass_precipitate[p])
-                    sf = sf * iscale.get_scaling_factor(self.mw_precipitate[p])
+                    sf = sf / iscale.get_scaling_factor(self.mw_precipitate[p])
+
                     iscale.set_scaling_factor(self.flow_mol_precipitate[p], sf)
                 iscale.constraint_scaling_transform(
                     self.precipitation_reactor.eq_isothermal_precipitation[0], 1e-2
                 )
-            # assert False
-            for (t, p), con in self.eq_precipitation_mol_flow.items():
+            for (t, p), con in self.eq_flow_mol_precipitate.items():
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_precipitate[p], default=1, warning=True
                 )
