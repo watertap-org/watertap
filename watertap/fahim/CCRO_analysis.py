@@ -107,12 +107,13 @@ def build():
     )
 
     # connections
-    m.fs.s1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-    m.fs.s2 = Arc(source=m.fs.P1.outlet, destination=m.fs.mixer.feed)
-    m.fs.s3 = Arc(source=m.fs.mixer.outlet, destination=m.fs.RO.inlet)
-    m.fs.s4 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-    m.fs.s5 = Arc(source=m.fs.RO.retentate, destination=m.fs.P2.inlet)
-    m.fs.s6 = Arc(source=m.fs.P2.outlet, destination=m.fs.mixer.recycle)
+    m.fs.feed_to_P1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+    m.fs.P1_to_mixer = Arc(source=m.fs.P1.outlet, destination=m.fs.mixer.feed)
+    m.fs.P2_to_mixer = Arc(source=m.fs.P2.outlet, destination=m.fs.mixer.recycle)
+    m.fs.mixer_to_RO = Arc(source=m.fs.mixer.outlet, destination=m.fs.RO.inlet)
+    m.fs.RO_to_prod = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+    m.fs.RO_to_P2 = Arc(source=m.fs.RO.retentate, destination=m.fs.P2.inlet)
+    
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -125,14 +126,14 @@ def build():
     # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
+    iscale.set_scaling_factor(m.fs.RO.area, 1e-1)
 
     return m
 
 def set_operating_conditions(
     m,
     flow_vol=0.9,
-    salt_mass_conc=1.5,
+    salt_mass_conc=4.0,
     solver=None,
 ):
 
@@ -141,8 +142,8 @@ def set_operating_conditions(
     # ---specifications---
     # feed
     # state variables
-    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix(273.15 + 20)  # feed temperature [K]
+    m.fs.feed.properties[0].pressure.fix(170 * pyunits.psi)  # feed pressure [Pa]
+    m.fs.feed.properties[0].temperature.fix((273.15 + 21.8) * pyunits.degK)  # feed temperature [K]
 
     # scaling
     # set default property values
@@ -165,9 +166,9 @@ def set_operating_conditions(
         m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"], 1
     )
     iscale.set_scaling_factor(m.fs.P1.work_fluid[0], 1)
-    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e4)
+    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
     iscale.set_scaling_factor(
-        m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4
+        m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e3
     )
 
     # calculate and propagate scaling factors
@@ -295,10 +296,10 @@ def initialize_mixer(m, guess=True):
     if guess:
         recovery_guess = 0.9
         m.fs.mixer.recycle_state[0.0].flow_mass_phase_comp["Liq", "H2O"].fix(
-            (1 - recovery_guess) * 0.9985
+            (1 - recovery_guess) * 0.994
         )
         m.fs.mixer.recycle_state[0.0].flow_mass_phase_comp["Liq", "NaCl"].fix(
-            0.0015 / (1 - recovery_guess)
+            0.006 / (1 - recovery_guess)
         )
     m.fs.mixer.initialize()
     m.fs.mixer.recycle_state[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
@@ -306,37 +307,39 @@ def initialize_mixer(m, guess=True):
 
 def do_forward_initialization_pass(m, pass_num=1):
     # initialize unit by unit
+    m.fs.feed.properties[0].pressure_osm_phase
     m.fs.feed.initialize()
-    propagate_state(m.fs.s1)
+    m.fs.feed.properties[0].dens_mass_phase.display()
+    m.fs.feed.properties[0].pressure_osm_phase.display()
+    over_press_factor = 1.15
+    pressure_guess = value(m.fs.feed.properties[0].pressure_osm_phase["Liq"]) * over_press_factor
 
-    # m.fs.product.initialize()
-    # propagate_state(m.fs.s5)
+    propagate_state(m.fs.feed_to_P1)
 
-    m.fs.P1.outlet.pressure.fix(50e5)
+    m.fs.P1.control_volume.properties_out[0].pressure.fix(pressure_guess)
     m.fs.P1.initialize()
-    m.fs.P1.outlet.pressure.unfix()
-    propagate_state(m.fs.s2)
-
-    if pass_num > 0:
-        m.fs.M1.initialize()
-    else:
-        initialize_mixer(m)
-    m.fs.mixer.initialize()
-    propagate_state(m.fs.s3)
-
-    m.fs.RO.inlet.pressure.fix(20 * 1e5)
-    m.fs.RO.initialize()
-    m.fs.RO.inlet.pressure.unfix()
-    
-    propagate_state(m.fs.s4)
-    propagate_state(m.fs.s5)
+    m.fs.P1.control_volume.properties_out[0].pressure.unfix()
+    m.fs.P1.control_volume.properties_out[0].pressure.display()
+    propagate_state(m.fs.P1_to_mixer)
 
     m.fs.P2.initialize()
-    propagate_state(m.fs.s6)
+    propagate_state(m.fs.P2_to_mixer)
+
+    propagate_state(m.fs.RO_to_P2)
+
+    if pass_num > 0:
+        m.fs.mixer.initialize()
+    else:
+        initialize_mixer(m)
+    propagate_state(m.fs.mixer_to_RO)
+
+    m.fs.RO.inlet.pressure.fix(2e6)
+    m.fs.RO.initialize()
+    m.fs.RO.inlet.pressure.unfix()
+    propagate_state(m.fs.RO_to_P2)
+    propagate_state(m.fs.RO_to_prod)
 
     m.fs.product.initialize()
-    propagate_state(m.fs.s5)
-
 
 def initialize_system(m):
     # initialize unit by unit
