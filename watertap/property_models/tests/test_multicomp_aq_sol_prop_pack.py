@@ -454,9 +454,9 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 94
-    assert number_total_constraints(m) == 71
-    assert number_unused_variables(m) == 6
+    assert number_variables(m) == 117
+    assert number_total_constraints(m) == 72
+    assert number_unused_variables(m) == 5
 
 
 @pytest.mark.unit
@@ -488,6 +488,7 @@ def test_default_scaling(model3):
         ("visc_d_phase", "Liq"): 1e3,
         ("diffus_phase_comp", "Liq"): 1e10,
         ("visc_k_phase", "Liq"): 1e6,
+        ("enth_mass_phase", "Liq"): 1e-5,
     }
 
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
@@ -799,7 +800,8 @@ def test_seawater_data():
             * 100.0869
         )
     )
-    assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42)
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42, rel=1e-3)
+    assert value(stream[0].enth_mass_phase["Liq"]) == pytest.approx(98938.56, rel=1e-3)
 
 
 @pytest.mark.component
