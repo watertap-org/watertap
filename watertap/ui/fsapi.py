@@ -718,7 +718,11 @@ class FlowsheetInterface:
             Return value of the underlying initialization function. Otherwise, return none
         """
         if self.get_action(Actions.initialize) is not None:
-            return self.run_action(Actions.initialize, *args, **kwargs)
+            try:
+                result = self.run_action(Actions.initialize, *args, **kwargs)
+            except Exception as err:
+                raise RuntimeError(f"Initializing flowsheet: {err}") from err
+            return result
         else:
             return None
 
