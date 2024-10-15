@@ -1,0 +1,178 @@
+{
+   "feed.properties[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "feed_flow_vol",
+      "plot_label": "Feed Flow (L/min)"
+   },
+   "feed.properties[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "feed_conc",
+      "plot_label": "Feed Conc. (g/L)"
+   },
+   "P1.control_volume.properties_in[0].pressure": {
+      "units": [
+         "Pa",
+         "psi"
+      ],
+      "col_name": "p1_pressure_in",
+      "plot_label": "Pump 1 Pressure Inlet (psi)"
+   },
+   "P1.control_volume.properties_out[0].pressure": {
+      "units": [
+         "Pa",
+         "psi"
+      ],
+      "col_name": "p1_pressure_out",
+      "plot_label": "Pump 1 Pressure Outlet (psi)"
+   },
+   "P1.control_volume.properties_out[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "p1_flow_vol_out",
+      "plot_label": "Pump 2 Flow Outlet (L/min)"
+   },
+   "P2.control_volume.properties_in[0].pressure": {
+      "units": [
+         "Pa",
+         "psi"
+      ],
+      "col_name": "p2_pressure_in",
+      "plot_label": "Pump 1 Pressure Inlet (psi)"
+   },
+   "P2.control_volume.properties_out[0].pressure": {
+      "units": [
+         "Pa",
+         "psi"
+      ],
+      "col_name": "p2_pressure_out",
+      "plot_label": "Pump 2 Pressure Outlet (psi)"
+   },
+   "P2.control_volume.properties_out[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "p2_flow_vol_out",
+      "plot_label": "Pump 2 Flow Outlet (L/min)"
+   },
+   "M1.inlet_1_state[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "mixer_flow_vol_in_1",
+      "plot_label": "Mixer Flow Outlet (L/min)"
+   },
+   "M1.inlet_1_state[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "mixer_conc_in_1",
+      "plot_label": "Mixer Conc. Inlet 1 (g/L)"
+   },
+   "M1.inlet_2_state[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "mixer_flow_vol_in_1",
+      "plot_label": "Mixer Flow Outlet (L/min)"
+   },
+   "M1.inlet_2_state[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "mixer_conc_in_2",
+      "plot_label": "Mixer Conc. Inlet 2 (g/L)"
+   },
+   "M1.mixed_state[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "mixer_flow_vol_out",
+      "plot_label": "Mixer Flow Outlet (L/min)"
+   },
+   "M1.mixed_state[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "mixer_conc_out",
+      "plot_label": "Mixer Conc. Inlet 2 (g/L)"
+   },
+   "M1.mixed_state[0].pressure": {
+      "units": [
+         "Pa",
+         "psi"
+      ],
+      "col_name": "mixer_conc_out",
+      "plot_label": "Mixer Conc. Inlet 2 (g/L)"
+   },
+   "RO.feed_side.properties_in[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "ro_flow_vol_in",
+      "plot_label": "RO Flow Inlet (L/min)"
+   },
+   "RO.feed_side.properties_out[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "ro_flow_vol_out",
+      "plot_label": "RO Flow Outlet (L/min)"
+   },
+   "RO.feed_side.properties_in[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "ro_conc_in",
+      "plot_label": "RO Inlet Conc. (g/L)"
+   },
+   "RO.feed_side.properties_out[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "reject_conc",
+      "plot_label": "RO Reject Conc. (g/L)"
+   },
+   "RO.mixed_permeate[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "permeate_flow",
+      "plot_label": "RO Permeate Flow (L/min)"
+   },
+   "RO.mixed_permeate[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "permeate_conc",
+      "plot_label": "RO Permeate Conc. (g/L)"
+   },
+   "RO.recovery_vol_phase[0,Liq]": {
+      "units": [
+         "dimensionless",
+         "dimensionless"
+      ],
+      "col_name": "recovery",
+      "plot_label": "RO Recovery"
+   }
+}
