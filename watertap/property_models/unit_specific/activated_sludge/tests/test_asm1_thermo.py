@@ -170,7 +170,7 @@ class TestStateBlock(object):
         assert value(model.props[1].params.i_xp) == 0.06
         assert isinstance(model.props[1].params.COD_to_SS, Var)
         assert value(model.props[1].params.COD_to_SS) == 0.75
-        assert isinstance(model.props[1].params.BOD5_factor, Var)
+        assert isinstance(model.props[1].params.BOD5_factor, Param)
         assert value(model.props[1].params.BOD5_factor["raw"]) == 0.65
         assert value(model.props[1].params.BOD5_factor["effluent"]) == 0.25
 
