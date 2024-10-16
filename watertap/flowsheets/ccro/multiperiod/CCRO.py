@@ -119,7 +119,7 @@ class CCRO:
         membrane_length=0.9626,  # m
         channel_height=1e-3,
         spacer_porosity=0.97,
-        add_costing=False,
+        include_costing=False,
     ):
         self.rho = rho * pyunits.kg / pyunits.m**3
 
@@ -155,6 +155,13 @@ class CCRO:
             self.reject_conc_start * self.reject_flow,
             to_units=pyunits.kg / pyunits.s,
         )
+        self.feed_as_reject_flow_mass_water = pyunits.convert(
+            self.rho * self.reject_flow, to_units=pyunits.kg / pyunits.s
+        )
+        self.feed_as_reject_flow_mass_salt = pyunits.convert(
+            self.feed_conc * self.reject_flow,
+            to_units=pyunits.kg / pyunits.s,
+        )
 
         self.inlet_flow = self.feed_flow + self.reject_flow
         self.inlet_flow_mass_water = (
@@ -172,8 +179,10 @@ class CCRO:
         self.channel_height = channel_height * pyunits.m
         self.spacer_porosity = spacer_porosity * pyunits.dimensionless
 
+        self.include_costing = include_costing
+
         self.m = self.build_system()
-        if add_costing:
+        if self.include_costing:
             self.add_costing()
         self.set_operating_conditions()
         # self.scale_system()
@@ -279,7 +288,8 @@ class CCRO:
         m.fs.M1.mixed_state[0].conc_mass_phase_comp
 
         self.scale_system(m=m)
-        self.add_costing(m=m)
+        if self.include_costing:
+            self.add_costing(m=m)
 
         return m
 
@@ -370,9 +380,11 @@ class CCRO:
 
         m.fs.recirc.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(
             self.reject_flow_mass_water
+            # self.feed_as_reject_flow_mass_water
         )
         m.fs.recirc.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
             self.reject_flow_mass_salt
+            # self.feed_as_reject_flow_mass_salt
         )
         m.fs.recirc.properties[0].pressure.fix(atmospheric_pressure)
         m.fs.recirc.properties[0].temperature.fix(self.temperature_start)
@@ -403,12 +415,12 @@ class CCRO:
         m.fs.RO.feed_side.channel_height.fix(self.channel_height)
         m.fs.RO.feed_side.spacer_porosity.fix(self.spacer_porosity)
 
-        # print("DOF =", degrees_of_freedom(m))
-        # print("DOF FEED =", degrees_of_freedom(m.fs.feed))
-        # print("DOF PUMP 1 =", degrees_of_freedom(m.fs.P1))
-        # print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
-        # print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
-        # print("DOF RO =", degrees_of_freedom(m.fs.RO))
+        print("DOF =", degrees_of_freedom(m))
+        print("DOF FEED =", degrees_of_freedom(m.fs.feed))
+        print("DOF PUMP 1 =", degrees_of_freedom(m.fs.P1))
+        print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
+        print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
+        print("DOF RO =", degrees_of_freedom(m.fs.RO))
         assert_no_degrees_of_freedom(m)
 
     def initialize_system(self, m=None):
