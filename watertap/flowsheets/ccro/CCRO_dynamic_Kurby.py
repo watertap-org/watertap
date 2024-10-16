@@ -169,7 +169,7 @@ class CCRO:
             property_package=m.fs.properties,
             has_holdup=False,
             num_inlets=2,
-            momentum_mixing_type=MomentumMixingType.equality,
+            momentum_mixing_type=MomentumMixingType.none,
         )
 
         m.fs.RO = ReverseOsmosis0D(
@@ -314,13 +314,22 @@ class CCRO:
 
         m.fs.P1.efficiency_pump.fix(self.p1_eff)
         m.fs.P1.control_volume.properties_out[0].pressure.fix(self.p1_pressure_start)
-
+        m.fs.M1_constraint_1 = Constraint(
+            expr=m.fs.M1.inlet_2_state[0].pressure
+            == m.fs.M1.inlet_1_state[0].pressure
+        )
+        m.fs.M1_constraint_2 = Constraint(
+            expr=m.fs.M1.inlet_1_state[0].pressure
+            == m.fs.M1.mixed_state[0].pressure
+        )
+        
         """
         Pump 2 operating conditions
         """
 
         m.fs.P2.efficiency_pump.fix(self.p2_eff)
         # m.fs.P2.control_volume.properties_out[0].pressure.set_value(self.p2_pressure_start)
+        m.fs.P2.control_volume.properties_out[0].pressure.setub(6e6)
 
         """
         RO operating conditions
@@ -348,24 +357,78 @@ class CCRO:
         """
         if m is None:
             m = self.m
+        
         m.fs.feed.initialize()
 
         propagate_state(m.fs.feed_to_P1)
         m.fs.P1.initialize()
 
         propagate_state(m.fs.P1_to_M1)
-        propagate_state(m.fs.RO_retentate_to_P2)
+        m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75465)
+        m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0029261)
+        m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.80332)
+        m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030916)
+        m.fs.M1.inlet_2_state[0].pressure.set_value(2.1098e+06)
 
-        m.fs.P2.initialize()
-        propagate_state(m.fs.P2_to_M1)
-
+        print('M1 first initialization')
+        m.fs.M1.report()
         m.fs.M1.initialize()
+        m.fs.M1.report()
+
         propagate_state(m.fs.M1_to_RO)
 
-        m.fs.RO.initialize()
-        propagate_state(m.fs.RO_permeate_to_product)
+        # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+        #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        # )
+        # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
+        #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+        # )
+        # m.fs.RO.feed_side.properties_in[0].temperature = value(
+        #     m.fs.feed.properties[0].temperature
+        # )
+        # m.fs.RO.feed_side.properties_in[0].pressure = value(
+        #     m.fs.P1.control_volume.properties_out[0].pressure
+        # )
 
+        print('RO first initialization')
+        m.fs.RO.feed_side.properties_in[0].pressure_osm_phase
+        m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75253)
+        m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030899)
+        m.fs.RO.feed_side.properties_out[0].pressure.set_value(1976757.5687263503)
+        m.fs.RO.report()
+        m.fs.RO.initialize()
+        m.fs.RO.report()
+
+        propagate_state(m.fs.RO_permeate_to_product)
         m.fs.product.initialize()
+
+        propagate_state(m.fs.RO_retentate_to_P2)
+        m.fs.P2.report()
+        m.fs.P2.initialize()
+        m.fs.P2.report()
+
+        propagate_state(m.fs.P2_to_M1)
+        
+        print('M1 second initialization')
+        m.fs.M1.report()
+        m.fs.M1.inlet_2_state[0].pressure.unfix()
+        m.fs.M1.initialize()
+        m.fs.M1.report()
+
+        propagate_state(m.fs.M1_to_RO)
+
+        print('RO second initialization')
+        m.fs.RO.report()
+        m.fs.RO.initialize()
+        m.fs.RO.report()
+
+        print(value(m.fs.RO.feed_side.properties_out[0].pressure))
+        m.fs.RO.feed_side.properties_in[0].pressure_osm_phase.display()
+
+        propagate_state(m.fs.RO_retentate_to_P2)
+        m.fs.P2.report()
+        m.fs.P2.initialize()
+        m.fs.P2.report()
 
     def fix_dof_and_initialize(self, m=None):
         """
@@ -382,7 +445,7 @@ class CCRO:
             solver = get_solver()
 
         if model is None:
-            model = self.mp
+            model = self.m
 
         print("\n--------- SOLVING ---------\n")
         print(f"Degrees of Freedom: {degrees_of_freedom(model)}")
@@ -430,6 +493,5 @@ if __name__ == "__main__":
 
     ccro = CCRO(**initial_conditions)
 
-    ccro.create_multiperiod()
     ccro.solve()
     ccro.mp_df
