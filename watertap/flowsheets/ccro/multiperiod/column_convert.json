@@ -1,4 +1,100 @@
 {
+   "disposal.properties[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "disposal_flow_vol",
+      "plot_label": "Disposal Flow (L/min)"
+   },
+   "disposal.properties[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "disposal_conc",
+      "plot_label": "Disposal Conc. (g/L)"
+   },
+   "disposal.properties[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "disposal_mass_flow_water",
+      "plot_label": "Disposal Mass Flow Water (kg/s)"
+   },
+   "disposal.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "disposal_mass_flow_salt",
+      "plot_label": "Disposal Mass Flow Salt (kg/s)"
+   },
+   "product.properties[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "product_flow_vol",
+      "plot_label": "Product Flow (L/min)"
+   },
+   "product.properties[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "product_conc",
+      "plot_label": "Product Conc. (g/L)"
+   },
+   "product.properties[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "product_mass_flow_water",
+      "plot_label": "Product Mass Flow Water (kg/s)"
+   },
+   "product.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "product_mass_flow_salt",
+      "plot_label": "Product Mass Flow Salt (kg/s)"
+   },
+   "recirc.properties[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "recirc_flow_vol",
+      "plot_label": "Recirc. Flow (L/min)"
+   },
+   "recirc.properties[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "recirc_conc",
+      "plot_label": "Recirc. Conc. (g/L)"
+   },
+   "recirc.properties[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "recirc_mass_flow_water",
+      "plot_label": "Recirc. Mass Flow Water (kg/s)"
+   },
+   "recirc.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "recirc_mass_flow_salt",
+      "plot_label": "Recirc. Mass Flow Salt (kg/s)"
+   },
    "feed.properties[0].flow_vol_phase[Liq]": {
       "units": [
          "m**3/sec",
@@ -14,6 +110,22 @@
       ],
       "col_name": "feed_conc",
       "plot_label": "Feed Conc. (g/L)"
+   },
+   "feed.properties[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "feed_mass_flow_water",
+      "plot_label": "Feed Mass Flow Water (kg/s)"
+   },
+   "feed.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "feed_mass_flow_salt",
+      "plot_label": "Feed Mass Flow Salt (kg/s)"
    },
    "P1.control_volume.properties_in[0].pressure": {
       "units": [
@@ -37,7 +149,39 @@
          "liter/min"
       ],
       "col_name": "p1_flow_vol_out",
-      "plot_label": "Pump 2 Flow Outlet (L/min)"
+      "plot_label": "Pump 1 Flow Outlet (L/min)"
+   },
+   "P1.control_volume.properties_out[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "p1_mass_flow_water_out",
+      "plot_label": "Pump 1 Mass Flow Water Out (kg/s)"
+   },
+   "P1.control_volume.properties_out[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "p1_mass_flow_salt_out",
+      "plot_label": "Pump 1 Mass Flow Salt Out (kg/s)"
+   },
+   "P2.control_volume.properties_out[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "p2_mass_flow_water_out",
+      "plot_label": "Pump 2 Mass Flow Water Out (kg/s)"
+   },
+   "P2.control_volume.properties_out[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "p2_mass_flow_salt_out",
+      "plot_label": "Pump 2 Mass Flow Salt Out (kg/s)"
    },
    "P2.control_volume.properties_in[0].pressure": {
       "units": [
