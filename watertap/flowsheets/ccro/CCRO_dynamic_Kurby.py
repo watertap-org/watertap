@@ -314,14 +314,6 @@ class CCRO:
 
         m.fs.P1.efficiency_pump.fix(self.p1_eff)
         m.fs.P1.control_volume.properties_out[0].pressure.fix(self.p1_pressure_start)
-        m.fs.M1_constraint_1 = Constraint(
-            expr=m.fs.M1.inlet_2_state[0].pressure
-            == m.fs.M1.inlet_1_state[0].pressure
-        )
-        m.fs.M1_constraint_2 = Constraint(
-            expr=m.fs.M1.inlet_1_state[0].pressure
-            == m.fs.M1.mixed_state[0].pressure
-        )
         
         """
         Pump 2 operating conditions
@@ -330,6 +322,19 @@ class CCRO:
         m.fs.P2.efficiency_pump.fix(self.p2_eff)
         # m.fs.P2.control_volume.properties_out[0].pressure.set_value(self.p2_pressure_start)
         m.fs.P2.control_volume.properties_out[0].pressure.setub(6e6)
+
+        """
+        Mixer operating conditions
+        """
+
+        m.fs.M1_constraint_1 = Constraint(
+            expr=m.fs.M1.inlet_2_state[0].pressure
+            == m.fs.M1.inlet_1_state[0].pressure
+        )
+        m.fs.M1_constraint_2 = Constraint(
+            expr=m.fs.M1.inlet_1_state[0].pressure
+            == m.fs.M1.mixed_state[0].pressure
+        )
 
         """
         RO operating conditions
@@ -376,22 +381,17 @@ class CCRO:
         m.fs.M1.report()
 
         propagate_state(m.fs.M1_to_RO)
-
-        # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-        #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-        # )
-        # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
-        #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-        # )
-        # m.fs.RO.feed_side.properties_in[0].temperature = value(
-        #     m.fs.feed.properties[0].temperature
-        # )
-        # m.fs.RO.feed_side.properties_in[0].pressure = value(
-        #     m.fs.P1.control_volume.properties_out[0].pressure
-        # )
+        
+        
 
         print('RO first initialization')
         m.fs.RO.feed_side.properties_in[0].pressure_osm_phase
+        m.fs.RO.feed_side.properties_in[0].temperature = value(
+            m.fs.feed.properties[0].temperature
+        )
+        m.fs.RO.feed_side.properties_in[0].pressure = value(
+            m.fs.P1.control_volume.properties_out[0].pressure
+        )
         m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75253)
         m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030899)
         m.fs.RO.feed_side.properties_out[0].pressure.set_value(1976757.5687263503)
