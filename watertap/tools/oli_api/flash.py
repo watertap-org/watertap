@@ -972,7 +972,7 @@ class Flash:
                     pass
                 elif k in d["inflows"]["values"]:
                     d = d["inflows"]["values"]
-                elif k in d["corrosionParameters"]:
+                elif hasattr(d, "corrosionParameters") and (k in d["corrosionParameters"]):
                     d = d["corrosionParameters"]
                 else:
                     _logger.warning(f"Survey key {k} not found in JSON input.")
