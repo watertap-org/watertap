@@ -191,7 +191,7 @@ class CredentialManager:
         self.dbs_url = self.credentials["root_url"] + "/channel/dbs"
         self.upload_dbs_url = self.credentials["root_url"] + "/channel/upload/dbs"
         self.access_key_url = self.credentials["root_url"] + "/user/api-key"
-        self.engine_url = self.credentials["root_url"] + "/engine/"
+        self.engine_url = self.credentials["root_url"] + "/engine"
         self._delete_dbs_url = self.credentials["root_url"] + "/channel/file/"
 
     def _decrypt_credentials(self):
