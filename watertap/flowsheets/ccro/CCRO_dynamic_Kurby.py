@@ -55,6 +55,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
+from idaes.core.scaling import  report_scaling_factors
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -203,7 +204,7 @@ class CCRO:
             property_package=m.fs.properties,
             has_holdup=False,
             num_inlets=2,
-            momentum_mixing_type=MomentumMixingType.none,
+            # momentum_mixing_type=MomentumMixingType.none,
         )
 
         m.fs.RO = ReverseOsmosis0D(
@@ -279,7 +280,6 @@ class CCRO:
         m.fs.M1.mixed_state[0].flow_vol_phase
         m.fs.M1.mixed_state[0].conc_mass_phase_comp
 
-        self.scale_system(m=m)
 
         return m
 
@@ -291,30 +291,30 @@ class CCRO:
             m = self.m
 
         m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+            "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
             "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
         )
 
-        set_scaling_factor(m.fs.P1.control_volume.work, 1e-2)
-        set_scaling_factor(m.fs.P2.control_volume.work, 1e-2)
-        set_scaling_factor(m.fs.RO.area, 1)
+        # set_scaling_factor(m.fs.P1.control_volume.work, 1e-2)
+        # set_scaling_factor(m.fs.P2.control_volume.work, 1e-2)
+        # set_scaling_factor(m.fs.RO.area, 1)
 
-        set_scaling_factor(m.fs.water_recovery, 1e2)
-        set_scaling_factor(m.fs.feed_flow_mass_water, 1e1)
-        set_scaling_factor(m.fs.feed_salinity, 1)
+        # set_scaling_factor(m.fs.water_recovery, 1e2)
+        # set_scaling_factor(m.fs.feed_flow_mass_water, 1e1)
+        # set_scaling_factor(m.fs.feed_salinity, 1)
 
-        constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0,0.0,'NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0,1.0,'NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,0.0,'Liq','NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,1.0,'Liq','NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,0.0,'Liq','H2O'], 1e4)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,1.0,'Liq','H2O'], 1e4)
-        constraint_scaling_transform(m.fs.RO.eq_recovery_mass_phase_comp[0.0,'NaCl'], 1e4)
-        constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,0.0,'NaCl'], 1e5)
-        constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,1.0,'NaCl'], 1e5)
-        constraint_scaling_transform(m.fs.RO.eq_permeate_production[0.0,'Liq','NaCl'], 1e4)
+        # constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0,0.0,'NaCl'], 1e7)
+        # constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0,1.0,'NaCl'], 1e7)
+        # constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,0.0,'Liq','NaCl'], 1e7)
+        # constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,1.0,'Liq','NaCl'], 1e7)
+        # constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,0.0,'Liq','H2O'], 1e4)
+        # constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,1.0,'Liq','H2O'], 1e4)
+        # constraint_scaling_transform(m.fs.RO.eq_recovery_mass_phase_comp[0.0,'NaCl'], 1e4)
+        # constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,0.0,'NaCl'], 1e5)
+        # constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,1.0,'NaCl'], 1e5)
+        # constraint_scaling_transform(m.fs.RO.eq_permeate_production[0.0,'Liq','NaCl'], 1e4)
 
         calculate_scaling_factors(m)
 
@@ -366,7 +366,7 @@ class CCRO:
 
         m.fs.P2.efficiency_pump.fix(self.p2_eff)
         m.fs.P2.control_volume.properties_out[0].pressure.fix(self.p1_pressure_start)
-        m.fs.P2.control_volume.properties_out[0].pressure.setub(6e6)
+        # m.fs.P2.control_volume.properties_out[0].pressure.setub(6e6)
 
         """
         Mixer operating conditions
@@ -376,10 +376,10 @@ class CCRO:
         #     expr=m.fs.M1.inlet_2_state[0].pressure
         #     == m.fs.M1.inlet_1_state[0].pressure
         # )
-        m.fs.M1_constraint_2 = Constraint(
-            expr=m.fs.M1.inlet_1_state[0].pressure
-            == m.fs.M1.mixed_state[0].pressure
-        )
+        # m.fs.M1_constraint_2 = Constraint(
+        #     expr=m.fs.M1.inlet_1_state[0].pressure
+        #     == m.fs.M1.mixed_state[0].pressure
+        # )
 
         # m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"].setub(5)
 
@@ -394,7 +394,7 @@ class CCRO:
         m.fs.RO.length.fix(self.membrane_length)
         m.fs.RO.feed_side.channel_height.fix(self.channel_height)
         m.fs.RO.feed_side.spacer_porosity.fix(self.spacer_porosity)
-        m.fs.RO.RO_constraint_1 = Constraint(expr=m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"] <= 0.035) # Activating this reduces condition number by 8 OoM
+        m.fs.RO.RO_constraint_1 = Constraint(expr=m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"] <= 0.5 * pyunits.kg/pyunits.m**3) # Activating this reduces condition number by 8 OoM
 
         print("DOF =", degrees_of_freedom(m))
         print("DOF FEED =", degrees_of_freedom(m.fs.feed))
@@ -479,51 +479,109 @@ class CCRO:
         # self.m.fs.P1.control_volume.properties_out[0].pressure.unfix()
         # self.m.fs.M1_constraint_1.deactivate()
 
-    def fix_dof_and_initialize(self, m=None):
-        """
-        Fix DOF for MP model and initialize steady-state models.
-        """
+    def initialize_system(self, m=None):
         if m is None:
             m = self.m
-        self.set_operating_conditions(m=m)
-        self.initialize_system(m=m)
+        
+        m.fs.feed.initialize()
 
-    def solve(self, model=None, solver=None, tee=False, raise_on_failure=False):
-        # ---solving---
+        propagate_state(m.fs.feed_to_P1)
+        m.fs.P1.initialize()
+
+        propagate_state(m.fs.P1_to_M1)
+
+        self.master_initialize_with_recirculation(m, count=3)
+        
+    def master_initialize_with_recirculation(self, m, count):
+        solved = 0 
+        counter = 0
+        while not solved:
+            try:
+                self.initialize_with_recirculation(m)
+                res= self.solve(m, tee=True)
+            except:
+                pass
+            counter = counter + 1
+            if counter == count:
+                break 
+            if check_optimal_termination(res):
+                solved = 1
+
+    def initialize_with_recirculation(self, m=None):
+        if m is None:
+            m = self.m
+        propagate_state(m.fs.P2_to_M1)
+        m.fs.M1.initialize()
+        
+        # mixer to RO 
+        propagate_state(m.fs.M1_to_RO)
+
+        try:
+            m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+        except:
+            pass
+
+        # RO brine to P2
+        propagate_state(m.fs.RO_permeate_to_product) 
+        propagate_state(m.fs.RO_retentate_to_P2)
+        # P2 initialize
+        m.fs.P2.initialize()
+
+
+    # def fix_dof_and_initialize(self, m=None):
+    #     """
+    #     Fix DOF for MP model and initialize steady-state models.
+    #     """
+    #     if m is None:
+    #         m = self.m
+    #     self.set_operating_conditions(m=m)
+    #     self.initialize_system(m=m)
+
+    def solve(self, blk, solver=None, tee=True):
         if solver is None:
             solver = get_solver()
+        results = solver.solve(blk, tee=tee)
+        return results
 
-        if model is None:
-            model = self.m
+    # def solve(self, model=None, solver=None, tee=False, raise_on_failure=False):
+    #     # ---solving---
+    #     if solver is None:
+    #         solver = get_solver()
 
-        print("\n--------- SOLVING ---------\n")
-        print(f"Degrees of Freedom: {degrees_of_freedom(model)}")
-        optarg = {"tol": 1e-5, "linear_solver": "ma27", "max_iter": 1000}
-        solver.options = optarg
-        results = solver.solve(model, tee=tee)
+    #     if model is None:
+    #         model = self.m
 
-        if check_optimal_termination(results):
-            print("\n--------- OPTIMAL SOLVE!!! ---------\n")
-            return results
-        msg = "The current configuration is infeasible. Please adjust the decision variables."
-        if raise_on_failure:
-            print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
+    #     print("\n--------- SOLVING ---------\n")
+    #     print(f"Degrees of Freedom: {degrees_of_freedom(model)}")
+    #     optarg = {"tol": 1e-5, "linear_solver": "ma27", "max_iter": 1000}
+    #     solver.options = optarg
+    #     results = solver.solve(model, tee=tee)
+        
 
-            print("\n--------- CLOSE TO BOUNDS ---------\n")
-            print_close_to_bounds(model)
+    #     if check_optimal_termination(results):
+    #         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
+    #         return results
+    #     msg = "The current configuration is infeasible. Please adjust the decision variables."
+    #     if raise_on_failure:
+    #         print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
 
-            print("\n--------- INFEASIBLE BOUNDS ---------\n")
-            print_infeasible_bounds(model)
+    #         print("\n--------- CLOSE TO BOUNDS ---------\n")
+    #         print_close_to_bounds(model)
 
-            print("\n--------- INFEASIBLE CONSTRAINTS ---------\n")
-            print_infeasible_constraints(model)
+    #         print("\n--------- INFEASIBLE BOUNDS ---------\n")
+    #         print_infeasible_bounds(model)
 
-            raise RuntimeError(msg)
-        else:
-            print(msg)
-            # debug(model, solver=solver, automate_rescale=False, resolve=False)
-            # check_jac(model)
-            # assert False
+    #         print("\n--------- INFEASIBLE CONSTRAINTS ---------\n")
+    #         print_infeasible_constraints(model)
+
+    #         raise RuntimeError(msg)
+    #     else:
+    #         print(msg)
+    #         # debug(model, solver=solver, automate_rescale=False, resolve=False)
+    #         # check_jac(model)
+    #         # assert False
+        
+    #     return results
     
     def print_results(self, m=None):
         print("\n\n")
@@ -589,8 +647,12 @@ if __name__ == "__main__":
     }
 
     ccro = CCRO(**initial_conditions)
-    ccro.initialize()
-    ccro.solve(tee=False)
     dt = DiagnosticsToolbox(ccro.m)
-    dt.compute_infeasibility_explanation()
-    ccro.mp_df
+    ccro.set_operating_conditions()
+    ccro.scale_system()
+    ccro.initialize_system()
+    res = ccro.solve(ccro.m,tee=True)
+    
+    # assert_optimal_termination(res)
+    # dt.compute_infeasibility_explanation()
+    # ccro.mp_df
