@@ -22,7 +22,7 @@ __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
-
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
@@ -36,6 +36,7 @@ from idaes.models.unit_models import (
     Mixer,
     PressureChanger,
 )
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 from idaes.models.unit_models.separator import SplittingType
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -46,6 +47,8 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 from watertap.unit_models.cstr_injection import CSTR_Injection
+
+from watertap.unit_models.aeration_tank import AerationTank
 from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
@@ -91,10 +94,11 @@ from watertap.costing.unit_models.clarifier import (
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
+_log.debug
 
 def main(bio_P=False):
     m = build(bio_P=bio_P)
+    dt = DiagnosticsToolbox(m)
     set_operating_conditions(m)
 
     for mx in m.fs.mixers:
@@ -120,7 +124,7 @@ def main(bio_P=False):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
-    # Resolve with controls in place
+    # Re-solve with controls in place
     results = solve(m)
 
     pyo.assert_optimal_termination(results)
@@ -144,7 +148,7 @@ def main(bio_P=False):
     display_costing(m)
     display_performance_metrics(m)
 
-    return m, results
+    return m, results, dt
 
 
 def build(bio_P=False):
@@ -372,6 +376,9 @@ def build(bio_P=False):
         mutable=True,
         doc="Dissolved oxygen concentration at equilibrium",
     )
+    m.fs.R5.KLa = 240
+    m.fs.R6.KLa = 240
+    m.fs.R7.KLa = 84
 
     m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
     for R in m.fs.aerobic_reactors:
@@ -480,7 +487,9 @@ def set_operating_conditions(m):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].fix(1.91e-3)
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
-
+    # for R in m.fs.aerobic_reactors:
+    #     calculate_variable_from_constraint(R.KLa, R.eq_mass_transfer[0])
+    
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
@@ -548,6 +557,10 @@ def set_operating_conditions(m):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
+    iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e1)
+
     # Apply scaling
     scale_variables(m)
     iscale.calculate_scaling_factors(m)
@@ -612,7 +625,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_AUT"): 0.25,
                 (0, "X_H"): 23.0,
                 (0, "X_I"): 11.3,
-                (0, "X_PAO"): 10.8,
+                (0, "X_PAO"): 10.9,
                 (0, "X_PHA"): 0.0058,
                 (0, "X_PP"): 2.9,
                 (0, "X_S"): 3.8,
@@ -872,10 +885,83 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
     )
 
+    print("---- Feed Metrics----")
+    print(
+        "Feed TSS concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TSS),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TSS),
+    )
+    print(
+        "Feed COD concentration",
+        pyo.value(m.fs.FeedWater.properties[0].COD),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.FeedWater.properties[0].BOD5["raw"]),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].BOD5["raw"]),
+    )
+    print(
+        "TKN concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TKN),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TKN),
+    )
+    print(
+        "SNOX concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SNOX),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_inorganic),
+    )
+
+    print("---- Effluent Metrics----")
+    print(
+        "TSS concentration",
+        pyo.value(m.fs.Treated.properties[0].TSS),
+        pyo.units.get_units(m.fs.Treated.properties[0].TSS),
+    )
+    print(
+        "COD concentration",
+        pyo.value(m.fs.Treated.properties[0].COD),
+        pyo.units.get_units(m.fs.Treated.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.Treated.properties[0].BOD5["effluent"]),
+        pyo.units.get_units(m.fs.Treated.properties[0].BOD5["effluent"]),
+    )
+    print(
+        "TKN concentration",
+        pyo.value(m.fs.Treated.properties[0].TKN),
+        pyo.units.get_units(m.fs.Treated.properties[0].TKN),
+    )
+    print(
+        "SNOX concentration",
+        pyo.value(m.fs.Treated.properties[0].SNOX),
+        pyo.units.get_units(m.fs.Treated.properties[0].SNOX),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_inorganic),
+    )
+
 
 if __name__ == "__main__":
-    # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main(bio_P=False)
+    m, results, dt = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
