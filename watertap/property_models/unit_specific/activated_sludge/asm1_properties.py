@@ -149,7 +149,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="Conversion factor applied for TSS calculation",
         )
-        self.BOD5_factor = pyo.Var(
+        self.BOD5_factor = pyo.Param(
             ["raw", "effluent"],
             initialize={"raw": 0.65, "effluent": 0.25},
             units=pyo.units.dimensionless,
