@@ -997,7 +997,7 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
 
         return m
 
-
+@pytest.mark.requires_idaes_solver
 @pytest.mark.unit
 def test_RO_dynamic_instantiation():
     # TODO: add test to check exception for simplest RO0D with dynamics
@@ -1151,173 +1151,173 @@ def test_RO_dynamic_instantiation():
         assert_optimal_termination(result)
 
     # print(value(m.fs.unit.feed_side.properties_out[:].flow_mass_phase_comp['Liq','H2O']))
-    print(
-        "Flux H2O: ",
-        value(m.fs.unit.flux_mass_phase_comp_avg[:, "Liq", "H2O"]),
-    )
-    print(
-        "Flux NaCl: ",
-        value(m.fs.unit.flux_mass_phase_comp_avg[:, "Liq", "NaCl"]),
-    )
-    # assert False
-    traj = results.trajectory
-    time_set = m.fs.time.ordered_data()
-    tf = time_set[-1]
-    # print(str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"]))
-    # print(str(m.fs.unit.flux_mass_phase_comp_avg[tf, 'Liq', 'H2O']))
-    # print(traj.vecs)
-    # print('Flow vol:', m.fs.unit.feed_side.properties_out[:].flow_vol_phase['Liq'])
-    # print('Flow vol unit:', value(m.fs.unit.recovery_vol_phase[:, "Liq"]))
-    # assert False
-    print("1")
-    results_dict = {
-        "time": np.array(traj.time),
-        "feed.out.vol": 60000
-        * np.array(  # L/min
-            traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_vol_phase["Liq"])]
-        ),
-        "feed.in.vol": 60000
-        * np.array(  # L/min
-            traj.vecs[str(m.fs.unit.feed_side.properties_in[tf].flow_vol_phase["Liq"])]
-        ),
-        "mixed_permeate.vol": 60000
-        * np.array(  #
-            traj.vecs[str(m.fs.unit.mixed_permeate[tf].flow_vol_phase["Liq"])]
-        ),
-        "recovery": np.array(  #
-            traj.vecs[str(m.fs.unit.recovery_vol_phase[tf, "Liq"])]
-        ),
-        "feed.in.mass.NaCl": np.array(  # kg/s
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_in[tf].flow_mass_phase_comp[
-                        "Liq", "NaCl"
-                    ]
-                )
-            ]
-        ),
-        "feed.out.mass.NaCl": np.array(  # kg/s
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp[
-                        "Liq", "NaCl"
-                    ]
-                )
-            ]
-        ),
-        "feed.in.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_in[tf].conc_mass_phase_comp[
-                        "Liq", "NaCl"
-                    ]
-                )
-            ]
-        ),
-        "feed.out.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp[
-                        "Liq", "NaCl"
-                    ]
-                )
-            ]
-        ),
-        "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_interface[
-                        tf, 0
-                    ].conc_mass_phase_comp["Liq", "NaCl"]
-                )
-            ]
-        ),
-        "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(
-                    m.fs.unit.feed_side.properties_interface[
-                        tf, 1
-                    ].conc_mass_phase_comp["Liq", "NaCl"]
-                )
-            ]
-        ),
-        "mixed_permeate.mass.NaCl": np.array(  # kg/s
-            traj.vecs[
-                str(m.fs.unit.mixed_permeate[tf].flow_mass_phase_comp["Liq", "NaCl"])
-            ]
-        ),
-        "mixed_permeate.conc.NaCl": np.array(  # kg/m3
-            traj.vecs[
-                str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"])
-            ]
-        ),
-        "flux_mass_phase_comp.H2O": 3600
-        * 0.5  # LMH
-        * (
-            np.array(
-                traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 0, "Liq", "H2O"])]
-            )
-            + np.array(
-                traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 1, "Liq", "H2O"])]
-            )
-        ),
-    }
-    print("after results_dict")
-    for key, v in results_dict.items():
-        # Turn n by 1 arrays in into vectors
-        results_dict[key] = np.squeeze(v)
-    time = results_dict["time"]
-    # print(time)
+    # print(
+    #     "Flux H2O: ",
+    #     value(m.fs.unit.flux_mass_phase_comp_avg[:, "Liq", "H2O"]),
+    # )
+    # print(
+    #     "Flux NaCl: ",
+    #     value(m.fs.unit.flux_mass_phase_comp_avg[:, "Liq", "NaCl"]),
+    # )
+    # # assert False
+    # traj = results.trajectory
+    # time_set = m.fs.time.ordered_data()
+    # tf = time_set[-1]
+    # # print(str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"]))
+    # # print(str(m.fs.unit.flux_mass_phase_comp_avg[tf, 'Liq', 'H2O']))
+    # # print(traj.vecs)
+    # # print('Flow vol:', m.fs.unit.feed_side.properties_out[:].flow_vol_phase['Liq'])
+    # # print('Flow vol unit:', value(m.fs.unit.recovery_vol_phase[:, "Liq"]))
+    # # assert False
+    # print("1")
+    # results_dict = {
+    #     "time": np.array(traj.time),
+    #     "feed.out.vol": 60000
+    #     * np.array(  # L/min
+    #         traj.vecs[str(m.fs.unit.feed_side.properties_out[tf].flow_vol_phase["Liq"])]
+    #     ),
+    #     "feed.in.vol": 60000
+    #     * np.array(  # L/min
+    #         traj.vecs[str(m.fs.unit.feed_side.properties_in[tf].flow_vol_phase["Liq"])]
+    #     ),
+    #     "mixed_permeate.vol": 60000
+    #     * np.array(  #
+    #         traj.vecs[str(m.fs.unit.mixed_permeate[tf].flow_vol_phase["Liq"])]
+    #     ),
+    #     "recovery": np.array(  #
+    #         traj.vecs[str(m.fs.unit.recovery_vol_phase[tf, "Liq"])]
+    #     ),
+    #     "feed.in.mass.NaCl": np.array(  # kg/s
+    #         traj.vecs[
+    #             str(
+    #                 m.fs.unit.feed_side.properties_in[tf].flow_mass_phase_comp[
+    #                     "Liq", "NaCl"
+    #                 ]
+    #             )
+    #         ]
+    #     ),
+    #     "feed.out.mass.NaCl": np.array(  # kg/s
+    #         traj.vecs[
+    #             str(
+    #                 m.fs.unit.feed_side.properties_out[tf].flow_mass_phase_comp[
+    #                     "Liq", "NaCl"
+    #                 ]
+    #             )
+    #         ]
+    #     ),
+    #     "feed.in.conc.NaCl": np.array(  # kg/m3
+    #         traj.vecs[
+    #             str(
+    #                 m.fs.unit.feed_side.properties_in[tf].conc_mass_phase_comp[
+    #                     "Liq", "NaCl"
+    #                 ]
+    #             )
+    #         ]
+    #     ),
+    #     "feed.out.conc.NaCl": np.array(  # kg/m3
+    #         traj.vecs[
+    #             str(
+    #                 m.fs.unit.feed_side.properties_out[tf].conc_mass_phase_comp[
+    #                     "Liq", "NaCl"
+    #                 ]
+    #             )
+    #         ]
+    #     ),
+    #     "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
+    #         traj.vecs[
+    #             str(
+    #                 m.fs.unit.feed_side.properties_interface[
+    #                     tf, 0
+    #                 ].conc_mass_phase_comp["Liq", "NaCl"]
+    #             )
+    #         ]
+    #     ),
+    #     "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
+    #         traj.vecs[
+    #             str(
+    #                 m.fs.unit.feed_side.properties_interface[
+    #                     tf, 1
+    #                 ].conc_mass_phase_comp["Liq", "NaCl"]
+    #             )
+    #         ]
+    #     ),
+    #     "mixed_permeate.mass.NaCl": np.array(  # kg/s
+    #         traj.vecs[
+    #             str(m.fs.unit.mixed_permeate[tf].flow_mass_phase_comp["Liq", "NaCl"])
+    #         ]
+    #     ),
+    #     "mixed_permeate.conc.NaCl": np.array(  # kg/m3
+    #         traj.vecs[
+    #             str(m.fs.unit.mixed_permeate[tf].conc_mass_phase_comp["Liq", "NaCl"])
+    #         ]
+    #     ),
+    #     "flux_mass_phase_comp.H2O": 3600
+    #     * 0.5  # LMH
+    #     * (
+    #         np.array(
+    #             traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 0, "Liq", "H2O"])]
+    #         )
+    #         + np.array(
+    #             traj.vecs[str(m.fs.unit.flux_mass_phase_comp[tf, 1, "Liq", "H2O"])]
+    #         )
+    #     ),
+    # }
+    # print("after results_dict")
+    # for key, v in results_dict.items():
+    #     # Turn n by 1 arrays in into vectors
+    #     results_dict[key] = np.squeeze(v)
+    # time = results_dict["time"]
+    # # print(time)
 
-    fig = plt.figure(figsize=(16, 9))
-    # ax = fig.subplots(4, 2, sharex=True)
-    plt.subplot(4, 2, 1)
-    plt.plot(time, results_dict["recovery"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Recovery", fontsize=9)
-    plt.subplot(4, 2, 2)
-    plt.plot(time, results_dict["flux_mass_phase_comp.H2O"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Flux H2O $J_w$ (LMH)", fontsize=9)
-    plt.subplot(4, 2, 3)
-    plt.plot(time, results_dict["feed.in.vol"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Brine inlet flow $\dot{V}$ (L/min)", fontsize=9)
-    plt.subplot(4, 2, 4)
-    plt.plot(time, results_dict["feed.in.conc.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Brine inlet $C_{NaCl}$ (g/L)", fontsize=9)
-    plt.subplot(4, 2, 5)
-    plt.plot(time, results_dict["feed.out.vol"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Brine outlet flow $\dot{V}$ (L/min)", fontsize=9)
-    plt.subplot(4, 2, 6)
-    plt.plot(time, results_dict["feed.out.conc.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Brine outlet $C_{NaCl}$ (g/L)", fontsize=9)
-    plt.subplot(4, 2, 7)
-    plt.plot(time, results_dict["mixed_permeate.vol"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Mixed permeate out flow rate $\dot{V}$ (L/min)", fontsize=9)
-    plt.subplot(4, 2, 8)
-    plt.plot(time, results_dict["mixed_permeate.conc.NaCl"])
-    plt.xlabel("Time (s)", fontsize=9)
-    plt.ylabel("Mixed permeate $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
-    plt.tight_layout()
-    plt.savefig("test_plot.png", dpi=150)
+    # fig = plt.figure(figsize=(16, 9))
+    # # ax = fig.subplots(4, 2, sharex=True)
+    # plt.subplot(4, 2, 1)
+    # plt.plot(time, results_dict["recovery"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Recovery", fontsize=9)
+    # plt.subplot(4, 2, 2)
+    # plt.plot(time, results_dict["flux_mass_phase_comp.H2O"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Flux H2O $J_w$ (LMH)", fontsize=9)
+    # plt.subplot(4, 2, 3)
+    # plt.plot(time, results_dict["feed.in.vol"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Brine inlet flow $\dot{V}$ (L/min)", fontsize=9)
+    # plt.subplot(4, 2, 4)
+    # plt.plot(time, results_dict["feed.in.conc.NaCl"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Brine inlet $C_{NaCl}$ (g/L)", fontsize=9)
+    # plt.subplot(4, 2, 5)
+    # plt.plot(time, results_dict["feed.out.vol"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Brine outlet flow $\dot{V}$ (L/min)", fontsize=9)
+    # plt.subplot(4, 2, 6)
+    # plt.plot(time, results_dict["feed.out.conc.NaCl"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Brine outlet $C_{NaCl}$ (g/L)", fontsize=9)
+    # plt.subplot(4, 2, 7)
+    # plt.plot(time, results_dict["mixed_permeate.vol"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Mixed permeate out flow rate $\dot{V}$ (L/min)", fontsize=9)
+    # plt.subplot(4, 2, 8)
+    # plt.plot(time, results_dict["mixed_permeate.conc.NaCl"])
+    # plt.xlabel("Time (s)", fontsize=9)
+    # plt.ylabel("Mixed permeate $C_{NaCl}$ (kg/m$^3$)", fontsize=9)
+    # plt.tight_layout()
+    # plt.savefig("test_plot.png", dpi=150)
 
-    with open("model_results.p", "wb") as fp:
-        pickle.dump(results_dict, fp, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open("model_results.p", "wb") as fp:
+    #     pickle.dump(results_dict, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
-    print("Accumulation and holdup")
-    m.fs.unit.feed_side.material_accumulation.display()
-    m.fs.unit.feed_side.material_holdup.display()
+    # print("Accumulation and holdup")
+    # m.fs.unit.feed_side.material_accumulation.display()
+    # m.fs.unit.feed_side.material_holdup.display()
 
-    # print('VFR balance (L/min): ', results_dict["feed.in.vol"] - results_dict["feed.out.vol"] - results_dict["mixed_permeate.vol"])
-    # print('NaCl balance (kg/s): ', results_dict["feed.in.mass.NaCl"] - results_dict["feed.out.mass.NaCl"] - results_dict["mixed_permeate.mass.NaCl"])
-    print(results_dict["feed.in.mass.NaCl"])
-    print(results_dict["feed.out.mass.NaCl"])
-    print(results_dict["mixed_permeate.mass.NaCl"])
+    # # print('VFR balance (L/min): ', results_dict["feed.in.vol"] - results_dict["feed.out.vol"] - results_dict["mixed_permeate.vol"])
+    # # print('NaCl balance (kg/s): ', results_dict["feed.in.mass.NaCl"] - results_dict["feed.out.mass.NaCl"] - results_dict["mixed_permeate.mass.NaCl"])
+    # print(results_dict["feed.in.mass.NaCl"])
+    # print(results_dict["feed.out.mass.NaCl"])
+    # print(results_dict["mixed_permeate.mass.NaCl"])
 
     # m.fs.unit.flux_mass_phase_comp.display()
     # m.fs.unit.mixed_permeate[190].conc_mass_phase_comp.display()
