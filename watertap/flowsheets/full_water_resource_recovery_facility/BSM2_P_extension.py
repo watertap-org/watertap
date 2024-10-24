@@ -774,7 +774,32 @@ def initialize_system(m, bio_P=False, solver=None):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+        if unit == m.fs.AD:
+            try:
+                unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+            except:
+                print("Default initialization of AD failed")
+                # Fix feed states
+                m.fs.AD.inlet.flow_vol.fix()
+                m.fs.AD.inlet.conc_mass_comp.fix()
+                m.fs.AD.inlet.temperature.fix()
+                m.fs.AD.inlet.pressure.fix()
+                m.fs.AD.volume_vapor.fix()
+                m.fs.AD.volume_liquid.fix()
+                m.fs.AD.liquid_outlet.temperature.fix()
+                # Re-solve unit
+                solver = get_solver()
+                solver.solve(m.fs.AD, tee=True)
+                # Unfix feed states
+                m.fs.AD.inlet.flow_vol.unfix()
+                m.fs.AD.inlet.conc_mass_comp.unfix()
+                m.fs.AD.inlet.temperature.unfix()
+                m.fs.AD.inlet.pressure.unfix()
+                m.fs.AD.volume_vapor.unfix()
+                m.fs.AD.volume_liquid.unfix()
+                m.fs.AD.liquid_outlet.temperature.unfix()
+        else:
+            unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
 
