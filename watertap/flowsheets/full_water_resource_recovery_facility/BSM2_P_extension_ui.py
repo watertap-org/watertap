@@ -13,12 +13,11 @@
 GUI configuration for the extended BSM2 flowsheet.
 """
 
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import units as pyunits
+
+import idaes.logger as idaeslog
 
 from watertap.ui.fsapi import FlowsheetInterface
-
-from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
@@ -27,6 +26,14 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     solve,
     add_costing,
 )
+
+from watertap.core.util.initialization import (
+    assert_degrees_of_freedom,
+    interval_initializer,
+)
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def export_to_ui():
@@ -38,6 +45,15 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        requires_idaes_solver=True,
+        build_options={
+            "BioP": {
+                "name": "BioP",
+                "display_name": "Phosphorus Biomass Transformation",
+                "values_allowed": ["False", "True"],
+                "value": "False",  # default value
+            },
+        },
     )
 
 
@@ -1007,50 +1023,50 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Capital costs",
     )
-    exports.add(
-        obj=fs.CL2.costing.capital_cost,
-        name="Secondary clarifier capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of secondary clarifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.AD.costing.capital_cost,
-        name="Anaerobic digester capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of anaerobic digester",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.dewater.costing.capital_cost,
-        name="Dewatering unit capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of dewatering",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-    exports.add(
-        obj=fs.thickener.costing.capital_cost,
-        name="Thickener capital cost",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=3,
-        description="Capital cost of thickener",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
+    # exports.add(
+    #     obj=fs.CL2.costing.capital_cost,
+    #     name="Secondary clarifier capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of secondary clarifier",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.AD.costing.capital_cost,
+    #     name="Anaerobic digester capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of anaerobic digester",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.dewater.costing.capital_cost,
+    #     name="Dewatering unit capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of dewatering",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
+    # exports.add(
+    #     obj=fs.thickener.costing.capital_cost,
+    #     name="Thickener capital cost",
+    #     ui_units=fs.costing.base_currency,
+    #     display_units="$",
+    #     rounding=3,
+    #     description="Capital cost of thickener",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Capital costs",
+    # )
 
     # Outlets
     exports.add(
@@ -3848,44 +3864,90 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     Builds the initial flowsheet.
     """
-    m = build()
 
-    set_operating_conditions(m)
+    if build_options is not None:
+        if build_options["BioP"]:
+            bioP = True
+        else:
+            bioP = False
 
-    for mx in m.fs.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
+        m = build(bio_P=bioP)
 
-    assert_degrees_of_freedom(m, 0)
-    assert_units_consistent(m)
+        set_operating_conditions(m)
 
-    initialize_system(m)
+        for mx in m.fs.mixers:
+            mx.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    for mx in m.fs.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
+        initialize_system(m, bio_P=bioP)
 
-    results = solve(m)
-    assert_optimal_termination(results)
+        for mx in m.fs.mixers:
+            mx.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
-    m.fs.R5.KLa.fix(240)
-    m.fs.R6.KLa.fix(240)
-    m.fs.R7.KLa.fix(84)
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # Resolve with controls in place
-    results = solve(m)
-    assert_optimal_termination(results)
+        solve(m)
 
-    add_costing(m)
-    assert_degrees_of_freedom(m, 0)
-    m.fs.costing.initialize()
+        # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
+        m.fs.R5.KLa.fix(240)
+        m.fs.R6.KLa.fix(240)
+        m.fs.R7.KLa.fix(84)
+        m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
-    results = solve(m)
-    assert_optimal_termination(results)
+        # Resolve with controls in place
+        solve(m)
+
+        add_costing(m)
+        m.fs.costing.initialize()
+
+        # interval_initializer(m.fs.costing)
+
+        assert_degrees_of_freedom(m, 0)
+
+        solve(m)
+
+    else:
+        m = build(bio_P=False)
+
+        set_operating_conditions(m)
+
+        for mx in m.fs.mixers:
+            mx.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
+
+        initialize_system(m, bio_P=False)
+
+        for mx in m.fs.mixers:
+            mx.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
+        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
+
+        solve(m)
+
+        # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
+        m.fs.R5.KLa.fix(240)
+        m.fs.R6.KLa.fix(240)
+        m.fs.R7.KLa.fix(84)
+        m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+        m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+
+        # Resolve with controls in place
+        solve(m)
+
+        add_costing(m)
+        m.fs.costing.initialize()
+
+        interval_initializer(m.fs.costing)
+
+        assert_degrees_of_freedom(m, 0)
+
+        solve(m)
+
     return m
 
 

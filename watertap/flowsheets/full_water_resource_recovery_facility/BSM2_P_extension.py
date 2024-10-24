@@ -26,6 +26,7 @@ from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
+    UnitModelBlockData,
 )
 from idaes.models.unit_models import (
     CSTR,
@@ -76,21 +77,26 @@ from watertap.unit_models.thickener import (
     ActivatedSludgeModelType as thickener_type,
 )
 
-from watertap.core.util.initialization import check_solve, assert_degrees_of_freedom
+from watertap.core.util.initialization import (
+    check_solve,
+    assert_degrees_of_freedom,
+    interval_initializer,
+)
+
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=True):
+def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
+
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
@@ -113,7 +119,8 @@ def main(bio_P=True):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    # Resolve with controls in place
+
+    # Re-solve with controls in place
     results = solve(m)
 
     pyo.assert_optimal_termination(results)
@@ -126,6 +133,8 @@ def main(bio_P=True):
 
     add_costing(m)
     m.fs.costing.initialize()
+
+    interval_initializer(m.fs.costing)
 
     assert_degrees_of_freedom(m, 0)
 
@@ -205,6 +214,7 @@ def build(bio_P=False):
         property_package=m.fs.props_ASM2D, outlet_list=["underflow", "overflow"]
     )
     # Secondary Clarifier
+    # TODO: Replace with more detailed model when available
     m.fs.CL2 = Clarifier(
         property_package=m.fs.props_ASM2D,
         outlet_list=["underflow", "effluent"],
@@ -268,7 +278,8 @@ def build(bio_P=False):
     m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
         outlet_property_package=m.fs.props_ASM2D,
-        reaction_package=m.fs.rxn_props_ADM1,
+        inlet_reaction_package=m.fs.rxn_props_ADM1,
+        outlet_reaction_package=m.fs.rxn_props_ASM2D,
         has_phase_equilibrium=False,
         outlet_state_defined=True,
     )
@@ -362,7 +373,12 @@ def build(bio_P=False):
         doc="Dissolved oxygen concentration at equilibrium",
     )
 
-    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R5")
+    m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
+    for R in m.fs.aerobic_reactors:
+        iscale.set_scaling_factor(R.KLa, 1e-2)
+        iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-3)
+
+    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):
         return pyo.units.convert(
             m.fs.R5.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -372,7 +388,7 @@ def build(bio_P=False):
             * (m.fs.S_O_eq - m.fs.R5.outlet.conc_mass_comp[t, "S_O2"])
         )
 
-    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R6")
+    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
     def mass_transfer_R6(self, t):
         return pyo.units.convert(
             m.fs.R6.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -382,7 +398,7 @@ def build(bio_P=False):
             * (m.fs.S_O_eq - m.fs.R6.outlet.conc_mass_comp[t, "S_O2"])
         )
 
-    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R7")
+    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
     def mass_transfer_R7(self, t):
         return pyo.units.convert(
             m.fs.R7.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -465,7 +481,7 @@ def set_operating_conditions(m):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
 
-    # Set fraction of outflow from reactor 7 that goes to recycle
+    # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
     # Secondary Clarifier
@@ -513,13 +529,13 @@ def set_operating_conditions(m):
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+                iscale.set_scaling_factor(var, 1e0)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-4)
+                iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e1)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -532,17 +548,21 @@ def set_operating_conditions(m):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
+    iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e1)
+
     # Apply scaling
     scale_variables(m)
     iscale.calculate_scaling_factors(m)
 
 
-def initialize_system(m, bio_P=False):
+def initialize_system(m, bio_P=False, solver=None):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 5
+    seq.options.iterLim = 1
     seq.options.tear_set = [m.fs.stream5, m.fs.stream10adm]
 
     G = seq.create_graph(m)
@@ -553,28 +573,27 @@ def initialize_system(m, bio_P=False):
         print(o[0].name)
 
     if bio_P:
-        # Initial guesses for flow into first reactor
         tear_guesses = {
             "flow_vol": {0: 1.2368},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0009,
-                (0, "S_F"): 0.00042,
-                (0, "S_I"): 0.05745,
-                (0, "S_N2"): 0.0534,
-                (0, "S_NH4"): 0.0089,
-                (0, "S_NO3"): 0.0046,
-                (0, "S_O2"): 0.0046,
-                (0, "S_PO4"): 0.0118,
-                (0, "S_K"): 0.373,
+                (0, "S_A"): 0.0006,
+                (0, "S_F"): 0.0004,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.045,
+                (0, "S_NH4"): 0.0075,
+                (0, "S_NO3"): 0.003,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 0.011,
+                (0, "S_K"): 0.37,
                 (0, "S_Mg"): 0.023,
-                (0, "S_IC"): 0.1366,
-                (0, "X_AUT"): 0.135,
-                (0, "X_H"): 3.647,
-                (0, "X_I"): 3.314,
-                (0, "X_PAO"): 2.984,
-                (0, "X_PHA"): 0.083,
-                (0, "X_PP"): 0.9907,
-                (0, "X_S"): 0.05823,
+                (0, "S_IC"): 0.13,
+                (0, "X_AUT"): 0.10,
+                (0, "X_H"): 3.6,
+                (0, "X_I"): 3.2,
+                (0, "X_PAO"): 3.6,
+                (0, "X_PHA"): 0.094,
+                (0, "X_PP"): 1.16,
+                (0, "X_S"): 0.059,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -585,76 +604,75 @@ def initialize_system(m, bio_P=False):
             "conc_mass_comp": {
                 (0, "S_A"): 0.10,
                 (0, "S_F"): 0.16,
-                (0, "S_I"): 0.05745,
-                (0, "S_N2"): 0.039,
-                (0, "S_NH4"): 0.035,
-                (0, "S_NO3"): 0.0032,
-                (0, "S_O2"): 0.00314,
-                (0, "S_PO4"): 0.0238,
-                (0, "S_K"): 0.379,
-                (0, "S_Mg"): 0.026,
-                (0, "S_IC"): 0.078,
-                (0, "X_AUT"): 0.342,
-                (0, "X_H"): 23.95,
-                (0, "X_I"): 11.9,
-                (0, "X_PAO"): 9.62,
-                (0, "X_PHA"): 0.0033,
-                (0, "X_PP"): 2.51,
-                (0, "X_S"): 3.92,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.036,
+                (0, "S_NH4"): 0.03,
+                (0, "S_NO3"): 0.002,
+                (0, "S_O2"): 0.0013,
+                (0, "S_PO4"): 0.024,
+                (0, "S_K"): 0.38,
+                (0, "S_Mg"): 0.027,
+                (0, "S_IC"): 0.072,
+                (0, "X_AUT"): 0.25,
+                (0, "X_H"): 23.0,
+                (0, "X_I"): 11.3,
+                (0, "X_PAO"): 10.9,
+                (0, "X_PHA"): 0.0058,
+                (0, "X_PP"): 2.9,
+                (0, "X_S"): 3.8,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
         }
 
     else:
-        # Initial guesses for flow into first reactor
         tear_guesses = {
-            "flow_vol": {0: 1.235},
+            "flow_vol": {0: 1.2368},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0007,
+                (0, "S_A"): 0.0006,
                 (0, "S_F"): 0.0004,
-                (0, "S_I"): 0.0575,
-                (0, "S_N2"): 0.05,
-                (0, "S_NH4"): 0.007,
-                (0, "S_NO3"): 0.0035,
-                (0, "S_O2"): 0.00192,
-                (0, "S_PO4"): 0.02,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.047,
+                (0, "S_NH4"): 0.0075,
+                (0, "S_NO3"): 0.003,
+                (0, "S_O2"): 0.0019,
+                (0, "S_PO4"): 0.73,
                 (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.02,
-                (0, "S_IC"): 0.11,
-                (0, "X_AUT"): 0.12,
-                (0, "X_H"): 3.3,
-                (0, "X_I"): 3.0,
-                (0, "X_PAO"): 2.3,
-                (0, "X_PHA"): 0.06,
-                (0, "X_PP"): 0.75,
-                (0, "X_S"): 0.050,
+                (0, "S_Mg"): 0.020,
+                (0, "S_IC"): 0.13,
+                (0, "X_AUT"): 0.11,
+                (0, "X_H"): 3.5,
+                (0, "X_I"): 3.2,
+                (0, "X_PAO"): 3.2,
+                (0, "X_PHA"): 0.084,
+                (0, "X_PP"): 1.07,
+                (0, "X_S"): 0.057,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
         }
 
         tear_guesses2 = {
-            "flow_vol": {0: 0.0027},
+            "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.044,
+                (0, "S_A"): 0.097,
                 (0, "S_F"): 0.15,
-                (0, "S_I"): 0.0575,
-                (0, "S_N2"): 0.035,
+                (0, "S_I"): 0.057,
+                (0, "S_N2"): 0.036,
                 (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 0.002,
-                (0, "S_O2"): 0.0012,
-                (0, "S_PO4"): 0.02,
+                (0, "S_O2"): 0.0013,
+                (0, "S_PO4"): 0.74,
                 (0, "S_K"): 0.38,
-                (0, "S_Mg"): 0.023,
-                (0, "S_IC"): 0.063,
-                (0, "X_AUT"): 0.31,
-                (0, "X_H"): 24.8,
-                (0, "X_I"): 11.8,
-                (0, "X_PAO"): 8.5,
-                (0, "X_PHA"): 0.086,
-                (0, "X_PP"): 2.1,
-                (0, "X_S"): 4.2,
+                (0, "S_Mg"): 0.024,
+                (0, "S_IC"): 0.075,
+                (0, "X_AUT"): 0.28,
+                (0, "X_H"): 23.4,
+                (0, "X_I"): 11.4,
+                (0, "X_PAO"): 10.1,
+                (0, "X_PHA"): 0.0044,
+                (0, "X_PP"): 2.7,
+                (0, "X_S"): 3.9,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},
@@ -665,7 +683,7 @@ def initialize_system(m, bio_P=False):
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO)
+        unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
 
     seq.run(m, function)
 
@@ -714,11 +732,11 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
-    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
-    iscale.calculate_scaling_factors(m.fs)
+    for block in m.fs.component_objects(pyo.Block, descend_into=True):
+        if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
+            iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
 
 
 def display_costing(m):
@@ -858,10 +876,83 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
     )
 
+    print("---- Feed Metrics----")
+    print(
+        "Feed TSS concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TSS),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TSS),
+    )
+    print(
+        "Feed COD concentration",
+        pyo.value(m.fs.FeedWater.properties[0].COD),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.FeedWater.properties[0].BOD5["raw"]),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].BOD5["raw"]),
+    )
+    print(
+        "TKN concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TKN),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TKN),
+    )
+    print(
+        "SNOX concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SNOX),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_inorganic),
+    )
+
+    print("---- Effluent Metrics----")
+    print(
+        "TSS concentration",
+        pyo.value(m.fs.Treated.properties[0].TSS),
+        pyo.units.get_units(m.fs.Treated.properties[0].TSS),
+    )
+    print(
+        "COD concentration",
+        pyo.value(m.fs.Treated.properties[0].COD),
+        pyo.units.get_units(m.fs.Treated.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.Treated.properties[0].BOD5["effluent"]),
+        pyo.units.get_units(m.fs.Treated.properties[0].BOD5["effluent"]),
+    )
+    print(
+        "TKN concentration",
+        pyo.value(m.fs.Treated.properties[0].TKN),
+        pyo.units.get_units(m.fs.Treated.properties[0].TKN),
+    )
+    print(
+        "SNOX concentration",
+        pyo.value(m.fs.Treated.properties[0].SNOX),
+        pyo.units.get_units(m.fs.Treated.properties[0].SNOX),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_inorganic),
+    )
+
 
 if __name__ == "__main__":
-    # This method builds and runs a steady state activated sludge flowsheet.
-    m, results = main()
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
@@ -874,6 +965,7 @@ if __name__ == "__main__":
             "R6": m.fs.R6.outlet,
             "R7": m.fs.R7.outlet,
             "thickener outlet": m.fs.thickener.underflow,
+            "ASM-ADM translator inlet": m.fs.translator_asm2d_adm1.inlet,
             "ADM-ASM translator outlet": m.fs.translator_adm1_asm2d.outlet,
             "dewater outlet": m.fs.dewater.overflow,
             "Treated water": m.fs.Treated.inlet,

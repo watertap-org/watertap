@@ -163,16 +163,6 @@ class TestAsm2dAdm1_bioP_true(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-        assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
-        assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
-        assert value(asmadm.fs.unit.f_xI_xc) == 0.1
-        assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
-        assert value(asmadm.fs.unit.f_ch_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_pr_xc, Param)
-        assert value(asmadm.fs.unit.f_pr_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_li_xc, Param)
-        assert value(asmadm.fs.unit.f_li_xc) == 0.35
 
         assert isinstance(asmadm.fs.unit.f_XPHA_Sva, Param)
         assert value(asmadm.fs.unit.f_XPHA_Sva) == 0.1
@@ -204,7 +194,7 @@ class TestAsm2dAdm1_bioP_true(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 264
+        assert number_variables(asmadm) == 278
         assert number_total_constraints(asmadm) == 34
 
         # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
@@ -438,16 +428,6 @@ class TestAsm2dAdm1_bioP_false(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, asmadm):
-        assert isinstance(asmadm.fs.unit.f_sI_xc, Param)
-        assert value(asmadm.fs.unit.f_sI_xc) == 0
-        assert isinstance(asmadm.fs.unit.f_xI_xc, Param)
-        assert value(asmadm.fs.unit.f_xI_xc) == 0.1
-        assert isinstance(asmadm.fs.unit.f_ch_xc, Param)
-        assert value(asmadm.fs.unit.f_ch_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_pr_xc, Param)
-        assert value(asmadm.fs.unit.f_pr_xc) == 0.275
-        assert isinstance(asmadm.fs.unit.f_li_xc, Param)
-        assert value(asmadm.fs.unit.f_li_xc) == 0.35
 
         assert isinstance(asmadm.fs.unit.f_XPHA_Sva, Param)
         assert value(asmadm.fs.unit.f_XPHA_Sva) == 0.1
@@ -479,7 +459,7 @@ class TestAsm2dAdm1_bioP_false(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 264
+        assert number_variables(asmadm) == 278
         assert number_total_constraints(asmadm) == 34
 
         # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
