@@ -56,7 +56,7 @@ from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
 from idaes.core.scaling import  report_scaling_factors, AutoScaler
-
+import numpy as np
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 atmospheric_pressure = 101325 * pyunits.Pa
@@ -67,7 +67,9 @@ def build_system():
     Build steady-state model
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs = FlowsheetBlock(dynamic=True,
+                          time_set=list(np.linspace(0, 200, 6)),
+                          time_units=pyunits.s)
     m.fs.properties = NaClParameterBlock()
 
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -85,15 +87,20 @@ def build_system():
     m.fs.M1.pressure_equality_constraints[0,2].deactivate()
 
     m.fs.RO = ReverseOsmosis0D(
+        dynamic=True,
+        has_holdup=True,
         property_package=m.fs.properties,
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
-        # mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        # concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
         module_type="spiral_wound",
         has_full_reporting=True,
     )
-
+    time_nfe = len(m.fs.time) - 1
+    TransformationFactory("dae.finite_difference").apply_to(
+        m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
+    )
     # connect unit models
     m.fs.feed_to_P1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
     m.fs.P1_to_M1 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.inlet_1)
@@ -214,8 +221,8 @@ def set_operating_conditions(m):
 
 
 
-    m.fs.feed.properties[0].pressure.fix(atmospheric_pressure)
-    m.fs.feed.properties[0].temperature.fix(feed_temp)
+    m.fs.feed.properties[:].pressure.fix(atmospheric_pressure)
+    m.fs.feed.properties[:].temperature.fix(feed_temp)
 
     m.fs.feed.properties.calculate_state(
         var_args={
@@ -278,7 +285,9 @@ def set_operating_conditions(m):
     m.fs.RO.feed_side.spacer_porosity.fix(spacer_porosity)
   
     # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(0.06)
-
+    m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0
+    m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
+    
     m.fs.RO.feed_side.K.setlb(1e-9)
     m.fs.RO.feed_side.friction_factor_darcy.setub(None)
     m.fs.RO.permeate_side[...].conc_mass_phase_comp.setlb(None)
