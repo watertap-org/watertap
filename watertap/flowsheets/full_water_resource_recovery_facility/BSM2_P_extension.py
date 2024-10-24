@@ -93,7 +93,6 @@ from watertap.costing.unit_models.clarifier import (
 _log = idaeslog.getLogger(__name__)
 
 
-
 def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
