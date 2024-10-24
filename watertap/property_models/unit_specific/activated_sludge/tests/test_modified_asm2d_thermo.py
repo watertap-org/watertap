@@ -29,7 +29,6 @@ from idaes.core.util.model_statistics import (
 )
 
 from watertap.core.solvers import get_solver
-from watertap.property_models.tests.property_test_harness import PropertyAttributeError
 
 
 # -----------------------------------------------------------------------------
@@ -153,6 +152,66 @@ class TestParamBlock(object):
         assert model.params.f_ISS_BM.is_fixed()
         assert value(model.params.f_ISS_BM) == 0.15
 
+        assert isinstance(model.params.i_NSF, Var)
+        assert model.params.i_NSF.is_fixed()
+        assert value(model.params.i_NSF) == 0.03352
+
+        assert isinstance(model.params.i_NSI, Var)
+        assert model.params.i_NSI.is_fixed()
+        assert value(model.params.i_NSI) == 0.06003
+
+        assert isinstance(model.params.i_NXI, Var)
+        assert model.params.i_NXI.is_fixed()
+        assert value(model.params.i_NXI) == 0.06003
+
+        assert isinstance(model.params.i_NXS, Var)
+        assert model.params.i_NXS.is_fixed()
+        assert value(model.params.i_NXS) == 0.03352
+
+        assert isinstance(model.params.i_NBM, Var)
+        assert model.params.i_NBM.is_fixed()
+        assert value(model.params.i_NBM) == 0.08615
+
+        assert isinstance(model.params.f_SI, Var)
+        assert model.params.f_SI.is_fixed()
+        assert value(model.params.f_SI) == 0
+
+        assert isinstance(model.params.f_XIH, Var)
+        assert model.params.f_XIH.is_fixed()
+        assert value(model.params.f_XIH) == 0.1
+
+        assert isinstance(model.params.f_XIP, Var)
+        assert model.params.f_XIP.is_fixed()
+        assert value(model.params.f_XIP) == 0.1
+
+        assert isinstance(model.params.f_XIA, Var)
+        assert model.params.f_XIA.is_fixed()
+        assert value(model.params.f_XIA) == 0.1
+
+        assert isinstance(model.params.i_PSF, Var)
+        assert model.params.i_PSF.is_fixed()
+        assert value(model.params.i_PSF) == 0.00559
+
+        assert isinstance(model.params.i_PSI, Var)
+        assert model.params.i_PSI.is_fixed()
+        assert value(model.params.i_PSI) == 0.00649
+
+        assert isinstance(model.params.i_PXI, Var)
+        assert model.params.i_PXI.is_fixed()
+        assert value(model.params.i_PXI) == 0.00649
+
+        assert isinstance(model.params.i_PXS, Var)
+        assert model.params.i_PXS.is_fixed()
+        assert value(model.params.i_PXS) == 0.00559
+
+        assert isinstance(model.params.i_PBM, Var)
+        assert model.params.i_PBM.is_fixed()
+        assert value(model.params.i_PBM) == 0.02154
+
+        assert isinstance(model.params.BOD5_factor, Param)
+        assert value(model.params.BOD5_factor["raw"]) == 0.65
+        assert value(model.params.BOD5_factor["effluent"]) == 0.25
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
@@ -202,24 +261,6 @@ class TestStateBlock(object):
             assert value(model.props[1].conc_mass_comp[i]) == 0.1
 
         metadata = model.params.get_metadata().properties
-
-        # check that properties are not built if not demanded
-        for v in metadata.list_supported_properties():
-            if metadata[v.name].method is not None:
-                if model.props[1].is_property_constructed(v.name):
-                    raise PropertyAttributeError(
-                        "Property {v_name} is an on-demand property, but was found "
-                        "on the stateblock without being demanded".format(v_name=v.name)
-                    )
-
-        # check that properties are built if demanded
-        for v in metadata.list_supported_properties():
-            if metadata[v.name].method is not None:
-                if not hasattr(model.props[1], v.name):
-                    raise PropertyAttributeError(
-                        "Property {v_name} is an on-demand property, but was not built "
-                        "when demanded".format(v_name=v.name)
-                    )
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):

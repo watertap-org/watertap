@@ -19,8 +19,8 @@ from pyomo.environ import (
 )
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
-from watertap.property_models.unit_specific.activated_sludge.simple_modified_asm2d_properties import (
-    SimpleModifiedASM2dParameterBlock,
+from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
 )
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -42,45 +42,48 @@ class TestElectroNP:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = SimpleModifiedASM2dParameterBlock(
-            additional_solute_list=["S_K", "S_Mg"]
-        )
+        m.fs.properties = ModifiedASM2dParameterBlock()
 
         m.fs.unit = ElectroNPZO(property_package=m.fs.properties)
 
-        EPS = 1e-8
-
-        m.fs.unit.inlet.temperature.fix(298.15 * units.K)
+        m.fs.unit.inlet.flow_vol.fix(20935.15 * units.m**3 / units.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
         m.fs.unit.inlet.pressure.fix(1 * units.atm)
-
-        m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(10 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(16 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(3.6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(30 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(20 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(125 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(30 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(EPS * units.mg / units.liter)
-
-        # Alkalinity was givien in mg/L based on C
-        m.fs.unit.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(22.167e-3 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(8.5006e-3 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(
+            2.0166e-3 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(
+            65.774e-3 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
+            0.057457e-3 * units.kg / units.m**3
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(0.3079e-3 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(0.07e-3 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(0 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(1.2032e-3 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(1.0763e-3 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(
+            0.72403e-3 * units.kg / units.m**3
+        )
 
         # Unit option
         m.fs.unit.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
         m.fs.unit.magnesium_chloride_dosage.fix(0.388)
+
+        P_removal = 0.95
+        m.fs.unit.P_removal = P_removal
+        m.fs.unit.N_removal = 0.3 * P_removal
+        m.fs.unit.frac_mass_H2O_treated[0].fix(0.99)
 
         return m
 
@@ -116,6 +119,7 @@ class TestElectroNP:
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_F"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_A"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_I"))
+        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_IC"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_I"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_S"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_H"))
@@ -123,9 +127,6 @@ class TestElectroNP:
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_PP"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_PHA"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_AUT"))
-        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_MeOH"))
-        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_MeP"))
-        m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("X_TSS"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_K"))
         m.fs.properties.set_default_scaling("conc_mass_comp", 1e1, index=("S_Mg"))
         m.fs.properties.set_default_scaling("alkalinity", 1)
@@ -183,50 +184,47 @@ class TestElectroNP:
     @pytest.mark.component
     def test_solution(self, ElectroNP_frame):
         m = ElectroNP_frame
-        assert value(m.fs.unit.treated.flow_vol[0]) == pytest.approx(0.1874, rel=1e-3)
+        assert value(m.fs.unit.treated.flow_vol[0]) == pytest.approx(0.23988, rel=1e-3)
 
         assert value(m.fs.unit.treated.temperature[0]) == pytest.approx(
-            298.15, rel=1e-4
+            308.15, rel=1e-4
         )
         assert value(m.fs.unit.treated.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            0.02279, rel=1e-3
+            0.008586, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            0.03418, rel=1e-3
+            0.022390, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_I"]) == pytest.approx(
-            0.03418, rel=1e-3
+            0.000058038, rel=1e-3
+        )
+        assert value(m.fs.unit.treated.conc_mass_comp[0, "S_IC"]) == pytest.approx(
+            0.0012153, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_N2"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            0.01276, rel=1e-3
+            0.0014564, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            0.01139, rel=1e-3
+            0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            8.203e-5, rel=1e-3
+            0.0033219, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            0.03418, rel=1e-3
+            0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            0.02848, rel=1e-3
-        )
-        assert value(m.fs.unit.treated.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
-            0, abs=1e-4
-        )
-        assert value(m.fs.unit.treated.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
-            0, abs=1e-4
+            0.00031101, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             0, abs=1e-4
@@ -238,31 +236,25 @@ class TestElectroNP:
             0, abs=1e-4
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            0.1424, rel=1e-3
-        )
-        assert value(m.fs.unit.treated.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            0, abs=1e-4
+            0.000070775, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_Mg"]) == pytest.approx(
-            0, abs=1e-4
+            0.00073135, rel=1e-3
         )
         assert value(m.fs.unit.treated.conc_mass_comp[0, "S_K"]) == pytest.approx(
-            0, abs=1e-4
+            0.0010871, rel=1e-3
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            0.03925, rel=1e-3
+            0.057473, rel=1e-3
         )
         assert value(m.fs.unit.byproduct.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            0.02885, rel=1e-3
-        )
-        assert value(m.fs.unit.treated.alkalinity[0]) == pytest.approx(
-            0.005792, rel=1e-3
+            6.2485, rel=1e-3
         )
         assert value(m.fs.unit.energy_electric_flow_mass) == pytest.approx(
             0.044, rel=1e-3
         )
-        assert value(m.fs.unit.electricity[0]) == pytest.approx(0.1193, rel=1e-3)
-        assert value(m.fs.unit.MgCl2_flowrate[0]) == pytest.approx(1.0521, rel=1e-3)
+        assert value(m.fs.unit.electricity[0]) == pytest.approx(2.398255, rel=1e-3)
+        assert value(m.fs.unit.MgCl2_flowrate[0]) == pytest.approx(21.1482, rel=1e-3)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -280,10 +272,10 @@ class TestElectroNP:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(2.0 * 1036611.9, rel=1e-5) == value(
+        assert pytest.approx(2.0 * 1176494.96, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(0.05049, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.042569, rel=1e-3) == value(m.fs.costing.LCOW)
 
     @pytest.mark.unit
     def test_report(self, ElectroNP_frame):
