@@ -26,7 +26,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
+from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension_scaled import (
     main,
 )
 from watertap.core.solvers import get_solver
@@ -339,58 +339,58 @@ class TestFullFlowsheetBioPTrueOptimization:
             0.2422, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            2.46e-4, rel=1e-3
+            2.42e-4, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-            4.4647e-4, rel=1e-3
+            4.450488e-4, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
             0.057450, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
-        ) == pytest.approx(0.057956, rel=1e-3)
+        ) == pytest.approx(0.05828, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-        ) == pytest.approx(0.00388766, rel=1e-3)
+        ) == pytest.approx(0.0038698, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
-        ) == pytest.approx(0.00790185, rel=1e-3)
+        ) == pytest.approx(0.0079186, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-        ) == pytest.approx(0.00671073, rel=1e-3)
+        ) == pytest.approx(0.006708577, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.00663458, rel=1e-3)
+        ) == pytest.approx(0.00664499, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-            0.373562, rel=1e-3
+            0.373578, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-        ) == pytest.approx(0.020423, rel=1e-3)
+        ) == pytest.approx(0.020417, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(0.14046, rel=1e-3)
+        ) == pytest.approx(0.14045, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
-        ) == pytest.approx(0.00044229, rel=1e-3)
+        ) == pytest.approx(0.0004464033, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
-            0.026341, rel=1e-3
+            0.02637379, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0046364, rel=1e-3
+            0.0046446, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
-        ) == pytest.approx(0.0017225, rel=1e-3)
+        ) == pytest.approx(0.00170549, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-        ) == pytest.approx(5.0067e-06, abs=1e-6)
+        ) == pytest.approx(4.834034e-06, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
-        ) == pytest.approx(0.00053953, rel=1e-3)
+        ) == pytest.approx(0.0005326217, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00034592, rel=1e-3
+            0.00034648, rel=1e-3
         )
 
     @pytest.mark.requires_idaes_solver
