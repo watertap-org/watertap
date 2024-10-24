@@ -31,7 +31,8 @@ from watertap.core.solvers import get_solver
 
 __author__ = "Oluwamayowa Amusat, Adam Atia"
 
-#TODO: can consider adding NN model surrogate function and test
+
+# TODO: can consider adding NN model surrogate function and test
 def add_crystallizer_rbf_model(
     blk,
     surrogate_inputs_with_bounds,
@@ -69,7 +70,9 @@ def add_crystallizer_rbf_model(
         surrogate_directory = os.path.dirname(os.path.abspath(__file__))
 
         current_surrogate_filename = (
-            f"{surrogate_directory}\\surrogate_crystallizer_defaults\\" + filename[sm] + r".json"
+            f"{surrogate_directory}\\surrogate_crystallizer_defaults\\"
+            + filename[sm]
+            + r".json"
         )
         current_surrogate = PysmoSurrogate.load_from_file(current_surrogate_filename)
         getattr(blk, block_name).build_model(
