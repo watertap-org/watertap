@@ -27,6 +27,7 @@ from watertap.unit_models.surrogate_crystallizer import SurrogateCrystallizer
 
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 __author__ = "Oluwamayowa Amusat, Adam Atia"
 
@@ -68,7 +69,7 @@ def add_crystallizer_rbf_model(
         surrogate_directory = os.path.dirname(os.path.abspath(__file__))
 
         current_surrogate_filename = (
-            f"{surrogate_directory}\\" + filename[sm] + r".json"
+            f"{surrogate_directory}\\surrogate_crystallizer_defaults\\" + filename[sm] + r".json"
         )
         current_surrogate = PysmoSurrogate.load_from_file(current_surrogate_filename)
         getattr(blk, block_name).build_model(
@@ -204,20 +205,17 @@ def test_rbf_surrogate():
     )
     m.fs.costing.cost_process()
 
-    # Edit bound on liquid pressures from property package: should this be done on the backend instead?
+    # Edit bound on liquid pressures from property package
     m.fs.cryst.properties_out_liq[0].pressure.setlb(1000)
 
     # 1. Simulate single case
-    print("Degrees of freedom before fixing decision variables:", degrees_of_freedom(m))
     m.fs.cryst.temperature_operating.fix(40 + 273.15)
     m.fs.cryst.evaporation_percent.fix(60)
-    print("Degrees of freedom after fixing decision variables:", degrees_of_freedom(m))
 
     # Initialize and solve
     assert degrees_of_freedom(m) == 0
-    m.fs.cryst.initialize(outlvl=idaeslog.DEBUG)
-    solver = SolverFactory("ipopt")
-
-    res = solver.solve(m, tee=True)
+    m.fs.cryst.initialize()
+    solver = get_solver()
+    res = solver.solve(m)
     assert_optimal_termination(res)
     m.fs.cryst.report()
