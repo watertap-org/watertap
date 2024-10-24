@@ -562,6 +562,7 @@ class Actions(str, Enum):
     solve = "solve"
     export = "_export"
     diagram = "diagram"
+    initialize = "initialize"
 
 
 class FlowsheetCategory(str, Enum):
@@ -607,6 +608,7 @@ class FlowsheetInterface:
         do_build: Callable = None,
         do_export: Callable = None,
         do_solve: Callable = None,
+        do_initialize: Callable = None,
         get_diagram: Callable = None,
         category: FlowsheetCategory = None,
         custom_do_param_sweep_kwargs: Dict = None,
@@ -639,10 +641,13 @@ class FlowsheetInterface:
             (do_export, "export"),
             (do_build, "build"),
             (do_solve, "solve"),
+            (do_initialize, "initialize"),
         ):
             if arg:
                 if not callable(arg):
                     raise TypeError(f"'do_{name}' argument must be callable")
+                self.add_action(getattr(Actions, name), arg)
+            elif name == "initialize":
                 self.add_action(getattr(Actions, name), arg)
             else:
                 raise ValueError(f"'do_{name}' argument is required")
@@ -700,6 +705,24 @@ class FlowsheetInterface:
         """
         if self.get_action(Actions.diagram) is not None:
             return self.run_action(Actions.diagram, **kwargs)
+        else:
+            return None
+
+    def initialize(self, *args, **kwargs):
+        """Run initialize function.
+
+        Args:
+            **kwargs: User-defined values
+
+        Returns:
+            Return value of the underlying initialization function. Otherwise, return none
+        """
+        if self.get_action(Actions.initialize) is not None:
+            try:
+                result = self.run_action(Actions.initialize, *args, **kwargs)
+            except Exception as err:
+                raise RuntimeError(f"Initializing flowsheet: {err}") from err
+            return result
         else:
             return None
 
@@ -857,6 +880,9 @@ class FlowsheetInterface:
             elif action_name == Actions.diagram:
                 self._actions[action_name] = action_func
                 return
+            elif action_name == Actions.initialize:
+                _log.debug(f"initializing")
+                result = action_func(self.fs_exp.m)
             elif self.fs_exp.obj is None:
                 raise RuntimeError(
                     f"Cannot run any flowsheet action (except "
@@ -872,7 +898,7 @@ class FlowsheetInterface:
                     if not pyo.check_optimal_termination(result):
                         raise RuntimeError(f"Solve failed: {result}")
             # Sync model with exported values
-            if action_name in (Actions.build, Actions.solve):
+            if action_name in (Actions.build, Actions.solve, Actions.initialize):
                 self.export_values()
             return result
 
@@ -892,7 +918,7 @@ class FlowsheetInterface:
         """
         return self._actions[name]
 
-    def run_action(self, name, **kwargs):
+    def run_action(self, name, *args, **kwargs):
         """Run the named action."""
         func = self.get_action(name)
         if name.startswith("_"):
@@ -900,7 +926,7 @@ class FlowsheetInterface:
                 f"Refusing to call '{name}' action directly since its "
                 f"name begins with an underscore"
             )
-        return func(**kwargs)
+        return func(*args, **kwargs)
 
     def export_values(self):
         """Copy current values in underlying Pyomo model into exported model.
