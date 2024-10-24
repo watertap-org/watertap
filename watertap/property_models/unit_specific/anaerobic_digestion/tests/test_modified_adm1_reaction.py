@@ -635,6 +635,12 @@ class TestReactor:
     @pytest.mark.unit
     def test_scaling_factors(self, model):
         m = model
+        iscale.set_scaling_factor(
+            m.fs.unit.liquid_phase.properties_out[0].conc_mass_comp["S_IP"], 1e-5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], 1e-5
+        )
         iscale.calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
