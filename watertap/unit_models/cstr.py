@@ -82,19 +82,18 @@ class CSTRData(CSTRIDAESData):
     @property
     def default_costing_method(self):
         return cost_cstr
-    
+
     def calculate_scaling_factors(self):
-        
+
         super().calculate_scaling_factors()
 
         for t in self.flowsheet().time:
             if iscale.get_scaling_factor(self.hydraulic_retention_time[t]) is None:
-                iscale.set_variable_scaling_from_current_value(self.hydraulic_retention_time[t])
+                iscale.set_variable_scaling_from_current_value(
+                    self.hydraulic_retention_time[t]
+                )
             if iscale.get_scaling_factor(self.volume[t]) is None:
                 iscale.set_variable_scaling_from_current_value(self.volume[t])
 
             sf = iscale.get_scaling_factor(self.hydraulic_retention_time[t])
             iscale.constraint_scaling_transform(self.CSTR_retention_time[t], sf)
-
-
-

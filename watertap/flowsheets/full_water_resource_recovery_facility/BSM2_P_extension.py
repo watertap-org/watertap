@@ -96,6 +96,7 @@ from watertap.costing.unit_models.clarifier import (
 _log = idaeslog.getLogger(__name__)
 _log.debug
 
+
 def main(bio_P=False):
     m = build(bio_P=bio_P)
     dt = DiagnosticsToolbox(m)
@@ -489,7 +490,7 @@ def set_operating_conditions(m):
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
     # for R in m.fs.aerobic_reactors:
     #     calculate_variable_from_constraint(R.KLa, R.eq_mass_transfer[0])
-    
+
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
