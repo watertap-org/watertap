@@ -133,9 +133,11 @@ Variables
    "Reagent dose", reagent_dose,[reagent],kg/:math:`\text{m}^3`
    "Reagent density", density_reagent,[reagent],kg/:math:`\text{m}^3`
    "Reagent flow mass", flow_mass_reagent,[reagent],kg/s
+   "Reagent molar flow", flow_mol_reagent,[reagent],mol/s
    "Reagent flow volume", flow_vol_reagent,[reagent],:math:`\text{m}^3`/s
    "Stoichiometric coefficients for dissolution", dissolution_stoich_comp, "[reagent, :math:`j`]",dimensionless
    "Flow mass of precipitant",flow_mass_precipitate,[precipitant],kg/s
+   "Molar flow of precipitant",flow_mol_precipitate,[precipitant],mol/s
    "Mass concentration of precipitant",conc_mass_precipitate,[precipitant],kg/:math:`\text{m}^3`
    "Stoichiometric coefficients for precipitation", precipitation_stoich_comp, "[precipitant, :math:`j`]",dimensionless
    "Fraction of solids in waste stream",  waste_mass_frac_precipitate, None, fraction
