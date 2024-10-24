@@ -108,7 +108,7 @@ CONFIG_Template.declare(
     "dynamic",
     ConfigValue(
         default=False,
-        domain=In([False]),
+        domain=Bool,
         description="Dynamic model flag - must be False",
         doc="""Indicates whether this model will be dynamic or not.
 **default** - False. Membrane units do not yet support dynamic
@@ -120,7 +120,7 @@ CONFIG_Template.declare(
     "has_holdup",
     ConfigValue(
         default=False,
-        domain=In([False]),
+        domain=Bool,
         description="Holdup construction flag - must be False",
         doc="""Indicates whether holdup terms should be constructed or not.
 **default** - False. Membrane units do not have defined volume, thus
@@ -1011,7 +1011,17 @@ class MembraneChannelMixin:
 
 # helper for validating configuration arguments for this CV
 def validate_membrane_config_args(unit):
-
+    if unit.config.dynamic and unit.config.has_holdup:
+        if not (
+            (unit.config.pressure_change_type != PressureChangeType.fixed_per_stage)
+            or (
+                unit.config.mass_transfer_coefficient
+                == MassTransferCoefficient.calculated
+            )
+        ):
+            raise ConfigurationError(
+                f"dynamics=True and has_holdup=True will not work while pressure_change_type={unit.config.pressure_change_type} and mass_tranfer_coefficient={unit.config.mass_transfer_coefficient}\n. To enable dynamics, choose any other configuration option for pressure_change_type or mass_transfer_coefficient."
+            )
     if (
         unit.config.pressure_change_type is not PressureChangeType.fixed_per_stage
         and unit.config.has_pressure_change is False
