@@ -14,7 +14,6 @@ from pyomo.environ import (
     units as pyunits,
     TransformationFactory,
     assert_optimal_termination,
-    value,
 )
 from pyomo.network import Port
 from idaes.core.solvers import petsc
@@ -30,7 +29,6 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    degrees_of_freedom,
 )
 import idaes.core.util.scaling as iscale
 from watertap.core import (
@@ -50,11 +48,10 @@ from watertap.unit_models.reverse_osmosis_base import TransportModel
 import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-import pytest, pickle
+import pytest
 
 from idaes.core.solvers import petsc
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 # -----------------------------------------------------------------------------
