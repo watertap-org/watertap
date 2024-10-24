@@ -26,7 +26,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension_scaled import (
+from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
 )
 from watertap.core.solvers import get_solver
