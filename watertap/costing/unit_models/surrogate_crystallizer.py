@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2023, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -11,9 +11,6 @@
 #################################################################################
 
 import pyomo.environ as pyo
-from idaes.core.util.constants import Constants
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import StrEnum
 from watertap.costing.util import (
     register_costing_parameter_block,
     make_capital_cost_var,

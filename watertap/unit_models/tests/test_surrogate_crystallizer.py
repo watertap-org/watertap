@@ -1,3 +1,15 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
+
 import os
 import pytest
 from pyomo.environ import (
@@ -5,7 +17,6 @@ from pyomo.environ import (
     Var,
     Constraint,
     units as pyunits,
-    SolverFactory,
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
@@ -17,7 +28,6 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MaterialFlowBasis,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-import idaes.logger as idaeslog
 
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.pysmo_surrogate import (
