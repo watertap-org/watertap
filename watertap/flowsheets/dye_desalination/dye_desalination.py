@@ -36,6 +36,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
     FlowsheetBlock,
     MomentumBalanceType,
+    UnitModelBlockData,
 )
 
 from watertap.core.solvers import get_solver
@@ -132,6 +133,11 @@ def main(
 
     results = solve(m, checkpoint="solve flowsheet after costing")
     assert_optimal_termination(results)
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     display_results(m)
     display_costing(m)
@@ -1142,6 +1148,17 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             pass
 
     assert_units_consistent(m)
+
+    # Set costing scaling factors
+    iscale.set_scaling_factor(m.fs.zo_costing.total_capital_cost, 1e-4)
+    iscale.set_scaling_factor(m.fs.ro_costing.total_capital_cost, 1e-6)
+
+    iscale.set_scaling_factor(m.fs.zo_costing.total_operating_cost, 1e-4)
+    iscale.set_scaling_factor(m.fs.ro_costing.total_operating_cost, 1e-5)
+
+    for block in m.fs.component_objects(Block, descend_into=True):
+        if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
+            iscale.set_scaling_factor(block.costing.capital_cost, 1e-4)
     return
 
 
