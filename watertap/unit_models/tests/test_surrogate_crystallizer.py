@@ -74,16 +74,15 @@ def add_crystallizer_rbf_model(
         "Glauberite_g",
         "Halite_g",
     ]
+    surrogate_directory = os.path.dirname(os.path.abspath(__file__))
+    surrogate_directory = os.path.join(surrogate_directory,'surrogate_crystallizer_defaults')
+
     for sm in range(0, len(filename)):
         block_name = "crystallizer_surrogate" + "_" + filename[sm]
         blk.add_component(block_name, SurrogateBlock(concrete=True))
-        surrogate_directory = os.path.dirname(os.path.abspath(__file__))
 
-        current_surrogate_filename = (
-            f"{surrogate_directory}\\surrogate_crystallizer_defaults\\"
-            + filename[sm]
-            + r".json"
-        )
+        surrogate_name = f"{filename[sm]}.json"
+        current_surrogate_filename = os.path.join(surrogate_directory, surrogate_name)
         current_surrogate = PysmoSurrogate.load_from_file(
             os.path.normpath(current_surrogate_filename)
         )
@@ -144,11 +143,6 @@ def test_rbf_surrogate():
         solids_ions_dict=solids_list,
     )
 
-    print(
-        "Degrees of freedom of crystallizer model with undefined feed",
-        degrees_of_freedom(m),
-    )
-
     # Feed composition
     feed = {
         "ion_composition_g_kg": {
@@ -176,10 +170,7 @@ def test_rbf_surrogate():
 
     m.fs.cryst.inlet.temperature.fix(298.15)
     m.fs.cryst.inlet.pressure.fix(101325)
-    print(
-        "Degrees of freedom of crystallizer model with defined feed",
-        degrees_of_freedom(m),
-    )
+
     assert_units_consistent(m)
 
     # Create dummy variables for inputs and outputs
