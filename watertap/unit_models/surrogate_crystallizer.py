@@ -130,8 +130,8 @@ see property package for documentation.}""",
         ConfigValue(
             default={},
             domain=dict,
-            description="Specification of ion makeup of each solid in system",
-            doc="""Solids makeup""",
+            description="Specification of ion makeup of each solid in system. e.g., {'NaCl': {'Na_+': 1, 'Cl_-': -1} }",
+            doc="""Solids makeup; keys are solid names, and values include subkeys of ion names and values of charge.""",
         ),
     )
 
@@ -180,40 +180,40 @@ see property package for documentation.}""",
             bounds=(10, 95),
             doc="Crystallizer percentage of water evaporation",
         )
-        self.S = Var(
+        self.flow_mass_sol_comp_true = Var(
             self.config.property_package.ion_set,
             initialize=0,
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="True species solid mass flow (kg)",
         )
-        self.mixed_solids = Var(
+        self.flow_mass_sol_comp_apparent = Var(
             self.solids_list,
             initialize=0,
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Apparent species solid mass flow (kg)",
         )
-        self.S_total = Var(
+        self.flow_mass_sol_total = Var(
             initialize=0,
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Total solid flow",
         )
-        self.L_total = Var(
+        self.flow_mass_liq_total = Var(
             initialize=0,
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Total liquid flow",
         )
-        self.V_total = Var(
+        self.flow_mass_vap_total = Var(
             initialize=0,
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Total vapor flow",
         )
 
-        self.Q = Var(
+        self.heat_required = Var(
             initialize=1e5,
             domain=NonNegativeReals,
             units=pyunits.kW,
@@ -280,7 +280,7 @@ see property package for documentation.}""",
                         b.properties_out_liq[0].flow_mass_phase_comp[p, j]
                         for p in self.config.property_package.phase_list
                     )
-                    + b.S[j]
+                    + b.flow_mass_sol_comp_true[j]
                 )
             else:
                 return (
@@ -296,7 +296,6 @@ see property package for documentation.}""",
                         b.properties_out_vapor[0].flow_mass_phase_comp[p, j]
                         for p in self.config.vapor_property_package.phase_list
                     )
-                    # + b.S[j]
                 )
 
         # 3. Temperature and pressure balances:
@@ -342,13 +341,13 @@ see property package for documentation.}""",
             if j == "H2O":
                 return Constraint.Skip
             else:
-                return b.S[j] == sum(
+                return b.flow_mass_sol_comp_true[j] == sum(
                     (b.mwc[q, j] * b.properties_in[0].params.mw_comp[j])
                     / sum(
                         b.mwc[q, j] * b.properties_in[0].params.mw_comp[j]
                         for j in b.config.property_package.ion_set
                     )
-                    * b.mixed_solids[q]
+                    * b.flow_mass_sol_comp_apparent[q]
                     for q in b.solids_list
                 )
 
@@ -357,13 +356,13 @@ see property package for documentation.}""",
             doc="Total solid flow constraint",
         )
         def eq_total_solids_constraint(b):
-            return b.S_total == sum(b.mixed_solids[k] for k in b.solids_list)
+            return b.flow_mass_sol_total == sum(b.flow_mass_sol_comp_apparent[k] for k in b.solids_list)
 
         @self.Constraint(
             doc="Total liquid flow constraint",
         )
         def eq_total_liquid_constraint(b):
-            return b.L_total == sum(
+            return b.flow_mass_liq_total == sum(
                 sum(
                     b.properties_out_liq[0].flow_mass_phase_comp[p, j]
                     for p in self.config.property_package.phase_list
@@ -375,7 +374,7 @@ see property package for documentation.}""",
             doc="Total vapor flow constraint",
         )
         def eq_total_vapor_constraint(b):
-            return b.V_total == sum(
+            return b.flow_mass_vap_total == sum(
                 b.properties_out_vapor[0].flow_mass_phase_comp[p, "H2O"]
                 for p in self.config.vapor_property_package.phase_list
             )
@@ -385,7 +384,7 @@ see property package for documentation.}""",
             doc="Energy balance",
         )
         def eq_energy_balance_constraint(b):
-            return pyunits.convert(b.Q, to_units=pyunits.W) + b.properties_in[
+            return pyunits.convert(b.heat_required, to_units=pyunits.W) + b.properties_in[
                 0
             ].enth_flow == b.properties_out_liq[0].enth_flow + sum(
                 b.properties_out_vapor[0].enth_flow_phase[p]
@@ -507,10 +506,10 @@ see property package for documentation.}""",
         var_dict = {}
         var_dict["Operating Temperature (K)"] = self.temperature_operating
         var_dict["Vapor Pressure (Pa)"] = self.pressure_operating
-        var_dict["Total solids at outlet (Kg)"] = self.S_total
-        var_dict["Total liquid flow at outlet (Kg)"] = self.L_total
-        var_dict["Total water vapor flow at outlet (Kg)"] = self.V_total
-        var_dict["Heat requirement"] = self.Q
+        var_dict["Total solids at outlet (Kg)"] = self.flow_mass_sol_total
+        var_dict["Total liquid flow at outlet (Kg)"] = self.flow_mass_liq_total
+        var_dict["Total water vapor flow at outlet (Kg)"] = self.flow_mass_vap_total
+        var_dict["Heat requirement"] = self.heat_required
         return {"vars": var_dict}
 
     def calculate_scaling_factors(self):
@@ -523,7 +522,7 @@ see property package for documentation.}""",
         )
         iscale.set_scaling_factor(self.pressure_operating, 1e-3)
         iscale.set_scaling_factor(
-            self.Q,
+            self.heat_required,
             iscale.get_scaling_factor(
                 self.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
             )

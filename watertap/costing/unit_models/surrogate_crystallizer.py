@@ -83,7 +83,7 @@ def cost_surrogate_crystallizer(blk):
 def _cost_crystallizer_flows(blk):
     blk.costing_package.cost_flow(
         pyo.units.convert(
-            (blk.unit_model.Q / _compute_steam_properties(blk)),
+            (blk.unit_model.heat_required / _compute_steam_properties(blk)),
             to_units=pyo.units.m**3 / pyo.units.s,
         ),
         "steam",
@@ -109,7 +109,7 @@ def cost_crystallizer_by_crystal_mass(blk):
                 blk.costing_package.surrogate_crystallizer.iec_percent
                 * blk.costing_package.surrogate_crystallizer.fob_unit_cost
                 * (
-                    blk.unit_model.S_total
+                    blk.unit_model.flow_mass_sol_total
                     / blk.costing_package.surrogate_crystallizer.ref_capacity
                 )
                 ** blk.costing_package.surrogate_crystallizer.ref_exponent

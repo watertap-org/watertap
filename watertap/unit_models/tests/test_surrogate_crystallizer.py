@@ -94,7 +94,7 @@ def add_crystallizer_rbf_model(
     # Add constraints tying provided mass variables with crystallizer unit variables - done to avoid unit challenges
     def eq_mass_conversion_constraint(b, j):
         return (
-            b.mixed_solids[j]
+            b.flow_mass_sol_comp_apparent[j]
             == pyunits.convert(
                 surrogate_outputs[j]["flowsheet_var"], to_units=pyunits.kg / pyunits.s
             )
