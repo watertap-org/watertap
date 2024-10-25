@@ -905,8 +905,7 @@ class _MCASStateBlock(StateBlock):
                         self[k].enth_mass_phase["Liq"],
                         self[k].eq_enth_mass_phase["Liq"],
                     )
-                else:
-                    self[k].total_dissolved_solids = 0
+
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
             dof = degrees_of_freedom(self[k])
