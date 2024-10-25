@@ -637,6 +637,10 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
     m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
     m.fs.ro_costing.base_currency = pyunits.USD_2020
     m.fs.ro_costing.utilization_factor.fix(0.85)
+    # Assume the same capital recovery factor as zo_costing
+    m.fs.ro_costing.capital_recovery_factor.fix(0.065051435)
+    # Must unfix either plant_lifetime or wacc in ro_costing
+    m.fs.ro_costing.wacc.unfix()
 
     # cost nanofiltration module and pump
     if hasattr(m.fs, "pretreatment"):
