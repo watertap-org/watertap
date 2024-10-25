@@ -283,19 +283,15 @@ see property package for documentation.}""",
                     + b.flow_mass_sol_comp_true[j]
                 )
             else:
-                return (
-                    sum(
-                        b.properties_in[0].flow_mass_phase_comp[p, j]
-                        for p in self.config.property_package.phase_list
-                    )
-                    == sum(
-                        b.properties_out_liq[0].flow_mass_phase_comp[p, j]
-                        for p in self.config.property_package.phase_list
-                    )
-                    + sum(
-                        b.properties_out_vapor[0].flow_mass_phase_comp[p, j]
-                        for p in self.config.vapor_property_package.phase_list
-                    )
+                return sum(
+                    b.properties_in[0].flow_mass_phase_comp[p, j]
+                    for p in self.config.property_package.phase_list
+                ) == sum(
+                    b.properties_out_liq[0].flow_mass_phase_comp[p, j]
+                    for p in self.config.property_package.phase_list
+                ) + sum(
+                    b.properties_out_vapor[0].flow_mass_phase_comp[p, j]
+                    for p in self.config.vapor_property_package.phase_list
                 )
 
         # 3. Temperature and pressure balances:
@@ -356,7 +352,9 @@ see property package for documentation.}""",
             doc="Total solid flow constraint",
         )
         def eq_total_solids_constraint(b):
-            return b.flow_mass_sol_total == sum(b.flow_mass_sol_comp_apparent[k] for k in b.solids_list)
+            return b.flow_mass_sol_total == sum(
+                b.flow_mass_sol_comp_apparent[k] for k in b.solids_list
+            )
 
         @self.Constraint(
             doc="Total liquid flow constraint",
@@ -384,9 +382,9 @@ see property package for documentation.}""",
             doc="Energy balance",
         )
         def eq_energy_balance_constraint(b):
-            return pyunits.convert(b.heat_required, to_units=pyunits.W) + b.properties_in[
-                0
-            ].enth_flow == b.properties_out_liq[0].enth_flow + sum(
+            return pyunits.convert(
+                b.heat_required, to_units=pyunits.W
+            ) + b.properties_in[0].enth_flow == b.properties_out_liq[0].enth_flow + sum(
                 b.properties_out_vapor[0].enth_flow_phase[p]
                 for p in self.config.vapor_property_package.phase_list
             )
