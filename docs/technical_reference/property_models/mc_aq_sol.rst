@@ -141,7 +141,7 @@ Relationships
    "Phase electrical conductivity", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
    "Debye-Huckel constant", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\frac{3}{2}}`"
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
-   "Component mass diffusivity :sup:`5`", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}`"
+   "Component mass diffusivity :sup:`5`", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}`"
    "Specific enthalpy", "Equations 25-27 in Nayar et al. (2016)"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
    "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
