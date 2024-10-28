@@ -74,9 +74,15 @@ def add_crystallizer_rbf_model(
         "Glauberite_g",
         "Halite_g",
     ]
+
     surrogate_directory = os.path.dirname(os.path.abspath(__file__))
     surrogate_directory = os.path.join(
-        surrogate_directory, "surrogate_crystallizer_defaults"
+        surrogate_directory,
+        "..",
+        "..",
+        "data",
+        "surrogate_defaults",
+        "surrogate_crystallizer_defaults",
     )
 
     for sm in range(0, len(filename)):
