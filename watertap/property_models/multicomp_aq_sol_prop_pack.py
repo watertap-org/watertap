@@ -42,6 +42,7 @@ from pyomo.environ import (
     value,
     check_optimal_termination,
     units as pyunits,
+    exp,
 )
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -619,6 +620,8 @@ class MCASParameterData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e10, index="Liq")
         self.set_default_scaling("visc_k_phase", 1e6, index="Liq")
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
+        self.set_default_scaling("pressure_sat", 1e-5)
+
 
     @classmethod
     def define_metadata(cls, obj):
@@ -645,6 +648,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 "mw_comp": {"method": "_mw_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
+                "pressure_sat": {"method": "_pressure_sat"},
             }
         )
 
@@ -900,11 +904,15 @@ class _MCASStateBlock(StateBlock):
                     self[k].total_dissolved_solids = 0
 
             if self[k].is_property_constructed("enth_mass_phase"):
-                if hasattr(self[k], "eq_enth_mass_phase"):
-                    calculate_variable_from_constraint(
-                        self[k].enth_mass_phase["Liq"],
-                        self[k].eq_enth_mass_phase["Liq"],
-                    )
+                calculate_variable_from_constraint(
+                    self[k].enth_mass_phase["Liq"],
+                    self[k].eq_enth_mass_phase["Liq"],
+                )
+            if self[k].is_property_constructed("pressure_sat"):
+                calculate_variable_from_constraint(
+                    self[k].pressure_sat,
+                    self[k].eq_pressure_sat,
+                )
 
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
@@ -2083,7 +2091,7 @@ class MCASStateBlockData(StateBlockData):
                 )
                 / b.dens_mass_phase[p]
             )
-            S_g_kg = S_kg_kg * 1000
+            S_g_kg = S_kg_kg * 1000 
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
 
@@ -2135,6 +2143,96 @@ class MCASStateBlockData(StateBlockData):
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
+    def _pressure_sat(self):
+        params = self.params
+        if not hasattr(params, "pressure_sat_param_psatw_A1"):
+            t_inv_units = pyunits.K**-1
+            s_inv_units = pyunits.kg / pyunits.g
+            # vapor pressure parameters,  0-180 C, 0-160 g/kg
+            # eq. 5 and 6 in Nayar et al.(2016)
+            params.pressure_sat_param_psatw_A1 = Var(
+                within=Reals,
+                initialize=-5.8002206e3,
+                units=pyunits.K,
+                doc="Vapor pressure of pure water parameter A1",
+            )
+            params.pressure_sat_param_psatw_A2 = Var(
+                within=Reals,
+                initialize=1.3914993,
+                units=pyunits.dimensionless,
+                doc="Vapor pressure of pure water parameter A2",
+            )
+            params.pressure_sat_param_psatw_A3 = Var(
+                within=Reals,
+                initialize=-4.8640239e-2,
+                units=t_inv_units,
+                doc="Vapor pressure of pure water parameter A3",
+            )
+            params.pressure_sat_param_psatw_A4 = Var(
+                within=Reals,
+                initialize=4.1764768e-5,
+                units=t_inv_units**2,
+                doc="Vapor pressure of pure water parameter A4",
+            )
+            params.pressure_sat_param_psatw_A5 = Var(
+                within=Reals,
+                initialize=-1.4452093e-8,
+                units=t_inv_units**3,
+                doc="Vapor pressure of pure water parameter A5",
+            )
+            params.pressure_sat_param_psatw_A6 = Var(
+                within=Reals,
+                initialize=6.5459673,
+                units=pyunits.dimensionless,
+                doc="Vapor pressure of pure water parameter A6",
+            )
+            params.pressure_sat_param_B1 = Var(
+                within=Reals,
+                initialize=-4.5818e-4,
+                units=s_inv_units,
+                doc="Vapor pressure of seawater parameter B1",
+            )
+            params.pressure_sat_param_B2 = Var(
+                within=Reals,
+                initialize=-2.0443e-6,
+                units=s_inv_units**2,
+                doc="Vapor pressure of seawater parameter B2",
+            )
+
+            for v in params.component_objects(Var):
+                v.fix()
+       
+        self.pressure_sat = Var(
+            initialize=1e3, bounds=(1, 1e8), units=pyunits.Pa, doc="Saturation vapor pressure"
+            )
+       
+        # Nayar et al.(2016), eq. 5 and 6, 0-180 C, 0-160 g/kg
+        def rule_pressure_sat(b):
+            t = b.temperature
+            S_kg_kg = (
+                pyunits.convert(
+                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
+                )
+                / b.dens_mass_phase['Liq']
+            )
+            S_g_kg = S_kg_kg * 1000  * pyunits.g / pyunits.kg         
+            psatw = (
+                exp(
+                    b.params.pressure_sat_param_psatw_A1 * t**-1
+                    + b.params.pressure_sat_param_psatw_A2
+                    + b.params.pressure_sat_param_psatw_A3 * t
+                    + b.params.pressure_sat_param_psatw_A4 * t**2
+                    + b.params.pressure_sat_param_psatw_A5 * t**3
+                    + b.params.pressure_sat_param_psatw_A6 * log(t / pyunits.K)
+                )
+                * pyunits.Pa
+            )
+            return b.pressure_sat == psatw * exp(
+                b.params.pressure_sat_param_B1 * S_g_kg
+                + b.params.pressure_sat_param_B2 * S_g_kg**2
+            )
+
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
@@ -2343,7 +2441,7 @@ class MCASStateBlockData(StateBlockData):
         # default scaling factors have already been set with
         # idaes.core.property_base.calculate_scaling_factors()
         # for the following variables: pressure,
-        # temperature, dens_mass, visc_d_phase, diffus_phase_comp
+        # temperature, dens_mass, visc_d_phase, diffus_phase_comp, enth_mass_phase, pressure_sat
 
         for j, v in self.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -2599,18 +2697,20 @@ class MCASStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.elec_cond_phase[ind], sf)
 
         if self.is_property_constructed("flow_vol_phase"):
-            sf = (
-                iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1
+            if iscale.get_scaling_factor(self.flow_vol_phase) is None:
+                sf = (
+                    iscale.get_scaling_factor(
+                        self.flow_mol_phase_comp["Liq", "H2O"], default=1
+                    )
+                    * iscale.get_scaling_factor(self.mw_comp["H2O"])
+                    / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
                 )
-                * iscale.get_scaling_factor(self.mw_comp["H2O"])
-                / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
-            )
-            iscale.set_scaling_factor(self.flow_vol_phase, sf)
+                iscale.set_scaling_factor(self.flow_vol_phase, sf)
 
         if self.is_property_constructed("flow_vol"):
-            sf = iscale.get_scaling_factor(self.flow_vol_phase)
-            iscale.set_scaling_factor(self.flow_vol, sf)
+            if iscale.get_scaling_factor(self.flow_vol) is None:
+                sf = iscale.get_scaling_factor(self.flow_vol_phase)
+                iscale.set_scaling_factor(self.flow_vol, sf)
 
         if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.solute_set:
@@ -2668,8 +2768,12 @@ class MCASStateBlockData(StateBlockData):
                     sf = 1 / value(self.total_dissolved_solids)
                 iscale.set_scaling_factor(self.total_dissolved_solids, sf)
 
-        # if self.is_property_constructed("enth_mass_phase"):
-        #     for v in self.enth_mass_phase.values():
+        if self.is_property_constructed("enth_flow"):
+            iscale.set_scaling_factor(
+                self.enth_flow,
+                iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"])
+                * iscale.get_scaling_factor(self.enth_mass_phase["Liq"]),
+                )
 
         # transforming constraints
         transform_property_constraints(self)

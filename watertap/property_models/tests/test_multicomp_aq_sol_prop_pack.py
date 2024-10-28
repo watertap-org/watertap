@@ -445,6 +445,8 @@ def test_build(model3):
         "act_coeff_phase_comp",
         "total_hardness",
         "total_dissolved_solids",
+        "enth_mass_phase",
+        "pressure_sat",
     ]
 
     # test on demand constraints
@@ -454,8 +456,8 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 117
-    assert number_total_constraints(m) == 72
+    assert number_variables(m) == 126
+    assert number_total_constraints(m) == 73
     assert number_unused_variables(m) == 5
 
 
@@ -489,13 +491,15 @@ def test_default_scaling(model3):
         ("diffus_phase_comp", "Liq"): 1e10,
         ("visc_k_phase", "Liq"): 1e6,
         ("enth_mass_phase", "Liq"): 1e-5,
+        ("pressure_sat", None): 1e-5,
     }
 
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
     for t, sf in default_scaling_var_dict.items():
         assert t in m.fs.properties.default_scaling_factor.keys()
         assert m.fs.properties.default_scaling_factor[t] == sf
-
+    calculate_scaling_factors(m)
+    assert get_scaling_factor(m.fs.stream[0].enth_mass_phase["Liq"]) == 1e-5
 
 @pytest.mark.unit
 def test_scaling(model3):
