@@ -70,7 +70,7 @@ Parameters
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Index", "Units"
 
- "Component molecular weight :sup:`1`", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
+ "Component molecular weight :sup:`1`", ":math:`MW`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`"
  "Stokes radius of solute", ":math:`r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`"
  "Molar volume of solute", ":math:`V`", "molar_volume_phase_comp", "[p, j]", ":math:`\text{m}^3 \text{ mol}^{-1}`"
  "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`"
@@ -143,6 +143,8 @@ Relationships
    "Specific enthalpy", "Equations 25-27 in Nayar et al. (2016)"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
    "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
+   "Total hardness as CaCO3",":math:`TH = \sum_{j\in polyvalent cation set}{\Ndot_j/Q_{liq}z_j}MW_{CaCO3}/z_{CaCO3}`"
+   "Total dissolved solids","`TDS = \sum_{j\in ion set}{m_j}"
 
 
 .. note::
