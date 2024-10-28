@@ -622,7 +622,6 @@ class MCASParameterData(PhysicalParameterBlock):
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
 
-
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -2091,7 +2090,7 @@ class MCASStateBlockData(StateBlockData):
                 )
                 / b.dens_mass_phase[p]
             )
-            S_g_kg = S_kg_kg * 1000 
+            S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
 
@@ -2201,11 +2200,14 @@ class MCASStateBlockData(StateBlockData):
 
             for v in params.component_objects(Var):
                 v.fix()
-       
+
         self.pressure_sat = Var(
-            initialize=1e3, bounds=(1, 1e8), units=pyunits.Pa, doc="Saturation vapor pressure"
-            )
-       
+            initialize=1e3,
+            bounds=(1, 1e8),
+            units=pyunits.Pa,
+            doc="Saturation vapor pressure",
+        )
+
         # Nayar et al.(2016), eq. 5 and 6, 0-180 C, 0-160 g/kg
         def rule_pressure_sat(b):
             t = b.temperature
@@ -2213,9 +2215,9 @@ class MCASStateBlockData(StateBlockData):
                 pyunits.convert(
                     b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
                 )
-                / b.dens_mass_phase['Liq']
+                / b.dens_mass_phase["Liq"]
             )
-            S_g_kg = S_kg_kg * 1000  * pyunits.g / pyunits.kg         
+            S_g_kg = S_kg_kg * 1000 * pyunits.g / pyunits.kg
             psatw = (
                 exp(
                     b.params.pressure_sat_param_psatw_A1 * t**-1
@@ -2233,6 +2235,7 @@ class MCASStateBlockData(StateBlockData):
             )
 
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
+
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
@@ -2773,7 +2776,7 @@ class MCASStateBlockData(StateBlockData):
                 self.enth_flow,
                 iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"])
                 * iscale.get_scaling_factor(self.enth_mass_phase["Liq"]),
-                )
+            )
 
         # transforming constraints
         transform_property_constraints(self)

@@ -501,6 +501,7 @@ def test_default_scaling(model3):
     calculate_scaling_factors(m)
     assert get_scaling_factor(m.fs.stream[0].enth_mass_phase["Liq"]) == 1e-5
 
+
 @pytest.mark.unit
 def test_scaling(model3):
     m = model3
