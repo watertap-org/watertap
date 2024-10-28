@@ -80,7 +80,10 @@ def add_crystallizer_rbf_model(
         block_name = "crystallizer_surrogate" + "_" + filename[sm]
         blk.add_component(block_name, SurrogateBlock(concrete=True))
         surrogate_name = f"{filename[sm]}.json"
-        with importlib.resources.path("watertap.data.surrogate_defaults.surrogate_crystallizer_defaults", surrogate_name) as json_path:
+        with importlib.resources.path(
+            "watertap.data.surrogate_defaults.surrogate_crystallizer_defaults",
+            surrogate_name,
+        ) as json_path:
             current_surrogate = PysmoSurrogate.load_from_file(str(json_path))
         getattr(blk, block_name).build_model(
             current_surrogate,
