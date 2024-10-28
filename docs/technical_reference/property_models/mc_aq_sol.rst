@@ -112,7 +112,9 @@ Properties
    "Debye-Huckel constant A", ":math:`A`", "deby_huckel_constant", "none", ":math:`\text{dimensionless}`"
    "Ionic Strength", ":math:`I`", "ionic_strength_molal", "none", ":math:`\text{mol kg}^{-1}`"
    "Mass diffusivity of solute", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ s}^{-1}`"
-
+   "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
+   "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
+   "Saturation pressure", ":math:`P_v`", "pressure_sat", "None", ":math:`\text{Pa}`"
 
 
 Relationships
@@ -138,6 +140,10 @@ Relationships
    "Debye-Huckel constant", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\frac{3}{2}}`"
    "Ionic strength", ":math:`I=0.5\sum_{j\in ion}{z_j^2b_j}`"
    "Component mass diffusivity :sup:`5`", ":math:`D\text{ specified in data argument}` or :math:`D \text{ }[\text{m}^2 \text{ s}^{-1}]=\frac{\chi_{1}}{(\mu \text{ }[\text{cP}])^{\chi_{2}}(V \text{ }[\text{cm}^3 \text{ mol}^{-1}])^{\chi_{3}}}`"
+   "Specific enthalpy", "Equations 25-27 in Nayar et al. (2016)"
+   "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
+   "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
+
 
 .. note::
 
@@ -166,7 +172,7 @@ Physical/chemical constants
 
 Scaling
 -------
-A comprehensive scaling factor calculation method is coded in this property package.  Among the state variables (:math:`N, T, \text{and }  p`), default scaling factors for :math:`T` and :math:`p` were set and do not need users' input, while, for :math:`N`, usually require a user input via an interface. The coding interface to set defalut scaling factor for :math:`N` and call the scaling calculation for other variables is the following. 
+A comprehensive scaling factor calculation method is coded in this property package.  Among the state variables (:math:`N, T, \text{and }  p`), default scaling factors for :math:`T` and :math:`p` were set and do not need users' input, while, for :math:`N`, usually require a user input via an interface. The coding interface to set default scaling factor for :math:`N` and call the scaling calculation for other variables is the following. 
 
 .. code-block::
 
