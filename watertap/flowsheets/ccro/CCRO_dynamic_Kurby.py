@@ -315,6 +315,12 @@ class CCRO:
         constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,0.0,'NaCl'], 1e5)
         constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,1.0,'NaCl'], 1e5)
         constraint_scaling_transform(m.fs.RO.eq_permeate_production[0.0,'Liq','NaCl'], 1e4)
+        # constraint_scaling_transform(m.fs.M1.material_mixing_equations[0.0,'H2O'], 1e4)
+        # constraint_scaling_transform(m.fs.M1.material_mixing_equations[0.0,'NaCl'], 1e2)
+        # constraint_scaling_transform(m.fs.M1.enthalpy_mixing_equations[0.0], 1e4)
+        # constraint_scaling_transform(m.fs.M1.inlet_2_state[0.0].eq_mass_frac_phase_comp['Liq','H2O'], 1e2)
+        # constraint_scaling_transform(m.fs.M1.inlet_2_state[0.0].eq_mass_frac_phase_comp['Liq','NaCl'], 1e2)
+        # constraint_scaling_transform(m.fs.M1.inlet_2_state[0.0].eq_flow_vol_phase['Liq'], 1e4)
 
         calculate_scaling_factors(m)
 
@@ -394,7 +400,7 @@ class CCRO:
         m.fs.RO.length.fix(self.membrane_length)
         m.fs.RO.feed_side.channel_height.fix(self.channel_height)
         m.fs.RO.feed_side.spacer_porosity.fix(self.spacer_porosity)
-        m.fs.RO.RO_constraint_1 = Constraint(expr=m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"] <= 0.035) # Activating this reduces condition number by 8 OoM
+        # m.fs.RO.RO_constraint_1 = Constraint(expr=m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"] <= 0.035) # Activating this reduces condition number by 8 OoM
 
         print("DOF =", degrees_of_freedom(m))
         print("DOF FEED =", degrees_of_freedom(m.fs.feed))
@@ -427,7 +433,7 @@ class CCRO:
 
         propagate_state(m.fs.P1_to_M1)
        
-        print('M1 first initialization')
+        print(f'M1 {pass_num+1}th initialization')
         m.fs.M1.report()
         if pass_num > 0:
             m.fs.M1.initialize()
@@ -437,7 +443,7 @@ class CCRO:
 
         propagate_state(m.fs.M1_to_RO)
         
-        print('RO first initialization')
+        print(f'RO {pass_num+1}th initialization')
         m.fs.RO.feed_side.properties_in[0].pressure_osm_phase
         m.fs.RO.feed_side.properties_in[0].temperature = value(
             m.fs.feed.properties[0].temperature
@@ -451,6 +457,7 @@ class CCRO:
         m.fs.RO.report()
         m.fs.RO.initialize()
         m.fs.RO.report()
+        # print('m.fs.RO.recovery_vol_phase["Liq"]: ', m.fs.RO.recovery_vol_phase[0, "Liq"].value)
 
         propagate_state(m.fs.RO_permeate_to_product)
         m.fs.product.initialize()
@@ -464,17 +471,17 @@ class CCRO:
     
     def initialize(self, m=None):
         # initialize unit by unit
-        dt = DiagnosticsToolbox(self.m)
-        dt.report_structural_issues()
-        
-        # dt.display_constraints_with_extreme_jacobians()
-        for idx, init_pass in enumerate(range(1)):
+        for idx, init_pass in enumerate(range(4)):
             print(f"\n\nINITIALIZATION PASS {idx+1}\n\n")
             self.do_forward_initialization_pass(m, pass_num=idx)
             self.print_results()
         self.check_jac(self.m)
+        dt = DiagnosticsToolbox(self.m)
+        dt.report_structural_issues()
+        dt.display_constraints_with_extreme_jacobians()
         dt.report_numerical_issues()
         dt.display_constraints_with_large_residuals()
+        dt.display_near_parallel_variables()
         # dt.display_variables_with_extreme_jacobians()
         # self.m.fs.P1.control_volume.properties_out[0].pressure.unfix()
         # self.m.fs.M1_constraint_1.deactivate()

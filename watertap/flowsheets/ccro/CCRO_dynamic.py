@@ -83,11 +83,11 @@ def build():
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.product = Product(property_package=m.fs.properties)
-    m.fs.mixer = Mixer(
+    m.fs.M1 = Mixer(
         property_package=m.fs.properties,
         has_holdup=False,
-        momentum_mixing_type=MomentumMixingType.equality,
-        inlet_list=["feed", "recycle"],
+        num_inlets=2,
+        momentum_mixing_type=MomentumMixingType.none,
     )
 
     # --- Feed and recycle pumps ---
@@ -96,24 +96,27 @@ def build():
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
-        dynamic=False,
-        has_holdup=False,
         property_package=m.fs.properties,
         has_pressure_change=True,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
         pressure_change_type=PressureChangeType.calculated,
-        module_type=ModuleType.spiral_wound,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        module_type="spiral_wound",
+        has_full_reporting=True,
     )
 
-    # connections
+    # connect unit models
     m.fs.feed_to_P1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-    m.fs.P1_to_mixer = Arc(source=m.fs.P1.outlet, destination=m.fs.mixer.feed)
-    m.fs.P2_to_mixer = Arc(source=m.fs.P2.outlet, destination=m.fs.mixer.recycle)
-    m.fs.mixer_to_RO = Arc(source=m.fs.mixer.outlet, destination=m.fs.RO.inlet)
-    m.fs.RO_to_prod = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
-    m.fs.RO_to_P2 = Arc(source=m.fs.RO.retentate, destination=m.fs.P2.inlet)
-    
+    m.fs.P1_to_M1 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.inlet_1)
+    m.fs.P2_to_M1 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.inlet_2)
+    m.fs.M1_to_RO = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
+
+    m.fs.RO_permeate_to_product = Arc(
+        source=m.fs.RO.permeate, destination=m.fs.product.inlet
+    )
+    m.fs.RO_retentate_to_P2 = Arc(
+        source=m.fs.RO.retentate, destination=m.fs.P2.inlet
+    )
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
