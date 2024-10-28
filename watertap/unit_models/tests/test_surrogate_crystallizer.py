@@ -91,9 +91,7 @@ def add_crystallizer_rbf_model(
 
         surrogate_name = f"{filename[sm]}.json"
         current_surrogate_filename = os.path.join(surrogate_directory, surrogate_name)
-        current_surrogate = PysmoSurrogate.load_from_file(
-            os.path.normpath(current_surrogate_filename)
-        )
+        current_surrogate = PysmoSurrogate.load_from_file(current_surrogate_filename)
         getattr(blk, block_name).build_model(
             current_surrogate,
             input_vars=crystallizer_inputs,
