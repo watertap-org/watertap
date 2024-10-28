@@ -11,6 +11,7 @@
 #################################################################################
 
 import os
+import importlib.resources
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -75,23 +76,12 @@ def add_crystallizer_rbf_model(
         "Halite_g",
     ]
 
-    surrogate_directory = os.path.dirname(os.path.abspath(__file__))
-    surrogate_directory = os.path.join(
-        surrogate_directory,
-        "..",
-        "..",
-        "data",
-        "surrogate_defaults",
-        "surrogate_crystallizer_defaults",
-    )
-
     for sm in range(0, len(filename)):
         block_name = "crystallizer_surrogate" + "_" + filename[sm]
         blk.add_component(block_name, SurrogateBlock(concrete=True))
-
         surrogate_name = f"{filename[sm]}.json"
-        current_surrogate_filename = os.path.join(surrogate_directory, surrogate_name)
-        current_surrogate = PysmoSurrogate.load_from_file(current_surrogate_filename)
+        with importlib.resources.path("watertap.data.surrogate_defaults.surrogate_crystallizer_defaults", surrogate_name) as json_path:
+            current_surrogate = PysmoSurrogate.load_from_file(str(json_path))
         getattr(blk, block_name).build_model(
             current_surrogate,
             input_vars=crystallizer_inputs,
