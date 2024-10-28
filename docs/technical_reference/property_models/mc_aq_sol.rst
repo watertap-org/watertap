@@ -145,7 +145,7 @@ Relationships
    "Specific enthalpy", "Equations 25-27 in Nayar et al. (2016)"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
    "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
-   "Total hardness as CaCO3",":math:`TH = \sum_{j\in polyvalent cation set}{\dot{N}_j/Q_{liq}z_j} \frac{MW_{CaCO3}/z_{CaCO3}}`"
+   "Total hardness as CaCO3",":math:`TH = \sum_{j\in polyvalent cation set}{\dot{N}_j/Q_{liq}z_j} \frac{MW_{CaCO3}/{z_{CaCO3}}`"
    "Total dissolved solids","`TDS = \sum_{j\in ion set}{m_j}`"
 
 
