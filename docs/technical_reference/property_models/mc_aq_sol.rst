@@ -115,6 +115,8 @@ Properties
    "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
    "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
    "Saturation pressure", ":math:`P_v`", "pressure_sat", "None", ":math:`\text{Pa}`"
+   "Total hardness as CaCO3",":math:`TH`","total_hardness", "None", ":math:`\text{mg/L}`"
+   "Total dissolved solids",":math:`TDS`","total_dissolved_solids", "None", ":math:`\text{mg/L}`"
 
 
 Relationships
@@ -143,7 +145,7 @@ Relationships
    "Specific enthalpy", "Equations 25-27 in Nayar et al. (2016)"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
    "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
-   "Total hardness as CaCO3",":math:`TH = \sum_{j\in polyvalent cation set}{\Ndot_j/Q_{liq}z_j}MW_{CaCO3}/z_{CaCO3}`"
+   "Total hardness as CaCO3",":math:`TH = \sum_{j\in polyvalent cation set}{\dot{N}_j/Q_{liq}z_j} \frac{MW_{CaCO3}/z_{CaCO3}}`"
    "Total dissolved solids","`TDS = \sum_{j\in ion set}{m_j}`"
 
 
