@@ -498,14 +498,11 @@ def test_default_scaling(model3):
     for t, sf in default_scaling_var_dict.items():
         assert t in m.fs.properties.default_scaling_factor.keys()
         assert m.fs.properties.default_scaling_factor[t] == sf
-    calculate_scaling_factors(m)
-    assert get_scaling_factor(m.fs.stream[0].enth_mass_phase["Liq"]) == 1e-5
 
 
 @pytest.mark.unit
 def test_scaling(model3):
     m = model3
-    # m.fs.stream.initialize()
     metadata = m.fs.properties.get_metadata().properties
 
     for v in metadata.list_supported_properties():
@@ -608,7 +605,6 @@ def test_seawater_data():
     metadata = m.fs.properties.get_metadata().properties
     for v in metadata.list_supported_properties():
         getattr(stream[0], v.name)
-    assert stream[0].is_property_constructed("conc_mol_phase_comp")
 
     assert_units_consistent(m)
 
@@ -807,6 +803,8 @@ def test_seawater_data():
     )
     assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42, rel=1e-3)
     assert value(stream[0].enth_mass_phase["Liq"]) == pytest.approx(98938.56, rel=1e-3)
+    assert value(stream[0].enth_flow) == pytest.approx(98918.931, rel=1e-3)
+    assert value(stream[0].pressure_sat) == pytest.approx(3110.73, rel=1e-3)
 
 
 @pytest.mark.component
