@@ -1021,11 +1021,12 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     if self.config.has_catalyst == True:
                         return (
                             self.generation_cem_flux_in[t, p, j]
-                            == -self.flux_splitting[t]
+                            == -0.5 * self.flux_splitting[t]
                         )
                     else:
                         return self.generation_cem_flux_in[t, p, j] == (
-                            smooth_min(
+                            0.5
+                            * smooth_min(
                                 -(
                                     self.current[t] / pyunits.amp
                                     - self.current_dens_lim_bpem[t]
@@ -1081,12 +1082,13 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     if self.config.has_catalyst == True:
                         return (
                             self.generation_aem_flux_in[t, p, j]
-                            == self.flux_splitting[t]
+                            == -0.5 * self.flux_splitting[t]
                         )
 
                     else:
                         return self.generation_aem_flux_in[t, p, j] == (
-                            smooth_min(
+                            0.5
+                            * smooth_min(
                                 -(
                                     self.current[t] / pyunits.amp
                                     - self.current_dens_lim_bpem[t]

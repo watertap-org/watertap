@@ -44,19 +44,6 @@ def build_bipolar_electrodialysis_cost_param_block(blk):
         doc="Stack and electrode replacement factor, equal to 1/lifetime.",
         units=pyo.units.year**-1,
     )
-    blk.acid_flow_cost = pyo.Var(
-        initialize=-0.12,
-        doc="Acid flow cost",
-        units=pyo.units.USD_2018 / (pyo.units.kg),
-    )
-
-    blk.base_flow_cost = pyo.Var(
-        initialize=-0.5,
-        doc="Acid flow cost",
-        units=pyo.units.USD_2018 / (pyo.units.kg),
-    )
-    blk.parent_block().register_flow_type("acid_flow_cost", blk.acid_flow_cost)
-    blk.parent_block().register_flow_type("base_flow_cost", blk.base_flow_cost)
 
 
 @register_costing_parameter_block(
@@ -67,8 +54,6 @@ def cost_bipolar_electrodialysis(
     blk,
     cost_electricity_flow=True,
     has_rectifier=False,
-    has_bp_acid_value=False,
-    has_bp_base_value=False,
 ):
     """
     Function for costing the bipolar electrodialysis unit
@@ -95,23 +80,6 @@ def cost_bipolar_electrodialysis(
         else:
             power = blk.unit_model.get_power_electrical(blk.flowsheet().time.first())
             cost_rectifier(blk, power=power, ac_dc_conversion_efficiency=0.9)
-
-    if has_bp_acid_value:
-        blk.costing_package.cost_flow(
-            pyo.units.convert(
-                blk.unit_model.acid_produced,
-                to_units=pyo.units.kg * pyo.units.second**-1,
-            ),
-            "acid_flow_cost",
-        )
-    if has_bp_base_value:
-        blk.costing_package.cost_flow(
-            pyo.units.convert(
-                blk.unit_model.base_produced,
-                to_units=pyo.units.kg * pyo.units.second**-1,
-            ),
-            "base_flow_cost",
-        )
 
     cost_bipolar_electrodialysis_stack(blk)
 

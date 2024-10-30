@@ -53,7 +53,6 @@ class Test_catalyst:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -194,7 +193,6 @@ class Test_limiting_parameters:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -231,7 +229,6 @@ class Test_limiting_parameters:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -359,6 +356,7 @@ class Test_limiting_parameters:
 
 
 class Test_BPED_pressure_drop_components:
+
     @pytest.fixture(scope="class")
     def bped_m0(self):
         m = ConcreteModel()
@@ -366,7 +364,6 @@ class Test_BPED_pressure_drop_components:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -402,7 +399,6 @@ class Test_BPED_pressure_drop_components:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -440,7 +436,6 @@ class Test_BPED_pressure_drop_components:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -477,7 +472,6 @@ class Test_BPED_pressure_drop_components:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -514,7 +508,6 @@ class Test_BPED_pressure_drop_components:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -551,7 +544,6 @@ class Test_BPED_pressure_drop_components:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
             "mw_data": {
-                "H2O": 18e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35.5e-3,
                 "H_+": 1e-3,
@@ -632,7 +624,7 @@ class Test_BPED_pressure_drop_components:
 
             # Set scaling of critical quantities.
             m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
+                "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
             )
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1e0, index=("Liq", "Na_+")
@@ -672,14 +664,14 @@ class Test_BPED_pressure_drop_components:
         initialization_tester(bped_m[1])
         results = solver.solve(bped_m[1])
         assert_optimal_termination(results)
-        assert value(bped_m[1].fs.unit.N_Re) == pytest.approx(9.491, rel=1e-3)
+        assert value(bped_m[1].fs.unit.N_Re) == pytest.approx(9.585, rel=1e-3)
 
         assert value(bped_m[1].fs.unit.pressure_drop[0]) == pytest.approx(
-            10087.548, rel=1e-3
+            10286.288, rel=1e-3
         )
 
         assert value(bped_m[1].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            7969.163, rel=1e-3
+            8126.168, rel=1e-3
         )
 
         # Test bped_m2
@@ -689,14 +681,14 @@ class Test_BPED_pressure_drop_components:
         initialization_tester(bped_m[2])
         results = solver.solve(bped_m[2])
         assert_optimal_termination(results)
-        assert value(bped_m[2].fs.unit.N_Re) == pytest.approx(9.491, rel=1e-3)
+        assert value(bped_m[2].fs.unit.N_Re) == pytest.approx(9.585, rel=1e-3)
 
         assert value(bped_m[2].fs.unit.pressure_drop[0]) == pytest.approx(
-            40080.279, rel=1e-3
+            40473.174, rel=1e-3
         )
 
         assert value(bped_m[2].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            31663.421, rel=1e-3
+            31973.808, rel=1e-3
         )
 
         # Test bped_m3
@@ -706,14 +698,14 @@ class Test_BPED_pressure_drop_components:
         initialization_tester(bped_m[3])
         results = solver.solve(bped_m[3])
         assert_optimal_termination(results)
-        assert value(bped_m[3].fs.unit.N_Re) == pytest.approx(9.491, rel=1e-3)
+        assert value(bped_m[3].fs.unit.N_Re) == pytest.approx(9.585, rel=1e-3)
 
         assert value(bped_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
-            7574.199, rel=1e-3
+            7685.843, rel=1e-3
         )
 
         assert value(bped_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            5983.618, rel=1e-3
+            6071.816, rel=1e-3
         )
 
         # Test bped_m4
@@ -724,14 +716,14 @@ class Test_BPED_pressure_drop_components:
         initialization_tester(bped_m[4])
         results = solver.solve(bped_m[4])
         assert_optimal_termination(results)
-        assert value(bped_m[4].fs.unit.N_Re) == pytest.approx(21.235, rel=1e-3)
+        assert value(bped_m[4].fs.unit.N_Re) == pytest.approx(21.443, rel=1e-3)
 
         assert value(bped_m[4].fs.unit.pressure_drop[0]) == pytest.approx(
-            2263.540, rel=1e-3
+            2296.904, rel=1e-3
         )
 
         assert value(bped_m[4].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            1788.196, rel=1e-3
+            1814.554, rel=1e-3
         )
 
         # Test bped_m5
@@ -743,12 +735,12 @@ class Test_BPED_pressure_drop_components:
         iscale.calculate_scaling_factors(bped_m[5])
         results = solver.solve(bped_m[5])
         assert_optimal_termination(results)
-        assert value(bped_m[5].fs.unit.N_Re) == pytest.approx(7.641, rel=1e-3)
+        assert value(bped_m[5].fs.unit.N_Re) == pytest.approx(7.716, rel=1e-3)
 
         assert value(bped_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
-            10486.482, rel=1e-3
+            10641.053, rel=1e-3
         )
 
         assert value(bped_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            8284.321, rel=1e-3
+            8406.432, rel=1e-3
         )

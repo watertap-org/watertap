@@ -25,12 +25,13 @@ assumptions made:
 
 * The **acidic** and **basic** side channels have identical geometry.
 * For each channel, component fluxes are uniform in the bulk solutions (the 0-dimensional assumption)  and are set as the average of inlet and outlet of each channel.
-* Steady state: all variables are independent on time.
+* Steady state: all variables are independent of time.
 * Co-current flow operation. 
 * Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one.
 * All ion-exchange membrane properties (ion and water transport number, resistance, permeability) are constant.
 * Detailed concentration gradient effect at membrane-water interfaces is neglected. 
-* Constant pressure and temperature through each channel. 
+* Constant pressure and temperature through each channel.
+* No boundary layer, electric double layer or diffusion layer, has been considered.
 
 Control Volumes
 ---------------
@@ -38,7 +39,7 @@ Control Volumes
 This model has two control volumes for the acidic and basic channels.
 
 * **acidic** channel
-* **basic** side channel
+* **basic** channel
 
 Ports
 -----
@@ -84,7 +85,7 @@ Degrees of Freedom
 The bipolar membrane model has multiple degrees of freedom, among which temperature, pressure, and component molar flow
 rate are state variables that are fixed as initial conditions. The rest are parameters that should be provided in order
 to fully solve the model. The exact degrees of freedom depend on the mode of operation. For the simplest case where no water
-splitting occurs and the bipolar membrane acts like a simple electrodialysis memrbane these are:
+splitting occurs and the bipolar membrane acts like a simple electrodialysis membrane these are:
 
 .. csv-table:: **Table 2.** List of Degree of Freedom (DOF)
    :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number \ :sup:`1`"
@@ -124,7 +125,6 @@ To fully construct solution properties, users need to provide basic component in
    ion_dict = {
         "solute_list": ["Na_+", "Cl_-", "H_+", "OH_-"],
         "mw_data": {
-            "H2O": 18e-3,
             "Na_+": 23e-3,
             "Cl_-": 35.5e-3,
             "H_+": 1e-3,
@@ -145,7 +145,7 @@ To fully construct solution properties, users need to provide basic component in
         },
     }
 
-This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution.
+This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution. Please note that H\ :sup:`+` and OH\ :sup:`-` information must be supplied. Otherwise an error will be thrown.
 
 Information regarding the property package this unit model relies on can be found here: 
 
