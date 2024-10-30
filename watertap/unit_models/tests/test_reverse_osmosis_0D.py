@@ -9,8 +9,15 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel
+from pyomo.environ import (
+    ConcreteModel,
+    units as pyunits,
+    TransformationFactory,
+    assert_optimal_termination,
+)
 from pyomo.network import Port
+from idaes.core.solvers import petsc
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -42,6 +49,10 @@ import watertap.property_models.NaCl_prop_pack as props
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import pytest
+
+from idaes.core.solvers import petsc
+import numpy as np
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -115,9 +126,9 @@ def test_default_config_and_build():
         == "fs._time*fs.unit.feed_side.length_domain"
     )
     # test statistics
-    assert number_variables(m) == 134
+    assert number_variables(m) == 135
     assert number_total_constraints(m) == 110
-    assert number_unused_variables(m) == 1
+    assert number_unused_variables(m) == 2
 
 
 def build():
@@ -982,3 +993,104 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
         }
 
         return m
+
+
+@pytest.mark.requires_idaes_solver
+@pytest.mark.unit
+def test_RO_dynamic_instantiation():
+    # TODO: add test to check exception for simplest RO0D with dynamics
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(
+        dynamic=True,
+        time_set=list(np.linspace(0, 200, 6)),
+        time_units=pyunits.s,
+    )
+
+    m.fs.properties = props.NaClParameterBlock()
+
+    m.fs.unit = ReverseOsmosis0D(
+        dynamic=True,
+        has_holdup=True,
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        pressure_change_type=PressureChangeType.calculated,
+        module_type=ModuleType.spiral_wound,
+    )
+
+    time_nfe = len(m.fs.time) - 1
+    TransformationFactory("dae.finite_difference").apply_to(
+        m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
+    )
+
+    NaCl_g_per_L_basis = 39
+    NaCl_kg_per_L_basis = NaCl_g_per_L_basis * 1e-3
+    h2o_kg_per_L_basis = 1 - NaCl_kg_per_L_basis  # 0.96
+    desired_feed_flow_start = 22 / 60  # 22 L/min to kg/s
+    NaCl_kg_per_L_start = desired_feed_flow_start / (
+        h2o_kg_per_L_basis / NaCl_kg_per_L_basis + 1
+    )
+    h2o_kg_per_L_start = NaCl_kg_per_L_start * h2o_kg_per_L_basis / NaCl_kg_per_L_basis
+    desired_feed_flow_end = 24 / 60  # 22 L/min to kg/s
+    NaCl_kg_per_L_end = desired_feed_flow_end / (
+        h2o_kg_per_L_basis / NaCl_kg_per_L_basis + 1
+    )
+    h2o_kg_per_L_end = NaCl_kg_per_L_end * h2o_kg_per_L_basis / NaCl_kg_per_L_basis
+    ramp_gradient_NaCl = NaCl_kg_per_L_end - NaCl_kg_per_L_start
+    ramp_gradient_h2o = h2o_kg_per_L_end - h2o_kg_per_L_start
+
+    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "NaCl"].fix(NaCl_kg_per_L_end)
+    m.fs.unit.inlet.flow_mass_phase_comp[:, "Liq", "H2O"].fix(h2o_kg_per_L_end)
+    m.fs.unit.inlet.pressure[:].fix(900 * 6895)  # feed pressure (Pa)
+    ramp_len = 80
+    for i in list([0, 40, ramp_len]):
+        m.fs.unit.inlet.flow_mass_phase_comp[i, "Liq", "NaCl"].fix(NaCl_kg_per_L_start)
+        m.fs.unit.inlet.flow_mass_phase_comp[i, "Liq", "H2O"].fix(h2o_kg_per_L_start)
+        m.fs.unit.inlet.flow_mass_phase_comp[ramp_len + i, "Liq", "NaCl"].fix(
+            NaCl_kg_per_L_start + ramp_gradient_NaCl / ramp_len * i
+        )
+        m.fs.unit.inlet.flow_mass_phase_comp[ramp_len + i, "Liq", "H2O"].fix(
+            h2o_kg_per_L_start + ramp_gradient_h2o / ramp_len * i
+        )
+        m.fs.unit.inlet.pressure[i].fix(800 * 6895)  # feed pressure (Pa)
+        m.fs.unit.inlet.pressure[ramp_len + i].fix(
+            (800 + 100 / ramp_len * i) * 6895
+        )  # feed pressure (Pa)
+
+    m.fs.unit.inlet.temperature[:].fix(293.15)  # feed temperature (K)
+
+    m.fs.unit.area.fix(7.4)  # membrane area (m^2)
+    m.fs.unit.A_comp.fix(3.75e-12)  # membrane water permeability (m/Pa/s)
+    m.fs.unit.B_comp.fix(3e-8)  # membrane salt permeability (m/s)
+    m.fs.unit.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
+
+    m.fs.unit.feed_side.channel_height.fix(0.001)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.729)  # 72.9%
+    m.fs.unit.length.fix(1.016 - 2 * 0.0267)  # m
+
+    m.fs.unit.feed_side.material_accumulation[:, :, :].value = 0
+    m.fs.unit.feed_side.material_accumulation[0, :, :].fix(0)
+
+    assert not hasattr(m.fs.unit.feed_side, "energy_accumulation")
+
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    )
+
+    iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
+
+    iscale.calculate_scaling_factors(m)
+
+    m.fs.unit.initialize()
+
+    iscale.calculate_scaling_factors(m)
+
+    results = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.fs.time,
+    )
+    for result in results.results:
+        assert_optimal_termination(result)
