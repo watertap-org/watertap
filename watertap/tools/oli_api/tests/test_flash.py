@@ -72,28 +72,28 @@ def test_water_analysis_single_point(
     )
 
 
-# @pytest.mark.unit
-# def test_water_analysis_survey(
-#     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
-# ):
-#     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-#     survey = build_survey(
-#         {
-#             "Na_+": linspace(0, 1e4, 2),
-#             "temperature": linspace(0, 70, 2),
-#         },
-#         get_oli_names=True,
-#         file_name=tmp_path / "test_survey",
-#     )
-#     stream_input = flash_instance.configure_water_analysis(source_water)
-#     stream_output = flash_instance.run_flash(
-#         "wateranalysis",
-#         oliapi_instance,
-#         dbs_file_id,
-#         stream_input,
-#         survey,
-#         file_name=tmp_path / "test_wa_survey",
-#     )
+@pytest.mark.unit
+def test_water_analysis_survey(
+    flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
+):
+    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    survey = build_survey(
+        {
+            "Na_+": linspace(0, 1e4, 2),
+            "temperature": linspace(0, 70, 2),
+        },
+        get_oli_names=True,
+        file_name=tmp_path / "test_survey",
+    )
+    stream_input = flash_instance.configure_water_analysis(source_water)
+    stream_output = flash_instance.run_flash(
+        "wateranalysis",
+        oliapi_instance,
+        dbs_file_id,
+        stream_input,
+        survey,
+        file_name=tmp_path / "test_wa_survey",
+    )
 
 
 @pytest.mark.unit
@@ -116,32 +116,32 @@ def test_isothermal_flash_single_point(
     )
 
 
-# def test_isothermal_flash_survey(
-#     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
-# ):
-#     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-#     survey = build_survey(
-#         {
-#             "NaCl": linspace(0, 1e4, 2),
-#             "temperature": linspace(0, 70, 2),
-#         },
-#         get_oli_names=True,
-#         file_name=tmp_path / "test_survey",
-#     )
-#     dbs_file_id = oliapi_instance.session_dbs_files[-1]
-#     stream_input = flash_instance.configure_water_analysis(source_water)
-#     inflows = flash_instance.get_apparent_species_from_true(
-#         stream_input,
-#         oliapi_instance,
-#         dbs_file_id,
-#     )
-#     isothermal_input = flash_instance.configure_flash_analysis(inflows, "isothermal")
-#     isothermal_output = flash_instance.run_flash(
-#         "isothermal",
-#         oliapi_instance,
-#         dbs_file_id,
-#         isothermal_input,
-#     )
+def test_isothermal_flash_survey(
+    flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
+):
+    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    survey = build_survey(
+        {
+            "NaCl": linspace(0, 1e4, 2),
+            "temperature": linspace(0, 70, 2),
+        },
+        get_oli_names=True,
+        file_name=tmp_path / "test_survey",
+    )
+    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    stream_input = flash_instance.configure_water_analysis(source_water)
+    inflows = flash_instance.get_apparent_species_from_true(
+        stream_input,
+        oliapi_instance,
+        dbs_file_id,
+    )
+    isothermal_input = flash_instance.configure_flash_analysis(inflows, "isothermal")
+    isothermal_output = flash_instance.run_flash(
+        "isothermal",
+        oliapi_instance,
+        dbs_file_id,
+        isothermal_input,
+    )
 
 
 @pytest.mark.unit
