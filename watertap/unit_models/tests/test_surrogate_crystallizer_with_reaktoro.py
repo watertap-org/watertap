@@ -26,7 +26,7 @@ from watertap.costing import WaterTAPCosting
 from watertap.core.solvers import get_solver
 from watertap.unit_models.surrogate_crystallizer import SurrogateCrystallizer
 
-from reaktoro_pitzer_chem_modifier import add_reaktoro_model
+from watertap.unit_models.tests.reaktoro_pitzer_crystallizer import add_reaktoro_model
 
 
 __author__ = "Oluwamayowa Amusat"
