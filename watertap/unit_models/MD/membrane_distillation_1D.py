@@ -513,26 +513,37 @@ see property package for documentation.}""",
                         b.cold_ch.mass_transfer_term[t, x, p, j]
                         == -b.hot_ch.mass_transfer_term[t, x, p, j]
                     )
-                elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                    return (
-                        b.gap_ch.mass_transfer_term[t, x, "Liq", "H2O"]
-                        == -b.hot_ch.mass_transfer_term[t, x, "Liq", "H2O"]
-                    )
-                elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
-                    # b.cold_ch.mass_transfer_term[t, x, "Liq", j].fix(0)
+                else: 
                     return Constraint.Skip
             else:
                 if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                     b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                    b.gap_ch.mass_transfer_term[t, x, p, j].fix(0)
+                    #b.gap_ch.mass_transfer_term[t, x, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                     return (
                         b.cold_ch.mass_transfer_term[t, x, p, j]
                         == -b.hot_ch.mass_transfer_term[t, x, "Liq", j]
                     )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="Mass transfer from feed to gap",
+        )
+        def eq_connect_mass_transfer_gap(b, t, x):
+
+               
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.gap_ch.mass_transfer_term[t, x, "Liq", "H2O"]
+                    == -b.hot_ch.mass_transfer_term[t, x, "Liq", "H2O"]
+                )
+            else:
+                return Constraint.Skip
+         
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -562,7 +573,10 @@ see property package for documentation.}""",
             doc="Conductive heat transfer to cold channel",
         )
         def eq_conductive_heat_transfer_hot(b, t, x):
-            return b.hot_ch.heat[t, x] == -b.width * b.flux_conduction_heat[t, x]
+            if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                 return b.hot_ch.heat[t, x] == -b.width * b.flux_expansion_heat[t, x]
+            else:
+                return b.hot_ch.heat[t, x] == -b.width * b.flux_conduction_heat[t, x]
 
         @self.Constraint(
             self.flowsheet().config.time,
