@@ -102,14 +102,16 @@ class OLIApi:
     # return False if no exceptions raised
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
-        _logger.info("Exiting: deleting all DBS files created during the session.")
+        _logger.info(f"Exiting: deleting {len(self.session_dbs_files)} remaining DBS files created during the session that were not marked by keep_file=True.")
         self.dbs_file_cleanup(self.session_dbs_files)
         return False
 
     def _prompt(self, msg, default=""):
         if self.interactive_mode:
+            msg = msg + "Enter [y]/n to proceed."
             return input(msg)
         else:
+            msg = msg + "To choose [y]/n to this action, set interactive_mode=True."
             _logger.info(msg)
             return default
 
@@ -289,9 +291,14 @@ class OLIApi:
         """
 
         if dbs_file_ids is None:
+            _logger.info("No DBS file IDs were provided to the dbs_file_cleanup method. Checking user's cloud account for DBS file IDs.")
             dbs_file_ids = self.get_user_dbs_file_ids()
+            if not len(dbs_file_ids):
+                _logger.info("No DBS file IDs were found on the user's cloud account.")
+                return
+
         r = self._prompt(
-            f"WaterTAP will delete {len(dbs_file_ids)} DBS files [y]/n ", "y"
+            f"WaterTAP will delete {len(dbs_file_ids)} DBS files. ", "y"
         )
         if (r.lower() == "y") or (r == ""):
             for dbs_file_id in dbs_file_ids:
@@ -307,9 +314,13 @@ class OLIApi:
                     # Remove the file from session_dbs_files list if it is there, otherwise an error will occur upon exit when this method is called again and already deleted files will remain on the list for deletion. Thus, an error can occur if there is no existing ID to delete.
                     if dbs_file_id in self.session_dbs_files:
                         self.session_dbs_files.remove(dbs_file_id)
-                    _logger.info(
-                        f"File {dbs_file_id} deleted and removed from session_dbs_files list."
-                    )
+                        _logger.info(
+                            f"File {dbs_file_id} deleted and removed from session_dbs_files list."
+                        )
+                    else:
+                        _logger.info(
+                            f"File {dbs_file_id} deleted."
+                        )
 
     def get_corrosion_contact_surfaces(self, dbs_file_id):
         """
