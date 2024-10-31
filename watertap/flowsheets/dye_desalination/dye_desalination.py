@@ -134,11 +134,6 @@ def main(
     results = solve(m, checkpoint="solve flowsheet after costing")
     assert_optimal_termination(results)
 
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
     display_results(m)
     display_costing(m)
 
