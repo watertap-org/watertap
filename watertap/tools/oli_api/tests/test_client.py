@@ -58,6 +58,7 @@ def test_dbs_file_available_for_testing(local_dbs_file: Path):
 
 @pytest.mark.unit
 def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
+    # The following line will return 3 DBS file IDs. Note, the same file is uploaded three times, but each time a new ID is assigned.
     ids = [oliapi_instance.upload_dbs_file(str(local_dbs_file)) for i in range(3)]
     oliapi_instance.dbs_file_cleanup(ids)
 

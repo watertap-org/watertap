@@ -56,7 +56,7 @@ import time
 from pyomo.common.dependencies import attempt_import
 
 requests, requests_available = attempt_import("requests", defer_check=False)
-
+from requests.exceptions import JSONDecodeError
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
 
@@ -103,6 +103,7 @@ class OLIApi:
     # return False if no exceptions raised
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
+        _logger.info("Exiting: deleting all DBS files created during the session.")
         self.dbs_file_cleanup(self.session_dbs_files)
         return False
 
@@ -133,7 +134,7 @@ class OLIApi:
         if bool(dbs_file_id):
             if not keep_file:
                 self.session_dbs_files.append(dbs_file_id)
-            _logger.info(f"DBS file ID is {dbs_file_id}")
+            _logger.info(f"Uploaded DBS file ID is {dbs_file_id}")
             return dbs_file_id
         else:
             raise RuntimeError("Unexpected failure getting DBS file ID.")
@@ -230,7 +231,7 @@ class OLIApi:
         if bool(dbs_file_id):
             if not keep_file:
                 self.session_dbs_files.append(dbs_file_id)
-            _logger.info(f"DBS file ID is {dbs_file_id}")
+            _logger.info(f"Generated DBS file ID is {dbs_file_id}")
             return dbs_file_id
         else:
             raise RuntimeError("Unexpected failure getting DBS file ID.")
@@ -302,8 +303,14 @@ class OLIApi:
                     headers=self.credential_manager.headers,
                 )
                 req = _request_status_test(req, ["SUCCESS"])
+
                 if req["status"] == "SUCCESS":
-                    _logger.info(f"File deleted")
+                    # Remove the file from session_dbs_files list if it is there, otherwise an error will occur upon exit when this method is called again and already deleted files will remain on the list for deletion. Thus, an error can occur if there is no existing ID to delete.
+                    if dbs_file_id in self.session_dbs_files:
+                        self.session_dbs_files.remove(dbs_file_id)
+                    _logger.info(
+                        f"File {dbs_file_id} deleted and removed from session_dbs_files list."
+                    )
 
     def get_corrosion_contact_surfaces(self, dbs_file_id):
         """
@@ -454,7 +461,7 @@ def _get_result_link(req_json):
             if "resultsLink" in req_json["data"]:
                 result_link = req_json["data"]["resultsLink"]
     if not result_link:
-        raise RuntimeError(f"Failed to get 'resultsLink'. Response: {req.json()}")
+        raise RuntimeError(f"Failed to get 'resultsLink'. Response: {req_json.json()}")
     return result_link
 
 
@@ -467,7 +474,6 @@ def _request_status_test(req, target_keys):
 
     :return req_json: response object converted to JSON
     """
-
     req_json = req.json()
     func_name = sys._getframe().f_back.f_code.co_name
     _logger.debug(f"{func_name} response: {req_json}")
