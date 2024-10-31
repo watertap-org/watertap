@@ -56,7 +56,6 @@ import time
 from pyomo.common.dependencies import attempt_import
 
 requests, requests_available = attempt_import("requests", defer_check=False)
-from requests.exceptions import JSONDecodeError
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
 
