@@ -121,7 +121,7 @@ def cost_bipolar_electrodialysis_stack(blk):
             * pyo.units.convert(
                 blk.costing_package.bipolar_electrodialysis.membrane_capital_cost
                 * (
-                    4
+                    2
                     * blk.unit_model.cell_num
                     * blk.unit_model.cell_width
                     * blk.unit_model.cell_length
