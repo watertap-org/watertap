@@ -51,17 +51,13 @@ Properties
    "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap_mass", "None", ":math:`\text{J/kg}`"
    "Diffusivity", ":math:`D`", "diffus_phase_comp", "[p]", ":math:`\text{m}^2\text{/s}`"
    "Boiling point elevation", ":math:`BPE`", "boiling_point_elevation_phase", "[p]", ":math:`\text{K}`"
-
-
-**The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable", "Index", "Units"
-
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
    "Molality", ":math:`Cm`", "molality_phase_comp", "['TDS']", ":math:`\text{mole/kg}`"
    "Osmotic pressure", ":math:`\pi`", "pressure_osm_phase", "None", ":math:`\text{Pa}`"
+
+**The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
+
 
 Relationships
 -------------
@@ -86,8 +82,6 @@ Relationships
    "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
    "Diffusivity", "Equation 6 in Bartholomew et al. (2019)"
    "Boiling point elevation", "Equation 36 in Sharqawy et al. (2010)"
-
-
 
 Note: Osmotic pressure calculation (based on equation 48 in Nayar et al. (2016)) uses the density of water as a function of temperature (:math:`\rho_w`) and the ideal gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`), in addition to previously defined variables.
 
