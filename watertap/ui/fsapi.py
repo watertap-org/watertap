@@ -828,7 +828,7 @@ class FlowsheetInterface:
 
         # print(f'ADDING ACTION: {action_name}')
         # print(action_func)
-        def action_wrapper(**kwargs):
+        def action_wrapper(*args, **kwargs):
             if action_name == Actions.build:
                 # set new model object from return value of build action
                 action_result = action_func(**kwargs)

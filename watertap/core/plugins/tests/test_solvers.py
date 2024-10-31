@@ -233,9 +233,6 @@ class TestIpoptWaterTAP:
         )
 
     @pytest.mark.unit
-    @pytest.mark.xfail(
-        reason="Needs https://github.com/Pyomo/pyomo/pull/3295", strict=True
-    )
     @pytest.mark.skipif(
         not pyo.SolverFactory("cyipopt").available(exception_flag=False),
         reason="cyipopt not available",
