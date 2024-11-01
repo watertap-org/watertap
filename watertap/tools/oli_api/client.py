@@ -103,7 +103,7 @@ class OLIApi:
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
         _logger.info(f"Exiting: deleting {len(self.session_dbs_files)} remaining DBS files created during the session that were not marked by keep_file=True.")
-        self.dbs_file_cleanup(self.session_dbs_files)
+        # self.dbs_file_cleanup(self.session_dbs_files)
         return False
 
     def _prompt(self, msg, default=""):
