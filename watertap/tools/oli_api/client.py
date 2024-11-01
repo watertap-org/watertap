@@ -487,6 +487,7 @@ def _request_status_test(req, target_keys):
     req_json = req.json()
     func_name = sys._getframe().f_back.f_code.co_name
     _logger.debug(f"{func_name} response: {req_json}")
+
     if req.status_code == 200:
         if target_keys:
             if "status" in req_json:
@@ -494,7 +495,7 @@ def _request_status_test(req, target_keys):
                     return req_json
         else:
             return req_json
-    raise RuntimeError(f"Failure in {func_name}. Response: {req_json}")
+    raise RuntimeError(f"Failure in {func_name}. Response: {req_json}. Status Code: {req.status_code}, Response Object Keys: {req_json.keys()}")
 
 
 def _poll_result_link(result_link, headers, max_request, poll_time):
