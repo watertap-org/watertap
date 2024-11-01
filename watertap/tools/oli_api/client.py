@@ -93,6 +93,9 @@ class OLIApi:
             _logger.setLevel(logging.INFO)
         else:
             _logger.setLevel(logging.DEBUG)
+        
+        # TODO: unknown bug where only "liquid1" phase is found in Flash analysis
+        self.valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
 
     # binds OLIApi instance to context manager
     def __enter__(self):
@@ -193,8 +196,6 @@ class OLIApi:
         else:
             dbs_file_inputs["modelName"] = "OLI_analysis"
 
-        # TODO: unknown bug where only "liquid1" phase is found in Flash analysis
-        self.valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
         if phases is not None:
             invalid_phases = [p for p in phases if p not in self.valid_phases]
             if invalid_phases:

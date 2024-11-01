@@ -61,6 +61,11 @@ def test_generate_dbs_file(oliapi_instance: OLIApi, local_dbs_file: Path, source
     assert len(dbs_file_id) > 0
 
 @pytest.mark.unit
+def test_upload_dbs_file(oliapi_instance: OLIApi, local_dbs_file: Path, source_water: dict):
+    dbs_file_id = oliapi_instance.upload_dbs_file(str(local_dbs_file))
+    assert len(dbs_file_id) > 0
+
+@pytest.mark.unit
 def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
     # This test checks both the upload_dbs_file method and dbs_file_cleanup method
     # The following line will return 3 DBS file IDs. Note, the same file is uploaded three times, but each time a new ID is assigned.
@@ -80,7 +85,6 @@ def test_valid_phases(oliapi_instance: OLIApi):
     valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
     for v in oliapi_instance.valid_phases:
         assert v in valid_phases
-
 
 @pytest.mark.unit
 def test_invalid_phases(oliapi_instance_with_invalid_phase: OLIApi):
