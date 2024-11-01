@@ -93,7 +93,7 @@ class OLIApi:
             _logger.setLevel(logging.INFO)
         else:
             _logger.setLevel(logging.DEBUG)
-        
+
         # TODO: unknown bug where only "liquid1" phase is found in Flash analysis
         self.valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
 
@@ -105,7 +105,9 @@ class OLIApi:
     # return False if no exceptions raised
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
-        _logger.info(f"Exiting: deleting {len(self.session_dbs_files)} remaining DBS files created during the session that were not marked by keep_file=True.")
+        _logger.info(
+            f"Exiting: deleting {len(self.session_dbs_files)} remaining DBS files created during the session that were not marked by keep_file=True."
+        )
         self.dbs_file_cleanup(self.session_dbs_files)
         return False
 
@@ -292,15 +294,15 @@ class OLIApi:
         """
 
         if dbs_file_ids is None:
-            _logger.info("No DBS file IDs were provided to the dbs_file_cleanup method. Checking user's cloud account for DBS file IDs.")
+            _logger.info(
+                "No DBS file IDs were provided to the dbs_file_cleanup method. Checking user's cloud account for DBS file IDs."
+            )
             dbs_file_ids = self.get_user_dbs_file_ids()
             if not len(dbs_file_ids):
                 _logger.info("No DBS file IDs were found on the user's cloud account.")
                 return
 
-        r = self._prompt(
-            f"WaterTAP will delete {len(dbs_file_ids)} DBS files. ", "y"
-        )
+        r = self._prompt(f"WaterTAP will delete {len(dbs_file_ids)} DBS files. ", "y")
         if (r.lower() == "y") or (r == ""):
             for dbs_file_id in dbs_file_ids:
                 _logger.info(f"Deleting {dbs_file_id} ...")
@@ -319,9 +321,7 @@ class OLIApi:
                             f"File {dbs_file_id} deleted and removed from session_dbs_files list."
                         )
                     else:
-                        _logger.info(
-                            f"File {dbs_file_id} deleted."
-                        )
+                        _logger.info(f"File {dbs_file_id} deleted.")
 
     def get_corrosion_contact_surfaces(self, dbs_file_id):
         """
@@ -496,7 +496,9 @@ def _request_status_test(req, target_keys):
                     return req_json
         else:
             return req_json
-    raise RuntimeError(f"Failure in {func_name}. Response: {req_json}. Status Code: {req.status_code}.")
+    raise RuntimeError(
+        f"Failure in {func_name}. Response: {req_json}. Status Code: {req.status_code}."
+    )
 
 
 def _poll_result_link(result_link, headers, max_request, poll_time):
