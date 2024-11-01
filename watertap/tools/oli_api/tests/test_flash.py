@@ -147,7 +147,7 @@ def test_isothermal_flash_survey(
 def test_bubble_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
-    dbs_file_id = oliapi_instance.generate_dbs_file(source_water)
+    dbs_file_id = oliapi_instance.session_dbs_files[-1]
 
     stream_input = flash_instance.configure_water_analysis(source_water)
     inflows = flash_instance.get_apparent_species_from_true(

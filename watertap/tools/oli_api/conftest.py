@@ -99,7 +99,7 @@ def oliapi_instance(
     credential_manager = CredentialManager(**credentials, test=True)
     with OLIApi(credential_manager, interactive_mode=False) as oliapi:
         oliapi.upload_dbs_file(str(local_dbs_file))
-        # oliapi.generate_dbs_file(source_water)
+        oliapi.generate_dbs_file(source_water)
         yield oliapi
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()
