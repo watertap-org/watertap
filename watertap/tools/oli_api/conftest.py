@@ -82,8 +82,6 @@ def auth_credentials() -> dict:
 def oliapi_instance(
     tmp_path: Path,
     auth_credentials: dict,
-    local_dbs_file: Path,
-    source_water: dict,
 ) -> OLIApi:
 
     if not cryptography_available:

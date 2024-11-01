@@ -496,7 +496,7 @@ def _request_status_test(req, target_keys):
                     return req_json
         else:
             return req_json
-    raise RuntimeError(f"Failure in {func_name}. Response: {req_json}. Status Code: {req.status_code}, Response Object Keys: {req_json.keys()}")
+    raise RuntimeError(f"Failure in {func_name}. Response: {req_json}. Status Code: {req.status_code}.")
 
 
 def _poll_result_link(result_link, headers, max_request, poll_time):
