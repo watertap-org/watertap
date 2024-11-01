@@ -93,7 +93,7 @@ def oliapi_instance(
     credentials = {
         **auth_credentials,
         "config_file": cred_file_path,
-        "refresh": True,
+        "refresh": False,
         "interactive_mode": False,
     }
     credential_manager = CredentialManager(**credentials, test=True)
