@@ -493,13 +493,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
         )
 
         # Performance metrics
-        self.current_efficiency = Var(
-            self.flowsheet().time,
-            initialize=0.9,
-            bounds=(-1.2, 1.2),
-            units=pyunits.dimensionless,
-            doc="The overall current efficiency for deionizaiton",
-        )
         self.power_electrical = Var(
             self.flowsheet().time,
             initialize=1,
@@ -515,14 +508,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
             domain=NonNegativeReals,
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="acidic-volume-flow-rate-specific electrical power consumption",
-        )
-        self.recovery_mass_H2O = Var(
-            self.flowsheet().time,
-            initialize=0.5,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="water recovery ratio calculated by mass",
         )
         self.acid_produced = Var(
             initialize=55 * 1e3,
@@ -1396,37 +1381,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 )
                 * self.acidic.properties_out[t].flow_vol_phase["Liq"]
                 == self.current[t] * self.voltage[t]
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Overall current efficiency evaluation",
-        )
-        def eq_current_efficiency(self, t):
-            return (
-                self.current_efficiency[t] * self.current[t] * self.cell_num
-                == sum(
-                    self.acidic.properties_in[t].flow_mol_phase_comp["Liq", j]
-                    * self.config.property_package.charge_comp[j]
-                    - self.acidic.properties_out[t].flow_mol_phase_comp["Liq", j]
-                    * self.config.property_package.charge_comp[j]
-                    for j in self.config.property_package.cation_set
-                )
-                * Constants.faraday_constant
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Water recovery by mass",
-        )
-        def eq_recovery_mass_H2O(self, t):
-            return (
-                self.recovery_mass_H2O[t]
-                * (
-                    self.acidic.properties_in[t].flow_mass_phase_comp["Liq", "H2O"]
-                    + self.basic.properties_in[t].flow_mass_phase_comp["Liq", "H2O"]
-                )
-                == self.acidic.properties_out[t].flow_mass_phase_comp["Liq", "H2O"]
             )
 
     # Catalyst action:
@@ -2341,14 +2295,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 * iscale.get_scaling_factor(self.cell_num),
             )
 
-        for ind, c in self.eq_recovery_mass_H2O.items():
-            iscale.constraint_scaling_transform(
-                c,
-                iscale.get_scaling_factor(
-                    self.acidic.properties_out[ind].flow_mass_phase_comp["Liq", "H2O"]
-                ),
-            )
-
         for ind, c in self.eq_power_electrical.items():
             iscale.constraint_scaling_transform(
                 c,
@@ -2363,10 +2309,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                     self.acidic.properties_out[ind].flow_vol_phase["Liq"]
                 ),
             )
-        # for ind, c in self.eq_current_efficiency.items():
-        #     iscale.constraint_scaling_transform(
-        #         c, iscale.get_scaling_factor(self.current[ind])
-        #     )
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -2388,10 +2330,6 @@ class BipolarElectrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
-                # "Current efficiency for deionzation": self.current_efficiency[
-                #     time_point
-                # ],
-                "Water recovery by mass": self.recovery_mass_H2O[time_point],
             },
             "exprs": {},
             "params": {},
