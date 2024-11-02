@@ -55,6 +55,7 @@ from idaes.core.scaling.custom_scaler_base import (
     ConstraintScalingScheme,
 )
 from idaes.core.scaling.autoscaling import AutoScaler
+from idaes.core.scaling.scaling_base import ScalerBase
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
 from watertap.unit_models.clarifier import Clarifier
@@ -151,7 +152,7 @@ def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=
         )
         results = solve(m)
 
-    add_costing(m)
+    add_costing(m, bio_P=bio_P)
     m.fs.costing.initialize()
 
     interval_initializer(m.fs.costing)
@@ -167,6 +168,8 @@ def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=
     dt = DiagnosticsToolbox(m)
     print("---Numerical Issues---")
     dt.report_numerical_issues()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
     print("---SVD---")
     svd = dt.prepare_svd_toolbox()
     svd.display_underdetermined_variables_and_constraints()
@@ -562,6 +565,49 @@ def set_operating_conditions(m):
 def set_scaling(m, bio_P=False):
     csb = CustomScalerBase()
     auto = AutoScaler()
+    sb = ScalerBase()
+
+    # Scale Arc constraints
+    stream_list = [
+        m.fs.stream2,
+        m.fs.stream3,
+        m.fs.stream4,
+        m.fs.stream5,
+        m.fs.stream6,
+        m.fs.stream7,
+        m.fs.stream8,
+        m.fs.stream9,
+        m.fs.stream10,
+        m.fs.stream11,
+        m.fs.stream12,
+        m.fs.stream13,
+        m.fs.stream14,
+        m.fs.stream15,
+        m.fs.stream16,
+        m.fs.stream_AD_translator,
+        m.fs.stream_SP_thickener,
+        m.fs.stream3adm,
+        m.fs.stream7adm,
+        m.fs.stream9adm,
+        m.fs.stream_translator_dewater,
+        m.fs.stream1a,
+        m.fs.stream1b,
+        m.fs.stream1c,
+        m.fs.stream_dewater_sludge,
+        m.fs.stream_dewater_mixer,
+        m.fs.stream10adm,
+        m.fs.stream_translator_AD,
+    ]
+
+    # for stream in stream_list:
+    #     for constraint in stream.component_data_objects(pyo.Constraint, descend_into=True):
+    #         csb.scale_constraint_by_nominal_value(
+    #             constraint,
+    #             scheme=ConstraintScalingScheme.inverseMaximum,
+    #             overwrite=True,
+    #         )
+    # iscale.constraint_scaling_transform(constraint, 1e9)
+    # auto.scale_constraints_by_jacobian_norm(constraint)
 
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
@@ -575,31 +621,77 @@ def set_scaling(m, bio_P=False):
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
-        iscale.set_scaling_factor(
-            block.control_volume.reactions[0.0].rate_expression, 1e3
-        )
+        if bio_P:
+            iscale.set_scaling_factor(
+                block.control_volume.reactions[0.0].rate_expression, 1e3
+            )
+        else:
+            iscale.set_scaling_factor(
+                block.control_volume.reactions[0.0].rate_expression, 1e4
+            )
         iscale.set_scaling_factor(block.cstr_performance_eqn, 1e3)
         iscale.set_scaling_factor(
             block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
+        # if unit in "R1":
+        #     iscale.set_scaling_factor(block.control_volume.reactions[0].reaction_rate, 1e7)
+
     iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
-    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
+    if bio_P:
+        iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
+    else:
+        iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e1)  # or 1e4
 
     # New scaling factors (may not include all of these)
-    iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat[0], 1e3)
+    if bio_P:
+        pass
+        # iscale.set_scaling_factor(m.fs.dewater.mixed_state[0].flow_vol, 1e2)
+    else:
+        iscale.set_scaling_factor(m.fs.dewater.mixed_state[0].flow_vol, 1e2)
+
+    iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat[0], 1e3)  # or 1e2
+    if bio_P:
+        csb.scale_constraint_by_nominal_value(
+            m.fs.AD.liquid_phase.enthalpy_balances[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=True,
+        )
+    else:
+        csb.scale_constraint_by_nominal_value(
+            m.fs.AD.liquid_phase.enthalpy_balances[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=True,
+        )
+    # iscale.constraint_scaling_transform(m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-3)
+
     csb.scale_constraint_by_nominal_value(
         m.fs.AD.flow_vol_vap[0],
         scheme=ConstraintScalingScheme.inverseMaximum,
         overwrite=True,
     )
-    csb.scale_constraint_by_nominal_value(
-        m.fs.AD.liquid_phase.enthalpy_balances[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
+
+    # csb.scale_constraint_by_nominal_value(
+    #     m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"],
+    #     scheme=ConstraintScalingScheme.inverseMinimum,
+    #     overwrite=True,
+    # )
+    # iscale.constraint_scaling_transform(m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"], 1e5)
+
+    # iscale.set_scaling_factor(m.fs.AD.AD_retention_time[0], 1e0)
+    if bio_P:
+        pass
+        # iscale.constraint_scaling_transform(m.fs.AD.AD_retention_time[0], 1e-6)
+    else:
+        iscale.constraint_scaling_transform(m.fs.AD.AD_retention_time[0], 1e-6)
+
+    # csb.scale_constraint_by_nominal_value(
+    #     m.fs.MX3.enthalpy_mixing_equations[0],
+    #     scheme=ConstraintScalingScheme.inverseMinimum,
+    #     overwrite=True,
+    # )
 
     if bio_P:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e7)
@@ -930,7 +1022,7 @@ def add_effluent_violations(m, bio_P=False):
         iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e3)
     else:
         csb.scale_constraint_by_nominal_value(
-            m.fs.eq_tss_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
+            m.fs.eq_tss_max, scheme=ConstraintScalingScheme.inverseSum, overwrite=True
         )
         csb.scale_constraint_by_nominal_value(
             m.fs.eq_cod_max, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
@@ -973,7 +1065,7 @@ def add_effluent_violations(m, bio_P=False):
         # iscale.constraint_scaling_transform(m.fs.eq_BOD5_max, 1e2)
 
 
-def add_costing(m):
+def add_costing(m, bio_P=False):
     m.fs.costing = WaterTAPCosting()
     m.fs.costing.base_currency = pyo.units.USD_2020
 
@@ -1010,13 +1102,38 @@ def add_costing(m):
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
     # iscale.set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-7)
-    # iscale.set_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
+    # iscale.set_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-4)
     # iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
     # iscale.set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
 
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
             iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
+
+    csb = CustomScalerBase()
+
+    # csb.scale_constraint_by_nominal_value(
+    #     m.fs.dewater.costing.capital_cost_constraint,
+    #     scheme=ConstraintScalingScheme.inverseMinimum,
+    #     overwrite=True,
+    # )
+    if bio_P:
+        iscale.constraint_scaling_transform(
+            m.fs.AD.costing.capital_cost_constraint, 1e-6
+        )
+        # iscale.constraint_scaling_transform(m.fs.dewater.costing.capital_cost_constraint, 1e-7)
+        # csb.scale_constraint_by_nominal_value(
+        #     m.fs.dewater.costing.capital_cost_constraint, scheme=ConstraintScalingScheme.inverseSum, overwrite=True
+        # )
+        # iscale.constraint_scaling_transform(m.fs.CL.costing.capital_cost_constraint, 1e-6)
+    else:
+        iscale.constraint_scaling_transform(
+            m.fs.dewater.costing.capital_cost_constraint, 1e-6
+        )
+        iscale.constraint_scaling_transform(
+            m.fs.AD.costing.capital_cost_constraint, 1e-6
+        )
+    # iscale.constraint_scaling_transform(m.fs.CL.costing.capital_cost_constraint, 1e-6)
 
     # iscale.set_scaling_factor(m.fs.CL.costing.capital_cost, 1e-6)
     # iscale.set_scaling_factor(m.fs.AD.costing.capital_cost, 1e-6)
@@ -1261,7 +1378,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True, has_effluent_constraints=True)
+    m, results = main(bio_P=False, has_effluent_constraints=True)
 
     stream_table = create_stream_table_dataframe(
         {
@@ -1283,3 +1400,8 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+
+    # constraint_sf = iscale.get_scaling_factor(m.fs.eq_tss_max)
+    # constraint_value = pyo.value(m.fs.eq_tss_max)
+    # print(f"Constraint value is: {constraint_value}")
+    # print(f"Constraint scaling factor is: {constraint_sf}")
