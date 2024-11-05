@@ -53,7 +53,6 @@ def build():
     return m
 
 
-@pytest.mark.requires_idaes_solver
 class TestSteamEjector(UnitTestHarness):
     def configure(self):
         m = build()

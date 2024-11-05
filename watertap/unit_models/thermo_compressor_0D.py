@@ -37,6 +37,9 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from watertap.costing.unit_models.thermo_compressor import (
+    cost_thermo_compressor,
+)
 
 from watertap.core import InitializationMixin
 
@@ -410,3 +413,7 @@ class SteamEjectorData(InitializationMixin, UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+
+    @property
+    def default_costing_method(self):
+        return cost_thermo_compressor
