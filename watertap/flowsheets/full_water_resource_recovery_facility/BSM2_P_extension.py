@@ -106,6 +106,7 @@ from idaes.core.util import DiagnosticsToolbox
 _log = idaeslog.getLogger(__name__)
 
 
+# TODO: Look into removing temperature from modifiedASM2d property package
 def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m)
@@ -170,6 +171,7 @@ def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=
     dt.report_numerical_issues()
     dt.display_variables_with_extreme_jacobians()
     dt.display_constraints_with_extreme_jacobians()
+    dt.display_near_parallel_variables()
     print("---SVD---")
     svd = dt.prepare_svd_toolbox()
     svd.display_underdetermined_variables_and_constraints()
@@ -674,10 +676,11 @@ def set_scaling(m, bio_P=False):
     )
 
     # csb.scale_constraint_by_nominal_value(
-    #     m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"],
-    #     scheme=ConstraintScalingScheme.inverseMinimum,
+    #     m.fs.AD.liquid_phase.reactions[0.0].rate_expression["R24"],
+    #     scheme=ConstraintScalingScheme.inverseMaximum,
     #     overwrite=True,
     # )
+
     # iscale.constraint_scaling_transform(m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"], 1e5)
 
     # iscale.set_scaling_factor(m.fs.AD.AD_retention_time[0], 1e0)
