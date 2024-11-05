@@ -12,8 +12,6 @@
 
 from pyomo.environ import (
     ConcreteModel,
-    value,
-    units as pyunits,
 )
 
 from idaes.core import FlowsheetBlock

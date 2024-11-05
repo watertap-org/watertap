@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-# Import Pyomo libraries
 from pyomo.environ import (
     Suffix,
     check_optimal_termination,
@@ -21,7 +20,6 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
-# Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
     MaterialBalanceType,
