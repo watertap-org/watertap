@@ -210,7 +210,7 @@ class SteamEjectorData(InitializationMixin, UnitModelBlockData):
         )
 
         # Empirical correlation constraints
-        @self.Constraint(doc="Pressure Correction Factor")
+        @self.Constraint(doc="Pressure Correction Factor (El-Dessouky, 1997)")
         def eq_PCF(b):
             A_PCF = 3e-7 / pyunits.kPa**2
             B_PCF = -0.0009 / pyunits.kPa
@@ -229,7 +229,7 @@ class SteamEjectorData(InitializationMixin, UnitModelBlockData):
                 + C_PCF
             )
 
-        @self.Constraint(doc="Temperature Correction Factor")
+        @self.Constraint(doc="Temperature Correction Factor (El-Dessouky, 1997)")
         def eq_TCF(b):
             A_TCF = 2e-8 / (pyunits.K**2)
             B_TCF = 0.0006 / pyunits.K
@@ -271,7 +271,7 @@ class SteamEjectorData(InitializationMixin, UnitModelBlockData):
                 * b.PCF
             )
 
-        @self.Constraint(doc="Entrainment Ratio Definition")
+        @self.Constraint(doc="Entrainment Ratio Definition (El-Dessouky, 1997)")
         def eq_entrainment_ratio(b):
             return (
                 b.entrainment_ratio
