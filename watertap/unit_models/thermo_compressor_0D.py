@@ -11,12 +11,9 @@
 #################################################################################
 
 from pyomo.environ import (
-    Suffix,
     check_optimal_termination,
     units as pyunits,
     Var,
-    Block,
-    Constraint,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -33,7 +30,6 @@ from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from watertap.costing.unit_models.thermo_compressor import (
     cost_thermo_compressor,
