@@ -110,6 +110,7 @@ class CredentialManager:
         self.access_key = ""
         self.encryption_key = encryption_key
         self.config_file = Path(config_file).resolve()
+        self.refresh = refresh
         self._manage_credentials(
             username,
             password,
@@ -123,7 +124,7 @@ class CredentialManager:
             _logger.setLevel(logging.DEBUG)
         self.set_headers()
 
-        self.refresh = refresh
+        
 
     def set_headers(self):
         """

@@ -1160,9 +1160,9 @@ def flatten_results(processed_requests):
                         prop_tag = _get_nested_data(result, prop)["name"]
             else:
                 _logger.warning(
-                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict}"
+                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict} from prop {prop}"
                 )
-
+                continue
             label = f"{prop_tag}_{phase_tag}" if phase_tag else prop_tag
             input_dict[k][label] = _extract_values(result, prop)
         return input_dict
