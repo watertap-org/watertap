@@ -53,8 +53,6 @@ def build():
 class TestSteamEjector(UnitTestHarness):
     def configure(self):
         m = build()
-
-        # Expected values (these should be updated based on actual model results)
         m.fs.unit.initialize()
         solver.solve(m, tee=True)
 
