@@ -109,7 +109,7 @@ def build():
         property_package=m.fs.properties,
         has_holdup=False,
         num_inlets=2,
-        momentum_mixing_type=MomentumMixingType.none,
+        momentum_mixing_type=MomentumMixingType.equality,
     )
 
     # --- Feed and recycle pumps ---
@@ -118,6 +118,7 @@ def build():
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
+        dynamic=True,
         has_holdup=True,
         property_package=m.fs.properties,
         has_pressure_change=True,
@@ -164,8 +165,65 @@ def set_operating_conditions(
     # ---specifications---
     # feed
     # state variables
-    m.fs.feed.properties[0].pressure.fix(170 * pyunits.psi)  # feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix((273.15 + 21.81) * pyunits.degK)  # feed temperature [K]
+    m.fs.feed.properties[:].pressure.fix(170 * pyunits.psi)  # feed pressure [Pa]
+    m.fs.feed.properties[:].temperature.fix(294.96)  # feed temperature [K]
+
+    # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(1.8/60)
+    # m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(1.5e-3)
+
+    # properties (cannot be fixed for initialization routines, must calculate the state variables)
+    m.fs.feed.properties.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_vol,  # feed volumetric flow rate [m3/s]
+            ("conc_mass_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
+        },  # feed NaCl mass fraction [-]
+        hold_state=True,  # fixes the calculated component mass flow rates
+    )
+    # m.fs.feed.properties.display()
+    # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
+    m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
+    m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
+    num_time_points = 2
+    time_set = np.linspace(0, 1400, num_time_points+1)
+    m.fs.P1.control_volume.properties_out[0].pressure.fix(275 * pyunits.psi)
+    m.fs.P2.control_volume.properties_out[0].pressure.fix(275 * pyunits.psi)
+    for i in range(len(time_set+1)):
+        m.fs.P1.control_volume.properties_out[time_set[i]].pressure.fix(
+            (275 + 1400/num_time_points * 1/7 * i) * 6895
+        )  # feed pressure (Pa)
+        m.fs.P2.control_volume.properties_out[time_set[i]].pressure.fix(
+            (275 + 1400/num_time_points * 1/7 * i) * 6895
+        )  # feed pressure (Pa)
+    m.fs.P2.control_volume.properties_out.display()
+    m.fs.RO.area.fix(7.2)  # membrane area (m^2)
+    m.fs.RO.A_comp.fix(4.422e-12)  # membrane water permeability (m/Pa/s)
+    m.fs.RO.B_comp.fix(5.613e-8)  # membrane salt permeability (m/s)
+    m.fs.RO.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
+    m.fs.RO.display()
+    m.fs.RO.feed_side.channel_height.fix(0.0008636)
+    m.fs.RO.feed_side.spacer_porosity.fix(0.7081)
+    m.fs.RO.length.fix(1.016 - 2 * 0.0267)  # m
+
+    m.fs.RO.feed_side.material_accumulation[:, :, :].value = 0
+    m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)
+    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp.fix(0)
+    m.fs.RO.feed_side.properties_out[0].temperature.fix(294.96)
+
+    assert not hasattr(m.fs.RO.feed_side, "energy_accumulation")
+    # initialize RO
+    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(value(
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+    ))
+    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"].fix(value(
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+    ))
+    m.fs.RO.feed_side.properties_in[0].temperature.fix(value(
+        m.fs.feed.properties[0].temperature
+    ))
+    m.fs.RO.feed_side.properties_in[0].pressure.fix(value(
+        m.fs.P1.control_volume.properties_out[0].pressure
+    ))
+    # m.fs.RO.initialize(optarg=solver.options)
 
     # scaling
     # set default property values
@@ -176,9 +234,6 @@ def set_operating_conditions(
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e-3 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
     )
-
-    # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(1.8/60)
-    # m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(1.5e-3)
 
     # set scaling factors
     iscale.set_scaling_factor(
@@ -195,56 +250,6 @@ def set_operating_conditions(
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
-
-    # properties (cannot be fixed for initialization routines, must calculate the state variables)
-    m.fs.feed.properties.calculate_state(
-        var_args={
-            ("flow_vol_phase", "Liq"): flow_vol,  # feed volumetric flow rate [m3/s]
-            ("conc_mass_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
-        },  # feed NaCl mass fraction [-]
-        hold_state=True,  # fixes the calculated component mass flow rates
-    )
-
-    # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
-    m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
-    num_time_points = 2
-    time_set = np.linspace(0, 1400, num_time_points+1)
-    m.fs.P1.control_volume.properties_out[0].pressure.fix(275 * pyunits.psi)
-    for i in range(len(time_set+1)):
-        m.fs.P1.control_volume.properties_out[time_set[i]].pressure.fix(
-            (275 + 1400/num_time_points * 1/7 * i) * 6895
-        )  # feed pressure (Pa)
-
-    m.fs.RO.area.fix(7.2)  # membrane area (m^2)
-    m.fs.RO.A_comp.fix(4.422e-12)  # membrane water permeability (m/Pa/s)
-    m.fs.RO.B_comp.fix(5.613e-8)  # membrane salt permeability (m/s)
-    m.fs.RO.permeate.pressure[:].fix(101325)  # permeate pressure (Pa)
-
-    m.fs.RO.feed_side.channel_height.fix(0.0008636)
-    m.fs.RO.feed_side.spacer_porosity.fix(0.7081)
-    m.fs.RO.length.fix(1.016 - 2 * 0.0267)  # m
-
-    m.fs.RO.feed_side.material_accumulation[:, :, :].value = 0
-    m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)
-
-    assert not hasattr(m.fs.RO.feed_side, "energy_accumulation")
-    # initialize RO
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    )
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-    )
-    m.fs.RO.feed_side.properties_in[0].temperature = value(
-        m.fs.feed.properties[0].temperature
-    )
-    m.fs.RO.feed_side.properties_in[0].pressure = value(
-        m.fs.P1.control_volume.properties_out[0].pressure
-    )
-    # m.fs.RO.initialize(optarg=solver.options)
-    m.fs.P2.efficiency_pump.fix(0.80)
-
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
@@ -347,9 +352,9 @@ def initialize_system(m, pass_num=1):
     m.fs.RO.feed_side.properties_in[0].pressure = value(
         m.fs.P1.control_volume.properties_out[0].pressure
     )
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75253)
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030899)
-    m.fs.RO.feed_side.properties_out[0].pressure.set_value(1976757.5687263503)
+    # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75253)
+    # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030899)
+    # m.fs.RO.feed_side.properties_out[0].pressure.set_value(1976757.5687263503)
     m.fs.RO.report()
     m.fs.RO.initialize()
     m.fs.RO.report()
