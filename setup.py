@@ -87,6 +87,7 @@ setup(
         "pydantic >= 2, <3",
         "numpy",
         "importlib-resources",
+        "git+https://github.com/watertap-org/idaes-flowsheet-processor@main",
     ],
     extras_require={
         "testing": [
