@@ -105,21 +105,6 @@ setup(
             "requests",
             "cryptography",  # for encrypting OLI credentials
         ],
-        "dev": [
-            "nbsphinx",  # jupyter notebook support for sphinx
-            "jinja2<3.1.0",  # see watertap-org/watertap#449
-            "Sphinx==7.1.*",  # docs
-            "sphinx_rtd_theme",  # docs
-            "urllib3 < 2",  # see watertap-org/watertap#1021,
-            # other requirements
-            "linkify-it-py",
-            "black",  # code formatting
-            # other requirements
-            "pytest",  # test framework
-            "pytest-cov",  # code coverage
-            # treebeardtech/nbmake#121
-            "nbmake != 1.5.1",
-        ],
     },
     package_data={  # Optional
         "": [
