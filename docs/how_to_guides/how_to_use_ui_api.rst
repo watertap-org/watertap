@@ -2,21 +2,21 @@
 
 Add a flowsheet to the UI
 ==========================
-.. py:currentmodule:: watertap.ui.fsapi
+.. py:currentmodule:: idaes_flowsheet_processor.api
 
 This API is intended for model developers who would like to connect their flowsheets to the UI.
 Developers can select which variables to "export" to the UI for each component of the model, 
 and provide extra metadata (display name, description) for them. For flowsheets, they should also 
 specify how to build and solve the flowsheets.
 
-For reference, see :class:`FlowsheetInterface` and :class:`FlowsheetExport` in the `watertap.ui.fsapi` module.
+For reference, see :class:`FlowsheetInterface` and :class:`FlowsheetExport` in the `idaes_flowsheet_processor.api` module.
 
 ----
 
 In some Python module, define the function ``export_to_ui``, which will look
 similar to this::
 
-    from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
+    from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
     def export_to_ui():
         return FlowsheetInterface(
             name="NF-DSPM-DE",
