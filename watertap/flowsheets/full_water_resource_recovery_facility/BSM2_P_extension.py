@@ -526,7 +526,7 @@ def set_operating_conditions(m):
     # AD
     m.fs.AD.volume_liquid.fix(3400)
     m.fs.AD.volume_vapor.fix(300)
-    m.fs.AD.liquid_outlet.temperature.fix(308.15)
+    # m.fs.AD.liquid_outlet.temperature.fix(308.15)
 
     # Dewatering Unit - fix either HRT or volume.
     m.fs.dewater.hydraulic_retention_time.fix(1800 * pyo.units.s)
