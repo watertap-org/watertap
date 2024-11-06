@@ -87,7 +87,6 @@ setup(
         "pydantic >= 2, <3",
         "numpy",
         "importlib-resources",
-        "idaes-flowsheet-processor @ git+https://github.com/watertap-org/idaes-flowsheet-processor@main",
     ],
     extras_require={
         "testing": [
@@ -96,6 +95,7 @@ setup(
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
             "nbconvert",
+            "idaes-flowsheet-processor @ git+https://github.com/watertap-org/idaes-flowsheet-processor@main",
         ],
         "notebooks": [
             "jupyter",
