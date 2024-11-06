@@ -259,13 +259,13 @@ def set_operating_conditions(m):
     # TODO: inspect pump model when flowsheet set to dynamic; setting flowsheet to dynamic seems to activate holdup for pumps, forcing me to define pump volume, which I'd rather neglect in the interim.
     m.fs.P1.control_volume.volume[:].fix(1e-5)
 
-    @m.fs.P1.Constraint(m.fs.time)
-    def eq_operating_pressure(b, t):
-        if not t:
-            return Constraint.Skip
+    # @m.fs.P1.Constraint(m.fs.time)
+    # def eq_operating_pressure(b, t):
+    #     if not t:
+    #         return Constraint.Skip
 
-        else:
-            return b.control_volume.properties_out[t].pressure == m.fs.RO.feed_side.properties_interface[t, 1].pressure_osm_phase["Liq"]*1.1
+    #     else:
+    #         return b.control_volume.properties_out[t].pressure == m.fs.RO.feed_side.properties_interface[t, 1].pressure_osm_phase["Liq"]*1.1
 
     """
     Pump 2 operating conditions
@@ -318,8 +318,12 @@ def set_operating_conditions(m):
     m.fs.RO.length.fix(membrane_length)
     m.fs.RO.feed_side.channel_height.fix(channel_height)
     m.fs.RO.feed_side.spacer_porosity.fix(spacer_porosity)
-  
-    # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(0.06)
+    
+    for i,t in enumerate(m.fs._time):
+        if i==1:
+            pass
+        else: 
+            m.fs.RO.recovery_vol_phase[t, "Liq"].fix(0.06)
     m.fs.RO.feed_side.material_accumulation[:, :, :].value = 0
     m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)
     
@@ -367,13 +371,16 @@ def master_initialize_with_recirculation(m, count=1):
             initialize_with_recirculation(m)
             _log.info(f"ATTEMPT TO SOLVE AFTER COUNT={counter+1} of {count} ")
             interval_initializer(m)
-            res= solve(m, tee=True)
+            try:
+                res= solve(m, tee=True)
+            except:
+                res = None
         except:
             pass
         counter = counter + 1
         if counter == count:
             break 
-        if check_optimal_termination(res):
+        if res is not None and check_optimal_termination(res):
             solved = 1
         m.fs.report()
         m.fs.RO.report()
@@ -484,8 +491,10 @@ if __name__ == "__main__":
     # autoscaler = AutoScaler()
     # autoscaler.scale_model(m,descend_into=True)
     
-    # initialize_system(m)
-    interval_initializer(m)
+ 
+    initialize_system(m)
+ 
+    # interval_initializer(m)
 
     m.fs.report()
     m.fs.RO.report()
