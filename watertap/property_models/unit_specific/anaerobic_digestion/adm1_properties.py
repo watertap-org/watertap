@@ -32,8 +32,8 @@ from idaes.core import (
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
+from idaes.core.scaling import CustomScalerBase
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Adam Atia, Xinhong Liu"
@@ -151,11 +151,47 @@ class ADM1ParameterData(PhysicalParameterBlock):
         )
 
 
+class ADM1PropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Anaerobic Digestion Model No.1 property package.
+
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Pressure": (pyo.units.Pa, 1e-5),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e5,
+        "temperature": 1e-2,
+        "anion": 1e2,
+        "cation": 1e2,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+
+    # There are currently no constraints in this model
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        pass
+
+
 class _ADM1StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_scaler = ADM1PropertiesScaler
 
     def initialize(
         self,
@@ -390,14 +426,6 @@ class ADM1StateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        iscale.set_scaling_factor(self.flow_vol, 1e5)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-6)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e5)
-        iscale.set_scaling_factor(self.anions, 1e2)
-        iscale.set_scaling_factor(self.cations, 1e2)
-
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 
@@ -438,39 +466,3 @@ class ADM1StateBlockData(StateBlockData):
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
-
-    def calculate_scaling_factors(self):
-        # Get default scale factors and do calculations from base classes
-        super().calculate_scaling_factors()
-
-        # No constraints in this model as yet, just need to set scaling factors
-        # for expressions
-        sf_F = iscale.get_scaling_factor(self.flow_vol, default=1, warning=True)
-        sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
-
-        # Mass flow and density terms
-        for j in self.component_list:
-            if j == "H2O":
-                sf_C = pyo.value(1 / self.params.dens_mass)
-            elif j == "S_cat":
-                sf_C = 1e-1 * iscale.get_scaling_factor(
-                    self.cations, default=1, warning=True
-                )
-            elif j == "S_an":
-                sf_C = 1e-1 * iscale.get_scaling_factor(
-                    self.anions, default=1, warning=True
-                )
-            else:
-                sf_C = iscale.get_scaling_factor(
-                    self.conc_mass_comp[j], default=1e2, warning=True
-                )
-
-            iscale.set_scaling_factor(self.material_flow_expression[j], sf_F * sf_C)
-            iscale.set_scaling_factor(self.material_density_expression[j], sf_C)
-
-        # Enthalpy and energy terms
-        sf_rho_cp = pyo.value(1 / (self.params.dens_mass * self.params.cp_mass))
-        iscale.set_scaling_factor(
-            self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
-        )
-        iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
