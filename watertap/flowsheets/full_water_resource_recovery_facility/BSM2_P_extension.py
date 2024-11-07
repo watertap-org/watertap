@@ -29,7 +29,6 @@ from idaes.core import (
     UnitModelBlockData,
 )
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Separator,
     Product,
@@ -68,6 +67,7 @@ from watertap.unit_models.translators.translator_adm1_asm2d import (
 from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 from watertap.unit_models.anaerobic_digester import AD
+from watertap.unit_models.cstr import CSTR
 from watertap.unit_models.dewatering import (
     DewateringUnit,
     ActivatedSludgeModelType as dewater_type,
@@ -537,6 +537,10 @@ def set_operating_conditions(m):
             if "conc_mass_comp" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
 
+    for unit in ("R1", "R2", "R3", "R4"):
+        block = getattr(m.fs, unit)
+        iscale.set_scaling_factor(block.hydraulic_retention_time, 1e-3)
+
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
         iscale.set_scaling_factor(
@@ -550,7 +554,7 @@ def set_operating_conditions(m):
 
     iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
-    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
 
     # Apply scaling
     scale_variables(m)
