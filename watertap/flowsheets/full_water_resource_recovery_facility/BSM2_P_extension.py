@@ -742,6 +742,11 @@ def add_costing(m):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
             iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
 
+    iscale.constraint_scaling_transform(m.fs.AD.costing.capital_cost_constraint, 1e-6)
+    iscale.constraint_scaling_transform(
+        m.fs.dewater.costing.capital_cost_constraint, 1e-6
+    )
+
 
 def display_costing(m):
     print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
