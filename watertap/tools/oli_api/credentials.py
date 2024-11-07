@@ -124,8 +124,6 @@ class CredentialManager:
             _logger.setLevel(logging.DEBUG)
         self.set_headers()
 
-        
-
     def set_headers(self):
         """
         Creates OLI Cloud API headers and performs initial login.
