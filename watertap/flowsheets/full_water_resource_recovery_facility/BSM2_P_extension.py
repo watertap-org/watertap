@@ -88,6 +88,7 @@ from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -95,7 +96,7 @@ _log = idaeslog.getLogger(__name__)
 
 def main(bio_P=False):
     m = build(bio_P=bio_P)
-    set_operating_conditions(m)
+    set_operating_conditions(m, bio_P=bio_P)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -140,6 +141,11 @@ def main(bio_P=False):
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
+
+    dt = DiagnosticsToolbox(m)
+    dt.report_numerical_issues()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
 
     display_costing(m)
     display_performance_metrics(m)
@@ -411,7 +417,7 @@ def build(bio_P=False):
     return m
 
 
-def set_operating_conditions(m):
+def set_operating_conditions(m, bio_P=False):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
@@ -555,6 +561,17 @@ def set_operating_conditions(m):
     iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
+
+    if bio_P:
+        iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-6
+        )
+    else:
+        iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-3
+        )
 
     # Apply scaling
     scale_variables(m)
@@ -961,7 +978,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
