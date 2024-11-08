@@ -88,7 +88,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
-from idaes.core.util import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -141,11 +140,6 @@ def main(bio_P=False):
 
     results = solve(m)
     pyo.assert_optimal_termination(results)
-
-    dt = DiagnosticsToolbox(m)
-    dt.report_numerical_issues()
-    dt.display_variables_with_extreme_jacobians()
-    dt.display_constraints_with_extreme_jacobians()
 
     display_costing(m)
     display_performance_metrics(m)
