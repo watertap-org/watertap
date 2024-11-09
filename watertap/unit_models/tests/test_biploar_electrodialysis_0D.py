@@ -154,12 +154,14 @@ class Test_catalyst:
     def test_assign(self, bped):
 
         # Experimental data from Wilhelm et al. (2002) with additional inputs from Mareev et al. (2020)
-        expt_current_density = np.array(
-            [11.7, 15.5, 20.8, 24.4, 30.6, 40.0, 100.6]
-        )  # in mA/cm2
         expt_membrane_potential = np.array(
             [0.088, 0.184, 0.4045, 0.690, 0.858, 0.95, 1.3]
         )  # in volts
+
+        # experimental current density: 11.7, 15.5, 20.8, 24.4, 30.6, 40.0, 100.6]  # in mA/cm2
+        expected_current_density = np.array(
+            [19.250, 19.269, 19.606, 22.764, 29.009, 35.278, 99.223]
+        )  # in mA/cm2 (computed numerically)
 
         for indx, v in enumerate(expt_membrane_potential):
             m = bped
@@ -170,10 +172,6 @@ class Test_catalyst:
             initialization_tester(m)
             results = solver.solve(m)
             assert_optimal_termination(results)
-            if indx < 2:
-                rel_tol = 1e0
-            else:
-                rel_tol = 1.5e-1
 
             current_density_computed = (
                 0.1
@@ -181,7 +179,7 @@ class Test_catalyst:
                 / (m.fs.unit.cell_width * m.fs.unit.cell_length)
             )  # convert to mA/cm2
             assert value(current_density_computed) == pytest.approx(
-                expt_current_density[indx], rel=rel_tol
+                expected_current_density[indx], rel=1e-3
             )
 
 
@@ -329,6 +327,8 @@ class Test_limiting_parameters:
         # Data on limiting current and potential barrier to water splitting have been obtained from:
         # Fumatech, Technical Data Sheet for Fumasep FBM, 2020. With additional modelling parameters obtained from
         # Ionescu, Viorel. Advanced Topics in Optoelectronics, Microelectronics, and Nanotechnologies (2023)
+        # Expected current density is 1000 A/m2 and potential barrier is 0.8 V
+
         iscale.calculate_scaling_factors(check_m[1])
 
         # Test computing limiting current in  bipolar membrane
@@ -338,7 +338,7 @@ class Test_limiting_parameters:
         results = solver.solve(check_m[0])
         assert_optimal_termination(results)
         assert value(check_m[0].fs.unit.current_dens_lim_bpem[0]) == pytest.approx(
-            1000, rel=1e-1
+            987.120, rel=1e-3
         )
 
         # Test computing limiting current and potential barrier to water splitting in  bipolar membrane
@@ -348,10 +348,10 @@ class Test_limiting_parameters:
         results = solver.solve(check_m[1])
         assert_optimal_termination(results)
         assert value(check_m[0].fs.unit.current_dens_lim_bpem[0]) == pytest.approx(
-            1000, rel=1e-1
+            987.120, rel=1e-3
         )
         assert value(check_m[1].fs.unit.potential_barrier_bpem[0]) == pytest.approx(
-            0.8, rel=1e-1
+            0.786, rel=1e-3
         )
 
 
