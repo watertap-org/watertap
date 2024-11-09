@@ -194,7 +194,7 @@ class TestAsm2dAdm1_bioP_true(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 264
+        assert number_variables(asmadm) == 278
         assert number_total_constraints(asmadm) == 34
 
         # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
@@ -459,7 +459,7 @@ class TestAsm2dAdm1_bioP_false(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 264
+        assert number_variables(asmadm) == 278
         assert number_total_constraints(asmadm) == 34
 
         # TODO: Result of SN2_AS2 being unused. Remove? It's also unused in the c-code
