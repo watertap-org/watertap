@@ -632,7 +632,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             )
 
         # pre-solve using interval arithmetic
-        # interval_initializer(self)
+        interval_initializer(self)
 
         # Create solver
         opt = get_solver(solver, optarg)
