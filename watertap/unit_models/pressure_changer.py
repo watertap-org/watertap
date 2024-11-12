@@ -186,7 +186,7 @@ class PumpIsothermalData(InitializationMixin, PumpData):
 
 
 @declare_process_block_class("EnergyRecoveryDevice")
-class EnergyRecoveryDeviceData(InitializationMixin, PumpIsothermalData):
+class EnergyRecoveryDeviceData(PumpIsothermalData):
     """
     Turbine-type isothermal energy recovery device
     """
