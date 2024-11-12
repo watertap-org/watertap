@@ -347,6 +347,8 @@ fundamentals, models and applications. Desalination, 434, 121-160.
 Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019).
 A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
 
+Fumatech, Technical Data Sheet for Fumasep FBM, 2020.
+
 Ionescu, V., 2023, March. A simple one-dimensional model for analysis of a bipolar membrane used in electrodialysis desalination. In Advanced Topics in Optoelectronics, Microelectronics, and Nanotechnologies XI (Vol. 12493, pp. 520-529). SPIE.
 
 Mareev, S.A., Evdochenko, E., Wessling, M., Kozaderova, O.A., Niftaliev, S.I., Pismenskaya, N.D. and Nikonenko, V.V., 2020. A comprehensive mathematical model of water splitting in bipolar membranes: Impact of the spatial distribution of fixed charges and catalyst at bipolar junction. Journal of Membrane Science, 603, p.118010.
