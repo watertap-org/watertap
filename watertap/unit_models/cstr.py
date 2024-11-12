@@ -21,6 +21,7 @@ from idaes.core import (
 from idaes.models.unit_models.cstr import CSTRData as CSTRIDAESData
 
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 from pyomo.environ import (
     Constraint,
@@ -69,7 +70,8 @@ class CSTRData(CSTRIDAESData):
         def CSTR_retention_time_rule(self, t):
             return (
                 self.hydraulic_retention_time[t]
-                == self.volume[t] / self.control_volume.properties_in[t].flow_vol
+                * self.control_volume.properties_in[t].flow_vol
+                == self.volume[t]
             )
 
         self.CSTR_retention_time = Constraint(
@@ -81,3 +83,19 @@ class CSTRData(CSTRIDAESData):
     @property
     def default_costing_method(self):
         return cost_cstr
+    
+    def calculate_scaling_factors(self):
+        
+        super().calculate_scaling_factors()
+
+        for t in self.flowsheet().time:
+            if iscale.get_scaling_factor(self.hydraulic_retention_time[t]) is None:
+                iscale.set_variable_scaling_from_current_value(self.hydraulic_retention_time[t])
+            if iscale.get_scaling_factor(self.volume[t]) is None:
+                iscale.set_variable_scaling_from_current_value(self.volume[t])
+
+            sf = iscale.get_scaling_factor(self.hydraulic_retention_time[t])
+            iscale.constraint_scaling_transform(self.CSTR_retention_time[t], sf)
+
+
+

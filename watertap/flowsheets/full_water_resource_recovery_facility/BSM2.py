@@ -95,8 +95,12 @@ def main(reactor_volume_equalities=False):
     display_costing(m)
 
     setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-    results = solve(m, tee=True)
-    pyo.assert_optimal_termination(results)
+    try:
+        results = solve(m, tee=True)    
+        pyo.assert_optimal_termination(results)
+    except:
+        print("Failed to converge")
+        return m, results
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # display_results(m)
     display_costing(m)
@@ -741,3 +745,5 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     m, results = main()
+    from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+    dt =DiagnosticsToolbox(m)
