@@ -205,8 +205,10 @@ def set_operating_conditions(m):
     m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
     m.fs.EDstack.channel_height.fix(2.7e-4)
-    m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
-    m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
+    m.fs.EDstack.membrane_areal_resistance_const["cem"].fix(1.89e-4)
+    m.fs.EDstack.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+    m.fs.EDstack.membrane_areal_resistance_coef["cem"].fix(0)
+    m.fs.EDstack.membrane_areal_resistance_coef["aem"].fix(0)
     m.fs.EDstack.cell_width.fix(0.1)
     m.fs.EDstack.cell_length.fix(0.79)
     m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
@@ -220,6 +222,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
     m.fs.EDstack.spacer_porosity.fix(1)
+    m.fs.EDstack.spacer_conductivity_coefficient.fix(1)
 
     # check zero degrees of freedom
     check_dof(m)
