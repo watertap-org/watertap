@@ -104,7 +104,7 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
    "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega m^2`", 1
    "Cell number", ":math:`n`", "cell_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
-   "Shadow factor", ":math:`\xi`", "shadow_factor", "None", "dimensionless", 1
+   "Shadow factor", ":math:`\beta`", "shadow_factor", "None", "dimensionless", 1
    "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:`m` ", 1
    "Membrane areal resistance", ":math:`r`", "membrane_surface_resistance", "['acidic', 'basic']", ":math:`\Omega m^2`", 2
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
@@ -207,7 +207,7 @@ Please note that since the unit model is assumed to operate in the water splitti
 .. csv-table:: **Table 6** Electrical and Performance Equations
    :header: "Description", "Equation"
 
-   "Current density", ":math:`i =  \frac{I}{\xi bl}`"
+   "Current density", ":math:`i =  \frac{I}{\beta bl}`"
    "Potential drop", ":math:`U =  n U_{diss} + i r_{tot}`"
    "Resistance calculation", ":math:`r_{tot}=n\left(r^{acidic}+r^{basic}\right)+r_{el}`"
    "Electrical power consumption", ":math:`P=UI`"
@@ -309,6 +309,7 @@ Nomenclature
    ":math:`U`", "Voltage over a stack", ":math:`V`"
    ":math:`n`", "Cell number", "dimensionless"
    ":math:`\xi`", "Current utilization coefficient (including ion diffusion and water electroosmosis)", "dimensionless"
+   ":math:`\beta`", "Shadow factor", "dimensionless"
    ":math:`z`", "Ion charge", "dimensionless"
    ":math:`F`", "Faraday constant", ":math:`C\ mol^{-1}`"
    ":math:`\epsilon_0`", "permittivity of free space", ":math:`C\ mol^{-1}`"
@@ -339,25 +340,27 @@ Class Documentation
 
 References
 ----------
-Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications.
-Desalination, 264(3), 268-288.
-
-Strathmann, H. (2004). Ion-exchange membrane separation processes. Elsevier. Ch. 4.
+Campione, A., Gurreri, L., Ciofalo, M., Micale, G., Tamburini, A., & Cipollina, A. (2018).
+Electrodialysis for water desalination: A critical assessment of recent developments on process 
+fundamentals, models and applications. Desalination, 434, 121-160.
 
 Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019).
 A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
 
-Campione, A., Gurreri, L., Ciofalo, M., Micale, G., Tamburini, A., & Cipollina, A. (2018). 
-Electrodialysis for water desalination: A critical assessment of recent developments on process 
-fundamentals, models and applications. Desalination, 434, 121-160.
+Ionescu, V., 2023, March. A simple one-dimensional model for analysis of a bipolar membrane used in electrodialysis desalination. In Advanced Topics in Optoelectronics, Microelectronics, and Nanotechnologies XI (Vol. 12493, pp. 520-529). SPIE.
+
+Mareev, S.A., Evdochenko, E., Wessling, M., Kozaderova, O.A., Niftaliev, S.I., Pismenskaya, N.D. and Nikonenko, V.V., 2020. A comprehensive mathematical model of water splitting in bipolar membranes: Impact of the spatial distribution of fixed charges and catalyst at bipolar junction. Journal of Membrane Science, 603, p.118010.
 
 Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
+
+Strathmann, H. (2004). Ion-exchange membrane separation processes. Elsevier. Ch. 4.
+
+Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications.
+Desalination, 264(3), 268-288.
 
 Wright, N. C., Shah, S. R., & Amrose, S. E. (2018).
 A robust model of brackish water electrodialysis desalination with experimental comparison at different size scales.
 Desalination, 443, 27-43.
-
-Mareev, S.A., Evdochenko, E., Wessling, M., Kozaderova, O.A., Niftaliev, S.I., Pismenskaya, N.D. and Nikonenko, V.V., 2020. A comprehensive mathematical model of water splitting in bipolar membranes: Impact of the spatial distribution of fixed charges and catalyst at bipolar junction. Journal of Membrane Science, 603, p.118010.
 
 Wilhelm, F.G., Pünt, I., Van Der Vegt, N.F.A., Wessling, M. and Strathmann, H., 2001. Optimisation strategies for the preparation of bipolar membranes with reduced salt ion leakage in acid–base electrodialysis. Journal of Membrane Science, 182(1-2), pp.13-28.
 
