@@ -156,7 +156,7 @@ def build():
 
 def set_operating_conditions(
     m,
-    flow_vol=1.8, # m3/s and 1.8 L/min is 3e-5 m3/s
+    flow_vol=8e-4, # m3/s and 1.8 L/min is 3e-5 m3/s
     salt_mass_conc=3.4, # g/L
     solver=None,
 ):
@@ -197,9 +197,14 @@ def set_operating_conditions(
         )  # feed pressure (Pa)
     m.fs.P1.control_volume.material_accumulation[:, :, :].value = 0
     m.fs.P1.control_volume.energy_accumulation[:, :].value = 0
+    m.fs.P1.control_volume.material_accumulation[0, :, :].fix(0) # 2 DoF
+    # m.fs.P1.control_volume.energy_accumulation[0, :].fix(0) # 2 DoF
+    m.fs.P1.control_volume.volume.fix(0)
     m.fs.P2.control_volume.material_accumulation[:, :, :].value = 0
     m.fs.P2.control_volume.energy_accumulation[:, :].value = 0
-    m.fs.P2.control_volume.properties_out.display()
+    m.fs.P2.control_volume.material_accumulation[0, :, :].fix(0) # 2 DoF
+    # m.fs.P2.control_volume.volume.fix(0)
+    # m.fs.P2.control_volume.properties_out.display()
     m.fs.RO.area.fix(7.2)  # membrane area (m^2)
     m.fs.RO.A_comp.fix(4.422e-12)  # membrane water permeability (m/Pa/s)
     m.fs.RO.B_comp.fix(5.613e-8)  # membrane salt permeability (m/s)
@@ -211,39 +216,45 @@ def set_operating_conditions(
 
     m.fs.RO.feed_side.material_accumulation[:, :, :].value = 0
     m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp.fix(0)
-    m.fs.RO.feed_side.properties_out[0].temperature.fix(294.96)
+    # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp.fix(0) # This and next line together 3 DoF
+    # m.fs.RO.feed_side.properties_out[0].temperature.fix(294.96)
 
     assert not hasattr(m.fs.RO.feed_side, "energy_accumulation")
     # initialize RO
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]))
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"].fix(value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]))
-    m.fs.RO.feed_side.properties_in[0].temperature.fix(value(m.fs.feed.properties[0].temperature))
-    m.fs.RO.feed_side.properties_in[0].pressure.fix(value(m.fs.P1.control_volume.properties_out[0].pressure))
+    # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]))
+    # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"].fix(value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]))
+    # m.fs.RO.feed_side.properties_in[0].temperature.fix(value(m.fs.feed.properties[0].temperature))
+    # m.fs.RO.feed_side.properties_in[0].pressure.fix(value(m.fs.P1.control_volume.properties_out[0].pressure))
     # m.fs.RO.initialize(optarg=solver.options)
 
     # scaling
     # set default property values
 
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e-3 / flow_vol / salt_mass_conc, index=("Liq", "NaCl"))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")) # Increase by 10 for 3e-5
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e-3 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")) # Increase by 10 for 3e-5
 
     # set scaling factors
     iscale.set_scaling_factor(m.fs.RO.area, 1)
     iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
     iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"], 1e4)
     iscale.set_scaling_factor(m.fs.RO.permeate.pressure, 1e-5)
-    iscale.set_scaling_factor(m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e4)
-    iscale.set_scaling_factor(m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e4)
+    iscale.set_scaling_factor(m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e2)
+    iscale.set_scaling_factor(m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e2)
     # iscale.set_scaling_factor(m.fs.P1.work_fluid[0], 1e2)
     iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.material_holdup_calculation[0, "Liq", "H2O"], 1e-6)
+    iscale.set_scaling_factor(m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e5)
+    iscale.set_scaling_factor(m.fs.RO.feed_side.material_holdup_calculation[0, "Liq", "H2O"], 1e2)
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
     # check degrees of freedom
+    print("DOF =", degrees_of_freedom(m))
+    print("DOF FEED =", degrees_of_freedom(m.fs.feed))
+    print("DOF PUMP 1 =", degrees_of_freedom(m.fs.P1))
+    print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
+    print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
+    print("DOF RO =", degrees_of_freedom(m.fs.RO))
     if degrees_of_freedom(m) != 0:
         raise RuntimeError(
             "The set_operating_conditions function resulted in {} "
@@ -312,11 +323,11 @@ def solve_dynamic(m):
         assert_optimal_termination(result)
 
 def initialize_mixer(m):
-    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75465)
-    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0029261)
-    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.80332)
-    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030916)
-    m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"].set_value(4.0)
+    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.015)
+    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0001)
+    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.015)
+    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0001)
+    m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"].set_value(3.4)
     m.fs.M1.inlet_2_state[0].pressure.set_value(170 * 6895)
     m.fs.M1.initialize()
 
@@ -324,7 +335,7 @@ def initialize_system(m):
     """
     Initialize steady-state model
     """
-    
+    print("DOF before initialization =", degrees_of_freedom(m))
     m.fs.feed.initialize()
 
     propagate_state(m.fs.feed_to_P1)
@@ -334,55 +345,44 @@ def initialize_system(m):
     
     initialize_mixer(m)
     m.fs.M1.report()
-    m.fs.P2_to_M1_expanded.pressure_equality[:].deactivate()
 
     propagate_state(m.fs.M1_to_RO)
 
-    m.fs.RO.feed_side.properties_in[0].pressure_osm_phase.unfix()
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-    m.fs.RO.feed_side.properties_in[0].temperature.unfix()
-    m.fs.RO.feed_side.properties_in[0].pressure.unfix()
-    m.fs.RO.feed_side.properties_in[0].temperature = value(m.fs.feed.properties[0].temperature)
-    m.fs.RO.feed_side.properties_in[0].pressure = value(m.fs.P1.control_volume.properties_out[0].pressure)
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75)
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.005)
-    m.fs.RO.feed_side.properties_out[0].pressure.set_value(1976757.5687263503)
-    m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.8)
-
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-    m.fs.RO.feed_side.properties_out[0].pressure.unfix()
-    m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-    m.fs.RO.feed_side.properties_out[0].temperature.unfix()
+    # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].unfix() # Comment out reduces DoF by 4
+    # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].unfix() # Comment out reduces DoF by 4
+    # m.fs.RO.feed_side.properties_out[0].temperature.unfix() # Comment out reduces DoF by 4
+    m.fs.RO.feed_side.properties_out[0].pressure.unfix() # Comment out doesn't affect DoF
+    # m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"].unfix() # Comment out doesn't affect DoF
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "NaCl"))
 
-    
-    dt = DiagnosticsToolbox(m)
     # dt.report_structural_issues()
     # print('Underconstrained')
     # dt.display_underconstrained_set()
     # print('Overconstrained')
     # dt.display_overconstrained_set()
     print('Numerical')
-    dt.display_constraints_with_extreme_jacobians()
-    dt.report_numerical_issues()
-    dt.display_constraints_with_large_residuals()
+    # dt.display_constraints_with_extreme_jacobians()
+    # dt.report_numerical_issues()
+    # dt.display_constraints_with_large_residuals()
     # dt.display_near_parallel_variables()
     optarg = {"tol": 1e-6, "constr_viol_tol": 1e-8,"linear_solver": "ma27", "max_iter": 500}
     m.fs.RO.report()
-    source_flags = m.fs.RO.feed_side.initialize()
-    print('Hereeeeeeeee')
-    print(source_flags)
-    m.fs.RO.permeate_side.initialize()
-    m.fs.RO.mixed_permeate.initialize()
-    # m.fs.RO.initialize(optarg=optarg, outlvl=3)
+    # source_flags = m.fs.RO.feed_side.initialize()
+    # print('Flag')
+    # print(source_flags)
+    # m.fs.RO.permeate_side.initialize()
+    # m.fs.RO.mixed_permeate.initialize()
+    m.fs.RO.initialize(optarg=optarg, outlvl=10)
+    print('RO succeeded')
+    dt = DiagnosticsToolbox(m.fs.RO)
+    dt.display_constraints_with_large_residuals()
     m.fs.RO.report()
     # print('m.fs.RO.recovery_vol_phase["Liq"]: ', m.fs.RO.recovery_vol_phase[0, "Liq"].value)
 
+    # m.fs.RO.feed_side.release_state(source_flags)
     propagate_state(m.fs.RO_permeate_to_product)
-    m.fs.product.initialize()
+    
 
     propagate_state(m.fs.RO_retentate_to_P2)
     m.fs.P2.report()
@@ -390,7 +390,11 @@ def initialize_system(m):
     m.fs.P2.report()
 
     propagate_state(m.fs.P2_to_M1)
-    m.fs.RO.feed_side.release_state(source_flags)
+    # m.fs.RO.permeate.pressure[700].unfix()
+    # m.fs.feed.properties[700].pressure.unfix()  # feed pressure [Pa]
+    # m.fs.feed.properties[700].temperature.unfix()  # feed temperature [K]
+    # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+    print("DOF after initialization =", degrees_of_freedom(m))
 
 if __name__ == "__main__":
     m = main()
