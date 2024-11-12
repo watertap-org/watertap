@@ -120,7 +120,9 @@ are parameters that should be provided in order to fully solve the model.
    "Cell pair number", ":math:`n`", "cell_pair_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
    "Channel height", ":math:`d`", "channel_height", "none", ":math:`m` ", 1
-   "Membrane areal resistance", ":math:`r`", "membrane_areal_resistance", "['cem', 'aem']", ":math:`\Omega m^2`", 2
+   "Membrane areal resistance independent on ion concentration", ":math:`r_{const}`", "membrane_areal_resistance_const", "['cem', 'aem']", ":math:`\Omega m^2`", 2
+   "Membrane areal resistance coefficient to ion concentration", ":math:`r`", "membrane_areal_resistance_coef", "['cem', 'aem']", ":math:`\Omega mol m^{-1}`", 2
+   "Spacer conductivity coefficient", ":math:`r`", "spacer_conductivity_coefficient", "None", "dimensionless", 1
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
    "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['cem', 'aem']", ":math:`m`", 2
@@ -186,7 +188,8 @@ Additionally, several other equations are built to describe the electrochemical 
 
    "Electrical input condition", ":math:`i(x) = \frac{I}{bl}`, for 'Constant_Current';  :math:`u(x) =U` for 'Constant_Voltage'"
    "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x)`"
-   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{d}{\kappa^C(x)}+\frac{d}{\kappa^D(x)}\right)+r_{el}`"
+   "mebrane resistance calculation", ":math:`r^{iem}(x)=r^{iem}_{const}+\frac{r^{iem}_{coef}}{c_b^D}`"
+   "Total resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}(x)+r^{aem}(x)+\frac{d}{\kappa^C(x)}+\frac{d}{\kappa^D(x)}\right)+r_{el}`"
    "Electrical power consumption", ":math:`P(x)=b\int _0 ^l u(x)i(x) dx`"
    "Water-production-specific power consumption", ":math:`P_Q=\frac{P(x=l)}{3.6\times 10^6 nQ_{out}^D}`"
    "Current efficiency for desalination", ":math:`bi(x)\eta(x)=-\sum_{j \in[cation]}{\left[\left(\frac{\partial N_j ^D(x)}{\partial x}\right) z_j F\right]}`"
@@ -238,7 +241,8 @@ Some other modifications to previously defined equations are made to accommodate
    :header: "Original equation description", "Equation replacement", "Condition"
 
    "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x) + \phi_m(x) + \phi_d^{ohm}(x) + \phi_d^{nonohm}(x)` \ :sup:`1`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
-   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{d- \Delta_{cem}^L(x) - \Delta_{aem}^R(x)}{\kappa^C(x)}+\frac{d- \Delta_{cem}^R(x) - \Delta_{aem}^L(x)}{\kappa^D(x)}\right)+r_{el}`", "`has_Nernst_diffusion_layer==True`"
+   "mebrane resistance calculation", ":math:`r^{iem}(x)=r^{iem}_{const}+\frac{r^{iem}_{coef}}{c_b^D}`"
+   "total resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}(x)+r^{aem}(x)+\frac{d- \Delta_{cem}^L(x) - \Delta_{aem}^R(x)}{\kappa^C(x)}+\frac{d- \Delta_{cem}^R(x) - \Delta_{aem}^L(x)}{\kappa^D(x)}\right)+r_{el}`", "`has_Nernst_diffusion_layer==True`"
    "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
    "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
    "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem} \left(p_{s, osm}^{cem, L}(x)-p_{s, osm}^{cem, R}(x) \right)+L^{aem} \left(p_{s, osm}^{aem, R}(x)-p_{s, osm}^{aem, L}(x) \right)\right)\frac{\rho_w}{M_w}`", "`has_Nernst_diffusion_layer==True`"
@@ -301,6 +305,8 @@ Nomenclature
    ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
    ":math:`r_{tot}`", "Total areal resistance", ":math:`\Omega m^2`"
    ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
+   ":math:`r_const`", "Membrane areal resistance independent on ion concentration", ":math:`\Omega m^2`"
+   ":math:`r_coef`", "The dependent cofficient of membrane areal resistance to :math:`1/c_b `", ":math:`\Omega mol m^{-1}`"
    ":math:`r_{el}`", "Electrode areal resistance", ":math:`\Omega m^2`"
    ":math:`d`", "Channel height", ":math:`m`"
    ":math:`\kappa`", "Solution conductivity", ":math:`S m^{-1}\ or\  \Omega^{-1} m^{-1}`"
