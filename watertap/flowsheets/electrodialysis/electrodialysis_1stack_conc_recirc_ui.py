@@ -240,23 +240,23 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.EDstack.membrane_areal_resistance["cem"],
+        obj=fs.EDstack.membrane_areal_resistance_const["cem"],
         name="Areal resistnace of CEM",
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
         rounding=2,
-        description="Areal resistnace of the cation exchange membrane",
+        description="Constant areal resistnace of the cation exchange membrane measured in concentrated electrolyte.",
         is_input=True,
         input_category="Membrane properties",
         is_output=False,
     )
     exports.add(
-        obj=fs.EDstack.membrane_areal_resistance["aem"],
+        obj=fs.EDstack.membrane_areal_resistance_const["aem"],
         name="Areal resistnace of AEM",
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
         rounding=2,
-        description="Areal resistnace of the anion exchange membrane",
+        description="Constant areal resistnace of the anion exchange membrane measured in concentrated electrolyte.",
         is_input=True,
         input_category="Membrane properties",
         is_output=False,
