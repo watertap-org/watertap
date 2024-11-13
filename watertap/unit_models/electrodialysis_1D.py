@@ -544,7 +544,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
         self.spacer_conductivity_coefficient = Var(
             initialize=1,
-            bounds=(0.01, 1),
+            bounds=(0.01, 1.01),
             units=pyunits.dimensionless,
             doc="A coefficient accounting for the effect of spacer on the solution conductivity",
         )
