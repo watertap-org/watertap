@@ -80,6 +80,7 @@ setup(
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
         "pyomo>=6.6.1",
+        "flexparser != 0.4",  # IDAES/idaes-pse#1524
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep>=0.1.dev5",
