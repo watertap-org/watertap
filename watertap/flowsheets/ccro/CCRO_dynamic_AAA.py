@@ -55,8 +55,12 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
-from idaes.core.scaling import  report_scaling_factors, AutoScaler
+# from idaes.core.scaling import  report_scaling_factors, AutoScaler
 import numpy as np
+from idaes.core.solvers import petsc
+
+
+
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 atmospheric_pressure = 101325 * pyunits.Pa
@@ -354,34 +358,37 @@ def initialize_system(m):
 
     propagate_state(m.fs.P1_to_M1)
 
-    propagate_state(source=m.fs.P1.outlet, destination=m.fs.P2.outlet)
-    propagate_state(source=m.fs.P1.inlet, destination=m.fs.P2.inlet)
-    m.fs.P2.inlet.pressure[:] = value(m.fs.P1.outlet.pressure[0])
+    # propagate_state(source=m.fs.P1.outlet, destination=m.fs.P2.outlet)
+    # propagate_state(source=m.fs.P1.inlet, destination=m.fs.P2.inlet)
+    m.fs.P2.outlet.pressure[:] = value(m.fs.P1.outlet.pressure[0])
     m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
     propagate_state(m.fs.P2_to_M1)
-    propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
+    # propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
 
-    master_initialize_with_recirculation(m, count=3)
+    master_initialize_with_recirculation(m, count=4)
     
 def master_initialize_with_recirculation(m, count=1):
     solved = 0 
     counter = 0
     while not solved:
+        # try:
+        initialize_with_recirculation(m)
+        _log.info(f"ATTEMPT TO SOLVE AFTER COUNT={counter+1} of {count} ")
+        interval_initializer(m)
         try:
-            initialize_with_recirculation(m)
-            _log.info(f"ATTEMPT TO SOLVE AFTER COUNT={counter+1} of {count} ")
-            interval_initializer(m)
-            try:
-                res= solve(m, tee=True)
-            except:
-                res = None
+            res= solve(m, tee=True)
         except:
-            pass
+            res = None
+        # except:
+        #     pass
         counter = counter + 1
         if counter == count:
             break 
-        if res is not None and check_optimal_termination(res):
-            solved = 1
+        try:
+            if check_optimal_termination(res):
+                solved = 1
+        except UnboundLocalError:
+            _log.warning(f"Failed to solve at step {counter}. No results object returned.")
         m.fs.report()
         m.fs.RO.report()
 
@@ -392,14 +399,15 @@ def initialize_with_recirculation(m):
 
     # mixer to RO 
     propagate_state(m.fs.M1_to_RO)
-    propagate_state(source=m.fs.P2.inlet, destination=m.fs.P2.outlet)
+    # propagate_state(source=m.fs.P2.inlet, destination=m.fs.P2.outlet)
 
-    try:
-        _log.info("INITIALIZING RO")
-        m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
-    except InitializationError:
-        _log.warning("RO Initialization failed during initialize_with_recirculation")
-        pass
+    # try:
+    _log.info(f"INITIALIZING RO; DOF = {degrees_of_freedom(m.fs.RO)}")
+    m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+    _log.info("FINISHED INITIALIZING RO")
+    # except InitializationError:
+    #     _log.warning("RO Initialization failed during initialize_with_recirculation")
+    #     pass
 
     # RO brine to P2
     propagate_state(m.fs.RO_permeate_to_product) 
@@ -468,7 +476,7 @@ def print_results(self, m=None):
     print(self.m.fs.RO.report())
 
 if __name__ == "__main__":
-
+    my_solver = 'ipopt'
     # initial_conditions = {
     #     "feed_flow": 2.92,
     #     "feed_conc": 3.4,
@@ -500,15 +508,24 @@ if __name__ == "__main__":
     m.fs.RO.report()
 
     m.fs.RO.feed_side.N_Re.setlb(None)
-    solver =get_solver()
 
-    # solver.options["max_iter"] = 1
-    # solver.options["halt_on_ampl_error"] = "yes"
+    if my_solver == "petsc":
+        results = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.fs.time,
+        )
+        for result in results.results:
+            assert_optimal_termination(result)
+    else:
+        solver =get_solver()
 
-    res = solver.solve(m,tee=True,
-                       symbolic_solver_labels=True, 
-                       export_defined_variables=False
-                       )
+        solver.options["max_iter"] = 1
+        solver.options["halt_on_ampl_error"] = "yes"
+
+        res = solver.solve(m,tee=True,
+                        symbolic_solver_labels=True, 
+                        export_defined_variables=False
+                        )
     
         # assert_optimal_termination(res)
         # dt.compute_infeasibility_explanation()
