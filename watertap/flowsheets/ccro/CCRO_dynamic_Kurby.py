@@ -55,7 +55,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
-from idaes.core.scaling import  report_scaling_factors
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
