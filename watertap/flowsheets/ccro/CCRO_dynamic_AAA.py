@@ -263,13 +263,13 @@ def set_operating_conditions(m):
     # TODO: inspect pump model when flowsheet set to dynamic; setting flowsheet to dynamic seems to activate holdup for pumps, forcing me to define pump volume, which I'd rather neglect in the interim.
     m.fs.P1.control_volume.volume[:].fix(1e-5)
 
-    # @m.fs.P1.Constraint(m.fs.time)
-    # def eq_operating_pressure(b, t):
-    #     if not t:
-    #         return Constraint.Skip
+    @m.fs.P1.Constraint(m.fs.time)
+    def eq_operating_pressure(b, t):
+        if not t:
+            return Constraint.Skip
 
-    #     else:
-    #         return b.control_volume.properties_out[t].pressure == m.fs.RO.feed_side.properties_interface[t, 1].pressure_osm_phase["Liq"]*1.1
+        else:
+            return b.control_volume.properties_out[t].pressure == m.fs.RO.feed_side.properties_interface[t, 1].pressure_osm_phase["Liq"]*1.1
 
     """
     Pump 2 operating conditions
@@ -323,11 +323,11 @@ def set_operating_conditions(m):
     m.fs.RO.feed_side.channel_height.fix(channel_height)
     m.fs.RO.feed_side.spacer_porosity.fix(spacer_porosity)
     
-    for i,t in enumerate(m.fs._time):
-        if i==1:
-            pass
-        else: 
-            m.fs.RO.recovery_vol_phase[t, "Liq"].fix(0.06)
+    # for i,t in enumerate(m.fs._time):
+    #     if i==1:
+    #         pass
+    #     else: 
+    #         m.fs.RO.recovery_vol_phase[t, "Liq"].fix(0.06)
     m.fs.RO.feed_side.material_accumulation[:, :, :].value = 0
     m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)
     
@@ -358,12 +358,12 @@ def initialize_system(m):
 
     propagate_state(m.fs.P1_to_M1)
 
-    # propagate_state(source=m.fs.P1.outlet, destination=m.fs.P2.outlet)
-    # propagate_state(source=m.fs.P1.inlet, destination=m.fs.P2.inlet)
+    propagate_state(source=m.fs.P1.outlet, destination=m.fs.P2.outlet)
+    propagate_state(source=m.fs.P1.inlet, destination=m.fs.P2.inlet)
     m.fs.P2.outlet.pressure[:] = value(m.fs.P1.outlet.pressure[0])
     m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
     propagate_state(m.fs.P2_to_M1)
-    # propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
+    propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
 
     master_initialize_with_recirculation(m, count=4)
     
@@ -372,9 +372,11 @@ def master_initialize_with_recirculation(m, count=1):
     counter = 0
     while not solved:
         # try:
+
         initialize_with_recirculation(m)
         _log.info(f"ATTEMPT TO SOLVE AFTER COUNT={counter+1} of {count} ")
-        interval_initializer(m)
+        interval_initializer(m) 
+
         try:
             res= solve(m, tee=True)
         except:
@@ -399,8 +401,7 @@ def initialize_with_recirculation(m):
 
     # mixer to RO 
     propagate_state(m.fs.M1_to_RO)
-    # propagate_state(source=m.fs.P2.inlet, destination=m.fs.P2.outlet)
-
+    propagate_state(source=m.fs.P2.inlet, destination=m.fs.P2.outlet)
     # try:
     _log.info(f"INITIALIZING RO; DOF = {degrees_of_freedom(m.fs.RO)}")
     m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
