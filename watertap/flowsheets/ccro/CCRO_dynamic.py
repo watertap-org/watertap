@@ -95,7 +95,7 @@ def build():
     # flowsheet set up
     m = ConcreteModel()
     num_time_points = 2
-    time_set = np.linspace(0, 1400, num_time_points+1)
+    time_set = np.linspace(0, 14, num_time_points+1)
     m.fs = FlowsheetBlock(
         dynamic=True,
         time_set=list(time_set),
@@ -185,15 +185,15 @@ def set_operating_conditions(
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
     m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
     num_time_points = 2
-    time_set = np.linspace(0, 1400, num_time_points+1)
+    time_set = np.linspace(0, 14, num_time_points+1)
     # m.fs.P1.control_volume.properties_out[0].pressure.fix(170 * 6895)
     # m.fs.P2.control_volume.properties_out[0].pressure.fix(170 * 6895)
     for i in range(len(time_set+1)):
         m.fs.P1.control_volume.properties_out[time_set[i]].pressure.fix(
-            (170 + 1400/num_time_points * 1/50 * i) * 6895
+            (170 + 14/num_time_points * 1/50 * i) * 6895
         )  # feed pressure (Pa)
         m.fs.P2.control_volume.properties_out[time_set[i]].pressure.fix(
-            (170 + 1400/num_time_points * 1/50 * i) * 6895
+            (170 + 14/num_time_points * 1/50 * i) * 6895
         )  # feed pressure (Pa)
     m.fs.P1.control_volume.material_accumulation[:, :, :].value = 0
     m.fs.P1.control_volume.energy_accumulation[:, :].value = 0
@@ -215,7 +215,19 @@ def set_operating_conditions(
     m.fs.RO.length.fix(1.016 - 2 * 0.0267)  # m
 
     m.fs.RO.feed_side.material_accumulation[:, :, :].value = 0
+    print("DOF =", degrees_of_freedom(m))
+    print("DOF FEED =", degrees_of_freedom(m.fs.feed))
+    print("DOF PUMP 1 =", degrees_of_freedom(m.fs.P1))
+    print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
+    print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
+    print("DOF RO =", degrees_of_freedom(m.fs.RO))
     m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)
+    print("DOF =", degrees_of_freedom(m))
+    print("DOF FEED =", degrees_of_freedom(m.fs.feed))
+    print("DOF PUMP 1 =", degrees_of_freedom(m.fs.P1))
+    print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
+    print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
+    print("DOF RO =", degrees_of_freedom(m.fs.RO))
     # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp.fix(0) # This and next line together 3 DoF
     # m.fs.RO.feed_side.properties_out[0].temperature.fix(294.96)
 
@@ -249,12 +261,7 @@ def set_operating_conditions(
     iscale.calculate_scaling_factors(m)
 
     # check degrees of freedom
-    print("DOF =", degrees_of_freedom(m))
-    print("DOF FEED =", degrees_of_freedom(m.fs.feed))
-    print("DOF PUMP 1 =", degrees_of_freedom(m.fs.P1))
-    print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
-    print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
-    print("DOF RO =", degrees_of_freedom(m.fs.RO))
+    
     if degrees_of_freedom(m) != 0:
         raise RuntimeError(
             "The set_operating_conditions function resulted in {} "
@@ -272,52 +279,57 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 def solve_dynamic(m):
+    # results = petsc.petsc_dae_by_time_element(
+    #     m,
+    #     time=m.fs.time,
+    #     keepfiles=True,
+    #     symbolic_solver_labels=True,
+    #     ts_options={
+    #         "--ts_type": "beuler",
+    #         # "-ts_arkimex_type": "1bee",
+    #         "--ts_dt": 0.1,
+    #         "--ts_rtol": 1e-3,
+    #         # "--ts_adapt_clip":"0.001,3600",
+    #         # "--ksp_monitor":"",
+    #         "--ts_adapt_dt_min": 1e-3,
+    #         "--ts_adapt_dt_max": 3600,
+    #         "--snes_type": "newtontr",
+    #         # "--ts_max_reject": 200,
+    #         "--ts_monitor": "",
+    #         "-ts_adapt_monitor": "",
+    #         # "--snes_monitor":"",
+    #         "-snes_converged_reason": "",
+    #         # "-ksp_monitor_true_residual": "",
+    #         # "-ksp_converged_reason": "",
+    #         # "-snes_test_jacobian": "",
+    #         "snes_grid_sequence": "",
+    #         "-pc_type": "lu",
+    #         # "-mat_view": "",
+    #         "--ts_save_trajectory": 1,
+    #         "--ts_trajectory_type": "visualization",
+    #         "--ts_max_snes_failures": 25,
+    #         # "--show_cl":"",
+    #         "-snes_max_it": 50,
+    #         "-snes_rtol": 0,
+    #         "-snes_stol": 0,
+    #         "-snes_atol": 1e-6,
+    #     },
+    #     skip_initial=True,
+    #     initial_solver="ipopt",
+    #     initial_solver_options={
+    #         "constr_viol_tol": 1e-8,
+    #         "nlp_scaling_method": "user-scaling",
+    #         "linear_solver": "ma27",
+    #         "OF_ma57_automatic_scaling": "yes",
+    #         "max_iter": 300,
+    #         "tol": 1e-8,
+    #         "halt_on_ampl_error": "no",
+    #     },
+    # )
     results = petsc.petsc_dae_by_time_element(
         m,
         time=m.fs.time,
-        keepfiles=True,
-        symbolic_solver_labels=True,
-        ts_options={
-            "--ts_type": "beuler",
-            # "-ts_arkimex_type": "1bee",
-            "--ts_dt": 0.1,
-            "--ts_rtol": 1e-3,
-            # "--ts_adapt_clip":"0.001,3600",
-            # "--ksp_monitor":"",
-            "--ts_adapt_dt_min": 1e-3,
-            "--ts_adapt_dt_max": 3600,
-            "--snes_type": "newtontr",
-            # "--ts_max_reject": 200,
-            "--ts_monitor": "",
-            "-ts_adapt_monitor": "",
-            # "--snes_monitor":"",
-            "-snes_converged_reason": "",
-            # "-ksp_monitor_true_residual": "",
-            # "-ksp_converged_reason": "",
-            # "-snes_test_jacobian": "",
-            "snes_grid_sequence": "",
-            "-pc_type": "lu",
-            # "-mat_view": "",
-            "--ts_save_trajectory": 1,
-            "--ts_trajectory_type": "visualization",
-            "--ts_max_snes_failures": 25,
-            # "--show_cl":"",
-            "-snes_max_it": 50,
-            "-snes_rtol": 0,
-            "-snes_stol": 0,
-            "-snes_atol": 1e-6,
-        },
-        skip_initial=False,
-        initial_solver="ipopt",
-        initial_solver_options={
-            "constr_viol_tol": 1e-8,
-            "nlp_scaling_method": "user-scaling",
-            "linear_solver": "ma27",
-            "OF_ma57_automatic_scaling": "yes",
-            "max_iter": 300,
-            "tol": 1e-8,
-            "halt_on_ampl_error": "no",
-        },
+        skip_initial=True,
     )
     for result in results.results:
         assert_optimal_termination(result)
@@ -351,7 +363,7 @@ def initialize_system(m):
     # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].unfix() # Comment out reduces DoF by 4
     # m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].unfix() # Comment out reduces DoF by 4
     # m.fs.RO.feed_side.properties_out[0].temperature.unfix() # Comment out reduces DoF by 4
-    m.fs.RO.feed_side.properties_out[0].pressure.unfix() # Comment out doesn't affect DoF
+    # m.fs.RO.feed_side.properties_out[0].pressure.unfix() # Comment out doesn't affect DoF
     # m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"].unfix() # Comment out doesn't affect DoF
 
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "NaCl"))
