@@ -269,7 +269,7 @@ def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
     # Choose and unfix variables to be optimized
     m.fs.EDstack.voltage_applied[0].unfix()
     m.fs.EDstack.cell_pair_num.unfix()
-    m.fs.EDstack.cell_pair_num.set_value(10)
+    #m.fs.EDstack.cell_pair_num.set_value(20)
     # Give narrower bounds to optimizing variables if available
     m.fs.EDstack.voltage_applied[0].setlb(0.5)
     m.fs.EDstack.voltage_applied[0].setub(20)
