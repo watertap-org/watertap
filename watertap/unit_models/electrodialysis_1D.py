@@ -604,6 +604,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         self.membrane_areal_resistance_coef = Var(
             self.membrane_set,
             initialize=0,
+            bounds=(0,100),
             domain=NonNegativeReals,
             units=pyunits.ohm * pyunits.mol * pyunits.m**-1,
             doc="Coefficient of membrane areal resistance to 1/c, where c is the electrolyte concentration",
