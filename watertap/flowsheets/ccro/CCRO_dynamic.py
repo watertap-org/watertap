@@ -59,7 +59,7 @@ def main():
     m = build()
     set_operating_conditions(m)
     initialize_system(m)
-    solve_dynamic(m)
+    # solve_dynamic(m)
     return m
 
 def scale_system(m):
@@ -95,7 +95,7 @@ def build():
     # flowsheet set up
     m = ConcreteModel()
     num_time_points = 2
-    time_set = np.linspace(0, 14, num_time_points+1)
+    time_set = np.linspace(0, 2.0, num_time_points+1)
     m.fs = FlowsheetBlock(
         dynamic=True,
         time_set=list(time_set),
@@ -156,7 +156,7 @@ def build():
 
 def set_operating_conditions(
     m,
-    flow_vol=8e-4, # m3/s and 1.8 L/min is 3e-5 m3/s
+    flow_vol=3e-5, # m3/s and 1.8 L/min is 3e-5 m3/s
     salt_mass_conc=3.4, # g/L
     solver=None,
 ):
@@ -166,7 +166,7 @@ def set_operating_conditions(
     # ---specifications---
     # feed
     # state variables
-    m.fs.feed.properties[:].pressure.fix(170 * 6895)  # feed pressure [Pa]
+    m.fs.feed.properties[:].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[:].temperature.fix(294.96)  # feed temperature [K]
 
     # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(1.8/60)
@@ -185,15 +185,15 @@ def set_operating_conditions(
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
     m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-] No need to index because all times by default
     num_time_points = 2
-    time_set = np.linspace(0, 14, num_time_points+1)
+    time_set = np.linspace(0, 2.0, num_time_points+1)
     # m.fs.P1.control_volume.properties_out[0].pressure.fix(170 * 6895)
     # m.fs.P2.control_volume.properties_out[0].pressure.fix(170 * 6895)
     for i in range(len(time_set+1)):
         m.fs.P1.control_volume.properties_out[time_set[i]].pressure.fix(
-            (170 + 14/num_time_points * 1/50 * i) * 6895
+            (170 + 2.0/num_time_points * 1/50 * i) * 6895
         )  # feed pressure (Pa)
         m.fs.P2.control_volume.properties_out[time_set[i]].pressure.fix(
-            (170 + 14/num_time_points * 1/50 * i) * 6895
+            (170 + 2.0/num_time_points * 1/50 * i) * 6895
         )  # feed pressure (Pa)
     m.fs.P1.control_volume.material_accumulation[:, :, :].value = 0
     m.fs.P1.control_volume.energy_accumulation[:, :].value = 0
@@ -242,18 +242,19 @@ def set_operating_conditions(
     # scaling
     # set default property values
 
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")) # Increase by 10 for 3e-5
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e-3 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")) # Increase by 10 for 3e-5
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e5 * flow_vol, index=("Liq", "H2O")) # Increase by 10 for 3e-5
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e1 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")) # Increase by 10 for 3e-5
 
     # set scaling factors
     iscale.set_scaling_factor(m.fs.RO.area, 1)
     iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"], 1e4)
+    m.fs.RO.feed_side.properties_in[0].display()
+    iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"], 1e2)
     iscale.set_scaling_factor(m.fs.RO.permeate.pressure, 1e-5)
     iscale.set_scaling_factor(m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e2)
     iscale.set_scaling_factor(m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e2)
     # iscale.set_scaling_factor(m.fs.P1.work_fluid[0], 1e2)
-    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e3)
+    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e5)
     iscale.set_scaling_factor(m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e5)
     iscale.set_scaling_factor(m.fs.RO.feed_side.material_holdup_calculation[0, "Liq", "H2O"], 1e2)
 
@@ -335,10 +336,10 @@ def solve_dynamic(m):
         assert_optimal_termination(result)
 
 def initialize_mixer(m):
-    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.015)
-    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0001)
-    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.015)
-    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0001)
+    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.833)
+    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0029)
+    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.863)
+    m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.003)
     m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"].set_value(3.4)
     m.fs.M1.inlet_2_state[0].pressure.set_value(170 * 6895)
     m.fs.M1.initialize()
@@ -394,7 +395,7 @@ def initialize_system(m):
 
     # m.fs.RO.feed_side.release_state(source_flags)
     propagate_state(m.fs.RO_permeate_to_product)
-    
+    m.fs.product.initialize()
 
     propagate_state(m.fs.RO_retentate_to_P2)
     m.fs.P2.report()
@@ -402,11 +403,21 @@ def initialize_system(m):
     m.fs.P2.report()
 
     propagate_state(m.fs.P2_to_M1)
+    # m.fs.M1.initialize()
+    # propagate_state(m.fs.M1_to_RO)
+    # m.fs.RO.initialize()
     # m.fs.RO.permeate.pressure[700].unfix()
     # m.fs.feed.properties[700].pressure.unfix()  # feed pressure [Pa]
     # m.fs.feed.properties[700].temperature.unfix()  # feed temperature [K]
     # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
     print("DOF after initialization =", degrees_of_freedom(m))
 
+    print('Check all units here')
+    m.fs.feed.report()
+    m.fs.P1.report()
+    m.fs.P2.report()
+    m.fs.M1.report()
+    m.fs.RO.report()
+    m.fs.product.report()
 if __name__ == "__main__":
     m = main()
