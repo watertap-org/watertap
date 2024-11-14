@@ -68,7 +68,7 @@ atmospheric_pressure = 101325 * pyunits.Pa
 
 _log = idaeslog.getLogger(__name__)   
 
-def build_system():
+def build_system(has_pipes=True):
     """
     Build steady-state model
     """
@@ -115,7 +115,17 @@ def build_system():
     m.fs.feed_to_P1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
     m.fs.P1_to_M1 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.inlet_1)
     m.fs.P2_to_M1 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.inlet_2)
-    m.fs.M1_to_RO = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
+
+    if has_pipes:
+        m.fs.RO_inlet_pipe = WaterPipe(property_package=m.fs.properties, 
+                                       dynamic=False, 
+                                       has_holdup=True, 
+                                       #TODO: change hard-coded True for has_pressure_change in IDAES
+                                       has_pressure_change=True)
+        m.fs.M1_to_RO = Arc(source=m.fs.M1.outlet, destination=m.fs.RO_inlet_pipe.inlet)
+        m.fs.pipe_to_RO = Arc(source=m.fs.RO_inlet_pipe.outlet, destination=m.fs.RO.inlet)
+    else:
+        m.fs.M1_to_RO = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
 
     m.fs.RO_permeate_to_product = Arc(
         source=m.fs.RO.permeate, destination=m.fs.product.inlet
@@ -315,6 +325,18 @@ def set_operating_conditions(m):
     # m.fs.M1.inlet_2_state[0].flow_mass_phase_comp.fix()
     # m.fs.M1.inlet_2_state[0].pressure.fix()
     # m.fs.M1.inlet_2_state[0].temperature.fix()
+
+    """
+    RO inlet pipe specs
+    """
+    if hasattr(m.fs, "RO_inlet_pipe"):
+        m.fs.RO_inlet_pipe.diameter.fix(pyunits.convert(8*pyunits.inches, to_units=pyunits.m))
+        m.fs.RO_inlet_pipe.length.fix(1*pyunits.m)
+        m.fs.RO_inlet_pipe.number_of_pipes.fix(1)
+        m.fs.RO_inlet_pipe.elevation_change.fix(0)
+        m.fs.RO_inlet_pipe.fcorrection_dp.fix(1)
+        m.fs.RO_inlet_pipe.set_initial_condition()
+        m.fs.RO_inlet_pipe.initialize()
     """
     RO operating conditions
     """
@@ -409,12 +431,12 @@ def initialize_system(m):
 
     propagate_state(m.fs.P1_to_M1)
 
-    # propagate_state(source=m.fs.P1.outlet, destination=m.fs.P2.outlet)
-    # propagate_state(source=m.fs.P1.inlet, destination=m.fs.P2.inlet)
-    m.fs.P2.outlet.pressure[:] = value(m.fs.P1.outlet.pressure[0])
+    propagate_state(source=m.fs.P1.outlet, destination=m.fs.P2.outlet)
+    propagate_state(source=m.fs.P1.inlet, destination=m.fs.P2.inlet)
+    m.fs.P2.outlet.pressure[0] = value(m.fs.P1.outlet.pressure[0])
     m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
     propagate_state(m.fs.P2_to_M1)
-    propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
+    # propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
 
     master_initialize_with_recirculation(m, count=3)
     
@@ -450,16 +472,21 @@ def initialize_with_recirculation(m, count):
     m.fs.M1.initialize(outlvl=idaeslog.DEBUG)
     m.fs.M1.pressure_equality_constraints[0,2].deactivate()
 
+ 
     # mixer to RO 
     propagate_state(m.fs.M1_to_RO)
-    propagate_state(source=m.fs.P2.inlet, destination=m.fs.P2.outlet)
-    # try:
-    _log.info(f"INITIALIZING RO ON COUNT {count}; DOF = {degrees_of_freedom(m.fs.RO)}")
 
-    m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
-    #     _log.info(f"FINISHED INITIALIZING RO ON COUNT {count}")
-    # except InitializationError:
-    #     _log.warning(f"RO Initialization failed during initialize_with_recirculation on COUNT {count}")
+    if hasattr(m.fs, "RO_inlet_pipe"):
+        propagate_state(m.fs.pipe_to_RO)
+
+    try:
+        _log.info(f"INITIALIZING RO ON COUNT {count}; DOF = {degrees_of_freedom(m.fs.RO)}")
+
+        m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+        _log.info(f"FINISHED INITIALIZING RO ON COUNT {count}")
+    except InitializationError:
+        _log.warning((f"RO Initialization failed during initialize_with_recirculation on COUNT {count}"))
+        # raise InitializationError(f"RO Initialization failed during initialize_with_recirculation on COUNT {count}")
     #     pass
 
     # RO brine to P2
@@ -471,8 +498,8 @@ def initialize_with_recirculation(m, count):
         m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
     except InitializationError:
         _log.warning("P2 Initialization failed during initialize_with_recirculation")
-
-        pass
+        raise InitializationError(f"P2 Initialization failed during initialize_with_recirculation at count {count}")
+        # pass
 
 
 def solve(blk, solver=None, tee=True):
@@ -482,51 +509,51 @@ def solve(blk, solver=None, tee=True):
     return results
 
 
-def print_results(self, m=None):
+def print_results(m):
     print("\n\n")
     print(
-        f'MIXER INLET 1: {value(self.m.fs.M1.inlet_1_state[0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
+        f'MIXER INLET 1: {value(m.fs.M1.inlet_1_state[0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
     )
     print(
-        f'MIXER INLET 2: {value(self.m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
+        f'MIXER INLET 2: {value(m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
     )
     print(
-        f'MIXER OUTLET: {value(self.m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
+        f'MIXER OUTLET: {value(m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
     )
     print(
-        f'MIXER CONC: {value(pyunits.convert(self.m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.g/pyunits.L)):<5.2f} {pyunits.get_units(pyunits.convert(self.m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.g/pyunits.L))}'
-    )
-    print("\n")
-    print(
-        f'PUMP 1 INLET: {value(self.m.fs.P1.control_volume.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
-    )
-    print(
-        f'PUMP 1 OUTLET: {value(self.m.fs.P1.control_volume.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
-    )
-    print(
-        f"PUMP 1 PRESSURE: {value(pyunits.convert(self.m.fs.P1.control_volume.properties_out[0.0].pressure, to_units=pyunits.bar)):<5.2f}"
+        f'MIXER CONC: {value(pyunits.convert(m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.g/pyunits.L)):<5.2f} {pyunits.get_units(pyunits.convert(m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.g/pyunits.L))}'
     )
     print("\n")
     print(
-        f'PUMP 2 INLET: {value(self.m.fs.P2.control_volume.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
+        f'PUMP 1 INLET: {value(m.fs.P1.control_volume.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
     )
     print(
-        f'PUMP 2 OUTLET: {value(self.m.fs.P2.control_volume.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
+        f'PUMP 1 OUTLET: {value(m.fs.P1.control_volume.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
     )
     print(
-        f"PUMP 2 PRESSURE: {value(pyunits.convert(self.m.fs.P2.control_volume.properties_out[0.0].pressure, to_units=pyunits.bar)):<5.2f}"
+        f"PUMP 1 PRESSURE: {value(pyunits.convert(m.fs.P1.control_volume.properties_out[0.0].pressure, to_units=pyunits.bar)):<5.2f}"
     )
     print("\n")
-    print(f'RO FEED: {value(self.m.fs.RO.inlet.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}')
     print(
-        f'RO PRODUCT: {value(self.m.fs.RO.permeate.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}'
+        f'PUMP 2 INLET: {value(m.fs.P2.control_volume.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
     )
     print(
-        f'RO BRINE: {value(self.m.fs.RO.retentate.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}'
+        f'PUMP 2 OUTLET: {value(m.fs.P2.control_volume.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]):<5.2f}'
+    )
+    print(
+        f"PUMP 2 PRESSURE: {value(pyunits.convert(m.fs.P2.control_volume.properties_out[0.0].pressure, to_units=pyunits.bar)):<5.2f}"
+    )
+    print("\n")
+    print(f'RO FEED: {value(m.fs.RO.inlet.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}')
+    print(
+        f'RO PRODUCT: {value(m.fs.RO.permeate.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}'
+    )
+    print(
+        f'RO BRINE: {value(m.fs.RO.retentate.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}'
     )
     print("\n\n")
-    print(self.m.fs.M1.report())
-    print(self.m.fs.RO.report())
+    print(m.fs.M1.report())
+    print(m.fs.RO.report())
 
 if __name__ == "__main__":
     my_solver = 'petsc'
@@ -545,7 +572,7 @@ if __name__ == "__main__":
     #     "n_time_points": 5,
     # }
     # try:
-    m = build_system()
+    m = build_system(has_pipes=True)
     dt = DiagnosticsToolbox(m)
     set_operating_conditions(m)
     scale_system(m)
@@ -555,10 +582,11 @@ if __name__ == "__main__":
  
     initialize_system(m)
  
-    # interval_initializer(m)
+    interval_initializer(m)
     m.fs.report()
     m.fs.RO.report()
 
+    assert False
     m.fs.RO.feed_side.N_Re.setlb(None)
     
     initialize_by_time_element(m.fs, m.fs.time, solver=get_solver(my_solver), outlvl=idaeslog.DEBUG)
