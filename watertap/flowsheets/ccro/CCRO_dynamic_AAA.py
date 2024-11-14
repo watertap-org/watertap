@@ -60,7 +60,7 @@ import numpy as np
 from idaes.core.solvers import petsc
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.initialization import initialize_by_time_element
-
+from idaes.models_extra.power_generation.unit_models import WaterPipe, WaterTank 
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -285,6 +285,8 @@ def set_operating_conditions(m):
     p2_eff = 0.8
     m.fs.P2.efficiency_pump.fix(p2_eff)
     m.fs.P2.control_volume.properties_out[0].pressure.fix(p1_pressure_start)
+    # m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(value(m.fs.feed.properties[0].flow_vol_phase["Liq"]*(1-0.06))
+
     # m.fs.P2.control_volume.properties_out[0].pressure.setub(6e6)
     if m.fs.P2.config.dynamic:
 
@@ -453,6 +455,7 @@ def initialize_with_recirculation(m, count):
     propagate_state(source=m.fs.P2.inlet, destination=m.fs.P2.outlet)
     # try:
     _log.info(f"INITIALIZING RO ON COUNT {count}; DOF = {degrees_of_freedom(m.fs.RO)}")
+
     m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
     #     _log.info(f"FINISHED INITIALIZING RO ON COUNT {count}")
     # except InitializationError:
