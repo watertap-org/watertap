@@ -28,7 +28,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.6.0rc0",
+    "idaes-pse==2.6.0",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.1.dev0",
+    version="1.2.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -80,6 +80,7 @@ setup(
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
         "pyomo>=6.6.1",
+        "flexparser != 0.4",  # IDAES/idaes-pse#1524
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep>=0.1.dev5",
