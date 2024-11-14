@@ -283,8 +283,9 @@ def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
     print("---report model statistics---\n ", report_statistics(m.fs))
     if solver is None:
         solver = get_solver()
-    results = solver.solve(m, tee=True)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    solve(m, solver=solver, tee=True)
+    m.fs.EDstack.cell_pair_num.fix(round(value(m.fs.EDstack.cell_pair_num)))
+    solve(m, solver=solver, tee=True)
 
 
 def display_model_metrics(m):
@@ -322,6 +323,7 @@ def display_model_metrics(m):
         data=[
             value(m.fs.EDstack.recovery_mass_H2O[0]),
             value(m.fs.mem_area),
+            value(m.fs.EDstack.cell_pair_num),
             value(m.fs.EDstack.voltage_applied[0]),
             value(m.fs.costing.specific_energy_consumption),
             value(m.fs.costing.LCOW),
@@ -330,6 +332,7 @@ def display_model_metrics(m):
         index=[
             "Water recovery by mass",
             "Total membrane area (aem or cem), m2",
+            "Cell pair number",
             "Operation Voltage, V",
             "Specific energy consumption, kWh/m3",
             "Levelized cost of water, $/m3",

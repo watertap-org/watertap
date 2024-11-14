@@ -599,7 +599,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             initialize=2e-4,
             bounds=(1e-6, 1),
             units=pyunits.ohm * pyunits.meter**2,
-            doc="Constant areal resistance of membrane at high electrolyte concentration",
+            doc="Constant areal resistance of membrane at infinity-approximated electrolyte concentration",
         )
         self.membrane_areal_resistance_coef = Var(
             self.membrane_set,
