@@ -639,7 +639,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
     m.fs.ro_costing.base_currency = pyunits.USD_2020
     m.fs.ro_costing.utilization_factor.fix(0.85)
     # Assume the same capital recovery factor as zo_costing
-    m.fs.ro_costing.capital_recovery_factor.fix(0.065051435)
+    zo_crf = m.fs.zo_costing.capital_recovery_factor
+    m.fs.ro_costing.capital_recovery_factor.fix(value(zo_crf))
     # Must unfix either plant_lifetime or wacc in ro_costing
     m.fs.ro_costing.wacc.unfix()
 
