@@ -7,9 +7,10 @@ Introduction
 Bipolar electrodialysis, an electrochemical separation technology, is primarily used to generate acids and bases
 from waste salts. Recently, multiple proof of concept studies have also shown that starting from Lithium Chloride solution bipolar membranes can produce Lithium Hydroxide.
 These are critical for batteries. In water treatment plants starting with waste brine, at the end of water purification, yields high concentrations sodium hydroxide.
-These can be new revenue streams. A sketch of the bipolar membrane cell stack is shown in Figure 1 with **basic** and **acidic** channels, that produce base and acid
-respectively. More overview of the bipolar
-electrodialysis technology can be found in the *References*.
+These can be new revenue streams. To produce products from salts there is a cation exchange memrbane (CEM) and a anion exchange membrane (AEM) in parallel with the bipolar membrane.
+To simplify the model we do NOT account for these salt ion fluxes. This allows direct comparisons with models presented in works of Mareev et al. (2020) and Melnikov (2022). Users may choose to add ions via the feed.
+In the future we will add a unit model with CEM and AEM in parallel with a bipolar membrane. A sketch of the bipolar membrane cell stack is shown in Figure 1 with **basic** and **acidic** channels, that produce base and acid
+respectively. More overview of the bipolar electrodialysis technology can be found in the *References*.
 
 .. figure:: ../../_static/unit_models/BPEDdiagram.png
     :width: 600
@@ -162,13 +163,13 @@ The simplest water splitting mode is without any catalyst. Hence default the con
    :header: "Description", "Equation", "Index set"
 
    "Component mass balance", ":math:`N_{j, in}^{acidic \: or\:  basic}-N_{j, out}^{acidic\: or\:  basic}+J_j^{acidic\: or\:  basic} bl=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-} '\right]`"
-   "mass transfer flux, basic, solute", ":math:`J_j^{C} = -t_j^{bpem}\frac{\xi i_{lim}}{ z_j F}`", ":math:`j \in \left['{Na_+} ', '{Cl^-} '\right]`"
-   "mass transfer flux, acidic, proton", ":math:`J_j^{C} = \frac{i - i_{lim}}{F}`", ":math:`j \in \left['{H^+} '\right]`"
-   "mass transfer flux, acidic, hydroxide", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{OH^-} '\right]`"
-   "mass transfer flux, basic, proton", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{H^+} '\right]`"
-   "mass transfer flux, basic,  hydroxide", ":math:`J_j^{C} = \frac{i - i_{lim}}{F}`", ":math:`j \in \left['{OH^-} '\right]`"
-   "mass transfer flux, acidic H\ :sub:`2`\ O", ":math:`J_j^{C} = t_w^{bpem} \left(\frac{i}{F}\right)+\left(L^{bpem} \right)\left(p_{osm}^{CEM}-p_{osm}^{AEM} \right)\left(\frac{\rho_w}{M_w}\right) - 0.5 \frac{i - i_{lim}}{ F}`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, basic, H\ :sub:`2`\ O", ":math:`J_j^{C} = -t_w^{bpem} \left(\frac{i}{F}\right)-\left(L^{bpem} \right)\left(p_{osm}^{CEM}-p_{osm}^{AEM} \right)\left(\frac{\rho_w}{M_w}\right) - 0.5 \frac{i - i_{lim}}{F}`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, basic, solute", ":math:`J_j = -t_j^{bpem}\frac{\xi i_{lim}}{ z_j F}`", ":math:`j \in \left['{Na_+} ', '{Cl^-} '\right]`"
+   "mass transfer flux, acidic, proton", ":math:`J_j = J_{diss}`", ":math:`j \in \left['{H^+} '\right]`"
+   "mass transfer flux, acidic, hydroxide", ":math:`J_j = 0`", ":math:`j \in \left['{OH^-} '\right]`"
+   "mass transfer flux, basic, proton", ":math:`J_j = 0`", ":math:`j \in \left['{H^+} '\right]`"
+   "mass transfer flux, basic,  hydroxide", ":math:`J_j = J_{diss}`", ":math:`j \in \left['{OH^-} '\right]`"
+   "mass transfer flux, acidic H\ :sub:`2`\ O", ":math:`J_j = t_w^{bpem} \left(\frac{i}{F}\right)+\left(L^{bpem} \right)\left(p_{osm}^{CEM}-p_{osm}^{AEM} \right)\left(\frac{\rho_w}{M_w}\right) - 0.5 J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, basic, H\ :sub:`2`\ O", ":math:`J_j = -t_w^{bpem} \left(\frac{i}{F}\right)-\left(L^{bpem} \right)\left(p_{osm}^{CEM}-p_{osm}^{AEM} \right)\left(\frac{\rho_w}{M_w}\right) - 0.5 J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
 
 Overcoming the limiting current corresponds to a potential barrier, :math:`U_{diss}`. Important quantities are either taken as user input or computed. The appropriate configurations are ``limiting_current_density_method_bpem" for limiting current or ``limiting_potential_method_bpem`` for potential barrier.
 These relationships are given in **Table 4**
@@ -178,6 +179,7 @@ These relationships are given in **Table 4**
 .. csv-table:: **Table 4** Essential equations
    :header: "Description", "Equation", "Condition"
 
+   "Flux due to hydrolysis reaction", ":math:`J_{diss} = (i - i_{lim})/F`", " "
    "Limiting current density", ":math:`i_{lim} =` user input constant", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.InitialValue``"
    " ", ":math:`i_{lim} = D F (C_{acidic}+C_{basic})^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical``"
    "Potential barrier",":math:`U_{diss} =` user input constant", "``limiting_potential_method_bpem =LimitingpotentialMethod.InitialValue``"
@@ -188,9 +190,11 @@ These relationships are given in **Table 4**
 
 
 The quantities :math:`C_{H_2 O}, C_{H^+}, C_{OH^-}` are the water proton and hydroxyl concentration in
-:math:`mol\, m^{-3}` and are taken to be constants. :math:`f(E)` is the second Wien effect driven enhanacidicent of the
+:math:`mol\, m^{-3}` and are taken to be constants. :math:`f(E)` is the second Wien effect driven enhancement of the
 dissociation rate under applied electric field. It requires as input temperature and relative permittivity (:math:`\epsilon_r`).
 Please note that since the unit model is assumed to operate in the water splitting regime and so :math:`U_{diss}` is always computed when ``has_catalyst`` is False.
+It should be noted that :math:`J_{diss}` arises from the hydrolysis reaction and can be equated to the reaction rate.
+However, as  Wilhelm et al. (2001) have shown, this can be simplified to the current in excess of the limiting current.
 
 
 .. csv-table:: **Table 5** DOF for water splitting without catalyst
@@ -201,7 +205,7 @@ Please note that since the unit model is assumed to operate in the water splitti
    "Salt concentration, acidic side ", ":math:`C_{acidic}`", "salt_conc_acidic", "[bpem]",":math:`mol m^{-3}`"
    "Membrane Fixed charge ", ":math:`\sigma`", "membrane_fixed_charge", "[bpem]",":math:`mol m^{-3}`"
    "Dissociation rate constant, zero electric field ", ":math:`k_2(0)`", "kd_zero", "[bpem]",":math:`s^{-1}`"
-   "Recombination rate constant ", ":math:`k_r`", "k_r", "[bpem]",":math:`L^1 mol^{-1} s^{-1}`"
+   "Recombination rate constant ", ":math:`k_r`", "kr", "[bpem]",":math:`L^1 mol^{-1} s^{-1}`"
    "Relative permittivity ", ":math:`\epsilon_r`", "relative_permittivity", "[bpem]","Non-dimensional"
 
 .. csv-table:: **Table 6** Electrical and Performance Equations
@@ -221,24 +225,15 @@ Fumasep FBM, 2020. Additional inputs were obtained from from  Ionescu, Viorel (2
 Operation with catalyst
 --------------------------
 
-Choosing config ``has_catalyst`` to True enables catalyst action. With catalyst present the Mass balance term is shown in **Table 7**
+Choosing config ``has_catalyst`` to True enables catalyst action. With catalyst present the Mass balance term still follows the equations in **Table 3**.
 
-.. csv-table:: **Table 7** Mass Balance Equations
-   :header: "Description", "Equation", "Index set"
 
-   "mass transfer flux, acidic, proton", ":math:`J_j^{C} =J_{diss}`", ":math:`j \in \left['{H^+} '\right]`"
-   "mass transfer flux, acidic, hydroxide", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{OH^-} '\right]`"
-   "mass transfer flux, basic, proton", ":math:`J_j^{C} = 0`", ":math:`j \in \left['{H^+} '\right]`"
-   "mass transfer flux, basic, hydroxide", ":math:`J_j^{C} = J_{diss}`", ":math:`j \in \left['{OH^-} '\right]`"
-   "mass transfer flux, acidic H\ :sub:`2`\ O", ":math:`J_j^{C} = t_w^{bpem} \left(\frac{i}{F}\right)+\left(L^{bpem} \right)\left(p_{osm}^{CEM}-p_{osm}^{AEM} \right)\left(\frac{\rho_w}{M_w}\right) -  0.5 J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, basic, H\ :sub:`2`\ O", ":math:`J_j^{C} = -t_w^{bpem} \left(\frac{i}{F}\right)-\left(L^{bpem} \right)\left(p_{osm}^{CEM}-p_{osm}^{AEM }\right)\left(\frac{\rho_w}{M_w}\right) -  0.5 J_{diss}`", ":math:`j \in \left['H_2 O'\right]`"
+The flux from water splitting with catalyst action is shown in **Table 7**
 
-The flux from water splitting :math:`J_{diss}` is given by the equations in **Table 8**
-
-.. csv-table:: **Table 8** Essential equations
+.. csv-table:: **Table 7** Essential equations
    :header: "Description", "Equation"
 
-   "Water splitting flux", ":math:`J_{diss} =R_{K_A} /\lambda + R_{K_B} /\lambda`"
+   "Water splitting flux", ":math:`J_{diss} =R_{K_A} \lambda + R_{K_B} \lambda`"
    "Water splitting rate", ":math:`R_{K_A/K_B} = \frac{Q_m}{K_{A/B}}[k_2(0)f(E)C_{H_2O}-k_r C_{H^+}C_{OH^-} ]`"
    "Depletion length", ":math:`\lambda = E \epsilon_0 \epsilon_r / (F \sigma)`"
    "Electric current density", ":math:`i = i_{lim} + F J_{diss}`"
@@ -247,10 +242,9 @@ The flux from water splitting :math:`J_{diss}` is given by the equations in **Ta
 Please note that since the unit model is assumed to operate in the water splitting regime and so :math:`i_{lim}` is always computed when ``has_catalyst`` is True.
 
 
+The parameters used are given in **Table 8**.
 
-The parameters used are given in **Table 9**.
-
-.. csv-table:: **Table 9.** DOF for water splitting with catalyst
+.. csv-table:: **Table 8.** DOF for water splitting with catalyst
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Catalyst concentration on the cation exchange side", ":math:`Q_m`", "membrane_fixed_catalyst_cem", "[bpem]", ":math:`mol \, m^{-3}`"
@@ -267,11 +261,11 @@ config ``has_pressure_change`` and ``pressure_drop_method``.  Under the assumpti
 channels and starting flow rates, the flow velocities in the two channels are approximated equal and invariant over the
 channel length when calculating the frictional pressure drops. This approximation is based on the evaluation that the
 actual velocity variation over the channel length caused by water mass transfer across the consecutive channels leads to
-negligible errors as compared to the uncertainties carried by the frictional pressure method itself. **Table 10** gives
+negligible errors as compared to the uncertainties carried by the frictional pressure method itself. **Table 9** gives
 essential equations to simulate the pressure drop. Among extensive literatures using these equations, a good reference
 paper is by Wright et. al., 2018 (*References*).
 
-.. csv-table:: **Table 10** Essential equations supporting the pressure drop calculation
+.. csv-table:: **Table 9** Essential equations supporting the pressure drop calculation
    :header: "Description", "Equation", "Condition"
 
    "Frictional pressure drop, Darcy_Weisbach", ":math:`p_L=f\frac{\rho v^2}{2d_H}` \ :sup:`1`", "`has_pressure_change == True` and `pressure_drop_method == PressureDropMethod.Darcy_Weisbach`"
@@ -291,7 +285,7 @@ paper is by Wright et. al., 2018 (*References*).
 
 Nomenclature
 ------------
-.. csv-table:: **Table 11** Nomenclature
+.. csv-table:: **Table 10** Nomenclature
    :header: "Symbol", "Description", "Unit"
    :widths: 10, 20, 10
 
@@ -352,6 +346,8 @@ Fumatech, Technical Data Sheet for Fumasep FBM, 2020.
 Ionescu, V., 2023, March. A simple one-dimensional model for analysis of a bipolar membrane used in electrodialysis desalination. In Advanced Topics in Optoelectronics, Microelectronics, and Nanotechnologies XI (Vol. 12493, pp. 520-529). SPIE.
 
 Mareev, S.A., Evdochenko, E., Wessling, M., Kozaderova, O.A., Niftaliev, S.I., Pismenskaya, N.D. and Nikonenko, V.V., 2020. A comprehensive mathematical model of water splitting in bipolar membranes: Impact of the spatial distribution of fixed charges and catalyst at bipolar junction. Journal of Membrane Science, 603, p.118010.
+
+Melnikov, S., 2022. Ion Transport and Process of Water Dissociation in Electromembrane System with Bipolar Membrane: Modelling of Symmetrical Case. Membranes, 13(1), p.47.
 
 Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
 
