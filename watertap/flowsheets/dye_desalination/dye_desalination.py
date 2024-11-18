@@ -453,6 +453,8 @@ def set_operating_conditions(m):
         m.fs.gac.ele_conc_ratio_replace[0] = 1e-10
         m.fs.gac.ele_operational_time[0] = 1e-10
 
+        m.fs.gac.process_flow.properties_out[0].conc_mass_phase_comp["Liq", "dye"]
+
         iscale.constraint_scaling_transform(m.fs.gac.eq_mass_adsorbed["dye"], 1e-2)
     else:
         pass
@@ -1600,7 +1602,37 @@ if __name__ == "__main__":
         include_RO=True,
         include_pretreatment=False,
         include_dewatering=False,
-        include_gac=False,
+        include_gac=True,
         dye_revenue=False,
         brine_revenue=False,
     )
+
+    # Dye removal
+    dye_removed = value(model.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "dye"])
+    dye_total = value(
+        model.fs.gac.process_flow.properties_in[0].flow_mass_phase_comp["Liq", "dye"]
+    )
+    removal_percentage = (dye_removed / dye_total) * 100
+    print(f"Dye removal is {removal_percentage} %")
+
+    # Adsorption Capacity: q = (C_o - C_e)V/m
+    inlet_dye = value(
+        model.fs.gac.process_flow.properties_in[0].conc_mass_phase_comp["Liq", "dye"]
+    )
+    print(f"GAC inlet dye concentration is {inlet_dye}")
+    outlet_dye = value(
+        model.fs.gac.process_flow.properties_out[0].conc_mass_phase_comp["Liq", "dye"]
+    )
+    print(f"GAC outlet dye concentration is {outlet_dye}")
+    solution_volume = value(
+        model.fs.gac.process_flow.properties_in[0].flow_vol_phase["Liq"]
+        * model.fs.gac.operational_time
+    )
+    adsorbent_mass = value(
+        model.fs.gac.process_flow.properties_in[0].flow_mass_phase_comp["Liq", "dye"]
+        * model.fs.gac.operational_time
+    )
+    adsorption_capacity = (
+        100 * (inlet_dye - outlet_dye) * solution_volume / adsorbent_mass
+    )
+    print(f"GAC adsorption capacity is {adsorption_capacity} %")
