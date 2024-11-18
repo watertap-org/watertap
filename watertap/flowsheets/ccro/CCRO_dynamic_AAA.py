@@ -55,7 +55,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
-from idaes.core.scaling import  report_scaling_factors, AutoScaler
 import numpy as np
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -344,6 +343,7 @@ def set_operating_conditions(m):
     print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
     print("DOF RO =", degrees_of_freedom(m.fs.RO))
     assert_no_degrees_of_freedom(m)
+    assert False
 
 def initialize_system(m):
     
