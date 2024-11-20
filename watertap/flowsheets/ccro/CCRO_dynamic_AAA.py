@@ -95,7 +95,7 @@ def build_system(has_pipes=True):
         # num_inlets=2,
         momentum_mixing_type=MomentumMixingType.equality,
     )
-    m.fs.M1.pressure_equality_constraints[0,2].deactivate()
+    # m.fs.M1.pressure_equality_constraints[0,2].deactivate()
 
     m.fs.RO = ReverseOsmosis0D(
         dynamic=False,
@@ -133,10 +133,11 @@ def build_system(has_pipes=True):
     m.fs.RO_retentate_to_P2 = Arc(
         source=m.fs.RO.retentate, destination=m.fs.P2.inlet
     )
-    time_nfe = len(m.fs.time) - 1
-    TransformationFactory("dae.finite_difference").apply_to(
-        m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
-    )
+    if m.fs.config.dynamic:
+        time_nfe = len(m.fs.time) - 1
+        TransformationFactory("dae.finite_difference").apply_to(
+            m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
+        )
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # m.fs.water_recovery = Var(
@@ -279,8 +280,8 @@ def set_operating_conditions(m):
     p1_pressure_start = 306 * pyunits.psi#306 * pyunits.psi
 
     m.fs.P1.efficiency_pump.fix(p1_eff)
-    # m.fs.P1.control_volume.properties_out[0].pressure.fix(p1_pressure_start)
     m.fs.P1.control_volume.properties_out[0].pressure = p1_pressure_start
+    m.fs.P1.control_volume.properties_out[0].pressure.fix(p1_pressure_start)
 
     if m.fs.P1.config.dynamic:
         m.fs.P1.control_volume.material_accumulation[:, :, :].value = 0
@@ -303,7 +304,7 @@ def set_operating_conditions(m):
     """
     p2_eff = 0.8
     m.fs.P2.efficiency_pump.fix(p2_eff)
-    m.fs.P2.control_volume.properties_out[0].pressure.fix(p1_pressure_start)
+    m.fs.P2.control_volume.deltaP[0].fix(0)
     # m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(value(m.fs.feed.properties[0].flow_vol_phase["Liq"]*(1-0.06))
 
     # m.fs.P2.control_volume.properties_out[0].pressure.setub(6e6)
@@ -317,24 +318,28 @@ def set_operating_conditions(m):
     """
     Mixer operating conditions
     """
+    Qp = value(m.fs.feed.properties[0].flow_vol)
+    R = 0.05
+    Qf= Qp/R
     m.fs.M1.mixed_state[:].temperature.fix(feed_temp)
 
-    # m.fs.M1_constraint_1 = Constraint(
-    #     expr=m.fs.M1.inlet_2_state[0].pressure
-    #     == m.fs.M1.inlet_1_state[0].pressure
-    # )
-    # m.fs.M1_constraint_2 = Constraint(
-    #     expr=m.fs.M1.inlet_1_state[0].pressure
-    #     == m.fs.M1.mixed_state[0].pressure
-    # )
 
-    # m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"].setub(5)
-    
-    
-    # propagate_state(destination=m.fs.M1.inlet_2, source=m.fs.feed.outlet)
-    # m.fs.M1.inlet_2_state[0].flow_mass_phase_comp.fix()
-    # m.fs.M1.inlet_2_state[0].pressure.fix()
-    # m.fs.M1.inlet_2_state[0].temperature.fix()
+    m.fs.M1.inlet_2_state[0].flow_mass_phase_comp.fix(1e-8)
+    m.fs.M1.inlet_2_state[0].temperature.fix(feed_temp)
+    m.fs.M1.inlet_2_state[0].pressure.fix(atmospheric_pressure)
+
+    m.fs.M1.pressure_equality_constraints[0,2].deactivate()
+    m.fs.P2_to_M1_expanded.flow_mass_phase_comp_equality[0,:,:].deactivate()
+    m.fs.P2_to_M1_expanded.pressure_equality[0].deactivate()
+    m.fs.P2_to_M1_expanded.temperature_equality[0].deactivate()
+
+    m.fs.RO_retentate_to_P2_expanded.flow_mass_phase_comp_equality[0,:,:].deactivate()
+    m.fs.RO_retentate_to_P2_expanded.pressure_equality[0].deactivate()
+    m.fs.RO_retentate_to_P2_expanded.temperature_equality[0].deactivate()
+    m.fs.P2.deactivate()
+    # m.fs.M1.mixed_state[:].flow_vol_phase['Liq'].fix(Qf)
+    # m.fs.M1.mixed_state[0].conc_mass_phase_comp['Liq', 'NaCl'].fix()
+    # m.fs.M1_to_RO_expanded.flow_mass_phase_comp_equality[:,:,'H2O'].deactivate()
 
     """
     RO inlet pipe specs
@@ -342,8 +347,8 @@ def set_operating_conditions(m):
     if hasattr(m.fs, "RO_inlet_pipe"):
         # for pipe
         m.fs.RO_inlet_pipe.diameter.fix(pyunits.convert(12*pyunits.inches, to_units=pyunits.m))
-        m.fs.RO_inlet_pipe.length.fix(100*pyunits.m)
-        m.fs.RO_inlet_pipe.number_of_pipes.fix(100)
+        m.fs.RO_inlet_pipe.length.fix(3*pyunits.m)
+        m.fs.RO_inlet_pipe.number_of_pipes.fix(1)
         m.fs.RO_inlet_pipe.elevation_change.fix(0)
         m.fs.RO_inlet_pipe.fcorrection_dp.fix(1)
         m.fs.RO_inlet_pipe.set_initial_condition()
@@ -372,8 +377,8 @@ def set_operating_conditions(m):
     m.fs.RO.B_comp.fix(B_comp)
     # set_scaling_factor(m.fs.RO.B_comp[ 0, "NaCl"], 10/value(m.fs.RO.B_comp[ 0, "NaCl"]))
     m.fs.RO.area.fix(membrane_area)
-    # m.fs.RO.recovery_vol_phase.fix(0.05)
-    # m.fs.RO.recovery_vol_phase[0, 'Liq'].unfix()
+    # m.fs.RO.recovery_vol_phase[0, 'Liq'].fix(0.05)
+    # m.fs.RO.recovery_vol_phase[:, 'Liq'].fix(0.05)
     # m.fs.RO.length.fix(membrane_length)
     # m.fs.RO.feed_side.channel_height.fix(channel_height)
     # m.fs.RO.feed_side.spacer_porosity.fix(spacer_porosity)
@@ -459,8 +464,9 @@ def initialize_system(m):
     propagate_state(source=m.fs.P1.outlet, destination=m.fs.P2.outlet)
     propagate_state(source=m.fs.P1.inlet, destination=m.fs.P2.inlet)
     m.fs.P2.outlet.pressure[0] = value(m.fs.P1.outlet.pressure[0])
-    m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
-    propagate_state(m.fs.P2_to_M1)
+    if m.fs.P2.active:
+        m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
+        propagate_state(m.fs.P2_to_M1)
     # propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
 
     master_initialize_with_recirculation(m, count=1)
@@ -494,12 +500,14 @@ def master_initialize_with_recirculation(m, count=1):
 
 def initialize_with_recirculation(m, count):
     m.fs.M1.mixed_state[:].temperature.unfix()
+    Qf = value(m.fs.M1.mixed_state[0].flow_vol_phase['Liq'])
+    m.fs.M1.mixed_state[:].flow_vol_phase['Liq'].unfix()
 
     m.fs.M1.initialize(outlvl=idaeslog.DEBUG)
     m.fs.M1.pressure_equality_constraints[0,2].deactivate()
     m.fs.M1.mixed_state[:].temperature.fix(25 +273.15)
-
- 
+    m.fs.M1.mixed_state[:].flow_vol_phase['Liq'].fix(Qf)
+    
     # mixer to RO 
     propagate_state(m.fs.M1_to_RO)
 
