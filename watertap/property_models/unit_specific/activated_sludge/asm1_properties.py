@@ -35,6 +35,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.scaling import CustomScalerBase
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.base.property_base import PhysicalParameterBlock
 
 # Some more information about this module
 __author__ = "Andrew Lee, Adam Atia, Xinhong Liu"
@@ -505,12 +506,6 @@ class ASM1StateBlockData(StateBlockData):
             doc="Total Nitrogen",
         )
 
-        # TODO: Eventually need to deprecate/remove iscale-based scaling
-        iscale.set_scaling_factor(self.flow_vol, 1e1)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-6)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
-
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 
@@ -549,36 +544,3 @@ class ASM1StateBlockData(StateBlockData):
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
-
-    def calculate_scaling_factors(self):
-        # TODO: Eventually need to deprecate/remove iscale-based scaling
-        # Get default scale factors and do calculations from base classes
-        super().calculate_scaling_factors()
-
-        # No constraints in this model as yet, just need to set scaling factors
-        # for expressions
-        sf_F = iscale.get_scaling_factor(self.flow_vol, default=1e2, warning=True)
-        sf_T = iscale.get_scaling_factor(self.temperature, default=1e-2, warning=True)
-
-        # Mass flow and density terms
-        for j in self.component_list:
-            if j == "H2O":
-                sf_C = pyo.value(1 / self.params.dens_mass)
-            elif j == "S_ALK":
-                sf_C = 1e-1 * iscale.get_scaling_factor(
-                    self.alkalinity, default=1, warning=True
-                )
-            else:
-                sf_C = iscale.get_scaling_factor(
-                    self.conc_mass_comp[j], default=1e2, warning=True
-                )
-
-            iscale.set_scaling_factor(self.material_flow_expression[j], sf_F * sf_C)
-            iscale.set_scaling_factor(self.material_density_expression[j], sf_C)
-
-        # Enthalpy and energy terms
-        sf_rho_cp = pyo.value(1 / (self.params.dens_mass * self.params.cp_mass))
-        iscale.set_scaling_factor(
-            self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
-        )
-        iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)

@@ -362,7 +362,7 @@ class TestASM1PropertiesScaler:
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 8
+        assert len(sfx) == 3
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-2, rel=1e-8)
@@ -397,7 +397,7 @@ class TestASM1PropertiesScaler:
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 9
-        assert sfx[model.props[1].flow_vol] == pytest.approx(1e2, rel=1e-8)
+        assert len(sfx) == 3
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-2, rel=1e-8)

@@ -36,7 +36,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 # Some more information about this module
 __author__ = "Andrew Lee, Xinhong Liu, Adam Atia"
@@ -330,11 +330,46 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
         )
 
 
+class ASM1ReactionScaler(CustomScalerBase):
+    """
+    Scaler for saponification reaction package.
+
+    Variables are scaled by nominal order of magnitude, and constraints
+    using the inverse maximum scheme.
+    """
+
+    # TODO: Revisit this scaling factor
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+
+        if model.is_property_constructed("reaction_rate"):
+            for j in model.reaction_rate.values():
+                self.scale_variable_by_default(j, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # TODO: Revisit this scaling methodology
+        # Consider scale_constraint_by_default or scale_constraints_by_jacobian_norm
+        if model.is_property_constructed("rate_expression"):
+            for j in model.rate_expression.values():
+                self.scale_constraint_by_nominal_value(
+                    j,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+
 class _ASM1ReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
+
+    default_scaler = ASM1ReactionScaler
 
     def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
@@ -502,9 +537,3 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
 
     def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
-
-    def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()
-        iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
-        iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
-        iscale.constraint_scaling_transform(self.rate_expression["R4"], 1e3)
