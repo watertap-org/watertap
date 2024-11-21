@@ -54,10 +54,6 @@ from idaes.models.unit_models import (
     PressureChanger,
     Product,
 )
-from idaes.core.scaling.custom_scaler_base import (
-    CustomScalerBase,
-    ConstraintScalingScheme,
-)
 
 from watertap.unit_models.aeration_tank import AerationTank, ElectricityConsumption
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
@@ -558,14 +554,6 @@ def add_effluent_violations(m):
     @m.fs.Constraint(m.fs.time)
     def eq_BOD5_max(self, t):
         return m.fs.CL1.effluent_state[0].BOD5["effluent"] <= m.fs.BOD5_max
-
-    csb = CustomScalerBase()
-
-    csb.scale_constraint_by_nominal_value(
-        m.fs.eq_totalN_max[0],
-        scheme=ConstraintScalingScheme.inverseRSS,
-        overwrite=True,
-    )
 
 
 def add_reactor_volume_equalities(m):

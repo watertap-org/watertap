@@ -36,6 +36,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
+import idaes.core.util.scaling as iscale
 
 # Some more information about this module
 __author__ = "Andrew Lee, Xinhong Liu, Adam Atia"
@@ -536,3 +537,9 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
 
     def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
+        iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
+        iscale.constraint_scaling_transform(self.rate_expression["R4"], 1e3)
