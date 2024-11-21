@@ -688,7 +688,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.01,
-            bounds=(1e-6, 10),
+            bounds=(1e-6, 1e2),
             units=pyunits.meter * pyunits.second**-1,
             doc="Linear velocity of flow",
         )
@@ -727,10 +727,16 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 doc="Express deltaP_term by the calculated pressure drop data.",
             )
             def eq_deltaP(self, c, t, x):
-                if c == "concentrate":
-                    return self.concentrate.deltaP[t, x] == -self.pressure_drop[c, t, x]
-                elif c == "diluate":
-                    return self.diluate.deltaP[t, x] == -self.pressure_drop[c, t, x]
+                if x not in self.difference_elements:
+                    self.concentrate.deltaP[t, x].fix(0)
+                    self.diluate.deltaP[t, x].fix(0)
+                else:
+                    if c == "concentrate":
+                        return (
+                            self.concentrate.deltaP[t, x] == -self.pressure_dx[c, t, x]
+                        )
+                    elif c == "diluate":
+                        return self.diluate.deltaP[t, x] == -self.pressure_dx[c, t, x]
 
         elif self.config.pressure_drop_method == PressureDropMethod.none and (
             not self.config.has_pressure_change
@@ -1880,7 +1886,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             )
 
     def _pressure_drop_calculation(self):
-        self.pressure_drop = Var(
+        self.pressure_dx = Var(
             self.flow_channel_set,
             self.flowsheet().time,
             self.difference_elements,
@@ -1926,9 +1932,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 self.difference_elements,
                 doc="To calculate pressure drop per unit length",
             )
-            def eq_pressure_drop(self, c, t, x):
+            def eq_pressure_dx(self, c, t, x):
                 return (
-                    self.pressure_drop[c, t, x]
+                    self.pressure_dx[c, t, x]
                     == self.dens_mass
                     * self.friction_factor[c, t, x]
                     * self.velocity[c, t, x] ** 2
@@ -1977,9 +1983,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
         def eq_pressure_drop_total(self, c, t):
             return self.pressure_drop_total[c, t] == sum(
-                self.pressure_drop[c, t, x]
+                self.pressure_dx[c, t, x]
                 * self.cell_length
-                / self.config.finite_elements
+                / len(self.difference_elements)
                 for x in self.difference_elements
             )
 
@@ -2312,10 +2318,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                             self.N_Re[ind]
                         ) ** -0.5
                     iscale.set_scaling_factor(self.friction_factor[ind], sf)
-        if hasattr(self, "pressure_drop"):
-            for ind in self.pressure_drop:
+        if hasattr(self, "pressure_dx"):
+            for ind in self.pressure_dx:
                 if (
-                    iscale.get_scaling_factor(self.pressure_drop[ind], warning=True)
+                    iscale.get_scaling_factor(self.pressure_dx[ind], warning=True)
                     is None
                 ):
                     if (
@@ -2331,7 +2337,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                             * 2
                             * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
                         )
-                    iscale.set_scaling_factor(self.pressure_drop[ind], sf)
+                    iscale.set_scaling_factor(self.pressure_dx[ind], sf)
         if hasattr(self, "pressure_drop_total"):
             for ind in self.pressure_drop_total:
                 if (
@@ -2341,7 +2347,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     is None
                 ):
                     sf = iscale.get_scaling_factor(
-                        self.pressure_drop[
+                        self.pressure_dx[
                             ind[0], ind[1], self.difference_elements.first()
                         ]
                     ) * iscale.get_scaling_factor(self.cell_length)
@@ -2645,22 +2651,27 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "eq_Sc"):
             for ind, c in self.eq_Sc.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.eq_Sc[ind])
+                    c, iscale.get_scaling_factor(self.N_Sc[ind])
                 )
         if hasattr(self, "eq_Sh"):
             for ind, c in self.eq_Sh.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.eq_Sh[ind])
+                    c, iscale.get_scaling_factor(self.N_Sh[ind])
                 )
-        if hasattr(self, "eq_pressure_drop"):
-            for ind, c in self.eq_pressure_drop.items():
+        if hasattr(self, "eq_pressure_dx"):
+            for ind, c in self.eq_pressure_dx.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.pressure_drop[ind])
+                    c, iscale.get_scaling_factor(self.pressure_dx[ind])
                 )
         if hasattr(self, "eq_deltaP"):
             for ind, c in self.eq_deltaP.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.pressure_drop[ind])
+                    c,
+                    iscale.get_scaling_factor(
+                        self.pressure_dx[
+                            ind[0], ind[1], self.difference_elements.first()
+                        ]
+                    ),
                 )
         if hasattr(self, "eq_hydraulic_diameter"):
             for ind, c in self.eq_hydraulic_diameter.items():
