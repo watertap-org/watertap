@@ -596,7 +596,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.reagent_list,
-                doc="Mol generation from dissolution",
+                doc="Mole generation from dissolution",
             )
             def eq_flow_mol_reagent(b, t, r):
                 return b.flow_mass_reagent[r] / b.mw_reagent[r] == b.flow_mol_reagent[r]
@@ -668,7 +668,7 @@ class StoichiometricReactorData(UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.precipitate_list,
-                doc="Mol generation from precipitation",
+                doc="Mole generation from precipitation",
             )
             def eq_flow_mol_precipitate(b, t, p):
                 return (
