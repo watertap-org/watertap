@@ -34,7 +34,6 @@ from idaes.core import (
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 

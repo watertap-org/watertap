@@ -75,7 +75,7 @@ from watertap.costing.unit_models.clarifier import (
 from pyomo.util.check_units import assert_units_consistent
 
 
-def main(reactor_volume_equalities=True):
+def main(reactor_volume_equalities=False):
     m = build()
     set_operating_conditions(m)
 
