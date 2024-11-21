@@ -394,6 +394,13 @@ class _BaseDebugSolverWrapper:
 
         self._value_cache = pyo.ComponentMap()
 
+    def __getattr__(self, attr):
+        # if not available here, ask the base_solver
+        try:
+            return getattr(pyo.SolverFactory(self._base_solver), attr)
+        except AttributeError:
+            raise
+
     def restore_initial_values(self, blk):
         for var in blk.component_data_objects(pyo.Var, descend_into=True):
             var.set_value(self._value_cache[var], skip_validation=True)
