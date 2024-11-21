@@ -20,7 +20,6 @@ import pyomo.environ as pyo
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
-    PhysicalParameterBlock,
     StateBlockData,
     StateBlock,
     MaterialBalanceType,
@@ -34,7 +33,6 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.scaling import CustomScalerBase
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 from idaes.core.base.property_base import PhysicalParameterBlock
 
 # Some more information about this module
