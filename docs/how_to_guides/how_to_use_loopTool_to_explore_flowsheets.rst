@@ -145,7 +145,7 @@ The sweep_param_loop parameters will be iterated over one by one, to sweep over 
             upper_limit: upper value for sampling
             num_samples: number of samples to run
 
-Please note that .yaml only supports literals. Inputs such as 150 * 0.8 will be parsed as strings and throw error.
+Please note that YAML only supports literals for numeric data types. Expression-like values such as ``150 * 0.8`` will be parsed as strings and cause errors once the YAML inputs have been loaded.
 
 **Defining diff_param_loop**
 
