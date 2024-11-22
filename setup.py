@@ -21,14 +21,14 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.6.0,<2.7.0rc0",  # from PyPI
+    "idaes-pse>=2.7.0,<2.8.0rc0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.6.0",
+    "idaes-pse @ git+https://github.com/watertap-org/idaes-pse@2.7.0.dev0.watertap.24.11.19",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -80,7 +80,6 @@ setup(
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
         "pyomo>=6.6.1",
-        "flexparser != 0.4",  # IDAES/idaes-pse#1524
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep>=0.1.dev5",
