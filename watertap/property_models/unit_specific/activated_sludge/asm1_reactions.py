@@ -332,10 +332,10 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
 
 class ASM1ReactionScaler(CustomScalerBase):
     """
-    Scaler for saponification reaction package.
+    Scaler for the Activated Sludge Model No.1 reaction package.
 
-    Variables are scaled by nominal order of magnitude, and constraints
-    using the inverse maximum scheme.
+    Variables are scaled by their default scaling factor (if no user input provided), and constraints
+    are scaled using the inverse maximum scheme.
     """
 
     # TODO: Revisit this scaling factor
