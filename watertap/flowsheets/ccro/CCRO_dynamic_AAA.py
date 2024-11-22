@@ -132,73 +132,35 @@ def build_system(has_pipes=True):
     m.fs.RO_retentate_to_P2 = Arc(
         source=m.fs.RO.retentate, destination=m.fs.P2.inlet
     )
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
     if m.fs.config.dynamic:
         time_nfe = len(m.fs.time) - 1
         TransformationFactory("dae.finite_difference").apply_to(
             m.fs, nfe=time_nfe, wrt=m.fs.time, scheme="BACKWARD"
         )
-    TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # m.fs.water_recovery = Var(
-    #     initialize=0.5,
-    #     bounds=(0, 0.99),
-    #     domain=NonNegativeReals,
-    #     units=pyunits.dimensionless,
-    #     doc="System Water Recovery",
-    # )
-
-    # m.fs.feed_salinity = Var(
-    #     initialize=self.feed_conc,
-    #     bounds=(0, 2000),
-    #     domain=NonNegativeReals,
-    #     units=pyunits.kg / pyunits.m**3,
-    #     doc="Feed salinity",
-    # )
-
-    # m.fs.feed_flow_mass_water = Var(
-    #     initialize=self.feed_flow_mass_water,
-    #     bounds=(0.00001, 1e6),
-    #     domain=NonNegativeReals,
-    #     units=pyunits.kg / pyunits.s,
-    #     doc="Mass flow water",
-    # )
-
-    # m.fs.feed_flow_vol_water = Var(
-    #     initialize=self.feed_flow,
-    #     bounds=(0, None),
-    #     domain=NonNegativeReals,
-    #     units=pyunits.liter / pyunits.min,
-    #     doc="Feed tank, volumetric flow water",
-    # )
-
-    # m.fs.inlet_flow_vol_water = Expression(
-    #     expr=pyunits.convert(
-    #         m.fs.M1.mixed_state[0].flow_vol_phase["Liq"],
-    #         to_units=pyunits.liter / pyunits.minute,
-    #     )
-    # )
-
-    for t in m.fs._time:
-        m.fs.feed.properties[t].flow_vol_phase
-        m.fs.feed.properties[t].conc_mass_phase_comp
-        m.fs.M1.inlet_1_state[t].flow_vol_phase
-        m.fs.M1.inlet_1_state[t].conc_mass_phase_comp
-        m.fs.M1.inlet_2_state[t].flow_vol_phase
-        m.fs.M1.inlet_2_state[t].conc_mass_phase_comp
-        m.fs.M1.mixed_state[t].flow_vol_phase
-        m.fs.M1.mixed_state[t].conc_mass_phase_comp
+    # for t in m.fs._time:
+    #     m.fs.feed.properties[t].flow_vol_phase
+    #     m.fs.feed.properties[t].conc_mass_phase_comp
+    #     m.fs.M1.inlet_1_state[t].flow_vol_phase
+    #     m.fs.M1.inlet_1_state[t].conc_mass_phase_comp
+    #     m.fs.M1.inlet_2_state[t].flow_vol_phase
+    #     m.fs.M1.inlet_2_state[t].conc_mass_phase_comp
+    #     m.fs.M1.mixed_state[t].flow_vol_phase
+    #     m.fs.M1.mixed_state[t].conc_mass_phase_comp
         
-        m.fs.P1.control_volume.properties_in[t].conc_mass_phase_comp
-        m.fs.P2.control_volume.properties_in[t].conc_mass_phase_comp
-        m.fs.P1.control_volume.properties_out[t].conc_mass_phase_comp
-        m.fs.P2.control_volume.properties_out[t].conc_mass_phase_comp
+    #     m.fs.P1.control_volume.properties_in[t].conc_mass_phase_comp
+    #     m.fs.P2.control_volume.properties_in[t].conc_mass_phase_comp
+    #     m.fs.P1.control_volume.properties_out[t].conc_mass_phase_comp
+    #     m.fs.P2.control_volume.properties_out[t].conc_mass_phase_comp
 
-        m.fs.P1.control_volume.properties_in[t].flow_vol_phase
-        m.fs.P2.control_volume.properties_in[t].flow_vol_phase
-        m.fs.P1.control_volume.properties_out[t].flow_vol_phase
-        m.fs.P2.control_volume.properties_out[t].flow_vol_phase
-        m.fs.RO_inlet_pipe.control_volume.properties_in[t].conc_mass_phase_comp
-        m.fs.RO_inlet_pipe.control_volume.properties_out[t].conc_mass_phase_comp
+    #     m.fs.P1.control_volume.properties_in[t].flow_vol_phase
+    #     m.fs.P2.control_volume.properties_in[t].flow_vol_phase
+    #     m.fs.P1.control_volume.properties_out[t].flow_vol_phase
+    #     m.fs.P2.control_volume.properties_out[t].flow_vol_phase
+    #     m.fs.RO_inlet_pipe.control_volume.properties_in[t].conc_mass_phase_comp
+    #     m.fs.RO_inlet_pipe.control_volume.properties_out[t].conc_mass_phase_comp
 
     return m
 
@@ -335,7 +297,8 @@ def set_operating_conditions(m):
     m.fs.RO_retentate_to_P2_expanded.flow_mass_phase_comp_equality[0,:,:].deactivate()
     m.fs.RO_retentate_to_P2_expanded.pressure_equality[0].deactivate()
     m.fs.RO_retentate_to_P2_expanded.temperature_equality[0].deactivate()
-    m.fs.P2.deactivate()
+    # m.fs.P2.deactivate()
+
     # m.fs.M1.mixed_state[:].flow_vol_phase['Liq'].fix(Qf)
     # m.fs.M1.mixed_state[0].conc_mass_phase_comp['Liq', 'NaCl'].fix()
     # m.fs.M1_to_RO_expanded.flow_mass_phase_comp_equality[:,:,'H2O'].deactivate()
@@ -435,7 +398,7 @@ def set_operating_conditions(m):
     # # m.fs.P2.control_volume.properties_out[:].flow_vol_phase.setlb(0.8*17* pyunits.m**3/pyunits.hour)
 
 
-    m.fs.RO.mixed_permeate[:].mass_frac_phase_comp['Liq', 'NaCl'].setub(1000e-6)
+    # m.fs.RO.mixed_permeate[:].mass_frac_phase_comp['Liq', 'NaCl'].setub(1000e-6)
     m.fs.RO.recovery_mass_phase_comp.setlb(None)
     m.fs.RO.flux_mass_phase_comp.setlb(None)
     # m.fs.RO.feed_side.K.setlb(1e-9)
@@ -449,8 +412,9 @@ def set_operating_conditions(m):
     print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
     print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
     print("DOF RO =", degrees_of_freedom(m.fs.RO))
+    print("DOF RO INLET PIPE =", degrees_of_freedom(m.fs.RO_inlet_pipe))
+
     assert_no_degrees_of_freedom(m)
-    assert False
 
 def initialize_system(m):
     
@@ -479,7 +443,7 @@ def master_initialize_with_recirculation(m, count=1):
 
         initialize_with_recirculation(m, count=counter+1)
         _log.info(f"ATTEMPT TO SOLVE AFTER COUNT={counter+1} of {count} ")
-        interval_initializer(m) 
+        # interval_initializer(m) 
 
         try:
             res= solve(m, tee=True)
@@ -528,13 +492,15 @@ def initialize_with_recirculation(m, count):
     propagate_state(m.fs.RO_permeate_to_product) 
     propagate_state(m.fs.RO_retentate_to_P2)
     # P2 initialize
-    try:
-        _log.info("REINITIALIZING P2 at end of initialize_with_recirculation")
-        m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
-    except InitializationError:
-        _log.warning("P2 Initialization failed during initialize_with_recirculation")
-        raise InitializationError(f"P2 Initialization failed during initialize_with_recirculation at count {count}")
-        # pass
+    if m.fs.P2.active:
+            
+        try:
+            _log.info("REINITIALIZING P2 at end of initialize_with_recirculation")
+            m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
+        except InitializationError:
+            _log.warning("P2 Initialization failed during initialize_with_recirculation")
+            raise InitializationError(f"P2 Initialization failed during initialize_with_recirculation at count {count}")
+            # pass
 
 
 def solve(blk, solver=None, tee=True):
@@ -591,7 +557,7 @@ def print_results(m):
     print(m.fs.RO.report())
 
 if __name__ == "__main__":
-    my_solver = 'ipopt-watertap'
+    my_solver = 'petsc'
     # initial_conditions = {
     #     "feed_flow": 2.92,
     #     "feed_conc": 3.4,
@@ -617,7 +583,7 @@ if __name__ == "__main__":
  
     initialize_system(m)
  
-    interval_initializer(m)
+    # interval_initializer(m)
     m.fs.report()
     m.fs.RO.report()
 
