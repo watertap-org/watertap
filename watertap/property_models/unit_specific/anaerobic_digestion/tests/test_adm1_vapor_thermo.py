@@ -19,6 +19,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Param,
+    Suffix,
     value,
     Var,
     check_optimal_termination,
@@ -31,6 +32,7 @@ from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
     ADM1_vaporStateBlock,
+    ADM1_vaporPropertiesScaler,
 )
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
@@ -90,6 +92,8 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_build(self, model):
+        assert model.props[1].default_scaler is ADM1_vaporPropertiesScaler
+
         assert isinstance(model.props[1].flow_vol, Var)
         assert value(model.props[1].flow_vol) == 1
 
@@ -257,3 +261,55 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
+
+
+class TestADM1_vaporPropertiesScaler:
+    @pytest.mark.unit
+    def test_variable_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = ADM1_vaporParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ADM1_vaporPropertiesScaler)
+
+        scaler.variable_scaling_routine(model.props[1])
+
+        sfx = model.props[1].scaling_factor
+        assert len(sfx) == 12
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e5, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-3, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = ADM1_vaporParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ADM1_vaporPropertiesScaler)
+
+        scaler.constraint_scaling_routine(model.props[1])
+
+    @pytest.mark.unit
+    def test_scale_model(self):
+        model = ConcreteModel()
+        model.params = ADM1_vaporParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ADM1_vaporPropertiesScaler)
+
+        scaler.scale_model(model.props[1])
+
+        assert isinstance(model.props[1].scaling_factor, Suffix)
+
+        sfx = model.props[1].scaling_factor
+        assert len(sfx) == 16
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e5, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-3, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
