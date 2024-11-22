@@ -2,9 +2,9 @@ How to use loopTool to explore flowsheets
 =========================================
 
 .. index::
-   pair: watertap.tools.analysis_tools.loop_tool;loop_tool
+   pair: parameter_sweep.loop_tool;loop_tool
 
-.. currentmodule:: watertap.tools.analysis_tools.loop_tool
+.. currentmodule:: parameter_sweep.loop_tool
 
 The loopTool is a wrapper for the parameter sweep (PS) tool set, and is designed to simplify setting up parametric sweeps, enabling sweeping over discrete design choices, and providing structured data management.  
 
