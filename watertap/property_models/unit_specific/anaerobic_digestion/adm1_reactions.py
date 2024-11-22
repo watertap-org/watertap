@@ -1159,6 +1159,38 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         )
 
 
+class ADM1ReactionScaler(CustomScalerBase):
+    """
+    Scaler for the Anaerobic Digestion Model No.1 reaction package.
+    Variables are scaled by nominal order of magnitude, and constraints
+    using the inverse maximum scheme.
+    """
+
+    # TODO: Revisit this scaling factor
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+
+        if model.is_property_constructed("reaction_rate"):
+            for j in model.reaction_rate.values():
+                self.scale_variable_by_default(j, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # TODO: Revisit this scaling methodology
+        # Consider scale_constraint_by_default or scale_constraints_by_jacobian_norm
+        if model.is_property_constructed("rate_expression"):
+            for j in model.rate_expression.values():
+                self.scale_constraint_by_nominal_value(
+                    j,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+
 class _ADM1ReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
