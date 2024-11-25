@@ -1150,11 +1150,10 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
 
     # Set costing scaling factors
     iscale.set_scaling_factor(m.fs.zo_costing.total_capital_cost, 1e-4)
+    iscale.set_scaling_factor(m.fs.zo_costing.total_operating_cost, 1e-4)
+
     if hasattr(m.fs, "desalination"):
         iscale.set_scaling_factor(m.fs.ro_costing.total_capital_cost, 1e-6)
-
-    iscale.set_scaling_factor(m.fs.zo_costing.total_operating_cost, 1e-4)
-    if hasattr(m.fs, "desalination"):
         iscale.set_scaling_factor(m.fs.ro_costing.total_operating_cost, 1e-5)
 
     for block in m.fs.component_objects(Block, descend_into=True):
