@@ -16,7 +16,7 @@ the opposite ion selectivity of cation- and anion-exchange membranes (cem and ae
 one cell to its adjacent cell in a cell-pair treatment unit (Figure 1). The ion-departing cell is called a **diluate
 channel** and the ion-entering cell a **concentrate channel**. Recovered (desalinated) water is
 collected from diluate channels of all cell pairs while the concentrate product can be disposed of as brine
-or retreated. More overview of the electrodialysis technology can be found in [1]_ - [3]_.
+or retreated. More overview of the electrodialysis technology can be found in [1]_, [2]_, and [3]_.
 
 .. figure:: ../../_static/unit_models/EDdiagram.png
     :width: 400
