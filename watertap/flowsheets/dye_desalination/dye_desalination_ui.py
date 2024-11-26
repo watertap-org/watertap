@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.flowsheets.dye_desalination.dye_desalination import (
     build,
