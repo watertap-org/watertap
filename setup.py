@@ -95,7 +95,7 @@ setup(
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
             "nbconvert",
-            "idaes-flowsheet-processor @ git+https://github.com/watertap-org/idaes-flowsheet-processor@refs/pull/6/merge",
+            "idaes-flowsheet-processor @ git+https://github.com/watertap-org/idaes-flowsheet-processor@0.1.dev1",
         ],
         "notebooks": [
             "jupyter",
