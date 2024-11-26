@@ -682,7 +682,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.dye_disposal_cost,
+        obj=fs.dye_cost,
         name="Dye disposal",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
