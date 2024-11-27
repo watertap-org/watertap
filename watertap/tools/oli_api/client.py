@@ -52,10 +52,11 @@ import logging
 import sys
 import json
 import time
-
 from pyomo.common.dependencies import attempt_import
 
 requests, requests_available = attempt_import("requests", defer_check=False)
+from requests import JSONDecodeError
+
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
 
@@ -446,10 +447,19 @@ class OLIApi:
         """
 
         mode, url, headers = self._get_flash_mode(dbs_file_id, flash_method)
-        req = requests.request(
-            mode, url, headers=headers, data=json.dumps(input_params)
-        )
-        req_json = _request_status_test(req, ["SUCCESS"])
+        try:
+            req = requests.request(
+                mode, url, headers=headers, data=json.dumps(input_params)
+            )
+            req_json = _request_status_test(req, ["SUCCESS"])
+        except JSONDecodeError:
+            delay = 1 
+            time.sleep(delay)
+            _logger.debug(f"JSONDecodeError occurred. Trying to convert response object to JSON again.")
+            req = requests.request(
+                mode, url, headers=headers, data=json.dumps(input_params)
+            )
+            req_json = _request_status_test(req, ["SUCCESS"])
         result_link = _get_result_link(req_json)
         result = _poll_result_link(result_link, headers, max_request, poll_time)
         return result
@@ -486,6 +496,7 @@ def _request_status_test(req, target_keys):
     :return req_json: response object converted to JSON
     """
     req_json = req.json()
+
     func_name = sys._getframe().f_back.f_code.co_name
     _logger.debug(f"{func_name} response: {req_json}")
 

@@ -111,6 +111,11 @@ class CredentialManager:
         self.encryption_key = encryption_key
         self.config_file = Path(config_file).resolve()
         self.refresh = refresh
+        self.interactive_mode = interactive_mode
+        if self.interactive_mode:
+            _logger.setLevel(logging.INFO)
+        else:
+            _logger.setLevel(logging.DEBUG)
         self._manage_credentials(
             username,
             password,
@@ -118,11 +123,8 @@ class CredentialManager:
             auth_url,
             access_keys,
         )
-        if interactive_mode:
-            _logger.setLevel(logging.INFO)
-        else:
-            _logger.setLevel(logging.DEBUG)
         self.set_headers()
+
 
     def set_headers(self):
         """
@@ -236,12 +238,13 @@ class CredentialManager:
         if self.test:
             return True
         else:
-            r = input(
-                "WaterTAP will write encrypted file to store OLI Cloud credentials: [y]/n: "
-            )
-            if (r.lower() == "y") or (r == ""):
-                return True
-            return False
+            if self.interactive_mode:
+                r = input(
+                    "WaterTAP will write encrypted file to store OLI Cloud credentials: [y]/n: "
+                )
+                if (r.lower() == "y") or (r == ""):
+                    return True
+                return False
 
     # TODO: consider updating credentials when writing, rather than resetting blank ones
     def _encrypt_credentials(self):
@@ -358,11 +361,21 @@ class CredentialManager:
         else:
             _logger.info("Logging into OLI API using username and password")
             if self.refresh:
-                body = {
-                    "refresh_token": self.refresh_token,
-                    "grant_type": "refresh_token",
+                if hasattr(self, "refresh_token"):
+                    body = {
+                        "refresh_token": self.refresh_token,
+                        "grant_type": "refresh_token",
+                        "client_id": "apiclient",
+                    }
+                else:
+                    body = {
+                    "username": self.credentials["username"],
+                    "password": self.credentials["password"],
+                    "grant_type": "password",
                     "client_id": "apiclient",
-                }
+                    }
+                    status = self.auth_status(body, req_result)
+                    return status
             else:
                 body = {
                     "username": self.credentials["username"],
