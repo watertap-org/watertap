@@ -89,7 +89,7 @@ class CredentialManager:
         test=False,
         interactive_mode=True,
         refresh=False,
-        debug_level="INFO"
+        debug_level="INFO",
     ):
         """
         Manages credentials for OLIApi authentication requests.
