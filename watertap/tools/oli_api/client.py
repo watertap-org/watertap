@@ -453,9 +453,11 @@ class OLIApi:
             )
             req_json = _request_status_test(req, ["SUCCESS"])
         except JSONDecodeError:
-            delay = 1 
+            delay = 1
             time.sleep(delay)
-            _logger.debug(f"JSONDecodeError occurred. Trying to convert response object to JSON again.")
+            _logger.debug(
+                f"JSONDecodeError occurred. Trying to convert response object to JSON again."
+            )
             req = requests.request(
                 mode, url, headers=headers, data=json.dumps(input_params)
             )

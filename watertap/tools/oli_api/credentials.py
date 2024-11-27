@@ -125,7 +125,6 @@ class CredentialManager:
         )
         self.set_headers()
 
-
     def set_headers(self):
         """
         Creates OLI Cloud API headers and performs initial login.
@@ -369,10 +368,10 @@ class CredentialManager:
                     }
                 else:
                     body = {
-                    "username": self.credentials["username"],
-                    "password": self.credentials["password"],
-                    "grant_type": "password",
-                    "client_id": "apiclient",
+                        "username": self.credentials["username"],
+                        "password": self.credentials["password"],
+                        "grant_type": "password",
+                        "client_id": "apiclient",
                     }
                     status = self.auth_status(body, req_result)
                     return status
