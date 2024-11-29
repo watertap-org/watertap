@@ -277,7 +277,7 @@ class TestADM1_vaporPropertiesScaler:
         scaler.variable_scaling_routine(model.props[1])
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 12
+        assert len(sfx) == 3
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e5, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-3, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
@@ -309,7 +309,7 @@ class TestADM1_vaporPropertiesScaler:
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 16
+        assert len(sfx) == 7
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e5, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-3, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
