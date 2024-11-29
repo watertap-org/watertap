@@ -42,7 +42,6 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties 
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
-    ADM1_vaporPropertiesScaler,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
@@ -1071,11 +1070,6 @@ class TestADScaler:
         m.fs.unit.volume_liquid.fix(3400)
         m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
-
-        # TODO: Figure out how to implement vapor scaler - may need manual scaling
-        # May be the case that vapor scaler can't do anything since no control volume
-        # vapor_scaler = ADM1_vaporPropertiesScaler()
-        # vapor_scaler.scale_model(m.fs.props_vap)
 
         scaler = ADScaler()
         scaler.scale_model(
