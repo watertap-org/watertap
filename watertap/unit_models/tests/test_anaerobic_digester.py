@@ -19,25 +19,34 @@ Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 
 """
+import pytest
 from pyomo.environ import (
     ConcreteModel,
+    Suffix,
+    TransformationFactory,
 )
 
 from idaes.core import (
     FlowsheetBlock,
 )
-
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 from watertap.core.solvers import get_solver
 
-from watertap.unit_models.anaerobic_digester import AD
+from watertap.unit_models.anaerobic_digester import AD, ADScaler
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
+    ADM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
+    ADM1_vaporPropertiesScaler,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
+    ADM1ReactionScaler,
 )
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
@@ -51,6 +60,7 @@ solver = get_solver()
 # -----------------------------------------------------------------------------
 
 
+# TODO: Refine testing once iscale functionality has been deprecated/removed
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -105,12 +115,12 @@ def build():
     m.fs.unit.volume_vapor.fix(300)
     m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
+    iscale.calculate_scaling_factors(m.fs.unit)
+
     # Set scaling factors for badly scaled variables
     iscale.set_scaling_factor(
         m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
     )
-
-    iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
 
@@ -238,3 +248,848 @@ class TestAnaerobicDigester(UnitTestHarness):
         }
 
         return m
+
+
+class TestADScaler:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ADM1ParameterBlock()
+        m.fs.props_vap = ADM1_vaporParameterBlock()
+        m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
+
+        m.fs.unit = AD(
+            liquid_property_package=m.fs.props,
+            vapor_property_package=m.fs.props_vap,
+            reaction_package=m.fs.rxn_props,
+            has_heat_transfer=True,
+            has_pressure_change=False,
+        )
+
+        # Set the operating conditions
+        m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
+        m.fs.unit.inlet.temperature.fix(308.15)
+        m.fs.unit.inlet.pressure.fix(101325)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
+
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
+
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.liquid_outlet.temperature.fix(308.15)
+
+        return m
+
+    @pytest.mark.component
+    def test_variable_scaling_routine(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, ADScaler)
+
+        scaler.variable_scaling_routine(model.fs.unit)
+
+        # Inlet state
+        sfx_in = model.fs.unit.liquid_phase.properties_in[0].scaling_factor
+        assert isinstance(sfx_in, Suffix)
+        assert len(sfx_in) == 3
+        assert sfx_in[
+            model.fs.unit.liquid_phase.properties_in[0].flow_vol
+        ] == pytest.approx(1e5, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.liquid_phase.properties_in[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.liquid_phase.properties_in[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Outlet state - should be the same as the inlet
+        sfx_out = model.fs.unit.liquid_phase.properties_out[0].scaling_factor
+        assert isinstance(sfx_out, Suffix)
+        assert len(sfx_out) == 3
+        assert sfx_out[
+            model.fs.unit.liquid_phase.properties_out[0].flow_vol
+        ] == pytest.approx(1e5, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.liquid_phase.properties_out[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.liquid_phase.properties_out[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Reaction block
+        sfx_rxn = model.fs.unit.liquid_phase.reactions[0].scaling_factor
+        assert isinstance(sfx_rxn, Suffix)
+        assert len(sfx_rxn) == 38
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R1"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R2"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R3"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R4"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R5"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R6"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R7"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R8"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R9"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R10"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R11"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R12"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R13"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R14"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R15"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R16"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R17"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R18"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R19"]
+        ] == pytest.approx(1e2, rel=1e-8)
+
+        # Check that unit model has scaling factors
+        sfx_cv = model.fs.unit.liquid_phase.scaling_factor
+        assert isinstance(sfx_cv, Suffix)
+        assert len(sfx_cv) == 1
+        assert sfx_cv[model.fs.unit.liquid_phase.volume[0]] == pytest.approx(
+            1e-2, rel=1e-3
+        )
+
+    #
+    @pytest.mark.component
+    def test_constraint_scaling_routine(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, ADScaler)
+
+        scaler.constraint_scaling_routine(model.fs.unit)
+
+        sfx_out = model.fs.unit.liquid_phase.properties_out[0].scaling_factor
+        assert isinstance(sfx_out, Suffix)
+        assert len(sfx_out) == 0
+
+        sfx_rxn = model.fs.unit.liquid_phase.reactions[0].scaling_factor
+        assert isinstance(sfx_rxn, Suffix)
+        assert len(sfx_rxn) == 51
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R1"]
+        ] == pytest.approx(5.574193548e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R2"]
+        ] == pytest.approx(3.0857142857e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R3"]
+        ] == pytest.approx(8.424599832e4, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R4"]
+        ] == pytest.approx(2.93083236e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R5"]
+        ] == pytest.approx(2.9257142857e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R6"]
+        ] == pytest.approx(8.4245998e4, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R7"]
+        ] == pytest.approx(3.024242424e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R8"]
+        ] == pytest.approx(3.697674433395e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R9"]
+        ] == pytest.approx(3.09597523e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R10"]
+        ] == pytest.approx(3.44175824176e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R11"]
+        ] == pytest.approx(2.4868421053e4, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R12"]
+        ] == pytest.approx(2.39005736e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R13"]
+        ] == pytest.approx(1.0271158587e7, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R14"]
+        ] == pytest.approx(3.6610169492e6, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R15"]
+        ] == pytest.approx(1.7771459037e7, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R16"]
+        ] == pytest.approx(1.00010001e7, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R17"]
+        ] == pytest.approx(3.08571428571e7, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R18"]
+        ] == pytest.approx(5.678591709e6, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R19"]
+        ] == pytest.approx(1.35e7, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].Dissociation
+        ] == pytest.approx(3.10210344e-2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].CO2_acid_base_equilibrium
+        ] == pytest.approx(6.83928318e-2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].IN_acid_base_equilibrium
+        ] == pytest.approx(4.69507548e-2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].pH_calc
+        ] == pytest.approx(0.1428571429, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_va
+        ] == pytest.approx(83.33333333, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_bu
+        ] == pytest.approx(76.923076923, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_pro
+        ] == pytest.approx(62.5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_ac
+        ] == pytest.approx(5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_hco3
+        ] == pytest.approx(0.142857143, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_nh3
+        ] == pytest.approx(0.10810810811, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_co2
+        ] == pytest.approx(6.6666666667, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_nh4
+        ] == pytest.approx(7.6923076923, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].S_H_cons
+        ] == pytest.approx(7.14285714, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R1"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R2"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R3"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R4"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R5"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R6"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R7"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R8"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R9"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R10"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R11"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R12"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R13"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R14"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R15"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R16"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R17"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R18"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R19"]
+        ] == pytest.approx(1, rel=1e-8)
+
+        # Check that unit model has scaling factors
+        sfx_cv = model.fs.unit.liquid_phase.scaling_factor
+        assert isinstance(model.fs.unit.liquid_phase.scaling_factor, Suffix)
+        assert len(sfx_cv) == 56
+        assert sfx_cv[
+            model.fs.unit.liquid_phase.enthalpy_balances[0.0]
+        ] == pytest.approx(7.783208078e-10, abs=1e-8)
+        assert sfx_cv[
+            model.fs.unit.liquid_phase.pressure_balance[0.0]
+        ] == pytest.approx(9.869232667e-6, rel=1e-8)
+        for (
+            c
+        ) in model.fs.unit.liquid_phase.rate_reaction_stoichiometry_constraint.values():
+            assert sfx_cv[c] == pytest.approx(1, rel=1e-8)
+
+        sfx_unit = model.fs.unit.scaling_factor
+        assert isinstance(sfx_unit, Suffix)
+        assert len(sfx_unit) == 59
+        assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
+            1.277154575e-1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
+            1.479435417e-1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
+            1.38666123e-1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(
+            9.8692326672e-6, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
+            5.524296675192e5, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
+            2.310160428, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sco2_conc[0]] == pytest.approx(
+            1.069518717, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.flow_vol_vap[0]] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
+            2.702702703e-4, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
+            5.3178178178e-7, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
+            3.2451728e-3, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
+            7.783208078e-10, abs=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
+            4.214223e-2, rel=1e-8
+        )
+
+    @pytest.mark.component
+    def test_scale_model(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, ADScaler)
+
+        scaler.scale_model(model.fs.unit)
+
+        # Inlet state
+        sfx_in = model.fs.unit.liquid_phase.properties_in[0].scaling_factor
+        assert isinstance(sfx_in, Suffix)
+        assert len(sfx_in) == 3
+        assert sfx_in[
+            model.fs.unit.liquid_phase.properties_in[0].flow_vol
+        ] == pytest.approx(1e5, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.liquid_phase.properties_in[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.liquid_phase.properties_in[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Outlet state - should be the same as the inlet
+        sfx_out = model.fs.unit.liquid_phase.properties_out[0].scaling_factor
+        assert isinstance(sfx_out, Suffix)
+        assert len(sfx_out) == 3
+        assert sfx_out[
+            model.fs.unit.liquid_phase.properties_out[0].flow_vol
+        ] == pytest.approx(1e5, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.liquid_phase.properties_out[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.liquid_phase.properties_out[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Reaction block
+        sfx_rxn = model.fs.unit.liquid_phase.reactions[0].scaling_factor
+        assert isinstance(sfx_rxn, Suffix)
+        assert len(sfx_rxn) == 89
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R1"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R2"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R3"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R4"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R5"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R6"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R7"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R8"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R9"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R10"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R11"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R12"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R13"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R14"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R15"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R16"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R17"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R18"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0].reaction_rate["R19"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R1"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R2"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R3"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R4"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R5"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R6"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R7"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R8"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R9"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R10"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R11"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R12"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R13"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R14"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R15"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R16"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R17"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R18"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].rate_expression["R19"]
+        ] == pytest.approx(100, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].Dissociation
+        ] == pytest.approx(3.10210344e-2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].CO2_acid_base_equilibrium
+        ] == pytest.approx(6.83928318e-2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].IN_acid_base_equilibrium
+        ] == pytest.approx(4.69507548e-2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].pH_calc
+        ] == pytest.approx(0.142857143, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_va
+        ] == pytest.approx(83.33333333, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_bu
+        ] == pytest.approx(76.923076923, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_pro
+        ] == pytest.approx(62.5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_ac
+        ] == pytest.approx(5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_hco3
+        ] == pytest.approx(0.142857143, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_nh3
+        ] == pytest.approx(0.10810810811, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_co2
+        ] == pytest.approx(6.6666666667, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].concentration_of_nh4
+        ] == pytest.approx(7.6923076923, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].S_H_cons
+        ] == pytest.approx(7.14285714, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R1"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R2"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R3"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R4"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R5"]
+        ] == pytest.approx(1.000769231, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R6"]
+        ] == pytest.approx(1.000769231, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R7"]
+        ] == pytest.approx(1.046804615, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R8"]
+        ] == pytest.approx(1.023786923, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R9"]
+        ] == pytest.approx(1.023786923, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R10"]
+        ] == pytest.approx(1.066534066, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R11"]
+        ] == pytest.approx(3.280299145, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R12"]
+        ] == pytest.approx(1.000769231, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R13"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R14"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R15"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R16"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R17"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R18"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.liquid_phase.reactions[0.0].I_fun["R19"]
+        ] == pytest.approx(1, rel=1e-8)
+
+        # Check that unit model has scaling factors
+        sfx_cv = model.fs.unit.liquid_phase.scaling_factor
+        assert isinstance(sfx_cv, Suffix)
+        assert len(sfx_cv) == 57
+        assert sfx_cv[
+            model.fs.unit.liquid_phase.enthalpy_balances[0.0]
+        ] == pytest.approx(3.95570105e-7, rel=1e-8)
+        assert sfx_cv[
+            model.fs.unit.liquid_phase.pressure_balance[0.0]
+        ] == pytest.approx(1e-6, rel=1e-8)
+        for (
+            c
+        ) in model.fs.unit.liquid_phase.rate_reaction_stoichiometry_constraint.values():
+            assert sfx_cv[c] == pytest.approx(1, rel=1e-8)
+
+        sfx_unit = model.fs.unit.scaling_factor
+        assert isinstance(sfx_unit, Suffix)
+        assert len(sfx_unit) == 59
+        assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
+            0.127715457, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
+            0.147943542, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
+            0.138666123, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(
+            9.8692326672e-6, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
+            5.52429667519e5, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
+            2.310160428, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sco2_conc[0]] == pytest.approx(
+            1.069518717, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.flow_vol_vap[0]] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
+            2.7027027027e-4, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
+            5.3178178178e-7, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
+            3.2451728e-3, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
+            3.95570105e-7, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
+            4.214223e-2, rel=1e-8
+        )
+
+    # TODO: Remove test once iscale is deprecated
+    @pytest.mark.integration
+    def test_example_case_iscale(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ADM1ParameterBlock()
+        m.fs.props_vap = ADM1_vaporParameterBlock()
+        m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
+
+        m.fs.unit = AD(
+            liquid_property_package=m.fs.props,
+            vapor_property_package=m.fs.props_vap,
+            reaction_package=m.fs.rxn_props,
+            has_heat_transfer=True,
+            has_pressure_change=False,
+        )
+
+        # Set the operating conditions
+        m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
+        m.fs.unit.inlet.temperature.fix(308.15)
+        m.fs.unit.inlet.pressure.fix(101325)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
+
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
+
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.liquid_outlet.temperature.fix(308.15)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        # Set scaling factors for badly scaled variables
+        iscale.set_scaling_factor(
+            m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
+        )
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            4.184434e12, rel=1e-3
+        )
+
+    @pytest.mark.integration
+    def test_example_case_scaler_scaling(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ADM1ParameterBlock()
+        m.fs.props_vap = ADM1_vaporParameterBlock()
+        m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
+
+        m.fs.unit = AD(
+            liquid_property_package=m.fs.props,
+            vapor_property_package=m.fs.props_vap,
+            reaction_package=m.fs.rxn_props,
+            has_heat_transfer=True,
+            has_pressure_change=False,
+        )
+
+        # Set the operating conditions
+        m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
+        m.fs.unit.inlet.temperature.fix(308.15)
+        m.fs.unit.inlet.pressure.fix(101325)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
+
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
+
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.liquid_outlet.temperature.fix(308.15)
+
+        # TODO: Figure out how to implement vapor scaler - may need manual scaling
+        # May be the case that vapor scaler can't do anything since no control volume
+        # vapor_scaler = ADM1_vaporPropertiesScaler()
+        # vapor_scaler.scale_model(m.fs.props_vap)
+
+        scaler = ADScaler()
+        scaler.scale_model(
+            m.fs.unit,
+            submodel_scalers={
+                m.fs.unit.liquid_phase.properties_in: ADM1PropertiesScaler,
+                m.fs.unit.liquid_phase.properties_out: ADM1PropertiesScaler,
+                m.fs.unit.liquid_phase.reactions: ADM1ReactionScaler,
+            },
+        )
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            9.43861834e16, rel=1e-3
+        )

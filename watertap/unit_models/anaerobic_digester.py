@@ -129,7 +129,9 @@ class ADScaler(CustomScalerBase):
 
         # Scaling control volume variables
         # TODO: Revisit this scaling factor & the addition of other scaling factors
-        self.scale_variable_by_default(model.liquid_phase.volume, overwrite=overwrite)
+        self.scale_variable_by_default(
+            model.liquid_phase.volume[0], overwrite=overwrite
+        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -179,13 +181,6 @@ class ADScaler(CustomScalerBase):
             )
 
         # Scale unit level constraints
-        if hasattr(model, "rate_reaction_constraint"):
-            for c in model.rate_reaction_constraint.values():
-                self.scale_constraint_by_nominal_value(
-                    c,
-                    scheme=ConstraintScalingScheme.inverseMaximum,
-                    overwrite=overwrite,
-                )
         if hasattr(model, "unit_material_balance"):
             for c in model.unit_material_balance.values():
                 self.scale_constraint_by_nominal_value(
@@ -204,85 +199,86 @@ class ADScaler(CustomScalerBase):
         # TODO: See if these can be scaled in a for loop like the control volume constraints
         if hasattr(model, "CO2_Henrys_law"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.CO2_Henrys_law[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "Ch4_Henrys_law"):
             self.scale_constraint_by_nominal_value(
-                model.Ch4_Henrys_law,
+                model.Ch4_Henrys_law[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "H2_Henrys_law"):
             self.scale_constraint_by_nominal_value(
-                model.H2_Henrys_law,
+                model.H2_Henrys_law[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "outlet_P"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.outlet_P[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "Sh2_conc"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.Sh2_conc[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "Sch4_conc"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.Sch4_conc[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "Sco2_conc"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.Sco2_conc[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "flow_vol_vap"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.flow_vol_vap[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "ad_total_volume"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.ad_total_volume[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "AD_retention_time"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.AD_retention_time[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
+        # TODO: Might be able to remove temperature, pressure, and enthalpy balances
         if hasattr(model, "unit_temperature_equality"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.unit_temperature_equality[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "unit_pressure_balance"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.unit_pressure_balance[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "unit_enthalpy_balance"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.unit_enthalpy_balance[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
         if hasattr(model, "unit_electricity_consumption"):
             self.scale_constraint_by_nominal_value(
-                model.CO2_Henrys_law,
+                model.unit_electricity_consumption[0],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
@@ -1009,22 +1005,6 @@ see reaction package for documentation.}""",
         # Set references to balance terms at unit level
         self.heat_duty = Reference(self.liquid_phase.heat[:])
 
-        iscale.set_scaling_factor(self.KH_co2, 1e2)
-        iscale.set_scaling_factor(self.KH_ch4, 1e2)
-        iscale.set_scaling_factor(self.KH_h2, 1e2)
-        iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
-        iscale.set_scaling_factor(self.volume_AD, 1e-2)
-        iscale.set_scaling_factor(self.volume_vapor, 1e-2)
-        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
-        iscale.set_scaling_factor(self.liquid_phase.mass_transfer_term, 1e2)
-        iscale.set_scaling_factor(self.liquid_phase.heat, 1e0)
-        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e4)
-        iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e0)
-        iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
-        iscale.set_scaling_factor(self.electricity_consumption, 1e0)
-        for i, c in self.ad_performance_eqn.items():
-            iscale.constraint_scaling_transform(c, 1e2)
-
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
@@ -1052,6 +1032,22 @@ see reaction package for documentation.}""",
             self.vapor_phase.component_list
             & self.liquid_phase.properties_out.component_list
         )
+
+        iscale.set_scaling_factor(self.KH_co2, 1e2)
+        iscale.set_scaling_factor(self.KH_ch4, 1e2)
+        iscale.set_scaling_factor(self.KH_h2, 1e2)
+        iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
+        iscale.set_scaling_factor(self.volume_AD, 1e-2)
+        iscale.set_scaling_factor(self.volume_vapor, 1e-2)
+        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
+        iscale.set_scaling_factor(self.liquid_phase.mass_transfer_term, 1e2)
+        iscale.set_scaling_factor(self.liquid_phase.heat, 1e0)
+        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e4)
+        iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e0)
+        iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
+        iscale.set_scaling_factor(self.electricity_consumption, 1e0)
+        for i, c in self.ad_performance_eqn.items():
+            iscale.constraint_scaling_transform(c, 1e2)
 
         # TODO: improve this later; for now, this resolved some scaling issues for modified adm1 test file
         if "S_IP" in self.config.liquid_property_package.component_list:
