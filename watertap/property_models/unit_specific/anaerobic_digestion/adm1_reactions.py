@@ -1895,6 +1895,12 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
+    def get_reaction_rate_basis(self):
+        return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
         iscale.set_scaling_factor(self.I, 1e1)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
@@ -1909,12 +1915,6 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         iscale.set_scaling_factor(self.pK_a_co2, 1e0)
         iscale.set_scaling_factor(self.pK_a_IN, 1e0)
         iscale.set_scaling_factor(self.pH, 1e0)
-
-    def get_reaction_rate_basis(self):
-        return MaterialFlowBasis.mass
-
-    def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()
 
         for i, c in self.rates.items():
             iscale.set_scaling_factor(self.reaction_rate[i], 1 / c)

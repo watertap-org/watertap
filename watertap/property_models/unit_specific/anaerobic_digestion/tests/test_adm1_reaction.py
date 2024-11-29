@@ -455,7 +455,7 @@ class TestADM1ReactionScaler(object):
         assert isinstance(model.rxns[1].scaling_factor, Suffix)
 
         sfx = model.rxns[1].scaling_factor
-        assert len(sfx) == 52
+        assert len(sfx) == 38
         assert sfx[model.rxns[1].I] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e2, rel=1e-8)
@@ -497,7 +497,7 @@ class TestADM1ReactionScaler(object):
         assert isinstance(model.rxns[1].scaling_factor, Suffix)
 
         sfx = model.rxns[1].scaling_factor
-        assert len(sfx) == 84
+        assert len(sfx) == 51
         assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(
             5.59910414e5, rel=1e-8
         )
@@ -616,7 +616,7 @@ class TestADM1ReactionScaler(object):
         assert isinstance(model.rxns[1].scaling_factor, Suffix)
 
         sfx = model.rxns[1].scaling_factor
-        assert len(sfx) == 103
+        assert len(sfx) == 89
         assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e2, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R3"]] == pytest.approx(1e2, rel=1e-8)

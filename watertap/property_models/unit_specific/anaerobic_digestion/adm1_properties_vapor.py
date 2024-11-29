@@ -405,14 +405,6 @@ class ADM1_vaporStateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        iscale.set_scaling_factor(self.flow_vol, 1e5)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-3)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e3)
-        iscale.set_scaling_factor(self.pressure_sat, 1e-3)
-        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-2)
-
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 
@@ -453,6 +445,14 @@ class ADM1_vaporStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
+
+        iscale.set_scaling_factor(self.flow_vol, 1e5)
+        iscale.set_scaling_factor(self.temperature, 1e-1)
+        iscale.set_scaling_factor(self.pressure, 1e-3)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e3)
+        iscale.set_scaling_factor(self.pressure_sat, 1e-3)
+        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-2)
 
         sf_F = iscale.get_scaling_factor(self.flow_vol, default=1e2, warning=True)
         sf_T = iscale.get_scaling_factor(self.temperature, default=1e-2, warning=True)
