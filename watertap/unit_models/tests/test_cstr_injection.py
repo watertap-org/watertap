@@ -279,9 +279,9 @@ class TestCosting_Saponification(UnitTestHarness):
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         m.objective = Objective(expr=m.fs.costing.LCOW)
 
-        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-2)
-
         iscale.calculate_scaling_factors(m.fs.unit)
+
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-2)
 
         m.fs.unit.initialize()
 
@@ -334,6 +334,10 @@ class TestCSTR_injection_ASM1(UnitTestHarness):
     def configure(self):
         m = build_ASM1()
 
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0].conc_mass_comp["X_P"], 1e5
+        )
+
         self.unit_solutions[m.fs.unit.outlet.pressure[0]] = 101325.0
         self.unit_solutions[m.fs.unit.outlet.temperature[0]] = 308.15
         self.unit_solutions[m.fs.unit.outlet.conc_mass_comp[0, "S_O"]] = 6.258e-3
@@ -382,9 +386,12 @@ class TestCosting(UnitTestHarness):
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         m.objective = Objective(expr=m.fs.costing.LCOW)
 
-        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
-
         iscale.calculate_scaling_factors(m.fs.unit)
+
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0].conc_mass_comp["X_P"], 1e5
+        )
 
         m.fs.unit.initialize()
 
