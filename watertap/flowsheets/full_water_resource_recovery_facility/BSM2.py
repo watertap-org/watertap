@@ -103,6 +103,7 @@ def main(reactor_volume_equalities=False):
     dt = DiagnosticsToolbox(m)
     print("---Numerical Issues---")
     dt.report_numerical_issues()
+    dt.display_constraints_with_extreme_jacobians()
 
     badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
     print("----------------   badly_scaled_var_list   ----------------")
@@ -288,8 +289,6 @@ def build():
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-    iscale.calculate_scaling_factors(m.fs)
-
     # keep handy all the mixers
     m.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4, m.fs.MX6)
 
@@ -398,6 +397,18 @@ def set_operating_conditions(m):
     for mx in m.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
+    iscale.calculate_scaling_factors(m)
+
+    # iscale.set_scaling_factor(m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7)
+    # iscale.set_scaling_factor(m.fs.RADM.liquid_phase.rate_reaction_generation[0, "Liq", "S_h2"], 1e7)
+    # iscale.set_scaling_factor(m.fs.RADM.liquid_phase.properties_in[0].flow_vol, 1e3)
+    # iscale.set_scaling_factor(m.fs.DU.mixed_state[0].flow_vol, 1e3)
+
+    iscale.constraint_scaling_transform(
+        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "S_h2"], 1e6
+    )
+    iscale.constraint_scaling_transform(m.fs.RADM.AD_retention_time[0], 1e-5)
+
 
 def initialize_system(m):
     # Initialize flowsheet
@@ -504,7 +515,7 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    # iscale.calculate_scaling_factors(m.fs)
+    # iscale.calculate_scaling_factors(m)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
