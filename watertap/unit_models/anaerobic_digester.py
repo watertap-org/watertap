@@ -1041,7 +1041,6 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.volume_vapor, 1e-2)
         iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
         iscale.set_scaling_factor(self.liquid_phase.mass_transfer_term, 1e2)
-        iscale.set_scaling_factor(self.liquid_phase.heat, 1e0)
         iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e4)
         iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e0)
         iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
