@@ -25,6 +25,7 @@ Unit Models
    membrane_distillation_0D
    mvc
    nanofiltration_ZO
+   nanofiltration_0D
    nanofiltration_dspmde_0D
    osmotically_assisted_reverse_osmosis_0D
    osmotically_assisted_reverse_osmosis_1D

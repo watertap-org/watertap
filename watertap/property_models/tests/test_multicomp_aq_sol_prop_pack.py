@@ -49,7 +49,7 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.scaling import report_scaling_factors, set_scaling_factor
+from idaes.core.scaling import set_scaling_factor
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,

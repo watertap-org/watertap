@@ -287,6 +287,9 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
 
 
 class Nanofiltration0DScaler(CustomScalerBase):
+    """
+    Scaler class for Nanofiltration0D models.
+    """
     DEFAULT_SCALING_FACTORS = {
         "deltaP": 1e-4,
         "multivalent_recovery": 1e2,
@@ -297,6 +300,18 @@ class Nanofiltration0DScaler(CustomScalerBase):
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        """
+        Apply variable scaling to model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scaler objects to be applied to sub-models
+
+        Returns:
+            None
+
+        """
         # Scale inlet state
         self.call_submodel_scaler_method(
             submodel=model.properties_in,
@@ -341,6 +356,18 @@ class Nanofiltration0DScaler(CustomScalerBase):
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        """
+        Apply constraint scaling to model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scaler objects to be applied to sub-models
+
+        Returns:
+            None
+
+        """
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
             submodel=model.properties_in,

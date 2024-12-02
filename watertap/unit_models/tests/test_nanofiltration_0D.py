@@ -20,7 +20,6 @@ from pyomo.environ import (
     Set,
     Suffix,
     TransformationFactory,
-    units as pyunits,
     value,
     Var,
 )
@@ -37,7 +36,7 @@ from idaes.core.util.testing import PhysicalParameterTestBlock
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
 )
-from watertap.unit_models.nanofiltration0D import (
+from watertap.unit_models.nanofiltration_0D import (
     Nanofiltration0D,
     Nanofiltration0DInitializer,
     Nanofiltration0DScaler,
