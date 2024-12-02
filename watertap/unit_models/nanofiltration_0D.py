@@ -290,6 +290,7 @@ class Nanofiltration0DScaler(CustomScalerBase):
     """
     Scaler class for Nanofiltration0D models.
     """
+
     DEFAULT_SCALING_FACTORS = {
         "deltaP": 1e-4,
         "multivalent_recovery": 1e2,
