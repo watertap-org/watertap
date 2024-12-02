@@ -92,14 +92,14 @@ def build():
     m.fs.unit.heat_duty.fix(0)
     m.fs.unit.deltaP.fix(0)
 
+    iscale.calculate_scaling_factors(m.fs.unit)
+
     iscale.set_scaling_factor(
         m.fs.unit.control_volume.properties_out[0.0].conc_mol_comp["H2O"], 1e-5
     )
     iscale.set_scaling_factor(
         m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-6
     )
-
-    iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
 
@@ -375,9 +375,13 @@ class TestCosting(UnitTestHarness):
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         m.objective = Objective(expr=m.fs.costing.LCOW)
 
-        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
-
         iscale.calculate_scaling_factors(m.fs.unit)
+
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e6
+        )
+
+        iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
 
         self.unit_solutions[m.fs.unit.costing.capital_cost] = 566989.10
         self.unit_solutions[m.fs.costing.LCOW] = 0.002127

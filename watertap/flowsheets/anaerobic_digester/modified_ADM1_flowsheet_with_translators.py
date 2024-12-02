@@ -293,6 +293,8 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.AD.volume_vapor.fix(300)
     m.fs.AD.liquid_outlet.temperature.fix(308.15)
 
+    iscale.calculate_scaling_factors(m.fs)
+
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
@@ -306,7 +308,6 @@ def set_operating_conditions(m, bio_P=False):
 
     # Apply scaling
     scale_variables(m)
-    iscale.calculate_scaling_factors(m.fs)
 
 
 def initialize_system(m):
