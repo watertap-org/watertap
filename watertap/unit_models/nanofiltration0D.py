@@ -105,15 +105,15 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                 if sv.local_name == "pressure" and not sv_ret.fixed:
                     # For pressure, only retentate is linked to inlet
                     if hasattr(model, "deltaP"):
-                        sv_ret.set_value(sv + model.deltaP)
+                        sv_ret.set_value(sv + model.deltaP[t])
                     else:
                         sv_ret.set_value(sv)
                 elif "flow" in sv.local_name:
-                    self._init_flow(in_state, sv, sv_ret, sv_per)
-                elif any(sv.startswith(i) for i in ["mass_frac", "mole_frac"]):
-                    self._init_frac(in_state, sv, sv_ret, sv_per)
-                elif sv.startswith("conc"):
-                    self._init_conc(in_state, sv, sv_ret, sv_per)
+                    self._init_flow(model, in_state, sv, sv_ret, sv_per)
+                elif any(sv.local_name.startswith(i) for i in ["mass_frac", "mole_frac"]):
+                    self._init_frac(model, in_state, sv, sv_ret, sv_per)
+                elif sv.local_name.startswith("conc"):
+                    self._init_conc(model, in_state, sv, sv_ret, sv_per)
                 else:
                     # For everything else, assume outlet similar to inlet
                     for k, svd in sv.items():
@@ -142,7 +142,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
 
         return res
 
-    def _init_conc(self, in_state, sv, sv_ret, sv_per):
+    def _init_conc(self, model, in_state, sv, sv_ret, sv_per):
         # Component indexed flow - need to apply split fractions
         for k, svd in sv.items():
             # Component is always the last index
@@ -163,14 +163,18 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                 if abs(charge) > 1:
                     split = model.multivalent_recovery
                 else:
-                    split = model.solute_recovery[j]
+                    try:
+                        split = model.solute_recovery[j]
+                    except KeyError:
+                        # probably the electroneutrality ion - use solvent recovery
+                        split = model.solvent_recovery
 
             if not sv_ret[k].fixed:
                 sv_ret[k].set_value(svd * (1 - split))
             if not sv_per[k].fixed:
                 sv_per[k].set_value(svd * split)
 
-    def _init_flow(self, in_state, sv, sv_ret, sv_per):
+    def _init_flow(self, model, in_state, sv, sv_ret, sv_per):
         # Determine if it is a component flow or not
         if sv.local_name.endswith("_comp"):
             # Component indexed flow - need to apply split fractions
@@ -192,7 +196,11 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                     if abs(charge) > 1:
                         split = model.multivalent_recovery
                     else:
-                        split = model.solute_recovery[j]
+                        try:
+                            split = model.solute_recovery[j]
+                        except KeyError:
+                            # probably the electroneutrality ion - use solvent recovery
+                            split = model.solvent_recovery
 
                 if not sv_ret[k].fixed:
                     sv_ret[k].set_value(svd * (1 - split))
@@ -207,7 +215,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                 if not sv_per[k].fixed:
                     sv_per[k].set_value(svd * split)
 
-    def _init_frac(self, in_state, sv, sv_ret, sv_per):
+    def _init_frac(self, model, in_state, sv, sv_ret, sv_per):
         # First need to iterate over all indices to collect normalized flows
         # Assume a basis of 1 mass or mole unit
         # Also, only single phase property packages supported, so we only need to
@@ -233,7 +241,11 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                 if abs(charge) > 1:
                     split = model.multivalent_recovery
                 else:
-                    split = model.solute_recovery[j]
+                    try:
+                        split = model.solute_recovery[j]
+                    except KeyError:
+                        # probably the electroneutrality ion - use solvent recovery
+                        split = model.solvent_recovery
 
             nom_ret_comp_flow[j] = value(svd * (1 - split))
             nom_per_comp_flow[j] = value(svd * (1 - split))
@@ -517,7 +529,7 @@ class Nanofiltration0DData(UnitModelBlockData):
         self.split_species = Set(initialize=other_solutes)
         self.solute_recovery = Var(self.split_species, initialize=0.9)
 
-        units = self.config.property_package.get_metadata().get_derived_units
+        units = self.config.property_package.get_metadata().derived_units
         if self.config.has_retentate_pressure_drop:
             self.deltaP = Var(self.flowsheet().time, initialize=0, units=units.PRESSURE, doc="Retentate side pressure drop")
 
