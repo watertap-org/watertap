@@ -560,7 +560,7 @@ class Nanofiltration0DData(UnitModelBlockData):
                 perm_state = b.properties_permeate[t]
                 return 0 == sum(
                     perm_state.params.get_component(j).config.charge
-                    * perm_state.get_material_flow_terms(p, j)
+                    * perm_state.flow_mol_phase_comp[p, j]
                     for p, j in perm_state.phase_component_set
                     if j in perm_state.params.ion_set
                 )
