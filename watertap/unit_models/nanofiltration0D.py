@@ -13,7 +13,7 @@
 Nanofiltration unit model with assumed 100% rejection of divalent ions.
 """
 
-from pyomo.environ import Block, Constraint, Set, Var
+from pyomo.environ import Block, Constraint, Set, value, Var
 from pyomo.common.config import ConfigDict, ConfigValue, In, Bool
 from pyomo.network import Port
 
@@ -145,15 +145,20 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
     def _init_conc(self, model, in_state, sv, sv_ret, sv_per):
         # Component indexed flow - need to apply split fractions
         for k, svd in sv.items():
-            # Component is always the last index
-            j = k[-1]
+            if isinstance(k, str):
+                # Single indexing set, component is the index
+                j = k
+            else:
+                # Component is always the last index
+                j = k[-1]
 
             # Determine split based on type
             comp = in_state.params.get_component(j)
 
             if comp.is_solvent():
-                # Assume solvent concentrations remain roughly constants
-                split = 1
+                # Assume solvent concentrations unchanged
+                sv_ret[k].set_value(svd)
+                sv_per[k].set_value(svd)
             else:
                 try:
                     charge = comp.config.charge
@@ -169,18 +174,22 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                         # probably the electroneutrality ion - use solvent recovery
                         split = model.solvent_recovery
 
-            if not sv_ret[k].fixed:
-                sv_ret[k].set_value(svd * (1 - split))
-            if not sv_per[k].fixed:
-                sv_per[k].set_value(svd * split)
+                if not sv_ret[k].fixed:
+                    sv_ret[k].set_value(svd * (1 - split))
+                if not sv_per[k].fixed:
+                    sv_per[k].set_value(svd * split)
 
     def _init_flow(self, model, in_state, sv, sv_ret, sv_per):
         # Determine if it is a component flow or not
         if sv.local_name.endswith("_comp"):
             # Component indexed flow - need to apply split fractions
             for k, svd in sv.items():
-                # Component is always the last index
-                j = k[-1]
+                if isinstance(k, str):
+                    # Single indexing set, component is the index
+                    j = k
+                else:
+                    # Component is always the last index
+                    j = k[-1]
 
                 # Determine split based on type
                 comp = in_state.params.get_component(j)
@@ -224,8 +233,12 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
         nom_per_comp_flow = {}
 
         for k, svd in sv.items():
-            # Component is always the last index
-            j = k[-1]
+            if isinstance(k, str):
+                # Single indexing set, component is the index
+                j = k
+            else:
+                # Component is always the last index
+                j = k[-1]
 
             # Determine split based on type
             comp = in_state.params.get_component(j)
@@ -248,15 +261,19 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                         split = model.solvent_recovery
 
             nom_ret_comp_flow[j] = value(svd * (1 - split))
-            nom_per_comp_flow[j] = value(svd * (1 - split))
+            nom_per_comp_flow[j] = value(svd * split)
 
         nom_ret_tot_flow = sum(f for f in nom_ret_comp_flow.values())
         nom_per_tot_flow = sum(f for f in nom_per_comp_flow.values())
 
         # # Next set value based on fraction of nominal total flow
         for k, svd in sv.items():
-            # Component is always the last index
-            j = k[-1]
+            if isinstance(k, str):
+                # Single indexing set, component is the index
+                j = k
+            else:
+                # Component is always the last index
+                j = k[-1]
 
             if not sv_ret[k].fixed:
                 sv_ret[k].set_value(nom_ret_comp_flow[j]/nom_ret_tot_flow)
@@ -266,6 +283,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
 
 class Nanofiltration0DScaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
+        "deltaP": 1e-4,
         "multivalent_recovery": 1e2,
         "solvent_recovery": 10,
         "solute_recovery": 10,
