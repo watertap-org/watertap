@@ -69,7 +69,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util import DiagnosticsToolbox
 
 
 def main(reactor_volume_equalities=False):
@@ -99,16 +98,6 @@ def main(reactor_volume_equalities=False):
     results = solve(m, tee=True)
     pyo.assert_optimal_termination(results)
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-
-    dt = DiagnosticsToolbox(m)
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
-    dt.display_constraints_with_extreme_jacobians()
-
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     # display_results(m)
     display_costing(m)
@@ -399,13 +388,14 @@ def set_operating_conditions(m):
 
     iscale.calculate_scaling_factors(m)
 
-    # iscale.set_scaling_factor(m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7)
-    # iscale.set_scaling_factor(m.fs.RADM.liquid_phase.rate_reaction_generation[0, "Liq", "S_h2"], 1e7)
-    # iscale.set_scaling_factor(m.fs.RADM.liquid_phase.properties_in[0].flow_vol, 1e3)
-    # iscale.set_scaling_factor(m.fs.DU.mixed_state[0].flow_vol, 1e3)
-
     iscale.constraint_scaling_transform(
-        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "S_h2"], 1e6
+        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "S_h2"], 1e4
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "X_c"], 1e4
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "X_I"], 1e4
     )
     iscale.constraint_scaling_transform(m.fs.RADM.AD_retention_time[0], 1e-5)
 
@@ -515,7 +505,6 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    # iscale.calculate_scaling_factors(m)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
