@@ -388,17 +388,6 @@ def set_operating_conditions(m):
 
     iscale.calculate_scaling_factors(m)
 
-    iscale.constraint_scaling_transform(
-        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "S_h2"], 1e4
-    )
-    iscale.constraint_scaling_transform(
-        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "X_c"], 1e4
-    )
-    iscale.constraint_scaling_transform(
-        m.fs.RADM.liquid_phase.material_balances[0, "Liq", "X_I"], 1e4
-    )
-    iscale.constraint_scaling_transform(m.fs.RADM.AD_retention_time[0], 1e-5)
-
 
 def initialize_system(m):
     # Initialize flowsheet
