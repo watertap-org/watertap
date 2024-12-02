@@ -12,6 +12,7 @@
 import re
 
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
@@ -23,6 +24,11 @@ from pyomo.environ import (
     Var,
     Constraint,
 )
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+
+# Imports from idaes core
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.phases import PhaseType as PT
 from idaes.core import (
     FlowsheetBlock,
     MaterialFlowBasis,
@@ -31,19 +37,6 @@ from idaes.core import (
     EnergyBalanceType,
 )
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
-
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    MCASStateBlock,
-    ActivityCoefficientModel,
-    DensityCalculation,
-    DiffusivityCalculation,
-    ElectricalMobilityCalculation,
-    EquivalentConductivityCalculation,
-    TransportNumberCalculation,
-)
-from watertap.core.util.initialization import check_dof
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
@@ -56,12 +49,7 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from watertap.property_models.tests.property_test_harness import PropertyAttributeError
-from watertap.core.solvers import get_solver
-
-# Imports from idaes core
-from idaes.core.base.components import Solvent, Solute, Cation, Anion
-from idaes.core.base.phases import PhaseType as PT
+from idaes.core.scaling import report_scaling_factors, set_scaling_factor
 
 # Imports from idaes generic models
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
@@ -78,6 +66,20 @@ from idaes.models.unit_models import Mixer
 from idaes.models.unit_models.mixer import MixingType
 import idaes.logger as idaeslog
 
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
+    ActivityCoefficientModel,
+    DensityCalculation,
+    DiffusivityCalculation,
+    ElectricalMobilityCalculation,
+    EquivalentConductivityCalculation,
+    TransportNumberCalculation,
+    MCASScaler,
+)
+from watertap.core.util.initialization import check_dof
+from watertap.property_models.tests.property_test_harness import PropertyAttributeError
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -2485,3 +2487,98 @@ def test_automatic_charge_mw_population():
     for comp, val in test_vals.items():
         assert value(m.fs.stream2[0].mw_comp[comp]) == val[0]
         assert value(m.fs.stream2[0].charge_comp[comp]) == val[1]
+
+
+class TestMCASScaler:
+    @pytest.mark.component
+    def test_scaler(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+            material_flow_basis=MaterialFlowBasis.mass,
+            diffusivity_data={
+                ("Liq", "Ca_2+"): 7.92e-10,
+                ("Liq", "SO4_2-"): 1.06e-09,
+                ("Liq", "Na_+"): 1.33e-09,
+                ("Liq", "Cl_-"): 2.03e-09,
+                ("Liq", "Mg_2+"): 7.06e-10,
+            },
+            mw_data={
+                "H2O": 0.018,
+                "Na_+": 0.023,
+                "Ca_2+": 0.04,
+                "Mg_2+": 0.024,
+                "Cl_-": 0.035,
+                "SO4_2-": 0.096,
+            },
+            stokes_radius_data={
+                "Na_+": 1.84e-10,
+                "Ca_2+": 3.09e-10,
+                "Mg_2+": 3.47e-10,
+                "Cl_-": 1.21e-10,
+                "SO4_2-": 2.3e-10,
+            },
+            charge={"Na_+": 1, "Ca_2+": 2, "Mg_2+": 2, "Cl_-": -1, "SO4_2-": -2},
+            elec_mobility_calculation=ElectricalMobilityCalculation.EinsteinRelation,
+            density_calculation=DensityCalculation.seawater,
+            activity_coefficient_model=ActivityCoefficientModel.davies,
+        )
+
+        m.fs.stream = stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+        mass_flow_in = 1 * pyunits.kg / pyunits.s
+        feed_mass_frac = {
+            "Na_+": 11122e-6,
+            "Ca_2+": 382e-6,
+            "Mg_2+": 1394e-6,
+            "SO4_2-": 2136e-6,
+            "Cl_-": 20300e-6,
+        }
+        for ion, x in feed_mass_frac.items():
+            mass_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in
+
+            stream[0].flow_mass_phase_comp["Liq", ion].fix(mass_comp_flow)
+
+        H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+
+        stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(H2O_mass_frac)
+        stream[0].temperature.fix(298.15)
+        stream[0].pressure.fix(101325)
+
+        stream[0].assert_electroneutrality(
+            defined_state=True, tol=1e-2, adjust_by_ion="Cl_-"
+        )
+
+        metadata = m.fs.properties.get_metadata().properties
+        for v in metadata.list_supported_properties():
+            getattr(stream[0], v.name)
+            assert stream[0].is_property_constructed(v.name)
+
+        stream.default_initializer().initialize(stream)
+
+        scaler = stream.default_scaler()
+        assert isinstance(scaler, MCASScaler)
+
+        set_scaling_factor(stream[0].flow_mass_phase_comp["Liq", "H2O"], 1)
+        set_scaling_factor(stream[0].flow_mass_phase_comp["Liq", "Ca_2+"], 1e4)
+        set_scaling_factor(stream[0].flow_mass_phase_comp["Liq", "SO4_2-"], 1e3)
+        set_scaling_factor(stream[0].flow_mass_phase_comp["Liq", "Na_+"], 1e2)
+        set_scaling_factor(stream[0].flow_mass_phase_comp["Liq", "Cl_-"], 1e2)
+        set_scaling_factor(stream[0].flow_mass_phase_comp["Liq", "Mg_2+"], 1e3)
+
+        scaler.scale_model(stream[0])
+
+        from idaes.core.scaling import report_scaling_factors
+
+        report_scaling_factors(stream, descend_into=True)
+
+        from idaes.core.util import DiagnosticsToolbox
+        from pyomo.environ import TransformationFactory
+
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        dt2 = DiagnosticsToolbox(model=sm)
+
+        dt2.report_numerical_issues()
+
+        assert False
