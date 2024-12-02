@@ -47,7 +47,7 @@ Variables
    "Multivalent ion recovery", ":math:`R_{multi}`", "multivalent_recovery", None, ":math:`\text{dimensionless}`"
    "Retentate pressure drop", ":math:`\deltaP`", "deltaP", [t], ":math:`\text{pressure}`"
 
-.. _ZO_NF_equations:
+.. _NF0D_equations:
 
 Equations
 ---------
