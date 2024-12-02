@@ -31,7 +31,9 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.unit_models.separator import EnergySplittingType
 import idaes.logger as idaeslog
 
-from watertap.flowsheets.generic_desalination_train.unit_operations.separator import initialize
+from watertap.flowsheets.generic_desalination_train.unit_operations.separator import (
+    initialize,
+)
 
 _log = idaeslog.getLogger(__name__)
 
@@ -44,6 +46,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
     Initializer for 0D Nanofiltration models.
 
     """
+
     CONFIG = ModularInitializerBase.CONFIG()
 
     def initialize_main_model(
@@ -110,7 +113,9 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                         sv_ret.set_value(sv)
                 elif "flow" in sv.local_name:
                     self._init_flow(model, in_state, sv, sv_ret, sv_per)
-                elif any(sv.local_name.startswith(i) for i in ["mass_frac", "mole_frac"]):
+                elif any(
+                    sv.local_name.startswith(i) for i in ["mass_frac", "mole_frac"]
+                ):
                     self._init_frac(model, in_state, sv, sv_ret, sv_per)
                 elif sv.local_name.startswith("conc"):
                     self._init_conc(model, in_state, sv, sv_ret, sv_per)
@@ -276,9 +281,9 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                 j = k[-1]
 
             if not sv_ret[k].fixed:
-                sv_ret[k].set_value(nom_ret_comp_flow[j]/nom_ret_tot_flow)
+                sv_ret[k].set_value(nom_ret_comp_flow[j] / nom_ret_tot_flow)
             if not sv_per[k].fixed:
-                sv_per[k].set_value(nom_per_comp_flow[j]/nom_per_tot_flow)
+                sv_per[k].set_value(nom_per_comp_flow[j] / nom_per_tot_flow)
 
 
 class Nanofiltration0DScaler(CustomScalerBase):
@@ -290,7 +295,7 @@ class Nanofiltration0DScaler(CustomScalerBase):
     }
 
     def variable_scaling_routine(
-            self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         # Scale inlet state
         self.call_submodel_scaler_method(
@@ -334,7 +339,7 @@ class Nanofiltration0DScaler(CustomScalerBase):
                 self.scale_variable_by_default(v, overwrite=overwrite)
 
     def constraint_scaling_routine(
-            self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
@@ -427,7 +432,7 @@ class Nanofiltration0DData(UnitModelBlockData):
             default=True,
             domain=Bool,
             description="Whether to include pressure balance for retentate side.",
-        )
+        ),
     )
     CONFIG.declare(
         "has_retentate_pressure_drop",
@@ -435,7 +440,7 @@ class Nanofiltration0DData(UnitModelBlockData):
             default=False,
             domain=Bool,
             description="Whether to include pressure drop in the retentate side.",
-        )
+        ),
     )
     CONFIG.declare(
         "include_temperature_equality",
@@ -481,7 +486,10 @@ class Nanofiltration0DData(UnitModelBlockData):
             try:
                 bal_ion = prop_params.get_component(self.config.electroneutrality_ion)
                 # Check that balancing ion is monovalent
-                if not hasattr(bal_ion.config, "charge") or abs(bal_ion.config.charge) > 1:
+                if (
+                    not hasattr(bal_ion.config, "charge")
+                    or abs(bal_ion.config.charge) > 1
+                ):
                     raise ConfigurationError(
                         f"electroneutrality_ion ({self.config.electroneutrality_ion}) "
                         "must be a monovalent ion."
@@ -492,7 +500,10 @@ class Nanofiltration0DData(UnitModelBlockData):
                     "is not a valid component in property package."
                 )
         # Check that pressure balance arguments are consistent
-        if self.config.has_retentate_pressure_drop and not self.config.include_pressure_balance:
+        if (
+            self.config.has_retentate_pressure_drop
+            and not self.config.include_pressure_balance
+        ):
             raise ConfigurationError(
                 "Inconsistent configuration arguments. has_retentate_pressure_drop=True "
                 "requires that include_pressure_balance=True."
@@ -549,17 +560,30 @@ class Nanofiltration0DData(UnitModelBlockData):
 
         units = self.config.property_package.get_metadata().derived_units
         if self.config.has_retentate_pressure_drop:
-            self.deltaP = Var(self.flowsheet().time, initialize=0, units=units.PRESSURE, doc="Retentate side pressure drop")
+            self.deltaP = Var(
+                self.flowsheet().time,
+                initialize=0,
+                units=units.PRESSURE,
+                doc="Retentate side pressure drop",
+            )
 
         # Material balance
         @self.Constraint(self.flowsheet().time, prop_params.component_list)
         def material_balances(b, t, j):
             pset = b.properties_in[t].phase_list
             pcset = b.properties_in[t].phase_component_set
-            return (
-                sum(b.properties_in[t].get_material_flow_terms(p, j) for p in pset if (p, j) in pcset)
-                == sum(b.properties_retentate[t].get_material_flow_terms(p, j) for p in pset if (p, j) in pcset)
-                + sum(b.properties_permeate[t].get_material_flow_terms(p, j) for p in pset if (p, j) in pcset)
+            return sum(
+                b.properties_in[t].get_material_flow_terms(p, j)
+                for p in pset
+                if (p, j) in pcset
+            ) == sum(
+                b.properties_retentate[t].get_material_flow_terms(p, j)
+                for p in pset
+                if (p, j) in pcset
+            ) + sum(
+                b.properties_permeate[t].get_material_flow_terms(p, j)
+                for p in pset
+                if (p, j) in pcset
             )
 
         @self.Constraint(self.flowsheet().time, prop_params.component_list)
@@ -571,16 +595,21 @@ class Nanofiltration0DData(UnitModelBlockData):
             if j in b.split_species:
                 rec = b.solute_recovery[j]
             elif comp.is_solvent():
-                rec =  b.solvent_recovery
+                rec = b.solvent_recovery
             elif j == self.config.electroneutrality_ion:
                 return Constraint.Skip
             else:
                 rec = b.multivalent_recovery
 
             # Permeate flows equal to recovery * inlet flow
-            return (
-                rec * sum(b.properties_in[t].get_material_flow_terms(p, j) for p in pset if (p, j) in pcset)
-                == sum(b.properties_permeate[t].get_material_flow_terms(p, j) for p in pset if (p, j) in pcset)
+            return rec * sum(
+                b.properties_in[t].get_material_flow_terms(p, j)
+                for p in pset
+                if (p, j) in pcset
+            ) == sum(
+                b.properties_permeate[t].get_material_flow_terms(p, j)
+                for p in pset
+                if (p, j) in pcset
             )
 
         if self.config.electroneutrality_ion is not None:
@@ -597,6 +626,7 @@ class Nanofiltration0DData(UnitModelBlockData):
 
         # Retentate pressure balance
         if self.config.include_pressure_balance:
+
             @self.Constraint(self.flowsheet().time, doc="Retentate pressure balance")
             def retentate_pressure_balance(b, t):
                 expr = b.properties_retentate[t].pressure
@@ -606,10 +636,19 @@ class Nanofiltration0DData(UnitModelBlockData):
 
         # Temperature equalities
         if self.config.include_temperature_equality:
-            @self.Constraint(self.flowsheet().time, doc="Retentate temperature equality")
+
+            @self.Constraint(
+                self.flowsheet().time, doc="Retentate temperature equality"
+            )
             def retentate_temperature_equality(b, t):
-                return b.properties_in[t].temperature == b.properties_retentate[t].temperature
+                return (
+                    b.properties_in[t].temperature
+                    == b.properties_retentate[t].temperature
+                )
 
             @self.Constraint(self.flowsheet().time, doc="Permeate temperature equality")
             def permeate_temperature_equality(b, t):
-                return b.properties_in[t].temperature == b.properties_permeate[t].temperature
+                return (
+                    b.properties_in[t].temperature
+                    == b.properties_permeate[t].temperature
+                )
