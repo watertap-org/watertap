@@ -98,7 +98,6 @@ def main(reactor_volume_equalities=False):
     results = solve(m, tee=True)
     pyo.assert_optimal_termination(results)
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-
     # display_results(m)
     display_costing(m)
     display_performance_metrics(m)
@@ -278,6 +277,8 @@ def build():
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
+    iscale.calculate_scaling_factors(m.fs)
+
     # keep handy all the mixers
     m.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4, m.fs.MX6)
 
@@ -386,8 +387,6 @@ def set_operating_conditions(m):
     for mx in m.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
-    iscale.calculate_scaling_factors(m)
-
 
 def initialize_system(m):
     # Initialize flowsheet
@@ -494,7 +493,7 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    iscale.calculate_scaling_factors(m)
+    iscale.calculate_scaling_factors(m.fs)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
