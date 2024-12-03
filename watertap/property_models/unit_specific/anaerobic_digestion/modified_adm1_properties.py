@@ -34,7 +34,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
+from idaes.core.scaling import CustomScalerBase
 
 # Some more information about this module
 __author__ = "Chenyu Wang, Marcus Holly, Adam Atia, Xinhong Liu"
