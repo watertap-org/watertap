@@ -15,12 +15,9 @@ Nanofiltration unit model with assumed 100% rejection of divalent ions.
 
 from pyomo.environ import Block, Constraint, Set, value, Var
 from pyomo.common.config import ConfigDict, ConfigValue, In, Bool
-from pyomo.network import Port
 
 from idaes.core import (
     declare_process_block_class,
-    MaterialBalanceType,
-    MomentumBalanceType,
     useDefault,
     UnitModelBlockData,
 )
@@ -28,12 +25,8 @@ from idaes.core.initialization import ModularInitializerBase
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.models.unit_models.separator import EnergySplittingType
 import idaes.logger as idaeslog
 
-from watertap.flowsheets.generic_desalination_train.unit_operations.separator import (
-    initialize,
-)
 
 _log = idaeslog.getLogger(__name__)
 
