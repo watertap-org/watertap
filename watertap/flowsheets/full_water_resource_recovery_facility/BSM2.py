@@ -69,6 +69,7 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
+from idaes.core.util import DiagnosticsToolbox
 
 
 def main(reactor_volume_equalities=False):
@@ -102,6 +103,12 @@ def main(reactor_volume_equalities=False):
     # display_results(m)
     display_costing(m)
     display_performance_metrics(m)
+
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
 
     return m, results
 
@@ -494,6 +501,7 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
+    iscale.calculate_scaling_factors(m)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
