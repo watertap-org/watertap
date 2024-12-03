@@ -38,6 +38,7 @@ from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.math import smooth_max
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 # Some more information about this module
 __author__ = "Chenyu Wang, Marcus Holly, Xinhong Liu"
@@ -1754,11 +1755,147 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
         )
 
 
+class ModifiedADM1ReactionScaler(CustomScalerBase):
+    """
+    Scaler for the Modified Anaerobic Digestion Model No.1 reaction package.
+    Variables are scaled by their default scaling factor (if no user input provided), and constraints
+    are scaled using the inverse maximum scheme.
+    """
+
+    # TODO: Revisit this scaling factor
+    DEFAULT_SCALING_FACTORS = {
+        "reaction_rate": 1e2,
+        "I": 1e1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for r in model.params.rate_reaction_idx:
+            self.scale_variable_by_default(model.I[r], overwrite=overwrite)
+
+        if model.is_property_constructed("reaction_rate"):
+            for j in model.reaction_rate.values():
+                self.scale_variable_by_default(j, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # TODO: Revisit these scaling methodologies
+        # Consider other schemes, scale_constraint_by_default, or scale_constraints_by_jacobian_norm
+        if model.is_property_constructed("rate_expression"):
+            for j in model.rate_expression.values():
+                self.scale_constraint_by_nominal_value(
+                    j,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+        if model.is_property_constructed("Dissociation"):
+            self.scale_constraint_by_nominal_value(
+                model.Dissociation,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("CO2_acid_base_equilibrium"):
+            self.scale_constraint_by_nominal_value(
+                model.CO2_acid_base_equilibrium,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("IN_acid_base_equilibrium"):
+            self.scale_constraint_by_nominal_value(
+                model.IN_acid_base_equilibrium,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("pH_calc"):
+            self.scale_constraint_by_nominal_value(
+                model.pH_calc,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_va"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_va,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_bu"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_bu,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_pro"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_pro,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_ac"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_ac,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_hco3"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_hco3,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_nh3"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_nh3,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_co2"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_co2,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_nh4"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_nh4,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_Mg"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_Mg,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("concentration_of_K"):
+            self.scale_constraint_by_nominal_value(
+                model.concentration_of_K,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("S_H_cons"):
+            self.scale_constraint_by_nominal_value(
+                model.S_H_cons,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if model.is_property_constructed("I_fun"):
+            for r in model.params.rate_reaction_idx:
+                self.scale_constraint_by_nominal_value(
+                    model.I_fun[r],
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+
 class _ModifiedADM1ReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
+
+    default_scaler = ModifiedADM1ReactionScaler
 
     def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
@@ -2577,6 +2714,12 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
+    def get_reaction_rate_basis(self):
+        return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
         for i, c in self.rates.items():
             iscale.set_scaling_factor(self.reaction_rate[i], 1 / c)
 
@@ -2596,12 +2739,6 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         iscale.set_scaling_factor(self.pK_a_co2, 1e0)
         iscale.set_scaling_factor(self.pK_a_IN, 1e0)
         iscale.set_scaling_factor(self.pH, 1e0)
-
-    def get_reaction_rate_basis(self):
-        return MaterialFlowBasis.mass
-
-    def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()
 
         for i, c in self.rate_expression.items():
             iscale.constraint_scaling_transform(
