@@ -609,13 +609,6 @@ class ModifiedADM1StateBlockData(StateBlockData):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):
-        iscale.set_scaling_factor(self.flow_vol, 1e5)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-6)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.anions, 1e2)
-        iscale.set_scaling_factor(self.cations, 1e2)
-
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
