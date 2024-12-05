@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
+from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
 from watertap.flowsheets.generic_desalination_train import generic_train
 from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
