@@ -1596,60 +1596,6 @@ def display_costing(m):
 
     print(f"Specific energy intensity: {sec:.3f} kWh/m3 feed")
 
-    # Dye removal
-    # dye_removed = value(m.fs.gac.gac_removed[0].flow_mass_phase_comp["Liq", "dye"])
-    # dye_total = value(
-    #     m.fs.gac.process_flow.properties_in[0].flow_mass_phase_comp["Liq", "dye"]
-    # )
-    # removal_percentage = (dye_removed / dye_total) * 100
-    # print(f"\nDye removal is {removal_percentage} %")
-
-    # Adsorption Capacity: q = (C_o - C_e)V/m
-    # inlet_dye = value(
-    #     m.fs.gac.process_flow.properties_in[0].conc_mass_phase_comp["Liq", "dye"]
-    # )
-    # print(f"GAC inlet dye concentration is {inlet_dye}")
-    # outlet_dye = value(
-    #     m.fs.gac.process_flow.properties_out[0].conc_mass_phase_comp["Liq", "dye"]
-    # )
-    # print(f"GAC outlet dye concentration is {outlet_dye}")
-    # solution_volume = value(
-    #     m.fs.gac.process_flow.properties_in[0].flow_vol_phase["Liq"]
-    #     * m.fs.gac.operational_time
-    # )
-    # adsorbent_mass = value(
-    #     m.fs.gac.process_flow.properties_in[0].flow_mass_phase_comp["Liq", "dye"]
-    #     * m.fs.gac.operational_time
-    # )
-    # adsorption_capacity = (
-    #     100 * (inlet_dye - outlet_dye) * solution_volume / adsorbent_mass
-    # )
-    # print(f"GAC adsorption capacity is {adsorption_capacity} %")
-
-    # ro_elec = value(m.fs.ro_costing.aggregate_flow_costs["electricity"])
-    # zo_elec = value(m.fs.zo_costing.aggregate_flow_costs["electricity"])
-    #
-    # print(f"RO Electricity: {ro_elec}")
-    # print(f"ZO Electricity: {zo_elec}")
-    #
-    # ro_vopex = value(m.fs.ro_costing.total_variable_operating_cost)
-    # zo_vopex = value(m.fs.zo_costing.total_variable_operating_cost)
-    #
-    # print(f"RO VOPEX: {ro_vopex}") # aggregate flow costs (electricity)
-    # print(f"ZO VOPEX: {zo_vopex}")
-    #
-    # ro_fopex = value(m.fs.ro_costing.total_fixed_operating_cost)
-    # zo_fopex = value(m.fs.zo_costing.total_fixed_operating_cost)
-    #
-    # print(f"RO FOPEX: {ro_fopex}") # MLC + aggregate fixed operating costs (unit model dependent)
-    # print(f"ZO FOPEX: {zo_fopex}")
-    #
-    # ro_mlc = value(m.fs.ro_costing.maintenance_labor_chemical_operating_cost)
-    # zo_mlc = value(m.fs.zo_costing.maintenance_labor_chemical_operating_cost)
-    #
-    # print(f"RO MLC: {ro_mlc}")
-    # print(f"ZO MLC: {zo_mlc}")
-
 
 if __name__ == "__main__":
     model, results = main(
