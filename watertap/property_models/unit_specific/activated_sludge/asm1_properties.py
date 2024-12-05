@@ -505,6 +505,11 @@ class ASM1StateBlockData(StateBlockData):
             doc="Total Nitrogen",
         )
 
+        # iscale.set_scaling_factor(self.flow_vol, 1e1)
+        # iscale.set_scaling_factor(self.temperature, 1e-1)
+        # iscale.set_scaling_factor(self.pressure, 1e-6)
+        # iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
+
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 
@@ -545,13 +550,13 @@ class ASM1StateBlockData(StateBlockData):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):
-        iscale.set_scaling_factor(self.flow_vol, 1e1)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-6)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
-
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
+
+        # iscale.set_scaling_factor(self.flow_vol, 1e1)
+        # iscale.set_scaling_factor(self.temperature, 1e-1)
+        # iscale.set_scaling_factor(self.pressure, 1e-6)
+        # iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
 
         # No constraints in this model as yet, just need to set scaling factors
         # for expressions
