@@ -53,8 +53,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
     def add_state_blocks(
         self,
         has_phase_equilibrium=None,
-        property_package_vapor=None,
-        property_package_args_vapor=None,
     ):
         super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
 
@@ -90,13 +88,6 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             )
 
         add_object_reference(self, "properties", properties_dict)
-
-        self._add_interface_stateblock(has_phase_equilibrium)
-        self._add_vapor_stateblock(
-            property_package_vapor,
-            property_package_args_vapor,
-            has_phase_equilibrium=False,
-        )
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         if pressure_change_type == PressureChangeType.fixed_per_stage:
@@ -231,25 +222,27 @@ class MDChannel0DBlockData(MDChannelMixin, ControlVolume0DBlockData):
             raise ConfigurationError(
                 "Either hot_ch or cold_ch must be set in the configuration."
             )
-        state_args_interface = self._get_state_args_interface(
-            state_args_properties_in, state_args_properties_out
-        )
-        self.properties_interface.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_interface,
-        )
+        if hasattr(self, "properties_interface"):
+            state_args_interface = self._get_state_args_interface(
+                state_args_properties_in, state_args_properties_out
+            )
+            self.properties_interface.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args_interface,
+            )
 
-        state_args_vapor = self._get_state_args_vapor(
-            state_args_properties_in, state_args_properties_out
-        )
-        self.properties_vapor.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_vapor,
-        )
+        if hasattr(self, "properties_vapor"):
+            state_args_vapor = self._get_state_args_vapor(
+                state_args_properties_in, state_args_properties_out
+            )
+            self.properties_vapor.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args_vapor,
+            )
 
         init_log.info("Initialization Complete")
 

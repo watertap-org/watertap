@@ -31,6 +31,7 @@ from watertap.unit_models.MD.MD_channel_base import (
     PressureChangeType,
 )
 
+from watertap.unit_models.MD.membrane_distillation_base import MDconfigurationType
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 solver = get_solver()
@@ -63,6 +64,7 @@ def build():
             "pressure_change_type": PressureChangeType.fixed_per_stage,
             "flow_direction": FlowDirection.backward,
         },
+        MD_configuration_Type=MDconfigurationType.DCMD,
     )
 
     # fully specify system
