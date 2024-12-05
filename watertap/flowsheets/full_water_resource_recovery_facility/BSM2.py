@@ -503,9 +503,10 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    iscale.calculate_scaling_factors(m.fs)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
+
+    iscale.calculate_scaling_factors(m.fs)
 
 
 def setup_optimization(m, reactor_volume_equalities=False):
