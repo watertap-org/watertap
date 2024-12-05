@@ -507,7 +507,7 @@ def add_costing(m):
 
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
-            iscale.set_scaling_factor(block.costing.capital_cost, 1e-4)
+            iscale.set_scaling_factor(block.costing.capital_cost, 1e-3)
 
 
 def setup_optimization(m, reactor_volume_equalities=False):
