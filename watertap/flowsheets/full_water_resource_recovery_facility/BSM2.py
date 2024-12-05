@@ -69,17 +69,11 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util import DiagnosticsToolbox
-from idaes.core.scaling import report_scaling_factors
 
 
 def main(reactor_volume_equalities=False):
     m = build()
     set_operating_conditions(m)
-
-    dt = DiagnosticsToolbox(m)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
@@ -107,14 +101,6 @@ def main(reactor_volume_equalities=False):
     # display_results(m)
     display_costing(m)
     display_performance_metrics(m)
-
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
 
     return m, results
 
@@ -517,7 +503,6 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    iscale.set_scaling_factor(m.fs.costing.LCOW, 1e1)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
