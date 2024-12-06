@@ -58,7 +58,7 @@ from numpy import linspace
 def test_water_analysis_single_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
-    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    dbs_file_id = oliapi_instance.generate_dbs_file(source_water)
     stream_input = flash_instance.configure_water_analysis(
         source_water,
         file_name=tmp_path / "test_wa_input",
@@ -76,7 +76,7 @@ def test_water_analysis_single_point(
 def test_water_analysis_survey(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
-    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    dbs_file_id = oliapi_instance.generate_dbs_file(source_water)
     survey = build_survey(
         {
             "Na_+": linspace(0, 1e4, 2),
@@ -100,7 +100,7 @@ def test_water_analysis_survey(
 def test_isothermal_flash_single_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
-    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    dbs_file_id = oliapi_instance.generate_dbs_file(source_water)
     stream_input = flash_instance.configure_water_analysis(source_water)
     inflows = flash_instance.get_apparent_species_from_true(
         stream_input,
@@ -119,7 +119,7 @@ def test_isothermal_flash_single_point(
 def test_isothermal_flash_survey(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
-    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    dbs_file_id = oliapi_instance.generate_dbs_file(source_water)
     survey = build_survey(
         {
             "NaCl": linspace(0, 1e4, 2),
@@ -128,7 +128,6 @@ def test_isothermal_flash_survey(
         get_oli_names=True,
         file_name=tmp_path / "test_survey",
     )
-    dbs_file_id = oliapi_instance.session_dbs_files[-1]
     stream_input = flash_instance.configure_water_analysis(source_water)
     inflows = flash_instance.get_apparent_species_from_true(
         stream_input,
@@ -148,7 +147,7 @@ def test_isothermal_flash_survey(
 def test_bubble_point(
     flash_instance: Flash, source_water: dict, oliapi_instance: OLIApi, tmp_path: Path
 ):
-    dbs_file_id = oliapi_instance.session_dbs_files[-1]
+    dbs_file_id = oliapi_instance.generate_dbs_file(source_water)
 
     stream_input = flash_instance.configure_water_analysis(source_water)
     inflows = flash_instance.get_apparent_species_from_true(
