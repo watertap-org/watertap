@@ -453,6 +453,8 @@ def set_operating_conditions(m):
         m.fs.gac.ele_conc_ratio_replace[0] = 1e-10
         m.fs.gac.ele_operational_time[0] = 1e-10
 
+        m.fs.gac.process_flow.properties_out[0].conc_mass_phase_comp["Liq", "dye"]
+
         iscale.constraint_scaling_transform(m.fs.gac.eq_mass_adsorbed["dye"], 1e-2)
     else:
         pass
@@ -634,9 +636,10 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
     )
 
     m.fs.zo_costing = ZeroOrderCosting(case_study_definition=source_file)
+    m.fs.zo_costing.base_currency = pyunits.USD_2023
     m.fs.ro_costing = WaterTAPCosting()
     m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
-    m.fs.ro_costing.base_currency = pyunits.USD_2020
+    m.fs.ro_costing.base_currency = pyunits.USD_2023
     m.fs.ro_costing.utilization_factor.fix(0.85)
     # Assume the same capital recovery factor as zo_costing
     zo_crf = m.fs.zo_costing.capital_recovery_factor
@@ -917,9 +920,9 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
         @m.fs.Expression(doc="Total capital cost of the treatment train")
         def total_capital_cost(b):
             return pyunits.convert(
-                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
+                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2023
             ) + pyunits.convert(
-                m.fs.ro_costing.total_capital_cost, to_units=pyunits.USD_2020
+                m.fs.ro_costing.total_capital_cost, to_units=pyunits.USD_2023
             )
 
     else:
@@ -927,7 +930,7 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
         @m.fs.Expression(doc="Total capital cost of the treatment train")
         def total_capital_cost(b):
             return pyunits.convert(
-                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
+                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2023
             )
 
     if (
@@ -941,15 +944,15 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
             return (
                 pyunits.convert(
                     m.fs.zo_costing.total_fixed_operating_cost,
-                    to_units=pyunits.USD_2020 / pyunits.year,
+                    to_units=pyunits.USD_2023 / pyunits.year,
                 )
                 + pyunits.convert(
                     m.fs.zo_costing.total_variable_operating_cost,
-                    to_units=pyunits.USD_2020 / pyunits.year,
+                    to_units=pyunits.USD_2023 / pyunits.year,
                 )
                 + pyunits.convert(
                     m.fs.ro_costing.total_operating_cost,
-                    to_units=pyunits.USD_2020 / pyunits.year,
+                    to_units=pyunits.USD_2023 / pyunits.year,
                 )
             )
 
@@ -959,10 +962,10 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
         def total_operating_cost(b):
             return pyunits.convert(
                 m.fs.zo_costing.total_fixed_operating_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+                to_units=pyunits.USD_2023 / pyunits.year,
             ) + pyunits.convert(
                 m.fs.zo_costing.total_variable_operating_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+                to_units=pyunits.USD_2023 / pyunits.year,
             )
 
     @m.fs.Expression(doc="Total cost of water recovery and brine/sludge/dye disposed")
@@ -973,12 +976,12 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
                 - m.fs.dye_cost
                 - m.fs.brine_cost
                 - m.fs.sludge_disposal_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+                to_units=pyunits.USD_2023 / pyunits.year,
             )
         else:
             return pyunits.convert(
                 m.fs.water_recovery_revenue - m.fs.dye_cost - m.fs.brine_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+                to_units=pyunits.USD_2023 / pyunits.year,
             )
 
     @m.fs.Expression(doc="Total cost of brine/sludge/dye disposed")
@@ -986,40 +989,40 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
         if hasattr(m.fs, "pretreatment"):
             return pyunits.convert(
                 m.fs.dye_cost + m.fs.brine_cost + m.fs.sludge_disposal_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+                to_units=pyunits.USD_2023 / pyunits.year,
             )
         else:
             if dye_revenue and brine_revenue:
                 return pyunits.convert(
-                    0 * pyunits.USD_2020 / pyunits.year,
-                    to_units=pyunits.USD_2020 / pyunits.year,
+                    0 * pyunits.USD_2023 / pyunits.year,
+                    to_units=pyunits.USD_2023 / pyunits.year,
                 )
             elif dye_revenue:
                 if value(m.fs.brine_cost) > 0:
                     return pyunits.convert(
                         m.fs.brine_cost,
-                        to_units=pyunits.USD_2020 / pyunits.year,
+                        to_units=pyunits.USD_2023 / pyunits.year,
                     )
                 else:
                     return pyunits.convert(
-                        0 * pyunits.USD_2020 / pyunits.year,
-                        to_units=pyunits.USD_2020 / pyunits.year,
+                        0 * pyunits.USD_2023 / pyunits.year,
+                        to_units=pyunits.USD_2023 / pyunits.year,
                     )
             elif brine_revenue:
                 return pyunits.convert(
                     m.fs.dye_cost,
-                    to_units=pyunits.USD_2020 / pyunits.year,
+                    to_units=pyunits.USD_2023 / pyunits.year,
                 )
             else:
                 if value(m.fs.brine_cost) > 0:
                     return pyunits.convert(
                         m.fs.dye_cost + m.fs.brine_cost,
-                        to_units=pyunits.USD_2020 / pyunits.year,
+                        to_units=pyunits.USD_2023 / pyunits.year,
                     )
                 else:
                     return pyunits.convert(
                         m.fs.dye_cost,
-                        to_units=pyunits.USD_2020 / pyunits.year,
+                        to_units=pyunits.USD_2023 / pyunits.year,
                     )
 
     @m.fs.Expression(
@@ -1147,10 +1150,11 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
 
     # Set costing scaling factors
     iscale.set_scaling_factor(m.fs.zo_costing.total_capital_cost, 1e-4)
-    iscale.set_scaling_factor(m.fs.ro_costing.total_capital_cost, 1e-6)
-
     iscale.set_scaling_factor(m.fs.zo_costing.total_operating_cost, 1e-4)
-    iscale.set_scaling_factor(m.fs.ro_costing.total_operating_cost, 1e-5)
+
+    if hasattr(m.fs, "desalination"):
+        iscale.set_scaling_factor(m.fs.ro_costing.total_capital_cost, 1e-6)
+        iscale.set_scaling_factor(m.fs.ro_costing.total_operating_cost, 1e-5)
 
     for block in m.fs.component_objects(Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
@@ -1368,11 +1372,11 @@ def display_results(m):
 
 
 def display_costing(m):
-    capex = value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.MUSD_2020))
+    capex = value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.MUSD_2023))
     if hasattr(m.fs, "pretreatment"):
         wwtp_capex = value(
             pyunits.convert(
-                m.fs.pretreatment.wwtp.costing.capital_cost, to_units=pyunits.USD_2020
+                m.fs.pretreatment.wwtp.costing.capital_cost, to_units=pyunits.USD_2023
             )
         )
 
@@ -1391,14 +1395,14 @@ def display_costing(m):
         pyunits.convert(
             m.fs.dye_separation.nanofiltration.costing.capital_cost
             + m.fs.dye_separation.P1.costing.capital_cost,
-            to_units=pyunits.USD_2020,
+            to_units=pyunits.USD_2023,
         )
     )
 
     if hasattr(m.fs, "desalination"):
         ro_capex = value(
             pyunits.convert(
-                m.fs.ro_costing.total_capital_cost, to_units=pyunits.USD_2020
+                m.fs.ro_costing.total_capital_cost, to_units=pyunits.USD_2023
             )
         )
     else:
@@ -1406,7 +1410,7 @@ def display_costing(m):
 
     opex = value(
         pyunits.convert(
-            m.fs.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.total_operating_cost, to_units=pyunits.MUSD_2023 / pyunits.year
         )
     )
 
@@ -1415,7 +1419,7 @@ def display_costing(m):
             value(
                 pyunits.convert(
                     m.fs.zo_costing.total_operating_cost,
-                    to_units=pyunits.USD_2020 / pyunits.year,
+                    to_units=pyunits.USD_2023 / pyunits.year,
                 )
             )
             - wwtp_opex
@@ -1424,7 +1428,7 @@ def display_costing(m):
         nf_opex = value(
             pyunits.convert(
                 m.fs.zo_costing.total_operating_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+                to_units=pyunits.USD_2023 / pyunits.year,
             )
         )
 
@@ -1436,7 +1440,7 @@ def display_costing(m):
         ro_opex = value(
             pyunits.convert(
                 m.fs.ro_costing.total_operating_cost,
-                to_units=pyunits.USD_2020 / pyunits.year,
+                to_units=pyunits.USD_2023 / pyunits.year,
             )
         )
     else:
@@ -1444,24 +1448,24 @@ def display_costing(m):
 
     externalities = value(
         pyunits.convert(
-            m.fs.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.total_externalities, to_units=pyunits.MUSD_2023 / pyunits.year
         )
     )
     wrr = value(
         pyunits.convert(
-            m.fs.water_recovery_revenue, to_units=pyunits.USD_2020 / pyunits.year
+            m.fs.water_recovery_revenue, to_units=pyunits.USD_2023 / pyunits.year
         )
     )
     ddc = value(
-        pyunits.convert(m.fs.dye_cost, to_units=pyunits.USD_2020 / pyunits.year)
+        pyunits.convert(m.fs.dye_cost, to_units=pyunits.USD_2023 / pyunits.year)
     )
     bdc = value(
-        pyunits.convert(m.fs.brine_cost, to_units=pyunits.USD_2020 / pyunits.year)
+        pyunits.convert(m.fs.brine_cost, to_units=pyunits.USD_2023 / pyunits.year)
     )
     if hasattr(m.fs, "pretreatment"):
         sdc = value(
             pyunits.convert(
-                m.fs.sludge_disposal_cost, to_units=pyunits.USD_2020 / pyunits.year
+                m.fs.sludge_disposal_cost, to_units=pyunits.USD_2023 / pyunits.year
             )
         )
     else:
@@ -1474,7 +1478,7 @@ def display_costing(m):
         )
     )
     capex_norm = (
-        value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.USD_2020))
+        value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.USD_2023))
         / feed_flowrate
     )
 
@@ -1482,22 +1486,22 @@ def display_costing(m):
         pyunits.convert(
             m.fs.total_capital_cost * m.fs.zo_costing.capital_recovery_factor
             + m.fs.total_operating_cost,
-            to_units=pyunits.USD_2020 / pyunits.year,
+            to_units=pyunits.USD_2023 / pyunits.year,
         )
     )
     opex_fraction = (
         100
         * value(
             pyunits.convert(
-                m.fs.total_operating_cost, to_units=pyunits.USD_2020 / pyunits.year
+                m.fs.total_operating_cost, to_units=pyunits.USD_2023 / pyunits.year
             )
         )
         / annual_investment
     )
 
-    lcot = value(pyunits.convert(m.fs.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
+    lcot = value(pyunits.convert(m.fs.LCOT, to_units=pyunits.USD_2023 / pyunits.m**3))
     lcot_wo_rev = value(
-        pyunits.convert(m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
+        pyunits.convert(m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2023 / pyunits.m**3)
     )
 
     if (
@@ -1506,11 +1510,11 @@ def display_costing(m):
         or hasattr(m.fs, "dewaterer")
     ):
         lcow = value(
-            pyunits.convert(m.fs.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
+            pyunits.convert(m.fs.LCOW, to_units=pyunits.USD_2023 / pyunits.m**3)
         )
         lcow_wo_rev = value(
             pyunits.convert(
-                m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
+                m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2023 / pyunits.m**3
             )
         )
     else:
@@ -1535,14 +1539,14 @@ def display_costing(m):
         print(
             u.name,
             " : {price:0.3f} $".format(
-                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020))
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2023))
             ),
         )
     for z in m.fs.ro_costing._registered_unit_costing:
         print(
             z.name,
             " : {price:0.3f} $".format(
-                price=value(pyunits.convert(z.capital_cost, to_units=pyunits.USD_2020))
+                price=value(pyunits.convert(z.capital_cost, to_units=pyunits.USD_2023))
             ),
         )
 
@@ -1599,7 +1603,7 @@ if __name__ == "__main__":
         include_RO=True,
         include_pretreatment=False,
         include_dewatering=False,
-        include_gac=False,
+        include_gac=True,
         dye_revenue=False,
         brine_revenue=False,
     )
