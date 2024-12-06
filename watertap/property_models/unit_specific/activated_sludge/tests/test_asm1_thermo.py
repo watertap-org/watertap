@@ -15,13 +15,14 @@ Authors: Andrew Lee, Adam Atia
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, Expression, Param, units, value, Var
+from pyomo.environ import ConcreteModel, Expression, Param, units, value, Var, Suffix
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
     ASM1StateBlock,
+    ASM1PropertiesScaler,
 )
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
@@ -130,6 +131,8 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_build(self, model):
+        assert model.props[1].default_scaler is ASM1PropertiesScaler
+
         assert isinstance(model.props[1].flow_vol, Var)
         assert value(model.props[1].flow_vol) == 1
 
@@ -341,3 +344,55 @@ class TestStateBlock(object):
         assert value(model.props[1].BOD5["raw"]) == 0.096 * 0.65 / 0.25
         assert value(model.props[1].TKN) == pytest.approx(0.328, rel=1e-3)
         assert value(model.props[1].Total_N) == pytest.approx(0.428, rel=1e-3)
+
+
+class TestASM1PropertiesScaler:
+    @pytest.mark.unit
+    def test_variable_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = ASM1ParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ASM1PropertiesScaler)
+
+        scaler.variable_scaling_routine(model.props[1])
+
+        sfx = model.props[1].scaling_factor
+        assert len(sfx) == 3
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = ASM1ParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ASM1PropertiesScaler)
+
+        scaler.constraint_scaling_routine(model.props[1])
+
+    @pytest.mark.unit
+    def test_scale_model(self):
+        model = ConcreteModel()
+        model.params = ASM1ParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ASM1PropertiesScaler)
+
+        scaler.scale_model(model.props[1])
+
+        assert isinstance(model.props[1].scaling_factor, Suffix)
+
+        sfx = model.props[1].scaling_factor
+        assert len(sfx) == 3
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)

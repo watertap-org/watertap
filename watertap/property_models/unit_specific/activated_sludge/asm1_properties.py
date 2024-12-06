@@ -20,7 +20,6 @@ import pyomo.environ as pyo
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
-    PhysicalParameterBlock,
     StateBlockData,
     StateBlock,
     MaterialBalanceType,
@@ -32,7 +31,9 @@ from idaes.core import (
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
+from idaes.core.scaling import CustomScalerBase
 import idaes.logger as idaeslog
+from idaes.core.base.property_base import PhysicalParameterBlock
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
@@ -191,11 +192,45 @@ class ASM1ParameterData(PhysicalParameterBlock):
         )
 
 
+class ASM1PropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Activated Sludge Model No.1 property package.
+
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Pressure": (pyo.units.Pa, 1e-6),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e1,
+        "temperature": 1e-1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+
+    # There are currently no constraints in this model
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        pass
+
+
 class _ASM1StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_scaler = ASM1PropertiesScaler
 
     def initialize(
         self,
@@ -292,7 +327,7 @@ class _ASM1StateBlock(StateBlock):
 @declare_process_block_class("ASM1StateBlock", block_class=_ASM1StateBlock)
 class ASM1StateBlockData(StateBlockData):
     """
-    StateBlock for calculating thermophysical proeprties associated with the ASM1
+    StateBlock for calculating thermophysical properties associated with the ASM1
     reaction system.
     """
 
@@ -306,7 +341,7 @@ class ASM1StateBlockData(StateBlockData):
         self.flow_vol = pyo.Var(
             initialize=1.0,
             domain=pyo.NonNegativeReals,
-            doc="Total volumentric flowrate",
+            doc="Total volumetric flowrate",
             units=pyo.units.m**3 / pyo.units.s,
         )
         self.pressure = pyo.Var(
@@ -469,11 +504,6 @@ class ASM1StateBlockData(StateBlockData):
             rule=_Total_N,
             doc="Total Nitrogen",
         )
-
-        iscale.set_scaling_factor(self.flow_vol, 1e1)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-6)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]

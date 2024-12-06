@@ -246,6 +246,15 @@ def build_flowsheet():
     assert degrees_of_freedom(m) == 0
 
     # Apply scaling
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
+        if "temperature" in var.name:
+            iscale.set_scaling_factor(var, 1e-1)
+        if "pressure" in var.name:
+            iscale.set_scaling_factor(var, 1e-6)
+        if "conc_mass_comp" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
     iscale.calculate_scaling_factors(m.fs)
 
     # Initialize flowsheet
