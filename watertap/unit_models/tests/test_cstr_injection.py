@@ -156,6 +156,9 @@ def build_ASM1():
 
     # Set scaling factors for badly scaled variables
     iscale.set_scaling_factor(
+        m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5
+    )
+    iscale.set_scaling_factor(
         m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["X_P"], 1e3
     )
     iscale.set_scaling_factor(
@@ -386,12 +389,12 @@ class TestCosting(UnitTestHarness):
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         m.objective = Objective(expr=m.fs.costing.LCOW)
 
-        iscale.calculate_scaling_factors(m.fs.unit)
-
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
         iscale.set_scaling_factor(
             m.fs.unit.control_volume.properties_out[0].conc_mass_comp["X_P"], 1e5
         )
+
+        iscale.calculate_scaling_factors(m.fs.unit)
 
         m.fs.unit.initialize()
 
