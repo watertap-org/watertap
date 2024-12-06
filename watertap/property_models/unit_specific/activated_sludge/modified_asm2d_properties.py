@@ -31,7 +31,6 @@ import pyomo.environ as pyo
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
-    PhysicalParameterBlock,
     StateBlockData,
     StateBlock,
     MaterialBalanceType,
@@ -43,6 +42,8 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase
+from idaes.core.base.property_base import PhysicalParameterBlock
 
 # Some more information about this module
 __author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
@@ -345,11 +346,44 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
         )
 
 
+class ModifiedASM2dPropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Activated Sludge Model No.2d property package.
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Pressure": (pyo.units.Pa, 1e-5),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e1,
+        "temperature": 1e-2,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+
+    # There are currently no constraints in this model
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        pass
+
+
 class _ModifiedASM2dStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_scaler = ModifiedASM2dPropertiesScaler
 
     def initialize(
         self,
