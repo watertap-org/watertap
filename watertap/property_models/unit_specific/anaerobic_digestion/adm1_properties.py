@@ -390,14 +390,6 @@ class ADM1StateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        iscale.set_scaling_factor(self.flow_vol, 1e5)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-6)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e5)
-        iscale.set_scaling_factor(self.anions, 1e2)
-        iscale.set_scaling_factor(self.cations, 1e2)
-
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 
@@ -442,6 +434,14 @@ class ADM1StateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
+
+        iscale.set_scaling_factor(self.flow_vol, 1e5)
+        iscale.set_scaling_factor(self.temperature, 1e-1)
+        iscale.set_scaling_factor(self.pressure, 1e-6)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e5)
+        iscale.set_scaling_factor(self.anions, 1e2)
+        iscale.set_scaling_factor(self.cations, 1e2)
 
         # No constraints in this model as yet, just need to set scaling factors
         # for expressions
