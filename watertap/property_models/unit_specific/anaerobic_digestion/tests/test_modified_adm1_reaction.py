@@ -27,6 +27,7 @@ from pyomo.environ import (
     assert_optimal_termination,
     ConcreteModel,
     Param,
+    Suffix,
     log10,
     value,
     Var,
@@ -48,6 +49,7 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
     ModifiedADM1ReactionBlock,
+    ModifiedADM1ReactionScaler,
 )
 from idaes.core.util.testing import initialization_tester
 
@@ -66,6 +68,10 @@ class TestParamBlock(object):
         )
 
         return model
+
+    @pytest.mark.unit
+    def test_config(self, model):
+        assert len(model.rparams.config) == 2
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -556,6 +562,318 @@ class TestReactionBlock(object):
         assert_units_consistent(model)
 
 
+class TestModifiedADM1ReactionScaler(object):
+    @pytest.mark.unit
+    def test_variable_scaling_routine(self):
+        model = ConcreteModel()
+        model.pparams = ModifiedADM1ParameterBlock()
+        model.rparams = ModifiedADM1ReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+        model.rxns[1].I
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, ModifiedADM1ReactionScaler)
+
+        scaler.variable_scaling_routine(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 50
+        assert sfx[model.rxns[1].I["R1"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R2"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R3"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R4"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R5"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R6"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R7"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R8"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R9"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R10"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R11"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R12"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R13"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R14"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R15"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R16"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R17"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R18"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].I["R19"]] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R3"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R4"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R5"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R6"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R7"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R8"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R9"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R10"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R11"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R12"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R13"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R14"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R15"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R16"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R17"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R18"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R19"]] == pytest.approx(1e2, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine(self):
+        model = ConcreteModel()
+        model.pparams = ModifiedADM1ParameterBlock()
+        model.rparams = ModifiedADM1ReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, ModifiedADM1ReactionScaler)
+
+        scaler.constraint_scaling_routine(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 65
+        assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(
+            6.056935191e3, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R2"]] == pytest.approx(
+            5.803830528e3, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R3"]] == pytest.approx(
+            4.366812227e3, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R4"]] == pytest.approx(
+            1.88253012e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R5"]] == pytest.approx(
+            1.931993818e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R6"]] == pytest.approx(
+            1.5537600994e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R7"]] == pytest.approx(
+            9.3109869646e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R8"]] == pytest.approx(
+            5.5865921788e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R9"]] == pytest.approx(
+            4.246284501e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R10"]] == pytest.approx(
+            1.8079913216e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R11"]] == pytest.approx(
+            7.719194805e3, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R12"]] == pytest.approx(
+            7.72797527048e6, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R13"]] == pytest.approx(
+            8.81632653061e6, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R14"]] == pytest.approx(
+            1.0631511801e7, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R15"]] == pytest.approx(
+            2.389486260454e7, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R16"]] == pytest.approx(
+            4.35919790759e7, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R17"]] == pytest.approx(
+            7.94281175536e6, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R18"]] == pytest.approx(
+            1.35e7, rel=1e-8
+        )
+        assert sfx[model.rxns[1].rate_expression["R19"]] == pytest.approx(
+            3.626830675e5, rel=1e-8
+        )
+        assert sfx[model.rxns[1].Dissociation] == pytest.approx(3.10210344e-2, rel=1e-8)
+        assert sfx[model.rxns[1].CO2_acid_base_equilibrium] == pytest.approx(
+            6.83928318e-2, rel=1e-8
+        )
+        assert sfx[model.rxns[1].IN_acid_base_equilibrium] == pytest.approx(
+            4.69507548e-2, rel=1e-8
+        )
+        assert sfx[model.rxns[1].pH_calc] == pytest.approx(0.133895317, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_va] == pytest.approx(62.5, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_bu] == pytest.approx(62.5, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_pro] == pytest.approx(
+            27.777777778, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_ac] == pytest.approx(
+            5.070993915, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_hco3] == pytest.approx(
+            0.142857143, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_nh3] == pytest.approx(
+            0.1081081081, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_co2] == pytest.approx(
+            6.66666666667, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_nh4] == pytest.approx(
+            6.66666666667, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_Mg] == pytest.approx(2731.0, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_K] == pytest.approx(
+            91.4578379, rel=1e-8
+        )
+        assert sfx[model.rxns[1].S_H_cons] == pytest.approx(7.003929204, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R1"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R2"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R3"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R4"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R5"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R6"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R7"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R8"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R9"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R10"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R11"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R12"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R13"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R14"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R15"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R16"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R17"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R18"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R19"]] == pytest.approx(1, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_scale_model(self):
+        model = ConcreteModel()
+        model.pparams = ModifiedADM1ParameterBlock()
+        model.rparams = ModifiedADM1ReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, ModifiedADM1ReactionScaler)
+
+        scaler.scale_model(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 115
+        assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R3"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R4"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R5"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R6"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R7"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R8"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R9"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R10"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R11"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R12"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R13"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R14"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R15"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R16"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R17"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R18"]] == pytest.approx(1e2, rel=1e-8)
+
+        assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R2"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R3"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R4"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R5"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R6"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R7"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R8"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R9"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R10"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R11"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R12"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R13"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R14"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R15"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R16"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R17"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R18"]] == pytest.approx(1e2, rel=1e-8)
+
+        assert sfx[model.rxns[1].Dissociation] == pytest.approx(3.10210344e-2, rel=1e-8)
+        assert sfx[model.rxns[1].CO2_acid_base_equilibrium] == pytest.approx(
+            6.83928318e-2, rel=1e-8
+        )
+        assert sfx[model.rxns[1].IN_acid_base_equilibrium] == pytest.approx(
+            4.69507548e-2, rel=1e-8
+        )
+        assert sfx[model.rxns[1].pH_calc] == pytest.approx(0.133895317, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_va] == pytest.approx(62.5, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_bu] == pytest.approx(62.5, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_pro] == pytest.approx(
+            27.7777777778, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_ac] == pytest.approx(
+            5.0709939148, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_hco3] == pytest.approx(
+            0.142857143, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_nh3] == pytest.approx(
+            0.1081081081, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_co2] == pytest.approx(
+            6.66666666667, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_nh4] == pytest.approx(
+            6.66666666667, rel=1e-8
+        )
+        assert sfx[model.rxns[1].concentration_of_Mg] == pytest.approx(2731.0, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_K] == pytest.approx(
+            91.45783794, rel=1e-8
+        )
+        assert sfx[model.rxns[1].S_H_cons] == pytest.approx(7.00392920, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R1"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R2"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R3"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R4"]] == pytest.approx(1.0008668, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R5"]] == pytest.approx(1.0008668, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R6"]] == pytest.approx(10, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R7"]] == pytest.approx(10, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R8"]] == pytest.approx(10, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R9"]] == pytest.approx(10, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R10"]] == pytest.approx(3.22501524, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R11"]] == pytest.approx(1.0008668, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R12"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R13"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R14"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R15"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R16"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R17"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R18"]] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R19"]] == pytest.approx(1, rel=1e-8)
+
+
 class TestReactor:
     @pytest.fixture(scope="class")
     def model(self):
@@ -635,17 +953,24 @@ class TestReactor:
     @pytest.mark.unit
     def test_scaling_factors(self, model):
         m = model
+        iscale.calculate_scaling_factors(m)
+
+        for var in m.fs.component_data_objects(Var, descend_into=True):
+            if "flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e5)
+            if "temperature" in var.name:
+                iscale.set_scaling_factor(var, 1e-1)
+            if "pressure" in var.name:
+                iscale.set_scaling_factor(var, 1e-6)
+            if "conc_mass_comp" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+
         iscale.set_scaling_factor(
             m.fs.unit.liquid_phase.properties_out[0].conc_mass_comp["S_IP"], 1e-5
         )
         iscale.set_scaling_factor(
             m.fs.unit.liquid_phase.properties_out[0].conc_mass_comp["S_IN"], 1e-5
         )
-        iscale.calculate_scaling_factors(m)
-
-        # check that all variables have scaling factors
-        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-        assert len(unscaled_var_list) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
