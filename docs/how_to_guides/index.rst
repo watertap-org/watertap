@@ -21,7 +21,6 @@ How To Guides
    how_to_use_parameter_sweep_monte_carlo
    how_to_run_differential_parameter_sweep
    how_to_use_loopTool_to_explore_flowsheets
-   how_to_use_debugging_solver_wrapper
    how_to_use_property_test_harness
    how_to_use_ui_api
    how_to_use_unit_test_harness
