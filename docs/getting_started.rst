@@ -21,7 +21,7 @@ Create a Conda environment (in this example, named ``watertap``) where WaterTAP 
 
 .. code-block:: shell
 
-   conda create --name watertap --yes python=3.8 pip=21.1
+   conda create --name watertap --yes python=3.11
 
 Activate the ``watertap`` environment using the command given below. If the environment was activated successfully, the environment's name will be displayed in the terminal prompt such as ``(watertap) project-directory $``.
 
@@ -58,7 +58,7 @@ Create a Conda environment (in this example, named ``watertap``) where WaterTAP 
 
 .. code-block:: shell
 
-   conda create --name watertap --yes python=3.8 pip=21.1
+   conda create --name watertap --yes python=3.11
 
 Activate the ``watertap`` environment using the command given below. If the environment was activated successfully, the environment's name will be displayed in the terminal prompt such as ``(watertap) project-directory $``.
 
@@ -143,7 +143,7 @@ Create a Conda environment (in this example, named ``watertap-dev``) where Water
 
 .. code-block:: shell
 
-   conda create --name watertap-dev --yes python=3.8 pip=21.1 && conda activate watertap-dev
+   conda create --name watertap-dev --yes python=3.11 && conda activate watertap-dev
 
 Clone the WaterTAP repository to your local development machine using ``git clone``, then enter the newly created ``watertap`` subdirectory:
 
