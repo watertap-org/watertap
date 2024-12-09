@@ -1268,6 +1268,10 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "width"):
             if iscale.get_scaling_factor(self.width) is None:
                 iscale.set_scaling_factor(self.width, 1)
+        if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+            iscale.set_scaling_factor(
+                self.cold_ch.mass_transfer_term[0.0, "Liq", "H2O"], 1e4
+            )
 
     @property
     def default_costing_method(self):
