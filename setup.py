@@ -73,7 +73,6 @@ setup(
         # for parameter_sweep
         "parameter-sweep >=0.1.0",
         "numpy",
-        "importlib-resources",
     ],
     extras_require={
         "testing": [
