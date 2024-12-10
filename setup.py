@@ -20,16 +20,6 @@ from pathlib import Path
 cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
-SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.7.0,<2.8.0rc0",  # from PyPI
-]
-
-SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
-    # update with a tag from the nawi-hub/idaes-pse
-    # when a version of IDAES newer than the latest stable release from PyPI
-    # will become needed for the watertap development
-    "idaes-pse @ git+https://github.com/watertap-org/idaes-pse@2.7.0.dev0.watertap.24.11.19",
-]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
@@ -77,16 +67,12 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         # primary requirements for unit and property models
-        # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
-        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        "idaes-pse >=2.7.0,<2.8.0rc0",
         "pyomo>=6.6.1",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
-        "parameter-sweep>=0.1.dev5",
-        # for watertap.ui.api_model (though may be generally useful)
-        "pydantic >= 2, <3",
+        "parameter-sweep >=0.1.0",
         "numpy",
-        "importlib-resources",
     ],
     extras_require={
         "testing": [
@@ -95,7 +81,7 @@ setup(
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
             "nbconvert",
-            "idaes-flowsheet-processor @ git+https://github.com/watertap-org/idaes-flowsheet-processor@0.1.dev1",
+            "idaes-flowsheet-processor >=0.1.dev4",
         ],
         "notebooks": [
             "jupyter",
