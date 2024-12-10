@@ -24,6 +24,7 @@ from pyomo.environ import (
     ConcreteModel,
     Suffix,
     TransformationFactory,
+    Var,
 )
 
 from idaes.core import (
@@ -50,6 +51,7 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions i
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling.scaling_base import ScalerBase
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -120,6 +122,7 @@ def build():
     iscale.set_scaling_factor(
         m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
     )
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
 
     return m
 
@@ -583,60 +586,11 @@ class TestADScaler:
             model.fs.unit.liquid_phase.reactions[0.0].I_fun["R19"]
         ] == pytest.approx(1, rel=1e-8)
 
-        # Check that unit model has scaling factors
-        sfx_cv = model.fs.unit.liquid_phase.scaling_factor
-        assert isinstance(model.fs.unit.liquid_phase.scaling_factor, Suffix)
-        assert len(sfx_cv) == 56
-        assert sfx_cv[
-            model.fs.unit.liquid_phase.enthalpy_balances[0.0]
-        ] == pytest.approx(7.783208078e-10, abs=1e-8)
-        assert sfx_cv[
-            model.fs.unit.liquid_phase.pressure_balance[0.0]
-        ] == pytest.approx(9.869232667e-6, rel=1e-8)
-        for (
-            c
-        ) in model.fs.unit.liquid_phase.rate_reaction_stoichiometry_constraint.values():
-            assert sfx_cv[c] == pytest.approx(1, rel=1e-8)
-
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 59
-        assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
-            1.277154575e-1, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
-            1.479435417e-1, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
-            1.38666123e-1, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(
-            9.8692326672e-6, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
-            5.524296675192e5, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
-            2.310160428, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Sco2_conc[0]] == pytest.approx(
-            1.069518717, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.flow_vol_vap[0]] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
-            2.702702703e-4, rel=1e-8
-        )
+        assert len(sfx_unit) == 1
         assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
             5.3178178178e-7, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
-            3.2451728e-3, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
-            7.783208078e-10, abs=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
-            4.214223e-2, rel=1e-8
         )
 
     @pytest.mark.component
@@ -890,60 +844,11 @@ class TestADScaler:
             model.fs.unit.liquid_phase.reactions[0.0].I_fun["R19"]
         ] == pytest.approx(1, rel=1e-8)
 
-        # Check that unit model has scaling factors
-        sfx_cv = model.fs.unit.liquid_phase.scaling_factor
-        assert isinstance(sfx_cv, Suffix)
-        assert len(sfx_cv) == 57
-        assert sfx_cv[
-            model.fs.unit.liquid_phase.enthalpy_balances[0.0]
-        ] == pytest.approx(3.95570105e-7, rel=1e-8)
-        assert sfx_cv[
-            model.fs.unit.liquid_phase.pressure_balance[0.0]
-        ] == pytest.approx(1e-6, rel=1e-8)
-        for (
-            c
-        ) in model.fs.unit.liquid_phase.rate_reaction_stoichiometry_constraint.values():
-            assert sfx_cv[c] == pytest.approx(1, rel=1e-8)
-
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 59
-        assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
-            0.127715457, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
-            0.147943542, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
-            0.138666123, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(
-            9.8692326672e-6, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
-            5.52429667519e5, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
-            2.310160428, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.Sco2_conc[0]] == pytest.approx(
-            1.069518717, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.flow_vol_vap[0]] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
-            2.7027027027e-4, rel=1e-8
-        )
+        assert len(sfx_unit) == 1
         assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
             5.3178178178e-7, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
-            3.2451728e-3, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
-            3.95570105e-7, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
-            4.214223e-2, rel=1e-8
         )
 
     # TODO: Remove test once iscale is deprecated
@@ -1013,11 +918,11 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4.184434e12, rel=1e-3
+            3.8550325e12, rel=1e-3
         )
 
     @pytest.mark.integration
-    def test_example_case_scaler_scaling(self):
+    def test_example_case_scaler_scaling_default(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -1085,5 +990,90 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            9.43861834e16, rel=1e-3
+            2.428479487421e12, rel=1e-3
+        )
+
+    @pytest.mark.integration
+    def test_example_case_scaler_scaling(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ADM1ParameterBlock()
+        m.fs.props_vap = ADM1_vaporParameterBlock()
+        m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
+
+        m.fs.unit = AD(
+            liquid_property_package=m.fs.props,
+            vapor_property_package=m.fs.props_vap,
+            reaction_package=m.fs.rxn_props,
+            has_heat_transfer=True,
+            has_pressure_change=False,
+        )
+
+        # Set the operating conditions
+        m.fs.unit.inlet.flow_vol.fix(170 / 24 / 3600)
+        m.fs.unit.inlet.temperature.fix(308.15)
+        m.fs.unit.inlet.pressure.fix(101325)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.01)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(0.0)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
+
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
+
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.liquid_outlet.temperature.fix(308.15)
+
+        sb = ScalerBase()
+
+        # Apply scaling to unscaled variables
+        for var in m.fs.component_data_objects(Var, descend_into=True):
+            if "conc_mass_comp" in var.name:
+                sb.set_variable_scaling_factor(var, 1e1)
+            if "conc_mol" in var.name:
+                sb.set_variable_scaling_factor(var, 1e2)
+            if "reaction_rate" in var.name:
+                sb.set_variable_scaling_factor(var, 1e6)
+
+            sb.set_variable_scaling_factor(m.fs.unit.hydraulic_retention_time[0], 1e-6)
+
+        scaler = ADScaler()
+        scaler.scale_model(
+            m.fs.unit,
+            submodel_scalers={
+                m.fs.unit.liquid_phase.properties_in: ADM1PropertiesScaler,
+                m.fs.unit.liquid_phase.properties_out: ADM1PropertiesScaler,
+                m.fs.unit.liquid_phase.reactions: ADM1ReactionScaler,
+            },
+        )
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            2.27372477638e11, rel=1e-3
         )
