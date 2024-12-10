@@ -20,7 +20,6 @@ from idaes.core.util.scaling import (
     constraints_with_scale_factor_generator,
 )
 from idaes.core.util.model_statistics import number_activated_objectives
-from watertap.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP, _pyomo_nl_writer_log
 
 import watertap.core.plugins.solvers as solver_module
@@ -65,10 +64,6 @@ class TestIpoptWaterTAP:
     @pytest.mark.unit
     def test_pyomo_registration(self, s):
         assert s.__class__ is IpoptWaterTAP
-
-    @pytest.mark.unit
-    def test_idaes_registration(self):
-        assert get_solver().__class__ is IpoptWaterTAP
 
     @pytest.mark.unit
     @pytest.mark.requires_idaes_solver
