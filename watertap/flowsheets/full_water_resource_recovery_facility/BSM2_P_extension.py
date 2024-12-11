@@ -556,6 +556,9 @@ def set_operating_conditions(m, bio_P=False):
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
     else:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
+        iscale.set_scaling_factor(
+            m.fs.AD.liquid_phase.reactions[0].reaction_rate["R24"], 1e6
+        )
 
     # Apply scaling
     scale_variables(m)
@@ -963,7 +966,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
