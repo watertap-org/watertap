@@ -83,5 +83,3 @@ def test_solve():
     assert value(
         m.fs.unit.treated.flow_mass_phase_comp[0, "Liq", "X"]
     ) == pytest.approx(0.005, rel=1e-3)
-
-    return m

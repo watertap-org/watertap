@@ -88,4 +88,3 @@ def test_solve():
     assert value(m.fs.unit.brine_solids_concentration) == pytest.approx(
         180.180, rel=1e-3
     )
-    return m
