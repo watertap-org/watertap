@@ -193,8 +193,6 @@ Additional Variables
    "Reactor 7 oxygen mass transfer coefficient",":math:`KLa_{R7}`", "240", ":math:`\text{hr}^{-1}`"
    "Dissolved oxygen concentration at equilibrium",":math:`S_{O, eq}`", "8e-3", ":math:`\text{hr}^{-1}`"
 
-
-
 Additional Constraints
 ----------------------
 

@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.core.solvers import get_solver
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.flowsheets.oaro.oaro_multi import (
     build,
     set_operating_conditions,

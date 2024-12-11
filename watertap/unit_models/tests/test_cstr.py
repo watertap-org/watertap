@@ -52,6 +52,7 @@ from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -271,12 +272,17 @@ class TestInitializers:
         m.fs.unit.heat_duty[0].fix(0)
         m.fs.unit.deltaP[0].fix(0)
 
+        iscale.calculate_scaling_factors(m)
         return m
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_general_hierarchical(self, model):
-        initializer = SingleControlVolumeUnitInitializer()
-        initializer.initialize(model.fs.unit)
+        initializer = SingleControlVolumeUnitInitializer(
+            writer_config={"linear_presolve": False}
+        )
+
+        initializer.initialize(model.fs.unit, output_level=idaeslog.DEBUG)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 

@@ -21,14 +21,14 @@ cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.5.0,<2.6.0rc0",  # from PyPI
+    "idaes-pse>=2.7.0,<2.8.0rc0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse==2.5.0",
+    "idaes-pse @ git+https://github.com/watertap-org/idaes-pse@2.7.0.dev0.watertap.24.11.19",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -37,7 +37,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.1.dev0",
+    version="1.2.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -60,7 +60,6 @@ setup(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
@@ -96,6 +95,7 @@ setup(
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
             "nbconvert",
+            "idaes-flowsheet-processor @ git+https://github.com/watertap-org/idaes-flowsheet-processor@0.1.dev1",
         ],
         "notebooks": [
             "jupyter",
@@ -104,21 +104,6 @@ setup(
         "oli_api": [
             "requests",
             "cryptography",  # for encrypting OLI credentials
-        ],
-        "dev": [
-            "nbsphinx",  # jupyter notebook support for sphinx
-            "jinja2<3.1.0",  # see watertap-org/watertap#449
-            "Sphinx==7.1.*",  # docs
-            "sphinx_rtd_theme",  # docs
-            "urllib3 < 2",  # see watertap-org/watertap#1021,
-            # other requirements
-            "linkify-it-py",
-            "black",  # code formatting
-            # other requirements
-            "pytest",  # test framework
-            "pytest-cov",  # code coverage
-            # treebeardtech/nbmake#121
-            "nbmake != 1.5.1",
         ],
     },
     package_data={  # Optional
