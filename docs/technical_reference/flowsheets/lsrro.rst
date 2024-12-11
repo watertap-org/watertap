@@ -15,7 +15,7 @@ Moreover, LSRRO can be constructed using commercially available nanofiltration m
 
 
 Implementation
-==============
+--------------
 
 Figure 1 illustrates the LSRRO flowsheet. The LSRRO system comprises a conventional RO stage followed by low-salt-rejection (LSR) stages, where the saline permeate of each LSR stage is recycled to the inlet of the previous stage. Brine is concentrated further as it passes through each subsequent LSR stage.
 The first stage RO permeate is collected as purified water (Product Water) and the last LSR stage produces the final concentrated brine. 
