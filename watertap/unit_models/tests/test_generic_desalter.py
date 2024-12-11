@@ -65,7 +65,7 @@ def build():
     return m
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_solve():
     m = build()
     m.fs.unit.initialize()
