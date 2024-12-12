@@ -16,6 +16,7 @@ from pyomo.environ import (
     units,
 )
 from idaes.core import FlowsheetBlock
+import idaes.core.util.scaling as iscale
 from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
 from watertap.unit_models.anaerobic_digester import AD
@@ -88,6 +89,8 @@ def build_flowsheet():
     m.fs.R1.volume_vapor.fix(300 * pyo.units.m**3)
 
     m.fs.R1.liquid_outlet.temperature.fix(308.15 * pyo.units.K)
+
+    iscale.calculate_scaling_factors(m)
 
     # TO DO: Fix initialization
     m.fs.R1.initialize(outlvl=idaeslog.INFO_HIGH)
