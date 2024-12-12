@@ -567,15 +567,12 @@ def set_operating_conditions(m, bio_P=False):
 
     if bio_P:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
-        scale_constraints(m)
     else:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
-        iscale.set_scaling_factor(
-            m.fs.AD.liquid_phase.reactions[0].reaction_rate["R24"], 1e6
-        )
 
     # Apply scaling
     scale_variables(m)
+    scale_constraints(m)
     iscale.calculate_scaling_factors(m)
 
 
