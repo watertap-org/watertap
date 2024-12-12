@@ -210,7 +210,7 @@ class TestZOBase:
         with pytest.raises(
             KeyError,
             match="fs.unit - no value provided for recovery_vol"
-            " \(index: None\) in database.",
+            r" \(index: None\) in database.",
         ):
             model.fs.unit.set_param_from_data(
                 model.fs.unit.recovery_vol, {"recovery_vol": {}}
@@ -230,7 +230,7 @@ class TestZOBase:
         with pytest.raises(
             KeyError,
             match="fs.unit - no units provided for recovery_vol"
-            " \(index: None\) in database.",
+            r" \(index: None\) in database.",
         ):
             model.fs.unit.set_param_from_data(
                 model.fs.unit.recovery_vol, {"recovery_vol": {"value": 0.42}}
