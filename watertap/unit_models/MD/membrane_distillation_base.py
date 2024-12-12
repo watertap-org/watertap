@@ -20,7 +20,6 @@ from pyomo.environ import (
     units as pyunits,
     Constraint,
     log,
-    value,
 )
 from enum import Enum, auto
 

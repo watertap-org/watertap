@@ -11,7 +11,7 @@
 #################################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var, units as pyunits
+from pyomo.environ import Constraint
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from idaes.core import FlowDirection
 
