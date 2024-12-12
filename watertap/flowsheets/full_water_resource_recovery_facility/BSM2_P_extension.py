@@ -165,6 +165,10 @@ def main(bio_P=False):
     print("--- Scaling Factors ---")
     report_scaling_factors(m, descend_into=True)
 
+    print("---SVD---")
+    svd = dt.prepare_svd_toolbox()
+    svd.display_underdetermined_variables_and_constraints()
+
     return m, results
 
 
@@ -573,12 +577,17 @@ def set_operating_conditions(m, bio_P=False):
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
     else:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e4)
+        scaler.scale_constraint_by_nominal_value(
+            m.fs.AD.liquid_phase.enthalpy_balances[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=True,
+        )
         iscale.set_scaling_factor(
             m.fs.AD.liquid_phase.reactions[0].reaction_rate["R24"], 1e7
         )
         scaler.scale_constraint_by_nominal_value(
-            m.fs.AD.liquid_phase.enthalpy_balances[0],
-            scheme=ConstraintScalingScheme.inverseMaximum,
+            m.fs.AD.liquid_phase.reactions[0.0].rate_expression["R24"],
+            scheme=ConstraintScalingScheme.inverseRSS,
             overwrite=True,
         )
 
