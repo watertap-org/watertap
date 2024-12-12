@@ -11,7 +11,7 @@
 #################################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint, Var, units as pyunits)
+from pyomo.environ import Constraint, Var, units as pyunits
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from idaes.core import FlowDirection
 
@@ -445,9 +445,10 @@ see property package for documentation.}""",
 
             else:
                 if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
-                    b.cold_ch.mass_transfer_term[t, p, j].fix(0) 
+                    b.cold_ch.mass_transfer_term[t, p, j].fix(0)
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                    b.cold_ch.mass_transfer_term[t, "Liq", j].fix(0)
                     return (
                         b.cold_ch.mass_transfer_term[t, p, j]
                         == -b.hot_ch.mass_transfer_term[t, "Liq", j]
@@ -462,9 +463,8 @@ see property package for documentation.}""",
         )
         def eq_connect_mass_transfer_gap(b, t):
 
-            
             if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-
+                b.gap_ch.mass_transfer_term[t, "Vap", "H2O"].fix(0)
                 return (
                     b.gap_ch.mass_transfer_term[t, "Liq", "H2O"]
                     == -b.hot_ch.mass_transfer_term[t, "Liq", "H2O"]
@@ -472,8 +472,6 @@ see property package for documentation.}""",
 
             else:
                 return Constraint.Skip
-
-            
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -495,16 +493,6 @@ see property package for documentation.}""",
             self.config.hot_ch.property_package.get_metadata().get_derived_units
         )
 
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-            self.cold_ch.heat_term = Var(
-                self.flowsheet().config.time,
-                self.difference_elements,
-                initialize=10e3,
-                bounds=(0, 1e20),
-                units=pyunits.J * pyunits.s**-1,
-                doc="heat transfer term for cold side",
-            )
-
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Conductive heat transfer to cold channel",
@@ -517,18 +505,18 @@ see property package for documentation.}""",
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            # self.difference_elements,
             doc="Conductive heat transfer to cold channel",
         )
-        def eq_conductive_heat_transfer_term_cold(b, t, x):
+        def eq_conductive_heat_transfer_term_cold(b, t):
             if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                 return b.cold_ch.heat[t] == -b.hot_ch.heat[t]
             elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
                 return (
-                    b.cold_ch.heat_term[t,x] * self.nfe
-                    == -b.flux_conduction_heat[t, x] * b.area 
-                    - b.hot_ch.enthalpy_transfer[t] 
-                    - b.gap_ch.enthalpy_transfer[t] 
+                    b.cold_ch.heat[t]
+                    == -b.hot_ch.heat[t]
+                    - b.hot_ch.enthalpy_transfer[t]
+                    - b.gap_ch.enthalpy_transfer[t]
                 )
             elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                 return Constraint.Skip
@@ -538,24 +526,11 @@ see property package for documentation.}""",
             self.difference_elements,
             doc="Connecting the cold channel conductive heat transfer to conductive heat across the gap",
         )
-        def eq_conductive_heat_transfer_gap(b, t,x):
+        def eq_conductive_heat_transfer_gap(b, t, x):
             if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                return b.cold_ch.heat_term[t,x] * self.nfe== b.flux_conduction_heat_gap[t,x] * b.area 
+                return b.cold_ch.heat[t] == b.flux_conduction_heat_gap_avg[t] * b.area
             else:
                 return Constraint.Skip
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="cold channel total heat transfer",
-        )
-        def eq_total_conductive_heat_transfer_cold(b, t):
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                return (b.cold_ch.heat[t]==
-                        sum(b.cold_ch.heat_term[t,x] for x in self.difference_elements)
-                    )
-            else:
-                return Constraint.Skip
-
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -569,14 +544,10 @@ see property package for documentation.}""",
             doc="Enthalpy heat transfer to the cold channel",
         )
         def eq_enthalpy_transfer_cold(b, t):
-            if self.config.MD_configuration_Type in [
-                MDconfigurationType.DCMD,
-                MDconfigurationType.VMD,
-            ]:
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+
                 return (
                     b.cold_ch.enthalpy_transfer[t] == b.area * b.flux_enth_cold_avg[t]
                 )
-            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-                return b.gap_ch.enthalpy_transfer[t] == b.area * b.flux_enth_cold_avg[t]
             else:
                 return Constraint.Skip

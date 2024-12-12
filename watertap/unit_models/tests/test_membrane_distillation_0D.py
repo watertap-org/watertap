@@ -979,7 +979,6 @@ def build_temperature_polarization_none_vmd():
 
     m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
     m.fs.unit.cold_ch_inlet.pressure[0].fix(10000)
-  
 
     iscale.calculate_scaling_factors(m)
 
@@ -992,11 +991,10 @@ class TestMembraneDisillation0D_temperature_polarization_none_vmd(UnitTestHarnes
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] =  0.9285175510218185
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] =  337.7047629447829
+        ] = 0.9285175510218185
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 337.7047629447829
         self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 337.7047629447829
         self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03648244897818147
-       
 
         self.conservation_equality = {
             "Check 1": {
@@ -1011,6 +1009,7 @@ class TestMembraneDisillation0D_temperature_polarization_none_vmd(UnitTestHarnes
 
         return m
 
+
 def build_temperature_polarization_fixed_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -1023,7 +1022,7 @@ def build_temperature_polarization_fixed_hot_vmd():
             "property_package": m.fs.properties_hot_ch,
             "property_package_vapor": m.fs.properties_vapor,
             "has_pressure_change": False,
-            "temperature_polarization_type": TemperaturePolarizationType.fixed,  
+            "temperature_polarization_type": TemperaturePolarizationType.fixed,
             "concentration_polarization_type": ConcentrationPolarizationType.none,
             "mass_transfer_coefficient": MassTransferCoefficient.none,
             "flow_direction": FlowDirection.forward,
@@ -1071,8 +1070,8 @@ class TestMembraneDisillation0D_temperature_polarization_fixed_hot_vmd(UnitTestH
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         ] = 0.9479100277176233
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] =  352.1551430126428
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 337.7492369004734 
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 352.1551430126428
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 337.7492369004734
         self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.01708997228237665
 
         self.conservation_equality = {
@@ -1088,6 +1087,7 @@ class TestMembraneDisillation0D_temperature_polarization_fixed_hot_vmd(UnitTestH
 
         return m
 
+
 def build_temperature_polarization_calculated_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -1100,7 +1100,7 @@ def build_temperature_polarization_calculated_hot_vmd():
             "property_package": m.fs.properties_hot_ch,
             "property_package_vapor": m.fs.properties_vapor,
             "has_pressure_change": False,
-            "temperature_polarization_type": TemperaturePolarizationType.calculated,  
+            "temperature_polarization_type": TemperaturePolarizationType.calculated,
             "concentration_polarization_type": ConcentrationPolarizationType.none,
             "mass_transfer_coefficient": MassTransferCoefficient.none,
             "flow_direction": FlowDirection.forward,
@@ -1144,13 +1144,15 @@ def build_temperature_polarization_calculated_hot_vmd():
     return m
 
 
-class TestMembraneDisillation0D_temperature_polarization_calculated_hot_vmd(UnitTestHarness):
+class TestMembraneDisillation0D_temperature_polarization_calculated_hot_vmd(
+    UnitTestHarness
+):
     def configure(self):
         m = build_temperature_polarization_calculated_hot_vmd()
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] =  0.9348449235681139
+        ] = 0.9348449235681139
         self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 342.68302106371556
         self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 339.9911385947164
         self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03015507643188607
@@ -1168,6 +1170,7 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_hot_vmd(Unit
 
         return m
 
+
 def build_temperature_polarization_concentration_polarization_calculated_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -1180,8 +1183,8 @@ def build_temperature_polarization_concentration_polarization_calculated_hot_vmd
             "property_package": m.fs.properties_hot_ch,
             "property_package_vapor": m.fs.properties_vapor,
             "has_pressure_change": False,
-            "temperature_polarization_type": TemperaturePolarizationType.calculated,  
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,  
+            "temperature_polarization_type": TemperaturePolarizationType.calculated,
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
             "mass_transfer_coefficient": MassTransferCoefficient.calculated,
             "flow_direction": FlowDirection.forward,
         },
@@ -1218,16 +1221,20 @@ def build_temperature_polarization_concentration_polarization_calculated_hot_vmd
 
     m.fs.unit.hot_ch.channel_height.fix(0.0019)
     m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
-   # m.fs.unit.hot_ch.K.fix(3.15e-5)
+    # m.fs.unit.hot_ch.K.fix(3.15e-5)
 
     iscale.calculate_scaling_factors(m)
 
     return m
 
 
-class TestMembraneDisillation0D_temperature_polarization_concentration_polarization_calculated_hot_vmd(UnitTestHarness):
+class TestMembraneDisillation0D_temperature_polarization_concentration_polarization_calculated_hot_vmd(
+    UnitTestHarness
+):
     def configure(self):
-        m = build_temperature_polarization_concentration_polarization_calculated_hot_vmd()
+        m = (
+            build_temperature_polarization_concentration_polarization_calculated_hot_vmd()
+        )
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
@@ -1249,6 +1256,7 @@ class TestMembraneDisillation0D_temperature_polarization_concentration_polarizat
 
         return m
 
+
 def build_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -1260,7 +1268,7 @@ def build_temperature_polarization_concentration_polarization_pressure_calculate
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
             "property_package_vapor": m.fs.properties_vapor,
-            "has_pressure_change": True, 
+            "has_pressure_change": True,
             "pressure_change_type": PressureChangeType.calculated,
             "temperature_polarization_type": TemperaturePolarizationType.calculated,
             "concentration_polarization_type": ConcentrationPolarizationType.calculated,
@@ -1300,16 +1308,20 @@ def build_temperature_polarization_concentration_polarization_pressure_calculate
 
     m.fs.unit.hot_ch.channel_height.fix(0.0019)
     m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
-    #m.fs.unit.hot_ch.deltaP.fix(-5e4) 
+    # m.fs.unit.hot_ch.deltaP.fix(-5e4)
 
     iscale.calculate_scaling_factors(m)
 
     return m
 
 
-class TestMembraneDisillation0D_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd(UnitTestHarness):
+class TestMembraneDisillation0D_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd(
+    UnitTestHarness
+):
     def configure(self):
-        m = build_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd()
+        m = (
+            build_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd()
+        )
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
@@ -1331,6 +1343,7 @@ class TestMembraneDisillation0D_temperature_polarization_concentration_polarizat
         }
 
         return m
+
 
 def build_temperature_polarization_none_pgmd():
     m = ConcreteModel()
@@ -1412,23 +1425,28 @@ class TestMembraneDisillation0D_temperature_polarization_none_pgmd(UnitTestHarne
 
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 0.925
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 340.0
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 320.0
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.002
+        ] = 0.9580840582054698
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 356.6334998833635
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = (
+            304.69178989433595
+        )
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0023053139451937005
+        self.unit_solutions[m.fs.unit.gap_ch_outlet.temperature[0]] = 326.62398751842414
 
         self.conservation_equality = {
             "Check 1": {
                 "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
                 + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-                #+ m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-                #+ m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-                ,
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
                 "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
                 + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-                #+ m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-                #+ m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
                 + m.fs.unit.gap_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.gap_ch_outlet.flow_mass_phase_comp[0, "Vap", "H2O"],
             },
         }
 
