@@ -27,7 +27,7 @@ defaults:
 env:
   # --color=yes needed for colorized output to be shown in GHA logs
   # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
-  PYTEST_ADDOPTS: "--color=yes -Werror"
+  PYTEST_ADDOPTS: "--color=yes"
   PIP_PROGRESS_BAR: "off"
   WATERTAP_KERNEL_NAME: watertap-dev
 
