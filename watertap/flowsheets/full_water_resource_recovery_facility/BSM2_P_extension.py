@@ -93,6 +93,8 @@ from idaes.core.scaling.custom_scaler_base import (
     ConstraintScalingScheme,
 )
 
+from idaes.core.util import DiagnosticsToolbox
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -147,6 +149,17 @@ def main(bio_P=False):
 
     display_costing(m)
     display_performance_metrics(m)
+
+    dt = DiagnosticsToolbox(m)
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     return m, results
 
@@ -554,6 +567,7 @@ def set_operating_conditions(m, bio_P=False):
 
     if bio_P:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
+        scale_constraints(m)
     else:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
         iscale.set_scaling_factor(
@@ -562,7 +576,6 @@ def set_operating_conditions(m, bio_P=False):
 
     # Apply scaling
     scale_variables(m)
-    scale_constraints(m)
     iscale.calculate_scaling_factors(m)
 
 
@@ -966,7 +979,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
