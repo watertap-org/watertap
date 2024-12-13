@@ -7,7 +7,7 @@ This Steam Jet Ejector unit model:
    * Assumes the discharge mixture pressure equals its saturation pressure.
    
 .. index::
-   pair: watertap.unit_models.steam_ejector
+   pair: watertap.unit_models.steam_ejector;steam_ejector
 
 .. currentmodule:: watertap.unit_models.steam_ejector
 
