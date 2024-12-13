@@ -33,18 +33,6 @@ Equations
    "Entrainment Ratio Definition", ":math:`Ra = \frac{\dot{m}_{motive}}{\dot{m}_{entrained}}`"
    "Compression Ratio", ":math:`CR = \frac{P_s}{P_{ev}}`"
 
-Variables
-----------
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Units", "Bounds"
-
-   "Entrainment Ratio", ":math:`Ra`", "entrainment_ratio", "Dimensionless", "<4"
-   "Compression Ratio", ":math:`CR`", "compression_ratio", "Dimensionless", ">1.89"
-   "Pressure Correction Factor", ":math:`PCF`", "PCF", "Dimensionless", "-"
-   "Temperature Correction Factor", ":math:`TCF`", "TCF", "Dimensionless", "-"
-   "Motive Steam Pressure", ":math:`P_m`", "properties_motive_steam[0].pressure", "kPa", "[100, 3500]"
-   "Entrained Vapor Pressure", ":math:`P_{ev}`", "properties_entrained_vapor[0].pressure", "kPa", "-"
-   "Discharge Mixture Pressure", ":math:`P_s`", "properties_discharge_mix[0].pressure", "kPa", "-"
 
 Sets
 ----
@@ -64,6 +52,35 @@ Performance Metrics
    "Entrainment Ratio", ":math:`Ra = \frac{\dot{m}_{motive}}{\dot{m}_{entrained}}`"
    "Compression Ratio", ":math:`CR = \frac{P_s}{P_{ev}}`"
 
+Variables
+----------
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Units", "Bounds"
+
+   "Entrainment Ratio", ":math:`Ra`", "entrainment_ratio", "Dimensionless", "<4"
+   "Compression Ratio", ":math:`CR`", "compression_ratio", "Dimensionless", ">1.89"
+   "Pressure Correction Factor", ":math:`PCF`", "PCF", "Dimensionless", "N/A"
+   "Temperature Correction Factor", ":math:`TCF`", "TCF", "Dimensionless", "N/A"
+   "Motive Steam Pressure", ":math:`P_m`", "properties_motive_steam[0].pressure", "kPa", "[100, 3500]"
+   "Entrained Vapor Pressure", ":math:`P_{ev}`", "properties_entrained_vapor[0].pressure", "kPa", "N/A"
+   "Discharge Mixture Pressure", ":math:`P_s`", "properties_discharge_mix[0].pressure", "kPa", "N/A"
+
+   Equations
+---------
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Pressure Correction Factor", ":math:`PCF = 3 \times 10^{-7} P_m^2 - 0.0009 P_m + 1.6101`"
+   "Temperature Correction Factor", ":math:`TCF = 2 \times 10^{-8} T_{ev}^2 - 0.0006 T_{ev} + 1.0047`"
+   "Entrainment Ratio Model", ":math:`Ra \times TCF = 0.296 \frac{P_s^{1.19}}{P_{ev}^{1.04}} \left(\frac{P_m}{P_{ev}}\right)^{0.015} PCF`"
+   "Entrainment Ratio Definition", ":math:`Ra = \frac{\dot{m}_{motive}}{\dot{m}_{entrained}}`"
+   "Compression Ratio", ":math:`CR = \frac{P_s}{P_{ev}}`"
+
+
 Class Documentation
 -------------------
 * :mod:`watertap.unit_models.steam_ejector`
+
+References
+----------
+El-Dessouky, H., Modeling and simulation of thermal vapor compression desalination plant. Symposium on Desalination of Seawater with Nuclear Energy, Taejon, Republic of Korea, 26-30 May, 1997.
