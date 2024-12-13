@@ -31,8 +31,8 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
-from watertap.costing.unit_models.thermo_compressor import (
-    cost_thermo_compressor,
+from watertap.costing.unit_models.steam_ejector import (
+    cost_steam_ejector,
 )
 
 from watertap.core import InitializationMixin
@@ -42,7 +42,7 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "Elmira Shamlou"
 
 
-@declare_process_block_class("SteamEjector0D")
+@declare_process_block_class("SteamEjector")
 class SteamEjectorData(InitializationMixin, UnitModelBlockData):
     """
     Steam Ejector model for thermal vapor compression
@@ -410,4 +410,4 @@ class SteamEjectorData(InitializationMixin, UnitModelBlockData):
 
     @property
     def default_costing_method(self):
-        return cost_thermo_compressor
+        return cost_steam_ejector
