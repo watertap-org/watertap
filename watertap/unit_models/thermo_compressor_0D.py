@@ -42,7 +42,7 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "Elmira Shamlou"
 
 
-@declare_process_block_class("SteamEjector")
+@declare_process_block_class("SteamEjector0D")
 class SteamEjectorData(InitializationMixin, UnitModelBlockData):
     """
     Steam Ejector model for thermal vapor compression
