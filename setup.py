@@ -69,6 +69,7 @@ setup(
         # primary requirements for unit and property models
         "idaes-pse >=2.7.0,<2.8.0rc0",
         "pyomo>=6.6.1",
+        "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep >=0.1.0",
