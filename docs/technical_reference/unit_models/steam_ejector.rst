@@ -13,7 +13,7 @@ This Steam Jet Ejector unit model:
 
 Degrees of Freedom
 -------------------
-In addition to the inlet state variables (i.e., temperature, pressure, and component flowrates for motive steam and entrained vapor), the Steam Ejector model has at least 1 degrees of freedom that must be fixed for the unit to be fully specified. Typically, the following variables are fixed:
+In addition to the inlet state variables (i.e., temperature, pressure, and component flowrates for motive steam and entrained vapor), the Steam Ejector model has at least 1 degree of freedom that must be fixed for the unit to be fully specified. Typically, the following variables are fixed:
 
     * Entrainment ratio
     * Compression ratio
