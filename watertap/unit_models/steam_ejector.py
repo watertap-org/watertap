@@ -199,12 +199,16 @@ class SteamEjectorData(InitializationMixin, UnitModelBlockData):
             doc="Temperature correction factor",
         )
         self.entrainment_ratio = Var(
-            initialize=0.5, units=pyunits.dimensionless, doc="Entrainment ratio"
+            initialize=0.5,
+            bounds=(0, 4),
+            units=pyunits.dimensionless,
+            doc="Entrainment ratio",
         )
+
         # The bounds of compression ratio variable corresponds to the validity range of entrainment ratio semi-empirical model
         self.compression_ratio = Var(
             initialize=2,
-            bounds=(1, 6),
+            bounds=(1.89, None),
             units=pyunits.dimensionless,
             doc="Compression ratio",
         )

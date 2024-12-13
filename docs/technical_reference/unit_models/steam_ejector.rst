@@ -1,13 +1,13 @@
-Steam Ejector (Thermocompressor)
+Steam Jet Ejector
 ================================
-This Steam Ejector (thermocompressor) unit model:
+This Steam Jet Ejector unit model:
    * Simulates the performance of a steam jet ejector for thermal vapor compression.
    * Uses semi-empirical correlations for entrainment ratio, PCF, and TCF based on El-Dessouky (1997).
    * Operates in steady-state only.
    * Assumes the discharge mixture pressure equals its saturation pressure.
    
 .. index::
-   pair: watertap.unit_models.SteamEjector; SteamEjector
+   pair: watertap.unit_models.steam_ejector
 
 .. currentmodule:: watertap.unit_models.SteamEjector
 
