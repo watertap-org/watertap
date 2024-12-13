@@ -16,7 +16,7 @@ GUI configuration for the base BSM2 flowsheet.
 from pyomo.environ import units as pyunits, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
