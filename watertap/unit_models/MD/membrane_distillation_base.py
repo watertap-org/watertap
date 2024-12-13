@@ -278,19 +278,19 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             self.gap_ch._add_interface_stateblock(has_phase_equilibrium=False)
 
             self.gap_ch.add_material_balances(
-                balance_type=self.config.hot_ch.material_balance_type,
+                balance_type=self.config.gap_ch.material_balance_type,
                 has_mass_transfer=True,
             )
 
             self.gap_ch.add_momentum_balances(
-                balance_type=self.config.cold_ch.momentum_balance_type,
-                pressure_change_type=self.config.cold_ch.pressure_change_type,
-                has_pressure_change=self.config.cold_ch.has_pressure_change,
-                friction_factor=self.config.cold_ch.friction_factor,
+                balance_type=self.config.gap_ch.momentum_balance_type,
+                pressure_change_type=self.config.gap_ch.pressure_change_type,
+                has_pressure_change=self.config.gap_ch.has_pressure_change,
+                friction_factor=self.config.gap_ch.friction_factor,
             )
 
             self.gap_ch.add_energy_balances(
-                balance_type=self.config.hot_ch.energy_balance_type,
+                balance_type=self.config.gap_ch.energy_balance_type,
                 has_heat_transfer=False,
                 has_enthalpy_transfer=True,
             )
@@ -750,7 +750,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             else:
                 return Constraint.Skip
 
-        # Check for hot channel temperature polarization type
         if (
             self.config.hot_ch.temperature_polarization_type
             != TemperaturePolarizationType.none
@@ -913,7 +912,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             else:
                 return Constraint.Skip
 
-        ###########
         @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
@@ -981,7 +979,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         if include_constraint:
             if not hasattr(self, "eq_area"):
-                # Membrane area equation
+
                 @self.Constraint(doc="Total Membrane area")
                 def eq_area(b):
                     return b.area == b.length * b.width
@@ -1040,13 +1038,11 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         if self.config.MD_configuration_Type == MDconfigurationType.VMD:
             for x in [self.cold_ch.length_domain.first()]:
-                if not self.cold_ch._skip_element(x):
-                    self.cold_ch_inlet.temperature[0].unfix()
+                self.cold_ch_inlet.temperature[0].unfix()
 
         if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
             for x in [self.gap_ch.length_domain.first()]:
-                if not self.gap_ch._skip_element(x):
-                    self.gap_ch_inlet.temperature[0].unfix()
+                self.gap_ch_inlet.temperature[0].unfix()
 
         if degrees_of_freedom(self) != 0:
             raise Exception(

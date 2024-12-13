@@ -14,6 +14,7 @@
 from pyomo.environ import Constraint
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from idaes.core import FlowDirection
+from idaes.core.util import scaling as iscale
 
 from .MD_channel_base import (
     ConcentrationPolarizationType,
@@ -631,3 +632,159 @@ see property package for documentation.}""",
                 )
             else:
                 return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Gap interface pressure equality"
+        )
+        def eq_equal_pressure_interface_gap(b, t):
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.gap_ch.properties_interface[
+                        t, self.gap_ch.length_domain.first()
+                    ].pressure
+                    == b.gap_ch.properties[
+                        t, self.gap_ch.length_domain.first()
+                    ].pressure
+                )
+            else:
+                return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="gap bulk temperature in PGMD and CGMD",
+        )
+        def gap_bulk_temperature_interface_gap(b, t):
+
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                return (
+                    b.gap_ch.properties_interface[
+                        t, self.gap_ch.length_domain.first()
+                    ].temperature
+                    == b.gap_ch.properties[
+                        t, self.gap_ch.length_domain.first()
+                    ].temperature
+                )
+
+            else:
+                return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="gap bulk temperature inlet PGMD and CGMD",
+        )
+        def gap_bulk_temperature_interface_inlet(b, t):
+
+            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                if (
+                    self.config.gap_ch.temperature_polarization_type
+                    == TemperaturePolarizationType.fixed
+                ):
+                    return (
+                        b.hot_ch.properties[
+                            t, self.hot_ch.length_domain.first()
+                        ].temperature
+                        + b.cold_ch.properties[
+                            t, self.cold_ch.length_domain.last()
+                        ].temperature
+                        == b.gap_ch.properties[
+                            t, self.gap_ch.length_domain.first()
+                        ].temperature
+                        * 2
+                    )
+
+            else:
+                return Constraint.Skip
+
+        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            for t in self.flowsheet().config.time:
+                self.gap_ch.properties_interface[
+                    t, self.gap_ch.length_domain.first()
+                ].flow_mass_phase_comp["Liq", "H2O"].fix(0)
+
+        @self.Constraint(self.flowsheet().config.time, doc="VMD inlet temperature")
+        def eq_vmd_inlet_temp(b, t):
+            if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return (
+                    b.cold_ch.properties[
+                        t, self.cold_ch.length_domain.first()
+                    ].temperature
+                    == b.hot_ch.properties[
+                        t, self.hot_ch.length_domain.first()
+                    ].temperature
+                )
+            else:
+                return Constraint.Skip
+
+    def calculate_scaling_factors(self):
+
+        super().calculate_scaling_factors()
+
+        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_interface[0.0, 0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ],
+                1e7,
+            )
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_interface[0.0, 0.0].flow_vol_phase["Liq"], 1e10
+            )
+
+            for (t, x, p, j), v in self.gap_ch._flow_terms.items():
+                iscale.set_scaling_factor(v, 1e3)
+
+            for (t, x), v in self.gap_ch.enthalpy_transfer.items():
+                iscale.set_scaling_factor(v, 1e-3)
+
+            for (t, x, p), v in self.gap_ch._enthalpy_flow.items():
+                iscale.set_scaling_factor(v, 1e-2)
+
+            for t in self.flowsheet().config.time:
+                for x in self.gap_ch.length_domain:
+                    for p in self.gap_ch.config.property_package.phase_list:
+                        for j in self.gap_ch.config.property_package.component_list:
+                            if (p, j) in self.gap_ch.properties[
+                                t, x
+                            ].flow_mass_phase_comp:
+                                v = self.gap_ch.properties[t, x].flow_mass_phase_comp[
+                                    p, j
+                                ]
+                                iscale.set_scaling_factor(v, 1e4)
+
+            for t in self.flowsheet().config.time:
+                for x in self.gap_ch.length_domain:
+                    for p in self.gap_ch.config.property_package.phase_list:
+                        if p in self.gap_ch.properties[t, x].flow_vol_phase:
+                            v = self.gap_ch.properties[t, x].flow_vol_phase[p]
+                            iscale.set_scaling_factor(v, 1e9)
+
+            for t in self.flowsheet().config.time:
+                for x in self.gap_ch.length_domain:
+                    for p in self.gap_ch.config.property_package.phase_list:
+                        for j in self.gap_ch.config.property_package.component_list:
+                            if (p, j) in self.gap_ch.properties_interface[
+                                t, x
+                            ].flow_mass_phase_comp:
+                                var = self.gap_ch.properties_interface[
+                                    t, x
+                                ].flow_mass_phase_comp[p, j]
+                                iscale.set_scaling_factor(var, 1e3)
+
+            for t in self.flowsheet().config.time:
+                for x in self.gap_ch.length_domain:
+                    for p in self.gap_ch.config.property_package.phase_list:
+                        if p in self.gap_ch.properties_interface[t, x].flow_vol_phase:
+                            v = self.gap_ch.properties_interface[t, x].flow_vol_phase[p]
+                            iscale.set_scaling_factor(v, 1e9)
+
+            for t in self.flowsheet().config.time:
+                for x in self.gap_ch.length_domain:
+                    for p in self.gap_ch.config.property_package.phase_list:
+                        if p in self.gap_ch.properties[t, x].enth_flow_phase:
+                            v = self.gap_ch.properties[t, x].enth_flow_phase[p]
+                            iscale.set_scaling_factor(v, 1e-3)
+
+        if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+            for (t, x, p, j), v in self.cold_ch._flow_terms.items():
+                if p == "Vap" and j == "H2O":
+                    iscale.set_scaling_factor(v, 1e4)
