@@ -14,6 +14,7 @@
 from pyomo.environ import Constraint
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from idaes.core import FlowDirection
+from idaes.core.util import scaling as iscale
 
 from .MD_channel_base import (
     ConcentrationPolarizationType,
@@ -551,3 +552,27 @@ see property package for documentation.}""",
                 )
             else:
                 return Constraint.Skip
+
+    def calculate_scaling_factors(self):
+        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_in[0.0].enth_flow_phase["Liq"],
+                4.0,
+            )
+
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_in[0.0].flow_vol_phase["Liq"],
+                1e9,
+            )
+
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_interface[0.0, 0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ],
+                1e8,
+            )
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_interface[0.0, 0.0].flow_vol_phase["Liq"], 1e10
+            )
+
+        super().calculate_scaling_factors()

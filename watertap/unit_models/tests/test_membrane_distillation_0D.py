@@ -1409,7 +1409,7 @@ def build_temperature_polarization_none_pgmd():
     m.fs.unit.cold_ch_inlet.temperature[0].fix(273.15 + 25)
     m.fs.unit.cold_ch_inlet.pressure[0].fix(100000)
 
-    m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0)
+    m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
     m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
     m.fs.unit.gap_ch_inlet.temperature[0].set_value(273.15 + 30)
     m.fs.unit.gap_ch_inlet.pressure[0].fix(100000)

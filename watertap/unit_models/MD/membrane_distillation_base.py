@@ -1265,7 +1265,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 self.gap_ch.properties_interface[0.0, 0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ],
-                1e7,
+                1e8,
             )
             iscale.set_scaling_factor(
                 self.gap_ch.properties_interface[0.0, 0.0].flow_vol_phase["Liq"], 1e10
