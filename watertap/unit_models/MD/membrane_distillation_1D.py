@@ -372,7 +372,7 @@ see property package for documentation.}""",
             description="Options for selecting membrane distillation process configurations",
             doc="""
             Options for selecting membrane distillation process configurations
-         **default** - ``TemperaturePolarizationType.calculated``
+            **default** - ``TemperaturePolarizationType.calculated``
 
         .. csv-table::
             :header: "Configuration Options", "Description"

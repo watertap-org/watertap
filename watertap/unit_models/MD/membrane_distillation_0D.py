@@ -364,7 +364,7 @@ see property package for documentation.}""",
             description="Options for selecting membrane distillation process configurations",
             doc="""
             Options for selecting membrane distillation process configurations
-         **default** - ``MDconfigurationType.DCMD``
+            **default** - ``MDconfigurationType.DCMD``
 
         .. csv-table::
             :header: "Configuration Options", "Description"
