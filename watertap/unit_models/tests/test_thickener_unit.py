@@ -89,6 +89,22 @@ def build_ASM1():
     m.fs.unit.hydraulic_retention_time.fix()
     m.fs.unit.diameter.fix()
 
+    # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(m.fs.unit.underflow_state[0.0].flow_vol, 1e4)
+    iscale.set_scaling_factor(m.fs.unit.underflow_state[0.0].pressure, 1e-6)
+    iscale.set_scaling_factor(m.fs.unit.underflow_state[0.0].conc_mass_comp["S_S"], 1e4)
+    iscale.set_scaling_factor(
+        m.fs.unit.underflow_state[0.0].conc_mass_comp["S_NH"], 1e4
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.underflow_state[0.0].conc_mass_comp["S_ND"], 1e4
+    )
+    iscale.set_scaling_factor(m.fs.unit.overflow_state[0.0].pressure, 1e-6)
+    iscale.set_scaling_factor(m.fs.unit.overflow_state[0.0].conc_mass_comp["S_S"], 1e4)
+    iscale.set_scaling_factor(m.fs.unit.overflow_state[0.0].conc_mass_comp["S_NH"], 1e4)
+    iscale.set_scaling_factor(m.fs.unit.overflow_state[0.0].conc_mass_comp["S_ND"], 1e4)
+    iscale.set_scaling_factor(m.fs.unit.overflow_state[0.0].conc_mass_comp["X_ND"], 1e4)
+
     return m
 
 
