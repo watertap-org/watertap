@@ -9,7 +9,7 @@ This Steam Jet Ejector unit model:
 .. index::
    pair: watertap.unit_models.steam_ejector
 
-.. currentmodule:: watertap.unit_models.SteamEjector
+.. currentmodule:: watertap.unit_models.steam_ejector
 
 Degrees of Freedom
 -------------------
