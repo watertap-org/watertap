@@ -16,7 +16,7 @@ from pyomo.environ import (
 
 from idaes.core import FlowsheetBlock
 import watertap.property_models.water_prop_pack as props_w
-from watertap.unit_models.thermo_compressor_0D import SteamEjector
+from watertap.unit_models.steam_ejector import SteamEjector
 from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness

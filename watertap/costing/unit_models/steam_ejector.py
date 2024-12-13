@@ -2,13 +2,13 @@ import pyomo.environ as pyo
 from ..util import register_costing_parameter_block, make_capital_cost_var
 
 
-def build_thermo_compressor_cost_param_block(blk):
+def build_steam_ejector_cost_param_block(blk):
     """
-    Build the costing parameter block for the thermo compressor (steam ejector).
+    Build the costing parameter block for the steam ejector.
     """
     blk.base_cost = pyo.Var(
         initialize=1949,
-        doc="Base cost coefficient for thermo compressor",
+        doc="Base cost coefficient for steam ejector",
         units=pyo.units.USD_2020,
     )
     blk.cost_exponent = pyo.Var(
@@ -27,10 +27,10 @@ def build_thermo_compressor_cost_param_block(blk):
 
 
 @register_costing_parameter_block(
-    build_rule=build_thermo_compressor_cost_param_block,
-    parameter_block_name="thermo_compressor",
+    build_rule=build_steam_ejector_cost_param_block,
+    parameter_block_name="steam_ejector",
 )
-def cost_thermo_compressor(blk, cost_steam_flow=False):
+def cost_steam_ejector(blk, cost_steam_flow=False):
     """
     Thermo Compressor (Steam Ejector) Costing Method.
 
@@ -61,8 +61,8 @@ def cost_thermo_compressor(blk, cost_steam_flow=False):
         expr=blk.capital_cost
         == blk.cost_factor
         * pyo.units.convert(
-            blk.costing_package.thermo_compressor.base_cost
-            * (S + EV) ** blk.costing_package.thermo_compressor.cost_exponent,
+            blk.costing_package.steam_ejector.base_cost
+            * (S + EV) ** blk.costing_package.steam_ejector.cost_exponent,
             to_units=blk.costing_package.base_currency,
         )
     )
