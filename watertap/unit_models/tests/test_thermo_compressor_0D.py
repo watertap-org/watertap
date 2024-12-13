@@ -36,7 +36,7 @@ def build():
     # Fix inlet conditions for motive steam
     m.fs.unit.properties_motive_steam[0].flow_mass_phase_comp["Vap", "H2O"].fix(1)
     m.fs.unit.properties_motive_steam[0].flow_mass_phase_comp["Liq", "H2O"].fix(0)
-    m.fs.unit.properties_motive_steam[0].temperature.fix(406.7)  # 200 °C
+    m.fs.unit.properties_motive_steam[0].temperature.fix(406.7)  
     m.fs.unit.properties_motive_steam[0].pressure.fix(3e5)  
 
     # Fix inlet conditions for entrained vapor
