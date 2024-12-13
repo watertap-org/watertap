@@ -46,7 +46,7 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_
     ADM1_vaporParameterBlock,
 )
 
-from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock, UnitModelBlockData
 from idaes.models.unit_models import (
     Feed,
     Mixer,
@@ -277,8 +277,6 @@ def build():
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-    iscale.calculate_scaling_factors(m.fs)
-
     # keep handy all the mixers
     m.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4, m.fs.MX6)
 
@@ -387,6 +385,18 @@ def set_operating_conditions(m):
     for mx in m.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
+        if "temperature" in var.name:
+            iscale.set_scaling_factor(var, 1e-1)
+        if "pressure" in var.name:
+            iscale.set_scaling_factor(var, 1e-6)
+        if "conc_mass_comp" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
+
+    iscale.calculate_scaling_factors(m)
+
 
 def initialize_system(m):
     # Initialize flowsheet
@@ -494,10 +504,14 @@ def add_costing(m):
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
     iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
-    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
     iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
-    iscale.calculate_scaling_factors(m.fs)
+    for block in m.fs.component_objects(pyo.Block, descend_into=True):
+        if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
+            iscale.set_scaling_factor(block.costing.capital_cost, 1e-6)
+
+    iscale.constraint_scaling_transform(m.fs.DU.costing.capital_cost_constraint, 1e-6)
+    iscale.constraint_scaling_transform(m.fs.RADM.costing.capital_cost_constraint, 1e-6)
 
 
 def setup_optimization(m, reactor_volume_equalities=False):

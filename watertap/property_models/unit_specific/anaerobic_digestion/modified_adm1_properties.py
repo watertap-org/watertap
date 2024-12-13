@@ -34,6 +34,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase
 
 # Some more information about this module
 __author__ = "Chenyu Wang, Marcus Holly, Adam Atia, Xinhong Liu"
@@ -309,6 +310,36 @@ class _ModifiedADM1StateBlock(StateBlock):
         init_log.info("State Released.")
 
 
+class ModifiedADM1PropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Modified Anaerobic Digestion Model No.1 property package.
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Pressure": (pyo.units.Pa, 1e-6),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e5,
+        "temperature": 1e-1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        pass
+
+
 @declare_process_block_class(
     "ModifiedADM1StateBlock", block_class=_ModifiedADM1StateBlock
 )
@@ -317,6 +348,8 @@ class ModifiedADM1StateBlockData(StateBlockData):
     StateBlock for calculating thermophysical properties associated with the modified ADM1
     reaction system.
     """
+
+    default_scaler = ModifiedADM1PropertiesScaler
 
     def build(self):
         """
@@ -458,13 +491,6 @@ class ModifiedADM1StateBlockData(StateBlockData):
         self.energy_density_expression = pyo.Expression(
             rule=energy_density_expression, doc="Energy density term"
         )
-
-        iscale.set_scaling_factor(self.flow_vol, 1e5)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-6)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.anions, 1e2)
-        iscale.set_scaling_factor(self.cations, 1e2)
 
     # On-demand properties
     def _VSS(self):
