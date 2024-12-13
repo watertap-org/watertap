@@ -121,7 +121,7 @@ are parameters that should be provided in order to fully solve the model.
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
    "Channel height", ":math:`d`", "channel_height", "none", ":math:`m` ", 1
    "Membrane areal resistance independent on ion concentration", ":math:`r_{const}`", "membrane_areal_resistance_const", "['cem', 'aem']", ":math:`\Omega m^2`", 2
-   "Membrane areal resistance coefficient to ion concentration", ":math:`r_{coef}`", "membrane_areal_resistance_coef", "['cem', 'aem']", ":math:`\Omega mol m^{-1}`", 2
+   "Membrane areal resistance coefficient to the reciprocal of the ion concentration", ":math:`r_{coef}`", "membrane_areal_resistance_coef", "['cem', 'aem']", ":math:`\Omega mol m^{-1}`", 2
    "Spacer conductivity coefficient", ":math:`\sigma`", "spacer_conductivity_coefficient", "None", "dimensionless", 1
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
