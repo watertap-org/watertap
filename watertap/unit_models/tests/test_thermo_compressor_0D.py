@@ -41,8 +41,8 @@ def build():
 
     # Fix inlet conditions for entrained vapor
     m.fs.unit.properties_entrained_vapor[0].flow_mass_phase_comp["Liq", "H2O"].fix(0)
-    m.fs.unit.properties_entrained_vapor[0].temperature.fix(373.15)  # 70 °C
-    m.fs.unit.properties_entrained_vapor[0].pressure.fix(1e5)  # 0.1 MPa
+    m.fs.unit.properties_entrained_vapor[0].temperature.fix(373.15)  
+    m.fs.unit.properties_entrained_vapor[0].pressure.fix(1e5) 
     m.fs.unit.compression_ratio.fix(1.9)
 
     iscale.calculate_scaling_factors(m.fs.unit)
