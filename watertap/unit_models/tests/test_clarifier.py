@@ -97,6 +97,7 @@ def build():
     m.fs.unit.split_fraction[0, "effluent", "S_ALK"].fix(0.993)
 
     # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(m.fs.unit.underflow_state[0.0].pressure, 1e-5)
     iscale.set_scaling_factor(
         m.fs.unit.underflow_state[0.0].conc_mass_comp["X_BA"], 1e3
     )
@@ -105,6 +106,7 @@ def build():
     iscale.set_scaling_factor(
         m.fs.unit.underflow_state[0.0].conc_mass_comp["S_NO"], 1e3
     )
+    iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].pressure, 1e-5)
     iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["X_BA"], 1e7)
     iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["X_P"], 1e7)
     iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["S_O"], 1e7)
