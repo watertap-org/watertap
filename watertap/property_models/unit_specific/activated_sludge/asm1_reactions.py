@@ -34,9 +34,9 @@ from idaes.core import (
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
+import idaes.core.util.scaling as iscale
 
 # Some more information about this module
 __author__ = "Andrew Lee, Xinhong Liu, Adam Atia"
@@ -330,11 +330,46 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
         )
 
 
+class ASM1ReactionScaler(CustomScalerBase):
+    """
+    Scaler for the Activated Sludge Model No.1 reaction package.
+
+    Variables are scaled by their default scaling factor (if no user input provided), and constraints
+    are scaled using the inverse maximum scheme.
+    """
+
+    # TODO: Revisit this scaling factor
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+
+        if model.is_property_constructed("reaction_rate"):
+            for j in model.reaction_rate.values():
+                self.scale_variable_by_default(j, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # TODO: Revisit this scaling methodology
+        # Consider scale_constraint_by_default or scale_constraints_by_jacobian_norm
+        if model.is_property_constructed("rate_expression"):
+            for j in model.rate_expression.values():
+                self.scale_constraint_by_nominal_value(
+                    j,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+
 class _ASM1ReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
+
+    default_scaler = ASM1ReactionScaler
 
     def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
