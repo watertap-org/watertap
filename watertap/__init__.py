@@ -9,10 +9,3 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import pathlib
-
-_ROOT = pathlib.Path(__file__).parent.absolute()
-
-# create the ipopt-watertap solver and register
-# it as the default IDAES solver
-import watertap.core.plugins
