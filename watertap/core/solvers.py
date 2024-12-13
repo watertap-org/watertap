@@ -10,4 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+__all__ = [
+    "get_solver",
+]
+
 from watertap_solvers import get_solver
