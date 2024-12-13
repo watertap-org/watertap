@@ -25,6 +25,7 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    Suffix,
     units,
     value,
     Var,
@@ -43,6 +44,7 @@ from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_prop
 from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
     ModifiedASM2dReactionBlock,
+    ModifiedASM2dReactionScaler,
 )
 import idaes.core.util.scaling as iscale
 
@@ -306,6 +308,191 @@ class TestReactionBlock(object):
     @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
+
+
+class TestASM1ReactionScaler(object):
+    @pytest.mark.unit
+    def test_variable_scaling_routine(self):
+        model = ConcreteModel()
+        model.pparams = ModifiedASM2dParameterBlock()
+        model.rparams = ModifiedASM2dReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, ModifiedASM2dReactionScaler)
+
+        scaler.variable_scaling_routine(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 19
+        assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R3"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R4"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R5"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R6"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R7"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R8"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R9"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R10"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R11"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R12"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R13"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R14"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R15"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R16"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R17"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R18"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R19"]] == pytest.approx(1e2, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine(self):
+        model = ConcreteModel()
+        model.pparams = ModifiedASM2dParameterBlock()
+        model.rparams = ModifiedASM2dReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, ModifiedASM2dReactionScaler)
+
+        scaler.constraint_scaling_routine(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 19
+        assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(
+            387114.1, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R2"]] == pytest.approx(
+            324208097.5, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R3"]] == pytest.approx(1e10, rel=1e-5)
+        assert sfx[model.rxns[1].rate_expression["R4"]] == pytest.approx(
+            425956.2, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R5"]] == pytest.approx(
+            425956.2, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R6"]] == pytest.approx(
+            267553743, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R7"]] == pytest.approx(
+            267553743, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R8"]] == pytest.approx(1e10, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R9"]] == pytest.approx(
+            3091885.7, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R10"]] == pytest.approx(
+            368921.0, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R11"]] == pytest.approx(
+            690719.1, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R12"]] == pytest.approx(
+            578477274, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R13"]] == pytest.approx(
+            1066963, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R14"]] == pytest.approx(
+            893581814, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R15"]] == pytest.approx(
+            6183771.4, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R16"]] == pytest.approx(
+            6183771.4, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R17"]] == pytest.approx(
+            6183771.4, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R18"]] == pytest.approx(
+            1437853.9, rel=1e-5
+        )
+        assert sfx[model.rxns[1].rate_expression["R19"]] == pytest.approx(
+            9648000, rel=1e-5
+        )
+
+    @pytest.mark.unit
+    def test_scale_model(self):
+        model = ConcreteModel()
+        model.pparams = ModifiedASM2dParameterBlock()
+        model.rparams = ModifiedASM2dReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, ModifiedASM2dReactionScaler)
+
+        scaler.scale_model(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 38
+        assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R3"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R4"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R5"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R6"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R7"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R8"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R9"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R10"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R11"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R12"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R13"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R14"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R15"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R16"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R17"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R18"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R19"]] == pytest.approx(1e2, rel=1e-8)
+
+        assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R2"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R3"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R4"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R5"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R6"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R7"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R8"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R9"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R10"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R11"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R12"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R13"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R14"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R15"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R16"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R17"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R18"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R19"]] == pytest.approx(1e2, rel=1e-8)
 
 
 class TestAerobic:
