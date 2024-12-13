@@ -24,7 +24,6 @@ from pyomo.environ import ConcreteModel, value, assert_optimal_termination, Para
 
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
-
 from pyomo.environ import units
 
 from watertap.core.solvers import get_solver

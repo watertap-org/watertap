@@ -33,7 +33,8 @@ def test_against_multisweep(number_of_stages, tmp_path):
     csv_baseline_file_name = os.path.join(
         _this_file_path, "parameter_sweep_baselines", csv_file_name
     )
-    run_case(number_of_stages, 2, output_filename=csv_test_file_name)
+    with pytest.warns(UserWarning, match=r"Too few points to perform interpolation\."):
+        run_case(number_of_stages, 2, output_filename=csv_test_file_name)
 
     baseline = pd.read_csv(csv_baseline_file_name).astype(float).T.to_dict()
     test = pd.read_csv(csv_test_file_name).astype(float).T.to_dict()

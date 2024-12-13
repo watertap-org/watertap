@@ -558,6 +558,10 @@ def set_operating_conditions(m, bio_P=False):
                 iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
+            if "anions" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+            if "cations" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
 
     def scale_constraints(m):
         for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
