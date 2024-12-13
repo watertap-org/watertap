@@ -34,22 +34,20 @@ from watertap.core.solvers import get_solver
 solver = get_solver()
 
 
+@pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPFalse:
-    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=False)
         m.results = res
         return m
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
@@ -112,7 +110,6 @@ class TestFullFlowsheetBioPFalse:
             0.00021570, rel=1e-3
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
@@ -127,22 +124,20 @@ class TestFullFlowsheetBioPFalse:
         )
 
 
+@pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPTrue:
-    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=True)
         m.results = res
         return m
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
@@ -205,7 +200,6 @@ class TestFullFlowsheetBioPTrue:
             0.00022424, rel=1e-3
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
