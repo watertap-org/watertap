@@ -2,7 +2,7 @@ Steam Jet Ejector
 ================================
 This Steam Jet Ejector unit model:
    * Simulates the performance of a steam jet ejector for thermal vapor compression.
-   * Uses semi-empirical correlations for entrainment ratio, pressure correction factor (PCF), and temperature correction factor (TCF), based on El-Dessouky (1997).
+   * Uses semi-empirical correlations for entrainment ratio, PCF, and TCF based on El-Dessouky (1997).
    * Operates in steady-state only.
    * Assumes the discharge mixture pressure equals its saturation pressure.
    
@@ -13,7 +13,7 @@ This Steam Jet Ejector unit model:
 
 Degrees of Freedom
 -------------------
-In addition to the inlet state variables (i.e., temperature, pressure, and component flowrates for motive steam and entrained vapor), the Steam Ejector model has at least 1 degree of freedom that must be fixed for the unit to be fully specified. Typically, the following variables are fixed:
+In addition to the inlet state variables (i.e., temperature, pressure, and component flowrates for motive steam and entrained vapor), the Steam Ejector model has at least 1 degrees of freedom that must be fixed for the unit to be fully specified. Typically, the following variables are fixed:
 
     * Entrainment ratio
     * Compression ratio
@@ -22,16 +22,6 @@ Model Structure
 ------------------
 This Steam Ejector model consists of state blocks for the properties of the motive steam inlet, entrained vapor inlet, and discharge mixture. It incorporates semi-empirical equations to model key performance parameters.
 
-Equations
----------
-.. csv-table::
-   :header: "Description", "Equation"
-
-   "Pressure Correction Factor", ":math:`PCF = 3 \times 10^{-7} P_m^2 - 0.0009 P_m + 1.6101`"
-   "Temperature Correction Factor", ":math:`TCF = 2 \times 10^{-8} T_{ev}^2 - 0.0006 T_{ev} + 1.0047`"
-   "Entrainment Ratio Model", ":math:`Ra \times TCF = 0.296 \frac{P_s^{1.19}}{P_{ev}^{1.04}} \left(\frac{P_m}{P_{ev}}\right)^{0.015} PCF`"
-   "Entrainment Ratio Definition", ":math:`Ra = \frac{\dot{m}_{motive}}{\dot{m}_{entrained}}`"
-   "Compression Ratio", ":math:`CR = \frac{P_s}{P_{ev}}`"
 
 
 Sets
@@ -65,7 +55,7 @@ Variables
    "Entrained Vapor Pressure", ":math:`P_{ev}`", "properties_entrained_vapor[0].pressure", "kPa", "N/A"
    "Discharge Mixture Pressure", ":math:`P_s`", "properties_discharge_mix[0].pressure", "kPa", "N/A"
 
-   Equations
+Equations
 ---------
 .. csv-table::
    :header: "Description", "Equation"
@@ -75,7 +65,7 @@ Variables
    "Entrainment Ratio Model", ":math:`Ra \times TCF = 0.296 \frac{P_s^{1.19}}{P_{ev}^{1.04}} \left(\frac{P_m}{P_{ev}}\right)^{0.015} PCF`"
    "Entrainment Ratio Definition", ":math:`Ra = \frac{\dot{m}_{motive}}{\dot{m}_{entrained}}`"
    "Compression Ratio", ":math:`CR = \frac{P_s}{P_{ev}}`"
-
+   
 
 Class Documentation
 -------------------
