@@ -21,7 +21,7 @@ In a python module containing the model and script to solve that model, the user
 
 .. testcode::
 
-    from watertap.core.util.model_debug_mode import activate
+    from watertap_solvers.model_debug_mode import activate
     activate()
 
 
