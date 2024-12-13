@@ -36,6 +36,7 @@ from idaes.core.util.exceptions import BurntToast
 
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 
 # Some more information about this module
@@ -986,11 +987,45 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
         )
 
 
+class ModifiedASM2dReactionScaler(CustomScalerBase):
+    """
+    Scaler for the Activated Sludge Model No.2d reaction package.
+    Variables are scaled by their default scaling factor (if no user input provided), and constraints
+    are scaled using the inverse maximum scheme.
+    """
+
+    # TODO: Revisit this scaling factor
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+
+        if model.is_property_constructed("reaction_rate"):
+            for j in model.reaction_rate.values():
+                self.scale_variable_by_default(j, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # TODO: Revisit this scaling methodology
+        # Consider scale_constraint_by_default or scale_constraints_by_jacobian_norm
+        if model.is_property_constructed("rate_expression"):
+            for j in model.rate_expression.values():
+                self.scale_constraint_by_nominal_value(
+                    j,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+
 class _ModifiedASM2dReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
+
+    default_scaler = ModifiedASM2dReactionScaler
 
     def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
