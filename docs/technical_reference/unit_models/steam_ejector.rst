@@ -2,7 +2,7 @@ Steam Jet Ejector
 ================================
 This Steam Jet Ejector unit model:
    * Simulates the performance of a steam jet ejector for thermal vapor compression.
-   * Uses semi-empirical correlations for entrainment ratio, PCF, and TCF based on El-Dessouky (1997).
+   * Uses semi-empirical correlations for entrainment ratio, pressure correction factor (PCF), and temperature correction factor (TCF), based on El-Dessouky (1997).
    * Operates in steady-state only.
    * Assumes the discharge mixture pressure equals its saturation pressure.
    
@@ -13,7 +13,7 @@ This Steam Jet Ejector unit model:
 
 Degrees of Freedom
 -------------------
-In addition to the inlet state variables (i.e., temperature, pressure, and component flowrates for motive steam and entrained vapor), the Steam Ejector model has at least 1 degrees of freedom that must be fixed for the unit to be fully specified. Typically, the following variables are fixed:
+In addition to the inlet state variables (i.e., temperature, pressure, and component flowrates for motive steam and entrained vapor), the Steam Ejector model has at least 1 degree of freedom that must be fixed for the unit to be fully specified. Typically, the following variables are fixed:
 
     * Entrainment ratio
     * Compression ratio
