@@ -93,9 +93,6 @@ from idaes.core.scaling.custom_scaler_base import (
     ConstraintScalingScheme,
 )
 
-from idaes.core.util import DiagnosticsToolbox
-from idaes.core.scaling import report_scaling_factors
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -150,24 +147,6 @@ def main(bio_P=False):
 
     display_costing(m)
     display_performance_metrics(m)
-
-    dt = DiagnosticsToolbox(m)
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
-    dt.display_variables_with_extreme_jacobians()
-    dt.display_constraints_with_extreme_jacobians()
-
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    print("--- Scaling Factors ---")
-    report_scaling_factors(m, descend_into=True)
-
-    print("---SVD---")
-    svd = dt.prepare_svd_toolbox()
-    svd.display_underdetermined_variables_and_constraints()
 
     return m, results
 
@@ -586,14 +565,6 @@ def set_operating_conditions(m, bio_P=False):
             scheme=ConstraintScalingScheme.inverseMinimum,
             overwrite=True,
         )
-        # iscale.set_scaling_factor(
-        #     m.fs.AD.liquid_phase.reactions[0].reaction_rate["R24"], 1e6
-        # )
-        # scaler.scale_constraint_by_nominal_value(
-        #     m.fs.AD.liquid_phase.reactions[0.0].rate_expression["R24"],
-        #     scheme=ConstraintScalingScheme.inverseMaximum,
-        #     overwrite=True,
-        # )
 
     # Apply scaling
     scale_variables(m)
