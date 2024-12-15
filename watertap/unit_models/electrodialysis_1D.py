@@ -594,7 +594,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.ohm * pyunits.meter**2,
             doc="Areal resistance of membrane",
         )
-        self.membrane_areal_resistance_const = Var(
+        self.membrane_areal_resistance = Var(
             self.membrane_set,
             initialize=2e-4,
             bounds=(1e-6, 1),
@@ -811,7 +811,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     * self.config.property_package.charge_comp[j]
                     for j in self.cation_set
                 )
-                == self.membrane_areal_resistance_const[memb]
+                == self.membrane_areal_resistance[memb]
                 * sum(
                     self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
                     * self.config.property_package.charge_comp[j]
@@ -1909,7 +1909,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
         def eq_Sc(self):
 
-            return self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
+            return (
+                self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
+            )
 
         @self.Constraint(
             doc="To calculate Sc",
@@ -1979,7 +1981,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     ):
                         return (
                             self.friction_factor
-                            == 4 * 50.6 * self.spacer_porosity**-7.06 * self.N_Re**-1
+                            == 4
+                            * 50.6
+                            * self.spacer_porosity**-7.06
+                            * self.N_Re**-1
                         )
                     elif (
                         self.config.friction_factor_method
@@ -2054,24 +2059,24 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     in self[k].diluate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].diluate.properties[set].flow_mol_phase_comp:
-                        self[k].diluate.properties[set].flow_mol_phase_comp[ind] = (
-                            value(
-                                self[k]
-                                .diluate.properties[(0.0, 0.0)]
-                                .flow_mol_phase_comp[ind]
-                            )
+                        self[k].diluate.properties[set].flow_mol_phase_comp[
+                            ind
+                        ] = value(
+                            self[k]
+                            .diluate.properties[(0.0, 0.0)]
+                            .flow_mol_phase_comp[ind]
                         )
                 if (
                     "flow_mass_phase_comp"
                     in self[k].diluate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].diluate.properties[set].flow_mass_phase_comp:
-                        self[k].diluate.properties[set].flow_mass_phase_comp[ind] = (
-                            value(
-                                self[k]
-                                .diluate.properties[(0.0, 0.0)]
-                                .flow_mass_phase_comp[ind]
-                            )
+                        self[k].diluate.properties[set].flow_mass_phase_comp[
+                            ind
+                        ] = value(
+                            self[k]
+                            .diluate.properties[(0.0, 0.0)]
+                            .flow_mass_phase_comp[ind]
                         )
                 if hasattr(self[k], "conc_mem_surf_mol_x"):
                     for mem in self[k].membrane_set:
@@ -2113,12 +2118,12 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     in self[k].concentrate.properties[set].define_state_vars()
                 ):
                     for ind in self[k].concentrate.properties[set].flow_mol_phase_comp:
-                        self[k].concentrate.properties[set].flow_mol_phase_comp[ind] = (
-                            value(
-                                self[k]
-                                .concentrate.properties[(0.0, 0.0)]
-                                .flow_mol_phase_comp[ind]
-                            )
+                        self[k].concentrate.properties[set].flow_mol_phase_comp[
+                            ind
+                        ] = value(
+                            self[k]
+                            .concentrate.properties[(0.0, 0.0)]
+                            .flow_mol_phase_comp[ind]
                         )
                 if (
                     "flow_mass_phase_comp"
@@ -2145,8 +2150,8 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                                 )
             self[k].total_areal_resistance_x[...].set_value(
                 (
-                    self[k].membrane_areal_resistance_const["aem"]
-                    + self[k].membrane_areal_resistance_const["cem"]
+                    self[k].membrane_areal_resistance["aem"]
+                    + self[k].membrane_areal_resistance["cem"]
                     + self[k].channel_height
                     * (
                         self[k].concentrate.properties[set].elec_cond_phase["Liq"] ** -1
@@ -2158,7 +2163,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             )
             for memb in self[k].membrane_set:
                 self[k].membrane_areal_resistance_x[memb, :].set_value(
-                    self[k].membrane_areal_resistance_const[memb]
+                    self[k].membrane_areal_resistance[memb]
                 )
 
         # ---------------------------------------------------------------------
@@ -2221,12 +2226,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
         if (
-            iscale.get_scaling_factor(
-                self.membrane_areal_resistance_const, warning=True
-            )
+            iscale.get_scaling_factor(self.membrane_areal_resistance, warning=True)
             is None
         ):
-            iscale.set_scaling_factor(self.membrane_areal_resistance_const, 1e4)
+            iscale.set_scaling_factor(self.membrane_areal_resistance, 1e4)
 
         if (
             iscale.get_scaling_factor(self.solute_diffusivity_membrane, warning=True)
@@ -2352,7 +2355,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         # No warnings if no providing.
         iscale.set_scaling_factor(
             self.membrane_areal_resistance_x,
-            iscale.get_scaling_factor(self.membrane_areal_resistance_const["cem"]),
+            iscale.get_scaling_factor(self.membrane_areal_resistance["cem"]),
         )
         for ind in self.total_areal_resistance_x:
             if (
@@ -2362,9 +2365,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 is None
             ):
                 sf = (
-                    iscale.get_scaling_factor(
-                        self.membrane_areal_resistance_const["cem"]
-                    )
+                    iscale.get_scaling_factor(self.membrane_areal_resistance["cem"])
                     ** 2
                     + iscale.get_scaling_factor(self.channel_height) ** 2
                     * (
@@ -2935,7 +2936,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         return {
             "vars": {
-                "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[
+                "Total electrical power consumption (W)": self.diluate.power_electrical_x[
                     time_point, self.diluate.length_domain.last()
                 ],
                 "Specific electrical power consumption, ED stack (kW*h/m**3)": self.specific_power_electrical[

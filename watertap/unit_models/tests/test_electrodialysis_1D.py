@@ -100,7 +100,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_areal_resistance_const, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
         assert isinstance(m.fs.unit.voltage_applied, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
@@ -138,8 +138,8 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.channel_height.fix(2.7e-4)
-        m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
         m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
@@ -264,7 +264,7 @@ class TestElectrodialysisVoltageConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(3.0, rel=5e-3)
         assert value(
             perform_dict["vars"][
@@ -387,7 +387,7 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_areal_resistance_const, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_applied, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
@@ -422,8 +422,8 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.channel_height.fix(2.7e-4)
-        m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
         m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
@@ -543,7 +543,7 @@ class TestElectrodialysisCurrentConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(5.83, rel=5e-3)
         assert value(
             perform_dict["vars"][
@@ -604,7 +604,7 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_areal_resistance_const, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_applied, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
@@ -640,8 +640,8 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.channel_height.fix(2.7e-4)
-        m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
         m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
@@ -775,7 +775,7 @@ class TestElectrodialysis_withNeutralSPecies:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(5.837, rel=5e-3)
         assert value(
             perform_dict["vars"][
@@ -836,7 +836,7 @@ class Test_ED_MembNonohm_On_ConstV:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_areal_resistance_const, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
         assert isinstance(m.fs.unit.voltage_applied, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
@@ -877,8 +877,8 @@ class Test_ED_MembNonohm_On_ConstV:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.channel_height.fix(5e-4)
-        m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
         m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
@@ -1007,7 +1007,7 @@ class Test_ED_MembNonohm_On_ConstV:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(1.4735, rel=1e-3)
         assert value(
             perform_dict["vars"][
@@ -1071,7 +1071,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_areal_resistance_const, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
         assert isinstance(m.fs.unit.voltage_applied, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
@@ -1121,8 +1121,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.channel_height.fix(5e-4)
-        m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
         m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
@@ -1224,7 +1224,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(1.3907, rel=1e-3)
         assert value(
             perform_dict["vars"][
@@ -1296,8 +1296,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
             m.fs.unit.cell_pair_num.fix(10)
             m.fs.unit.current_utilization.fix(1)
             m.fs.unit.channel_height.fix(5e-4)
-            m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-            m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+            m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+            m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
             m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
             m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
             m.fs.unit.cell_width.fix(0.1)
@@ -1468,7 +1468,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_areal_resistance_const, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
         assert isinstance(m.fs.unit.current_applied, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
@@ -1518,8 +1518,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.channel_height.fix(5e-4)
-        m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
         m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
@@ -1621,7 +1621,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(12.904, rel=1e-3)
         assert value(
             perform_dict["vars"][
@@ -1803,8 +1803,8 @@ class Test_ED_pressure_drop_components:
             m.fs.unit.cell_pair_num.fix(56)
             m.fs.unit.current_utilization.fix(1)
             m.fs.unit.channel_height.fix(7.1e-4)
-            m.fs.unit.membrane_areal_resistance_const["cem"].fix(1.89e-4)
-            m.fs.unit.membrane_areal_resistance_const["aem"].fix(1.77e-4)
+            m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+            m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
             m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
             m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
             m.fs.unit.cell_width.fix(0.197)

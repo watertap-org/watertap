@@ -240,7 +240,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     exports.add(
-        obj=fs.EDstack.membrane_areal_resistance_const["cem"],
+        obj=fs.EDstack.membrane_areal_resistance["cem"],
         name="Areal resistnace of CEM",
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
@@ -251,7 +251,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.EDstack.membrane_areal_resistance_const["aem"],
+        obj=fs.EDstack.membrane_areal_resistance["aem"],
         name="Areal resistnace of AEM",
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
