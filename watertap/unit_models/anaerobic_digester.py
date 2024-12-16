@@ -128,7 +128,6 @@ class ADScaler(CustomScalerBase):
         )
 
         # Scaling control volume variables
-        # TODO: Revisit this scaling factor & the addition of other scaling factors
         self.scale_variable_by_default(
             model.liquid_phase.volume[0], overwrite=overwrite
         )
