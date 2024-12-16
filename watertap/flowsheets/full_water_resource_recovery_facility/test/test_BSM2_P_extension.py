@@ -59,55 +59,55 @@ class TestFullFlowsheetBioPFalse:
             6.43000895e-07, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-            0.0002761026, rel=1e-3
+            0.0002760866, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
             0.057450006, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
-        ) == pytest.approx(0.05206039, rel=1e-3)
+        ) == pytest.approx(0.0520459, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-        ) == pytest.approx(0.00017686206, rel=1e-3)
+        ) == pytest.approx(0.0001769519, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
-        ) == pytest.approx(0.006048327, rel=1e-3)
+        ) == pytest.approx(0.006044579, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-        ) == pytest.approx(0.00767668, rel=1e-3)
+        ) == pytest.approx(0.00767666, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.6526703, rel=1e-3)
+        ) == pytest.approx(0.6527876, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-            0.36809786, rel=1e-3
+            0.36809549, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-        ) == pytest.approx(0.0186535, rel=1e-3)
+        ) == pytest.approx(0.01865257, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(0.1514789, rel=1e-3)
+        ) == pytest.approx(0.1507046, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
-        ) == pytest.approx(0.00041597, rel=1e-3)
+        ) == pytest.approx(0.000415746, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
-            0.0133706, rel=1e-3
+            0.0133707, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0123595, rel=1e-3
+            0.01235979, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
-        ) == pytest.approx(0.0110773, rel=1e-3)
+        ) == pytest.approx(0.0110803, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
         ) == pytest.approx(5.0389213e-06, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
-        ) == pytest.approx(0.00369976, rel=1e-3)
+        ) == pytest.approx(0.00370076, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.000215704, rel=1e-3
+            0.0002157186, rel=1e-3
         )
 
     @pytest.mark.component

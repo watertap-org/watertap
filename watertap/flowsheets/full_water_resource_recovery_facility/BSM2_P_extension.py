@@ -557,7 +557,10 @@ def set_operating_conditions(m, bio_P=False):
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+                if bio_P:
+                    iscale.set_scaling_factor(var, 1e1)
+                else:
+                    iscale.set_scaling_factor(var, 1e2)
             if "anions" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
             if "cations" in var.name:
