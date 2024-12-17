@@ -27,7 +27,7 @@ long_description = (cwd / "README.md").read_text()
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.2.dev0",
+    version="1.3.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -64,11 +64,12 @@ setup(
     packages=find_packages(
         include=("watertap*",),
     ),
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=[
         # primary requirements for unit and property models
         "idaes-pse >=2.7.0,<2.8.0rc0",
         "pyomo>=6.6.1",
+        "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep >=0.1.0",

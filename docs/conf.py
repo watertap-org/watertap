@@ -35,9 +35,9 @@ copyright = "2020-2024, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "1.2.dev0"
+release = "1.3.dev0"
 # The short X.Y version
-version = "1.2.dev0"
+version = "1.3.dev0"
 # -- General configuration ---------------------------------------------------
 
 

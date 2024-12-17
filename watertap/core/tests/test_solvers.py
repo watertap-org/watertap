@@ -9,13 +9,11 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
-
 import pytest
 
 from watertap.core.solvers import get_solver
-from watertap.core.plugins.solvers import IpoptWaterTAP
+import watertap_solvers
 
 
-def test_get_solver():
-    assert get_solver().__class__ is IpoptWaterTAP
+def test_get_solver_returns_expected_default():
+    assert get_solver().__class__ is watertap_solvers.IpoptWaterTAP
