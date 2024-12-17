@@ -51,13 +51,13 @@ class MDconfigurationType(Enum):
     """
     DCMD: Direct Contact Membrane Distillation
     VMD: Vacuum Membrane Distillation
-    PGMD_CGMD: Permeate Gap or Conductive Gap Membrane distillation
+    GMD: Permeate Gap or Conductive Gap Membrane distillation
     AGMD: Air Gap Membrane Distillation
     """
 
     DCMD = auto()
     VMD = auto()
-    PGMD_CGMD = auto()
+    GMD = auto()
     AGMD = auto()
 
 
@@ -131,7 +131,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         if self.config.MD_configuration_Type in [
             MDconfigurationType.DCMD,
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             self.cold_ch._add_interface_stateblock(has_phase_equilibrium=False)
@@ -155,7 +155,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 has_mass_transfer=True,
             )
         elif self.config.MD_configuration_Type in [
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             self.cold_ch.add_material_balances(
@@ -165,7 +165,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         if self.config.MD_configuration_Type in [
             MDconfigurationType.DCMD,
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             self.cold_ch.add_momentum_balances(
@@ -190,7 +190,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 has_enthalpy_transfer=True,
             )
         elif self.config.MD_configuration_Type in [
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             self.cold_ch.add_energy_balances(
@@ -214,7 +214,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             )
         if self.config.MD_configuration_Type in [
             MDconfigurationType.DCMD,
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             self.cold_ch.add_temperature_polarization(
@@ -228,7 +228,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         if self.config.MD_configuration_Type in [
             MDconfigurationType.DCMD,
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             for t in self.flowsheet().config.time:
@@ -264,7 +264,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         # gap channel
         # modification required for AGMD
         if self.config.MD_configuration_Type in [
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             self._make_MD_channel_control_volume(
@@ -303,7 +303,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 pass
 
         if self.config.MD_configuration_Type in [
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
         ]:
 
             for t in self.flowsheet().config.time:
@@ -337,7 +337,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         self.add_outlet_port(name="hot_ch_outlet", block=self.hot_ch)
         self.add_inlet_port(name="cold_ch_inlet", block=self.cold_ch)
         self.add_outlet_port(name="cold_ch_outlet", block=self.cold_ch)
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             self.add_inlet_port(name="gap_ch_inlet", block=self.gap_ch)
             self.add_outlet_port(name="gap_ch_outlet", block=self.gap_ch)
 
@@ -389,7 +389,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         def thermal_efficiency(b, t):
             if self.config.MD_configuration_Type in [
                 MDconfigurationType.DCMD,
-                MDconfigurationType.PGMD_CGMD,
+                MDconfigurationType.GMD,
                 MDconfigurationType.AGMD,
             ]:
 
@@ -406,7 +406,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         if self.config.MD_configuration_Type in [
             MDconfigurationType.DCMD,
-            MDconfigurationType.PGMD_CGMD,
+            MDconfigurationType.GMD,
             MDconfigurationType.AGMD,
         ]:
             # to do: define effectiveness at the flowsheet level, particularly for VMD and DCMD configs
@@ -509,7 +509,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     - b.cold_ch.properties_interface[t, x].pressure_sat
                 )
             elif self.config.MD_configuration_Type in [
-                MDconfigurationType.PGMD_CGMD,
+                MDconfigurationType.GMD,
                 MDconfigurationType.AGMD,
             ]:
                 return b.flux_mass[t, x] == b.permeability_coef[
@@ -577,7 +577,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     == b.flux_mass[t, x]
                     * b.cold_ch.properties_vapor[t, x].enth_mass_phase["Vap"]
                 )
-            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            elif self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return (
                     b.flux_enth_cold[t, x]
                     == b.flux_mass[t, x]
@@ -685,12 +685,12 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
-            doc="gap bulk temperature in PGMD and CGMD",
+            doc="gap bulk temperature in GMD",
         )
         def gap_bulk_temperature(b, t, x):
             # assuming linear temperature change across the gap
 
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 if (
                     self.config.gap_ch.temperature_polarization_type
                     == TemperaturePolarizationType.fixed
@@ -799,7 +799,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 doc="Temperature polarization in cold channel",
             )
             def eq_temperature_polarization_cold(b, t, x):
-                if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                     return (
                         b.cold_ch.h_conv[t, x]
                         * (
@@ -852,7 +852,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                 doc="Thermal conductivity coefficient of the membrane",
             )
 
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             self.gap_thermal_conductivity = Var(
                 initialize=0.06,
                 bounds=(0, 1),
@@ -889,7 +889,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
                     b.hot_ch.properties_interface[t, x].temperature
                     - b.cold_ch.properties_interface[t, x].temperature
                 )
-            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            elif self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return b.flux_conduction_heat[
                     t, x
                 ] == b.membrane_thermal_conductivity / b.membrane_thickness * (
@@ -915,10 +915,10 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
-            doc="heat conduction across the gap in PGMD and CGMD configuration",
+            doc="heat conduction across the gap in GMD configuration",
         )
         def eq_flux_conduction_gap(b, t, x):
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
 
                 return b.flux_conduction_heat_gap[
                     t, x
@@ -934,7 +934,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             doc="Average conduction heat flux across the gap",
         )
         def flux_conduction_heat_gap_avg(b, t):
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return (
                     sum(
                         b.flux_conduction_heat_gap[t, x]
@@ -1024,7 +1024,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
 
         init_log.info("Initialization Step 1b (cold channel) Complete")
 
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             gap_ch_flags = self.gap_ch.initialize(
                 state_args=state_args_cold_ch,
                 outlvl=outlvl,
@@ -1040,7 +1040,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
             for x in [self.cold_ch.length_domain.first()]:
                 self.cold_ch_inlet.temperature[0].unfix()
 
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             for x in [self.gap_ch.length_domain.first()]:
                 self.gap_ch_inlet.temperature[0].unfix()
 
@@ -1085,7 +1085,7 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         # Release inlet state
         self.cold_ch.release_state(cold_ch_flags, outlvl)
         self.hot_ch.release_state(hot_ch_flags, outlvl)
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             self.gap_ch.release_state(gap_ch_flags, outlvl)
 
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
@@ -1260,16 +1260,6 @@ class MembraneDistillationBaseData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "width"):
             if iscale.get_scaling_factor(self.width) is None:
                 iscale.set_scaling_factor(self.width, 1)
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
-            iscale.set_scaling_factor(
-                self.gap_ch.properties_interface[0.0, 0.0].flow_mass_phase_comp[
-                    "Liq", "H2O"
-                ],
-                1e8,
-            )
-            iscale.set_scaling_factor(
-                self.gap_ch.properties_interface[0.0, 0.0].flow_vol_phase["Liq"], 1e10
-            )
 
     @property
     def default_costing_method(self):

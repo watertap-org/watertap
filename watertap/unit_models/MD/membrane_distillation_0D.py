@@ -372,7 +372,7 @@ see property package for documentation.}""",
 
             "``MDconfigurationType.DCMD``", "Direct Contact Membrane Distillation"
             "``MDconfigurationType.VMD``", "Vacuum Membrane Distillation"
-            "``MDconfigurationType.PGMD_CGMD``", "Permeate Gap or Coductive Gap Membrane Distillation"
+            "``MDconfigurationType.GMD``", "Permeate Gap or Coductive Gap Membrane Distillation"
             "``MDconfigurationType.AGMD``", "Air Gap Membrane Distillation"
         """,
         ),
@@ -464,7 +464,7 @@ see property package for documentation.}""",
         )
         def eq_connect_mass_transfer_gap(b, t):
 
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 b.gap_ch.mass_transfer_term[t, "Vap", "H2O"].fix(0)
                 return (
                     b.gap_ch.mass_transfer_term[t, "Liq", "H2O"]
@@ -512,7 +512,7 @@ see property package for documentation.}""",
         def eq_conductive_heat_transfer_term_cold(b, t):
             if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                 return b.cold_ch.heat[t] == -b.hot_ch.heat[t]
-            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            elif self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return (
                     b.cold_ch.heat[t]
                     == -b.hot_ch.heat[t]
@@ -528,7 +528,7 @@ see property package for documentation.}""",
             doc="Connecting the cold channel conductive heat transfer to conductive heat across the gap",
         )
         def eq_conductive_heat_transfer_gap(b, t, x):
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return b.cold_ch.heat[t] == b.flux_conduction_heat_gap_avg[t] * b.area
             else:
                 return Constraint.Skip
@@ -554,7 +554,7 @@ see property package for documentation.}""",
                 return Constraint.Skip
 
     def calculate_scaling_factors(self):
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             iscale.set_scaling_factor(
                 self.gap_ch.properties_in[0.0].enth_flow_phase["Liq"],
                 4.0,

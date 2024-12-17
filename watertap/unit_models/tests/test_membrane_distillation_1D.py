@@ -1380,7 +1380,7 @@ def build_temperature_polarization_none_pgmd():
     m.fs.properties_cold_ch = props_w.WaterParameterBlock()
     m.fs.properties_vapor = props_w.WaterParameterBlock()
     m.fs.unit = MembraneDistillation1D(
-        MD_configuration_Type=MDconfigurationType.PGMD_CGMD,
+        MD_configuration_Type=MDconfigurationType.GMD,
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
             "property_package_vapor": m.fs.properties_vapor,
@@ -1496,7 +1496,7 @@ def build_temperature_polarization_concentration_polarization_pressure_calculate
     m.fs.properties_cold_ch = props_w.WaterParameterBlock()
     m.fs.properties_vapor = props_w.WaterParameterBlock()
     m.fs.unit = MembraneDistillation1D(
-        MD_configuration_Type=MDconfigurationType.PGMD_CGMD,
+        MD_configuration_Type=MDconfigurationType.GMD,
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
             "property_package_vapor": m.fs.properties_vapor,

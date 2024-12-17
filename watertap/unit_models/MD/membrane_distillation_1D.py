@@ -379,7 +379,7 @@ see property package for documentation.}""",
 
             "``MDconfigurationType.DCMD``", "Direct Contact Membrane Distillation"
             "``MDconfigurationType.VMD``", "Vacuum Membrane Distillation"
-            "``MDconfigurationType.PGMD_CGMD``", "Permeate Gap or Coductive Gap Membrane Distillation"
+            "``MDconfigurationType.GMD``", "Permeate Gap or Coductive Gap Membrane Distillation"
             "``MDconfigurationType.AGMD``", "Air Gap Membrane Distillation"
         """,
         ),
@@ -520,7 +520,7 @@ see property package for documentation.}""",
                 if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                     b.cold_ch.mass_transfer_term[t, x, p, j].fix(0)
                     return Constraint.Skip
-                elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+                elif self.config.MD_configuration_Type == MDconfigurationType.GMD:
                     return Constraint.Skip
                 elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
                     b.cold_ch.mass_transfer_term[t, x, "Liq", j].fix(0)
@@ -536,7 +536,7 @@ see property package for documentation.}""",
         )
         def eq_connect_mass_transfer_gap(b, t, x):
 
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 b.gap_ch.mass_transfer_term[t, x, "Vap", "H2O"].fix(0)
                 return (
                     b.gap_ch.mass_transfer_term[t, x, "Liq", "H2O"]
@@ -586,7 +586,7 @@ see property package for documentation.}""",
         def eq_conductive_heat_transfer_cold(b, t, x):
             if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
                 return b.cold_ch.heat[t, x] == -b.hot_ch.heat[t, x]
-            elif self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            elif self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return (
                     b.cold_ch.heat[t, x]
                     == -b.hot_ch.heat[t, x]
@@ -602,7 +602,7 @@ see property package for documentation.}""",
             doc="Connecting the cold channel conductive heat transfer to conductive heat across the gap",
         )
         def eq_conductive_heat_transfer_gap(b, t, x):
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return (
                     b.cold_ch.heat[t, x] == b.flux_conduction_heat_gap[t, x] * b.width
                 )
@@ -637,7 +637,7 @@ see property package for documentation.}""",
             self.flowsheet().config.time, doc="Gap interface pressure equality"
         )
         def eq_equal_pressure_interface_gap(b, t):
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return (
                     b.gap_ch.properties_interface[
                         t, self.gap_ch.length_domain.first()
@@ -651,11 +651,11 @@ see property package for documentation.}""",
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="gap bulk temperature in PGMD and CGMD",
+            doc="gap bulk temperature in GMD",
         )
         def gap_bulk_temperature_interface_gap(b, t):
 
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 return (
                     b.gap_ch.properties_interface[
                         t, self.gap_ch.length_domain.first()
@@ -670,11 +670,11 @@ see property package for documentation.}""",
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="gap bulk temperature inlet PGMD and CGMD",
+            doc="gap bulk temperature inlet GMD",
         )
         def gap_bulk_temperature_interface_inlet(b, t):
 
-            if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
                 if (
                     self.config.gap_ch.temperature_polarization_type
                     == TemperaturePolarizationType.fixed
@@ -695,7 +695,7 @@ see property package for documentation.}""",
             else:
                 return Constraint.Skip
 
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             for t in self.flowsheet().config.time:
                 self.gap_ch.properties_interface[
                     t, self.gap_ch.length_domain.first()
@@ -719,7 +719,7 @@ see property package for documentation.}""",
 
         super().calculate_scaling_factors()
 
-        if self.config.MD_configuration_Type == MDconfigurationType.PGMD_CGMD:
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
             iscale.set_scaling_factor(
                 self.gap_ch.properties_interface[0.0, 0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
