@@ -17,7 +17,7 @@ This Membrane Distillation (MD) unit model:
    * assumes complete vapor condensation for the cold channel (in DCMD and PGMD/CGMD)
    * accounts for vapor expansion in VMD
    * assumes linear temperature change across gap channel (in PGMD/CGMD)
-   * assumes no pressure change and temperature polarization in VMD vaccuum channel
+   * assumes no pressure change and temperature polarization in VMD vacuum channel
 
 
 Degrees of Freedom
