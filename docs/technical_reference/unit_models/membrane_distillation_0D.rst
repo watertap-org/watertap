@@ -1,48 +1,60 @@
+=========================================
 Membrane Distillation (0D)
 =========================================
-This Membrane Distillation (MD) unit model
-   * is developed for direct contact configuration (other configurations are under development)
-   * is developed for couterflow mode (parallel flow is under development)
+
+This Membrane Distillation (MD) unit model:
+   * supports the following configurations: 
+
+     - **DCMD** (Direct Contact Membrane Distillation)
+     - **VMD** (Vacuum Membrane Distillation)
+     - **PGMD/CGMD** (Permeate Gap/Conductive Gap Membrane Distillation)
+
    * is 0-dimensional
    * supports steady-state only
-   * Assumes heat loss in equipment is negligible
-   * Assumes permeate exits the membrane pores with zero salinity
-   * Assumes no concentration polarization for the cold channel
-   * Assumes complete vapor condensation on the cold channel
+   * assumes heat loss in equipment is negligible
+   * assumes permeate exits the membrane pores with zero salinity
+   * assumes no concentration polarization for the cold channel
+   * assumes complete vapor condensation for the cold channel (in DCMD and PGMD/CGMD)
+   * accounts for vapor expansion in VMD
+   * assumes linear temperature change across gap channel (in PGMD/CGMD)
+   * assumes no pressure change and temperature polarization in VMD vaccuum channel
 
-   
-
-.. index::
-   pair: watertap.unit_models.MD;MD
-
-.. currentmodule:: watertap.unit_models.MD
 
 Degrees of Freedom
 ------------------
-In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates), the MD model has
-at least 4 degrees of freedom that should be fixed for the unit to be fully specified. Typically, the following variables are fixed for the MD model:
+In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates) For the **DCMD** and **PGMD/CGMD** configurations, the MD model has at least **4 degrees of freedom** for all configurations that should be fixed for the unit to be fully specified. Typically, the following variables are fixed:
 
-    * Membrane permeability coefficient
-    * Membrane thickness
-    * Membrane thermal conductivity
-    * Recovery *or* membrane area
-    
+- Membrane permeability coefficient
+- Membrane thickness
+- Membrane thermal conductivity
+- Recovery *or* membrane area
+
+**Additional degress of freedom**:
+
+- **VMD** introduces vacuum pressure at the cold side.
+- **PGMD/CGMD** introduces gap thermal conductivity and gap thickness.
+
 Configuring the MD unit to calculate temperature polarization, concentration polarization, mass transfer
 coefficient, and pressure drop would result in five additional degrees of freedom. In this case, in addition to the
 previously fixed variables, we typically fix the following variables to fully specify the unit:
 
     * Hot channel spacer porosity
     * Hot channel height
-    * Cold channel spacer porosity
-    * Cold channel height
+    * Cold channel spacer porosity (in DCMD and PGMD/CGMD)
+    * Cold channel height (in DCMD and PGMD/CGMD)
     * Membrane length *or* membrane width
 
 Model Structure
-------------------
-This MD model consists of a separate MDchannel0Dblock for the hot channel and the cold channel of the module.
+---------------
+The MD model consists of a separate `MDchannel0Dblock` for each channel depending on the configuration:
 
-* Each MDchannel0Dblock includes 6 stateblocks: 2 stateBlocks for the bulk properites at the inlet and outlet (properties_in and properties_out), which are used for mass, energy, and momentum balances;  2  StateBlocks for the conditions at the membrane interface, and 2 stateblocks for the vapor phase at the membrane interface.  Property packages must be declared for each MD channel block for the liquid (bulk and interface) and vapor Phases.
+- **DCMD**: Includes **hot channel** and **cold channel**.
+- **VMD**: Includes **hot channel** and **vacuum (cold) channel**.
+- **PGMD/CGMD**: Includes **hot channel**, **gap channel**, and **cold channel**.
 
+- **hot and cold channels in all configurations** includes bulk properties at the inlet and outlet (`properties_in` and `properties_out`) which are used for mass, energy, and momentum balances
+- **hot channel in all configurations, cold channel in DCMD and PGMD/CGMD, and gap channel in PGMD/CGMD** includes 2 StateBlocks for the conditions at the membrane interface and gap interface
+- **hot channel in all configurations, cold channel in DCMD, and gap channel in PGMD/CGMD** includes Vapor properties at the membrane interface (for **DCMD** and **VMD** configurations).
 
 Sets
 ----
@@ -56,25 +68,40 @@ Sets
 
 \*Solute depends on the imported property model.
 
-.. _MD_variables:
+.. _0MD_variables:
+
 
 Variables
-----------
-
+---------
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Membrane permeability coefficient", ":math:`B_0`", "permeability_coef", "[t]", ":math:`\text{kg/m/Pa/s}`"
    "Membrane thickness", ":math:`\sigma`", "membrane_thickness", "None", ":math:`\text{m}`"
    "Membrane thermal conductivity", ":math:`k_m`", "membrane_tc", "None", ":math:`\text{W/K/m}`"
-   "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
    "Mass flux across membrane", ":math:`J`", "flux_mass", "[t, x]", ":math:`\text{kg/s}\text{/m}^2`"
    "Conduction heat flux across membrane", ":math:`q_{cond}`", "flux_conduction_heat", "[t, x]", ":math:`\text{W}\text{/m}^2`"
    "Evaporation heat flux from hot channel", ":math:`q_{evap}`", "flux_enth_hot", "[t, x]", ":math:`\text{W}\text{/m}^2`"
    "Condensation heat flux to cold channel", ":math:`q_{conden}`", "flux_enth_cold", "[t, x]", ":math:`\text{W}\text{/m}^2`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Recovery rate", ":math:`R`", "recovery_mass", "[t]", ":math:`\text{dimensionless}`"
-   
+
+**Additional Variables for VMD**:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Vapor expansion heat flux", ":math:`q_{exp}`", "flux_expansion_heat", "[t, x]", ":math:`\text{W}\text{/m}^2`"
+
+**Additional Variables for PGMD/CGMD**:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Gap thermal conductivity", ":math:`k_{gap}`", "gap_thermal_conductivity", "None", ":math:`\text{W/K/m}`"
+   "Gap thickness", ":math:`\sigma_{gap}`", "gap_thickness", "None", ":math:`\text{m}`"
+   "gap conduction heat flux", ":math:`q_{gap}`", "flux_conduction_heat_gap", "[t, x]", ":math:`\text{W}\text{/m}^2`"
+
 The following variables are only built when specific configuration key-value pairs are selected.
 
 if ``has_pressure_change`` is set to ``True``:
@@ -174,24 +201,142 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Cold channel velocity", ":math:`v_c`", "cold_ch.velocity", "[t, x]", ":math:`\text{m/s}`"
    "Pressure drop per unit length of cold channel at inlet/outlet", ":math:`(ΔP/Δx)_c`", "cold_ch.dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
 
-.. _MD_equations:
+.. _0MD_equations:
 
 Equations
------------
+---------
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.DCMD``:
 
 .. csv-table::
    :header: "Description", "Equation"
 
    "Vapor flux across membrane", ":math:`J(t, x) = \frac{B_0(t)}{\sigma} \times \left( P_{\text{sat, hot}}(t, x) - P_{\text{sat, cold}}(t, x) \right)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.VMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Vapor flux across membrane", ":math:`J(t, x) = \frac{B_0(t)}{\sigma} \times \left( P_{\text{sat, hot}}(t, x) - P_{\text{vaccuum, cold}}(t, x) \right)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.PGMD_CGMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Vapor flux across membrane", ":math:`J(t, x) = \frac{B_0(t)}{\sigma} \times \left( P_{\text{sat, hot}}(t, x) - P_{\text{sat, gap}}(t, x) \right)`"
+
+Common in all configurations:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
    "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
    "hot channel membrane-interface solute concentration", ":math:`C_{\text{interface, j, h}}(t, x) = C_{\text{bulk, j, h}}(t, x) \times \exp\left( \frac{J(t, x)}{\rho_{\text{solvent}} \times k_h(t, x, j)} \right)`"
    "Evaporation heat flux from hot channel", ":math:`q_{\text{evap}}(t, x) = J(t, x) \times \widehat{H}_{\text{h}}(t, x, Vap)`"
-   "Condensation heat flux to cold channel", ":math:`q_{\text{conden}}(t, x) = J(t, x) \times \widehat{H}_{\text{c}}(t, x, Vap)`"
    "Average evaporation flux from hot channel", ":math:`\overline{q}_{\text{evap}}(t) = \frac{1}{2} \sum_{x} q_{\text{evap}}(t, x)`"
-   "Average condensation flux to cold channel", ":math:`\overline{q}_{\text{conden}}(t) = \frac{1}{2} \sum_{x} q_{\text{conden}}(t, x)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.DCMD`` or ``MDconfigurationType.PGMD_CGMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
    "Hot channel convective heat transfer", ":math:`h_{\text{conv}, h}(t, x) \left( T_{\text{bulk}, h}(t, x) - T_{\text{interface}, h}(t, x) \right) = q_{\text{cond}}(t, x) + q_{\text{evap}}(t, x) - J(t, x) \cdot \widehat{H}_{\text{bulk, h}}(t, x, Liq)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.VMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+    "Hot channel convective heat transfer", ":math:`h_{\text{conv}, h}(t, x) \left( T_{\text{bulk}, h}(t, x) - T_{\text{interface}, h}(t, x) \right) = q_{\text{exp}}(t, x) + q_{\text{evap}}(t, x) - J(t, x) \cdot \widehat{H}_{\text{bulk, h}}(t, x, Liq)`"
+
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.DCMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Condensation heat flux to cold channel", ":math:`q_{\text{conden}}(t, x) = J(t, x) \times \widehat{H}_{\text{c}}(t, x, Vap)`"
+   "Average condensation flux to cold channel", ":math:`\overline{q}_{\text{conden}}(t) = \frac{1}{2} \sum_{x} q_{\text{conden}}(t, x)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.DCMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+   
    "Cold channel convective heat transfer", ":math:`h_{\text{conv}, c}(t, x) \left( T_{\text{interface}, c}(t, x) - T_{\text{bulk}, c}(t, x) \right) = q_{\text{cond}}(t, x) + q_{\text{conden}}(t, x) - J(t, x) \cdot \widehat{H}_{\text{bulk}, c}(t, x, Liq)`"
+   
+if ``MD_configuration_type`` is set to ``MDconfigurationType.PGMD_CGMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+   
+   "Cold channel convective heat transfer", ":math:`h_{\text{conv}, c}(t, x) \left( T_{\text{interface}, c}(t, x) - T_{\text{bulk}, c}(t, x) \right) = q_{\text{gap}}(t, x)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.DCMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+   
    "Conduction heat flux across membrane", ":math:`q_{\text{cond}}(t, x) = \frac{k_{\text{m}}}{\sigma} \left( T_{\text{interface}, h}(t, x) - T_{\text{interface}, c}(t, x) \right)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.PGMD_CGMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+   
+   "Conduction heat flux across membrane", ":math:`q_{\text{cond}}(t, x) = \frac{k_{\text{m}}}{\sigma} \left( T_{\text{interface}, h}(t, x) - T_{\text{interface}, gap}(t, x) \right)`"
+   "Conduction heat flux across gap", ":math:`q_{\text{gap}}(t, x) = \frac{k_{\text{m}}}{\sigma} \left( T_{\text{interface}, gap}(t, x) - T_{\text{interface}, c}(t, x) \right)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.VMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Vapor expansion heat flux", ":math:`q_{\text{exp}}(t, x) = \frac{R \cdot T}{M} \ln\left( \frac{P_f}{P_p} \right) \cdot J(t, x)`"
+
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.DCMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Mass transfer balance between hot and cold channel", ":math:`\dot{m}_{\text{cold}}(t, x, p, j) = -\dot{m}_{\text{hot}}(t, x, p, j)`"
+
+   "Conductive heat transfer to cold channel", ":math:`q_{\text{cond, hot}}(t, x) = -q_{\text{cond, cold}}(t, x)`"
+
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.VMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Mass transfer from vapor phase to vacuum channel", ":math:`\dot{m}_{\text{cold}}(t, x, Vap, j) = -\dot{m}_{\text{hot}}(t, x, Liq, j)`"
+
+   "Conductive heat transfer to cold channel", ":math:`q_{\text{cond, hot}}(t, x) = -q_{\text{exp}}(t, x)`"
+
+   "Cold channel inlet temperature", ":math:`T_{\text{cold, in}}(t) = T_{\text{hot, in}}(t)`"
+
+if ``MD_configuration_type`` is set to ``MDconfigurationType.PGMD_CGMD``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Mass transfer balance between hot and gap channel",  ":math:`\dot{m}_{\text{gap}}(t, x, Liq, H2O) = -\dot{m}_{\text{hot}}(t, x, Liq, H2O)`"
+
+   "Conductive heat transfer between channels", ":math:`q_{\text{cold}}(t, x) = -q_{\text{hot}}(t, x) - ΔH_{\text{hot}}(t, x) - ΔH_{\text{gap}}(t, x)`"
+
+   "Conductive heat transfer across gap",  ":math:`q_{\text{gap}}(t, x) = q_{\text{cold}}(t, x)`"
+
+
+
+.. csv-table::
+   :header: "Description", "Equation"
+
    "Average conduction heat across membrane", ":math:`q_{\text{cond, avg}}(t) = \frac{1}{N} \sum_{x} q_{\text{cond}}(t, x)`"
    "Total permeate production", ":math:`M_p = A \cdot J_{\text{avg}}`"
    "Total conduction heat transfer", ":math:`q_{\text{cond,total}} = - A \cdot q_{\text{cond,avg}}`"
