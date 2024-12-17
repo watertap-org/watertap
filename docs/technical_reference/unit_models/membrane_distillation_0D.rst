@@ -16,13 +16,22 @@ This Membrane Distillation (MD) unit model:
    * assumes no concentration polarization for the cold channel
    * assumes complete vapor condensation for the cold channel (in DCMD and GMD)
    * accounts for vapor expansion in VMD
+<<<<<<< HEAD
    * assumes linear temperature change across gap channel (in GMD)
    * assumes no pressure change and temperature polarization in VMD vaccuum channel
+=======
+   * assumes linear temperature change across gap channel (in PGMD/CGMD)
+   * assumes no pressure change and temperature polarization in VMD vacuum channel
+>>>>>>> ea02752094954f8b44637dd1d90192daa64f21ac
 
 
 Degrees of Freedom
 ------------------
+<<<<<<< HEAD
 In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates) For the **DCMD** and **GMD** configurations, the MD model has at least **4 degrees of freedom** for all configurations that should be fixed for the unit to be fully specified. Typically, the following variables are fixed:
+=======
+In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates) for the **DCMD** and **PGMD/CGMD** configurations, the MD model has at least **4 degrees of freedom** for all configurations that should be fixed for the unit to be fully specified. Typically, the following variables are fixed:
+>>>>>>> ea02752094954f8b44637dd1d90192daa64f21ac
 
 - Membrane permeability coefficient
 - Membrane thickness

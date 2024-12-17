@@ -6,22 +6,22 @@ This Membrane Distillation (MD) unit model:
 
      - **DCMD** (Direct Contact Membrane Distillation)
      - **VMD** (Vacuum Membrane Distillation)
-     - **PGMD/CGMD** (Permeate Gap/Conductive Gap Membrane Distillation)
+     - **GMD** (Permeate Gap/Conductive Gap Membrane Distillation)
 
    * is 1-dimensional
    * supports steady-state only
    * assumes heat loss in equipment is negligible
    * assumes permeate exits the membrane pores with zero salinity
    * assumes no concentration polarization for the cold channel
-   * assumes complete vapor condensation for the cold channel (in DCMD and PGMD/CGMD)
+   * assumes complete vapor condensation for the cold channel (in DCMD and GMD)
    * accounts for vapor expansion in VMD
-   * assumes linear temperature change across gap channel (in PGMD/CGMD)
+   * assumes linear temperature change across gap channel (in GMD)
    * assumes no pressure change and temperature polarization in VMD vaccuum channel
 
 
 Degrees of Freedom
 ------------------
-In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates) For the **DCMD** and **PGMD/CGMD** configurations, the MD model has at least **4 degrees of freedom** for all configurations that should be fixed for the unit to be fully specified. Typically, the following variables are fixed:
+In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates) for the **DCMD** and **GMD** configurations, the MD model has at least **4 degrees of freedom** for all configurations that should be fixed for the unit to be fully specified. Typically, the following variables are fixed:
 
 - Membrane permeability coefficient
 - Membrane thickness
@@ -31,7 +31,7 @@ In addition to the hot channel and cold channel inlet state variables (i.e, temp
 **Additional degress of freedom**:
 
 - **VMD** introduces vacuum pressure at the cold side.
-- **PGMD/CGMD** introduces gap thermal conductivity and gap thickness.
+- **GMD** introduces gap thermal conductivity and gap thickness.
 
 Configuring the MD unit to calculate temperature polarization, concentration polarization, mass transfer
 coefficient, and pressure drop would result in five additional degrees of freedom. In this case, in addition to the
@@ -39,8 +39,8 @@ previously fixed variables, we typically fix the following variables to fully sp
 
     * Hot channel spacer porosity
     * Hot channel height
-    * Cold channel spacer porosity (in DCMD and PGMD/CGMD)
-    * Cold channel height (in DCMD and PGMD/CGMD)
+    * Cold channel spacer porosity (in DCMD and GMD)
+    * Cold channel height (in DCMD and GMD)
     * Membrane length *or* membrane width
 
 Model Structure
@@ -49,11 +49,11 @@ The MD model consists of a separate `MDchannel1Dblock` for each channel dependin
 
 - **DCMD**: Includes **hot channel** and **cold channel**.
 - **VMD**: Includes **hot channel** and **vacuum (cold) channel**.
-- **PGMD/CGMD**: Includes **hot channel**, **gap channel**, and **cold channel**.
+- **GMD**: Includes **hot channel**, **gap channel**, and **cold channel**.
 
 - **hot and cold channels in all configurations** includes bulk properties StateBlocks indexed by time and space which are used for mass, energy, and momentum balances
-- **hot channel in all configurations, cold channel in DCMD and PGMD/CGMD, and gap channel in PGMD/CGMD** includes StateBlocks indexed by time and space for the conditions at the membrane interface and gap interface
-- **hot channel in all configurations, cold channel in DCMD, and gap channel in PGMD/CGMD** includes StateBlocks indexed by time and space for Vapor properties at the membrane interface (for **DCMD** and **VMD** configurations).
+- **hot channel in all configurations, cold channel in DCMD and GMD, and gap channel in GMD** includes StateBlocks indexed by time and space for the conditions at the membrane interface and gap interface
+- **hot channel in all configurations, cold channel in DCMD, and gap channel in GMD** includes StateBlocks indexed by time and space for Vapor properties at the membrane interface (for **DCMD** and **VMD** configurations).
 
 Sets
 ----
@@ -61,7 +61,7 @@ Sets
    :header: "Description", "Symbol", "Indices"
 
    "Time", ":math:`t`", "[0]"
-   "Space", ":math:`x`", ""
+   "Space", ":math:`x`", "None"
    "Phases", ":math:`p`", "['Liq', 'Vap']"
    "Components", ":math:`j`", "['H2O', solute]*"
 
