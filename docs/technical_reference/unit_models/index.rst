@@ -23,7 +23,7 @@ Unit Models
    generic_separator
    ion_exchange_0D
    membrane_distillation_0D
-   membrane_distillation_0D
+   membrane_distillation_1D
    mvc
    nanofiltration_ZO
    nanofiltration_dspmde_0D
