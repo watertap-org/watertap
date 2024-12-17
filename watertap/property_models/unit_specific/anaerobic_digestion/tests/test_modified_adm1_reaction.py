@@ -940,7 +940,6 @@ class TestReactor:
         m.fs.unit.liquid_phase.properties_in[0].TSS
         m.fs.unit.liquid_phase.properties_out[0].TSS
 
-        # TODO: Add additional scaling factors?
         iscale.calculate_scaling_factors(m)
         iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat, 1e-6)
 
