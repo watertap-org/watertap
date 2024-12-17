@@ -33,6 +33,7 @@ Unit Models
    pump
    reverse_osmosis_0D
    reverse_osmosis_1D
+   steam_ejector
    stoichiometric_reactor
    thickener
    translators/index

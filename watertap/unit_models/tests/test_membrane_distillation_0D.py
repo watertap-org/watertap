@@ -1221,7 +1221,6 @@ def build_temperature_polarization_concentration_polarization_calculated_hot_vmd
 
     m.fs.unit.hot_ch.channel_height.fix(0.0019)
     m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
-    # m.fs.unit.hot_ch.K.fix(3.15e-5)
 
     iscale.calculate_scaling_factors(m)
 
