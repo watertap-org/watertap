@@ -252,9 +252,6 @@ if ``MD_configuration_type`` is set to ``MDconfigurationType.VMD``:
     "Hot channel convective heat transfer", ":math:`h_{\text{conv}, h}(t, x) \left( T_{\text{bulk}, h}(t, x) - T_{\text{interface}, h}(t, x) \right) = q_{\text{exp}}(t, x) + q_{\text{evap}}(t, x) - J(t, x) \cdot \widehat{H}_{\text{bulk, h}}(t, x, Liq)`"
 
 
-.. csv-table::
-   :header: "Description", "Equation"
-
 if ``MD_configuration_type`` is set to ``MDconfigurationType.DCMD``:
 
 .. csv-table::
