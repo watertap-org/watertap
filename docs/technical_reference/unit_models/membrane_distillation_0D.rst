@@ -22,7 +22,7 @@ This Membrane Distillation (MD) unit model:
 
 Degrees of Freedom
 ------------------
-In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates) For the **DCMD** and **PGMD/CGMD** configurations, the MD model has at least **4 degrees of freedom** for all configurations that should be fixed for the unit to be fully specified. Typically, the following variables are fixed:
+In addition to the hot channel and cold channel inlet state variables (i.e, temperature, pressure, and component flowrates) for the **DCMD** and **PGMD/CGMD** configurations, the MD model has at least **4 degrees of freedom** for all configurations that should be fixed for the unit to be fully specified. Typically, the following variables are fixed:
 
 - Membrane permeability coefficient
 - Membrane thickness
