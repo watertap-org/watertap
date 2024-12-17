@@ -61,7 +61,7 @@ Sets
    :header: "Description", "Symbol", "Indices"
 
    "Time", ":math:`t`", "[0]"
-   "Space", ":math:`x`", ""
+   "Space", ":math:`x`", "None"
    "Phases", ":math:`p`", "['Liq', 'Vap']"
    "Components", ":math:`j`", "['H2O', solute]*"
 
