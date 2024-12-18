@@ -2,9 +2,9 @@ How to use loopTool to explore flowsheets
 =========================================
 
 .. index::
-   pair: watertap.tools.analysis_tools.loop_tool;loop_tool
+   pair: parameter_sweep.loop_tool;loop_tool
 
-.. currentmodule:: watertap.tools.analysis_tools.loop_tool
+.. currentmodule:: parameter_sweep.loop_tool
 
 The loopTool is a wrapper for the parameter sweep (PS) tool set, and is designed to simplify setting up parametric sweeps, enabling sweeping over discrete design choices, and providing structured data management.  
 
@@ -143,7 +143,9 @@ The sweep_param_loop parameters will be iterated over one by one, to sweep over 
             param: key on the flowsheet that can be found using m.find_component (e.g., fs.costing.reverse_osmosis.membrane_cost)
             lower_limit: lower value for sampling
             upper_limit: upper value for sampling
-            num_samples: number of samples to run 
+            num_samples: number of samples to run
+
+Please note that YAML only supports literals for numeric data types. Expression-like values such as ``150 * 0.8`` will be parsed as strings and cause errors once the YAML inputs have been loaded.
 
 **Defining diff_param_loop**
 
@@ -365,7 +367,7 @@ Example of code for setting up our example of RO with ERD
    # This imports the function created in the example for RO_with_energy_recovery above
    import ro_erd as ro_setup
    # import the loopTool and utility function for getting a working directory
-   from watertap.tools.analysis_tools.loop_tool.loop_tool import loopTool, get_working_dir
+   from parameter_sweep.loop_tool.loop_tool import loopTool, get_working_dir
 
    if __name__=='__main__': we will execute the loopTool script here, required for safe execution of parallel scripts
       # We assume our .yaml file is in the same directory as this script

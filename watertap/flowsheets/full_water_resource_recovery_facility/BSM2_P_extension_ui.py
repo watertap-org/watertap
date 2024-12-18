@@ -17,7 +17,7 @@ from pyomo.environ import units as pyunits
 
 import idaes.logger as idaeslog
 
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
@@ -3873,7 +3873,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         m = build(bio_P=bioP)
 
-        set_operating_conditions(m)
+        set_operating_conditions(m, bio_P=bioP)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -3912,7 +3912,7 @@ def build_flowsheet(build_options=None, **kwargs):
     else:
         m = build(bio_P=False)
 
-        set_operating_conditions(m)
+        set_operating_conditions(m, bio_P=False)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()

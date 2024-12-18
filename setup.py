@@ -20,16 +20,6 @@ from pathlib import Path
 cwd = Path(__file__).parent
 long_description = (cwd / "README.md").read_text()
 
-SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.6.0,<2.7.0rc0",  # from PyPI
-]
-
-SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
-    # update with a tag from the nawi-hub/idaes-pse
-    # when a version of IDAES newer than the latest stable release from PyPI
-    # will become needed for the watertap development
-    "idaes-pse==2.6.0",
-]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
@@ -37,7 +27,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.2.dev0",
+    version="1.3.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -74,20 +64,16 @@ setup(
     packages=find_packages(
         include=("watertap*",),
     ),
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=[
         # primary requirements for unit and property models
-        # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
-        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        "idaes-pse >=2.7.0,<2.8.0rc0",
         "pyomo>=6.6.1",
-        "flexparser != 0.4",  # IDAES/idaes-pse#1524
+        "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
-        "parameter-sweep>=0.1.dev5",
-        # for watertap.ui.api_model (though may be generally useful)
-        "pydantic >= 2, <3",
+        "parameter-sweep >=0.1.0",
         "numpy",
-        "importlib-resources",
     ],
     extras_require={
         "testing": [
@@ -96,6 +82,7 @@ setup(
             # treebeardtech/nbmake#121
             "nbmake != 1.5.1",
             "nbconvert",
+            "idaes-flowsheet-processor >=0.1.dev4",
         ],
         "notebooks": [
             "jupyter",
@@ -104,21 +91,6 @@ setup(
         "oli_api": [
             "requests",
             "cryptography",  # for encrypting OLI credentials
-        ],
-        "dev": [
-            "nbsphinx",  # jupyter notebook support for sphinx
-            "jinja2<3.1.0",  # see watertap-org/watertap#449
-            "Sphinx==7.1.*",  # docs
-            "sphinx_rtd_theme",  # docs
-            "urllib3 < 2",  # see watertap-org/watertap#1021,
-            # other requirements
-            "linkify-it-py",
-            "black",  # code formatting
-            # other requirements
-            "pytest",  # test framework
-            "pytest-cov",  # code coverage
-            # treebeardtech/nbmake#121
-            "nbmake != 1.5.1",
         ],
     },
     package_data={  # Optional

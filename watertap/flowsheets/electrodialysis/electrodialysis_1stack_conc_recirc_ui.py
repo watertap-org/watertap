@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.core.solvers import get_solver
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc import (
     build,
     _condition_base,

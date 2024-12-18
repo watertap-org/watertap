@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.flowsheets.dye_desalination.dye_desalination import (
     build,
@@ -682,7 +682,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.dye_disposal_cost,
+        obj=fs.dye_cost,
         name="Dye disposal",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
