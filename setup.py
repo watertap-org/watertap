@@ -27,7 +27,7 @@ long_description = (cwd / "README.md").read_text()
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.2.0rc1",
+    version="1.2.0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
