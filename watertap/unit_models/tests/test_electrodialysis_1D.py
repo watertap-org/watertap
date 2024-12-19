@@ -124,7 +124,7 @@ class TestElectrodialysisVoltageConst:
     def test_stats_constant_vol(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 34
+        assert degrees_of_freedom(m) == 37
         # Specify a system
         # Note: Testing scenarios in this file are primarily in accord with an experimental
         # setup reported by Campione et al. in Desalination 465 (2019): 79-93.
@@ -140,6 +140,8 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit.channel_height.fix(2.7e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -153,6 +155,7 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
         m.fs.unit.spacer_porosity.fix(1)
+        m.fs.unit.spacer_conductivity_coefficient.fix(1)
 
         # check ion transfer number requirements
         assert (
@@ -261,10 +264,12 @@ class TestElectrodialysisVoltageConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(3.0, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption, ED stack"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.197, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.485, rel=5e-3
@@ -419,6 +424,8 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit.channel_height.fix(2.7e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -432,6 +439,7 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
         m.fs.unit.spacer_porosity.fix(1)
+        m.fs.unit.spacer_conductivity_coefficient.fix(1)
 
         # check ion transfer number requirements
         assert (
@@ -535,10 +543,12 @@ class TestElectrodialysisCurrentConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(5.83, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption, ED stack"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.390, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -618,7 +628,7 @@ class TestElectrodialysis_withNeutralSPecies:
     def test_stats_constant_vol(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 38
+        assert degrees_of_freedom(m) == 41
         # Specify a system
         # set the operational parameters
         m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
@@ -632,6 +642,8 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.channel_height.fix(2.7e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -647,6 +659,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
         m.fs.unit.spacer_porosity.fix(1)
+        m.fs.unit.spacer_conductivity_coefficient.fix(1)
 
         # check ion transfer number requirements
         assert (
@@ -762,10 +775,12 @@ class TestElectrodialysis_withNeutralSPecies:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(5.837, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption, ED stack"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.3896, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
@@ -864,6 +879,8 @@ class Test_ED_MembNonohm_On_ConstV:
         m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -877,6 +894,7 @@ class Test_ED_MembNonohm_On_ConstV:
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
         m.fs.unit.spacer_porosity.fix(1)
+        m.fs.unit.spacer_conductivity_coefficient.fix(1)
 
         # check ion transfer number requirements
         assert (
@@ -989,10 +1007,12 @@ class Test_ED_MembNonohm_On_ConstV:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(1.4735, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption, ED stack"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0955, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4925, rel=1e-3
@@ -1103,6 +1123,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -1116,6 +1138,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
         m.fs.unit.spacer_porosity.fix(1)
+        m.fs.unit.spacer_conductivity_coefficient.fix(1)
 
         # set the inlet stream
         m.fs.unit.inlet_diluate.pressure.fix(101325)
@@ -1201,10 +1224,12 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(1.3907, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption, ED stack"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.0900, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4928, rel=1e-3
@@ -1273,6 +1298,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
             m.fs.unit.channel_height.fix(5e-4)
             m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
             m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+            m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+            m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
             m.fs.unit.cell_width.fix(0.1)
             m.fs.unit.cell_length.fix(0.79)
             m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -1286,6 +1313,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
             m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
             m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
             m.fs.unit.spacer_porosity.fix(0.83)
+            m.fs.unit.spacer_conductivity_coefficient.fix(1)
 
             # set the inlet stream
             m.fs.unit.inlet_diluate.pressure.fix(101325)
@@ -1492,6 +1520,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
         m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -1505,6 +1535,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
         m.fs.unit.spacer_porosity.fix(1)
+        m.fs.unit.spacer_conductivity_coefficient.fix(1)
 
         # set the inlet stream
         m.fs.unit.inlet_diluate.pressure.fix(101325)
@@ -1590,10 +1621,12 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Total electrical power consumption"]
+            perform_dict["vars"]["Total electrical power consumption (W)"]
         ) == pytest.approx(12.904, rel=1e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption, ED stack"]
+            perform_dict["vars"][
+                "Specific electrical power consumption, ED stack (kW*h/m**3)"
+            ]
         ) == pytest.approx(0.8627, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4791, rel=1e-3
@@ -1772,6 +1805,8 @@ class Test_ED_pressure_drop_components:
             m.fs.unit.channel_height.fix(7.1e-4)
             m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
             m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+            m.fs.unit.membrane_areal_resistance_coef["cem"].fix(0)
+            m.fs.unit.membrane_areal_resistance_coef["aem"].fix(0)
             m.fs.unit.cell_width.fix(0.197)
             m.fs.unit.cell_length.fix(1.68)
             m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -1784,9 +1819,9 @@ class Test_ED_pressure_drop_components:
             m.fs.unit.ion_trans_number_membrane["aem", "Na_+"].fix(0)
             m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
             m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
-            m.fs.unit.spacer_porosity.fix(0.83)
             m.fs.unit.voltage_applied.fix(40)
             m.fs.unit.spacer_porosity.fix(0.83)
+            m.fs.unit.spacer_conductivity_coefficient.fix(1)
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 0.1, index=("Liq", "H2O")
             )

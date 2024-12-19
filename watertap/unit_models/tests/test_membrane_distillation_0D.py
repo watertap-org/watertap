@@ -31,6 +31,7 @@ from watertap.unit_models.MD.MD_channel_base import (
     PressureChangeType,
 )
 
+from watertap.unit_models.MD.membrane_distillation_base import MDconfigurationType
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 solver = get_solver()
@@ -63,6 +64,7 @@ def build():
             "pressure_change_type": PressureChangeType.fixed_per_stage,
             "flow_direction": FlowDirection.backward,
         },
+        MD_configuration_Type=MDconfigurationType.DCMD,
     )
 
     # fully specify system
@@ -925,6 +927,524 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_concentratio
                 "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
                 + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
                 + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
+            },
+        }
+
+        return m
+
+
+def build_temperature_polarization_none_vmd():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
+    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.unit = MembraneDistillation0D(
+        MD_configuration_Type=MDconfigurationType.VMD,
+        hot_ch={
+            "property_package": m.fs.properties_hot_ch,
+            "property_package_vapor": m.fs.properties_vapor,
+            "has_pressure_change": False,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "concentration_polarization_type": ConcentrationPolarizationType.none,
+            "mass_transfer_coefficient": MassTransferCoefficient.none,
+            "flow_direction": FlowDirection.forward,
+        },
+        cold_ch={
+            "property_package": m.fs.properties_cold_ch,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "has_pressure_change": False,
+            "flow_direction": FlowDirection.forward,
+        },
+    )
+
+    # Fully specify the system
+    hot_ch_flow_mass = 1.0
+    hot_ch_mass_frac_TDS = 0.035
+    hot_ch_pressure = 7e5
+    membrane_area = 1.0
+    hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_TDS
+    )
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_H2O
+    )
+    m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+    m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.permeability_coef.fix(1e-10)
+    m.fs.unit.membrane_thickness.fix(1e-4)
+
+    m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
+    m.fs.unit.cold_ch_inlet.pressure[0].fix(10000)
+
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestMembraneDisillation0D_temperature_polarization_none_vmd(UnitTestHarness):
+    def configure(self):
+        m = build_temperature_polarization_none_vmd()
+
+        self.unit_solutions[
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.9285175510218185
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 337.7047629447829
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 337.7047629447829
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03648244897818147
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+            },
+        }
+
+        return m
+
+
+def build_temperature_polarization_fixed_hot_vmd():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
+    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.unit = MembraneDistillation0D(
+        MD_configuration_Type=MDconfigurationType.VMD,
+        hot_ch={
+            "property_package": m.fs.properties_hot_ch,
+            "property_package_vapor": m.fs.properties_vapor,
+            "has_pressure_change": False,
+            "temperature_polarization_type": TemperaturePolarizationType.fixed,
+            "concentration_polarization_type": ConcentrationPolarizationType.none,
+            "mass_transfer_coefficient": MassTransferCoefficient.none,
+            "flow_direction": FlowDirection.forward,
+        },
+        cold_ch={
+            "property_package": m.fs.properties_cold_ch,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "has_pressure_change": False,
+            "flow_direction": FlowDirection.forward,
+        },
+    )
+
+    # Fully specify the system
+    hot_ch_flow_mass = 1.0
+    hot_ch_mass_frac_TDS = 0.035
+    hot_ch_pressure = 7e5
+    membrane_area = 1.0
+    hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_TDS
+    )
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_H2O
+    )
+    m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+    m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.permeability_coef.fix(1e-10)
+    m.fs.unit.membrane_thickness.fix(1e-4)
+
+    m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
+    m.fs.unit.cold_ch_inlet.pressure[0].fix(10000)
+    m.fs.unit.hot_ch.h_conv.fix(2400)
+
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestMembraneDisillation0D_temperature_polarization_fixed_hot_vmd(UnitTestHarness):
+    def configure(self):
+        m = build_temperature_polarization_fixed_hot_vmd()
+
+        self.unit_solutions[
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.9479100277176233
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 352.1551430126428
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 337.7492369004734
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.01708997228237665
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+            },
+        }
+
+        return m
+
+
+def build_temperature_polarization_calculated_hot_vmd():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
+    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.unit = MembraneDistillation0D(
+        MD_configuration_Type=MDconfigurationType.VMD,
+        hot_ch={
+            "property_package": m.fs.properties_hot_ch,
+            "property_package_vapor": m.fs.properties_vapor,
+            "has_pressure_change": False,
+            "temperature_polarization_type": TemperaturePolarizationType.calculated,
+            "concentration_polarization_type": ConcentrationPolarizationType.none,
+            "mass_transfer_coefficient": MassTransferCoefficient.none,
+            "flow_direction": FlowDirection.forward,
+        },
+        cold_ch={
+            "property_package": m.fs.properties_cold_ch,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "has_pressure_change": False,
+            "flow_direction": FlowDirection.forward,
+        },
+    )
+
+    # Fully specify the system
+    hot_ch_flow_mass = 1.0
+    hot_ch_mass_frac_TDS = 0.035
+    hot_ch_pressure = 7e5
+    membrane_area = 1.0
+    hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_TDS
+    )
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_H2O
+    )
+    m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+    m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.permeability_coef.fix(1e-10)
+    m.fs.unit.membrane_thickness.fix(1e-4)
+    m.fs.unit.length.fix(1)
+
+    m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
+    m.fs.unit.cold_ch_inlet.pressure[0].fix(10000)
+
+    m.fs.unit.hot_ch.channel_height.fix(0.0019)
+    m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
+
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestMembraneDisillation0D_temperature_polarization_calculated_hot_vmd(
+    UnitTestHarness
+):
+    def configure(self):
+        m = build_temperature_polarization_calculated_hot_vmd()
+
+        self.unit_solutions[
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.9348449235681139
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 342.68302106371556
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 339.9911385947164
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03015507643188607
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+            },
+        }
+
+        return m
+
+
+def build_temperature_polarization_concentration_polarization_calculated_hot_vmd():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
+    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.unit = MembraneDistillation0D(
+        MD_configuration_Type=MDconfigurationType.VMD,
+        hot_ch={
+            "property_package": m.fs.properties_hot_ch,
+            "property_package_vapor": m.fs.properties_vapor,
+            "has_pressure_change": False,
+            "temperature_polarization_type": TemperaturePolarizationType.calculated,
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+            "flow_direction": FlowDirection.forward,
+        },
+        cold_ch={
+            "property_package": m.fs.properties_cold_ch,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "has_pressure_change": False,
+            "flow_direction": FlowDirection.forward,
+        },
+    )
+
+    # Fully specify the system
+    hot_ch_flow_mass = 1.0
+    hot_ch_mass_frac_TDS = 0.035
+    hot_ch_pressure = 7e5
+    membrane_area = 1.0
+    hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_TDS
+    )
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_H2O
+    )
+    m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+    m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.permeability_coef.fix(1e-10)
+    m.fs.unit.membrane_thickness.fix(1e-4)
+    m.fs.unit.length.fix(1)
+
+    m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
+    m.fs.unit.cold_ch_inlet.pressure[0].fix(10000)
+
+    m.fs.unit.hot_ch.channel_height.fix(0.0019)
+    m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
+
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestMembraneDisillation0D_temperature_polarization_concentration_polarization_calculated_hot_vmd(
+    UnitTestHarness
+):
+    def configure(self):
+        m = (
+            build_temperature_polarization_concentration_polarization_calculated_hot_vmd()
+        )
+
+        self.unit_solutions[
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.9348449235681139
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 342.68302106371556
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 339.9911385947164
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03004295222746866
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+            },
+        }
+
+        return m
+
+
+def build_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
+    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.unit = MembraneDistillation0D(
+        MD_configuration_Type=MDconfigurationType.VMD,
+        hot_ch={
+            "property_package": m.fs.properties_hot_ch,
+            "property_package_vapor": m.fs.properties_vapor,
+            "has_pressure_change": True,
+            "pressure_change_type": PressureChangeType.calculated,
+            "temperature_polarization_type": TemperaturePolarizationType.calculated,
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+            "flow_direction": FlowDirection.forward,
+        },
+        cold_ch={
+            "property_package": m.fs.properties_cold_ch,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "has_pressure_change": False,
+            "flow_direction": FlowDirection.forward,
+        },
+    )
+
+    # Fully specify the system
+    hot_ch_flow_mass = 1.0
+    hot_ch_mass_frac_TDS = 0.035
+    hot_ch_pressure = 7e5
+    membrane_area = 1.0
+    hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_TDS
+    )
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_H2O
+    )
+    m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+    m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.permeability_coef.fix(1e-10)
+    m.fs.unit.membrane_thickness.fix(1e-4)
+    m.fs.unit.length.fix(1)
+
+    m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
+    m.fs.unit.cold_ch_inlet.pressure[0].fix(10000)
+
+    m.fs.unit.hot_ch.channel_height.fix(0.0019)
+    m.fs.unit.hot_ch.spacer_porosity.fix(0.77)
+
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestMembraneDisillation0D_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd(
+    UnitTestHarness
+):
+    def configure(self):
+        m = (
+            build_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd()
+        )
+
+        self.unit_solutions[
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.9348449235681139
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 342.68302106371556
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 339.9911385947164
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.03004295222746866
+        self.unit_solutions[m.fs.unit.hot_ch.deltaP[0]] = -73462.05019358391
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+            },
+        }
+
+        return m
+
+
+def build_temperature_polarization_none_pgmd():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
+    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
+    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.unit = MembraneDistillation0D(
+        MD_configuration_Type=MDconfigurationType.GMD,
+        hot_ch={
+            "property_package": m.fs.properties_hot_ch,
+            "property_package_vapor": m.fs.properties_vapor,
+            "has_pressure_change": False,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "concentration_polarization_type": ConcentrationPolarizationType.none,
+            "mass_transfer_coefficient": MassTransferCoefficient.none,
+            "flow_direction": FlowDirection.forward,
+        },
+        cold_ch={
+            "property_package": m.fs.properties_hot_ch,
+            "temperature_polarization_type": TemperaturePolarizationType.none,
+            "concentration_polarization_type": ConcentrationPolarizationType.none,
+            "mass_transfer_coefficient": MassTransferCoefficient.none,
+            "has_pressure_change": False,
+            "flow_direction": FlowDirection.backward,
+        },
+        gap_ch={
+            "property_package": m.fs.properties_cold_ch,
+            "temperature_polarization_type": TemperaturePolarizationType.fixed,
+            "has_pressure_change": False,
+            "flow_direction": FlowDirection.forward,
+        },
+    )
+
+    # Fully specify the system
+    hot_ch_flow_mass = 1.0
+    hot_ch_mass_frac_TDS = 0.035
+    hot_ch_pressure = 7e5
+    membrane_area = 3.0
+    hot_ch_mass_frac_H2O = 1 - hot_ch_mass_frac_TDS
+
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_TDS
+    )
+    m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_H2O
+    )
+    m.fs.unit.hot_ch_inlet.pressure[0].fix(hot_ch_pressure)
+    m.fs.unit.hot_ch_inlet.temperature[0].fix(273.15 + 90)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.permeability_coef.fix(1e-10)
+    m.fs.unit.membrane_thickness.fix(1e-4)
+    m.fs.unit.gap_thickness.fix(0.0004)
+    m.fs.unit.membrane_thermal_conductivity.fix(0.2)
+    m.fs.unit.gap_thermal_conductivity.fix(0.06)
+
+    m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_H2O
+    )
+    m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+        hot_ch_flow_mass * hot_ch_mass_frac_TDS
+    )
+    m.fs.unit.cold_ch_inlet.temperature[0].fix(273.15 + 25)
+    m.fs.unit.cold_ch_inlet.pressure[0].fix(100000)
+
+    m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
+    m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0)
+    m.fs.unit.gap_ch_inlet.temperature[0].set_value(273.15 + 30)
+    m.fs.unit.gap_ch_inlet.pressure[0].fix(100000)
+
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestMembraneDisillation0D_temperature_polarization_none_pgmd(UnitTestHarness):
+    def configure(self):
+        m = build_temperature_polarization_none_pgmd()
+
+        self.unit_solutions[
+            m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.9580840582054698
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 356.6334998833635
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = (
+            304.69178989433595
+        )
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.0023053139451937005
+        self.unit_solutions[m.fs.unit.gap_ch_outlet.temperature[0]] = 326.62398751842414
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.cold_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.gap_ch_inlet.flow_mass_phase_comp[0, "Vap", "H2O"],
+                "out": m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+                + m.fs.unit.cold_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.gap_ch_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+                + m.fs.unit.gap_ch_outlet.flow_mass_phase_comp[0, "Vap", "H2O"],
             },
         }
 
