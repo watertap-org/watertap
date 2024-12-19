@@ -21,23 +21,31 @@ from pyomo.environ import (
     units,
     value,
     Objective,
+    Suffix,
+    TransformationFactory,
+    Var,
 )
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
-
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from watertap.unit_models.cstr import CSTR
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
+from watertap.unit_models.cstr import CSTR, CSTRScaler
 from watertap.costing import WaterTAPCosting
 
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
+    ASM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
+    ASM1ReactionScaler,
 )
 
 from idaes.models.properties.examples.saponification_thermo import (
@@ -391,21 +399,6 @@ class TestCosting(UnitTestHarness):
 
         assert pytest.approx(0.002127, rel=1e-3) == value(m.fs.costing.LCOW)
 
-        component_list = [
-            "S_I",
-            "S_S",
-            "X_I",
-            "X_S",
-            "X_BH",
-            "X_BA",
-            "X_P",
-            "S_O",
-            "S_NO",
-            "S_NH",
-            "S_ND",
-            "X_ND",
-        ]
-
         self.conservation_equality = {
             "Check 1": {
                 "in": m.fs.unit.inlet.flow_vol[0],
@@ -414,3 +407,421 @@ class TestCosting(UnitTestHarness):
         }
 
         return m
+
+
+class TestCSTRScaler:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props_ASM1 = ASM1ParameterBlock()
+        m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(
+            property_package=m.fs.props_ASM1
+        )
+
+        m.fs.unit = CSTR(
+            property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+        )
+
+        m.fs.unit.inlet.flow_vol[0].fix(1.2199 * units.m**3 / units.s)
+        m.fs.unit.inlet.alkalinity[0].fix(4.5102 * units.mole / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.061909 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(0.012366 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1.4258 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(0.090508 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(2.8404 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(0.20512 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(0.58681 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(0.00036092 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(0.012424 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(0.0076936 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.0019068 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(0.0053166 * units.kg / units.m**3)
+
+        m.fs.unit.inlet.temperature[0].fix(308.15 * units.K)
+        m.fs.unit.inlet.pressure[0].fix(84790.0 * units.Pa)
+
+        m.fs.unit.volume[0].fix(1000 * units.m**3)
+
+        return m
+
+    @pytest.mark.component
+    def test_variable_scaling_routine(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, CSTRScaler)
+
+        scaler.variable_scaling_routine(model.fs.unit)
+
+        # Inlet state
+        sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
+        assert isinstance(sfx_in, Suffix)
+        assert len(sfx_in) == 3
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].flow_vol
+        ] == pytest.approx(1e1, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Outlet state - should be the same as the inlet
+        sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
+        assert isinstance(sfx_out, Suffix)
+        assert len(sfx_out) == 3
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].flow_vol
+        ] == pytest.approx(1e1, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Reaction block
+        sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
+        assert isinstance(sfx_rxn, Suffix)
+        assert len(sfx_rxn) == 8
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R1"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R2"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R3"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R4"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R5"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R6"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R7"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R8"]
+        ] == pytest.approx(1e2, rel=1e-8)
+
+        # Check that unit model has scaling factors
+        sfx_cv = model.fs.unit.control_volume.scaling_factor
+        assert isinstance(sfx_cv, Suffix)
+        assert len(sfx_cv) == 1
+        assert sfx_cv[model.fs.unit.control_volume.volume[0]] == pytest.approx(
+            1e-3, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_constraint_scaling_routine(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, CSTRScaler)
+
+        scaler.constraint_scaling_routine(model.fs.unit)
+
+        sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
+        assert isinstance(sfx_out, Suffix)
+        assert len(sfx_out) == 0
+
+        sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
+        assert isinstance(sfx_rxn, Suffix)
+        assert len(sfx_rxn) == 8
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R1"]
+        ] == pytest.approx(2.380752e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R2"]
+        ] == pytest.approx(1.49540985e8, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R3"]
+        ] == pytest.approx(1.75226112e6, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R4"]
+        ] == pytest.approx(2.88e6, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R5"]
+        ] == pytest.approx(1.728e7, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R6"]
+        ] == pytest.approx(1.728e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R7"]
+        ] == pytest.approx(3.174336e5, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R8"]
+        ] == pytest.approx(1, rel=1e-8)
+
+        sfx_unit = model.fs.unit.scaling_factor
+        assert isinstance(sfx_unit, Suffix)
+        assert len(sfx_unit) == 1
+        assert sfx_unit[model.fs.unit.CSTR_retention_time[0]] == pytest.approx(
+            1.2199e-3, rel=1e-8
+        )
+
+    @pytest.mark.component
+    def test_scale_model(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, CSTRScaler)
+
+        scaler.scale_model(model.fs.unit)
+
+        # Inlet state
+        sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
+        assert isinstance(sfx_in, Suffix)
+        assert len(sfx_in) == 3
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].flow_vol
+        ] == pytest.approx(1e1, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Outlet state - should be the same as the inlet
+        sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
+        assert isinstance(sfx_out, Suffix)
+        assert len(sfx_out) == 3
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].flow_vol
+        ] == pytest.approx(1e1, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].pressure
+        ] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].temperature
+        ] == pytest.approx(1e-1, rel=1e-8)
+
+        # Reaction block
+        sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
+        assert isinstance(sfx_rxn, Suffix)
+        assert len(sfx_rxn) == 16
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R1"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R2"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R3"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R4"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R5"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R6"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R7"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R8"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R1"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R2"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R3"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R4"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R5"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R6"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R7"]
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0.0].rate_expression["R8"]
+        ] == pytest.approx(1e2, rel=1e-8)
+
+        # Check that unit model has scaling factors
+        sfx_cv = model.fs.unit.control_volume.scaling_factor
+        assert isinstance(sfx_cv, Suffix)
+        assert len(sfx_cv) == 1
+        assert sfx_cv[model.fs.unit.control_volume.volume[0]] == pytest.approx(
+            1e-3, rel=1e-3
+        )
+
+        sfx_unit = model.fs.unit.scaling_factor
+        assert isinstance(sfx_unit, Suffix)
+        assert len(sfx_unit) == 1
+        assert sfx_unit[model.fs.unit.CSTR_retention_time[0]] == pytest.approx(
+            0.0012199, rel=1e-8
+        )
+
+    # TODO: Remove test once iscale is deprecated
+    @pytest.mark.integration
+    def test_example_case_iscale(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props_ASM1 = ASM1ParameterBlock()
+        m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(
+            property_package=m.fs.props_ASM1
+        )
+
+        m.fs.unit = CSTR(
+            property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+        )
+
+        m.fs.unit.inlet.flow_vol[0].fix(1.2199 * units.m**3 / units.s)
+        m.fs.unit.inlet.alkalinity[0].fix(4.5102 * units.mole / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.061909 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(0.012366 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1.4258 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(0.090508 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(2.8404 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(0.20512 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(0.58681 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(0.00036092 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(0.012424 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(0.0076936 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.0019068 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(0.0053166 * units.kg / units.m**3)
+
+        m.fs.unit.inlet.temperature[0].fix(308.15 * units.K)
+        m.fs.unit.inlet.pressure[0].fix(84790.0 * units.Pa)
+
+        m.fs.unit.volume[0].fix(1000 * units.m**3)
+
+        # Set scaling factors for badly scaled variables
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0].pressure, 1e-5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_BA"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_P"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_O"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_NH"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_ND"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_ND"], 1e5
+        )
+
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_extent[0.0, "R1"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_extent[0.0, "R3"], 1e5
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.rate_reaction_extent[0.0, "R5"], 1e5
+        )
+
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R1"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R2"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R3"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R4"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R5"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R6"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R7"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.reactions[0.0].reaction_rate["R8"], 1e7
+        )
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            6.1277317e13, rel=1e-3
+        )
+
+    @pytest.mark.integration
+    def test_example_case_scaler(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props_ASM1 = ASM1ParameterBlock()
+        m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(
+            property_package=m.fs.props_ASM1
+        )
+
+        m.fs.unit = CSTR(
+            property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+        )
+
+        m.fs.unit.inlet.flow_vol[0].fix(1.2199 * units.m**3 / units.s)
+        m.fs.unit.inlet.alkalinity[0].fix(4.5102 * units.mole / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.061909 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(0.012366 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1.4258 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(0.090508 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(2.8404 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(0.20512 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(0.58681 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(0.00036092 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(0.012424 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(0.0076936 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.0019068 * units.kg / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(0.0053166 * units.kg / units.m**3)
+
+        m.fs.unit.inlet.temperature[0].fix(308.15 * units.K)
+        m.fs.unit.inlet.pressure[0].fix(84790.0 * units.Pa)
+
+        m.fs.unit.volume[0].fix(1000 * units.m**3)
+
+        scaler = CSTRScaler()
+        scaler.scale_model(
+            m.fs.unit,
+            submodel_scalers={
+                m.fs.unit.control_volume.properties_in: ASM1PropertiesScaler,
+                m.fs.unit.control_volume.properties_out: ASM1PropertiesScaler,
+                m.fs.unit.control_volume.reactions: ASM1ReactionScaler,
+            },
+        )
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            3.626085e10, rel=1e-3
+        )
