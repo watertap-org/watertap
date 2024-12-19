@@ -23,7 +23,6 @@ from pyomo.environ import (
     Objective,
     Suffix,
     TransformationFactory,
-    Var,
 )
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
