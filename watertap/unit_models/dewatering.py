@@ -160,7 +160,6 @@ class DewatererScaler(CustomScalerBase):
         )
 
         # Scale unit level constraints
-        # Constraint(
         for c in model.component_data_objects(Constraint, descend_into=False):
             self.scale_constraint_by_nominal_value(
                 c,
