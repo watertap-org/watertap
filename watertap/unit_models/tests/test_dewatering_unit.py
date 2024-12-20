@@ -20,7 +20,6 @@ from pyomo.environ import (
     assert_optimal_termination,
     Suffix,
     TransformationFactory,
-    Var,
     units as pyunits,
 )
 
