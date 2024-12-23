@@ -21,10 +21,14 @@ __author__ = "Chenyu Wang"
 
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value
+from pyomo.environ import assert_optimal_termination, TransformationFactory, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
@@ -211,4 +215,15 @@ class TestFullFlowsheetBioPTrue:
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             830582.94, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            4.329094e18, rel=1e-3
         )
