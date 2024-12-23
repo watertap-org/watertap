@@ -127,6 +127,16 @@ class TestFullFlowsheetBioPFalse:
             827635.247, rel=1e-3
         )
 
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            2.36720268e18, rel=1e-3
+        )
+
 
 @pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPTrue:
@@ -222,8 +232,7 @@ class TestFullFlowsheetBioPTrue:
         m = system_frame
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
+        jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4.329094e18, rel=1e-3
+            3.208168033e18, rel=1e-3
         )
