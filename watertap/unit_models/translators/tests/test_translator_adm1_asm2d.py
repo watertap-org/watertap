@@ -29,7 +29,6 @@ from pyomo.environ import (
 from idaes.core import (
     FlowsheetBlock,
 )
-from idaes.core.scaling import report_scaling_factors
 
 from pyomo.environ import (
     units,
@@ -66,12 +65,10 @@ from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_prop
 
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
-    ModifiedADM1ReactionScaler,
 )
 
 from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
-    ModifiedASM2dReactionScaler,
 )
 
 

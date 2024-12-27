@@ -59,7 +59,7 @@ _log = idaeslog.getLogger(__name__)
 
 class ADM1ASM2dScaler(CustomScalerBase):
     """
-    Default modular scaler for CSTR.
+    Default modular scaler for ADM1-ASM2d translator block.
     This Scaler relies on the associated property and reaction packages,
     either through user provided options (submodel_scalers argument) or by default
     Scalers assigned to the packages.

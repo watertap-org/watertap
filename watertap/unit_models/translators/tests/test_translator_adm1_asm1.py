@@ -46,7 +46,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.scaling.scaling_base import ScalerBase
 
 from watertap.unit_models.translators.translator_adm1_asm1 import (
     Translator_ADM1_ASM1,
@@ -64,14 +63,7 @@ from watertap.property_models.unit_specific.activated_sludge.asm1_properties imp
 
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
-    ADM1ReactionScaler,
 )
-
-from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
-    ASM1ReactionParameterBlock,
-    ASM1ReactionScaler,
-)
-
 
 from pyomo.util.check_units import assert_units_consistent
 
