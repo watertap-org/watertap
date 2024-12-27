@@ -91,18 +91,6 @@ class ADM1ASM2dScaler(CustomScalerBase):
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
-        self.call_submodel_scaler_method(
-            submodel=model.config.inlet_reaction_package,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.config.outlet_reaction_package,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -127,18 +115,6 @@ class ADM1ASM2dScaler(CustomScalerBase):
         )
         self.call_submodel_scaler_method(
             submodel=model.properties_out,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.config.inlet_reaction_package,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.config.outlet_reaction_package,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,

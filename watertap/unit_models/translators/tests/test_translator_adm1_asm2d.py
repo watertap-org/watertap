@@ -29,6 +29,7 @@ from pyomo.environ import (
 from idaes.core import (
     FlowsheetBlock,
 )
+from idaes.core.scaling import report_scaling_factors
 
 from pyomo.environ import (
     units,
@@ -416,7 +417,7 @@ class TestADM1ASM2dScaler:
         assert isinstance(sfx_in, Suffix)
         assert len(sfx_in) == 3
         assert sfx_in[model.fs.unit.properties_in[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
+            1e5, rel=1e-8
         )
         assert sfx_in[model.fs.unit.properties_in[0].pressure] == pytest.approx(
             1e-6, rel=1e-8
@@ -430,42 +431,13 @@ class TestADM1ASM2dScaler:
         assert isinstance(sfx_out, Suffix)
         assert len(sfx_out) == 3
         assert sfx_out[model.fs.unit.properties_out[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
+            1e5, rel=1e-8
         )
         assert sfx_out[model.fs.unit.properties_out[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-5, rel=1e-8
         )
         assert sfx_out[model.fs.unit.properties_out[0].temperature] == pytest.approx(
-            1e-1, rel=1e-8
-        )
-
-        # Reaction block
-        sfx_rxn = model.fs.unit.reactions[0].scaling_factor
-        assert isinstance(sfx_rxn, Suffix)
-        assert len(sfx_rxn) == 8
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R1"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R2"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R3"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R4"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R5"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R6"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R7"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R8"]] == pytest.approx(
-            1e2, rel=1e-8
+            1e-2, rel=1e-8
         )
 
     @pytest.mark.component
@@ -478,35 +450,7 @@ class TestADM1ASM2dScaler:
 
         sfx_out = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
-        assert len(sfx_out) == 0
-
-        sfx_rxn = model.fs.unit.reactions[0].scaling_factor
-        assert isinstance(sfx_rxn, Suffix)
-        assert len(sfx_rxn) == 8
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R1"]
-        ] == pytest.approx(2.380752e5, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R2"]
-        ] == pytest.approx(1.49540985e8, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R3"]
-        ] == pytest.approx(1.75226112e6, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R4"]
-        ] == pytest.approx(2.88e6, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R5"]
-        ] == pytest.approx(1.728e7, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R6"]
-        ] == pytest.approx(1.728e5, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R7"]
-        ] == pytest.approx(3.174336e5, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R8"]
-        ] == pytest.approx(1, rel=1e-8)
+        assert len(sfx_out) == 1
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -521,7 +465,7 @@ class TestADM1ASM2dScaler:
         assert isinstance(sfx_in, Suffix)
         assert len(sfx_in) == 3
         assert sfx_in[model.fs.unit.properties_in[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
+            1e5, rel=1e-8
         )
         assert sfx_in[model.fs.unit.properties_in[0].pressure] == pytest.approx(
             1e-6, rel=1e-8
@@ -535,67 +479,14 @@ class TestADM1ASM2dScaler:
         assert isinstance(sfx_out, Suffix)
         assert len(sfx_out) == 3
         assert sfx_out[model.fs.unit.properties_out[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
+            1e5, rel=1e-8
         )
         assert sfx_out[model.fs.unit.properties_out[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-5, rel=1e-8
         )
         assert sfx_out[model.fs.unit.properties_out[0].temperature] == pytest.approx(
-            1e-1, rel=1e-8
+            1e-2, rel=1e-8
         )
-
-        # Reaction block
-        sfx_rxn = model.fs.unit.reactions[0].scaling_factor
-        assert isinstance(sfx_rxn, Suffix)
-        assert len(sfx_rxn) == 16
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R1"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R2"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R3"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R4"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R5"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[
-            model.fs.unit.contr_volume.reactions[0].reaction_rate["R6"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R7"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[model.fs.unit.reactions[0].reaction_rate["R8"]] == pytest.approx(
-            1e2, rel=1e-8
-        )
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R1"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R2"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R3"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R4"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R5"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R6"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R7"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.reactions[0.0].rate_expression["R8"]
-        ] == pytest.approx(1e2, rel=1e-8)
 
     # TODO: Remove test once iscale is deprecated
     @pytest.mark.integration
@@ -660,15 +551,13 @@ class TestADM1ASM2dScaler:
         m.fs.unit.inlet.cations[0].fix(0.04)
         m.fs.unit.inlet.anions[0].fix(0.02)
 
-        # Set scaling factors for badly scaled variables
-
         iscale.calculate_scaling_factors(m.fs.unit)
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.1277317e13, rel=1e-3
+            4.47213596e5, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -739,8 +628,6 @@ class TestADM1ASM2dScaler:
             submodel_scalers={
                 m.fs.unit.properties_in: ModifiedADM1PropertiesScaler,
                 m.fs.unit.properties_out: ModifiedASM2dPropertiesScaler,
-                m.fs.unit.config.inlet_reaction_package: ModifiedADM1ReactionScaler,
-                m.fs.unit.config.outlet_reaction_package: ModifiedASM2dReactionScaler,
             },
         )
 
@@ -748,5 +635,5 @@ class TestADM1ASM2dScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.626085e10, rel=1e-3
+            7.180968e3, rel=1e-3
         )
