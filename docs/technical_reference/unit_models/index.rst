@@ -23,6 +23,7 @@ Unit Models
    generic_separator
    ion_exchange_0D
    membrane_distillation_0D
+   membrane_distillation_1D
    mvc
    nanofiltration_ZO
    nanofiltration_dspmde_0D
@@ -32,6 +33,7 @@ Unit Models
    pump
    reverse_osmosis_0D
    reverse_osmosis_1D
+   steam_ejector
    stoichiometric_reactor
    thickener
    translators/index
