@@ -23,22 +23,32 @@ import pyomo.environ as pyo
 
 from pyomo.network import Arc, SequentialDecomposition
 from watertap.unit_models.anaerobic_digester import AD
-from watertap.unit_models.thickener import Thickener
-from watertap.unit_models.dewatering import DewateringUnit
-from watertap.unit_models.cstr import CSTR
-from watertap.unit_models.clarifier import Clarifier
+from watertap.unit_models.thickener import Thickener, ThickenerScaler
+from watertap.unit_models.dewatering import DewateringUnit, DewatererScaler
+from watertap.unit_models.cstr import CSTR, CSTRScaler
+from watertap.unit_models.cstr_injection import CSTR_InjectionScaler
+from watertap.unit_models.clarifier import Clarifier, ClarifierScaler
 
-from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM1_ADM1
-from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM1_ASM1
+from watertap.unit_models.translators.translator_asm1_adm1 import (
+    Translator_ASM1_ADM1,
+    ASM1ADM1Scaler,
+)
+from watertap.unit_models.translators.translator_adm1_asm1 import (
+    Translator_ADM1_ASM1,
+    ADM1ASM1Scaler,
+)
 
 import idaes.logger as idaeslog
 from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.util import DiagnosticsToolbox
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
+    ADM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
+    ADM1ReactionScaler,
 )
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.models.unit_models.separator import SplittingType
@@ -71,19 +81,23 @@ from watertap.costing.unit_models.clarifier import (
 from pyomo.util.check_units import assert_units_consistent
 
 
-def main(reactor_volume_equalities=False):
+def main(reactor_volume_equalities=False, scalers=True):
     m = build()
     set_operating_conditions(m)
+    dt = DiagnosticsToolbox(m)
+    print("---Structural Issues---")
+    dt.report_structural_issues()
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
+    scale_system(m, scalers=scalers)
     initialize_system(m)
 
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
 
-    add_costing(m)
+    add_costing(m, scalers=scalers)
     m.fs.costing.initialize()
     assert_degrees_of_freedom(m, 0)
 
@@ -101,6 +115,8 @@ def main(reactor_volume_equalities=False):
     # display_results(m)
     display_costing(m)
     display_performance_metrics(m)
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
 
     return m, results
 
@@ -385,17 +401,34 @@ def set_operating_conditions(m):
     for mx in m.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-        if "flow_vol" in var.name:
-            iscale.set_scaling_factor(var, 1e1)
-        if "temperature" in var.name:
-            iscale.set_scaling_factor(var, 1e-1)
-        if "pressure" in var.name:
-            iscale.set_scaling_factor(var, 1e-6)
-        if "conc_mass_comp" in var.name:
-            iscale.set_scaling_factor(var, 1e1)
 
-    iscale.calculate_scaling_factors(m)
+def scale_system(m, scalers=True):
+    if scalers:
+        pass
+        # unit_scaler = UnitScaler()
+        # unit_scaler.scale_model(
+        #     m.fs.unit,
+        #     submodel_scalers={
+        #         m.fs.unit.control_volume.properties_in: ADM1PropertiesScaler,
+        #         m.fs.unit.control_volume.properties_out: ASM1PropertiesScaler,
+        #         m.fs.unit.properties_in: ADM1PropertiesScaler,
+        #         m.fs.unit.properties_out: ASM1PropertiesScaler,
+        #         m.fs.unit.mixed_state: ADM1PropertiesScaler,
+        #         m.fs.unit.underflow_state: ADM1PropertiesScaler,
+        #     },
+        # )
+    else:
+        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+            if "flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1e1)
+            if "temperature" in var.name:
+                iscale.set_scaling_factor(var, 1e-1)
+            if "pressure" in var.name:
+                iscale.set_scaling_factor(var, 1e-6)
+            if "conc_mass_comp" in var.name:
+                iscale.set_scaling_factor(var, 1e1)
+
+        iscale.calculate_scaling_factors(m)
 
 
 def initialize_system(m):
@@ -470,7 +503,7 @@ def initialize_system(m):
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
-def add_costing(m):
+def add_costing(m, scalers=True):
     m.fs.costing = WaterTAPCosting()
     m.fs.costing.base_currency = pyo.units.USD_2020
 
@@ -503,15 +536,24 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
-    iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
 
-    for block in m.fs.component_objects(pyo.Block, descend_into=True):
-        if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
-            iscale.set_scaling_factor(block.costing.capital_cost, 1e-6)
+    if scalers:
+        pass
+    else:
 
-    iscale.constraint_scaling_transform(m.fs.DU.costing.capital_cost_constraint, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.RADM.costing.capital_cost_constraint, 1e-6)
+        iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
+        iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
+
+        for block in m.fs.component_objects(pyo.Block, descend_into=True):
+            if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
+                iscale.set_scaling_factor(block.costing.capital_cost, 1e-6)
+
+        iscale.constraint_scaling_transform(
+            m.fs.DU.costing.capital_cost_constraint, 1e-6
+        )
+        iscale.constraint_scaling_transform(
+            m.fs.RADM.costing.capital_cost_constraint, 1e-6
+        )
 
 
 def setup_optimization(m, reactor_volume_equalities=False):
