@@ -279,6 +279,8 @@ def _condition_base(m):
     m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
+    m.fs.EDstack.membrane_areal_resistance_coef["cem"].fix(0)
+    m.fs.EDstack.membrane_areal_resistance_coef["aem"].fix(0)
     m.fs.EDstack.solute_diffusivity_membrane["cem", "Na_+"].fix(3.28e-11)
     m.fs.EDstack.solute_diffusivity_membrane["aem", "Na_+"].fix(3.28e-11)
     m.fs.EDstack.solute_diffusivity_membrane["cem", "Cl_-"].fix(3.28e-11)
@@ -299,6 +301,7 @@ def _condition_base(m):
     # Spacer properties
     m.fs.EDstack.spacer_porosity.fix(0.83)
     m.fs.EDstack.spacer_specific_area.fix(10400)
+    m.fs.EDstack.spacer_conductivity_coefficient.fix(1)
 
     # Electrochemical properties
     m.fs.EDstack.electrodes_resistance.fix(0)

@@ -9,6 +9,11 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import pytest
 
-# register the Pyomo components
-import watertap.core.plugins.solvers
+from watertap.core.solvers import get_solver
+import watertap_solvers
+
+
+def test_get_solver_returns_expected_default():
+    assert get_solver().__class__ is watertap_solvers.IpoptWaterTAP

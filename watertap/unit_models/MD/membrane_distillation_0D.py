@@ -14,6 +14,7 @@
 from pyomo.environ import Constraint
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, ConfigBlock, In
 from idaes.core import FlowDirection
+from idaes.core.util import scaling as iscale
 
 from .MD_channel_base import (
     ConcentrationPolarizationType,
@@ -39,6 +40,7 @@ from .MD_channel_base import (
 from .MD_channel_0D import MDChannel0DBlock
 from .membrane_distillation_base import (
     MembraneDistillationBaseData,
+    MDconfigurationType,
 )
 from idaes.core.util.config import is_physical_parameter_block
 
@@ -206,7 +208,7 @@ see property package for documentation.}""",
     _CONFIG_Template.declare(
         "temperature_polarization_type",
         ConfigValue(
-            default=TemperaturePolarizationType.calculated,
+            default=TemperaturePolarizationType.none,
             domain=In(TemperaturePolarizationType),
             description="External temperature polarization effect",
             doc="""
@@ -227,7 +229,7 @@ see property package for documentation.}""",
     _CONFIG_Template.declare(
         "concentration_polarization_type",
         ConfigValue(
-            default=ConcentrationPolarizationType.calculated,
+            default=ConcentrationPolarizationType.none,
             domain=In(ConcentrationPolarizationType),
             description="External concentration polarization effect in RO",
             doc="""
@@ -248,7 +250,7 @@ see property package for documentation.}""",
     _CONFIG_Template.declare(
         "mass_transfer_coefficient",
         ConfigValue(
-            default=MassTransferCoefficient.calculated,
+            default=MassTransferCoefficient.none,
             domain=In(MassTransferCoefficient),
             description="Mass transfer coefficient in RO feed channel",
             doc="""
@@ -353,6 +355,28 @@ see property package for documentation.}""",
 
     CONFIG.declare("hot_ch", _CONFIG_Template(doc="hot channel config arguments"))
     CONFIG.declare("cold_ch", _CONFIG_Template(doc="cold channel config arguments"))
+    CONFIG.declare("gap_ch", _CONFIG_Template(doc="gap channel config arguments"))
+
+    CONFIG.declare(
+        "MD_configuration_Type",
+        ConfigValue(
+            default=MDconfigurationType.DCMD,
+            domain=In(MDconfigurationType),
+            description="Options for selecting membrane distillation process configurations",
+            doc="""
+            Options for selecting membrane distillation process configurations
+            **default** - ``MDconfigurationType.DCMD``
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``MDconfigurationType.DCMD``", "Direct Contact Membrane Distillation"
+            "``MDconfigurationType.VMD``", "Vacuum Membrane Distillation"
+            "``MDconfigurationType.GMD``", "Permeate Gap or Coductive Gap Membrane Distillation"
+            "``MDconfigurationType.AGMD``", "Air Gap Membrane Distillation"
+        """,
+        ),
+    )
 
     def _make_MD_channel_control_volume(self, name_ch, common_config, config):
 
@@ -411,13 +435,43 @@ see property package for documentation.}""",
         def eq_connect_mass_transfer(b, t, p, j):
 
             if p == "Liq":
+                if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                    return (
+                        b.cold_ch.mass_transfer_term[t, p, j]
+                        == -b.hot_ch.mass_transfer_term[t, p, j]
+                    )
+
+                else:
+                    return Constraint.Skip
+
+            else:
+                if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                    b.cold_ch.mass_transfer_term[t, p, j].fix(0)
+                    return Constraint.Skip
+                elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                    b.cold_ch.mass_transfer_term[t, "Liq", j].fix(0)
+                    return (
+                        b.cold_ch.mass_transfer_term[t, p, j]
+                        == -b.hot_ch.mass_transfer_term[t, "Liq", j]
+                    )
+
+                else:
+                    return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Mass transfer from feed to permeate",
+        )
+        def eq_connect_mass_transfer_gap(b, t):
+
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
+                b.gap_ch.mass_transfer_term[t, "Vap", "H2O"].fix(0)
                 return (
-                    b.cold_ch.mass_transfer_term[t, "Liq", j]
-                    == -b.hot_ch.mass_transfer_term[t, "Liq", j]
+                    b.gap_ch.mass_transfer_term[t, "Liq", "H2O"]
+                    == -b.hot_ch.mass_transfer_term[t, "Liq", "H2O"]
                 )
 
             else:
-                b.cold_ch.mass_transfer_term[t, p, j].fix(0)
                 return Constraint.Skip
 
         @self.Constraint(
@@ -445,14 +499,39 @@ see property package for documentation.}""",
             doc="Conductive heat transfer to cold channel",
         )
         def eq_conductive_heat_transfer_hot(b, t):
-            return b.hot_ch.heat[t] == -b.area * b.flux_conduction_heat_avg[t]
+            if self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return b.hot_ch.heat[t] == -b.area * b.flux_expansion_heat_avg[t]
+            else:
+                return b.hot_ch.heat[t] == -b.area * b.flux_conduction_heat_avg[t]
 
         @self.Constraint(
             self.flowsheet().config.time,
+            # self.difference_elements,
             doc="Conductive heat transfer to cold channel",
         )
-        def eq_conductive_heat_transfer_cold(b, t):
-            return b.cold_ch.heat[t] == -b.hot_ch.heat[t]
+        def eq_conductive_heat_transfer_term_cold(b, t):
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+                return b.cold_ch.heat[t] == -b.hot_ch.heat[t]
+            elif self.config.MD_configuration_Type == MDconfigurationType.GMD:
+                return (
+                    b.cold_ch.heat[t]
+                    == -b.hot_ch.heat[t]
+                    - b.hot_ch.enthalpy_transfer[t]
+                    - b.gap_ch.enthalpy_transfer[t]
+                )
+            elif self.config.MD_configuration_Type == MDconfigurationType.VMD:
+                return Constraint.Skip
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="Connecting the cold channel conductive heat transfer to conductive heat across the gap",
+        )
+        def eq_conductive_heat_transfer_gap(b, t, x):
+            if self.config.MD_configuration_Type == MDconfigurationType.GMD:
+                return b.cold_ch.heat[t] == b.flux_conduction_heat_gap_avg[t] * b.area
+            else:
+                return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -466,4 +545,34 @@ see property package for documentation.}""",
             doc="Enthalpy heat transfer to the cold channel",
         )
         def eq_enthalpy_transfer_cold(b, t):
-            return b.cold_ch.enthalpy_transfer[t] == b.area * b.flux_enth_cold_avg[t]
+            if self.config.MD_configuration_Type == MDconfigurationType.DCMD:
+
+                return (
+                    b.cold_ch.enthalpy_transfer[t] == b.area * b.flux_enth_cold_avg[t]
+                )
+            else:
+                return Constraint.Skip
+
+    def calculate_scaling_factors(self):
+        if self.config.MD_configuration_Type == MDconfigurationType.GMD:
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_in[0.0].enth_flow_phase["Liq"],
+                4.0,
+            )
+
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_in[0.0].flow_vol_phase["Liq"],
+                1e9,
+            )
+
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_interface[0.0, 0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ],
+                1e8,
+            )
+            iscale.set_scaling_factor(
+                self.gap_ch.properties_interface[0.0, 0.0].flow_vol_phase["Liq"], 1e10
+            )
+
+        super().calculate_scaling_factors()
