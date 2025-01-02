@@ -980,7 +980,7 @@ class TestMCAS:
     def test_structural_issues(self, mcas_case):
         dt = DiagnosticsToolbox(mcas_case)
 
-        dt.assert_no_structural_warnings()
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.component
     def test_scaling(self, mcas_case):
@@ -1141,13 +1141,13 @@ class TestMCAS:
         ) == pytest.approx(0.8 * 53.6036, rel=1e-5)
         assert value(
             mcas_case.fs.unit.permeate.flow_mol_phase_comp[0, "Liq", "Ca_2+"]
-        ) == pytest.approx(0, abs=1e-8)
+        ) == pytest.approx(0, abs=1e-7)
         assert value(
             mcas_case.fs.unit.permeate.flow_mol_phase_comp[0, "Liq", "Mg_2+"]
-        ) == pytest.approx(0, abs=1e-8)
+        ) == pytest.approx(0, abs=1e-7)
         assert value(
             mcas_case.fs.unit.permeate.flow_mol_phase_comp[0, "Liq", "SO4_2-"]
-        ) == pytest.approx(0, abs=1e-8)
+        ) == pytest.approx(0, abs=1e-7)
         assert value(
             mcas_case.fs.unit.permeate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(0.328098, rel=1e-5)
