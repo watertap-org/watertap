@@ -73,20 +73,16 @@ from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions imp
 )
 from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
-    ModifiedASM2dPropertiesScaler,
 )
 from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
-    ModifiedASM2dReactionScaler,
 )
 
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
-    ADM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
-    ADM1ReactionScaler,
 )
 
 # -----------------------------------------------------------------------------
