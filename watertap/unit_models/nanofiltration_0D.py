@@ -32,9 +32,6 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-EPS = 1e-10  # Default value for multivalent ion rejection
-
-
 class Nanofiltration0DInitializer(ModularInitializerBase):
     """
     Initializer for 0D Nanofiltration models.
@@ -106,13 +103,13 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                     else:
                         sv_ret.set_value(sv)
                 elif "flow" in sv.local_name:
-                    self._init_flow(model, in_state, sv, sv_ret, sv_per)
+                    self._init_flow(model, t, in_state, sv, sv_ret, sv_per)
                 elif any(
                     sv.local_name.startswith(i) for i in ["mass_frac", "mole_frac"]
                 ):
-                    self._init_frac(model, in_state, sv, sv_ret, sv_per)
+                    self._init_frac(model, t, in_state, sv, sv_ret, sv_per)
                 elif sv.local_name.startswith("conc"):
-                    self._init_conc(model, in_state, sv, sv_ret, sv_per)
+                    self._init_conc(model, t, in_state, sv, sv_ret, sv_per)
                 else:
                     # For everything else, assume outlet similar to inlet
                     for k, svd in sv.items():
@@ -141,7 +138,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
 
         return res
 
-    def _init_conc(self, model, in_state, sv, sv_ret, sv_per):
+    def _init_conc(self, model, t, in_state, sv, sv_ret, sv_per):
         # Component indexed flow - need to apply split fractions
         for k, svd in sv.items():
             if isinstance(k, str):
@@ -159,26 +156,19 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                 sv_ret[k].set_value(svd)
                 sv_per[k].set_value(svd)
             else:
-                try:
-                    charge = comp.config.charge
-                except AttributeError:
-                    charge = 0
-
-                if abs(charge) > 1:
-                    split = model.multivalent_recovery
+                if j == model.config.electroneutrality_ion:
+                    # Guess electroneutrality ion will be based on solvent recovery
+                    split = model.solvent_recovery[t]
                 else:
-                    try:
-                        split = model.solute_recovery[j]
-                    except KeyError:
-                        # probably the electroneutrality ion - use solvent recovery
-                        split = model.solvent_recovery
+                    # For initialization, assume density is roughly constant and rejection can be used as split fraction
+                    split = 1 - model.rejection_comp[t, j]
 
                 if not sv_ret[k].fixed:
                     sv_ret[k].set_value(svd * (1 - split))
                 if not sv_per[k].fixed:
                     sv_per[k].set_value(svd * split)
 
-    def _init_flow(self, model, in_state, sv, sv_ret, sv_per):
+    def _init_flow(self, model, t, in_state, sv, sv_ret, sv_per):
         # Determine if it is a component flow or not
         if sv.local_name.endswith("_comp"):
             # Component indexed flow - need to apply split fractions
@@ -193,22 +183,12 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                 # Determine split based on type
                 comp = in_state.params.get_component(j)
 
-                if comp.is_solvent():
-                    split = model.solvent_recovery
+                if comp.is_solvent() or j == model.config.electroneutrality_ion:
+                    # Assume electroneutrality ion will have similar separation to solvents
+                    split = model.solvent_recovery[t]
                 else:
-                    try:
-                        charge = comp.config.charge
-                    except AttributeError:
-                        charge = 0
-
-                    if abs(charge) > 1:
-                        split = model.multivalent_recovery
-                    else:
-                        try:
-                            split = model.solute_recovery[j]
-                        except KeyError:
-                            # probably the electroneutrality ion - use solvent recovery
-                            split = model.solvent_recovery
+                    # For initialization, assume density is roughly constant and rejection can be used as split fraction
+                    split = 1-model.rejection_comp[t, j]
 
                 if not sv_ret[k].fixed:
                     sv_ret[k].set_value(svd * (1 - split))
@@ -216,14 +196,14 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                     sv_per[k].set_value(svd * split)
         else:
             # Assume a total flow basis, and use solvent recovery
-            split = model.solvent_recovery
+            split = model.solvent_recovery[t]
             for k, svd in sv.items():
                 if not sv_ret[k].fixed:
                     sv_ret[k].set_value(svd * (1 - split))
                 if not sv_per[k].fixed:
                     sv_per[k].set_value(svd * split)
 
-    def _init_frac(self, model, in_state, sv, sv_ret, sv_per):
+    def _init_frac(self, model, t, in_state, sv, sv_ret, sv_per):
         # First need to iterate over all indices to collect normalized flows
         # Assume a basis of 1 mass or mole unit
         # Also, only single phase property packages supported, so we only need to
@@ -242,22 +222,12 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
             # Determine split based on type
             comp = in_state.params.get_component(j)
 
-            if comp.is_solvent():
-                split = model.solvent_recovery
+            if comp.is_solvent() or j == model.config.electroneutrality_ion:
+                # Assume electroneutrality ion will have similar separation to solvents
+                split = model.solvent_recovery[t]
             else:
-                try:
-                    charge = comp.config.charge
-                except AttributeError:
-                    charge = 0
-
-                if abs(charge) > 1:
-                    split = model.multivalent_recovery
-                else:
-                    try:
-                        split = model.solute_recovery[j]
-                    except KeyError:
-                        # probably the electroneutrality ion - use solvent recovery
-                        split = model.solvent_recovery
+                # For initialization, assume density is roughly constant and rejection can be used as split fraction
+                split = 1 - model.rejection_comp[t, j]
 
             nom_ret_comp_flow[j] = value(svd * (1 - split))
             nom_per_comp_flow[j] = value(svd * split)
@@ -287,9 +257,8 @@ class Nanofiltration0DScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "deltaP": 1e-4,
-        "multivalent_recovery": 1e2,
+        "rejection_comp": 1e2,
         "solvent_recovery": 10,
-        "solute_recovery": 10,
     }
 
     def variable_scaling_routine(
@@ -498,7 +467,38 @@ class Nanofiltration0DData(UnitModelBlockData):
             for this ion will be solved implicitly to ensure electroneutrality
             is maintained in the permeate stream. If None, user must provide
             spl;it fractions for all monovalent ions and electroneutrality is
-            not guaranteed..""",
+            not guaranteed.""",
+        ),
+    )
+    CONFIG.declare(
+        "passing_species_list",
+        ConfigValue(
+            default=None,
+            domain=list,
+            description="List of solutes with low rejection",
+            doc="""List of solute species which pass through the nanofiltration membrane
+            with low rejection. If not provided (None), solutes will be classified based
+            on their charge, with monovalent and uncharged species considered passing.""",
+        ),
+    )
+    CONFIG.declare(
+        "default_passing_rejection",
+        ConfigValue(
+            default=0.1,
+            domain=float,
+            description="Default value for rejection of passing species",
+            doc="""Default value to be assigned as the rejection fraction for species
+            identified as passing through the membrane with low rejection.""",
+        ),
+    )
+    CONFIG.declare(
+        "default_excluded_rejection",
+        ConfigValue(
+            default=1-1e-10,
+            domain=float,
+            description="Default value for rejection of excluded species",
+            doc="""Default value to be assigned as the rejection fraction for species
+            identified as be excluded by membrane (high rejection).""",
         ),
     )
 
@@ -515,10 +515,24 @@ class Nanofiltration0DData(UnitModelBlockData):
                 "property packages."
             )
 
-        # Check that the electroneutrality ion is a valid monovalent ion
+        # Check that the electroneutrality ion is a valid passing species
+        # I.e. it must be in the passing species list or a monovalent ion
         if self.config.electroneutrality_ion is not None:
             try:
                 bal_ion = prop_params.get_component(self.config.electroneutrality_ion)
+            except AttributeError:
+                raise ConfigurationError(
+                    f"electroneutrality_ion ({self.config.electroneutrality_ion}) "
+                    "is not a valid component in property package."
+                )
+
+            if self.config.passing_species_list is not None:
+                if self.config.electroneutrality_ion not in self.config.passing_species_list:
+                    raise ConfigurationError(
+                        f"electroneutrality_ion ({self.config.electroneutrality_ion}) "
+                        "must be a member of the passing species list."
+                    )
+            else:
                 # Check that balancing ion is monovalent
                 if (
                     not hasattr(bal_ion.config, "charge")
@@ -528,11 +542,7 @@ class Nanofiltration0DData(UnitModelBlockData):
                         f"electroneutrality_ion ({self.config.electroneutrality_ion}) "
                         "must be a monovalent ion."
                     )
-            except AttributeError:
-                raise ConfigurationError(
-                    f"electroneutrality_ion ({self.config.electroneutrality_ion}) "
-                    "is not a valid component in property package."
-                )
+
         # Check that pressure balance arguments are consistent
         if self.config.momentum_balance_type not in (MomentumBalanceType.none, MomentumBalanceType.pressureTotal):
             raise ConfigurationError(
@@ -573,29 +583,40 @@ class Nanofiltration0DData(UnitModelBlockData):
         self.add_port("permeate", self.properties_permeate, doc="Permeate Port")
 
         # NF separation variables
-        self.solvent_recovery = Var(initialize=0.8)
-        self.multivalent_recovery = Var(initialize=EPS)
-        self.multivalent_recovery.fix()
+        self.solvent_recovery = Var(self.flowsheet().time, initialize=0.8)
 
-        other_solutes = []
-        for j in prop_params.component_list:
-            comp = prop_params.get_component(j)
-            if j in prop_params.ion_set:
-                # Check charge
-                if j == self.config.electroneutrality_ion:
-                    # This is the ion ot use to balance electronegativity - leave out of set
-                    continue
-                if abs(comp.config.charge) == 1:
-                    # Monovalent - include in set
-                    other_solutes.append(j)
+        self._solute_set = Set(
+            initialize=[
+                j for j in prop_params.component_list
+                if not prop_params.get_component(j).is_solvent() and j != self.config.electroneutrality_ion
+            ]
+        )
 
-                    # TODO: check for balance species
-            elif not comp.is_solvent():
-                # No ionic solute - include in set
-                other_solutes.append(j)
+        def _init_rejection(b, _, j):
+            if b.config.passing_species_list is not None:
+                if j in b.config.passing_species_list:
+                    return b.config.default_passing_rejection
+                return b.config.default_excluded_rejection
+            else:
+                if j in prop_params.ion_set:
+                    # Check charge
+                    comp = prop_params.get_component(j)
+                    if abs(comp.config.charge) == 1:
+                        # Monovalent - include in set
+                        return b.config.default_passing_rejection
+                    else:
+                        return b.config.default_excluded_rejection
+                else:
+                    # Non-ionic solute - assume passing species
+                    return b.config.default_passing_rejection
 
-        self.split_species = Set(initialize=other_solutes)
-        self.solute_recovery = Var(self.split_species, initialize=0.9)
+        self.rejection_comp = Var(
+            self.flowsheet().time,
+            self._solute_set,
+            initialize=_init_rejection,
+            bounds=(1e-10, 1),
+            doc="Solute rejection fractions"
+        )
 
         units = self.config.property_package.get_metadata().derived_units
         if self.config.has_pressure_change:
@@ -625,31 +646,20 @@ class Nanofiltration0DData(UnitModelBlockData):
                 if (p, j) in pcset
             )
 
-        @self.Constraint(self.flowsheet().time, prop_params.component_list)
-        def recovery_constraint(b, t, j):
-            pset = b.properties_in[t].phase_list
-            pcset = b.properties_in[t].phase_component_set
+        @self.Constraint(self.flowsheet().time, self.properties_in.phase_component_set)
+        def separation_constraint(b, t, p, j):
             comp = prop_params.get_component(j)
 
-            if j in b.split_species:
-                rec = b.solute_recovery[j]
-            elif comp.is_solvent():
-                rec = b.solvent_recovery
+            if comp.is_solvent():
+                # Permeate flows equal to recovery * inlet flow
+                return b.solvent_recovery[t] * b.properties_in[t].get_material_flow_terms(p, j) == b.properties_permeate[t].get_material_flow_terms(p, j)
             elif j == self.config.electroneutrality_ion:
+                # Rejection of electroneutrality ion will be solved using electroneutrality constraint
                 return Constraint.Skip
-            else:
-                rec = b.multivalent_recovery
 
-            # Permeate flows equal to recovery * inlet flow
-            return rec * sum(
-                b.properties_in[t].get_material_flow_terms(p, j)
-                for p in pset
-                if (p, j) in pcset
-            ) == sum(
-                b.properties_permeate[t].get_material_flow_terms(p, j)
-                for p in pset
-                if (p, j) in pcset
-            )
+            # else: Rejection = 1 - C_permeate/C_feed
+            return ((1-b.rejection_comp[t, j]) * b.properties_in[t].conc_mol_phase_comp[p, j]
+            ) == b.properties_permeate[t].conc_mol_phase_comp[p, j]
 
         if self.config.electroneutrality_ion is not None:
             # Add electroneutrality constraint for permeate stream
