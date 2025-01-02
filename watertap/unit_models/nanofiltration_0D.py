@@ -18,6 +18,7 @@ from pyomo.common.config import ConfigDict, ConfigValue, In, Bool
 
 from idaes.core import (
     declare_process_block_class,
+    MomentumBalanceType,
     useDefault,
     UnitModelBlockData,
 )
@@ -448,19 +449,31 @@ class Nanofiltration0DData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "include_pressure_balance",
+        "momentum_balance_type",
         ConfigValue(
-            default=True,
-            domain=Bool,
-            description="Whether to include pressure balance for retentate side.",
+            default=MomentumBalanceType.pressureTotal,
+            domain=In(MomentumBalanceType),
+            description="Retentate momentum balance construction flag",
+            doc="""Indicates what type of momentum balance should be constructed
+    for the retentate side. Only  MomentumBalanceType.none and
+    MomentumBalanceType.pressureTotal (default) are supported.
+    **Valid values:** {
+    **MomentumBalanceType.none** - exclude momentum balances,
+    **MomentumBalanceType.pressureTotal** - single pressure balance for material}""",
         ),
     )
     CONFIG.declare(
-        "has_retentate_pressure_drop",
+        "has_pressure_change",
         ConfigValue(
             default=False,
-            domain=Bool,
-            description="Whether to include pressure drop in the retentate side.",
+            domain=In([True, False]),
+            description="Retentate pressure change term construction flag",
+            doc="""Indicates whether terms for retentate pressure change should be
+    constructed,
+    **default** - False.
+    **Valid values:** {
+    **True** - include pressure change terms,
+    **False** - exclude pressure change terms.}""",
         ),
     )
     CONFIG.declare(
@@ -521,13 +534,18 @@ class Nanofiltration0DData(UnitModelBlockData):
                     "is not a valid component in property package."
                 )
         # Check that pressure balance arguments are consistent
-        if (
-            self.config.has_retentate_pressure_drop
-            and not self.config.include_pressure_balance
+        if self.config.momentum_balance_type not in (MomentumBalanceType.none, MomentumBalanceType.pressureTotal):
+            raise ConfigurationError(
+                f"Nanofiltration0D model only supports total pressure balance or no pressure balance "
+                f"(assigned {self.config.momentum_balance_type})"
+            )
+        elif (
+            self.config.has_pressure_change
+            and self.config.momentum_balance_type == MomentumBalanceType.none
         ):
             raise ConfigurationError(
-                "Inconsistent configuration arguments. has_retentate_pressure_drop=True "
-                "requires that include_pressure_balance=True."
+                "Inconsistent configuration arguments. has_pressure_change=True "
+                "requires that momentum_balance_type not equal MomentumBalanceType.none."
             )
 
         tmp_dict_in = dict(**self.config.property_package_args)
@@ -580,12 +598,12 @@ class Nanofiltration0DData(UnitModelBlockData):
         self.solute_recovery = Var(self.split_species, initialize=0.9)
 
         units = self.config.property_package.get_metadata().derived_units
-        if self.config.has_retentate_pressure_drop:
+        if self.config.has_pressure_change:
             self.deltaP = Var(
                 self.flowsheet().time,
                 initialize=0,
                 units=units.PRESSURE,
-                doc="Retentate side pressure drop",
+                doc="Retentate side pressure change",
             )
 
         # Material balance
@@ -646,12 +664,12 @@ class Nanofiltration0DData(UnitModelBlockData):
                 )
 
         # Retentate pressure balance
-        if self.config.include_pressure_balance:
+        if self.config.momentum_balance_type == MomentumBalanceType.pressureTotal:
 
             @self.Constraint(self.flowsheet().time, doc="Retentate pressure balance")
             def retentate_pressure_balance(b, t):
                 expr = b.properties_retentate[t].pressure
-                if b.config.has_retentate_pressure_drop:
+                if b.config.has_pressure_change:
                     expr += -b.deltaP[t]
                 return b.properties_in[t].pressure == expr
 

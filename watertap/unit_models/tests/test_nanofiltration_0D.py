@@ -25,7 +25,7 @@ from pyomo.environ import (
 )
 from pyomo.network import Port
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, MomentumBalanceType
 from idaes.core.initialization import InitializationStatus
 from idaes.core.scaling import set_scaling_factor
 from idaes.core.solvers import get_solver
@@ -59,8 +59,8 @@ class TestBuild:
         assert not m.fs.unit.config.has_holdup
         assert m.fs.unit.config.property_package is m.fs.properties
         assert m.fs.unit.config.property_package_args == {}
-        assert m.fs.unit.config.include_pressure_balance
-        assert not m.fs.unit.config.has_retentate_pressure_drop
+        assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_pressure_change
         assert m.fs.unit.config.include_temperature_equality
         assert m.fs.unit.config.electroneutrality_ion == "Cl_-"
 
@@ -128,8 +128,35 @@ class TestBuild:
                 property_package=m.fs.properties,
             )
 
+    unsupported_balance_types = [
+        MomentumBalanceType.pressurePhase,
+        MomentumBalanceType.momentumTotal,
+        MomentumBalanceType.momentumPhase,
+    ]
+
     @pytest.mark.unit
-    def test_invalid_pressure_drop(self):
+    @pytest.mark.parametrize("balance_type", unsupported_balance_types)
+    def test_unsupported_momentum_balance(self, balance_type):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["Na_+", "Cl_-"],
+            charge={"Na_+": 1, "Cl_-": -1},
+        )
+
+        with pytest.raises(
+                ConfigurationError,
+                match=re.escape(
+                    f"Nanofiltration0D model only supports total pressure balance or no pressure balance "
+                    f"(assigned {balance_type})")
+        ):
+            m.fs.unit = Nanofiltration0D(
+                property_package=m.fs.properties,
+                momentum_balance_type=balance_type,
+            )
+
+    @pytest.mark.unit
+    def test_invalid_pressure_change(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = MCASParameterBlock(
@@ -139,13 +166,13 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="Inconsistent configuration arguments. has_retentate_pressure_drop=True "
-            "requires that include_pressure_balance=True.",
+            match="Inconsistent configuration arguments. has_pressure_change=True "
+            "requires that momentum_balance_type not equal MomentumBalanceType.none.",
         ):
             m.fs.unit = Nanofiltration0D(
                 property_package=m.fs.properties,
-                include_pressure_balance=False,
-                has_retentate_pressure_drop=True,
+                momentum_balance_type=MomentumBalanceType.none,
+                has_pressure_change=True,
             )
 
     @pytest.mark.unit
@@ -253,7 +280,7 @@ class TestBuild:
         )
         m.fs.unit = Nanofiltration0D(
             property_package=m.fs.properties,
-            has_retentate_pressure_drop=True,
+            has_pressure_change=True,
         )
 
         assert hasattr(m.fs.unit, "properties_in")
@@ -352,7 +379,7 @@ class TestBuild:
         m.fs.unit = Nanofiltration0D(
             property_package=m.fs.properties,
             electroneutrality_ion=None,
-            include_pressure_balance=False,
+            momentum_balance_type=MomentumBalanceType.none,
             include_temperature_equality=False,
         )
 
@@ -446,7 +473,7 @@ def mcas_model():
 
     m.fs.unit = Nanofiltration0D(
         property_package=m.fs.properties,
-        has_retentate_pressure_drop=True,
+        has_pressure_change=True,
     )
 
     return m
@@ -810,7 +837,7 @@ class TestMCAS:
 
         m.fs.unit = Nanofiltration0D(
             property_package=m.fs.properties,
-            has_retentate_pressure_drop=True,
+            has_pressure_change=True,
         )
 
         # Fix other inlet state variables
