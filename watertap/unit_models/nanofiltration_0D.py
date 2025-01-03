@@ -14,7 +14,7 @@ Simple zero-dimensional Nanofiltration unit model.
 """
 
 from pyomo.environ import Block, Constraint, Set, value, Var
-from pyomo.common.config import ConfigDict, ConfigValue, In, Bool
+from pyomo.common.config import ConfigDict, ConfigValue, In
 
 from idaes.core import (
     declare_process_block_class,
