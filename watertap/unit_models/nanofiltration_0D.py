@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Nanofiltration unit model with assumed 100% rejection of divalent ions.
+Simple zero-dimensional Nanofiltration unit model.
 """
 
 from pyomo.environ import Block, Constraint, Set, value, Var
@@ -18,6 +18,7 @@ from pyomo.common.config import ConfigDict, ConfigValue, In, Bool
 
 from idaes.core import (
     declare_process_block_class,
+    EnergyBalanceType,
     MomentumBalanceType,
     useDefault,
     UnitModelBlockData,
@@ -188,7 +189,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                     split = model.solvent_recovery[t]
                 else:
                     # For initialization, assume density is roughly constant and rejection can be used as split fraction
-                    split = 1-model.rejection_comp[t, j]
+                    split = 1 - model.rejection_comp[t, j]
 
                 if not sv_ret[k].fixed:
                     sv_ret[k].set_value(svd * (1 - split))
@@ -364,7 +365,7 @@ class Nanofiltration0DScaler(CustomScalerBase):
 @declare_process_block_class("Nanofiltration0D")
 class Nanofiltration0DData(UnitModelBlockData):
     """
-    Zero order nanofiltration model.
+    Nanofiltration model.
     """
 
     default_initializer = Nanofiltration0DInitializer
@@ -446,16 +447,18 @@ class Nanofiltration0DData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "include_temperature_equality",
+        "energy_balance_type",
         ConfigValue(
-            default=True,
-            domain=Bool,
-            description="Whether to include temperature equality constraints",
-            doc="""Argument indicating whether temperature equality should be
-            inlcluded. If this is False, no energy balance constraint will be
-            written.""",
+            default=EnergyBalanceType.isothermal,
+            domain=In(EnergyBalanceType),
+            description="Indicated what type of energy balance should be constructed.",
+            doc="""Indicates what type of momentum balance should be constructed
+    for the retentate side. Only  EnergyBalanceType.none and
+    EnergyBalanceType.isothermal (default) are supported.""",
         ),
     )
+    # TODO: Support multiple electroneutrality ions
+    # This needs some rule for prioritizing each ion.
     CONFIG.declare(
         "electroneutrality_ion",
         ConfigValue(
@@ -494,7 +497,7 @@ class Nanofiltration0DData(UnitModelBlockData):
     CONFIG.declare(
         "default_excluded_rejection",
         ConfigValue(
-            default=1-1e-10,
+            default=1 - 1e-10,
             domain=float,
             description="Default value for rejection of excluded species",
             doc="""Default value to be assigned as the rejection fraction for species
@@ -527,7 +530,10 @@ class Nanofiltration0DData(UnitModelBlockData):
                 )
 
             if self.config.passing_species_list is not None:
-                if self.config.electroneutrality_ion not in self.config.passing_species_list:
+                if (
+                    self.config.electroneutrality_ion
+                    not in self.config.passing_species_list
+                ):
                     raise ConfigurationError(
                         f"electroneutrality_ion ({self.config.electroneutrality_ion}) "
                         "must be a member of the passing species list."
@@ -543,8 +549,21 @@ class Nanofiltration0DData(UnitModelBlockData):
                         "must be a monovalent ion."
                     )
 
+        # Check energy balance type is supported
+        if self.config.energy_balance_type not in (
+            EnergyBalanceType.none,
+            EnergyBalanceType.isothermal,
+        ):
+            raise ConfigurationError(
+                f"Nanofiltration0D model only supports isothermal operation or no energy balance "
+                f"(assigned {self.config.energy_balance_type})"
+            )
+
         # Check that pressure balance arguments are consistent
-        if self.config.momentum_balance_type not in (MomentumBalanceType.none, MomentumBalanceType.pressureTotal):
+        if self.config.momentum_balance_type not in (
+            MomentumBalanceType.none,
+            MomentumBalanceType.pressureTotal,
+        ):
             raise ConfigurationError(
                 f"Nanofiltration0D model only supports total pressure balance or no pressure balance "
                 f"(assigned {self.config.momentum_balance_type})"
@@ -587,8 +606,10 @@ class Nanofiltration0DData(UnitModelBlockData):
 
         self._solute_set = Set(
             initialize=[
-                j for j in prop_params.component_list
-                if not prop_params.get_component(j).is_solvent() and j != self.config.electroneutrality_ion
+                j
+                for j in prop_params.component_list
+                if not prop_params.get_component(j).is_solvent()
+                and j != self.config.electroneutrality_ion
             ]
         )
 
@@ -615,7 +636,7 @@ class Nanofiltration0DData(UnitModelBlockData):
             self._solute_set,
             initialize=_init_rejection,
             bounds=(1e-10, 1),
-            doc="Solute rejection fractions"
+            doc="Solute rejection fractions",
         )
 
         units = self.config.property_package.get_metadata().derived_units
@@ -652,13 +673,21 @@ class Nanofiltration0DData(UnitModelBlockData):
 
             if comp.is_solvent():
                 # Permeate flows equal to recovery * inlet flow
-                return b.solvent_recovery[t] * b.properties_in[t].get_material_flow_terms(p, j) == b.properties_permeate[t].get_material_flow_terms(p, j)
+                return b.solvent_recovery[t] * b.properties_in[
+                    t
+                ].get_material_flow_terms(p, j) == b.properties_permeate[
+                    t
+                ].get_material_flow_terms(
+                    p, j
+                )
             elif j == self.config.electroneutrality_ion:
                 # Rejection of electroneutrality ion will be solved using electroneutrality constraint
                 return Constraint.Skip
 
             # else: Rejection = 1 - C_permeate/C_feed
-            return ((1-b.rejection_comp[t, j]) * b.properties_in[t].conc_mol_phase_comp[p, j]
+            return (
+                (1 - b.rejection_comp[t, j])
+                * b.properties_in[t].conc_mol_phase_comp[p, j]
             ) == b.properties_permeate[t].conc_mol_phase_comp[p, j]
 
         if self.config.electroneutrality_ion is not None:
@@ -684,7 +713,7 @@ class Nanofiltration0DData(UnitModelBlockData):
                 return b.properties_in[t].pressure == expr
 
         # Temperature equalities
-        if self.config.include_temperature_equality:
+        if self.config.energy_balance_type == EnergyBalanceType.isothermal:
 
             @self.Constraint(
                 self.flowsheet().time, doc="Retentate temperature equality"
