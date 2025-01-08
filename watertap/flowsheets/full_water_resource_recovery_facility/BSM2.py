@@ -91,7 +91,7 @@ from watertap.costing.unit_models.clarifier import (
 from pyomo.util.check_units import assert_units_consistent
 
 
-def main(reactor_volume_equalities=False, scalers=True):
+def main(reactor_volume_equalities=False, has_scalers=True):
     m = build()
     set_operating_conditions(m)
     dt = DiagnosticsToolbox(m)
@@ -100,7 +100,7 @@ def main(reactor_volume_equalities=False, scalers=True):
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-    scale_system(m, scalers=scalers)
+    scale_system(m, has_scalers=has_scalers)
     initialize_system(m)
 
     # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
@@ -112,7 +112,7 @@ def main(reactor_volume_equalities=False, scalers=True):
 
     results = solve(m)
 
-    add_costing(m, scalers=scalers)
+    add_costing(m, has_scalers=has_scalers)
     m.fs.costing.initialize()
     assert_degrees_of_freedom(m, 0)
 
@@ -426,8 +426,8 @@ def set_operating_conditions(m):
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
-def scale_system(m, scalers=True):
-    if scalers:
+def scale_system(m, has_scalers=True):
+    if has_scalers:
         sb = ScalerBase()
         csb = CustomScalerBase()
 
@@ -497,7 +497,7 @@ def scale_system(m, scalers=True):
             submodel_scalers={
                 m.fs.TU.mixed_state: ASM1PropertiesScaler,
                 m.fs.TU.underflow_state: ASM1PropertiesScaler,
-                m.fs.TU.overflow_state: ASM1ReactionScaler,
+                m.fs.TU.overflow_state: ASM1PropertiesScaler,
             },
         )
 
@@ -507,7 +507,7 @@ def scale_system(m, scalers=True):
             submodel_scalers={
                 m.fs.DU.mixed_state: ASM1PropertiesScaler,
                 m.fs.DU.underflow_state: ASM1PropertiesScaler,
-                m.fs.DU.overflow_state: ASM1ReactionScaler,
+                m.fs.DU.overflow_state: ASM1PropertiesScaler,
             },
         )
         sb.set_variable_scaling_factor(m.fs.DU.volume[0], 1, overwrite=True)
@@ -549,12 +549,11 @@ def scale_system(m, scalers=True):
                 sb.set_variable_scaling_factor(var, 1e3)
 
         # for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
-        #     if "flow_vol_equality" in c.name:
-        #         csb.scale_constraint_by_nominal_value(
-        #             c,
-        #             scheme=ConstraintScalingScheme.inverseMaximum,
-        #             overwrite=True,
-        #         )
+        #     csb.scale_constraint_by_nominal_value(
+        #         c,
+        #         scheme=ConstraintScalingScheme.inverseMaximum,
+        #         overwrite=True,
+        #     )
 
         # csb.scale_constraint_by_nominal_value(
         #     m.fs.RADM.AD_retention_time[0],
@@ -648,7 +647,7 @@ def initialize_system(m):
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
-def add_costing(m, scalers=True):
+def add_costing(m, has_scalers=True):
     m.fs.costing = WaterTAPCosting()
     m.fs.costing.base_currency = pyo.units.USD_2020
 
@@ -682,7 +681,7 @@ def add_costing(m, scalers=True):
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
 
-    if scalers:
+    if has_scalers:
         sb = ScalerBase()
 
         sb.set_variable_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
@@ -950,4 +949,4 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(scalers=True)
+    m, results = main(has_scalers=True)
