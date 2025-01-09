@@ -14,6 +14,7 @@ Tests for CSTR unit model with injection.
 Authors: Andrew Lee, Vibhav Dabadghao
 """
 
+from io import StringIO
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -40,6 +41,7 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
+from idaes.core.scaling.scaler_profiling import ScalingProfiler
 import idaes.core.util.scaling as iscale
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.util.testing import (
@@ -786,3 +788,196 @@ class TestAerationTankScaler:
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             5.09707868988e11, rel=1e-3
         )
+
+
+def build_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = ASM1ParameterBlock()
+    m.fs.reactions = ASM1ReactionParameterBlock(property_package=m.fs.properties)
+
+    m.fs.unit = AerationTank(
+        property_package=m.fs.properties,
+        reaction_package=m.fs.reactions,
+        electricity_consumption=ElectricityConsumption.calculated,
+    )
+
+    m.fs.unit.inlet.flow_vol.fix(20648 * units.m**3 / units.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(27 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(58 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(92 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(363 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(50 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(0 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(0 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(0 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(0 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(23 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(5 * units.g / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(16 * units.g / units.m**3)
+    m.fs.unit.inlet.alkalinity.fix(7 * units.mol / units.m**3)
+
+    m.fs.unit.volume.fix(500)
+    m.fs.unit.injection.fix(0)
+    m.fs.unit.injection[0, "Liq", "S_O"].fix(2e-3)
+
+    solver = get_solver()
+    solver.solve(m)
+
+    return m
+
+
+def scale_vars_with_scalers(m):
+    scaler = AerationTankScaler()
+    scaler.scale_model(
+        m.fs.unit,
+        submodel_scalers={
+            m.fs.unit.control_volume.properties_in: ASM1PropertiesScaler,
+            m.fs.unit.control_volume.properties_out: ASM1PropertiesScaler,
+            m.fs.unit.control_volume.reactions: ASM1ReactionScaler,
+        },
+    )
+
+
+def scale_vars_with_iscale(m):
+    # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["X_P"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_S"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_S"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_BH"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_P"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_O"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_NH"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_ND"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_ND"], 1e3
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_ALK"], 1e3
+    )
+
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R4"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R6"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R7"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R8"], 1e5
+    )
+
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R1"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R4"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R6"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R7"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R8"], 1e5
+    )
+
+    iscale.calculate_scaling_factors(m.fs.unit)
+
+
+def perturb_solution(m):
+    m.fs.unit.inlet.flow_vol.fix(20648 * 0.9 * units.m**3 / units.day)
+    m.fs.unit.volume.fix(500 * 0.85)
+
+
+@pytest.mark.unit
+def test_scaling_profiler_with_scalers():
+    sp = ScalingProfiler(
+        build_model=build_model,
+        user_scaling=scale_vars_with_scalers,
+        perturb_state=perturb_solution,
+    )
+
+    stream = StringIO()
+
+    sp.report_scaling_profiles(stream=stream)
+
+    expected = """
+============================================================================
+Scaling Profile Report
+----------------------------------------------------------------------------
+Scaling Method           || User Scaling           || Perfect Scaling
+Unscaled                 || 1.826E+16 | Solved 4   ||
+Vars Only                || 4.843E+13 | Solved 4   || 2.014E+21 | Solved 4  
+Harmonic                 || 9.974E+17 | Failed 49  || 4.443E+22 | Solved 18 
+Inverse Sum              || 3.001E+17 | Solved 10  || 2.399E+14 | Solved 4  
+Inverse Root Sum Squares || 3.001E+17 | Solved 4   || 3.412E+14 | Solved 4  
+Inverse Maximum          || 3.001E+17 | Solved 4   || 4.809E+14 | Solved 4  
+Inverse Minimum          || 9.974E+17 | Failed 49  || 4.455E+22 | Solved 18 
+Nominal L1 Norm          || 2.365E+09 | Solved 4   || 2.842E+14 | Solved 4  
+Nominal L2 Norm          || 1.648E+09 | Solved 4   || 3.755E+14 | Solved 4  
+Actual L1 Norm           || 8.636E+08 | Solved 4   || 5.461E+13 | Solved 4  
+Actual L2 Norm           || 7.902E+08 | Solved 4   || 6.491E+13 | Solved 4  
+============================================================================
+"""
+
+    assert stream.getvalue() == expected
+
+
+@pytest.mark.unit
+def test_scaling_profiler_with_iscale():
+    sp = ScalingProfiler(
+        build_model=build_model,
+        user_scaling=scale_vars_with_iscale,
+        perturb_state=perturb_solution,
+    )
+
+    stream = StringIO()
+
+    sp.report_scaling_profiles(stream=stream)
+
+    expected = """
+============================================================================
+Scaling Profile Report
+----------------------------------------------------------------------------
+Scaling Method           || User Scaling           || Perfect Scaling
+Unscaled                 || 1.826E+16 | Solved 4   ||
+Vars Only                || 8.948E+12 | Solved 4   || 2.014E+21 | Solved 4  
+Harmonic                 || 1.044E+17 | Solved 57  || 4.443E+22 | Solved 18 
+Inverse Sum              || 5.247E+17 | Failed 50  || 2.399E+14 | Solved 4  
+Inverse Root Sum Squares || 5.220E+17 | Failed 55  || 3.412E+14 | Solved 4  
+Inverse Maximum          || 5.208E+17 | Failed 52  || 4.809E+14 | Solved 4  
+Inverse Minimum          || 2.103E+17 | Solved 65  || 4.455E+22 | Solved 18 
+Nominal L1 Norm          || 7.817E+09 | Solved 4   || 2.842E+14 | Solved 4  
+Nominal L2 Norm          || 1.278E+10 | Solved 4   || 3.755E+14 | Solved 4  
+Actual L1 Norm           || 3.950E+09 | Solved 3   || 5.461E+13 | Solved 4  
+Actual L2 Norm           || 4.339E+09 | Solved 3   || 6.491E+13 | Solved 4  
+============================================================================
+"""
+
+    assert stream.getvalue() == expected

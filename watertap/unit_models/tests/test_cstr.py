@@ -13,7 +13,7 @@
 Tests for CSTR unit model.
 Authors: Marcus Holly
 """
-
+from io import StringIO
 import pytest
 
 from pyomo.environ import (
@@ -35,6 +35,7 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
+from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from watertap.unit_models.cstr import CSTR, CSTRScaler
 from watertap.costing import WaterTAPCosting
 
@@ -824,3 +825,188 @@ class TestCSTRScaler:
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             3.626085e10, rel=1e-3
         )
+
+
+def build_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props_ASM1 = ASM1ParameterBlock()
+    m.fs.ASM1_rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props_ASM1)
+
+    m.fs.unit = CSTR(
+        property_package=m.fs.props_ASM1, reaction_package=m.fs.ASM1_rxn_props
+    )
+
+    m.fs.unit.inlet.flow_vol[0].fix(1.2199 * units.m**3 / units.s)
+    m.fs.unit.inlet.alkalinity[0].fix(4.5102 * units.mole / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.061909 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(0.012366 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1.4258 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(0.090508 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(2.8404 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(0.20512 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(0.58681 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(0.00036092 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(0.012424 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(0.0076936 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.0019068 * units.kg / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(0.0053166 * units.kg / units.m**3)
+
+    m.fs.unit.inlet.temperature[0].fix(308.15 * units.K)
+    m.fs.unit.inlet.pressure[0].fix(84790.0 * units.Pa)
+
+    m.fs.unit.volume[0].fix(1000 * units.m**3)
+
+    solver = get_solver()
+    solver.solve(m)
+
+    return m
+
+
+def scale_vars_with_scalers(m):
+    scaler = CSTRScaler()
+    scaler.scale_model(
+        m.fs.unit,
+        submodel_scalers={
+            m.fs.unit.control_volume.properties_in: ASM1PropertiesScaler,
+            m.fs.unit.control_volume.properties_out: ASM1PropertiesScaler,
+            m.fs.unit.control_volume.reactions: ASM1ReactionScaler,
+        },
+    )
+
+
+def scale_vars_with_iscale(m):
+    # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0].pressure, 1e-5)
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_BA"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_P"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_O"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_NH"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "S_ND"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_generation[0.0, "Liq", "X_ND"], 1e5
+    )
+
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R1"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R3"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.rate_reaction_extent[0.0, "R5"], 1e5
+    )
+
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R1"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R2"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R3"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R4"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R5"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R6"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R7"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.control_volume.reactions[0.0].reaction_rate["R8"], 1e7
+    )
+
+    iscale.calculate_scaling_factors(m.fs.unit)
+
+
+def perturb_solution(m):
+    m.fs.unit.inlet.flow_vol[0].fix(1.2199 * 0.5 * units.m**3 / units.s)
+    m.fs.unit.volume[0].fix(1000 * 0.75 * units.m**3)
+
+
+@pytest.mark.unit
+def test_scaling_profiler_with_scalers():
+    sp = ScalingProfiler(
+        build_model=build_model,
+        user_scaling=scale_vars_with_scalers,
+        perturb_state=perturb_solution,
+    )
+
+    stream = StringIO()
+
+    sp.report_scaling_profiles(stream=stream)
+
+    expected = """
+============================================================================
+Scaling Profile Report
+----------------------------------------------------------------------------
+Scaling Method           || User Scaling           || Perfect Scaling
+Unscaled                 || 1.196E+12 | Solved 4   ||
+Vars Only                || 4.434E+10 | Solved 5   || 1.674E+17 | Solved 1  
+Harmonic                 || 1.124E+10 | Solved 5   || 1.161E+05 | Solved 3  
+Inverse Sum              || 2.031E+07 | Solved 5   || 2.054E+02 | Solved 3  
+Inverse Root Sum Squares || 3.266E+07 | Solved 5   || 2.131E+02 | Solved 3  
+Inverse Maximum          || 4.057E+07 | Solved 5   || 2.427E+02 | Solved 3  
+Inverse Minimum          || 1.089E+10 | Solved 5   || 1.317E+05 | Solved 3  
+Nominal L1 Norm          || 1.799E+04 | Solved 5   || 2.183E+02 | Solved 3  
+Nominal L2 Norm          || 1.789E+04 | Solved 5   || 2.051E+02 | Solved 3  
+Actual L1 Norm           || 1.548E+04 | Solved 5   || 2.146E+02 | Solved 3  
+Actual L2 Norm           || 1.569E+04 | Solved 5   || 2.114E+02 | Solved 3  
+============================================================================
+"""
+
+    assert stream.getvalue() == expected
+
+
+@pytest.mark.unit
+def test_scaling_profiler_with_iscale():
+    sp = ScalingProfiler(
+        build_model=build_model,
+        user_scaling=scale_vars_with_iscale,
+        perturb_state=perturb_solution,
+    )
+
+    stream = StringIO()
+
+    sp.report_scaling_profiles(stream=stream)
+
+    expected = """
+============================================================================
+Scaling Profile Report
+----------------------------------------------------------------------------
+Scaling Method           || User Scaling           || Perfect Scaling
+Unscaled                 || 1.196E+12 | Solved 4   ||
+Vars Only                || 3.003E+13 | Solved 3   || 1.674E+17 | Solved 1  
+Harmonic                 || 9.790E+09 | Solved 5   || 1.161E+05 | Solved 3  
+Inverse Sum              || 2.885E+07 | Solved 5   || 2.054E+02 | Solved 3  
+Inverse Root Sum Squares || 3.046E+07 | Solved 5   || 2.131E+02 | Solved 3  
+Inverse Maximum          || 3.164E+07 | Solved 5   || 2.427E+02 | Solved 3  
+Inverse Minimum          || 1.879E+10 | Solved 5   || 1.317E+05 | Solved 3  
+Nominal L1 Norm          || 1.261E+09 | Solved 5   || 2.183E+02 | Solved 3  
+Nominal L2 Norm          || 9.543E+08 | Solved 5   || 2.051E+02 | Solved 3  
+Actual L1 Norm           || 1.665E+06 | Solved 4   || 2.146E+02 | Solved 3  
+Actual L2 Norm           || 1.736E+06 | Solved 4   || 2.114E+02 | Solved 3  
+============================================================================
+"""
+
+    assert stream.getvalue() == expected
