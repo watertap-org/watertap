@@ -540,7 +540,13 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             initialize=0.7,
             bounds=(0.01, 1),
             units=pyunits.dimensionless,
-            doc='The porosity of spacer in the ED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
+            doc='The prosity of spacer in the ED channels. This is also referred to elsewhere as "void fraction"',
+        )
+        self.spacer_conductivity_coefficient = Var(
+            initialize=1,
+            bounds=(0.01, 1.01),
+            units=pyunits.dimensionless,
+            doc="A coefficient accounting for the effect of spacer on the solution conductivity",
         )
 
         # Material and Operational properties
@@ -580,12 +586,28 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.meter * pyunits.second**-1 * pyunits.pascal**-1,
             doc="Water permeability coefficient",
         )
+        self.membrane_areal_resistance_x = Var(
+            self.membrane_set,
+            self.diluate.length_domain,
+            initialize=2e-4,
+            bounds=(1e-6, 1),
+            units=pyunits.ohm * pyunits.meter**2,
+            doc="Areal resistance of membrane",
+        )
         self.membrane_areal_resistance = Var(
             self.membrane_set,
             initialize=2e-4,
             bounds=(1e-6, 1),
             units=pyunits.ohm * pyunits.meter**2,
-            doc="Surface resistance of membrane",
+            doc="Constant areal resistance of membrane at infinity-approximated electrolyte concentration",
+        )
+        self.membrane_areal_resistance_coef = Var(
+            self.membrane_set,
+            initialize=0,
+            bounds=(0, 100),
+            domain=NonNegativeReals,
+            units=pyunits.ohm * pyunits.mol * pyunits.m**-1,
+            doc="Coefficient of membrane areal resistance to 1/c, where c is the electrolyte concentration",
         )
         self.electrodes_resistance = Var(
             initialize=0,
@@ -777,6 +799,29 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().time,
+            self.membrane_set,
+            self.diluate.length_domain,
+            doc="Calculate membrane areal resistance at L=x",
+        )
+        def eq_get_membrane_areal_resisance_x(self, t, memb, x):
+            return (
+                self.membrane_areal_resistance_x[memb, x]
+                * sum(
+                    self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
+                    * self.config.property_package.charge_comp[j]
+                    for j in self.cation_set
+                )
+                == self.membrane_areal_resistance[memb]
+                * sum(
+                    self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
+                    * self.config.property_package.charge_comp[j]
+                    for j in self.cation_set
+                )
+                + self.membrane_areal_resistance_coef[memb]
+            )
+
+        @self.Constraint(
+            self.flowsheet().time,
             self.diluate.length_domain,
             doc="Calculate the total areal resistance of a stack",
         )
@@ -784,20 +829,28 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             if self.config.has_Nernst_diffusion_layer:
                 return self.total_areal_resistance_x[t, x] == (
                     (
-                        self.membrane_areal_resistance["aem"]
-                        + self.membrane_areal_resistance["cem"]
+                        self.membrane_areal_resistance_x["aem", x]
+                        + self.membrane_areal_resistance_x["cem", x]
                         + (
                             self.channel_height
                             - self.dl_thickness_x["cem", "cathode_left", t, x]
                             - self.dl_thickness_x["aem", "anode_right", t, x]
                         )
-                        * self.concentrate.properties[t, x].elec_cond_phase["Liq"] ** -1
+                        * (
+                            self.spacer_conductivity_coefficient
+                            * self.concentrate.properties[t, x].elec_cond_phase["Liq"]
+                        )
+                        ** -1
                         + (
                             self.channel_height
                             - self.dl_thickness_x["cem", "anode_right", t, x]
                             - self.dl_thickness_x["aem", "cathode_left", t, x]
                         )
-                        * self.diluate.properties[t, x].elec_cond_phase["Liq"] ** -1
+                        * (
+                            self.spacer_conductivity_coefficient
+                            * self.diluate.properties[t, x].elec_cond_phase["Liq"]
+                        )
+                        ** -1
                     )
                     * self.cell_pair_num
                     + self.electrodes_resistance
@@ -805,13 +858,22 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             else:
                 return self.total_areal_resistance_x[t, x] == (
                     (
-                        self.membrane_areal_resistance["aem"]
-                        + self.membrane_areal_resistance["cem"]
+                        self.membrane_areal_resistance_x["aem", x]
+                        + self.membrane_areal_resistance_x["cem", x]
                         + self.channel_height
                         * (
-                            self.concentrate.properties[t, x].elec_cond_phase["Liq"]
+                            (
+                                self.spacer_conductivity_coefficient
+                                * self.concentrate.properties[t, x].elec_cond_phase[
+                                    "Liq"
+                                ]
+                            )
                             ** -1
-                            + self.diluate.properties[t, x].elec_cond_phase["Liq"] ** -1
+                            + (
+                                self.spacer_conductivity_coefficient
+                                * self.diluate.properties[t, x].elec_cond_phase["Liq"]
+                            )
+                            ** -1
                         )
                     )
                     * self.cell_pair_num
@@ -2081,20 +2143,22 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                                     .concentrate.properties[set]
                                     .conc_mol_phase_comp["Liq", j]
                                 )
-                self[k].total_areal_resistance_x[set].set_value(
-                    (
-                        self[k].membrane_areal_resistance["aem"]
-                        + self[k].membrane_areal_resistance["cem"]
-                        + self[k].channel_height
-                        * (
-                            self[k].concentrate.properties[set].elec_cond_phase["Liq"]
-                            ** -1
-                            + self[k].diluate.properties[set].elec_cond_phase["Liq"]
-                            ** -1
-                        )
+            self[k].total_areal_resistance_x[...].set_value(
+                (
+                    self[k].membrane_areal_resistance["aem"]
+                    + self[k].membrane_areal_resistance["cem"]
+                    + self[k].channel_height
+                    * (
+                        self[k].concentrate.properties[set].elec_cond_phase["Liq"] ** -1
+                        + self[k].diluate.properties[set].elec_cond_phase["Liq"] ** -1
                     )
-                    * self[k].cell_pair_num
-                    + self[k].electrodes_resistance
+                )
+                * self[k].cell_pair_num
+                + self[k].electrodes_resistance
+            )
+            for memb in self[k].membrane_set:
+                self[k].membrane_areal_resistance_x[memb, :].set_value(
+                    self[k].membrane_areal_resistance[memb]
                 )
 
         # ---------------------------------------------------------------------
@@ -2284,7 +2348,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         # For vars below, the users can choose but not required to provide scaling factors.
         # No warnings if no providing.
-
+        iscale.set_scaling_factor(
+            self.membrane_areal_resistance_x,
+            iscale.get_scaling_factor(self.membrane_areal_resistance["cem"]),
+        )
         for ind in self.total_areal_resistance_x:
             if (
                 iscale.get_scaling_factor(
@@ -2293,7 +2360,8 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 is None
             ):
                 sf = (
-                    iscale.get_scaling_factor(self.membrane_areal_resistance) ** 2
+                    iscale.get_scaling_factor(self.membrane_areal_resistance["cem"])
+                    ** 2
                     + iscale.get_scaling_factor(self.channel_height) ** 2
                     * (
                         iscale.get_scaling_factor(
@@ -2863,17 +2931,17 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         return {
             "vars": {
-                "Total electrical power consumption": self.diluate.power_electrical_x[
+                "Total electrical power consumption (W)": self.diluate.power_electrical_x[
                     time_point, self.diluate.length_domain.last()
                 ],
-                "Specific electrical power consumption, ED stack": self.specific_power_electrical[
+                "Specific electrical power consumption, ED stack (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
                 "Water recovery by mass": self.recovery_mass_H2O[time_point],
-                "Channel inlet velocity, diluate": self.velocity_diluate[
+                "Channel inlet velocity, diluate (m/s)": self.velocity_diluate[
                     time_point, self.diluate.length_domain.first()
                 ],
-                "Channel inlet velocity, concentrate": self.velocity_concentrate[
+                "Channel inlet velocity, concentrate (m/s)": self.velocity_concentrate[
                     time_point, self.diluate.length_domain.first()
                 ],
             },
