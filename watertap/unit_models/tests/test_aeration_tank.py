@@ -119,6 +119,7 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
     assert m.fs.unit.config.reaction_package is m.fs.reactions
     assert m.fs.unit.config.electricity_consumption == ElectricityConsumption.calculated
+    assert m.fs.unit.config.has_aeration
 
 
 class TestAeration_withASM1(object):
@@ -913,6 +914,7 @@ def scale_vars_with_iscale(m):
 def perturb_solution(m):
     m.fs.unit.inlet.flow_vol.fix(20648 * 0.9 * units.m**3 / units.day)
     m.fs.unit.volume.fix(500 * 0.85)
+    m.fs.unit.injection[0, "Liq", "S_O"].fix(2e-3 * 0.7)
 
 
 @pytest.mark.requires_idaes_solver
@@ -933,17 +935,17 @@ def test_scaling_profiler_with_scalers():
 Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 1.826E+16 | Solved 4   ||
-Vars Only                || 4.843E+13 | Solved 4   || 2.014E+21 | Solved 4  
-Harmonic                 || 9.974E+17 | Failed 49  || 4.443E+22 | Solved 18 
-Inverse Sum              || 3.001E+17 | Solved 10  || 2.399E+14 | Solved 4  
+Unscaled                 || 1.826E+16 | Solved 14  ||
+Vars Only                || 4.843E+13 | Solved 13  || 2.014E+21 | Solved 4  
+Harmonic                 || 9.974E+17 | Solved 50  || 4.443E+22 | Solved 27 
+Inverse Sum              || 3.001E+17 | Solved 4   || 2.399E+14 | Solved 4  
 Inverse Root Sum Squares || 3.001E+17 | Solved 4   || 3.412E+14 | Solved 4  
 Inverse Maximum          || 3.001E+17 | Solved 4   || 4.809E+14 | Solved 4  
-Inverse Minimum          || 9.974E+17 | Failed 49  || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 2.365E+09 | Solved 4   || 2.842E+14 | Solved 4  
-Nominal L2 Norm          || 1.648E+09 | Solved 4   || 3.755E+14 | Solved 4  
-Actual L1 Norm           || 8.636E+08 | Solved 4   || 5.461E+13 | Solved 4  
-Actual L2 Norm           || 7.902E+08 | Solved 4   || 6.491E+13 | Solved 4  
+Inverse Minimum          || 9.974E+17 | Solved 29  || 4.455E+22 | Solved 24 
+Nominal L1 Norm          || 2.365E+09 | Solved 14  || 2.842E+14 | Solved 3  
+Nominal L2 Norm          || 1.648E+09 | Solved 14  || 3.755E+14 | Solved 3  
+Actual L1 Norm           || 8.636E+08 | Solved 14  || 5.461E+13 | Solved 4  
+Actual L2 Norm           || 7.902E+08 | Solved 11  || 6.491E+13 | Solved 4  
 ============================================================================
 """
 
@@ -968,15 +970,15 @@ def test_scaling_profiler_with_iscale():
 Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 1.826E+16 | Solved 4   ||
+Unscaled                 || 1.826E+16 | Solved 14  ||
 Vars Only                || 8.948E+12 | Solved 4   || 2.014E+21 | Solved 4  
-Harmonic                 || 1.044E+17 | Solved 57  || 4.443E+22 | Solved 18 
-Inverse Sum              || 5.247E+17 | Failed 50  || 2.399E+14 | Solved 4  
-Inverse Root Sum Squares || 5.220E+17 | Failed 55  || 3.412E+14 | Solved 4  
-Inverse Maximum          || 5.208E+17 | Failed 52  || 4.809E+14 | Solved 4  
-Inverse Minimum          || 2.103E+17 | Solved 65  || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 7.817E+09 | Solved 4   || 2.842E+14 | Solved 4  
-Nominal L2 Norm          || 1.278E+10 | Solved 4   || 3.755E+14 | Solved 4  
+Harmonic                 || 1.044E+17 | Solved 44  || 4.443E+22 | Solved 27 
+Inverse Sum              || 5.247E+17 | Solved 66  || 2.399E+14 | Solved 4  
+Inverse Root Sum Squares || 5.220E+17 | Solved 73  || 3.412E+14 | Solved 4  
+Inverse Maximum          || 5.208E+17 | Solved 66  || 4.809E+14 | Solved 4  
+Inverse Minimum          || 2.103E+17 | Solved 85  || 4.455E+22 | Solved 24 
+Nominal L1 Norm          || 7.817E+09 | Solved 6   || 2.842E+14 | Solved 3  
+Nominal L2 Norm          || 1.278E+10 | Solved 6   || 3.755E+14 | Solved 3  
 Actual L1 Norm           || 3.950E+09 | Solved 3   || 5.461E+13 | Solved 4  
 Actual L2 Norm           || 4.339E+09 | Solved 3   || 6.491E+13 | Solved 4  
 ============================================================================
