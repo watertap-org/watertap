@@ -921,6 +921,7 @@ def perturb_solution(m):
     )
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.unit
 def test_scaling_profiler_with_scalers():
     sp = ScalingProfiler(
@@ -955,6 +956,7 @@ Actual L2 Norm           || 7.865E+06 | Solved 1   || 5.404E+02 | Solved 1
     assert stream.getvalue() == expected
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.unit
 def test_scaling_profiler_with_iscale():
     sp = ScalingProfiler(
