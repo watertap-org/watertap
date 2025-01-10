@@ -101,6 +101,7 @@ def main(reactor_volume_equalities=False, has_scalers=True):
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
     scale_system(m, has_scalers=has_scalers)
+    # TODO: Should follow this with TransformationFactory("core.scale_model"), but would need to refactor tear guesses
     initialize_system(m)
 
     # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
@@ -949,4 +950,4 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(has_scalers=True)
+    m, results = main(has_scalers=False)

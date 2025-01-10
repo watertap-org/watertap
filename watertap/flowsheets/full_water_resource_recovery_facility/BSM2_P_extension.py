@@ -116,6 +116,7 @@ def main(bio_P=False, has_scalers=True):
     m = build(bio_P=bio_P)
     set_operating_conditions(m, bio_P=bio_P)
     scale_system(m, bio_P=bio_P, has_scalers=has_scalers)
+    # TODO: Should follow this with TransformationFactory("core.scale_model"), but would need to refactor tear guesses
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
