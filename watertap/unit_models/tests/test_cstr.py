@@ -52,6 +52,7 @@ from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -135,6 +136,7 @@ def build_ASM1():
     m.fs.unit.volume[0].fix(1000 * units.m**3)
 
     # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(m.fs.unit.control_volume.properties_out[0].pressure, 1e-5)
     iscale.set_scaling_factor(
         m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e5
     )
@@ -271,13 +273,17 @@ class TestInitializers:
         m.fs.unit.heat_duty[0].fix(0)
         m.fs.unit.deltaP[0].fix(0)
 
+        iscale.calculate_scaling_factors(m)
         return m
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_general_hierarchical(self, model):
-        initializer = SingleControlVolumeUnitInitializer()
-        initializer.initialize(model.fs.unit)
+        initializer = SingleControlVolumeUnitInitializer(
+            writer_config={"linear_presolve": False}
+        )
+
+        initializer.initialize(model.fs.unit, output_level=idaeslog.DEBUG)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
@@ -369,6 +375,10 @@ class TestCosting(UnitTestHarness):
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         m.objective = Objective(expr=m.fs.costing.LCOW)
+
+        iscale.set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].conc_mass_comp["S_O"], 1e6
+        )
 
         iscale.set_scaling_factor(m.fs.unit.costing.capital_cost, 1e-7)
 

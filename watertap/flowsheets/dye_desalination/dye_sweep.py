@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from parameter_sweep import LinearSample, parameter_sweep
-import watertap.flowsheets.dye_desalination.dye_desalination as dye_desalination_withRO
+import watertap.flowsheets.dye_desalination.dye_desalination as dye_desal
 
 
 def set_up_sensitivity(m):
@@ -21,7 +21,7 @@ def set_up_sensitivity(m):
 
     # choose the right flowsheet and if ro is enabled add lcow
     outputs["LCOW"] = m.fs.LCOW
-    opt_function = dye_desalination_withRO.solve
+    opt_function = dye_desal.solve
 
     optimize_kwargs = {"fail_flag": False}
     return outputs, optimize_kwargs, opt_function
@@ -38,7 +38,7 @@ def run_analysis(case_num=8, nx=11, interpolate_nan_outputs=True, output_filenam
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
 
     # select flowsheet
-    m = dye_desalination_withRO.main()[0]
+    m = dye_desal.main()[0]
 
     # set up sensitivities
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)

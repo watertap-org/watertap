@@ -781,7 +781,7 @@ def display_costing(m):
 
 
 def export_to_ui():
-    from watertap.ui.fsapi import FlowsheetInterface
+    from idaes_flowsheet_processor.api import FlowsheetInterface
 
     def noop(*args, **kwargs):
         return

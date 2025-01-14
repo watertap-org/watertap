@@ -52,11 +52,9 @@ import logging
 import sys
 import json
 import time
-
 from pyomo.common.dependencies import attempt_import
 
-requests, requests_available = attempt_import("requests", defer_check=False)
-
+requests, requests_available = attempt_import("requests", defer_import=False)
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import get_oli_name
 
 
@@ -95,6 +93,9 @@ class OLIApi:
         else:
             _logger.setLevel(logging.DEBUG)
 
+        # TODO: unknown bug where only "liquid1" phase is found in Flash analysis
+        self.valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
+
     # binds OLIApi instance to context manager
     def __enter__(self):
         self.session_dbs_files = []
@@ -103,13 +104,18 @@ class OLIApi:
     # return False if no exceptions raised
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         # delete all .dbs files created during session
+        _logger.info(
+            f"Exiting: deleting {len(self.session_dbs_files)} remaining DBS files created during the session that were not marked by keep_file=True."
+        )
         self.dbs_file_cleanup(self.session_dbs_files)
         return False
 
     def _prompt(self, msg, default=""):
         if self.interactive_mode:
+            msg = msg + "Enter [y]/n to proceed."
             return input(msg)
         else:
+            msg = msg + "To choose [y]/n to this action, set interactive_mode=True."
             _logger.info(msg)
             return default
 
@@ -133,7 +139,7 @@ class OLIApi:
         if bool(dbs_file_id):
             if not keep_file:
                 self.session_dbs_files.append(dbs_file_id)
-            _logger.info(f"DBS file ID is {dbs_file_id}")
+            _logger.info(f"Uploaded DBS file ID is {dbs_file_id}")
             return dbs_file_id
         else:
             raise RuntimeError("Unexpected failure getting DBS file ID.")
@@ -191,8 +197,6 @@ class OLIApi:
         else:
             dbs_file_inputs["modelName"] = "OLI_analysis"
 
-        # TODO: unknown bug where only "liquid1" phase is found in Flash analysis
-        self.valid_phases = ["liquid1", "vapor", "solid", "liquid2"]
         if phases is not None:
             invalid_phases = [p for p in phases if p not in self.valid_phases]
             if invalid_phases:
@@ -230,7 +234,7 @@ class OLIApi:
         if bool(dbs_file_id):
             if not keep_file:
                 self.session_dbs_files.append(dbs_file_id)
-            _logger.info(f"DBS file ID is {dbs_file_id}")
+            _logger.info(f"Generated DBS file ID is {dbs_file_id}")
             return dbs_file_id
         else:
             raise RuntimeError("Unexpected failure getting DBS file ID.")
@@ -289,10 +293,15 @@ class OLIApi:
         """
 
         if dbs_file_ids is None:
+            _logger.info(
+                "No DBS file IDs were provided to the dbs_file_cleanup method. Checking user's cloud account for DBS file IDs."
+            )
             dbs_file_ids = self.get_user_dbs_file_ids()
-        r = self._prompt(
-            f"WaterTAP will delete {len(dbs_file_ids)} DBS files [y]/n ", "y"
-        )
+            if not len(dbs_file_ids):
+                _logger.info("No DBS file IDs were found on the user's cloud account.")
+                return
+
+        r = self._prompt(f"WaterTAP will delete {len(dbs_file_ids)} DBS files. ", "y")
         if (r.lower() == "y") or (r == ""):
             for dbs_file_id in dbs_file_ids:
                 _logger.info(f"Deleting {dbs_file_id} ...")
@@ -302,8 +311,16 @@ class OLIApi:
                     headers=self.credential_manager.headers,
                 )
                 req = _request_status_test(req, ["SUCCESS"])
+
                 if req["status"] == "SUCCESS":
-                    _logger.info(f"File deleted")
+                    # Remove the file from session_dbs_files list if it is there, otherwise an error will occur upon exit when this method is called again and already deleted files will remain on the list for deletion. Thus, an error can occur if there is no existing ID to delete.
+                    if dbs_file_id in self.session_dbs_files:
+                        self.session_dbs_files.remove(dbs_file_id)
+                        _logger.info(
+                            f"File {dbs_file_id} deleted and removed from session_dbs_files list."
+                        )
+                    else:
+                        _logger.info(f"File {dbs_file_id} deleted.")
 
     def get_corrosion_contact_surfaces(self, dbs_file_id):
         """
@@ -428,10 +445,21 @@ class OLIApi:
         """
 
         mode, url, headers = self._get_flash_mode(dbs_file_id, flash_method)
-        req = requests.request(
-            mode, url, headers=headers, data=json.dumps(input_params)
-        )
-        req_json = _request_status_test(req, ["SUCCESS"])
+        try:
+            req = requests.request(
+                mode, url, headers=headers, data=json.dumps(input_params)
+            )
+            req_json = _request_status_test(req, ["SUCCESS"])
+        except requests.JSONDecodeError:
+            delay = 1
+            time.sleep(delay)
+            _logger.debug(
+                f"JSONDecodeError occurred. Trying to convert response object to JSON again."
+            )
+            req = requests.request(
+                mode, url, headers=headers, data=json.dumps(input_params)
+            )
+            req_json = _request_status_test(req, ["SUCCESS"])
         result_link = _get_result_link(req_json)
         result = _poll_result_link(result_link, headers, max_request, poll_time)
         return result
@@ -454,7 +482,7 @@ def _get_result_link(req_json):
             if "resultsLink" in req_json["data"]:
                 result_link = req_json["data"]["resultsLink"]
     if not result_link:
-        raise RuntimeError(f"Failed to get 'resultsLink'. Response: {req.json()}")
+        raise RuntimeError(f"Failed to get 'resultsLink'. Response: {req_json.json()}")
     return result_link
 
 
@@ -467,10 +495,11 @@ def _request_status_test(req, target_keys):
 
     :return req_json: response object converted to JSON
     """
-
     req_json = req.json()
+
     func_name = sys._getframe().f_back.f_code.co_name
     _logger.debug(f"{func_name} response: {req_json}")
+
     if req.status_code == 200:
         if target_keys:
             if "status" in req_json:
@@ -478,7 +507,9 @@ def _request_status_test(req, target_keys):
                     return req_json
         else:
             return req_json
-    raise RuntimeError(f"Failure in {func_name}. Response: {req_json}")
+    raise RuntimeError(
+        f"Failure in {func_name}. Response: {req_json}. Status Code: {req.status_code}."
+    )
 
 
 def _poll_result_link(result_link, headers, max_request, poll_time):

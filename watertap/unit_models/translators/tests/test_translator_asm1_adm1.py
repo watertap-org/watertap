@@ -23,7 +23,7 @@ import pytest
 from pyomo.environ import ConcreteModel, value, assert_optimal_termination, Param
 
 from idaes.core import FlowsheetBlock
-
+import idaes.core.util.scaling as iscale
 from pyomo.environ import units
 
 from watertap.core.solvers import get_solver
@@ -133,6 +133,8 @@ class TestAsm1Adm1(object):
         m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(4.6834 * units.mg / units.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(906.0933 * units.mg / units.liter)
         m.fs.unit.inlet.alkalinity.fix(7.1549 * units.mol / units.m**3)
+
+        iscale.calculate_scaling_factors(m)
 
         return m
 
