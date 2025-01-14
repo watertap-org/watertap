@@ -176,6 +176,9 @@ def main(bio_P=False, has_scalers=True):
     dt.display_variables_at_or_outside_bounds()
     dt.display_variables_with_extreme_jacobians()
     dt.display_constraints_with_extreme_jacobians()
+    print("---SVD---")
+    svd = dt.prepare_svd_toolbox()
+    svd.display_underdetermined_variables_and_constraints()
 
     return m, results
 
@@ -591,6 +594,9 @@ def scale_system(m, bio_P=False, has_scalers=True):
             # sb.set_variable_scaling_factor(m.fs.AD.volume_AD[0], 1e-3)
             # sb.set_variable_scaling_factor(m.fs.AD.KH_ch4[0], 1e3)
             sb.set_variable_scaling_factor(
+                m.fs.AD.liquid_phase.properties_in[0.0].flow_vol, 1e3, overwrite=True
+            )
+            sb.set_variable_scaling_factor(
                 m.fs.AD.KH_h2[0], 1e4
             )  # This should be uncommented for now - start adding additional scaling
 
@@ -703,9 +709,17 @@ def scale_system(m, bio_P=False, has_scalers=True):
         #         )
 
         # for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
+        #     if "eq_flow_vol_rule" in c.name:
+        #         csb.scale_constraint_by_nominal_value(
+        #             c,
+        #             scheme=ConstraintScalingScheme.inverseRSS,
+        #             overwrite=True,
+        #         )
+
+        # for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
         #     csb.scale_constraint_by_nominal_value(
         #         c,
-        #         scheme=ConstraintScalingScheme.harmonicMean,
+        #         scheme=ConstraintScalingScheme.inverseMaximum,
         #         overwrite=True,
         #     )
 
