@@ -1,0 +1,18 @@
+* @lbianchi-lbl
+
+.binder/ @lbianchi-lbl
+.github/ @lbianchi-lbl
+setup.py @lbianchi-lbl
+pyproject.toml @lbianchi-lbl
+pytest*.ini @lbianchi-lbl
+docs/conf.py @lbianchi-lbl
+conftest.py @lbianchi-lbl
+requirements*.txt @lbianchi-lbl
+environment*.yml @lbianchi-lbl
+.git* @lbianchi-lbl
+
+LICENSE.md @ksbeattie
+COPYRIGHT.md @ksbeattie
+
+CITATION.cff @TimBartholomew
+
