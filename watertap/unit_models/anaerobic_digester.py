@@ -169,14 +169,6 @@ class ADScaler(CustomScalerBase):
             overwrite=overwrite,
         )
 
-        # Scale unit level constraints
-        if hasattr(model, "AD_retention_time"):
-            self.scale_constraint_by_nominal_value(
-                model.AD_retention_time[0],
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
-
 
 @declare_process_block_class("AD")
 class ADData(UnitModelBlockData):

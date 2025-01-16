@@ -645,10 +645,7 @@ class TestADScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 1
-        assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
-            5.3178178178e-7, rel=1e-8
-        )
+        assert len(sfx_unit) == 0
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -960,10 +957,7 @@ class TestADScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 1
-        assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
-            5.3178178178e-7, rel=1e-8
-        )
+        assert len(sfx_unit) == 0
 
     # TODO: Remove test once iscale is deprecated
     @pytest.mark.integration
@@ -1104,7 +1098,7 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.428479487421e12, rel=1e-3
+            6.97139638e11, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -1189,5 +1183,5 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.27372477638e11, rel=1e-3
+            2.86956021256e11, rel=1e-3
         )
