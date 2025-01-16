@@ -67,7 +67,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
+from idaes.core.scaling import CustomScalerBase
 
 from watertap.costing.unit_models.anaerobic_digester import cost_anaerobic_digester
 
