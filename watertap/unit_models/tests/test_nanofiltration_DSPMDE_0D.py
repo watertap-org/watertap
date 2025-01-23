@@ -58,6 +58,7 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     badly_scaled_var_generator,
 )
+import idaes.core.util.scaling as iscale
 from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import (
     Feed,
@@ -1592,6 +1593,13 @@ def test_mass_transfer_coeff_fixed():
         "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
     )
 
+    iscale.set_scaling_factor(
+        m.fs.unit.electric_potential_grad_feed_interface[0, 0], 1e6
+    )
+    iscale.set_scaling_factor(
+        m.fs.unit.electric_potential_grad_feed_interface[0, 1], 1e6
+    )
+
     calculate_scaling_factors(m)
 
     # check that all variables have scaling factors
@@ -1603,6 +1611,7 @@ def test_mass_transfer_coeff_fixed():
     badly_scaled_var_lst = list(
         badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
     )
+    print("---Badly Scaled Vars---")
     for var, val in badly_scaled_var_lst:
         print(var.name, val)
     assert len(badly_scaled_var_lst) == 0

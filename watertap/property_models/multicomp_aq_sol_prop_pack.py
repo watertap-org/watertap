@@ -1181,7 +1181,7 @@ class MCASStateBlockData(StateBlockData):
         )
 
         def rule_mass_frac_phase_comp(b, p, j):
-            return b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] / sum(
+            return b.flow_mass_phase_comp[p, j] == b.mass_frac_phase_comp[p, j] * sum(
                 b.flow_mass_phase_comp[p, j] for j in self.params.component_list
             )
 
