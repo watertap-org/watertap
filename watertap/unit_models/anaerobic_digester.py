@@ -67,6 +67,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.math import smooth_max
 
 from watertap.costing.unit_models.anaerobic_digester import cost_anaerobic_digester
 
@@ -494,9 +495,11 @@ see reaction package for documentation.}""",
             doc="Electricity intensity with respect to inlet flow",
         )
 
+        eps = 1e-10 * pyunits.kmol / pyunits.m**3 * pyunits.bar**-1
+
         def CO2_Henrys_law_rule(self, t):
             return log(
-                self.KH_co2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+                (self.KH_co2[t] + eps) / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
             ) == (
                 log(0.035)
                 + -19410
@@ -517,7 +520,7 @@ see reaction package for documentation.}""",
 
         def Ch4_Henrys_law_rule(self, t):
             return log(
-                self.KH_ch4[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+                (self.KH_ch4[t] + eps) / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
             ) == (
                 log(0.0014)
                 + -14240
@@ -538,7 +541,7 @@ see reaction package for documentation.}""",
 
         def H2_Henrys_law_rule(self, t):
             return log(
-                self.KH_h2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+                (self.KH_h2[t] + eps) / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
             ) == (
                 log(7.8e-4)
                 + -4180
@@ -694,8 +697,9 @@ see reaction package for documentation.}""",
 
         def AD_retention_time_rule(self, t):
             return (
-                self.hydraulic_retention_time[t]
-                == self.volume_AD[t] / self.liquid_phase.properties_in[t].flow_vol
+                self.volume_AD[t]
+                == self.hydraulic_retention_time[t]
+                * self.liquid_phase.properties_in[t].flow_vol
             )
 
         self.AD_retention_time = Constraint(
