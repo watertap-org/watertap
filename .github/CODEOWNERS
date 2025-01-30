@@ -1,0 +1,90 @@
+* @lbianchi-lbl
+
+.binder/ @lbianchi-lbl
+.github/ @lbianchi-lbl
+setup.py @lbianchi-lbl
+pyproject.toml @lbianchi-lbl
+pytest*.ini @lbianchi-lbl
+docs/conf.py @lbianchi-lbl
+conftest.py @lbianchi-lbl
+requirements*.txt @lbianchi-lbl
+environment*.yml @lbianchi-lbl
+.git* @lbianchi-lbl
+
+/docs/ @MarcusHolly @adam-a-a
+
+/tutorials/ @adam-a-a @zacharybinger @avdudchenko @MarcusHolly @TimBartholomew
+
+/watertap/core/ @bknueven @adam-a-a
+
+/watertap/costing/ @bknueven @adam-a-a
+
+/watertap/flowsheets/activated_sludge/ @agarciadiego @luohezhiming @MarcusHolly @adam-a-a @Morgan88888888
+/watertap/flowsheets/anaerobic_digester/ @agarciadiego @adam-a-a @MarcusHolly @luohezhiming @Morgan88888888
+/watertap/flowsheets/crystallization/ @OOAmusat @avdudchenko @ElmiraShamlou @adam-a-a @kurbansitterley 
+/watertap/flowsheets/dye_desalination/ @MarcusHolly @adam-a-a
+/watertap/flowsheets/electrodialysis/ @lbibl @johnson12742
+/watertap/flowsheets/electroNP/ @luohezhiming @adam-a-a @MarcusHolly
+/watertap/flowsheets/full_water_resource_recovery_facility/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
+/watertap/flowsheets/gac/ @adam-a-a @MarcusHolly @kurbansitterley
+/watertap/flowsheets/generic_desalination_train/ @avdudchenko
+/watertap/flowsheets/ion_exchange/ @kurbansitterley
+/watertap/flowsheets/lsrro/ @adam-a-a @TimBartholomew @bknueven
+/watertap/flowsheets/MD/ @ElmiraShamlou @adam-a-a
+/watertap/flowsheets/mvc/ @carson-tucker @ElmiraShamlou @adam-a-a @TimBartholomew
+/watertap/flowsheets/nf_dspmde/ @avdudchenko @adam-a-a
+/watertap/flowsheets/oaro/ @luohezhiming @adam-a-a @zacharybinger
+/watertap/flowsheets/RO_with_energy_recovery/ @adam-a-a @TimBartholomew @MarcusHolly @luohezhiming
+/watertap/flowsheets/seawater_RO_desalination/ @adam-a-a @TimBartholomew @MarcusHolly @luohezhiming
+
+/watertap/property_models/ @adam-a-a
+/watertap/property_models/unit_specific/activated_sludge/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
+/watertap/property_models/unit_specific/anaerobic_digestion/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
+
+/watertap/tools/ @bknueven @adam-a-a @k1nshuk @avdudchenko
+
+/watertap/unit_models/ @adam-a-a
+/watertap/unit_models/MD/ @ElmiraShamlou @adam-a-a
+/watertap/unit_models/mvc/ @carson-tucker
+/watertap/unit_models/translators/ @MarcusHolly @luohezhiming @adam-a-a
+/watertap/unit_models/zero_order/ @kurbansitterley @adam-a-a @luohezhiming @MarcusHolly
+
+/watertap/unit_models/aeration_tank.py @adam-a-a @MarcusHolly
+/watertap/unit_models/anaerobic_digester.py @agarciadiego @adam-a-a
+/watertap/unit_models/boron_removal.py @savannahsakhai
+/watertap/unit_models/clarifier.py @luohezhiming @MarcusHolly @adam-a-a
+/watertap/unit_models/coag_floc_model.py @lbibl @adam-a-a
+/watertap/unit_models/crystallizer.py @OOAmusat
+/watertap/unit_models/cstr.py @adam-a-a @MarcusHolly
+/watertap/unit_models/cstr_injection.py @adam-a-a @MarcusHolly
+/watertap/unit_models/dewatering.py @adam-a-a @agarciadiego
+/watertap/unit_models/electrodialysis_0D.py @lbibl
+/watertap/unit_models/electrodialysis_1D.py @lbibl
+/watertap/unit_models/electrolyzer.py @adam-a-a @lbibl
+/watertap/unit_models/electroNP_ZO.py @luohezhiming @adam-a-a @MarcusHolly
+/watertap/unit_models/gac.py @adam-a-a @MarcusHolly
+/watertap/unit_models/generic_desalter.py @avdudchenko
+/watertap/unit_models/generic_separation.py @avdudchenko
+/watertap/unit_models/ion_exchange_0D.py @kurbansitterley
+/watertap/unit_models/nanofiltration_DSPMDE_0D.py @adam-a-a
+/watertap/unit_models/nanofiltration_ZO.py @adam-a-a
+/watertap/unit_models/osmotically_assisted_reverse_osmosis_0D.py @luohezhiming @adam-a-a
+/watertap/unit_models/osmotically_assisted_reverse_osmosis_1D.py @luohezhiming @adam-a-a
+/watertap/unit_models/osmotically_assisted_reverse_osmosis_base.py @luohezhiming @adam-a-a
+/watertap/unit_models/pressure_changer.py @adam-a-a @TimBartholomew
+/watertap/unit_models/pressure_exchanger.py @luohezhiming @adam-a-a
+/watertap/unit_models/reverse_osmosis_0D.py @adam-a-a @TimBartholomew @bknueven
+/watertap/unit_models/reverse_osmosis_1D.py @adam-a-a @TimBartholomew @bknueven
+/watertap/unit_models/reverse_osmosis_base.py @adam-a-a @TimBartholomew @bknueven
+/watertap/unit_models/steam_ejector.py @ElmiraShamlou
+/watertap/unit_models/steam_heater_0D.py @ElmiraShamlou
+/watertap/unit_models/stoichiometric_reactor.py @avdudchenko @TimBartholomew
+/watertap/unit_models/surrogate_crystallizer.py @OOAmusat @adam-a-a
+/watertap/unit_models/thickener.py @adam-a-a @agarciadiego
+/watertap/unit_models/uv_aop.py @luohezhiming @adam-a-a
+
+LICENSE.md @ksbeattie
+COPYRIGHT.md @ksbeattie
+
+CITATION.cff @TimBartholomew
+
