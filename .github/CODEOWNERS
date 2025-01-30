@@ -21,17 +21,17 @@ environment*.yml @lbianchi-lbl
 
 /watertap/flowsheets/activated_sludge/ @agarciadiego @luohezhiming @MarcusHolly @adam-a-a @Morgan88888888
 /watertap/flowsheets/anaerobic_digester/ @agarciadiego @adam-a-a @MarcusHolly @luohezhiming @Morgan88888888
-/watertap/flowsheets/crystallization/ @OOAmusat
+/watertap/flowsheets/crystallization/ @OOAmusat @avdudchenko @ElmiraShamlou @adam-a-a @kurbansitterley 
 /watertap/flowsheets/dye_desalination/ @MarcusHolly @adam-a-a
-/watertap/flowsheets/electrodialysis/ @lbibl
+/watertap/flowsheets/electrodialysis/ @lbibl @johnson12742
 /watertap/flowsheets/electroNP/ @luohezhiming @adam-a-a @MarcusHolly
 /watertap/flowsheets/full_water_resource_recovery_facility/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
-/watertap/flowsheets/gac/ @adam-a-a @MarcusHolly
+/watertap/flowsheets/gac/ @adam-a-a @MarcusHolly @kurbansitterley
 /watertap/flowsheets/generic_desalination_train/ @avdudchenko
 /watertap/flowsheets/ion_exchange/ @kurbansitterley
 /watertap/flowsheets/lsrro/ @adam-a-a @TimBartholomew @bknueven
 /watertap/flowsheets/MD/ @ElmiraShamlou @adam-a-a
-/watertap/flowsheets/mvc/ @carson-tucker
+/watertap/flowsheets/mvc/ @carson-tucker @ElmiraShamlou @adam-a-a @TimBartholomew
 /watertap/flowsheets/nf_dspmde/ @avdudchenko @adam-a-a
 /watertap/flowsheets/oaro/ @luohezhiming @adam-a-a @zacharybinger
 /watertap/flowsheets/RO_with_energy_recovery/ @adam-a-a @TimBartholomew @MarcusHolly @luohezhiming
@@ -47,7 +47,8 @@ environment*.yml @lbianchi-lbl
 /watertap/unit_models/MD/ @ElmiraShamlou @adam-a-a
 /watertap/unit_models/mvc/ @carson-tucker
 /watertap/unit_models/translators/ @MarcusHolly @luohezhiming @adam-a-a
-/watertap/unit_models/zero_order/ @adam-a-a
+
+/watertap/unit_models/zero_order/ @kurbansitterley @adam-a-a @luohezhiming @MarcusHolly
 /watertap/unit_models/aeration_tank.py @adam-a-a @MarcusHolly
 /watertap/unit_models/anaerobic_digester.py @agarciadiego @adam-a-a
 /watertap/unit_models/boron_removal.py @savannahsakhai
