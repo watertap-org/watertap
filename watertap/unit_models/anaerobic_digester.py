@@ -495,7 +495,7 @@ see reaction package for documentation.}""",
             doc="Electricity intensity with respect to inlet flow",
         )
 
-        eps = 1e-10 * pyunits.kmol / pyunits.m**3 * pyunits.bar**-1
+        eps = 1e-30 * pyunits.kmol / pyunits.m**3 * pyunits.bar**-1
 
         def CO2_Henrys_law_rule(self, t):
             return log(

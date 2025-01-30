@@ -1611,7 +1611,6 @@ def test_mass_transfer_coeff_fixed():
     badly_scaled_var_lst = list(
         badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
     )
-    print("---Badly Scaled Vars---")
     for var, val in badly_scaled_var_lst:
         print(var.name, val)
     assert len(badly_scaled_var_lst) == 0
