@@ -1853,9 +1853,9 @@ class NaClStateBlockData(StateBlockData):
             if len(phase_comp_list) == 1:  # one component in this phase
                 return b.mole_frac_phase_comp[p, j] == 1
             else:
-                return b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[
+                return b.flow_mol_phase_comp[p, j] == b.mole_frac_phase_comp[
                     p, j
-                ] / sum(b.flow_mol_phase_comp[p_j] for (p_j) in phase_comp_list)
+                ] * sum(b.flow_mol_phase_comp[p_j] for (p_j) in phase_comp_list)
 
         self.eq_mole_frac_phase_comp = Constraint(
             self.phase_component_set, rule=rule_mole_frac_phase_comp
