@@ -24,7 +24,7 @@ The ``Nanofiltration0D`` model has the following degrees of freedom
    * inlet state
    * permeate pressure
    * solvent recovery fraction (``solvent_recovery``)
-   * solute rejection fractions (``rekection_comp``) for all solutes EXCEPT the one identified as the electroneutrality species.
+   * solute rejection fractions (``rejection_comp``) for all solutes EXCEPT the one identified as the electroneutrality species.
 
 The following additional degrees of freedom  may exist depending on configuration options
 
