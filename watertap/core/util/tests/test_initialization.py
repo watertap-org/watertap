@@ -179,3 +179,39 @@ class TestIntervalImproveInitial:
         assert m.y.ub == None
         assert m.z.lb == None
         assert m.z.ub == None
+
+    @pytest.fixture(scope="class")
+    def m_infeas(self):
+
+        # This is the same model used in the pyomo fbbt test at
+        # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
+
+        m = ConcreteModel()
+        m.x = Var(bounds=(-3, 3))
+        m.y = Var(bounds=(0, None))
+        m.z = Var()
+        m.c = ConstraintList()
+        m.c.add(m.x + m.y >= -1)
+        m.c.add(m.x + m.y <= -2)
+        m.c.add(m.y - m.x * m.z <= 2)
+        m.c.add(m.y - m.x * m.z >= -2)
+        m.c.add(m.x + m.z == 1)
+
+        return m
+
+    @pytest.mark.unit
+    def test_interval_initializer_failure_restores_bounds(self, m_infeas):
+        m = m_infeas
+        feasibility_tol = 1.0e-6
+        try:
+            interval_initializer(m, feasibility_tol=feasibility_tol)
+        except:
+            pass
+
+        # Assert the restored bounds
+        assert m.x.lb == -3.0
+        assert m.x.ub == 3.0
+        assert m.y.lb == 0.0
+        assert m.y.ub == None
+        assert m.z.lb == None
+        assert m.z.ub == None
