@@ -159,7 +159,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
             else:
                 if j == model.config.electroneutrality_ion:
                     # Guess electroneutrality ion will be based on solvent recovery
-                    split = model.solvent_recovery[t]
+                    split = model.recovery_solvent[t]
                 else:
                     # For initialization, assume density is roughly constant and rejection can be used as split fraction
                     split = 1 - model.rejection_comp[t, j]
@@ -186,7 +186,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
 
                 if comp.is_solvent() or j == model.config.electroneutrality_ion:
                     # Assume electroneutrality ion will have similar separation to solvents
-                    split = model.solvent_recovery[t]
+                    split = model.recovery_solvent[t]
                 else:
                     # For initialization, assume density is roughly constant and rejection can be used as split fraction
                     split = 1 - model.rejection_comp[t, j]
@@ -197,7 +197,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
                     sv_per[k].set_value(svd * split)
         else:
             # Assume a total flow basis, and use solvent recovery
-            split = model.solvent_recovery[t]
+            split = model.recovery_solvent[t]
             for k, svd in sv.items():
                 if not sv_ret[k].fixed:
                     sv_ret[k].set_value(svd * (1 - split))
@@ -225,7 +225,7 @@ class Nanofiltration0DInitializer(ModularInitializerBase):
 
             if comp.is_solvent() or j == model.config.electroneutrality_ion:
                 # Assume electroneutrality ion will have similar separation to solvents
-                split = model.solvent_recovery[t]
+                split = model.recovery_solvent[t]
             else:
                 # For initialization, assume density is roughly constant and rejection can be used as split fraction
                 split = 1 - model.rejection_comp[t, j]
@@ -259,7 +259,7 @@ class Nanofiltration0DScaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "deltaP": 1e-4,
         "rejection_comp": 1e2,
-        "solvent_recovery": 10,
+        "recovery_solvent": 10,
     }
 
     def variable_scaling_routine(
@@ -602,7 +602,7 @@ class Nanofiltration0DData(UnitModelBlockData):
         self.add_port("permeate", self.properties_permeate, doc="Permeate Port")
 
         # NF separation variables
-        self.solvent_recovery = Var(self.flowsheet().time, initialize=0.8)
+        self.recovery_solvent = Var(self.flowsheet().time, initialize=0.8)
 
         self._solute_set = Set(
             initialize=[
@@ -673,7 +673,7 @@ class Nanofiltration0DData(UnitModelBlockData):
 
             if comp.is_solvent():
                 # Permeate flows equal to recovery * inlet flow
-                return b.solvent_recovery[t] * b.properties_in[
+                return b.recovery_solvent[t] * b.properties_in[
                     t
                 ].get_material_flow_terms(p, j) == b.properties_permeate[
                     t

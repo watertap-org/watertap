@@ -258,8 +258,8 @@ class TestBuild:
         for j in m.fs.unit._solute_set:
             assert j in ["Na_+", "Ca_2+", "SO4_2-", "Mg_2+"]
 
-        assert isinstance(m.fs.unit.solvent_recovery, Var)
-        assert value(m.fs.unit.solvent_recovery[0]) == pytest.approx(0.8, rel=1e-8)
+        assert isinstance(m.fs.unit.recovery_solvent, Var)
+        assert value(m.fs.unit.recovery_solvent[0]) == pytest.approx(0.8, rel=1e-8)
 
         assert isinstance(m.fs.unit.rejection_comp, Var)
         for (_, j), v in m.fs.unit.rejection_comp.items():
@@ -292,7 +292,7 @@ class TestBuild:
 
             if j == "H2O":
                 assert str(cd.expr) == str(
-                    m.fs.unit.solvent_recovery[t]
+                    m.fs.unit.recovery_solvent[t]
                     * m.fs.unit.properties_in[t].flow_mol_phase_comp[p, j]
                     == m.fs.unit.properties_permeate[t].flow_mol_phase_comp[p, j]
                 )
@@ -363,8 +363,8 @@ class TestBuild:
         for j in m.fs.unit._solute_set:
             assert j in ["Na_+", "Ca_2+", "SO4_2-", "Mg_2+"]
 
-        assert isinstance(m.fs.unit.solvent_recovery, Var)
-        assert value(m.fs.unit.solvent_recovery[0]) == pytest.approx(0.8, rel=1e-8)
+        assert isinstance(m.fs.unit.recovery_solvent, Var)
+        assert value(m.fs.unit.recovery_solvent[0]) == pytest.approx(0.8, rel=1e-8)
 
         assert isinstance(m.fs.unit.rejection_comp, Var)
         for (_, j), v in m.fs.unit.rejection_comp.items():
@@ -397,7 +397,7 @@ class TestBuild:
 
             if j == "H2O":
                 assert str(cd.expr) == str(
-                    m.fs.unit.solvent_recovery[t]
+                    m.fs.unit.recovery_solvent[t]
                     * m.fs.unit.properties_in[t].flow_mol_phase_comp[p, j]
                     == m.fs.unit.properties_permeate[t].flow_mol_phase_comp[p, j]
                 )
@@ -468,8 +468,8 @@ class TestBuild:
         for j in m.fs.unit._solute_set:
             assert j in ["Na_+", "Ca_2+", "SO4_2-", "Mg_2+"]
 
-        assert isinstance(m.fs.unit.solvent_recovery, Var)
-        assert value(m.fs.unit.solvent_recovery[0]) == pytest.approx(0.8, rel=1e-8)
+        assert isinstance(m.fs.unit.recovery_solvent, Var)
+        assert value(m.fs.unit.recovery_solvent[0]) == pytest.approx(0.8, rel=1e-8)
 
         assert isinstance(m.fs.unit.rejection_comp, Var)
         for (_, j), v in m.fs.unit.rejection_comp.items():
@@ -502,7 +502,7 @@ class TestBuild:
 
             if j == "H2O":
                 assert str(cd.expr) == str(
-                    m.fs.unit.solvent_recovery[t]
+                    m.fs.unit.recovery_solvent[t]
                     * m.fs.unit.properties_in[t].flow_mol_phase_comp[p, j]
                     == m.fs.unit.properties_permeate[t].flow_mol_phase_comp[p, j]
                 )
@@ -575,8 +575,8 @@ class TestBuild:
         for j in m.fs.unit._solute_set:
             assert j in ["Na_+", "Ca_2+", "SO4_2-", "Mg_2+", "Cl_-"]
 
-        assert isinstance(m.fs.unit.solvent_recovery, Var)
-        assert value(m.fs.unit.solvent_recovery[0]) == pytest.approx(0.8, rel=1e-8)
+        assert isinstance(m.fs.unit.recovery_solvent, Var)
+        assert value(m.fs.unit.recovery_solvent[0]) == pytest.approx(0.8, rel=1e-8)
 
         assert isinstance(m.fs.unit.rejection_comp, Var)
         for (_, j), v in m.fs.unit.rejection_comp.items():
@@ -605,7 +605,7 @@ class TestBuild:
         for (t, p, j), cd in m.fs.unit.separation_constraint.items():
             if j == "H2O":
                 assert str(cd.expr) == str(
-                    m.fs.unit.solvent_recovery[t]
+                    m.fs.unit.recovery_solvent[t]
                     * m.fs.unit.properties_in[t].flow_mol_phase_comp[p, j]
                     == m.fs.unit.properties_permeate[t].flow_mol_phase_comp[p, j]
                 )
@@ -676,7 +676,7 @@ class TestNanofiltration0DInitializer:
         mcas_model.fs.unit.inlet.temperature[0].fix(298.15)
         mcas_model.fs.unit.inlet.pressure[0].fix(4e5)
 
-        mcas_model.fs.unit.solvent_recovery.fix()
+        mcas_model.fs.unit.recovery_solvent.fix()
         mcas_model.fs.unit.rejection_comp.fix()
         mcas_model.fs.unit.permeate.pressure[0].fix(1e5)
         mcas_model.fs.unit.deltaP.fix(-1e4)
@@ -889,7 +889,7 @@ class TestNanofiltration0DScaler:
                 == 1e2
             )
         assert (
-            mcas_model.fs.unit.scaling_factor[mcas_model.fs.unit.solvent_recovery[0]]
+            mcas_model.fs.unit.scaling_factor[mcas_model.fs.unit.recovery_solvent[0]]
             == 10
         )
 
@@ -1044,7 +1044,7 @@ class TestMCAS:
         m.fs.unit.inlet.temperature[0].fix(298.15)
         m.fs.unit.inlet.pressure[0].fix(4e5)
 
-        m.fs.unit.solvent_recovery.fix()
+        m.fs.unit.recovery_solvent.fix()
         m.fs.unit.rejection_comp.fix()
         m.fs.unit.deltaP.fix(-1e4)
         m.fs.unit.permeate.pressure[0].fix(101325)
@@ -1083,7 +1083,7 @@ class TestMCAS:
         scaler.scale_model(mcas_case.fs.unit)
 
         assert (
-            mcas_case.fs.unit.scaling_factor[mcas_case.fs.unit.solvent_recovery[0]]
+            mcas_case.fs.unit.scaling_factor[mcas_case.fs.unit.recovery_solvent[0]]
             == 10
         )
         for j in ["Ca_2+", "Mg_2+", "SO4_2-", "Na_+"]:
