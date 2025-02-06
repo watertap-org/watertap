@@ -556,7 +556,7 @@ def set_operating_conditions(m, bio_P=False):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
-    iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e2)
     iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
 
