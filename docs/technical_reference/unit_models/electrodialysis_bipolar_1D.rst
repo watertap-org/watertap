@@ -8,8 +8,8 @@ Bipolar electrodialysis, an electrochemical separation technology, is primarily 
 from waste salts. Recently, multiple proof of concept studies have also shown that starting from Lithium Chloride solution bipolar membranes can produce Lithium Hydroxide.
 These are critical for batteries. In water treatment plants starting with waste brine, at the end of water purification, yields high concentrations sodium hydroxide.
 These can be new revenue streams. To produce products from salts there is a cation exchange memrbane (CEM) and a anion exchange membrane (AEM) in parallel with the bipolar membrane.
-To simplify the model we do NOT account for these salt ion fluxes. This allows direct comparisons with models presented in works of Mareev et al. (2020) and Melnikov (2022). Users may choose to add ions via the feed.
-In the future we will add a unit model with CEM and AEM in parallel with a bipolar membrane. A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid
+ This model uses bipolar membrane model that accounts for catalyst action developed by Mareev et al. (2020) and Melnikov (2022). Users may choose to add ions via the feed.
+Combining with the AEM and CEM this unit model predicts brine purification as well as acid and base production. This unit can be deployed in a flowsheet to determine the optimal operating conditions by using the costing features in WaterTAP. A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid
 respectively. More overview of the bipolar electrodialysis technology can be found in the *References*.
 
 .. figure:: ../../_static/unit_models/BPEDdiagram.png
@@ -26,14 +26,14 @@ electrical migration, diffusion of ions, osmosis, electroosmosis, and water spli
 assumptions made:
 
 * The **diluate**, **basic**, and **acidic** channels have identical geometry.
-* For each channel, component fluxes in the bulk solution has variation along the vertical direction, as depicted in in Figure 1, but uniform in the other two orthogonal directions (the 1-dimensional assumption).
+* For each channel, component fluxes in the bulk solution has variation along the vertical direction (l), as depicted in in Figure 1, but uniform in the other two orthogonal directions, b (cell width) and d, (the 1-dimensional assumption).
 * Steady state: all variables are independent of time.
 * Co-current flow operation. 
 * Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one.
 * All ion-exchange membrane properties (ion and water transport number, resistance, permeability) are constant.
 * Detailed concentration gradient effect at membrane-water interfaces is neglected. 
 * Constant pressure and temperature through each channel.
-* No boundary layer, electric double layer or diffusion layer, has been considered.
+* No boundary layer, electric double layer or diffusion layer, has been considered. For typical operating conditions of a bipolar membrane system such low salinity in the **diluate** is not expected.
 
 Control Volumes
 ---------------
@@ -114,14 +114,16 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['AEM','CEM','BPEM']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 3
    "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`I`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
    "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega \,m^2`", 1
-   "Cell number", ":math:`n`", "cell_num", "None", "dimensionless", 1
+   "Cell number", ":math:`n`", "cell_triplet_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
    "Shadow factor", ":math:`\beta`", "shadow_factor", "None", "dimensionless", 1
    "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:`m` ", 1
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
+   "Channel height", ":math:`d`", "channel_height", "none", ":math:`m` ", 1
    "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['AEM','CEM','BPEM']", ":math:`m`", 3
    "transport number of ions in the membrane phase", ":math:`t_j`", "ion_trans_number_membrane", "['AEM','CEM','BPEM'], ['Na\ :sup:`+`', '\Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']", "dimensionless", 9
+   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "['AEM','CEM','BPEM'], ['Na\ :sup:`+`', '\Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']", "dimensionless", 9
    "Constant areal resistance of membrane at infinity-approximated electrolyte concentration", ":math:`r_0`", "membrane_areal_resistance_coef_0", "None", ":math:`\Omega \, m^2`", 1
    "Coefficient of membrane areal resistance to 1/c, where c is the electrolyte concentration", ":math:`r_1`", "membrane_areal_resistance_coef_1", "None", ":math:`\Omega \, Kg\,m^{-1}`", 1
 
@@ -206,29 +208,44 @@ The flux from water splitting with catalyst action as well as the limiting curre
    :header: "Description", "Equation"
 
    "Limiting current density", ":math:`i_{lim} =` user input constant", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.InitialValue``"
-   " ", ":math:`i_{lim} = D F (C_{acidic,NaCl}+C_{basic,NaCl})^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical``"
+   " ", ":math:`i_{lim} = D^*F (C_{acidic,NaCl}+C_{basic,NaCl})^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical``"
    "Water splitting flux", ":math:`J_{diss} =R_{K_A} \lambda + R_{K_B} \lambda`"
-   "Water splitting rate", ":math:`R_{K_A/K_B} = \frac{Q_m}{K_{A/B}}[k_2(0)f(E)C_{H_2O} ]`"
+   "Water splitting rate", ":math:`R_{K_A/K_B} = \frac{Q_{m,A/B}}{K_{A/B}}[k_2(0)f(E)C_{H_2O} ]`"
    "Depletion length", ":math:`\lambda = E \epsilon_0 \epsilon_r / (F \sigma)`"
    "Electric current density", ":math:`i = i_{lim} + F J_{diss}`"
    "Potential drop", ":math:`U=n E/\lambda + i r_{tot}`"
 
-The values of :math:`C_{acidic,NaCl}` and :math:`C_{basic,NaCl}` can either be user supplied by setting ``salt_calculation=False`` or computed by choosing ``salt_calculation=True``. Please note that since the unit model is assumed to operate in the water splitting regime and so :math:`i_{lim}` is always computed. :math:`f(E)` is the second Wien effect driven enhancement of the
+**Note**
+ :sup:`1` The diffusivity :math:`D^*`used here for the salt and should not be confused with the ion diffusivity.
+
+Please note that since the unit model is assumed to operate in the water splitting regime and so :math:`i_{lim}` is always computed. :math:`f(E)` is the second Wien effect driven enhancement of the
 dissociation rate under applied electric field. It requires as input temperature and relative permittivity (:math:`\epsilon_r`).The parameters used are given in **Table 6**.
 
-.. csv-table:: **Table 6.** DOF for water splitting with catalyst
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+.. csv-table:: **Table 6.** DOF relevant for water disassociation
+   :header: "Description", "Symbol", "Variable Name", "Units"
 
-   "Diffusivity", ":math:`D`", "diffus_mass", "[BPEM]", ":math:`m^2 s^{-1}`"
-   "Salt concentration, basic side ", ":math:`C_{basic}`", "salt_conc_aem_ref", "none",":math:`mol m^{-3}`"
-   "Salt concentration, acidic side ", ":math:`C_{acidic}`", "salt_conc_aem_ref", "none",":math:`mol m^{-3}`"
-   "Membrane Fixed charge ", ":math:`\sigma`", "membrane_fixed_charge", "none",":math:`mol m^{-3}`"
-   "Dissociation rate constant, zero electric field ", ":math:`k_2(0)`", "zero", "none",":math:`s^{-1}`"
-   "Relative permittivity ", ":math:`\epsilon_r`", "relative_permittivity", "none","Non-dimensional"
-   "Catalyst concentration on the cation exchange side", ":math:`Q_m`", "membrane_fixed_catalyst_cem", "none", ":math:`mol \, m^{-3}`"
-   "Catalyst concentration on the anion exchange side", ":math:`Q_m`", "membrane_fixed_catalyst_aem", "none", ":math:`mol \, m^{-3}`"
-   "Equilibrium constant of proton disassociation", ":math:`K_A`", "k_a", "none",":math:`mol \, m^{-3}`"
-   "Equilibrium constant of hydroxide disassociation", ":math:`K_B`", "k_b", "none",":math:`mol \, m^{-3}`"
+   "Salt diffusivity", ":math:`D^*`", "diffus_mass", ":math:`m^2\, s^{-1}`"
+   "Salt concentration, basic side ", ":math:`C_{basic}`", "salt_conc_ael_ref/salt_conc_ael_x[t,x]",":math:`mol\, m^{-3}`"
+   "Salt concentration, acidic side ", ":math:`C_{acidic}`", "salt_conc_cel_ref/salt_conc_cel_x[t,x]",":math:`mol \,m^{-3}`"
+   "Membrane Fixed charge ", ":math:`\sigma`", "membrane_fixed_charge",":math:`mol \,m^{-3}`"
+   "Dissociation rate constant, zero electric field ", ":math:`k_2(0)`", "k2_zero",":math:`s^{-1}`"
+   "Concentration of water", ":math:`k_2(0)`", "conc_water",":math:`mol\, m^{-3}`"
+   "Relative permittivity ", ":math:`\epsilon_r`", "relative_permittivity","Non-dimensional"
+   "Catalyst concentration on the cation exchange side", ":math:`Q_{m,A}`", "membrane_fixed_catalyst_cel", ":math:`mol \, m^{-3}`"
+   "Catalyst concentration on the anion exchange side", ":math:`Q_{m,B}`", "membrane_fixed_catalyst_ael", ":math:`mol \, m^{-3}`"
+   "Equilibrium constant of proton disassociation", ":math:`K_A`", "k_a",":math:`mol \, m^{-3}`"
+   "Equilibrium constant of hydroxide disassociation", ":math:`K_B`", "k_b",":math:`mol \, m^{-3}`"
+
+**Note**
+
+ :sup:`1` All the DOFs listed in this table have no index, unless explicitly specified.
+
+ :sup:`2` The values of :math:`C_{acidic,NaCl}` and :math:`C_{basic,NaCl}` can either be user supplied by setting ``salt_calculation=False`` or computed by choosing ``salt_calculation=True``.
+
+ :sup:`3` salt_conc_ael_ref and salt_conc_ael_ref need to be specified only when ``salt_calculation=False`` is chosen.
+
+ :sup:`4` When ``salt_calculation=True`` :math:`C_{basic}` and :math:`C_{acidic}` salt_conc_ael_x and salt_conc_cel_x are computed with indexes [t,x].
+
 
 
 The model used here is based on the analysis by Mareev et al. (2020). It and has been validated using the experimental data on bipolar membrane information available in Wilhelm et al. (2002). Additionaly inputs were obtained from Mareev et al. (2020).
@@ -248,7 +265,7 @@ dissociation rate under applied electric field. It requires as input temperature
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
-The model used here is derived from works by Wilhelm et al. (2002) and Ionescu, Viorel (2023).It has been validated using the bipolar membrane information available online: Fumatech, Technical Data Sheet for
+The model has been validated against the experimental data available from Wilhelm et al. (2002) as well as bipolar membrane information available online: Fumatech, Technical Data Sheet for
 Fumasep FBM, 2020. Additional inputs were obtained from from  Ionescu, Viorel (2023).
 
 

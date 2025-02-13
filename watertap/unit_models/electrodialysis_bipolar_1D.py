@@ -576,13 +576,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="cell triplet number in a stack",
         )
-        self.electrical_stage_num = Var(
-            initialize=1,
-            domain=NonNegativeReals,
-            bounds=(1, 20 * 1e0),
-            units=pyunits.dimensionless,
-            doc="number of electrical stages in a stack",
-        )
 
         # bipolar electrodialysis cell dimensional properties
         self.cell_width = Var(
@@ -789,13 +782,13 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.second**-1,
             doc="Dissociation rate constant at no electric field",
         )
-        self.salt_conc_aem_ref = Var(
+        self.salt_conc_ael_ref = Var(
             initialize=1e3,
             bounds=(1e-8, 1e6),
             units=pyunits.mole * pyunits.meter**-3,
             doc="Fixed salt concentration on the base channel of the bipolar membrane",
         )
-        self.salt_conc_cem_ref = Var(
+        self.salt_conc_cel_ref = Var(
             initialize=1e3,
             bounds=(1e-8, 1e6),
             units=pyunits.mole * pyunits.meter**-3,
@@ -807,7 +800,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mole * pyunits.meter**-3,
             doc="Fixed salt concentration on the diluate channel ",
         )
-        self.salt_conc_aem_x = Var(
+        self.salt_conc_ael_x = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=1e3,
@@ -815,7 +808,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mole * pyunits.meter**-3,
             doc="Salt concentration on the base channel of the bipolar membrane",
         )
-        self.salt_conc_cem_x = Var(
+        self.salt_conc_cel_x = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=1e3,
@@ -1024,7 +1017,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 conc_unit = 1 * pyunits.mole * pyunits.meter**-3
 
                 return (
-                    self.salt_conc_aem_x[t, x]
+                    self.salt_conc_ael_x[t, x]
                     == smooth_min(
                         self.basic.properties[t, x].conc_mol_phase_comp["Liq", "Na_+"]
                         / conc_unit,
@@ -1034,7 +1027,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     * conc_unit
                 )
             else:
-                return self.salt_conc_aem_x[t, x] == self.salt_conc_aem_ref
+                return self.salt_conc_ael_x[t, x] == self.salt_conc_ael_ref
 
         @self.Constraint(
             self.flowsheet().time,
@@ -1047,7 +1040,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 conc_unit = 1 * pyunits.mole * pyunits.meter**-3
 
                 return (
-                    self.salt_conc_cem_x[t, x]
+                    self.salt_conc_cel_x[t, x]
                     == smooth_min(
                         self.acidic.properties[t, x].conc_mol_phase_comp["Liq", "Na_+"]
                         / conc_unit,
@@ -1057,7 +1050,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     * conc_unit
                 )
             else:
-                return self.salt_conc_cem_x[t, x] == self.salt_conc_cem_ref
+                return self.salt_conc_cel_x[t, x] == self.salt_conc_cel_ref
 
         @self.Constraint(
             self.flowsheet().time,
@@ -1081,7 +1074,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 return self.current_dens_lim_bpem[
                     t, x
                 ] == self.diffus_mass * Constants.faraday_constant * (
-                    (self.salt_conc_aem_x[t, x] + self.salt_conc_cem_x[t, x]) * 0.5
+                    (self.salt_conc_ael_x[t, x] + self.salt_conc_cel_x[t, x]) * 0.5
                 ) ** 2 / (
                     self.membrane_thickness["bpem"] * self.membrane_fixed_charge
                 )
@@ -1116,7 +1109,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     )
                 )
                 * self.cell_triplet_num
-                / self.electrical_stage_num
                 + self.electrodes_resistance
             )
 
@@ -1149,9 +1141,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             else:
                 return (
                     self.current_density_x[t, x] * self.total_areal_resistance_x[t, x]
-                    + self.voltage_membrane_drop[t, x]
-                    * self.cell_triplet_num
-                    / self.electrical_stage_num
+                    + self.voltage_membrane_drop[t, x] * self.cell_triplet_num
                     == self.voltage_applied[t]
                 )
 
@@ -1163,9 +1153,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
         def eq_get_voltage_x(self, t, x):
             return (
                 self.current_density_x[t, x] * self.total_areal_resistance_x[t, x]
-                + self.voltage_membrane_drop[t, x]
-                * self.cell_triplet_num
-                / self.electrical_stage_num
+                + self.voltage_membrane_drop[t, x] * self.cell_triplet_num
                 == self.voltage_x[t, x]
             )
 
@@ -1394,7 +1382,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
                 * (self.cell_width * self.shadow_factor)
                 * self.cell_triplet_num
-                / self.electrical_stage_num
             )
 
         # Add constraints for mass transfer terms (base channel of the bipolar membrane)
@@ -1455,7 +1442,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     self.diluate.Dpower_electrical_Dx[t, x]
                     == self.voltage_x[t, x]
                     * self.current_density_x[t, x]
-                    * self.electrical_stage_num
                     * self.cell_width
                     * self.shadow_factor
                     * self.diluate.length
@@ -1488,13 +1474,13 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mole * pyunits.meter**-2 * pyunits.second**-1,
             doc="Flux generated",
         )
-        self.membrane_fixed_catalyst_aem = Var(
+        self.membrane_fixed_catalyst_ael = Var(
             initialize=5e3,
             bounds=(1e-1, 1e5),
             units=pyunits.mole * pyunits.meter**-3,
             doc="Membrane fixed charge",
         )
-        self.membrane_fixed_catalyst_cem = Var(
+        self.membrane_fixed_catalyst_cel = Var(
             initialize=5e3,
             bounds=(1e-1, 1e5),
             units=pyunits.mole * pyunits.meter**-3,
@@ -1549,8 +1535,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
 
             matrx *= self.k2_zero * self.conc_water
-            matrx_a = matrx * self.membrane_fixed_catalyst_cem / self.k_a
-            matrx_b = matrx * self.membrane_fixed_catalyst_aem / self.k_b
+            matrx_a = matrx * self.membrane_fixed_catalyst_cel / self.k_a
+            matrx_b = matrx * self.membrane_fixed_catalyst_ael / self.k_b
             return self.flux_splitting[t, x] == (matrx_a + matrx_b) * sqrt(
                 self.voltage_membrane_drop[t, x]
                 * Constants.vacuum_electric_permittivity
@@ -2045,8 +2031,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.water_permeability_membrane, 1e14)
         if iscale.get_scaling_factor(self.cell_triplet_num, warning=True) is None:
             iscale.set_scaling_factor(self.cell_triplet_num, 0.1)
-        if iscale.get_scaling_factor(self.electrical_stage_num, warning=True) is None:
-            iscale.set_scaling_factor(self.electrical_stage_num, 1)
         if iscale.get_scaling_factor(self.cell_length, warning=True) is None:
             iscale.set_scaling_factor(self.cell_length, 1e1)
         if iscale.get_scaling_factor(self.cell_width, warning=True) is None:
@@ -2089,15 +2073,15 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.current_applied, 1)
 
         if (
-            iscale.get_scaling_factor(self.membrane_fixed_catalyst_cem, warning=True)
+            iscale.get_scaling_factor(self.membrane_fixed_catalyst_cel, warning=True)
             is None
         ):
-            iscale.set_scaling_factor(self.membrane_fixed_catalyst_cem, 1e-3)
+            iscale.set_scaling_factor(self.membrane_fixed_catalyst_cel, 1e-3)
         if (
-            iscale.get_scaling_factor(self.membrane_fixed_catalyst_aem, warning=True)
+            iscale.get_scaling_factor(self.membrane_fixed_catalyst_ael, warning=True)
             is None
         ):
-            iscale.set_scaling_factor(self.membrane_fixed_catalyst_aem, 1e-3)
+            iscale.set_scaling_factor(self.membrane_fixed_catalyst_ael, 1e-3)
 
         if iscale.get_scaling_factor(self.k_a, warning=True) is None:
             iscale.set_scaling_factor(self.k_a, 1e6)
@@ -2119,8 +2103,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             iscale.get_scaling_factor(self.diffus_mass, warning=True) is None
         ):
             iscale.set_scaling_factor(self.diffus_mass, 1e9)
-        if hasattr(self, "salt_conc_aem_x") and (
-            iscale.get_scaling_factor(self.salt_conc_aem_x, warning=True) is None
+        if hasattr(self, "salt_conc_ael_x") and (
+            iscale.get_scaling_factor(self.salt_conc_ael_x, warning=True) is None
         ):
             if self.config.salt_calculation:
                 sf = -smooth_min(
@@ -2132,10 +2116,10 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     ),
                 )
             else:
-                sf = value(self.salt_conc_aem_ref) ** -1
-            iscale.set_scaling_factor(self.salt_conc_aem_x, sf)
-        if hasattr(self, "salt_conc_cem_x") and (
-            iscale.get_scaling_factor(self.salt_conc_cem_x, warning=True) is None
+                sf = value(self.salt_conc_ael_ref) ** -1
+            iscale.set_scaling_factor(self.salt_conc_ael_x, sf)
+        if hasattr(self, "salt_conc_cel_x") and (
+            iscale.get_scaling_factor(self.salt_conc_cel_x, warning=True) is None
         ):
             if self.config.salt_calculation:
                 sf = -smooth_min(
@@ -2148,8 +2132,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
                 # sf = iscale.get_scaling_factor(self.acidic.properties[0,0].conc_mol_phase_comp["Liq", "Na_+"])
             else:
-                sf = value(self.salt_conc_cem_ref) ** -1
-            iscale.set_scaling_factor(self.salt_conc_cem_x, sf)
+                sf = value(self.salt_conc_cel_ref) ** -1
+            iscale.set_scaling_factor(self.salt_conc_cel_x, sf)
 
         if hasattr(self, "relative_permittivity") and (
             iscale.get_scaling_factor(self.relative_permittivity, warning=True) is None
@@ -2198,12 +2182,12 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             )
             sf_a = (
                 sf
-                * iscale.get_scaling_factor(self.membrane_fixed_catalyst_cem)
+                * iscale.get_scaling_factor(self.membrane_fixed_catalyst_cel)
                 / iscale.get_scaling_factor(self.k_a)
             )
             sf_b = (
                 sf
-                * iscale.get_scaling_factor(self.membrane_fixed_catalyst_aem)
+                * iscale.get_scaling_factor(self.membrane_fixed_catalyst_ael)
                 / iscale.get_scaling_factor(self.k_b)
             )
 
@@ -2469,7 +2453,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     self.diluate.power_electrical_x[ind],
                     iscale.get_scaling_factor(self.voltage_x[ind])
                     * iscale.get_scaling_factor(self.current_density_x[ind])
-                    * iscale.get_scaling_factor(self.electrical_stage_num)
                     * iscale.get_scaling_factor(self.cell_width)
                     * iscale.get_scaling_factor(self.shadow_factor)
                     * iscale.get_scaling_factor(self.cell_length),
@@ -2609,7 +2592,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     sf = (
                         iscale.get_scaling_factor(self.diffus_mass)
                         * value(Constants.faraday_constant) ** -1
-                        * (2 * iscale.get_scaling_factor(self.salt_conc_aem_x)) ** 2
+                        * (2 * iscale.get_scaling_factor(self.salt_conc_ael_x)) ** 2
                         / (
                             iscale.get_scaling_factor(self.membrane_thickness)
                             * iscale.get_scaling_factor(self.membrane_fixed_charge)
@@ -2712,14 +2695,14 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             for ind, c in self.eq_salt_cem.items():
                 iscale.constraint_scaling_transform(
                     c,
-                    iscale.get_scaling_factor(self.salt_conc_cem_x[ind]),
+                    iscale.get_scaling_factor(self.salt_conc_cel_x[ind]),
                 )
 
         if hasattr(self, "eq_salt_aem"):
             for ind, c in self.eq_salt_aem.items():
                 iscale.constraint_scaling_transform(
                     c,
-                    iscale.get_scaling_factor(self.salt_conc_aem_x[ind]),
+                    iscale.get_scaling_factor(self.salt_conc_ael_x[ind]),
                 )
 
     def _get_stream_table_contents(self, time_point=0):

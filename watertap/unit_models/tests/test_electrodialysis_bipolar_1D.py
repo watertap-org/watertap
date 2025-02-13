@@ -80,14 +80,11 @@ class Test_membrane_characteristics:
         )
 
         m.fs.unit.diffus_mass.fix((2.03 + 1.96) * 10**-9 / 2)
-        # m.fs.unit.membrane_fixed_charge.fix(5e3)
-        # m.fs.unit.salt_conc_aem_ref.fix(2000)
-        # m.fs.unit.salt_conc_cem_ref.fix(2000)
         m.fs.unit.conc_water.fix(50 * 1e3)
         m.fs.unit.k2_zero.fix(2 * 10**-6)
         m.fs.unit.relative_permittivity.fix(30)
-        m.fs.unit.membrane_fixed_catalyst_cem.fix(5e3)
-        m.fs.unit.membrane_fixed_catalyst_aem.fix(5e3)
+        m.fs.unit.membrane_fixed_catalyst_cel.fix(5e3)
+        m.fs.unit.membrane_fixed_catalyst_ael.fix(5e3)
         m.fs.unit.k_a.fix(447)
         m.fs.unit.k_b.fix(5e4)
 
@@ -156,7 +153,6 @@ class Test_membrane_characteristics:
         m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
 
         m.fs.unit.shadow_factor.fix(1)
-        m.fs.unit.electrical_stage_num.fix(1)
 
         m.fs.unit.water_trans_number_membrane["cem"].fix((5.8 + 4.3) / 2)
         m.fs.unit.water_permeability_membrane["cem"].fix((2.16e-14 + 1.75e-14) / 2)
@@ -173,7 +169,6 @@ class Test_membrane_characteristics:
         m.fs.unit.membrane_areal_resistance_coef_1.fix(0)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
-        # m.fs.unit.membrane_thickness["bpem"].fix(8e-4)
         m.fs.unit.membrane_thickness["aem"].fix(4e-4)
         m.fs.unit.membrane_thickness["cem"].fix(4e-4)
 
@@ -193,8 +188,6 @@ class Test_membrane_characteristics:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "H2O")
         )
-        # m.fs.unit.current_applied.fix(12)
-        # m.fs.unit.voltage_applied.fix(3)
         m.fs.unit.cell_triplet_num.fix(1)
         iscale.set_scaling_factor(m.fs.unit.k_a, 1e-2)
         iscale.set_scaling_factor(m.fs.unit.k_b, 1e-4)
@@ -208,8 +201,8 @@ class Test_membrane_characteristics:
 
         m = bped
 
-        m.fs.unit.salt_conc_aem_ref.fix(2000)
-        m.fs.unit.salt_conc_cem_ref.fix(2000)
+        m.fs.unit.salt_conc_ael_ref.fix(2000)
+        m.fs.unit.salt_conc_cel_ref.fix(2000)
         m.fs.unit.membrane_fixed_charge.fix(5e3)
         m.fs.unit.membrane_thickness["bpem"].fix(8e-4)
 
@@ -251,8 +244,8 @@ class Test_membrane_characteristics:
 
         m = bped
 
-        m.fs.unit.salt_conc_aem_ref.fix(500 + 2 * 250)
-        m.fs.unit.salt_conc_cem_ref.fix(500 + 2 * 250)
+        m.fs.unit.salt_conc_ael_ref.fix(500 + 2 * 250)
+        m.fs.unit.salt_conc_cel_ref.fix(500 + 2 * 250)
         m.fs.unit.membrane_fixed_charge.fix(1.5e3)
         m.fs.unit.membrane_thickness["bpem"].fix(1.3e-4)
         m.fs.unit.current_applied.fix(1e2)
@@ -428,13 +421,13 @@ class Test_Operation:
 
             m.fs.unit.diffus_mass.fix((2.03 + 1.96) * 10**-9 / 2)
             m.fs.unit.membrane_fixed_charge.fix(5e3)
-            m.fs.unit.salt_conc_aem_ref.fix(2000)
-            m.fs.unit.salt_conc_cem_ref.fix(2000)
+            m.fs.unit.salt_conc_ael_ref.fix(2000)
+            m.fs.unit.salt_conc_cel_ref.fix(2000)
             m.fs.unit.conc_water.fix(50 * 1e3)
             m.fs.unit.k2_zero.fix(2 * 10**-6)
             m.fs.unit.relative_permittivity.fix(30)
-            m.fs.unit.membrane_fixed_catalyst_cem.fix(5e3)
-            m.fs.unit.membrane_fixed_catalyst_aem.fix(5e3)
+            m.fs.unit.membrane_fixed_catalyst_cel.fix(5e3)
+            m.fs.unit.membrane_fixed_catalyst_ael.fix(5e3)
             m.fs.unit.k_a.fix(447)
             m.fs.unit.k_b.fix(5e4)
 
@@ -503,7 +496,6 @@ class Test_Operation:
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
 
             m.fs.unit.shadow_factor.fix(1)
-            m.fs.unit.electrical_stage_num.fix(1)
 
             m.fs.unit.water_trans_number_membrane["cem"].fix((5.8 + 4.3) / 2)
             m.fs.unit.water_permeability_membrane["cem"].fix((2.16e-14 + 1.75e-14) / 2)
@@ -540,8 +532,6 @@ class Test_Operation:
             m.fs.properties.set_default_scaling(
                 "flow_mol_phase_comp", 1e2, index=("Liq", "H2O")
             )
-            # m.fs.unit.current_applied.fix(12)
-            # m.fs.unit.voltage_applied.fix(3)
             m.fs.unit.cell_triplet_num.fix(10)
             iscale.set_scaling_factor(m.fs.unit.k_a, 1e-2)
             iscale.set_scaling_factor(m.fs.unit.k_b, 1e-4)
@@ -555,12 +545,6 @@ class Test_Operation:
         iscale.calculate_scaling_factors(bped_m[0])
         assert degrees_of_freedom(bped_m[0]) == 0
         initialization_tester(bped_m[0])
-        # assert value(bped_m[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'H_+']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
-        # assert value(bped_m[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'OH_-']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
         assert value(
             bped_m[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
         ) == pytest.approx(0.06896, rel=1e-3)
@@ -574,9 +558,6 @@ class Test_Operation:
         assert value(
             bped_m[0].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "H_+"]
         ) == pytest.approx(0.074934, rel=1e-3)
-        # assert value(bped_m[0].fs.unit.outlet_acidic.flow_mol_phase_comp[0, 'Liq', 'OH_-']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
         assert value(
             bped_m[0].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "Na_+"]
         ) == pytest.approx(0.002597, rel=1e-3)
@@ -587,9 +568,6 @@ class Test_Operation:
             bped_m[0].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "H2O"]
         ) == pytest.approx(0.2734, rel=1e-3)
 
-        # assert value(bped_m[0].fs.unit.outlet_basic.flow_mol_phase_comp[0, 'Liq', 'H_+']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
         assert value(
             bped_m[0].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "OH_-"]
         ) == pytest.approx(0.074934, rel=1e-3)
@@ -609,12 +587,6 @@ class Test_Operation:
         iscale.calculate_scaling_factors(bped_m[1])
         assert degrees_of_freedom(bped_m[1]) == 0
         initialization_tester(bped_m[1])
-        # assert value(bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'H_+']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
-        # assert value(bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'OH_-']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
         assert value(
             bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
         ) == pytest.approx(0.05111, rel=1e-3)
@@ -664,12 +636,6 @@ class Test_Operation:
         iscale.calculate_scaling_factors(bped_m[2])
         assert degrees_of_freedom(bped_m[2]) == 0
         initialization_tester(bped_m[2])
-        # assert value(bped_m[2].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'H_+']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
-        # assert value(bped_m[2].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'OH_-']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
         assert value(
             bped_m[2].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
         ) == pytest.approx(0.06089, rel=1e-3)
@@ -683,9 +649,6 @@ class Test_Operation:
         assert value(
             bped_m[2].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "H_+"]
         ) == pytest.approx(0.07375, rel=1e-3)
-        # assert value(bped_m[2].fs.unit.outlet_acidic.flow_mol_phase_comp[0, 'Liq', 'OH_-']) == pytest.approx(
-        #     0.00031, rel=1e-3
-        # )
         assert value(
             bped_m[2].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "Na_+"]
         ) == pytest.approx(0.012023, rel=1e-3)
@@ -696,9 +659,6 @@ class Test_Operation:
             bped_m[2].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "H2O"]
         ) == pytest.approx(0.27893, rel=1e-3)
 
-        # assert value(bped_m[2].fs.unit.outlet_basic.flow_mol_phase_comp[0, 'Liq', 'H_+']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
         assert value(
             bped_m[2].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "OH_-"]
         ) == pytest.approx(0.073755, rel=1e-3)
@@ -720,12 +680,6 @@ class Test_Operation:
         iscale.calculate_scaling_factors(bped_m[3])
         assert degrees_of_freedom(bped_m[3]) == 0
         initialization_tester(bped_m[3])
-        # assert value(bped_m[3].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'H_+']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
-        # assert value(bped_m[3].fs.unit.outlet_diluate.flow_mol_phase_comp[0, 'Liq', 'OH_-']) == pytest.approx(
-        #     67200, rel=1e-3
-        # )
         assert value(
             bped_m[3].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
         ) == pytest.approx(0.05166, rel=1e-3)
@@ -739,9 +693,6 @@ class Test_Operation:
         assert value(
             bped_m[3].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "H_+"]
         ) == pytest.approx(0.08209, rel=1e-3)
-        # assert value(bped_m[3].fs.unit.outlet_acidic.flow_mol_phase_comp[0, 'Liq', 'OH_-']) == pytest.approx(
-        #     0.0003109, rel=1e-3
-        # )
         assert value(
             bped_m[3].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "Na_+"]
         ) == pytest.approx(0.01318, rel=1e-3)
@@ -1005,13 +956,13 @@ class Test_BPED_pressure_drop_components:
         for m in bped_m:
             m.fs.unit.diffus_mass.fix((2.03 + 1.96) * 10**-9 / 2)
             m.fs.unit.membrane_fixed_charge.fix(5e3)
-            m.fs.unit.salt_conc_aem_ref.fix(2000)
-            m.fs.unit.salt_conc_cem_ref.fix(2000)
+            m.fs.unit.salt_conc_ael_ref.fix(2000)
+            m.fs.unit.salt_conc_cel_ref.fix(2000)
             m.fs.unit.conc_water.fix(50 * 1e3)
             m.fs.unit.k2_zero.fix(2 * 10**-6)
             m.fs.unit.relative_permittivity.fix(30)
-            m.fs.unit.membrane_fixed_catalyst_cem.fix(5e3)
-            m.fs.unit.membrane_fixed_catalyst_aem.fix(5e3)
+            m.fs.unit.membrane_fixed_catalyst_cel.fix(5e3)
+            m.fs.unit.membrane_fixed_catalyst_ael.fix(5e3)
             m.fs.unit.k_a.fix(447)
             m.fs.unit.k_b.fix(5e4)
 
@@ -1080,7 +1031,6 @@ class Test_BPED_pressure_drop_components:
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
 
             m.fs.unit.shadow_factor.fix(1)
-            m.fs.unit.electrical_stage_num.fix(1)
 
             m.fs.unit.water_trans_number_membrane["cem"].fix((5.8 + 4.3) / 2)
             m.fs.unit.water_permeability_membrane["cem"].fix((2.16e-14 + 1.75e-14) / 2)
