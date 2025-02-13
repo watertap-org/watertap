@@ -28,7 +28,6 @@ from watertap.unit_models.electrodialysis_bipolar_1D import (
     Electrodialysis_Bipolar_1D,
     ElectricalOperationMode,
     LimitingCurrentDensitybpemMethod,
-    LimitingpotentialMethod,
     PressureDropMethod,
     FrictionFactorMethod,
     HydraulicDiameterMethod,
