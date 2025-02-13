@@ -31,6 +31,11 @@ from watertap.flowsheets.activated_sludge.modified_ASM2D_flowsheet import (
 from idaes.core.util import DiagnosticsToolbox
 
 
+# lbianchi-lbl 2024-12-12: adding this as part of watertap-org/watertap#1540
+# this was only observed for macOS (EXPERIMENTAL) CI env which is slated for removal soon
+@pytest.mark.filterwarnings(
+    "ignore:divide by zero encountered in divide:RuntimeWarning"
+)
 class TestASM2DFlowsheet:
     @pytest.fixture(scope="class")
     def model(self):

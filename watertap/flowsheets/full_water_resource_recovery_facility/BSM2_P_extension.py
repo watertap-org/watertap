@@ -29,7 +29,6 @@ from idaes.core import (
     UnitModelBlockData,
 )
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Separator,
     Product,
@@ -68,6 +67,7 @@ from watertap.unit_models.translators.translator_adm1_asm2d import (
 from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 from watertap.unit_models.anaerobic_digester import AD
+from watertap.unit_models.cstr import CSTR
 from watertap.unit_models.dewatering import (
     DewateringUnit,
     ActivatedSludgeModelType as dewater_type,
@@ -95,7 +95,7 @@ _log = idaeslog.getLogger(__name__)
 
 def main(bio_P=False):
     m = build(bio_P=bio_P)
-    set_operating_conditions(m)
+    set_operating_conditions(m, bio_P=bio_P)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -411,7 +411,7 @@ def build(bio_P=False):
     return m
 
 
-def set_operating_conditions(m):
+def set_operating_conditions(m, bio_P=False):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
@@ -536,6 +536,14 @@ def set_operating_conditions(m):
                 iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
+            if "anions" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+            if "cations" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+
+    for unit in ("R1", "R2", "R3", "R4"):
+        block = getattr(m.fs, unit)
+        iscale.set_scaling_factor(block.hydraulic_retention_time, 1e-3)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -550,7 +558,18 @@ def set_operating_conditions(m):
 
     iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
-    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
+
+    if bio_P:
+        iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-6
+        )
+    else:
+        iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-3
+        )
 
     # Apply scaling
     scale_variables(m)
@@ -737,6 +756,11 @@ def add_costing(m):
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
             iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
+
+    iscale.constraint_scaling_transform(m.fs.AD.costing.capital_cost_constraint, 1e-6)
+    iscale.constraint_scaling_transform(
+        m.fs.dewater.costing.capital_cost_constraint, 1e-6
+    )
 
 
 def display_costing(m):

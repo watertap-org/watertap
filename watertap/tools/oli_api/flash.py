@@ -972,7 +972,9 @@ class Flash:
                     pass
                 elif k in d["inflows"]["values"]:
                     d = d["inflows"]["values"]
-                elif k in d["corrosionParameters"]:
+                elif hasattr(d, "corrosionParameters") and (
+                    k in d["corrosionParameters"]
+                ):
                     d = d["corrosionParameters"]
                 else:
                     _logger.warning(f"Survey key {k} not found in JSON input.")
@@ -1158,9 +1160,9 @@ def flatten_results(processed_requests):
                         prop_tag = _get_nested_data(result, prop)["name"]
             else:
                 _logger.warning(
-                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict}"
+                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict} from prop {prop}"
                 )
-
+                continue
             label = f"{prop_tag}_{phase_tag}" if phase_tag else prop_tag
             input_dict[k][label] = _extract_values(result, prop)
         return input_dict

@@ -28,9 +28,9 @@ from watertap.flowsheets.electroNP.BSM2_electroNP_no_bioP import (
 )
 
 
+@pytest.mark.requires_idaes_solver
 class TestElectroNPFlowsheet:
     @pytest.fixture(scope="class")
-    @pytest.mark.requires_idaes_solver
     def model(self):
         m, res = m, results = main(has_electroNP=True)
 
@@ -38,14 +38,12 @@ class TestElectroNPFlowsheet:
 
         return m
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, model):
         assert_units_consistent(model)
         assert degrees_of_freedom(model) == 0
         assert_optimal_termination(model.results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_results(self, model):
         # Treated water
