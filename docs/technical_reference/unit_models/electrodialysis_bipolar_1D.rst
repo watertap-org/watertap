@@ -8,9 +8,7 @@ Bipolar electrodialysis, an electrochemical separation technology, is primarily 
 from waste salts. Recently, multiple proof of concept studies have also shown that starting from Lithium Chloride solution bipolar membranes can produce Lithium Hydroxide.
 These are critical for batteries. In water treatment plants starting with waste brine, at the end of water purification, yields high concentrations sodium hydroxide.
 These can be new revenue streams. To produce products from salts there is a cation exchange memrbane (CEM) and a anion exchange membrane (AEM) in parallel with the bipolar membrane.
- This model uses bipolar membrane model that accounts for catalyst action developed by Mareev et al. (2020) and Melnikov (2022). Users may choose to add ions via the feed.
-Combining with the AEM and CEM this unit model predicts brine purification as well as acid and base production. This unit can be deployed in a flowsheet to determine the optimal operating conditions by using the costing features in WaterTAP. A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid
-respectively. More overview of the bipolar electrodialysis technology can be found in the *References*.
+This model uses bipolar membrane model that accounts for catalyst action developed by Mareev et al. (2020) and Melnikov (2022). Users may choose to add ions via the feed. Combining with the AEM and CEM this unit model predicts brine purification as well as acid and base production. This unit can be deployed in a flowsheet to determine the optimal operating conditions by using the costing features in WaterTAP. A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid respectively. More overview of the bipolar electrodialysis technology can be found in the *References*.
 
 .. figure:: ../../_static/unit_models/BPEDdiagram.png
     :width: 600
@@ -216,7 +214,7 @@ The flux from water splitting with catalyst action as well as the limiting curre
    "Potential drop", ":math:`U=n E/\lambda + i r_{tot}`"
 
 **Note**
- :sup:`1` The diffusivity :math:`D^*`used here for the salt and should not be confused with the ion diffusivity.
+ :sup:`1` The diffusivity :math:`D^*` used here for the salt and should not be confused with the ion diffusivity.
 
 Please note that since the unit model is assumed to operate in the water splitting regime and so :math:`i_{lim}` is always computed. :math:`f(E)` is the second Wien effect driven enhancement of the
 dissociation rate under applied electric field. It requires as input temperature and relative permittivity (:math:`\epsilon_r`).The parameters used are given in **Table 6**.
