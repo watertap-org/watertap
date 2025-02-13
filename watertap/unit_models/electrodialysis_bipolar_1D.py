@@ -20,7 +20,6 @@ from pyomo.environ import (
     Suffix,
     NonNegativeReals,
     value,
-    log,
     Constraint,
     sqrt,
     units as pyunits,
