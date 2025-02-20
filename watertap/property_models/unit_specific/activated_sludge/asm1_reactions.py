@@ -413,6 +413,7 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
         try:
 
             def rate_expression_rule(b, r):
+                eps = 1e-30 * pyo.units.kg / pyo.units.m**3
                 if r == "R1":
                     # R1: Aerobic growth of heterotrophs
                     return b.reaction_rate[r] == pyo.units.convert(
@@ -491,6 +492,7 @@ class ASM1ReactionBlockData(ReactionBlockDataBase):
                         / (
                             b.params.K_X * b.conc_mass_comp_ref["X_BH"]
                             + b.conc_mass_comp_ref["X_S"]
+                            + eps
                         )
                         * (
                             (
