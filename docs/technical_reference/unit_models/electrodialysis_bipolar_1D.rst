@@ -11,7 +11,7 @@ The bipolar membrane (BPEM) typically is made of an Anion exhcange layer and Cat
 To produce products from salts the BPEM is placed in parallel with a cation exchange memrbane (CEM) and a anion exchange membrane (AEM) .
 The unit model uses the reduced order model for water disassociation proposed by Mareev et al. (2020) [5]_. While their work primarily focuses on simulating potential profile within the bipolar membrane they also find
 reasonably good agreements with the voltage-current experiments performed by Wilhelm et al. (2002) [6]_. Hence the Mareev et al. (2020) [5]_ framework for hydrolysis flux that incorporates catalyst action is used.
-Water splitting occurs only when the limiting current on the BPEM is exceeded. An expression for the limiting current is obtained from Wilhelm et al. (2001) [7]_.
+Water splitting occurs only when the limiting current on the BPEM is exceeded. An expression for the limiting current is obtained from Wilhelm et al. (2001) [7]_. These two components are coupled using best available model for current density from Wilhelm et al. (2001) [7]_.
 Combining the BPEM with the AEM and CEM this unit model can be deployed to model acid and base production from concentrated salt solutions. The mass transfer is modelled using rigorously validated conventional electrodialysis equations.
 Hence high fidelity prediction of bipolar electrodialysis process will be possible with this unit model.
 A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid respectively.
@@ -39,6 +39,8 @@ assumptions made:
 * Detailed concentration gradient effect at membrane-water interfaces is neglected. 
 * Constant pressure and temperature through each channel.
 * No boundary layer, electric double layer or diffusion layer, next to the monopolar membranes has been considered. For typical operating conditions of a bipolar membrane system such low salinity in the **diluate** is not expected.
+* All instances of limiting current density, unless explicitly specified, refer to salt ion limiting current density across BPEM.
+* The hydrolysis limiting current on BPEM is expected to be much higher and does not have a suitable model in literature. Hence not included in the unit model.
 
 
 Control Volumes
@@ -197,24 +199,32 @@ discretization manner using the "finite difference" or "collocation" method impl
 
 The mass transfer flux equations are based on the conventional electrodialysis relationships. For further details please refer to :py:mod:`watertap.unit_models.electrodialysis_1D`.
 The flux from water splitting with catalyst action has been obtained from the reduced order model for water disassociation proposed by Mareev et al. (2020) [5]_. The limiting current is obtained from Wilhelm et al. (2001) [7]_.
-These are shown in **Table 3**.
+Combining these using best available model for electrical current density from Wilhelm et al. (2001) [7]_ these are shown in **Table 3**.
 
 .. csv-table:: **Table 3** Essential equations
    :header: "Description", "Equation"
 
    "Limiting current density", ":math:`i_{lim}(x) =` user input constant", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.InitialValue``"
-   " ", ":math:`i_{lim} (x) = D^*F (C_{acidic,NaCl}(x)+C_{basic,NaCl}(x))^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical``"
-   "Water splitting flux", ":math:`S_{diss}(x) =R_{K_A} \lambda(x) + R_{K_B} \lambda(x)`"
-   "Water splitting rate", ":math:`R_{K_A/K_B}(x) = \frac{Q_{m,A/B}}{K_{A/B}}[k_2(0)f[E(x)]C_{H_2O} ]`"
-   "Depletion length", ":math:`\lambda(x) = E(x) \epsilon_0 \epsilon_r / (F \sigma)`"
+   " ", ":math:`i_{lim} (x) = D^*F (C_{acidic,NaCl}(x)+C_{basic,NaCl}(x))^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical`` \ :sup:`2`"
+   "Water splitting flux \ :sup:`3`", ":math:`S_{diss}(x) =R_{K_A} \lambda(x) + R_{K_B} \lambda(x)`"
+   "Water splitting rate \ :sup:`4`", ":math:`R_{K_A/K_B}(x) = \frac{Q_{m,A/B}}{K_{A/B}}[k_2(0)f[E(x)]C_{H_2O} ]`"
+   "Depletion length \ :sup:`5`", ":math:`\lambda(x) = E(x) \epsilon_0 \epsilon_r / (F \sigma)`"
    "Hydrolysis voltage drop", ":math:`u_{diss}(x) = E(x) \lambda(x)`"
-   "Electric current density", ":math:`i(x) = i_{lim}(x) + F S_{diss}(x)`"
+   "Electric current density \ :sup:`6`", ":math:`i(x) = i_{lim}(x) + F S_{diss}(x)`"
    "Potential drop", ":math:`U(x)=n E(x)/\lambda(x) + i(x) r_{tot}(x)`"
 
 **Note**
  :sup:`1` The diffusivity :math:`D^*` used here for the salt and should not be confused with the ion diffusivity.
 
- :sup:`2` The relationship between the electric field at the junction of the bipolar membrane's charged layers :math:`E`  to the depletion layer has been derived from equations in Melnikov (2022) [8]_.
+ :sup:`2` The limiting current density is set by balance of electrical migration and diffusion and obtained from equation (22) in Wilhelm et al. (2001) [7]_.
+
+ :sup:`3` Water disassociation flux is obtained from equation (16) in Mareev et al. (2020) [5]_.
+
+ :sup:`4` Hydrolysis rate with catalyst present is obtained from equation (35) in Mareev et al. (2020) [5]_.
+
+ :sup:`5` The relationship between the electric field at the junction of the bipolar membrane's charged layers :math:`E`  to the depletion layer has been derived from equations (26-27) in Melnikov (2022) [8]_.
+
+ :sup:`6` Total current density has been obtained from equation (3) in  Wilhelm et al. (2001) [7]_.
 
 Please note that since the unit model is assumed to operate in the water splitting regime. Hence :math:`i_{lim}` is always computed since hydrolysis current is the portion that is in excess of the limiting current.
 Below the water splitting regime the bipolar membrane behaves like a conventional ion exchange membrane, albeit with much lower mass transfer. Most cases do not operate in this regime [2]_ [3]_ [4]_.
