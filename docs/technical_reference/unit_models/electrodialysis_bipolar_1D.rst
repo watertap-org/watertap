@@ -4,11 +4,18 @@ Bipolar Electrodialysis (1D)
 Introduction
 ------------
 
-Bipolar electrodialysis, an electrochemical separation technology, is primarily used to generate acids and bases
-from waste salts. Recently, multiple proof of concept studies have also shown that starting from Lithium Chloride solution bipolar membranes can produce Lithium Hydroxide.
-These are critical for batteries. In water treatment plants starting with waste brine, at the end of water purification, yields high concentrations sodium hydroxide.
-These can be new revenue streams. To produce products from salts there is a cation exchange memrbane (CEM) and a anion exchange membrane (AEM) in parallel with the bipolar membrane.
-This model uses bipolar membrane model that accounts for catalyst action developed by Mareev et al. (2020) and Melnikov (2022). Users may choose to add ions via the feed. Combining with the AEM and CEM this unit model predicts brine purification as well as acid and base production. This unit can be deployed in a flowsheet to determine the optimal operating conditions by using the costing features in WaterTAP. A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid respectively. More overview of the bipolar electrodialysis technology can be found in the *References*.
+Bipolar electrodialysis, an electrochemical separation technology, is primarily used to generate acids and bases from concentrated salt solution [1]_.
+Recently, multiple proof of concept studies have shown that starting from Lithium Chloride solution bipolar membranes can produce Lithium Hydroxide [2]_ [3]_.
+Environmentally hazardous concentrated brine, produced at the end of water purification, can be converted  to valuable sodium hydroxide via bipolar membrane electrodialysis, thus creating a new revenue stream [4]_.
+The bipolar membrane (BPEM) typically is made of an Anion exhcange layer and Cation exchange layer sandwiched together, usually with catalyst added to improve the hydrolysis reaction.
+To produce products from salts the BPEM is placed in parallel with a cation exchange memrbane (CEM) and a anion exchange membrane (AEM) .
+The unit model uses the reduced order model for water disassociation proposed by Mareev et al. (2020) [5]_. While their work primarily focuses on simulating potential profile within the bipolar membrane they also find
+reasonably good agreements with the voltage-current experiments performed by Wilhelm et al. (2002) [6]_. Hence the Mareev et al. (2020) [5]_ framework for hydrolysis flux that incorporates catalyst action is used.
+Water splitting occurs only when the limiting current on the BPEM is exceeded. An expression for the limiting current is obtained from Wilhelm et al. (2001) [7]_.
+Combining the BPEM with the AEM and CEM this unit model can be deployed to model acid and base production from concentrated salt solutions. The mass transfer is modelled using rigorously validated conventional electrodialysis equations.
+Hence high fidelity prediction of bipolar electrodialysis process will be possible with this unit model.
+A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid respectively.
+Users may choose to add ions via the feed. More overview of the bipolar electrodialysis technology can be found in the *References*.
 
 .. figure:: ../../_static/unit_models/BPEDdiagram.png
     :width: 600
@@ -17,9 +24,9 @@ This model uses bipolar membrane model that accounts for catalyst action develop
     Figure 1. Schematic representation of a bipolar electrodialysis unit
 
 
-One bipolar membrane along with the **diluate**, **basic**, and **acidic** channels can thus be treated as a modelling unit that can
+One set of BPEM, CEM, AEM, along with the **diluate**, **basic**, and **acidic** channels can thus be treated as a modelling unit that can
 multiply to larger-scale systems. The presented bipolar electrodialysis model establishes mathematical descriptions of
-ion and water transport across the membrane along with water splitting. Modelled transfer mechanisms include
+ion and water transport across the membrane along with water disassociation. Modelled transfer mechanisms include
 electrical migration, diffusion of ions, osmosis, electroosmosis, and water splitting. The following are the key
 assumptions made:
 
@@ -28,10 +35,11 @@ assumptions made:
 * Steady state: all variables are independent of time.
 * Co-current flow operation. 
 * Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one.
-* All ion-exchange membrane properties (ion and water transport number, resistance, permeability) are constant.
+* Ion and water transport number, permeability are constant over space and time.
 * Detailed concentration gradient effect at membrane-water interfaces is neglected. 
 * Constant pressure and temperature through each channel.
-* No boundary layer, electric double layer or diffusion layer, has been considered. For typical operating conditions of a bipolar membrane system such low salinity in the **diluate** is not expected.
+* No boundary layer, electric double layer or diffusion layer, next to the monopolar membranes has been considered. For typical operating conditions of a bipolar membrane system such low salinity in the **diluate** is not expected.
+
 
 Control Volumes
 ---------------
@@ -124,6 +132,17 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
    "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "['AEM','CEM','BPEM'], ['Na\ :sup:`+`', '\Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']", "dimensionless", 9
    "Constant areal resistance of membrane at infinity-approximated electrolyte concentration", ":math:`r_0`", "membrane_areal_resistance_coef_0", "None", ":math:`\Omega \, m^2`", 1
    "Coefficient of membrane areal resistance to 1/c, where c is the electrolyte concentration", ":math:`r_1`", "membrane_areal_resistance_coef_1", "None", ":math:`\Omega \, Kg\,m^{-1}`", 1
+   "Salt diffusivity", ":math:`D^*`", "diffus_mass",  "None", ":math:`m^2\, s^{-1}`", 1
+   "Salt concentration, basic side \ :sup:`3`", ":math:`C_{basic}`", "salt_conc_ael_ref", "None", ":math:`mol\, m^{-3}`", 1
+   "Salt concentration, acidic side \ :sup:`3`", ":math:`C_{acidic}`", "salt_conc_cel_ref", "None", ":math:`mol \,m^{-3}`", 1
+   "Membrane Fixed charge ", ":math:`\sigma`", "membrane_fixed_charge", "None", ":math:`mol \,m^{-3}`", 1
+   "Dissociation rate constant, zero electric field ", ":math:`k_2(0)`", "k2_zero", "None", ":math:`s^{-1}`", 1
+   "Concentration of water", ":math:`C_{H_2O}`", "conc_water", "None", ":math:`mol\, m^{-3}`", 1
+   "Relative permittivity ", ":math:`\epsilon_r`", "relative_permittivity", "None", "Non-dimensional", 1
+   "Catalyst concentration on the cation exchange side", ":math:`Q_{m,A}`", "membrane_fixed_catalyst_cel",  "None", ":math:`mol \, m^{-3}`", 1
+   "Catalyst concentration on the anion exchange side", ":math:`Q_{m,B}`", "membrane_fixed_catalyst_ael",  "None", ":math:`mol \, m^{-3}`", 1
+   "Equilibrium constant of proton disassociation", ":math:`K_A`", "k_a", "None", ":math:`mol \, m^{-3}`", 1
+   "Equilibrium constant of hydroxide disassociation", ":math:`K_B`", "k_b", "None", ":math:`mol \, m^{-3}`", 1
 
 **Note**
  :sup:`1` DOF number takes account of the indices of the corresponding parameter.
@@ -132,6 +151,7 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
  or "Constant_Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
  that ensures an operational current *above the bipolar membrane limiting current*.
 
+ :sup:`3` 'salt_conc_ael_ref' and 'salt_conc_ael_ref' need to be specified only when ``salt_calculation=False`` is chosen. When ``salt_calculation=True`` :math:`C_{basic}` and :math:`C_{acidic}` salt_conc_ael_x and salt_conc_cel_x are computed with indexes [t,x] and do not need to be specified.
 
 Solution component information
 ------------------------------
@@ -175,96 +195,80 @@ This model solves mass balances of all solution components (H\ :sub:`2`\ O, Na :
 as differential algebraic equations (DAE) when concerned variables are functions of length (x). The DAEs are solved in a
 discretization manner using the "finite difference" or "collocation" method implemented in **Pyomo.DAE**.
 
-The flux equations are summarized in **Table3** and the mass balance given in **Table4** . Further details on these can be found in the *References*.
+The mass transfer flux equations are based on the conventional electrodialysis relationships. For further details please refer to :py:mod:`watertap.unit_models.electrodialysis_1D`.
+The flux from water splitting with catalyst action has been obtained from the reduced order model for water disassociation proposed by Mareev et al. (2020) [5]_. The limiting current is obtained from Wilhelm et al. (2001) [7]_.
+These are shown in **Table 3**.
 
-.. csv-table:: **Table 3** Flux Equations
-   :header: "Description", "Equation", "Index set"
-
-   "mass transfer flux, BPEM, solute", ":math:`J^{BPEM}_j(x) = t_j^{BPEM}\frac{\xi i_{lim}(x)}{ z_j F}`", ":math:`j \in \left['{Na^+} ', '{Cl^-} '\right]`"
-   "mass transfer flux, BPEM, H\ :sub:`2`\ O", ":math:`J^{BPEM}_j(x) = t_w^{BPEM} \left(\frac{i(x)}{F}\right)+\left(L^{BPEM} \right)\left(p_{osm}^{acidic}(x)-p_{osm}^{basic}(x) \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
-   "Water disassociation flux, BPEM, water ions", ":math:`J^{BPEM}_j (x)= J_{diss}(x)`", ":math:`j \in \left['{H^+}, {OH^-}  '\right]`"
-   "Water disassociation flux, BPEM,  H\ :sub:`2`\ O", ":math:`J^{BPEM}_j(x) = -0.5 J_{diss}(x)`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, CEM, solute", ":math:`J^{AEM}_j(x) = \left(t_j^{AEM} \right)\frac{\xi i(x)}{ z_j F}-\frac{D_j^{AEM}}{\delta ^{AEM} }\left(c_j^{acidic}(x)-c_j^{diluate}(x) \right)`", ":math:`j \in \left['{Na^+} ', '{Cl^-} '\right]`"
-   "mass transfer flux, AEM, H\ :sub:`2`\ O", ":math:`J^{AEM}_j(x) = t_w^{AEM} \left(\frac{i(x)}{F}\right)+\left(L^{AEM} \right)\left(p_{osm}^{acidic}(x)-p_{osm}^{diluate}(x) \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
-   "Water disassociation flux, AEM, water ions", ":math:`J^{AEM}_j(x) = 0`", ":math:`j \in \left['{H^+}, {OH^-}  '\right]`"
-   "Water disassociation flux, AEM,  H\ :sub:`2`\ O", ":math:`J^{AEM}_j (x)= 0`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, CEM, solute", ":math:`J^{CEM}_j(x) = \left(t_j^{CEM} \right)\frac{\xi i(x)}{ z_j F}-\frac{D_j^{CEM}}{\delta ^{CEM} }\left(c_j^{basic}(x)-c_j^{diluate}(x) \right)`", ":math:`j \in \left['{Na^+} ', '{Cl^-} '\right]`"
-   "mass transfer flux, CEM, H\ :sub:`2`\ O", ":math:`J^{CEM}_j(x) = t_w^{CEM} \left(\frac{i(x)}{F}\right)+\left(L^{CEM} \right)\left(p_{osm}^{basic}(x)-p_{osm}^{diluate}(x) \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
-   "Water disassociation flux, CEM, water ions", ":math:`J^{CEM}_j (x)= 0`", ":math:`j \in \left['{H^+}, {OH^-}  '\right]`"
-   "Water disassociation flux, CEM,  H\ :sub:`2`\ O", ":math:`J^{CEM}_j(x) = 0`", ":math:`j \in \left['H_2 O'\right]`"
-
-.. csv-table:: **Table 4** Mass balance equations
-   :header: "Description", "Equation", "Index set"
-
-   "Mass balance **basic** channel", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{\bf{basic}}+(J_j(x)^{BPEM} + J_j(x)^{CEM} ) b=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-}, '{H^+} ', '{OH^-} '\right]`"
-   "Mass balance **acidic** channel", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{\bf{acidic}}+(J_j(x)^{BPEM} + J_j(x)^{AEM} ) b=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-}, '{H^+} ', '{OH^-} '\right]`"
-   "Mass balance **diluate** channel", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{\bf{diluate}}-(J_j(x)^{AEM} + J_j(x)^{CEM} ) b=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-}, '{H^+} ', '{OH^-} '\right]`"
-
-The flux from water splitting with catalyst action as well as the limiting current are shown in **Table 5**
-
-.. csv-table:: **Table 5** Essential equations
+.. csv-table:: **Table 3** Essential equations
    :header: "Description", "Equation"
 
-   "Limiting current density", ":math:`i_{lim} =` user input constant", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.InitialValue``"
-   " ", ":math:`i_{lim} = D^*F (C_{acidic,NaCl}+C_{basic,NaCl})^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical``"
-   "Water splitting flux", ":math:`J_{diss} =R_{K_A} \lambda + R_{K_B} \lambda`"
-   "Water splitting rate", ":math:`R_{K_A/K_B} = \frac{Q_{m,A/B}}{K_{A/B}}[k_2(0)f(E)C_{H_2O} ]`"
-   "Depletion length", ":math:`\lambda = E \epsilon_0 \epsilon_r / (F \sigma)`"
-   "Electric current density", ":math:`i = i_{lim} + F J_{diss}`"
-   "Potential drop", ":math:`U=n E/\lambda + i r_{tot}`"
+   "Limiting current density", ":math:`i_{lim}(x) =` user input constant", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.InitialValue``"
+   " ", ":math:`i_{lim} (x) = D^*F (C_{acidic,NaCl}(x)+C_{basic,NaCl}(x))^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical``"
+   "Water splitting flux", ":math:`S_{diss}(x) =R_{K_A} \lambda(x) + R_{K_B} \lambda(x)`"
+   "Water splitting rate", ":math:`R_{K_A/K_B}(x) = \frac{Q_{m,A/B}}{K_{A/B}}[k_2(0)f[E(x)]C_{H_2O} ]`"
+   "Depletion length", ":math:`\lambda(x) = E(x) \epsilon_0 \epsilon_r / (F \sigma)`"
+   "Hydrolysis voltage drop", ":math:`u_{diss}(x) = E(x) \lambda(x)`"
+   "Electric current density", ":math:`i(x) = i_{lim}(x) + F S_{diss}(x)`"
+   "Potential drop", ":math:`U(x)=n E(x)/\lambda(x) + i(x) r_{tot}(x)`"
 
 **Note**
  :sup:`1` The diffusivity :math:`D^*` used here for the salt and should not be confused with the ion diffusivity.
 
-Please note that since the unit model is assumed to operate in the water splitting regime and so :math:`i_{lim}` is always computed. :math:`f(E)` is the second Wien effect driven enhancement of the
-dissociation rate under applied electric field. It requires as input temperature and relative permittivity (:math:`\epsilon_r`).The parameters used are given in **Table 6**.
+ :sup:`2` The relationship between the electric field at the junction of the bipolar membrane's charged layers :math:`E`  to the depletion layer has been derived from equations in Melnikov (2022) [8]_.
 
-.. csv-table:: **Table 6.** DOF relevant for water disassociation
-   :header: "Description", "Symbol", "Variable Name", "Units"
+Please note that since the unit model is assumed to operate in the water splitting regime. Hence :math:`i_{lim}` is always computed since hydrolysis current is the portion that is in excess of the limiting current.
+Below the water splitting regime the bipolar membrane behaves like a conventional ion exchange membrane, albeit with much lower mass transfer. Most cases do not operate in this regime [2]_ [3]_ [4]_.
+Hence the sub-limiting case has not been implemented in this unit model. :math:`f[E]` is the second Wien effect driven enhancement of the dissociation rate under applied electric field.
+It requires as input temperature and relative permittivity (:math:`\epsilon_r`) and the full expression has been obtained from Mareev et al. (2020) [5]_.
 
-   "Salt diffusivity", ":math:`D^*`", "diffus_mass", ":math:`m^2\, s^{-1}`"
-   "Salt concentration, basic side ", ":math:`C_{basic}`", "salt_conc_ael_ref/salt_conc_ael_x[t,x]",":math:`mol\, m^{-3}`"
-   "Salt concentration, acidic side ", ":math:`C_{acidic}`", "salt_conc_cel_ref/salt_conc_cel_x[t,x]",":math:`mol \,m^{-3}`"
-   "Membrane Fixed charge ", ":math:`\sigma`", "membrane_fixed_charge",":math:`mol \,m^{-3}`"
-   "Dissociation rate constant, zero electric field ", ":math:`k_2(0)`", "k2_zero",":math:`s^{-1}`"
-   "Concentration of water", ":math:`k_2(0)`", "conc_water",":math:`mol\, m^{-3}`"
-   "Relative permittivity ", ":math:`\epsilon_r`", "relative_permittivity","Non-dimensional"
-   "Catalyst concentration on the cation exchange side", ":math:`Q_{m,A}`", "membrane_fixed_catalyst_cel", ":math:`mol \, m^{-3}`"
-   "Catalyst concentration on the anion exchange side", ":math:`Q_{m,B}`", "membrane_fixed_catalyst_ael", ":math:`mol \, m^{-3}`"
-   "Equilibrium constant of proton disassociation", ":math:`K_A`", "k_a",":math:`mol \, m^{-3}`"
-   "Equilibrium constant of hydroxide disassociation", ":math:`K_B`", "k_b",":math:`mol \, m^{-3}`"
+**Table 4** shows the fluxes on each membrane. The positive direction for the mass fluxes :math:`J`  is from cathode to anode.
+The water dissociation fluxes :math:`S` flow out from the central depletion region of the bipolar membrane while water is drawn in. Here the convention is outflow from the bipolar membrane is the positive direction.
 
-**Note**
+Appropriately combining the various fluxes and assigning them to the channels the results are presented in **Table 5**.
 
- :sup:`1` All the DOFs listed in this table have no index, unless explicitly specified.
+.. csv-table:: **Table 4** Flux Equations
+   :header: "Description", "Equation", "Index set"
 
- :sup:`2` The values of :math:`C_{acidic,NaCl}` and :math:`C_{basic,NaCl}` can either be user supplied by setting ``salt_calculation=False`` or computed by choosing ``salt_calculation=True``.
+   "mass transfer flux, BPEM, ions", ":math:`J^{BPEM}_j(x) = t_j^{BPEM}\frac{\xi i_{lim}(x)}{ z_j F}`", ":math:`j \in \left['{Na^+} ', '{Cl^-}', '{H^+} ', '{OH^-} '\right]`"
+   "mass transfer flux, BPEM, H\ :sub:`2`\ O", ":math:`J^{BPEM}_j(x) = t_w^{BPEM} \left(\frac{i(x)}{F}\right)+\left(L^{BPEM} \right)\left(p_{osm}^{acidic}(x)-p_{osm}^{basic}(x) \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "Water disassociation flux, BPEM, ions", ":math:`S^{BPEM}_j (x)= S_{diss}(x)`", ":math:`j \in \left['{H^+}, {OH^-}  '\right]`"
+   "", ":math:`S^{BPEM}_j (x)= 0`", ":math:`j \in \left['{Na^+} ', '{Cl^-}'\right]`"
+   "Water disassociation flux, BPEM, H\ :sub:`2`\ O", ":math:`S^{BPEM}_j(x) = -0.5 S_{diss}(x)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, CEM, ions", ":math:`J^{AEM}_j(x) = \left(t_j^{AEM} \right)\frac{\xi i(x)}{ z_j F}-\frac{D_j^{AEM}}{\delta ^{AEM} }\left(c_j^{acidic}(x)-c_j^{diluate}(x) \right)`", ":math:`j \in \left['{Na^+} ', '{Cl^-}', '{H^+} ', '{OH^-} '\right]`"
+   "mass transfer flux, AEM, H\ :sub:`2`\ O", ":math:`J^{AEM}_j(x) = t_w^{AEM} \left(\frac{i(x)}{F}\right)+\left(L^{AEM} \right)\left(p_{osm}^{acidic}(x)-p_{osm}^{diluate}(x) \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, CEM, ions", ":math:`J^{CEM}_j(x) = \left(t_j^{CEM} \right)\frac{\xi i(x)}{ z_j F}-\frac{D_j^{CEM}}{\delta ^{CEM} }\left(c_j^{basic}(x)-c_j^{diluate}(x) \right)`", ":math:`j \in \left['{Na^+} ', '{Cl^-}', '{H^+} ', '{OH^-} '\right]`"
+   "mass transfer flux, CEM, H\ :sub:`2`\ O", ":math:`J^{CEM}_j(x) = t_w^{CEM} \left(\frac{i(x)}{F}\right)+\left(L^{CEM} \right)\left(p_{osm}^{basic}(x)-p_{osm}^{diluate}(x) \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
 
- :sup:`3` salt_conc_ael_ref and salt_conc_ael_ref need to be specified only when ``salt_calculation=False`` is chosen.
+.. csv-table:: **Table 5** Mass balance equations
+   :header: "Description", "Equation", "Index set"
 
- :sup:`4` When ``salt_calculation=True`` :math:`C_{basic}` and :math:`C_{acidic}` salt_conc_ael_x and salt_conc_cel_x are computed with indexes [t,x].
+   "Mass balance **basic** channel", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{\bf{basic}}+(-J_j(x)^{BPEM} + J_j(x)^{CEM} + S_j(x)^{BPEM} ) b=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-}', '{H^+} ', '{OH^-} '\right]`"
+   "Mass balance **acidic** channel", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{\bf{acidic}}+(J_j(x)^{BPEM} + J_j(x)^{AEM} + S_j(x)^{BPEM} ) b=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-}', '{H^+} ', '{OH^-} '\right]`"
+   "Mass balance **diluate** channel", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{\bf{diluate}}-(J_j(x)^{AEM} + J_j(x)^{CEM}) b=0`", ":math:`j \in \left['H_2 O', '{Na^+} ', '{Cl^-}', '{H^+} ', '{OH^-} '\right]`"
 
 
-
-The model used here is based on the analysis by Mareev et al. (2020). It and has been validated using the experimental data on bipolar membrane information available in Wilhelm et al. (2002). Additionaly inputs were obtained from Mareev et al. (2020).
+The flux and potential drop on the bipolar membrane are tested against the experimental data available from Wilhelm et al. (2002) [6]_ and we find reasonably good agreement.
+Some key inputs for the validation were obtained from Mareev et al. (2020) [5]_. :math:`K_A` is not readily available and so determined by best fit.
+The mass transfer flux employs the well tested conventional electrodialysis framework. Hence, robust predictions of bipolar electrodialysis operation is expected.
+Some of the key operational and performance metrics are given in **Table 6**.
 
 .. csv-table:: **Table 6** Electrical and Performance Equations
    :header: "Description", "Equation"
 
-   "Current density", ":math:`i =  \frac{I}{\beta bl}`"
-   "Potential drop", ":math:`U =  n U_{diss} + i r_{tot}`"
-   "Resistance calculation", ":math:`r_{tot}=n\left(r_0 + r_1/(C'_{acidic,HCl}+C'_{basic,NaOH})\right)+r_{el}`"
-   "Electrical power consumption", ":math:`P=UI`"
+   "Electrical input condition", ":math:`i(x) = \frac{I}{bl}`, for 'Constant_Current';  :math:`u(x) =U` for 'Constant_Voltage'"
+   "Potential drop", ":math:`u(x) =  n u_{diss}(x) + i(x) r_{tot}(x)`"
+   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r_0 + r_1/(C'_{acidic,HCl}(x)+C'_{basic,NaOH}(x))\right)+r_{el}`"
+   "Electrical power consumption", ":math:`P(x)=b\int _0 ^l u(x)i(x) dx`"
 
+**Note**
+ :sup:`1` The areal resistance functional form is based on Galama et al. (2014) [9]_.
 
-:math:`C'` is expressed in :math:`kg/m^3`. :math:`f(E)` is the second Wien effect driven enhancement of the
-dissociation rate under applied electric field. It requires as input temperature and relative permittivity (:math:`\epsilon_r`).
-
+ :sup:`2` :math:`C'` is expressed in :math:`kg/m^3`.
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
-The model has been validated against the experimental data available from Wilhelm et al. (2002) as well as bipolar membrane information available online: Fumatech, Technical Data Sheet for
-Fumasep FBM, 2020. Additional inputs were obtained from from  Ionescu, Viorel (2023).
+The model has been validated against the experimental data available from Wilhelm et al. (2002) [6]_ as well as bipolar membrane information available online: Fumatech, Technical Data Sheet for
+Fumasep FBM, 2020 [10]_. Additional inputs were obtained from from  Ionescu, Viorel (2023) [11]_.
 
 
 
@@ -277,7 +281,7 @@ channel length when calculating the frictional pressure drops. This approximatio
 actual velocity variation over the channel length caused by water mass transfer across the consecutive channels leads to
 negligible errors as compared to the uncertainties carried by the frictional pressure method itself. **Table 7** gives
 essential equations to simulate the pressure drop. Among extensive literatures using these equations, a good reference
-paper is by Wright et. al., 2018 (*References*).
+paper is by Wright et. al., 2018 [12]_.
 
 .. csv-table:: **Table 7** Essential equations supporting the pressure drop calculation
    :header: "Description", "Equation", "Condition"
@@ -306,15 +310,16 @@ Nomenclature
    "**Parameters**"
    ":math:`\rho_w`", "Mass density of water", ":math:`kg\  m^{-3}`"
    ":math:`M_w`", "Molecular weight of water", ":math:`kg\  mol^{-1}`"
-   "**Variables and Parameters**"
+   "**Variables**"
    ":math:`N`", "Molar flow rate of a component", ":math:`mol\  s^{-1}`"
    ":math:`J`", "Molar flux of a component", ":math:`mol\  m^{-2}s^{-1}`"
    ":math:`b`", "Cell/membrane width", ":math:`m`"
    ":math:`l`", "Cell/membrane length", ":math:`m`"
    ":math:`t`", "Ion transport number", "dimensionless"
-   ":math:`I`", "Current", ":math:`A`"
+   ":math:`I`", "Current input", ":math:`A`"
    ":math:`i`", "Current density", ":math:`A m^{-2}`"
-   ":math:`U`", "Voltage over a stack", ":math:`V`"
+   ":math:`U`", "Voltage input over a stack", ":math:`V`"
+   ":math:`u`", "x-dependent voltage over a stack", ":math:`V`"
    ":math:`n`", "Cell number", "dimensionless"
    ":math:`\xi`", "Current utilization coefficient (including ion diffusion and water electroosmosis)", "dimensionless"
    ":math:`\beta`", "Shadow factor", "dimensionless"
@@ -338,8 +343,13 @@ Nomenclature
    ":math:`j`", "Component index",
    ":math:`in`", "Inlet",
    ":math:`out`", "Outlet",
-   ":math:`acidic`", "Cation exchange side of bipolar membrane",
-   ":math:`basic`", "Anion exchange side of bipolar membrane",
+   ":math:`acidic`", "Acid channel",
+   ":math:`basic`", "Base channel",
+   ":math:`diluate`", "Salt channel",
+
+   ":math:`AEM`", "Anion exchange membrane",
+   ":math:`CEM`",  "Cation exchange membrane",
+   ":math:`BPEM`",  "Bipolar membrane",
 
 Class Documentation
 -------------------
@@ -348,34 +358,26 @@ Class Documentation
 
 References
 ----------
-Campione, A., Gurreri, L., Ciofalo, M., Micale, G., Tamburini, A., & Cipollina, A. (2018).
-Electrodialysis for water desalination: A critical assessment of recent developments on process 
-fundamentals, models and applications. Desalination, 434, 121-160.
+.. [1] Nagasubramanian, K., Chlanda, F. P., & Liu, K. J. (1977). Use of bipolar membranes for generation of acid and base—an engineering and economic analysis. Journal of Membrane Science, 2, 109-124.
 
-Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019).
-A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
+.. [2] Xiang, X., Li, X., Wei, Y., Wu, Y., Yin, J., & Yuan, X. (2024). Desalination of mother liquor generated from the precipitation of lithium carbonate during the recycling of retired lithium ion battery. Desalination and Water Treatment, 320, 100665.
 
-Fumatech, Technical Data Sheet for Fumasep FBM, 2020.
+.. [3] Foo, Z. H., Lee, T. R., Wegmueller, J. M., Heath, S. M., & Lienhard, J. H. (2024). Toward a Circular Lithium Economy with Electrodialysis: Upcycling Spent Battery Leachates with Selective and Bipolar Ion-Exchange Membranes. Environmental Science & Technology, 58(43), 19486-19500.
 
-Ionescu, V., 2023, March. A simple one-dimensional model for analysis of a bipolar membrane used in electrodialysis desalination. In Advanced Topics in Optoelectronics, Microelectronics, and Nanotechnologies XI (Vol. 12493, pp. 520-529). SPIE.
+.. [4] Raza, S., Hayat, A., Bashir, T., Ghasali, E., Hafez, A. A. A., Chen, C., ... & Lin, H. (2024). Recent progress in green thin film membrane based materials for desalination: Design, properties and applications. Desalination, 117973.
 
-Mareev, S.A., Evdochenko, E., Wessling, M., Kozaderova, O.A., Niftaliev, S.I., Pismenskaya, N.D. and Nikonenko, V.V., 2020. A comprehensive mathematical model of water splitting in bipolar membranes: Impact of the spatial distribution of fixed charges and catalyst at bipolar junction. Journal of Membrane Science, 603, p.118010.
+.. [5] Mareev, S. A., Evdochenko, E., Wessling, M., Kozaderova, O. A., Niftaliev, S. I., Pismenskaya, N. D., & Nikonenko, V. V. (2020). A comprehensive mathematical model of water splitting in bipolar membranes: Impact of the spatial distribution of fixed charges and catalyst at bipolar junction. Journal of Membrane Science, 603, 118010.
 
-Melnikov, S., 2022. Ion Transport and Process of Water Dissociation in Electromembrane System with Bipolar Membrane: Modelling of Symmetrical Case. Membranes, 13(1), p.47.
+.. [6] Wilhelm, F. G., Van Der Vegt, N. F. A., Strathmann, H., & Wessling, M. (2002). Comparison of bipolar membranes by means of chronopotentiometry. Journal of membrane science, 199(1-2), 177-190.
 
-Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
+.. [7] Wilhelm, F. G., Pünt, I., Van Der Vegt, N. F. A., Wessling, M., & Strathmann, H. (2001). Optimisation strategies for the preparation of bipolar membranes with reduced salt ion leakage in acid–base electrodialysis. Journal of Membrane Science, 182(1-2), 13-28.
 
-Strathmann, H. (2004). Ion-exchange membrane separation processes. Elsevier. Ch. 4.
+.. [8] Melnikov, S. (2022). Ion Transport and Process of Water Dissociation in Electromembrane System with Bipolar Membrane: Modelling of Symmetrical Case. Membranes, 13(1), 47.
 
-Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications.
-Desalination, 264(3), 268-288.
+.. [9] Galama, A. H., Vermaas, D. A., Veerman, J., Saakes, M., Rijnaarts, H. H. M., Post, J. W., & Nijmeijer, K. (2014). Membrane resistance: The effect of salinity gradients over a cation exchange membrane. Journal of membrane science, 467, 279-291.
 
-Wright, N. C., Shah, S. R., & Amrose, S. E. (2018).
-A robust model of brackish water electrodialysis desalination with experimental comparison at different size scales.
-Desalination, 443, 27-43.
+.. [10] Fumatech, Technical Data Sheet for Fumasep FBM, 2020.
 
-Wilhelm, F.G., Pünt, I., Van Der Vegt, N.F.A., Wessling, M. and Strathmann, H., 2001. Optimisation strategies for the preparation of bipolar membranes with reduced salt ion leakage in acid–base electrodialysis. Journal of Membrane Science, 182(1-2), pp.13-28.
+.. [11] Ionescu, V. (2023, March). A simple one-dimensional model for analysis of a bipolar membrane used in electrodialysis desalination. In Advanced Topics in Optoelectronics, Microelectronics, and Nanotechnologies XI (Vol. 12493, pp. 520-529). SPIE.
 
-Wilhelm, F.G., Van Der Vegt, N.F.A., Strathmann, H. and Wessling, M., 2002. Comparison of bipolar membranes by means of chronopotentiometry. Journal of membrane science, 199(1-2), pp.177-190.
-
-Galama, A. H., Vermaas, D. A., Veerman, J., Saakes, M., Rijnaarts, H. H. M., Post, J. W., & Nijmeijer, K. (2014). Membrane resistance: The effect of salinity gradients over a cation exchange membrane. Journal of membrane science, 467, 279-291.
+.. [12] Campione, A., Gurreri, L., Ciofalo, M., Micale, G., Tamburini, A., & Cipollina, A. (2018). Electrodialysis for water desalination: A critical assessment of recent developments on process fundamentals, models and applications. Desalination, 434, 121-160.
