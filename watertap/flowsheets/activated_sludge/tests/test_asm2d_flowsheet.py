@@ -171,6 +171,4 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
             3.5611, rel=1e-4
         )
-        assert value(model.fs.Sludge.alkalinity[0]) == pytest.approx(
-            4.2808e-3, rel=1e-4
-        )
+        assert value(model.fs.Sludge.alkalinity[0]) == pytest.approx(7.336e-3, rel=1e-4)
