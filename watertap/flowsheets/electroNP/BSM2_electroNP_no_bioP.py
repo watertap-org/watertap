@@ -740,4 +740,3 @@ if __name__ == "__main__":
             time_point=0,
         )
     print(stream_table_dataframe_to_string(stream_table))
-    m.fs.electroNP.treated.display()
