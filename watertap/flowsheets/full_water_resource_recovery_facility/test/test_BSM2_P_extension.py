@@ -110,6 +110,17 @@ class TestFullFlowsheetBioPFalse:
             0.00021958, rel=1e-3
         )
 
+        # Check electricity consumption for each aerobic reactor
+        assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
+            48.0849, rel=1e-3
+        )
+        assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
+            48.0849, rel=1e-3
+        )
+        assert value(m.fs.R7.electricity_consumption[0]) == pytest.approx(
+            48.0849, rel=1e-3
+        )
+
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
@@ -198,6 +209,17 @@ class TestFullFlowsheetBioPTrue:
         ) == pytest.approx(0.0048186, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
             0.00022988, rel=1e-3
+        )
+
+        # Check electricity consumption for each aerobic reactor
+        assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
+            48.0878, rel=1e-3
+        )
+        assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
+            48.0878, rel=1e-3
+        )
+        assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
+            48.0878, rel=1e-3
         )
 
     @pytest.mark.component
