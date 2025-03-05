@@ -114,23 +114,23 @@ rHGO_dye_rejection:
       value: 0.2
       units: 1/year
   recovery_frac_mass_H2O:
-    value: 0.83
+    value: 0.90
     units: dimensionless
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
   removal_frac_mass_comp:
     dye:
-      value: 0.9917
+      value: 0.991
       units: dimensionless
       constituent_longform: Dye
     tds:
-      value: 0.2117357
+      value: 0.145255
       units: dimensionless
-      constituent_longform: Total Suspended Solids (TSS)
+      constituent_longform: Total Dissolved Solids (TDS)
   applied_pressure:
     value: 7   # corresponds to default of 100 psi
     units: bar
   water_permeability_coefficient:
-    value: 105
+    value: 100
     units: liters/m^2/hour/bar

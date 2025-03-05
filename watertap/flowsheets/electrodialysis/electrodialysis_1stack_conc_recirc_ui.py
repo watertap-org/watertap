@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 from watertap.core.solvers import get_solver
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc import (
     build,
     _condition_base,
@@ -245,7 +245,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
         rounding=2,
-        description="Areal resistnace of the cation exchange membrane",
+        description="Constant areal resistance of the cation exchange membrane measured in concentrated electrolyte.",
         is_input=True,
         input_category="Membrane properties",
         is_output=False,
@@ -256,7 +256,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
         rounding=2,
-        description="Areal resistnace of the anion exchange membrane",
+        description="Constant areal resistance of the anion exchange membrane measured in concentrated electrolyte.",
         is_input=True,
         input_category="Membrane properties",
         is_output=False,
