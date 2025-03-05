@@ -381,8 +381,13 @@ def build(bio_P=False):
     )
 
     m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
-    for R in m.fs.aerobic_reactors:
-        iscale.set_scaling_factor(R.KLa, 1e-1)
+    if bio_P:
+        for R in m.fs.aerobic_reactors:
+            iscale.set_scaling_factor(R.KLa, 1e-1)
+            iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-2)
+    else:
+        for R in m.fs.aerobic_reactors:
+            iscale.set_scaling_factor(R.KLa, 1e-1)
 
     @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):
