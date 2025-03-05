@@ -107,6 +107,17 @@ class TestFullFlowsheet:
             m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
         ) == pytest.approx(1.4159e-5, rel=1e-3)
 
+        # Check electricity consumption for each aerobic reactor
+        assert value(m.fs.R3.electricity_consumption[0]) == pytest.approx(
+            73.8694, rel=1e-3
+        )
+        assert value(m.fs.R4.electricity_consumption[0]) == pytest.approx(
+            69.9669, rel=1e-3
+        )
+        assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
+            20.4775, rel=1e-3
+        )
+
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
