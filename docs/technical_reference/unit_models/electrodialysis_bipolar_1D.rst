@@ -8,13 +8,13 @@ Bipolar electrodialysis, an electrochemical separation technology, is primarily 
 Recently, multiple proof of concept studies have shown that starting from Lithium Chloride solution bipolar membranes can produce Lithium Hydroxide [2]_ [3]_.
 Environmentally hazardous concentrated brine, produced at the end of water purification, can be converted  to valuable sodium hydroxide via bipolar membrane electrodialysis, thus creating a new revenue stream [4]_.
 The bipolar membrane (BPEM) typically is made of an Anion exhcange layer and Cation exchange layer sandwiched together, usually with catalyst added to improve the hydrolysis reaction.
-To produce products from salts the BPEM is placed in parallel with a cation exchange memrbane (CEM) and a anion exchange membrane (AEM) .
+To produce products from salts the BPEM is placed in parallel with a cation exchange membrane (CEM) and an anion exchange membrane (AEM) .
 The unit model uses the reduced order model for water disassociation proposed by Mareev et al. (2020) [5]_. While their work primarily focuses on simulating potential profile within the bipolar membrane they also find
 reasonably good agreements with the voltage-current experiments performed by Wilhelm et al. (2002) [6]_. Hence the Mareev et al. (2020) [5]_ framework for hydrolysis flux that incorporates catalyst action is used.
 Water splitting occurs only when the limiting current on the BPEM is exceeded. An expression for the limiting current is obtained from Wilhelm et al. (2001) [7]_. These two components are coupled using best available model for current density from Wilhelm et al. (2001) [7]_.
-Combining the BPEM with the AEM and CEM this unit model can be deployed to model acid and base production from concentrated salt solutions. The mass transfer is modelled using rigorously validated conventional electrodialysis equations.
+Combining the BPEM with the AEM and CEM, this unit model can be deployed to model acid and base production from concentrated salt solutions. The mass transfer is modelled using rigorously validated conventional electrodialysis equations.
 Hence high fidelity prediction of bipolar electrodialysis process will be possible with this unit model.
-A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce base and acid respectively.
+A sketch of the bipolar membrane cell stack is shown in Figure 1 with the **diluate**, **basic**, and **acidic** channels, that produce low concentration brine, base, and acid respectively.
 Users may choose to add ions via the feed. More overview of the bipolar electrodialysis technology can be found in the *References*.
 
 .. figure:: ../../_static/unit_models/BPEDdiagram.png
@@ -35,7 +35,7 @@ assumptions made:
 * Steady state: all variables are independent of time.
 * Co-current flow operation. 
 * Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one.
-* Ion and water transport number, permeability are constant over space and time.
+* Ion and water transport number, permeability are constant over space.
 * Detailed concentration gradient effect at membrane-water interfaces is neglected. 
 * Constant pressure and temperature through each channel.
 * No boundary layer, electric double layer or diffusion layer, next to the monopolar membranes has been considered. For typical operating conditions of a bipolar membrane system such low salinity in the **diluate** is not expected.
@@ -121,7 +121,7 @@ splitting occurs and the bipolar membrane acts like a simple electrodialysis mem
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['AEM','CEM','BPEM']", "dimensionless", 3
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['AEM','CEM','BPEM']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 3
    "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`I`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
-   "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega \,m^2`", 1
+   "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "None", ":math:`\Omega \,m^2`", 1
    "Cell number", ":math:`n`", "cell_triplet_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
    "Shadow factor", ":math:`\beta`", "shadow_factor", "None", "dimensionless", 1
