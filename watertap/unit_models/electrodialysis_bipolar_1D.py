@@ -57,7 +57,7 @@ from enum import Enum
 from watertap.core import ControlVolume1DBlock, InitializationMixin
 from watertap.costing.unit_models.electrodialysis import cost_electrodialysis
 
-__author__ = " Xiangyu Bi, Austin Ladshaw, Kejia Hu, Johnson Dhanasekaran"
+__author__ = "Johnson Dhanasekaran"
 
 _log = idaeslog.getLogger(__name__)
 
