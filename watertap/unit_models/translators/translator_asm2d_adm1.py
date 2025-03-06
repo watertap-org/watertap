@@ -41,8 +41,8 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
     Set,
-    Expr_if,
     value,
+    exp,
 )
 
 from idaes.core.util.exceptions import InitializationError
@@ -62,7 +62,6 @@ class TranslatorDataASM2dADM1(TranslatorData):
 
     CONFIG = TranslatorData.CONFIG()
 
-    # TODO: Change the default to False
     CONFIG.declare(
         "bio_P",
         ConfigValue(
@@ -191,6 +190,9 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Smoothing factor",
         )
+
+        def smooth_heaviside(x, k):
+            return 1 / (1 + exp(-2 * k * x))
 
         @self.Constraint(
             self.flowsheet().time,
@@ -658,11 +660,14 @@ see reaction package for documentation.}""",
             # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    blk.SF_AS3[t],
-                    blk.XN_org[t],
+                x = (
+                    (blk.XN_org[t] - blk.properties_in[t].conc_mass_comp["X_S"])
+                    * pyunits.m**3
+                    / pyunits.kg
                 )
+                return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
+                    x=x, k=1e1
+                ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):
@@ -1106,11 +1111,14 @@ see reaction package for documentation.}""",
             # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    blk.SF_AS3[t],
-                    blk.XN_org[t],
+                x = (
+                    (blk.XN_org[t] - blk.properties_in[t].conc_mass_comp["X_S"])
+                    * pyunits.m**3
+                    / pyunits.kg
                 )
+                return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
+                    x=x, k=1e1
+                ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):
