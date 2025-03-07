@@ -5,5 +5,9 @@ authors:
 title: "WaterTAP: An open-source water treatment model library"
 url: "https://github.com/watertap-org/watertap"
 license-url: "https://github.com/watertap-org/watertap/blob/main/LICENSE.md"
-version: 0.6
-date-released: "2022-09-30"
+identifiers:
+  - description: "OSTI archive of WaterTAP releases."
+    type: url
+    value: "https://www.osti.gov/search/semantic:WaterTAP"
+version: 1.2
+date-released: "2024-12-18"
