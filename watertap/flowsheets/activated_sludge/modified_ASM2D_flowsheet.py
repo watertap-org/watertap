@@ -15,6 +15,13 @@ Based on flowsheet from:
 Flores-Alsina X., Gernaey K.V. and Jeppsson, U. "Benchmarking biological
 nutrient removal in wastewater treatment plants: influence of mathematical model
 assumptions", 2012, Wat. Sci. Tech., Vol. 65 No. 8, pp. 1496-1505
+
+Additional References:
+[1] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
+C.Rosen, J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 2 (BSM2)", 2018
+
+[2] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
+J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 """
 
 # Some more information about this module
@@ -142,18 +149,19 @@ def build_flowsheet():
 
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
     # Add additional parameter and constraints
+    # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
     m.fs.R5.KLa = pyo.Var(
-        initialize=240,
+        initialize=240 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
     m.fs.R6.KLa = pyo.Var(
-        initialize=240,
+        initialize=240 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
     m.fs.R7.KLa = pyo.Var(
-        initialize=84,
+        initialize=84 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
@@ -360,9 +368,9 @@ def build_flowsheet():
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
-    m.fs.R5.KLa.fix(240)
-    m.fs.R6.KLa.fix(240)
-    m.fs.R7.KLa.fix(84)
+    m.fs.R5.KLa.fix(240 / 24)
+    m.fs.R6.KLa.fix(240 / 24)
+    m.fs.R7.KLa.fix(84 / 24)
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
