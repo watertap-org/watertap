@@ -17,6 +17,8 @@ environment*.yml @lbianchi-lbl
 
 /watertap/core/ @bknueven @adam-a-a
 
+/watertap/data/ @kurbansitterley @adam-a-a
+
 /watertap/costing/ @bknueven @adam-a-a
 
 /watertap/flowsheets/activated_sludge/ @agarciadiego @luohezhiming @MarcusHolly @adam-a-a @Morgan88888888
