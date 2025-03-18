@@ -104,8 +104,8 @@ class ModelState:
         Keywords:
             model -- concrete model object to store results for
             scenario -- scenarios to store, should be string or list, this is useful
-            if different options or scenarios are being ran, for exampole when one changes
-            costs for pumps and wants to sweep across differnet water recoveries, the scenario is pump cost type and
+            if different options or scenarios are being ran, for example when one changes
+            costs for pumps and wants to sweep across different water recoveries, the scenario is pump cost type and
             cases are water recovery.
             number_of_cases -- this specifies how many simulations are ran for a given scenario
         """
@@ -145,13 +145,13 @@ class ModelState:
         return comp_dict
 
     def update_stored_outputs(self, model, scenario=None, case_number=0):
-        """This will update the data dictionary with model results for specificed scenario and case number
+        """This will update the data dictionary with model results for specified scenario and case number
 
         Keywords:
             model -- concrete model object to store results for
             scenario -- scenarios to store, should be string or list, this is useful
-            if different options or scenarios are being ran, for exampole when one changes
-            costs for pumps and wants to sweep across differnet water recoveries, the scenario is pump cost type and
+            if different options or scenarios are being ran, for example when one changes
+            costs for pumps and wants to sweep across different water recoveries, the scenario is pump cost type and
             cases are water recovery.
             case_number -- this specifies simulations number
         """

@@ -119,8 +119,8 @@ class CCRO:
         channel_height=1e-3,
         spacer_porosity=0.97,
         include_costing=False,
-        dead_volume=0.1,
-        accumulation_time=300,
+        dead_volume=0.010942,
+        accumulation_time=120,
     ):
         self.rho = rho * pyunits.kg / pyunits.m**3
         self.dead_volume = dead_volume * pyunits.m**3
@@ -166,14 +166,14 @@ class CCRO:
             to_units=pyunits.kg / pyunits.s,
         )
 
-        self.inlet_flow = self.feed_flow + self.reject_flow
-        self.inlet_flow_mass_water = (
-            self.feed_flow_mass_water + self.reject_flow_mass_water
-        )
-        self.inlet_conc_start = pyunits.convert(
-            (self.feed_flow_mass_water + self.reject_flow_mass_water) / self.inlet_flow,
-            to_units=pyunits.gram / pyunits.liter,
-        )
+        # self.inlet_flow = self.feed_flow + self.reject_flow
+        # self.inlet_flow_mass_water = (
+        #     self.feed_flow_mass_water + self.reject_flow_mass_water
+        # )
+        # self.inlet_conc_start = pyunits.convert(
+        #     (self.feed_flow_mass_water + self.reject_flow_mass_water) / self.inlet_flow,
+        #     to_units=pyunits.gram / pyunits.liter,
+        # )
 
         self.A_comp = A_comp
         self.B_comp = B_comp
@@ -468,10 +468,10 @@ class CCRO:
 
         propagate_state(m.fs.feed_to_P1)
         m.fs.P1.outlet.pressure[0].fix(
-            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 5
+            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 2 + 2e5
         )
         m.fs.P2.outlet.pressure[0].fix(
-            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 5
+            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 2 + 2e5
         )
 
         m.fs.P1.initialize()
@@ -575,7 +575,8 @@ class CCRO:
         # m.fs.RO.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
         #     self.inlet_flow_mass_water
         # )
-        m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+        # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+
         # m.fs.recov_constr = Constraint(expr=m.fs.RO.recovery_vol_phase[0, "Liq"] >= self.water_recovery)
         # m.fs.eq_flow_eq = Constraint(
         #     expr=m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"]
@@ -583,6 +584,10 @@ class CCRO:
         # )
         m.fs.P1.control_volume.properties_out[0].pressure.unfix()
         m.fs.P2.control_volume.properties_out[0].pressure.unfix()
+
+        m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
+            self.reject_flow
+        )
 
         if time_idx > 0:
             # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
@@ -706,23 +711,30 @@ class CCRO:
 if __name__ == "__main__":
 
     initial_conditions = {
-        "feed_flow": 2.92,
-        "feed_conc": 3.4,
-        "reject_flow": 45.25,
-        "reject_conc_start": 3.9,
+        "feed_flow": 1.8,
+        "feed_conc": 5.8,
+        "reject_flow": 49.911,
+        "reject_conc_start": 11.7,
         "temperature_start": 25,  # degC
         "p1_pressure_start": 306,  # psi
-        "A_comp": 4.422e-12,
-        "B_comp": 5.613e-8,
-        "channel_height": 0.0008636,
-        "spacer_porosity": 0.7081,
+        "A_comp": 5.963600814843386e-12,
+        "B_comp": 3.0790017613480806e-08,
+        "channel_height": 0.0008636000000000001,
+        "spacer_porosity": 0.85,
         "water_recovery": 0.063,
-        "n_time_points": 3,
+        "membrane_area": 7.9,
+        "membrane_length": 1,
+        "n_time_points": 22,
+        "accumulation_time": 60,
+        "dead_volume": 0.01251,
     }
 
     ccro = CCRO(**initial_conditions)
 
     ccro.create_multiperiod()
     ccro.solve(tee=True)
-    ccro.extract_multiperiod_data()
-    ccro.mp_df
+    # ccro.extract_multiperiod_data()
+    mp_df = ModelState()
+    mp_df.add_expected_outputs(ccro.mp, scenario="base_scenario", number_of_cases=1)
+    mp_df.update_stored_outputs(ccro.mp, scenario="base_scenario")
+    mp_df.save_model_outputs_to_json("CCRO_dead_volume")
