@@ -107,6 +107,17 @@ class TestFullFlowsheet:
             m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
         ) == pytest.approx(1.4159e-5, rel=1e-3)
 
+        # Check electricity consumption for each aerobic reactor
+        assert value(m.fs.R3.electricity_consumption[0]) == pytest.approx(
+            73.8694, rel=1e-3
+        )
+        assert value(m.fs.R4.electricity_consumption[0]) == pytest.approx(
+            69.9669, rel=1e-3
+        )
+        assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
+            20.4775, rel=1e-3
+        )
+
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
@@ -143,12 +154,12 @@ class TestFullFlowsheet:
         assert degrees_of_freedom(system_frame) == 10
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.3497531, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.349772203, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17441736.89749642, rel=1e-5
+            17379540.339857, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            629780.1104274583, rel=1e-5
+            636129.6209807, rel=1e-5
         )
 
 
@@ -258,10 +269,10 @@ class TestFullFlowsheet_with_equal_reactor_vols:
         assert degrees_of_freedom(system_frame) == 8
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.3497531, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.349560273, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17441740.61915915, rel=1e-5
+            17370674.42102, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            629779.9546967598, rel=1e-5
+            635577.7320509, rel=1e-5
         )

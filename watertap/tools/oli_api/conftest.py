@@ -82,8 +82,6 @@ def auth_credentials() -> dict:
 def oliapi_instance(
     tmp_path: Path,
     auth_credentials: dict,
-    local_dbs_file: Path,
-    source_water: dict,
 ) -> OLIApi:
 
     if not cryptography_available:
@@ -93,11 +91,11 @@ def oliapi_instance(
     credentials = {
         **auth_credentials,
         "config_file": cred_file_path,
+        "refresh": True,
+        "interactive_mode": False,
     }
     credential_manager = CredentialManager(**credentials, test=True)
     with OLIApi(credential_manager, interactive_mode=False) as oliapi:
-        oliapi.upload_dbs_file(str(local_dbs_file))
-        oliapi.generate_dbs_file(source_water)
         yield oliapi
     with contextlib.suppress(FileNotFoundError):
         cred_file_path.unlink()

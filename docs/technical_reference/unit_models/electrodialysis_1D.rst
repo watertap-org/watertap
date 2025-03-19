@@ -16,7 +16,7 @@ the opposite ion selectivity of cation- and anion-exchange membranes (cem and ae
 one cell to its adjacent cell in a cell-pair treatment unit (Figure 1). The ion-departing cell is called a **diluate
 channel** and the ion-entering cell a **concentrate channel**. Recovered (desalinated) water is
 collected from diluate channels of all cell pairs while the concentrate product can be disposed of as brine
-or retreated. More overview of the electrodialysis technology can be found in the *References*.
+or retreated. More overview of the electrodialysis technology can be found in [1]_, [2]_, and [3]_.
 
 .. figure:: ../../_static/unit_models/EDdiagram.png
     :width: 400
@@ -120,7 +120,9 @@ are parameters that should be provided in order to fully solve the model.
    "Cell pair number", ":math:`n`", "cell_pair_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
    "Channel height", ":math:`d`", "channel_height", "none", ":math:`m` ", 1
-   "Membrane areal resistance", ":math:`r`", "membrane_areal_resistance", "['cem', 'aem']", ":math:`\Omega m^2`", 2
+   "Membrane areal resistance at infinitive ion concentration", ":math:`r_{const}`", "membrane_areal_resistance", "['cem', 'aem']", ":math:`\Omega m^2`", 2
+   "Membrane areal resistance coefficient to the reciprocal of the ion concentration", ":math:`r_{coef}`", "membrane_areal_resistance_coef", "['cem', 'aem']", ":math:`\Omega mol m^{-1}`", 2
+   "Spacer conductivity coefficient", ":math:`\sigma`", "spacer_conductivity_coefficient", "None", "dimensionless", 1
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
    "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['cem', 'aem']", ":math:`m`", 2
@@ -168,7 +170,7 @@ discretization manner using the "finite difference" or "collocation" method impl
 
 Mass balance equations are summarized in **Table 3**. Mass transfer mechanisms account for solute electrical migration, diffusion,
 water osmosis, and electroosmosis. Theoretical principles, e.g., continuity equation, Fick's law, and Ohm's law,
-to simulate these processes are well developed and some good summaries for the electrodialysis scenario can be found in the *References*.
+to simulate these processes are well developed and some good summaries for the electrodialysis scenario can be found in [1]_.
 
 .. csv-table:: **Table 3** Mass Balance Equations
    :header: "Description", "Equation", "Index set"
@@ -186,10 +188,17 @@ Additionally, several other equations are built to describe the electrochemical 
 
    "Electrical input condition", ":math:`i(x) = \frac{I}{bl}`, for 'Constant_Current';  :math:`u(x) =U` for 'Constant_Voltage'"
    "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x)`"
-   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{d}{\kappa^C(x)}+\frac{d}{\kappa^D(x)}\right)+r_{el}`"
+   "mebrane resistance calculation \ :sup:`1`", ":math:`r^{iem}(x)=r^{iem}_{const}+\frac{r^{iem}_{coef}}{c_b^D}` [7]_"
+   "Total resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}(x)+r^{aem}(x)+\frac{d}{\sigma \kappa^C(x)}+\frac{d}{\sigma \kappa^D(x)}\right)+r_{el}` \ :sup:`2`"
    "Electrical power consumption", ":math:`P(x)=b\int _0 ^l u(x)i(x) dx`"
    "Water-production-specific power consumption", ":math:`P_Q=\frac{P(x=l)}{3.6\times 10^6 nQ_{out}^D}`"
    "Current efficiency for desalination", ":math:`bi(x)\eta(x)=-\sum_{j \in[cation]}{\left[\left(\frac{\partial N_j ^D(x)}{\partial x}\right) z_j F\right]}`"
+
+**Note**
+
+ :sup:`1` We now consider the experimentally observed dependence of membrane resistance on electrolyte concentration using an empirical relationship reported by [7]_. 
+ :sup:`2`  We used a coefficient multiplied by the solution conductance, denoted by :math:`\sigma`, to account for the spacer's conductance shadowing effect. 
+
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
@@ -201,7 +210,7 @@ This model supports extensive simulations of (1) the nonohmic potential across i
 Users can customize these extenions via two configurations: `has_nonohmic_potential_membrane` that triggers the calculation of nonohmic
 potentials across ion exchange membranes and `has_Nernst_diffusion_layer` that triggers the simulation of a concentration-polarized Nernst 
 diffusion layer including its ohmic and nonohmic potential changes. Based on a electrochemical cell setup in Figure 2 and established theoretical
-descriptions (*References*), our model accounts for the cross-membrane diffusion and Donnan potentials (nonohmic), ion concentration polarization
+descriptions ([4]_, [5]_), our model accounts for the cross-membrane diffusion and Donnan potentials (nonohmic), ion concentration polarization
 in assumed Nernst diffusion layers (NDL), and the ohmic and nonohmic (i.e., diffusion) potentials across NDLs. These extensions make the model 
 closer to the non-ideal physical conditions that can be encountered in real desalination practices.
 
@@ -238,7 +247,8 @@ Some other modifications to previously defined equations are made to accommodate
    :header: "Original equation description", "Equation replacement", "Condition"
 
    "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x) + \phi_m(x) + \phi_d^{ohm}(x) + \phi_d^{nonohm}(x)` \ :sup:`1`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
-   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{d- \Delta_{cem}^L(x) - \Delta_{aem}^R(x)}{\kappa^C(x)}+\frac{d- \Delta_{cem}^R(x) - \Delta_{aem}^L(x)}{\kappa^D(x)}\right)+r_{el}`", "`has_Nernst_diffusion_layer==True`"
+   "mebrane resistance calculation", ":math:`r^{iem}(x)=r^{iem}_{const}+\frac{r^{iem}_{coef}}{c_b^D}`"
+   "total resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}(x)+r^{aem}(x)+\frac{d- \Delta_{cem}^L(x) - \Delta_{aem}^R(x)}{\sigma \kappa^C(x)}+\frac{d- \Delta_{cem}^R(x) - \Delta_{aem}^L(x)}{\sigma \kappa^D(x)}\right)+r_{el}`", "`has_Nernst_diffusion_layer==True`"
    "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
    "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
    "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem} \left(p_{s, osm}^{cem, L}(x)-p_{s, osm}^{cem, R}(x) \right)+L^{aem} \left(p_{s, osm}^{aem, R}(x)-p_{s, osm}^{aem, L}(x) \right)\right)\frac{\rho_w}{M_w}`", "`has_Nernst_diffusion_layer==True`"
@@ -250,7 +260,7 @@ Some other modifications to previously defined equations are made to accommodate
 
 Frictional pressure drop
 ^^^^^^^^^^^^^^^^^^^^^^^^
-This model can optionally calculate pressured drops along the flow path in the diluate and concentrate channels through config ``has_pressure_change`` and ``pressure_drop_method``.  Under the assumption of identical diluate and concentrate channels and starting flow rates, the flow velocities in the two channels are approximated equal and invariant over the channel length when calculating the frictional pressure drops. This approximation is based on the evaluation that the actual velocity variation over the channel length caused by water mass transfer across the consecutive channels leads to negligible errors as compared to the uncertainties carried by the frictional pressure method itself. **Table 7** gives essential equations to simulate the pressure drop. Among extensive literatures using these equations, a good reference paper is by Wright et. al., 2018 (*References*).
+This model can optionally calculate pressured drops along the flow path in the diluate and concentrate channels through config ``has_pressure_change`` and ``pressure_drop_method``.  Under the assumption of identical diluate and concentrate channels and starting flow rates, the flow velocities in the two channels are approximated equal and invariant over the channel length when calculating the frictional pressure drops. This approximation is based on the evaluation that the actual velocity variation over the channel length caused by water mass transfer across the consecutive channels leads to negligible errors as compared to the uncertainties carried by the frictional pressure method itself. **Table 7** gives essential equations to simulate the pressure drop. Among extensive literatures using these equations, a good reference paper is by Wright et. al., 2018 ([6]_).
 
 .. csv-table:: **Table 7** Essential equations supporting the pressure drop calculation
    :header: "Description", "Equation", "Condition"
@@ -301,9 +311,12 @@ Nomenclature
    ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
    ":math:`r_{tot}`", "Total areal resistance", ":math:`\Omega m^2`"
    ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
+   ":math:`r_const`", "Membrane areal resistance independent on ion concentration", ":math:`\Omega m^2`"
+   ":math:`r_coef`", "The dependent cofficient of membrane areal resistance to :math:`1/c_b`", ":math:`\Omega mol m^{-1}`"
    ":math:`r_{el}`", "Electrode areal resistance", ":math:`\Omega m^2`"
    ":math:`d`", "Channel height", ":math:`m`"
    ":math:`\kappa`", "Solution conductivity", ":math:`S m^{-1}\ or\  \Omega^{-1} m^{-1}`"
+   ":math:`\sigma`", "Spacer conductivity coefficient", ":math:`S m^{-1}\ or\  \Omega^{-1} m^{-1}`"
    ":math:`\eta`", "Current efficiency for desalination", "dimensionless"
    ":math:`P`", "Power consumption", ":math:`W`"
    ":math:`P_Q`", "Specific power consumption", ":math:`kW\ h\  m^{-3}`"
@@ -351,18 +364,16 @@ Nomenclature
 
 References
 ----------
-Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications.
-Desalination, 264(3), 268-288.
+.. [1] Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications. Desalination, 264(3), 268-288.
 
-Strathmann, H. (2004). Ion-exchange membrane separation processes. Elsevier. Ch. 4.
+.. [2] Strathmann, H. (2004). Ion-exchange membrane separation processes. Elsevier. Ch. 4.
 
-Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019).
-A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
+.. [3] Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019). A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
 
-Campione, A., Gurreri, L., Ciofalo, M., Micale, G., Tamburini, A., & Cipollina, A. (2018). 
-Electrodialysis for water desalination: A critical assessment of recent developments on process 
-fundamentals, models and applications. Desalination, 434, 121-160.
+.. [4] Campione, A., Gurreri, L., Ciofalo, M., Micale, G., Tamburini, A., & Cipollina, A. (2018).  Electrodialysis for water desalination: A critical assessment of recent developments on process fundamentals, models and applications. Desalination, 434, 121-160.
 
-Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
+.. [5] Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
 
-Wright, N. C., Shah, S. R., & Amrose, S. E. (2018). A robust model of brackish water electrodialysis desalination with experimental comparison at different size scales. Desalination, 443, 27-43.
+.. [6] Wright, N. C., Shah, S. R., & Amrose, S. E. (2018). A robust model of brackish water electrodialysis desalination with experimental comparison at different size scales. Desalination, 443, 27-43.
+
+.. [7] Galama, A. H., Vermaas, D. A., Veerman, J., Saakes, M., Rijnaarts, H. H. M., Post, J. W., & Nijmeijer, K. (2014). Membrane resistance: The effect of salinity gradients over a cation exchange membrane. Journal of membrane science, 467, 279-291.

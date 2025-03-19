@@ -188,12 +188,10 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Symbol", "Value", "Units"
 
-   "Reactor 5 oxygen mass transfer coefficient",":math:`KLa_{R5}`", "240", ":math:`\text{hr}^{-1}`"
-   "Reactor 6 oxygen mass transfer coefficient",":math:`KLa_{R6}`", "240", ":math:`\text{hr}^{-1}`"
-   "Reactor 7 oxygen mass transfer coefficient",":math:`KLa_{R7}`", "240", ":math:`\text{hr}^{-1}`"
+   "Reactor 5 oxygen mass transfer coefficient",":math:`KLa_{R5}`", "10", ":math:`\text{hr}^{-1}`"
+   "Reactor 6 oxygen mass transfer coefficient",":math:`KLa_{R6}`", "10", ":math:`\text{hr}^{-1}`"
+   "Reactor 7 oxygen mass transfer coefficient",":math:`KLa_{R7}`", "3.5", ":math:`\text{hr}^{-1}`"
    "Dissolved oxygen concentration at equilibrium",":math:`S_{O, eq}`", "8e-3", ":math:`\text{hr}^{-1}`"
-
-
 
 Additional Constraints
 ----------------------
