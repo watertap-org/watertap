@@ -973,10 +973,6 @@ class Test_NMSU_bench_scale:
             results = solver.solve(m)
             assert_optimal_termination(results)
 
-            m.fs.unit.diluate.properties[0, 1].conc_mass_phase_comp.display()
-            m.fs.unit.acidic.properties[0, 1].conc_mass_phase_comp.display()
-            m.fs.unit.basic.properties[0, 1].conc_mass_phase_comp.display()
-
             conc_unit = 1 * pyunits.mole * pyunits.meter**-3
             salt_out = value(
                 smooth_min(
@@ -1024,6 +1020,18 @@ class Test_NMSU_bench_scale:
                 )
             )
 
+            m.fs.feed_diluate.flow_mol_phase_comp.unfix()
+            m.fs.feed_diluate.temperature.unfix()
+            m.fs.feed_diluate.pressure.unfix()
+
+            m.fs.feed_acidic.flow_mol_phase_comp.unfix()
+            m.fs.feed_acidic.temperature.unfix()
+            m.fs.feed_acidic.pressure.unfix()
+
+            m.fs.feed_basic.flow_mol_phase_comp.unfix()
+            m.fs.feed_basic.temperature.unfix()
+            m.fs.feed_basic.pressure.unfix()
+
             assert salt_out == pytest.approx(salt_out_ref[ctr], rel=1e-2)
             assert acid_out == pytest.approx(acid_out_ref[ctr], rel=1e-2)
             assert base_out == pytest.approx(base_out_ref[ctr], rel=1e-2)
@@ -1036,18 +1044,6 @@ class Test_NMSU_bench_scale:
                 voltage_out.append(value(m.fs.unit.voltage_x[0, i]))
 
             assert voltage_out[-1] == pytest.approx(voltage_out_ref[ctr], rel=1e-3)
-
-            m.fs.feed_diluate.flow_mol_phase_comp.unfix()
-            m.fs.feed_diluate.temperature.unfix()
-            m.fs.feed_diluate.pressure.unfix()
-
-            m.fs.feed_acidic.flow_mol_phase_comp.unfix()
-            m.fs.feed_acidic.temperature.unfix()
-            m.fs.feed_acidic.pressure.unfix()
-
-            m.fs.feed_basic.flow_mol_phase_comp.unfix()
-            m.fs.feed_basic.temperature.unfix()
-            m.fs.feed_basic.pressure.unfix()
 
 
 class Test_BPED_pressure_drop_components:
