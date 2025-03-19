@@ -201,10 +201,10 @@ discretization manner using the "finite difference" or "collocation" method impl
 To create a model for bipolar electrodialysis we use the mass transfer equations from conventional electrodialysis on the CEM and AEM
 (for further details please refer to :py:mod:`watertap.unit_models.electrodialysis_1D`) and couple it with equations developed for BPEM.
 
-Across the BPEM water disassociation occurs when the limiting current is exceeded. Assuming the unit model is operated in the hydrolysis regime the current density consists of
+Across the BPEM, water disassociation occurs when the limiting current is exceeded. Assuming the unit model is operated in the hydrolysis regime the current density consists of
 the limiting current and the water splitting current. See equation (3) in  Wilhelm et al. (2001) [7]_ or equations (11) and (12) from González et al. (2023) [13]_ for further details.
 The limiting current density is obtained from González et al. (2023) [13]_. It sets the amount of salt ions flowing across the BPEM. The governing equations for catalyst induced
-water disassociation is derived from by model proposed by Mareev et al. (2020) [5]_. The equations pertaining to the BPEM have been presented in **Table 3**.
+water disassociation is derived from the model proposed by Mareev et al. (2020) [5]_. The equations pertaining to the BPEM have been presented in **Table 3**.
 
 
 .. csv-table:: **Table 3** Essential equations across BPEM
@@ -213,7 +213,8 @@ water disassociation is derived from by model proposed by Mareev et al. (2020) [
    "Limiting current density", ":math:`i_{lim}(x) =` user input constant", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.InitialValue``"
    "", ":math:`i_{lim} (x) = D^*F (C_{acidic,NaCl}(x)+C_{basic,NaCl}(x))^2 / (\sigma \delta)`", "``limiting_current_density_method_bpem =LimitingCurrentDensitybpemMethod.Empirical`` \ :sup:`2`"
    "Water splitting flux \ :sup:`3`", ":math:`S_{diss}(x) =R_{K_A} \lambda(x) + R_{K_B} \lambda(x)`"
-   "Water splitting rate \ :sup:`4`", ":math:`R_{K_A/K_B}(x) = \frac{Q_{m,A/B}}{K_{A/B}}[k_2(0)f[E(x)]C_{H_2O} ]`"
+   "Water splitting rate \ :sup:`4`", ":math:`R_{K_A}(x) = \frac{Q_{m,A}}{K_{A}}[k_2(0)f[E(x)]C_{H_2O} ]`"
+   " ", ":math:`R_{K_B}(x) = \frac{Q_{m,B}}{K_{B}}[k_2(0)f[E(x)]C_{H_2O} ]`"
    "Depletion length \ :sup:`5`", ":math:`\lambda(x) = E(x) \epsilon_0 \epsilon_r / (F \sigma)`"
    "Hydrolysis voltage drop", ":math:`u_{diss}(x) = E(x) \lambda(x)`"
    "Electric current density \ :sup:`6`", ":math:`i(x) = i_{lim}(x) + F S_{diss}(x)`"
@@ -285,8 +286,8 @@ Some of the key operational and performance metrics are given in **Table 6**.
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
-The model has been validated against the experimental data available from Wilhelm et al. (2002) [6]_ as well as bipolar membrane information available online: Fumatech, Technical Data Sheet for
-Fumasep FBM, 2020 [10]_. Additional inputs were obtained from from  Ionescu, Viorel (2023) [11]_.
+The model has been validated against the experimental data available from Wilhelm et al. (2002) [6]_,bipolar membrane information available online: Fumatech, Technical Data Sheet for
+Fumasep FBM, 2020 [10]_ (additional inputs were obtained from from  Ionescu, Viorel (2023) [11]_) and bench scale experimental data provided by the New Mexico State University team.
 
 
 

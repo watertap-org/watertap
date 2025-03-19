@@ -1789,17 +1789,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                                 .flow_mass_phase_comp[ind]
                             )
                         )
-                if hasattr(self[k], "conc_mem_surf_mol_x"):
-                    for mem in self[k].membrane_set:
-                        for side in self[k].electrode_side:
-                            for j in self[k].ion_set:
-                                self[k].conc_mem_surf_mol_x[
-                                    mem, side, set, j
-                                ].set_value(
-                                    self[k]
-                                    .diluate.properties[set]
-                                    .conc_mol_phase_comp["Liq", j]
-                                )
                 self[k].total_areal_resistance_x[set].set_value(
                     (
                         pyunits.ohm
@@ -1878,17 +1867,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                             .basic.properties[(0.0, 0.0)]
                             .flow_mass_phase_comp[ind]
                         )
-                if hasattr(self[k], "conc_mem_surf_mol_x"):
-                    for mem in self[k].membrane_set:
-                        for side in self[k].electrode_side:
-                            for j in self[k].ion_set:
-                                self[k].conc_mem_surf_mol_x[
-                                    mem, side, set, j
-                                ].set_value(
-                                    self[k]
-                                    .basic.properties[set]
-                                    .conc_mol_phase_comp["Liq", j]
-                                )
 
                 # Set the intial conditions over the 1D length from the state vars - acidic
                 for k in self.keys():
@@ -1943,17 +1921,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                                     .acidic.properties[(0.0, 0.0)]
                                     .flow_mass_phase_comp[ind]
                                 )
-                        if hasattr(self[k], "conc_mem_surf_mol_x"):
-                            for mem in self[k].membrane_set:
-                                for side in self[k].electrode_side:
-                                    for j in self[k].ion_set:
-                                        self[k].conc_mem_surf_mol_x[
-                                            mem, side, set, j
-                                        ].set_value(
-                                            self[k]
-                                            .acidic.properties[set]
-                                            .conc_mol_phase_comp["Liq", j]
-                                        )
 
         # ---------------------------------------------------------------------
 
