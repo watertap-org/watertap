@@ -746,23 +746,23 @@ class Nanofiltration0DData(UnitModelBlockData):
             doc="Solvent mass transfer",
         )
         def flux_vol_solvent(b, t, p, j):
-            if b.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.mass:
-                return -b.properties_permeate[0].flow_mass_phase_comp[p, j] / (
-                    b.properties_in[0].dens_mass_phase[p] * b.area
+            if b.properties_in[t].get_material_flow_basis() == MaterialFlowBasis.mass:
+                return -b.properties_permeate[t].flow_mass_phase_comp[p, j] / (
+                    b.properties_in[t].dens_mass_phase[p] * b.area
                 )
             elif (
-                b.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar
+                b.properties_in[t].get_material_flow_basis() == MaterialFlowBasis.molar
             ):
                 # TODO- come up with better way to handle different locations of mw_comp in property models (generic vs simple ion prop model)
-                if hasattr(b.properties_in[0].params, "mw_comp"):
-                    mw_comp = b.properties_in[0].params.mw_comp[j]
-                elif hasattr(b.properties_in[0], "mw_comp"):
-                    mw_comp = b.properties_in[0].mw_comp[j]
+                if hasattr(b.properties_in[t].params, "mw_comp"):
+                    mw_comp = b.properties_in[t].params.mw_comp[j]
+                elif hasattr(b.properties_in[t], "mw_comp"):
+                    mw_comp = b.properties_in[t].mw_comp[j]
                 else:
                     raise ConfigurationError("mw_comp was not found.")
                 return (
-                    -b.properties_permeate[0].flow_mass_phase_comp[p, j] * mw_comp
-                ) / (b.properties_in[0].dens_mass_phase[p] * b.area)
+                    -b.properties_permeate[t].flow_mass_phase_comp[p, j] * mw_comp
+                ) / (b.properties_in[t].dens_mass_phase[p] * b.area)
 
         @self.Expression(
             self.flowsheet().config.time,
