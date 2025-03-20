@@ -13,7 +13,7 @@
 Simple zero-dimensional Nanofiltration unit model.
 """
 
-from pyomo.environ import Block, Constraint, Set, value, Var
+from pyomo.environ import Block, Constraint, Set, value, Var, units as pyunits
 from pyomo.common.config import ConfigDict, ConfigValue, In
 
 from idaes.core import (
@@ -22,6 +22,7 @@ from idaes.core import (
     MomentumBalanceType,
     useDefault,
     UnitModelBlockData,
+    MaterialFlowBasis,
 )
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
@@ -631,6 +632,14 @@ class Nanofiltration0DData(UnitModelBlockData):
                     # Non-ionic solute - assume passing species
                     return b.config.default_passing_rejection
 
+        units = self.config.property_package.get_metadata().derived_units
+
+        self.area = Var(
+            initialize=1,
+            bounds=(0.0, 1e6),
+            units=units.LENGTH**2,
+            doc="Membrane area",
+        )
         self.rejection_comp = Var(
             self.flowsheet().time,
             self._solute_set,
@@ -639,7 +648,6 @@ class Nanofiltration0DData(UnitModelBlockData):
             doc="Solute rejection fractions",
         )
 
-        units = self.config.property_package.get_metadata().derived_units
         if self.config.has_pressure_change:
             self.deltaP = Var(
                 self.flowsheet().time,
@@ -730,3 +738,51 @@ class Nanofiltration0DData(UnitModelBlockData):
                     b.properties_in[t].temperature
                     == b.properties_permeate[t].temperature
                 )
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.solvent_set,
+            doc="Solvent mass transfer",
+        )
+        def flux_vol_solvent(b, t, p, j):
+            if b.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.mass:
+                return -b.properties_permeate[0].flow_mass_phase_comp[p, j] / (
+                    b.properties_in[0].dens_mass_phase[p] * b.area
+                )
+            elif (
+                b.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar
+            ):
+                # TODO- come up with better way to handle different locations of mw_comp in property models (generic vs simple ion prop model)
+                if hasattr(b.properties_in[0].params, "mw_comp"):
+                    mw_comp = b.properties_in[0].params.mw_comp[j]
+                elif hasattr(b.properties_in[0], "mw_comp"):
+                    mw_comp = b.properties_in[0].mw_comp[j]
+                else:
+                    raise ConfigurationError("mw_comp was not found.")
+                return (
+                    -b.properties_permeate[0].flow_mass_phase_comp[p, j] * mw_comp
+                ) / (b.properties_in[0].dens_mass_phase[p] * b.area)
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.solvent_set | self._solute_set,
+            doc="Mass-based component recovery",
+        )
+        def recovery_mass_phase_comp(b, t, p, j):
+            return (
+                b.properties_permeate[t].flow_mass_phase_comp[p, j]
+                / b.properties_in[t].flow_mass_phase_comp[p, j]
+            )
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            doc="Volumetric-based recovery",
+        )
+        def recovery_vol_phase(b, t, p):
+            return (
+                b.properties_permeate[t].flow_vol_phase[p]
+                / b.properties_in[t].flow_vol_phase[p]
+            )
