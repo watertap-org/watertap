@@ -1056,7 +1056,6 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
         super().build()
 
         # Create references to state vars
-        # Concentration
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
 
     # Rate of reaction method
@@ -1071,6 +1070,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
         try:
             # TODO: Refer to Flores-Alsina c code to account for sulfur in rate expressions
             def rate_expression_rule(b, r):
+                eps = 1e-30 * pyo.units.kg / pyo.units.m**3
                 if r == "R1":
                     # R1: Aerobic hydrolysis
                     return b.reaction_rate[r] == pyo.units.convert(
@@ -1084,6 +1084,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KL_X * b.conc_mass_comp_ref["X_H"]
                                 + b.conc_mass_comp_ref["X_S"]
+                                + eps
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1107,6 +1108,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KL_X * b.conc_mass_comp_ref["X_H"]
                                 + b.conc_mass_comp_ref["X_S"]
+                                + eps
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1130,6 +1132,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KL_X * b.conc_mass_comp_ref["X_H"]
                                 + b.conc_mass_comp_ref["X_S"]
+                                + eps
                             )
                         )
                         * b.conc_mass_comp_ref["X_H"],
@@ -1323,6 +1326,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KP_PP * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PP"]
+                                + eps
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1345,6 +1349,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PHA"]
+                                + eps
                             )
                         )
                         * (
@@ -1383,6 +1388,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PHA"]
+                                + eps
                             )
                         )
                         * (
@@ -1394,6 +1400,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                                 b.params.KI_PP * b.conc_mass_comp_ref["X_PAO"]
                                 + b.params.K_MAX * b.conc_mass_comp_ref["X_PAO"]
                                 - b.conc_mass_comp_ref["X_PP"]
+                                + eps
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1420,6 +1427,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PHA"]
+                                + eps
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
@@ -1451,6 +1459,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.params.KP_PHA * b.conc_mass_comp_ref["X_PAO"]
                                 + b.conc_mass_comp_ref["X_PHA"]
+                                + eps
                             )
                         )
                         * b.conc_mass_comp_ref["X_PAO"],
