@@ -664,6 +664,8 @@ def mcas_model():
 
 
 class TestNanofiltration0DInitializer:
+    
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, mcas_model):
         # Fix DoF
@@ -1149,6 +1151,7 @@ class TestMCAS:
             mcas_case.fs.unit.permeate_temperature_equality[0.0]
         ] == pytest.approx(0.003354, rel=1e-3)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, mcas_case):
         initializer = Nanofiltration0DInitializer()
@@ -1157,7 +1160,8 @@ class TestMCAS:
         assert (
             initializer.summary[mcas_case.fs.unit]["status"] == InitializationStatus.Ok
         )
-
+    
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, mcas_case):
         solver = get_solver(
@@ -1167,6 +1171,7 @@ class TestMCAS:
 
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_numerical_issues(self, mcas_case):
         sm = TransformationFactory("core.scale_model").create_using(
@@ -1176,6 +1181,7 @@ class TestMCAS:
         dt = DiagnosticsToolbox(sm.fs.unit)
         dt.assert_no_numerical_warnings()
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, mcas_case):
         # Retentate stream
@@ -1249,7 +1255,8 @@ class TestMCAS:
             mcas_case.fs.unit.properties_permeate[0].conc_mol_phase_comp["Liq", "Na_+"]
             / mcas_case.fs.unit.properties_in[0].conc_mol_phase_comp["Liq", "Na_+"]
         ) == pytest.approx(0.9, abs=1e-8)
-
+    
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, mcas_case):
         for j in mcas_case.fs.properties.component_list:
