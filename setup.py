@@ -67,7 +67,7 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         # primary requirements for unit and property models
-        "idaes-pse @ https://github.com/watertap-org/idaes-pse/archive/2.7.0.dev.watertap.2025.01.21.zip",
+        "idaes-pse >=2.7.0,<2.8.0rc0",
         "pyomo>=6.6.1",
         "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
