@@ -680,6 +680,7 @@ class TestNanofiltration0DInitializer:
         mcas_model.fs.unit.rejection_comp.fix()
         mcas_model.fs.unit.permeate.pressure[0].fix(1e5)
         mcas_model.fs.unit.deltaP.fix(-1e4)
+        mcas_model.fs.unit.area.fix(500)
 
         # Initialize
         initializer = Nanofiltration0DInitializer()
@@ -698,7 +699,7 @@ class TestNanofiltration0DInitializer:
 
     @pytest.mark.unit
     def test_init_conc(self, mcas_model):
-        # Use MCAS model to dummy calls to initializer sub methods
+        # Use MCAS model to make dummy calls to initializer sub methods
         initializer = Nanofiltration0DInitializer()
 
         mcas_model.in_var = Var(mcas_model.fs.properties.component_list, initialize=10)
@@ -750,7 +751,7 @@ class TestNanofiltration0DInitializer:
 
     @pytest.mark.unit
     def test_init_flow_comp(self, mcas_model):
-        # Use MCA model to dummy calls to initializer sub methods
+        # Use MCAS model to make dummy calls to initializer sub methods
         initializer = Nanofiltration0DInitializer()
 
         mcas_model.in_var_comp = Var(
@@ -800,7 +801,7 @@ class TestNanofiltration0DInitializer:
 
     @pytest.mark.unit
     def test_init_flow_vol(self, mcas_model):
-        # Use MCA model to dummy calls to initializer sub methods
+        # Use MCAS model to make dummy calls to initializer sub methods
         initializer = Nanofiltration0DInitializer()
 
         mcas_model.in_var_vol = Var(initialize=10)
@@ -821,7 +822,7 @@ class TestNanofiltration0DInitializer:
 
     @pytest.mark.unit
     def test_init_frac(self, mcas_model):
-        # Use MCA model to dummy calls to initializer sub methods
+        # Use MCAS model to make dummy calls to initializer sub methods
         initializer = Nanofiltration0DInitializer()
 
         mcas_model.in_var = Var(mcas_model.fs.properties.component_list, initialize=10)
@@ -1046,6 +1047,7 @@ class TestMCAS:
 
         m.fs.unit.recovery_solvent.fix()
         m.fs.unit.rejection_comp.fix()
+        m.fs.unit.area.fix(500)
         m.fs.unit.deltaP.fix(-1e4)
         m.fs.unit.permeate.pressure[0].fix(101325)
 
@@ -1226,6 +1228,15 @@ class TestMCAS:
         )
         assert value(mcas_case.fs.unit.permeate.pressure[0]) == pytest.approx(
             101325, rel=1e-5
+        )
+        assert value(mcas_case.fs.unit.recovery_vol_phase[0, "Liq"]) == pytest.approx(
+            0.753868, rel=1e-3
+        )
+        assert value(mcas_case.fs.unit.recovery_mass_phase_comp[0, "Liq", "H2O"]) == pytest.approx(
+            0.79999, rel=1e-3
+        )
+        assert value(mcas_case.fs.unit.recovery_mass_phase_comp[0, "Liq", "Na_+"]) == pytest.approx(
+            0.67848, rel=1e-3
         )
 
         # Rejection
