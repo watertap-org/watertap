@@ -664,7 +664,7 @@ def mcas_model():
 
 
 class TestNanofiltration0DInitializer:
-    
+
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, mcas_model):
@@ -1160,7 +1160,7 @@ class TestMCAS:
         assert (
             initializer.summary[mcas_case.fs.unit]["status"] == InitializationStatus.Ok
         )
-    
+
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, mcas_case):
@@ -1238,12 +1238,12 @@ class TestMCAS:
         assert value(mcas_case.fs.unit.recovery_vol_phase[0, "Liq"]) == pytest.approx(
             0.753868, rel=1e-3
         )
-        assert value(mcas_case.fs.unit.recovery_mass_phase_comp[0, "Liq", "H2O"]) == pytest.approx(
-            0.79999, rel=1e-3
-        )
-        assert value(mcas_case.fs.unit.recovery_mass_phase_comp[0, "Liq", "Na_+"]) == pytest.approx(
-            0.67848, rel=1e-3
-        )
+        assert value(
+            mcas_case.fs.unit.recovery_mass_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.79999, rel=1e-3)
+        assert value(
+            mcas_case.fs.unit.recovery_mass_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(0.67848, rel=1e-3)
 
         # Rejection
         for j in ["Ca_2+", "Mg_2+", "SO4_2-"]:
@@ -1255,7 +1255,7 @@ class TestMCAS:
             mcas_case.fs.unit.properties_permeate[0].conc_mol_phase_comp["Liq", "Na_+"]
             / mcas_case.fs.unit.properties_in[0].conc_mol_phase_comp["Liq", "Na_+"]
         ) == pytest.approx(0.9, abs=1e-8)
-    
+
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, mcas_case):
