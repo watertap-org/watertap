@@ -73,7 +73,7 @@ runs:
       shell: bash -l {0}
       run: |
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --verbose --extras petsc
+        idaes get-extensions --verbose --extra petsc
         echo '::endgroup::'
 
     - name: Display environment info (dev)
