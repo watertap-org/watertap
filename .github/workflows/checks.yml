@@ -63,7 +63,7 @@ jobs:
         target:
           - pytest
           - pylint
-          - doctest
+          - docs
           - notebooks
         os:
           - linux
