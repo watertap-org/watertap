@@ -79,7 +79,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up WaterTAP dev environment
-      uses: ./actions/install
+      uses: ./.github/actions/install
       with:
         variant: dev-environment
 
