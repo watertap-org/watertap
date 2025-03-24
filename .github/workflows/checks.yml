@@ -81,7 +81,7 @@ jobs:
     - name: Set up WaterTAP dev environment
       uses: ./.github/actions/install
       with:
-        variant: dev-environment
+        variant: dev
 
     - name: Pylint
       if: matrix.target == 'pylint'
