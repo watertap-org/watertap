@@ -190,6 +190,12 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Smoothing factor",
         )
+        self.heaviside_k = Param(
+            initialize=1e1,
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="Smooth heaviside k parameter",
+        )
 
         def smooth_heaviside(x, k):
             return 1 / (1 + exp(-2 * k * x))
@@ -657,7 +663,6 @@ see reaction package for documentation.}""",
                     blk.eps_smooth,
                 )
 
-            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
                 x = (
@@ -666,7 +671,7 @@ see reaction package for documentation.}""",
                     / pyunits.kg
                 )
                 return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
-                    x=x, k=1e1
+                    x=x, k=self.heaviside_k
                 ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
@@ -1108,7 +1113,6 @@ see reaction package for documentation.}""",
                     blk.eps_smooth,
                 )
 
-            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
                 x = (
@@ -1117,7 +1121,7 @@ see reaction package for documentation.}""",
                     / pyunits.kg
                 )
                 return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
-                    x=x, k=1e1
+                    x=x, k=self.heaviside_k
                 ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
