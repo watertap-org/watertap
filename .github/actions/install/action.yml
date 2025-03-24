@@ -47,6 +47,13 @@ runs:
       run: |
         pip install --progress-bar off -r requirements-dev.txt
 
+    - name: Ensure local directory is empty
+      if: inputs.variant == 'standard'
+      shell: bash -l {0}
+      run: |
+        rm -rf *
+        ls -ltrh .
+
     - name: Set up Python (standard)
       if: inputs.variant == 'standard'
       uses: actions/setup-python@v5
