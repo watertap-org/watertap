@@ -177,6 +177,10 @@ jobs:
       with:
         variant: standard
         python-version: ${{ matrix.python-version }}
+    - name: Install pytest
+      if: matrix.target == 'pytest'
+      run: |
+        pip install pytest
     - name: Run pytest
       if: matrix.target == 'pytest'
       run: |
