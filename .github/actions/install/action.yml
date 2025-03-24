@@ -21,6 +21,12 @@ runs:
   using: "composite"
   steps:
 
+    - name: Validate Action inputs
+      if: "!contains(['standard', 'dev'], inputs.variant)"
+      run: |
+        echo "Unsupported variant '${{ inputs.variant }}'"
+        exit 1
+
     - name: Check out repository
       if: inputs.variant == 'dev'
       uses: actions/checkout@v4
