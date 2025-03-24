@@ -1,0 +1,12 @@
+name: watertap-dev
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11
+  - pip
+  - cyipopt=1.5
+  - reaktoro=2.13
+  - pip:
+    - -r requirements-dev.txt
+    - reaktoro-pse @ git+https://github.com/watertap-org/reaktoro-pse@0.1.dev1
