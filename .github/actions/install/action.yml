@@ -40,6 +40,8 @@ runs:
       with:
         environment-file: environment-dev.yml
         activate-environment: watertap-dev
+        conda-remove-defaults: 'true'
+        miniforge-version: latest
 
     - name: Install using pip (requirements-dev.txt)
       if: inputs.variant == 'dev'
