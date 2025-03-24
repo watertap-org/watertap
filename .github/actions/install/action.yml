@@ -23,6 +23,7 @@ runs:
 
     - name: Validate Action inputs
       if: (inputs.variant != 'standard') || (inputs.variant != 'dev')
+      shell: bash -l {0}
       run: |
         echo "Unsupported variant '${{ inputs.variant }}'"
         exit 1
