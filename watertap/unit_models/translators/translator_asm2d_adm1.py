@@ -42,7 +42,6 @@ from pyomo.environ import (
     check_optimal_termination,
     Set,
     value,
-    exp,
 )
 
 from idaes.core.util.exceptions import InitializationError
