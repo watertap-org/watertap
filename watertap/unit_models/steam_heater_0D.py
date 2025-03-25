@@ -176,8 +176,8 @@ class SteamHeater0DData(HeatExchangerData):
             print(f"DOF 2: {degrees_of_freedom(self)}")
 
             super().initialize_build(*args, **kwargs)
-            self.area.unfix()
-            self.cold_side_outlet.temperature[0].fix(cold_side_outlet_temperature)
+            #self.area.unfix()
+            #self.cold_side_outlet.temperature[0].fix(273.15+35)
             """
             for j in self.cold_side.config.property_package.solute_set:
                 self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j]
@@ -186,9 +186,11 @@ class SteamHeater0DData(HeatExchangerData):
 
             #for j in self.cold_side.config.property_package.component_list:
             self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+            self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].set_value(20)
 
             self.outlet_liquid_mass_balance.activate()
             self.outlet_pressure_sat.activate()
+            print(f"DOF 3: {degrees_of_freedom(self)}")
 
             opt = get_solver(solver, optarg)
 

@@ -76,8 +76,8 @@ import watertap.property_models.NaCl_T_dep_prop_pack as props_nacl
 from pyomo.common.log import LoggingIntercept
 from idaes.models.unit_models.translator import Translator
 import logging
-from watertap.core.util.model_debug_mode import activate
-activate()
+#from watertap.core.util.model_debug_mode import activate
+#activate()
 
 
 
@@ -152,7 +152,7 @@ def build():
         delta_temperature_callback=delta_temperature_chen_callback,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
         mode=Mode.CONDENSER,
-        estimate_cooling_water=True
+        estimate_cooling_water=False
     )
 
     m.fs.chiller = Heater(
@@ -258,6 +258,8 @@ def build():
     m.fs.eq_chiller = Constraint(
            expr=m.fs.chiller.control_volume.properties_out[0].temperature == m.fs.condenser.cold_side_inlet.temperature[0])
 
+    #eq_condenser_temperature_rise = Constraint(
+     #      expr=m.fs.condenser.cold_side_outlet.temperature[0] - m.fs.condenser.cold_side_inlet.temperature[0] == 10 * pyunits.K)
     # performance expressions
 
     # connections
@@ -326,14 +328,14 @@ def add_costs(m):
                                                 costing_method=cost_heat_exchanger,
         costing_method_arguments={"cost_steam_flow": True},)
 
-    m.fs.condenser.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing, 
-                                                costing_method=cost_heat_exchanger)
+    #m.fs.condenser.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing, 
+                                      #          costing_method=cost_heat_exchanger)
 
-    m.fs.chiller.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing,
-        costing_method=cost_heater_chiller,
-        costing_method_arguments={"HC_type": "chiller"},
-    )
+    #m.fs.chiller.costing = UnitModelCostingBlock(
+     #   flowsheet_costing_block=m.fs.costing,
+     #   costing_method=cost_heater_chiller,
+     #   costing_method_arguments={"HC_type": "chiller"},
+   # )
     
     m.fs.mixer.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.pump.costing = UnitModelCostingBlock(
@@ -345,10 +347,10 @@ def add_costs(m):
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
 
 def set_operating_conditions(m):
-    m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(9.5119 )
+    m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(10.5119 )
     m.fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(38.9326 )
     m.fs.tb_heater_to_cryst.outlet.flow_mass_phase_comp[0, "Sol", "NaCl"].fix(1e-6)
     m.fs.tb_heater_to_cryst.outlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(1e-6)
@@ -360,7 +362,7 @@ def set_operating_conditions(m):
     #m.fs.crystallizer.solids.flow_mass_phase_comp[0, "Sol", "NaCl"].fix(5)
     m.fs.crystallizer.temperature_operating.set_value(273.15 + 50 )
     m.fs.heater.overall_heat_transfer_coefficient.fix(2e3)
-    m.fs.heater.area.set_value(500)
+    m.fs.heater.area.set_value(200)
 
     # Fix
     m.fs.crystallizer.crystal_growth_rate.fix()
@@ -388,13 +390,13 @@ def set_operating_conditions(m):
 
     m.fs.condenser.cold_side_inlet.pressure[0].fix(101325)
     m.fs.condenser.cold_side_inlet.temperature[0].fix(273.15 + 20)
-    m.fs.condenser.cold_side_outlet.temperature[0].fix(273.15 + 35)
+    #m.fs.condenser.cold_side_outlet.temperature[0].fix(273.15 + 35)
     m.fs.condenser.overall_heat_transfer_coefficient.fix(2e3)
     m.fs.condenser.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
             1e-8
         )
-    m.fs.condenser.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].set_value(
-            12
+    m.fs.condenser.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            20
         )
     m.fs.condenser.area.set_value(10)
     
@@ -481,11 +483,11 @@ def optimize_set_up(m):
 
     m.fs.heater.cold_side_outlet.temperature.unfix()
     m.fs.heater.cold_side_outlet.temperature.setlb(273.15 +50)
-    m.fs.heater.cold_side_outlet.temperature.setub(273.15 +110)
+    m.fs.heater.cold_side_outlet.temperature.setub(273.15 +70)
   
     m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].lb = 300
     m.fs.mixer.recycle.flow_mass_phase_comp[0,"Liq", "H2O"].set_value(400)
-    
+    m.fs.heater.area.setlb(100)
 
     print("DOF final 2:", degrees_of_freedom(m.fs))
 
