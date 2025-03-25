@@ -36,7 +36,7 @@ def smooth_heaviside(x, k):
     """
     Provides a smooth, continuous approximation of a discontinuous function
     Args:
-        x : A Pyomo expression or a numeric value
+        x : Independent variable
         k : Smoothing parameter representing the slope of the discontinuity
     Returns:
         function : Continuous approximation of a discontinuous function
