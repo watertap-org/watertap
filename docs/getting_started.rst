@@ -139,32 +139,36 @@ For WaterTAP developers
 
 This section is for developers who plan to modify or contribute to WaterTAP's codebase. Typically, *contributing to WaterTAP* will involve opening a Pull Request (PR) in WaterTAP's repository. For more information, refer to :ref:`developer-guide`.
 
-Create a Conda environment (in this example, named ``watertap-dev``) where WaterTAP and all dependendencies needed for development will be installed, then activate it:
-
-.. code-block:: shell
-
-   conda create --name watertap-dev --yes python=3.11 && conda activate watertap-dev
-
 Clone the WaterTAP repository to your local development machine using ``git clone``, then enter the newly created ``watertap`` subdirectory:
 
 .. code-block:: shell
 
    git clone https://github.com/watertap-org/watertap && cd watertap
 
-Install WaterTAP and the development dependencies using ``pip`` and the ``requirements-dev.txt`` file:
+Using the ``environment-dev.yml`` file found in the root of the repository, create the Conda dev environment where WaterTAP and all dependendencies needed for development will be installed.
 
 .. code-block:: shell
 
-   pip install -r requirements-dev.txt
+   conda env create --file environment-dev.yml
 
-If needed, or if this is your first time installing IDAES or WaterTAP on your machine, run the following line from the same environment where WaterTAP was installed.
+.. note:: The name of the Conda environment is set in the ``environment-dev.yml`` file to ``watertap-dev``.
+   If needed (e.g. when you already have a Conda environment named ``watertap-dev`` and you want to avoid overwriting it), you can specify a different name
+   by adding the ``--name`` flag to the ``conda env create`` command, e.g. ``conda env create --file environment-dev.yml --name my-other-watertap-dev``.
+
+After the environment has been created, activate it using ``conda activate``. This step must be repeated every time a new console session or window is created:
+
+.. code-block:: shell
+
+   conda activate watertap-dev
+
+If needed, or if this is your first time installing IDAES or WaterTAP on your machine, run the following line after activating the WaterTAP dev environment:
 
 .. code-block:: shell
 
    idaes get-extensions
 
 .. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.  Depending on your operating system, you may need to follow additional steps described above to install solvers distributed through IDAES Extensions.
-   
+
 (Optional but recommended) `Pre-commit hooks <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>`_ are scripts that are automatically run by Git "client-side" (i.e. on a developer's local machine) whenever `git commit` is run. WaterTAP uses the `pre-commit <https://pre-commit.com/>`_ framework to manage a few hooks that are useful for WaterTAP developers. To install the WaterTAP pre-commit hooks, run:
 
 .. code-block:: shell
