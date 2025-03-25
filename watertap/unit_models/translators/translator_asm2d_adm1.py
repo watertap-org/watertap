@@ -47,6 +47,8 @@ from pyomo.environ import (
 
 from idaes.core.util.exceptions import InitializationError
 
+from watertap.core.util.misc import smooth_heaviside
+
 __author__ = "Marcus Holly"
 
 
@@ -196,9 +198,6 @@ see reaction package for documentation.}""",
             mutable=True,
             doc="Smooth heaviside k parameter",
         )
-
-        def smooth_heaviside(x, k):
-            return 1 / (1 + exp(-2 * k * x))
 
         @self.Constraint(
             self.flowsheet().time,

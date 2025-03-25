@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from pyomo.environ import exp
 from pyomo.core.expr.visitor import identify_variables, identify_mutable_parameters
 from pyomo.core.base.units_container import _PyomoUnit
 
@@ -29,3 +30,16 @@ def is_constant_up_to_units(expr):
             continue
         return False
     return True
+
+
+def smooth_heaviside(x, k):
+    """
+    Provides a smooth, continuous approximation of a discontinuous function
+    Args:
+        x : A Pyomo expression or a numeric value
+        k : Smoothing parameter representing the slope of the discontinuity
+    Returns:
+        function : Continuous approximation of a discontinuous function
+    """
+    function = 1 / (1 + exp(-2 * k * x))
+    return function
