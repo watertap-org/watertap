@@ -777,8 +777,6 @@ class Test_NMSU_bench_scale:
         m.fs.unit.solute_diffusivity_membrane["bpem", "OH_-"].fix(0)
         m.fs.unit.ion_trans_number_membrane["bpem", "Na_+"].fix(0.5)
         m.fs.unit.ion_trans_number_membrane["bpem", "Cl_-"].fix(0.5)
-        m.fs.unit.ion_trans_number_membrane["bpem", "H_+"].fix(0.5)
-        m.fs.unit.ion_trans_number_membrane["bpem", "OH_-"].fix(0.5)
 
         m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(2.00e-10)
         m.fs.unit.solute_diffusivity_membrane["aem", "Na_+"].fix(7.50e-11)

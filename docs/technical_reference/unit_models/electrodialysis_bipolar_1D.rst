@@ -69,20 +69,20 @@ Sets
 ----
 This model can simulate the water splitting and the transport of multiple species. All solution components
 ( H\ :sub:`2`\ O, neutral solutes, and ions, including Proton and Hydroxide ion) form a Pyomo set in the model.
-For a clear model demonstration, this document uses a NaCl water solution along with the products of water splitting, H\ :sup:`+` and OH\ :sup:`-`, hereafter.
+For a clear model demonstration, this document uses an aqueous NaCl solution along with the products of water splitting, H\ :sup:`+` and OH\ :sup:`-`, hereafter.
 
 This model can mathematically take a multi-component (i.e., one salt molecule to be treated) as an input; nevertheless
-a multi-component solution creates unknown or difficult-to-specify parameters, e.g., the electrical transport numbers through membranes,
-the multi-ion diffusivity, etc., and physical relationships, which may result in ill-posed or ill-conditioned problems challenging the models'
-numerical solutions.  While we continuously work on advancing our models to absorb new principles revealed by progressing
-research, we advise the users be very **cautious** with simulating multi-component system by this programmed model for aspects stated above.
+a multi-component solution introduces parameters that are either unknown or difficult to estimate (e.g., electrical transport numbers through membranes,
+multi-ion diffusivity, etc.) and physical relationships that may result in ill-posed or ill-conditioned problems, translating to numerical challenges that can make models difficult to solve.'
+While we continuously work on advancing our models to incorporate new principles revealed by new
+research findings, we advise users to be **cautious** when simulating multi-component systems with the current model, due to the aspects stated above.
 This unit model works with the MCAS property model.
 
 .. csv-table:: **Table 1.** List of Set
    :header: "Description", "Symbol", "Indices"
 
 
-   "Time", ":math:`t`", "[t] ([0])\ :sup:`1`"
+   "Time", ":math:`t`", "[t])\ :sup:`1`"
    "Length_domain", ":math:`x`", ":math:`l \times(0, 1)` \ :sup:`2`"
    "Phase", ":math:`p`", "['Liq']"
    "Component", ":math:`j`", "['H\ :sub:`2` \O', 'Na\ :sup:`+`', 'Cl\ :sup:`-`', 'H\ :sup:`+`', 'OH\ :sup:`-`']"
@@ -98,6 +98,10 @@ This unit model works with the MCAS property model.
  documentation, :math:`x` refers to the length dimension before normalization and carries a unit of [m].
 
  :sup:`3` "Ion" is a subset of "Component" and uses the same symbol j.
+
+ :sup:`4` Please note that Na :sup:`+`, \Cl :sup:`-` H\ :sup:`+` and OH\ :sup:`-` information must be supplied. Otherwise an error will be thrown.
+
+ :sup:`5` Additional ions can be added by the user and will not throw errors. However, areal resistance calculation assumes NaOH and HCl in the acid and base concentration. Hence, calculations will not be accurate unless users manually correct for areal resistance computation.
 
 
 Degrees of Freedom
@@ -185,7 +189,7 @@ To fully construct solution properties, users need to provide basic component in
         },
     }
 
-This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution. Please note that H\ :sup:`+` and OH\ :sup:`-` information must be supplied. Otherwise an error will be thrown.
+This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution. Please note that Na :sup:`+`, \Cl :sup:`-` H\ :sup:`+` and OH\ :sup:`-` information must be supplied. Otherwise an error will be thrown.
 
 Information regarding the property package this unit model relies on can be found here: 
 
@@ -283,6 +287,8 @@ Some of the key operational and performance metrics are given in **Table 6**.
  :sup:`1` The areal resistance functional form is based on Galama et al. (2014) [9]_.
 
  :sup:`2` :math:`C'` is expressed in :math:`kg/m^3`.
+
+ :sup:`3` Areal resistance calculation assume NaOH and HCl in the acid and base channels. Additional ions can be added by the user and will not throw errors. However, calculations will not be accurate unless users manually account for areal resistance computation.
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 

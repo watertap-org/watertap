@@ -759,7 +759,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=1,
-            # bounds=(0, 1e32),
             units=pyunits.dimensionless,
             doc="Limiting current density across the bipolar membrane as a function of the normalized length",
         )
@@ -1470,7 +1469,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             self.diluate.length_domain,
             initialize=1,
             domain=NonNegativeReals,
-            # bounds=(0, 50000),
             units=pyunits.mole * pyunits.meter**-2 * pyunits.second**-1,
             doc="Flux generated",
         )
