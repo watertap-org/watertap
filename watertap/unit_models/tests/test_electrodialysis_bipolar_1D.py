@@ -946,6 +946,10 @@ class Test_NMSU_bench_scale:
                 hold_state=True,
             )
 
+            m.fs.feed_diluate.initialize()
+            m.fs.feed_acidic.initialize()
+            m.fs.feed_basic.initialize()
+
             m.fs.arc0 = Arc(
                 source=m.fs.feed_diluate.outlet, destination=m.fs.unit.inlet_diluate
             )
