@@ -1,3 +1,4 @@
+.. _BSM2_flowsheet:
 Benchmark Simulation Model No.2
 ===============================
 

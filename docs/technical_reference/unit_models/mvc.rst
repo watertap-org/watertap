@@ -1,3 +1,4 @@
+.. _MVC:
 Mechanical Vapor Compression (MVC)
 ==================================
 Modeling a mechanical vapor compression (MVC) system is performed through flowsheet connectivity of individual model

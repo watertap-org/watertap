@@ -1,3 +1,4 @@
+.. _stoichiometric_reactor:
 Stoichiometric reactor
 ======================
 

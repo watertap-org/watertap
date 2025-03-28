@@ -1,3 +1,4 @@
+.. _MVC_flowsheet:
 Mechanical Vapor Compression
 ============================
 

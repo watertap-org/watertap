@@ -1,3 +1,4 @@
+.. _ADM1:
 ADM1 Property Package
 =====================
 

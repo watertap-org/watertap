@@ -1,3 +1,4 @@
+.. _ASM1:
 ASM1 Property Package
 =====================
 
@@ -6,6 +7,7 @@ This package implements property relationships for the treatment of wastewater u
 This Activated Sludge Model no.1 (ASM1) property/reaction package:
    * supports 'H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', and 'S_ALK' as components
    * supports only liquid phase
+
 
 Sets
 ----

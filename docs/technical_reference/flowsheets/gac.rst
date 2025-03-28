@@ -1,3 +1,4 @@
+.. _GAC_flowsheet:
 Granular Activated Carbon
 =========================
 

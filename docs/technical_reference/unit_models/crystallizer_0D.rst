@@ -1,6 +1,6 @@
-
-Crystallization (0D)
-=======================
+.. _crystallizer_0D:
+Crystallizer (0D)
+=================
 
 Introduction
 -------------

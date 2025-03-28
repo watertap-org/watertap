@@ -1,3 +1,4 @@
+.. _water:
 Water Property Package
 ======================
 

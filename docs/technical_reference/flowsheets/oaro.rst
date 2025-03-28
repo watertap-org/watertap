@@ -1,3 +1,4 @@
+.. _OARO_flowsheet:
 Osmotically Assisted Reverse Osmosis
 ====================================
 

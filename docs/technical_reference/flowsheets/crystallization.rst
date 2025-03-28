@@ -1,3 +1,4 @@
+.. _crystallization_flowsheet:
 NaCl Crystallization
 ===============================
 

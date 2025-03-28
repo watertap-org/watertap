@@ -1,3 +1,4 @@
+.. _ADM1_flowsheet:
 Anaerobic Digestion Model No. 1
 ===============================
 

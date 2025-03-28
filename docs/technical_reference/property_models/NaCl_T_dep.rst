@@ -1,3 +1,4 @@
+.. _nacl_t_dependent:
 NaCl Property Package with Temperature Dependence
 =================================================
 

@@ -1,3 +1,4 @@
+.. _nanofiltration_DSPMDE:
 Nanofiltration- Donnan Steric Pore Model with Dielectric Exclusion (0D)
 =======================================================================
 

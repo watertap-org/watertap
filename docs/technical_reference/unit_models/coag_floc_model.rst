@@ -1,3 +1,4 @@
+.. _coagulation_flocculation:
 Coagulation-Flocculation
 ========================
 

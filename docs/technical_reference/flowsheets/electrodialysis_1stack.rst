@@ -1,4 +1,5 @@
-One-Stack Electrodialysis 
+.. _ED_flowsheet:
+One-Stack Electrodialysis
 =========================
 
 Introduction

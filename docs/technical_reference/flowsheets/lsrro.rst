@@ -1,3 +1,4 @@
+.. _lsrro_flowsheet:
 Low-Salt-Rejection Reverse Osmosis (LSRRO)
 ==========================================
 

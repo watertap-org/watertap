@@ -1,3 +1,4 @@
+.. _RO_ERD_flowsheet:
 Reverse Osmosis with Energy Recovery
 ====================================
 

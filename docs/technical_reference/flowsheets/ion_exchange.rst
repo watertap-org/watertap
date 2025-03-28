@@ -1,3 +1,4 @@
+.. _IX_flowsheet:
 Ion Exchange
 ============
 

@@ -1,3 +1,4 @@
+.. _ED_flowsheet_with_recirc:
 One-Stack Electrodialysis with a Concentrate Fluid Recirculation
 ================================================================
 

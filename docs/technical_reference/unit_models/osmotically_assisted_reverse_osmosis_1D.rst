@@ -1,3 +1,4 @@
+.. _OARO_1D:
 Osmotically Assisted Reverse Osmosis (1D)
 =========================================
 This osmotically assisted reverse osmosis (OARO) unit model
