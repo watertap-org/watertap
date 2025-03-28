@@ -6,7 +6,7 @@ the capital cost of building the reactor. The capital cost of lime and soda ash 
 total reagent mass being added to the softening process and is only constructed when both precipitant and reagents are provided.
 While acid addition capital cost is only constructed if reagents are provided but precipitants are not. Acid addition costing is 
 based on volume flow of acid per day. 
-(Please refer to the `stoichiometric reactor documentation <https://watertap.readthedocs.io/en/stable/technical_reference/unit_models/stoichiometric_reactor.html>`_ for details on dissolution and precipitation reaction configurations). 
+(Please refer to the :ref:`stoichiometric reactor documentation <stoichiometric_reactor>` for details on dissolution and precipitation reaction configurations).
 
 Costing Method Parameters
 +++++++++++++++++++++++++
