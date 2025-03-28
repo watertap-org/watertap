@@ -41,6 +41,14 @@ from idaes.core.util.model_statistics import (
 
 import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepSpecification,
+)
+from idaes.core.surrogate.pysmo.sampling import (
+    UniformSampling,
+)
 
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 
@@ -634,3 +642,77 @@ class TestAsm2dAdm1_bioP_false(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_SF(self, asmadm):
+        spec = ParameterSweepSpecification()
+        spec.add_sampled_input(
+            "fs.unit.inlet.conc_mass_comp[0, S_F]", lower=0.001, upper=0.1
+        )
+        spec.set_sampling_method(UniformSampling)
+        spec.set_sample_size([4])
+
+        ca = IpoptConvergenceAnalysis(asmadm, input_specification=spec)
+
+        ca.run_convergence_analysis()
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 4
+
+        assert ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == 3
+        assert ca.results[0]["results"]["iters_in_restoration"] == 0
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == 3
+        assert ca.results[1]["results"]["iters_in_restoration"] == 0
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+        assert ca.results[2]["success"]
+        assert ca.results[2]["results"]["iters"] == 3
+        assert ca.results[2]["results"]["iters_in_restoration"] == 0
+        assert ca.results[2]["results"]["iters_w_regularization"] == 0
+        assert ca.results[2]["results"]["numerical_issues"]
+
+        assert ca.results[3]["success"]
+        assert ca.results[3]["results"]["iters"] == 3
+        assert ca.results[3]["results"]["iters_in_restoration"] == 0
+        assert ca.results[3]["results"]["iters_w_regularization"] == 0
+        assert ca.results[3]["results"]["numerical_issues"]
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_XS(self, asmadm):
+        spec = ParameterSweepSpecification()
+        spec.add_sampled_input(
+            "fs.unit.inlet.conc_mass_comp[0, X_S]", lower=1, upper=100
+        )
+        spec.set_sampling_method(UniformSampling)
+        spec.set_sample_size([4])
+
+        ca = IpoptConvergenceAnalysis(asmadm, input_specification=spec)
+
+        ca.run_convergence_analysis()
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 4
+
+        assert ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == 3
+        assert ca.results[0]["results"]["iters_in_restoration"] == 0
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == 3
+        assert ca.results[1]["results"]["iters_in_restoration"] == 0
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+        assert not ca.results[2]["success"]
+
+        assert not ca.results[3]["success"]
