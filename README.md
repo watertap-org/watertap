@@ -32,9 +32,7 @@ refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en
 
 ## Cite this work
 
-To cite this work, use the "Cite this repository" feature available on the right side of this repository page or use the reference text given below.
-
-> WaterTAP contributors. WaterTAP: An open-source water treatment model library. Version 1.2. Sponsored by California Energy Commission, National Alliance for Water Innovation, and USDOE. Available at https://github.com/watertap-org/watertap.
+To cite this work, please use the "Cite this repository" feature available on the right side of this repository page.
 
 ## Funding Acknowledgements
 
