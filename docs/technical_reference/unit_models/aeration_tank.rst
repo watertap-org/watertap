@@ -1,3 +1,5 @@
+.. _aeration_tank:
+
 Aeration Tank
 =============
 

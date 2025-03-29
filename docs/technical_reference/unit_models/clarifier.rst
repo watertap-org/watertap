@@ -1,3 +1,5 @@
+.. _clarifier:
+
 Clarifier
 =========
 

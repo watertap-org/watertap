@@ -1,3 +1,5 @@
+.. _boron_removal:
+
 Boron Removal
 =============
 

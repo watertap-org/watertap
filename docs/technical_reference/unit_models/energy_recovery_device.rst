@@ -1,3 +1,5 @@
+.. _ERD:
+
 Energy Recovery Device
 ======================
 

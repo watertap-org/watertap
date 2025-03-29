@@ -1,3 +1,5 @@
+.. _GAC:
+
 Granular Activated Carbon (GAC)
 ===============================
 This is an empirical, performance-based granular activated carbon (GAC) model that works under the following criteria and assumptions:

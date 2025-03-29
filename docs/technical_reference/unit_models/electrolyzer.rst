@@ -1,3 +1,5 @@
+.. _electrolyzer:
+
 Electrolyzer
 ============
 This is a simplified model used to approximate electrolyzer performance. With the current build, the model is simulated under the following assumptions:

@@ -1,3 +1,5 @@
+.. _ED_1D:
+
 Electrodialysis (1D)
 ====================
 

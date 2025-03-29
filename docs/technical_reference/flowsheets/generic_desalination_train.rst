@@ -1,4 +1,6 @@
-Generic desalination treatment train 
+.. _desalination_flowsheet:
+
+Generic desalination treatment train
 ====================================
 
 Introduction

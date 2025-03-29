@@ -1,5 +1,7 @@
-Generic desalter unit
-=========================
+.. _generic_desalter:
+
+Generic Desalter Unit
+=====================
 
 .. index::
    pair: watertap.unit_models.generic_desalter;generic_desalter

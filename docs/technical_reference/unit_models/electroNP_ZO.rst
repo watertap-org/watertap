@@ -1,5 +1,7 @@
+.. _electroNP:
+
 ElectroNP (ZO)
-====================
+==============
 This electrochemical nutrient removal (ElectroNP) unit model
    * is a zero-order model that enables the user to specify performance in terms of solute rejection
    * supports a single liquid phase only
