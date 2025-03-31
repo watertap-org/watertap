@@ -14,7 +14,7 @@ Modified ASM2D Property Package
 
 .. role:: blue
 
-This package is an extension of the `base Activated Sludge Model no.2d (ASM2d) <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM2D.html>`_ and implements properties and reactions of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with biological phosphorus removal as provided in Flores-Alsina, X. et al. (2016) [1].
+This package is an extension of the :ref:`base Activated Sludge Model No.2 (ASM2d) <ASM2d>` and implements properties and reactions of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with biological phosphorus removal as provided in Flores-Alsina, X. et al. (2016) [1].
 
 Throughout this documentation, text in :red:`red` has been removed in the Modified ASM2d model, text in :lime:`lime` has been added, and text in :blue:`blue` has been modified from its base ASM2d implementation.
 

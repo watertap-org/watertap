@@ -39,22 +39,22 @@ The flowsheet relies on the following key assumptions:
     Figure 1. BSM2 flowsheet
 
 Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
-    * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
-    * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
-    * `Dewatering unit <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/dewatering_unit.html>`_
+    * :ref:`Thickener <thickener>`
+    * :ref:`Anaerobic digester <anaerobic_digester>`
+    * :ref:`Dewatering unit <dewatering>`
     * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
-    * `ADM1 to ASM1 Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_adm1_asm1.html>`_
-    * `ASM1 to ADM1 Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_asm1_adm1.html>`_
-    * `Aeration tank <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/aeration_tank.html>`_
-    * `Primary clarifier <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/clarifier.html>`_
-    * `Secondary clarifier <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/clarifier.html>`_
+    * :ref:`ADM1 to ASM1 Translator <ADM1_ASM1_translator>`
+    * :ref:`ASM1 to ADM1 Translator <ASM1_ADM1_translator>`
+    * :ref:`Aeration Tank <aeration_tank>`
+    * :ref:`Primary Clarifier <clarifier>`
+    * :ref:`Secondary Clarifier <clarifier>`
 
 Documentation for each of the property models can be found below.
-    * `ASM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
-    * `ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+    * :ref:`ASM1 <ASM2d>`
+    * :ref:`ADM1 <ADM1>`
 
 Documentation for the costing relationships can be found below.
-    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+    * :ref:`WaterTAP Costing Package <watertap_costing>`
 
 The objective function is to minimize the levelized cost of water, which can be represented by the following equation
 where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor

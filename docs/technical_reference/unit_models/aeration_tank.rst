@@ -6,7 +6,7 @@ Aeration Tank
 .. index::
    pair: watertap.unit_models.aeration_tank;aeration_tank
 
-This aeration tank unit model inherits from the `CSTR with injection <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/cstr_injection.html>`_ .
+This aeration tank unit model inherits from the :ref:`CSTR with injection <CSTR_injection>`.
 The model makes the following assumptions:
 
    * oxygen is injected into the tank

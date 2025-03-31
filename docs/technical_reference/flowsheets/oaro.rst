@@ -9,9 +9,9 @@ Introduction
 Osmotically assisted reverse osmosis (OARO) is a non-evaporative membrane-based desalination technology that can treat
 high-salinity brines. Compared to conventional reverse osmosis (RO), a saline sweep is added to reduce the osmotic pressure
 difference across the membrane as well as enhance water transport. This OARO flowsheet includes numbers of
-`OARO <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/osmotically_assisted_reverse_osmosis_0D.html>`_ units,
+:ref:`OARO <OARO_0D>` units,
 pumps, energy recovery devices (ERDs) and a
-`RO <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/reverse_osmosis_0D.html>`_ unit
+:ref:`RO <RO_0D>` unit
 depending on the number of stages. It can be used to implement techno-economic analyses and optimize costing metrics
 with specified number of stages and system water recovery.
 
@@ -27,12 +27,12 @@ Similarly, the resulting concentrate flows out of the feed-side, gets energy rec
 pressurized by the recycle pump, and flows back into permeate-side of the last stage.
 Meanwhile, the diluted sweep solution in the permeate-side flows into the next stage and finally into a conventional RO module.
 Costing relationships for each of the unit models is described in the
-`WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_ .
+:ref:`WaterTAP Costing Package Package <watertap_costing>`.
 The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
    * supports optimization and minimizes levelized cost of water (LCOW) with constraints
-   * `NaCl Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/NaCl.html>`_ is utilized
+   * :ref:`NaCl Property Package <nacl>` is utilized
    * number of stages and system recovery should be specified for optimization
 
 
@@ -43,14 +43,14 @@ The flowsheet relies on the following key assumptions:
     Figure 1. OARO flow diagram
 
 Documentation for each of the unit models can be found here:
-   * `OARO <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/osmotically_assisted_reverse_osmosis_0D.html>`_
-   * `RO <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/reverse_osmosis_0D.html>`_
+   * :ref:`OARO <OARO_0D>`
+   * :ref:`RO <RO_0D>`
 
 Documentation for the property model can be found here:
-    * `NaCl Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/NaCl.html>`_
+    * :ref:`NaCl Property Package <nacl>`
 
 Documentation for the costing relationships can be found below.
-    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+    * :ref:`WaterTAP Costing Package <watertap_costing>`
 
 This flowsheet aims to solve optimization problem that minimizes levelized cost of water (LCOW) with specified
 number of stages and system mass recovery.
@@ -99,8 +99,8 @@ Flowsheet Specifications
    "Feed-side spacer porosity", ":math:`\text{dimensionless}`", "0.75"
    "Permeate pressure", ":math:`\text{Pa}`", "101325"
 
-\*Settings for `OARO <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/osmotically_assisted_reverse_osmosis_0D.html>`_
-and `RO <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/reverse_osmosis_0D.html>`_
+\*Settings for :ref:`OARO <OARO_0D>`
+and :ref:`RO <RO_0D>`
 can vary depending on the configurations.
 
 

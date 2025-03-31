@@ -7,7 +7,7 @@ Introduction
 ------------
 This flowsheet builds a treatment train with generic units that operate with assumed performance and use simple costs specified by the user for each unit operation. 
 The flowsheet uses its own simple costing package and uses generic desalter and generic separation units to estimate overall treatment costs. 
-The flowsheet relies on `MCAS <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/mc_aq_sol.html>`_ properties package to track different species through the train. 
+The flowsheet relies on :ref:`MCAS <mcas_tech_ref>` properties package to track different species through the train.
 
 Implementation
 --------------
@@ -17,8 +17,8 @@ The default flowsheet builds a typical zero liquid discharge processes shown in 
 .. figure:: ../../_static/flowsheets/generic_treatment_train.png
 
 The Documentation for desalter and separator units: 
-    * `Generic desalter <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/generic_desalter.html>`_
-    * `Generic separator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/generic_separator.html>`_
+    * :ref:`Generic desalter <generic_desalter>`
+    * :ref:`Generic separator <generic_separator>`
 
 
 Degrees of Freedom

@@ -27,7 +27,7 @@ The flowsheet relies on the following key assumptions:
     Figure 1. Crystallizer flowsheet
 
 Documentation for the crystallizer unit model can be found below. 
-    * `Crystallizer <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/crystallizer_0D.html>`_
+    * :ref:`Crystallizer <crystallizer_0D>`
 
 Degrees of Freedom
 ------------------

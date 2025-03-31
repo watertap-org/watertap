@@ -9,7 +9,7 @@ Electrodialysis (ED) is a promising technology for desalinating brackish waters 
 
 Equal flow conditions through the diluate and concentrate channels would result in a product water recovery of 50%. This flowsheet simulates the simplest setup of a one-stack ED system without any fluid recirculation, i.e., the ED stack being operated in an in-and-out single direction flow mode. This flowsheet also does not take account of the frictional pressure drop in the channel so no pump is included.  A more complicated ED flowsheet is presented as 
 
-    * `One-stack electrodialysis with a concentrate fluid recirculation <https://watertap--1385.org.readthedocs.build/en/1385/technical_reference/flowsheets/electrodialysis_1stack_conc_recirc.html>`_.
+    * :ref:`One-stack electrodialysis with a concentrate fluid recirculation <ED_flowsheet_with_recirc>`
 
 Implementation
 --------------
@@ -50,13 +50,13 @@ where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital r
 The product water salinity is set to 1 :math:`g L^{-1}` (from a feed salinity of 9.9 :math:`g L^{-1}`).
 
 Documentation for unit models from WaterTAP: 
-    * `Electrodialysis_1D <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/electrodialysis_1D.html>`_
+    * :ref:`Electrodialysis 1D <ED_1D>`
 Documentation for unit models from IDAES: 
     * `Feed block <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/feed.html>`_
     * `Separator <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/separator.html>`_
     * `Product block <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/product.html>`_
 Documentation for the property model:
-    * `Multi-Component Aqueous Solution (MCAS) Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/mc_aq_sol.html>`_
+    * :ref:`Multi-Component Aqueous Solution (MCAS) Property Package <mcas_tech_ref>`
 
 Degrees of Freedom
 ------------------

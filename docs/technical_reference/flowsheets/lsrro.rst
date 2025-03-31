@@ -37,18 +37,18 @@ The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
    * supports optimization and minimizes levelized cost of water (LCOW) with constraints
-   * `NaCl Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/NaCl.html>`_ is utilized
+   * :ref:`NaCl Property Package <nacl>` is utilized
    * number of stages and system recovery should be specified for optimization
 
 Documentation for each of the unit models can be found here:
-   * `RO and LSR <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/reverse_osmosis_0D.html>`_
+   * :ref:`RO and LSR <RO_0D>`
    * `Mixer <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/mixer.html>`_
 
 Documentation for the property model can be found here:
-    * `NaCl Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/NaCl.html>`_
+    * :ref:`NaCl Property Package <nacl>`
 
 Documentation for the costing relationships can be found here:
-    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+    * :ref:`WaterTAP Costing Package <watertap_costing>`
 
 This flowsheet aims to solve an optimization problem that minimizes the levelized cost of water (LCOW) with a specified number of stages and system mass recovery. LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents the total capital cost, :math:`C_{op,tot}` represents the total operating cost, and :math:`f_{util}` represents the utilization factor:
 
