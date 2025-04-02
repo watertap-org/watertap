@@ -23,7 +23,7 @@ from watertap.unit_models.gac import (
 )
 from watertap.costing.unit_models.gac import ContactorType
 from watertap.flowsheets.gac import gac as gac_fs
-from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
+from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
 
 __author__ = "Hunter Barber"
 

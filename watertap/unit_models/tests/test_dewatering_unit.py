@@ -188,9 +188,9 @@ class TestDu(object):
         assert hasattr(du.fs.unit.overflow, "pressure")
         assert hasattr(du.fs.unit.overflow, "alkalinity")
 
-        assert number_variables(du) == 85
+        assert number_variables(du) == 83
         assert number_total_constraints(du) == 62
-        assert number_unused_variables(du) == 6
+        assert number_unused_variables(du) == 4
 
     @pytest.mark.unit
     def test_dof(self, du):

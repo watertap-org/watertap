@@ -15,6 +15,12 @@ Flowsheet example full Water Resource Recovery Facility
 
 The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
 but comprises different specifications for default values than BSM2.
+
+[1] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
+C.Rosen, J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 2 (BSM2)", 2018
+
+[2] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
+J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 """
 
 # Some more information about this module
@@ -29,7 +35,6 @@ from idaes.core import (
     UnitModelBlockData,
 )
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Separator,
     Product,
@@ -68,6 +73,7 @@ from watertap.unit_models.translators.translator_adm1_asm2d import (
 from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import Translator_ASM2d_ADM1
 from watertap.unit_models.anaerobic_digester import AD
+from watertap.unit_models.cstr import CSTR
 from watertap.unit_models.dewatering import (
     DewateringUnit,
     ActivatedSludgeModelType as dewater_type,
@@ -95,7 +101,7 @@ _log = idaeslog.getLogger(__name__)
 
 def main(bio_P=False):
     m = build(bio_P=bio_P)
-    set_operating_conditions(m)
+    set_operating_conditions(m, bio_P=bio_P)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -113,14 +119,15 @@ def main(bio_P=False):
     results = solve(m)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-    m.fs.R5.KLa.fix(240)
-    m.fs.R6.KLa.fix(240)
-    m.fs.R7.KLa.fix(84)
+    # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
+    m.fs.R5.KLa.fix(240 / 24)
+    m.fs.R6.KLa.fix(240 / 24)
+    m.fs.R7.KLa.fix(84 / 24)
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
-    # Resolve with controls in place
+    # Re-solve with controls in place
     results = solve(m)
 
     pyo.assert_optimal_termination(results)
@@ -352,17 +359,17 @@ def build(bio_P=False):
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
     # Add additional parameter and constraints
     m.fs.R5.KLa = pyo.Var(
-        initialize=240,
+        initialize=240 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
     m.fs.R6.KLa = pyo.Var(
-        initialize=240,
+        initialize=240 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
     m.fs.R7.KLa = pyo.Var(
-        initialize=84,
+        initialize=84 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
@@ -374,9 +381,13 @@ def build(bio_P=False):
     )
 
     m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
-    for R in m.fs.aerobic_reactors:
-        iscale.set_scaling_factor(R.KLa, 1e-2)
-        iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-3)
+    if bio_P:
+        for R in m.fs.aerobic_reactors:
+            iscale.set_scaling_factor(R.KLa, 1e-1)
+            iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-2)
+    else:
+        for R in m.fs.aerobic_reactors:
+            iscale.set_scaling_factor(R.KLa, 1e-1)
 
     @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):
@@ -411,7 +422,7 @@ def build(bio_P=False):
     return m
 
 
-def set_operating_conditions(m):
+def set_operating_conditions(m, bio_P=False):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
@@ -536,6 +547,14 @@ def set_operating_conditions(m):
                 iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
+            if "anions" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+            if "cations" in var.name:
+                iscale.set_scaling_factor(var, 1e2)
+
+    for unit in ("R1", "R2", "R3", "R4"):
+        block = getattr(m.fs, unit)
+        iscale.set_scaling_factor(block.hydraulic_retention_time, 1e-3)
 
     for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
         block = getattr(m.fs, unit)
@@ -547,6 +566,21 @@ def set_operating_conditions(m):
             block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
+
+    iscale.set_scaling_factor(m.fs.AD.KH_co2, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
+    iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
+
+    if bio_P:
+        iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-6
+        )
+    else:
+        iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-3
+        )
 
     # Apply scaling
     scale_variables(m)
@@ -612,7 +646,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_AUT"): 0.25,
                 (0, "X_H"): 23.0,
                 (0, "X_I"): 11.3,
-                (0, "X_PAO"): 10.8,
+                (0, "X_PAO"): 10.9,
                 (0, "X_PHA"): 0.0058,
                 (0, "X_PP"): 2.9,
                 (0, "X_S"): 3.8,
@@ -733,6 +767,11 @@ def add_costing(m):
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
             iscale.set_scaling_factor(block.costing.capital_cost, 1e-5)
+
+    iscale.constraint_scaling_transform(m.fs.AD.costing.capital_cost_constraint, 1e-6)
+    iscale.constraint_scaling_transform(
+        m.fs.dewater.costing.capital_cost_constraint, 1e-6
+    )
 
 
 def display_costing(m):
@@ -872,9 +911,82 @@ def display_performance_metrics(m):
         pyo.units.get_units(m.fs.AD.liquid_phase.properties_in[0].flow_vol),
     )
 
+    print("---- Feed Metrics----")
+    print(
+        "Feed TSS concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TSS),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TSS),
+    )
+    print(
+        "Feed COD concentration",
+        pyo.value(m.fs.FeedWater.properties[0].COD),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.FeedWater.properties[0].BOD5["raw"]),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].BOD5["raw"]),
+    )
+    print(
+        "TKN concentration",
+        pyo.value(m.fs.FeedWater.properties[0].TKN),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].TKN),
+    )
+    print(
+        "SNOX concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SNOX),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.FeedWater.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_inorganic),
+    )
+
+    print("---- Effluent Metrics----")
+    print(
+        "TSS concentration",
+        pyo.value(m.fs.Treated.properties[0].TSS),
+        pyo.units.get_units(m.fs.Treated.properties[0].TSS),
+    )
+    print(
+        "COD concentration",
+        pyo.value(m.fs.Treated.properties[0].COD),
+        pyo.units.get_units(m.fs.Treated.properties[0].COD),
+    )
+    print(
+        "BOD5 concentration",
+        pyo.value(m.fs.Treated.properties[0].BOD5["effluent"]),
+        pyo.units.get_units(m.fs.Treated.properties[0].BOD5["effluent"]),
+    )
+    print(
+        "TKN concentration",
+        pyo.value(m.fs.Treated.properties[0].TKN),
+        pyo.units.get_units(m.fs.Treated.properties[0].TKN),
+    )
+    print(
+        "SNOX concentration",
+        pyo.value(m.fs.Treated.properties[0].SNOX),
+        pyo.units.get_units(m.fs.Treated.properties[0].SNOX),
+    )
+    print(
+        "Organic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_organic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_organic),
+    )
+    print(
+        "Inorganic phosphorus concentration",
+        pyo.value(m.fs.Treated.properties[0].SP_inorganic),
+        pyo.units.get_units(m.fs.Treated.properties[0].SP_inorganic),
+    )
+
 
 if __name__ == "__main__":
-    # This method builds and runs a steady state activated sludge flowsheet.
     m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(

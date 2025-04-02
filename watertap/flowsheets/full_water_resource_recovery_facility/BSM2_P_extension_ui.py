@@ -17,7 +17,7 @@ from pyomo.environ import units as pyunits
 
 import idaes.logger as idaeslog
 
-from watertap.ui.fsapi import FlowsheetInterface
+from idaes_flowsheet_processor.api import FlowsheetInterface
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     build,
@@ -3873,7 +3873,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         m = build(bio_P=bioP)
 
-        set_operating_conditions(m)
+        set_operating_conditions(m, bio_P=bioP)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -3890,9 +3890,9 @@ def build_flowsheet(build_options=None, **kwargs):
         solve(m)
 
         # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-        m.fs.R5.KLa.fix(240)
-        m.fs.R6.KLa.fix(240)
-        m.fs.R7.KLa.fix(84)
+        m.fs.R5.KLa.fix(240 / 24)
+        m.fs.R6.KLa.fix(240 / 24)
+        m.fs.R7.KLa.fix(84 / 24)
         m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
         m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
         m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
@@ -3912,7 +3912,7 @@ def build_flowsheet(build_options=None, **kwargs):
     else:
         m = build(bio_P=False)
 
-        set_operating_conditions(m)
+        set_operating_conditions(m, bio_P=False)
 
         for mx in m.fs.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -3929,9 +3929,9 @@ def build_flowsheet(build_options=None, **kwargs):
         solve(m)
 
         # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-        m.fs.R5.KLa.fix(240)
-        m.fs.R6.KLa.fix(240)
-        m.fs.R7.KLa.fix(84)
+        m.fs.R5.KLa.fix(240 / 24)
+        m.fs.R6.KLa.fix(240 / 24)
+        m.fs.R7.KLa.fix(84 / 24)
         m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
         m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
         m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
