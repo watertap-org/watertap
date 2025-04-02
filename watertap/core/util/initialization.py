@@ -162,31 +162,38 @@ def interval_initializer(
     for v in blk.component_data_objects(Var, active=True, descend_into=True):
         bound_cache[v] = v.bounds
 
-    fbbt(blk, feasibility_tol=feasibility_tol, deactivate_satisfied_constraints=False)
+    try:
+        fbbt(
+            blk, feasibility_tol=feasibility_tol, deactivate_satisfied_constraints=False
+        )
 
-    for v, bounds in bound_cache.items():
-        if v.value is None:
-            logger.info(
-                f"variable {v.name} has no initial value: setting to {default_initial_value}"
-            )
-            v.set_value(default_initial_value, skip_validation=True)
-        if v.lb is not None:
-            if v.lb == v.ub:
-                logger.debug(f"setting {v.name} to derived value {v.value}")
-                v.set_value(v.lb, skip_validation=True)
-                continue
-            if v.value < v.lb:
-                logger.debug(
-                    f"projecting {v.name} at value {v.value} onto derived lower bound {v.lb}"
+        for v, bounds in bound_cache.items():
+            if v.value is None:
+                logger.info(
+                    f"variable {v.name} has no initial value: setting to {default_initial_value}"
                 )
-                v.set_value(v.lb, skip_validation=True)
-        if v.ub is not None:
-            if v.value > v.ub:
-                logger.debug(
-                    f"projecting {v.name} at value {v.value} onto derived upper bound {v.ub}"
-                )
-                v.set_value(v.ub, skip_validation=True)
+                v.set_value(default_initial_value, skip_validation=True)
+            if v.lb is not None:
+                if v.lb == v.ub:
+                    logger.debug(f"setting {v.name} to derived value {v.value}")
+                    v.set_value(v.lb, skip_validation=True)
+                    continue
+                if v.value < v.lb:
+                    logger.debug(
+                        f"projecting {v.name} at value {v.value} onto derived lower bound {v.lb}"
+                    )
+                    v.set_value(v.lb, skip_validation=True)
+            if v.ub is not None:
+                if v.value > v.ub:
+                    logger.debug(
+                        f"projecting {v.name} at value {v.value} onto derived upper bound {v.ub}"
+                    )
+                    v.set_value(v.ub, skip_validation=True)
 
-    for v, bounds in bound_cache.items():
-        # restore bounds to original
-        v.bounds = bounds
+    except:
+        raise
+
+    finally:
+        # restore the bounds before leaving this function
+        for v, bounds in bound_cache.items():
+            v.bounds = bounds
