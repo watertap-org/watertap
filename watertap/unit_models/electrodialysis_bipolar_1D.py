@@ -384,6 +384,16 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
+        "terms_fE",
+        ConfigValue(
+            default=40,
+            domain=int,
+            description="Number of terms in the second Wien electric field expression",
+            doc="""Number of terms in the second Wien electric field expression. Highly recommended to use more than 15 (default=40)""",
+        ),
+    )
+
+    CONFIG.declare(
         "collocation_points",
         ConfigValue(
             default=2,
@@ -1523,9 +1533,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             doc="Calculate the potential barrier at limiting current across the bipolar membrane",
         )
         def eq_flux_splitting(self, t, x):
-            terms = 40
             matrx = 0
-            for indx in range(terms):
+            for indx in range(self.config.terms_fE):
                 matrx += (
                     2**indx
                     * self.elec_field_non_dim[t, x] ** indx
@@ -2072,14 +2081,16 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             iscale.get_scaling_factor(self.salt_conc_ael_x, warning=True) is None
         ):
             if self.config.salt_calculation:
-                sf = -smooth_min(
-                    -iscale.get_scaling_factor(
+                sf = (
+                    iscale.get_scaling_factor(
                         self.basic.properties[0, 0].conc_mol_phase_comp["Liq", "Na_+"]
-                    ),
-                    -iscale.get_scaling_factor(
+                    )
+                    ** 2
+                    + iscale.get_scaling_factor(
                         self.basic.properties[0, 0].conc_mol_phase_comp["Liq", "Cl_-"]
-                    ),
-                )
+                    )
+                    ** 2
+                ) ** 0.5
             else:
                 sf = value(self.salt_conc_ael_ref) ** -1
             iscale.set_scaling_factor(self.salt_conc_ael_x, sf)
@@ -2087,15 +2098,16 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             iscale.get_scaling_factor(self.salt_conc_cel_x, warning=True) is None
         ):
             if self.config.salt_calculation:
-                sf = -smooth_min(
-                    -iscale.get_scaling_factor(
+                sf = (
+                    iscale.get_scaling_factor(
                         self.acidic.properties[0, 0].conc_mol_phase_comp["Liq", "Na_+"]
-                    ),
-                    -iscale.get_scaling_factor(
+                    )
+                    ** 2
+                    + iscale.get_scaling_factor(
                         self.acidic.properties[0, 0].conc_mol_phase_comp["Liq", "Cl_-"]
-                    ),
-                )
-                # sf = iscale.get_scaling_factor(self.acidic.properties[0,0].conc_mol_phase_comp["Liq", "Na_+"])
+                    )
+                    ** 2
+                ) ** 0.5
             else:
                 sf = value(self.salt_conc_cel_ref) ** -1
             iscale.set_scaling_factor(self.salt_conc_cel_x, sf)
@@ -2111,30 +2123,19 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
         ):
             iscale.set_scaling_factor(self.k2_zero, 1e5)
 
-        # The folloing Vars are built for constructing constraints and their sf are computed from other Vars.
-
-        if iscale.get_scaling_factor(self.voltage_membrane_drop, warning=True) is None:
-            sf = (
-                (
-                    iscale.get_scaling_factor(self.elec_field_non_dim)
-                    * iscale.get_scaling_factor(self.relative_permittivity)
-                    * 293**-2
-                    / 0.09636**-1
-                )
-                ** 2
-                * value(Constants.vacuum_electric_permittivity) ** -1
-                * iscale.get_scaling_factor(self.relative_permittivity)
-                * value(Constants.faraday_constant) ** -1
-                * iscale.get_scaling_factor(self.membrane_fixed_charge)
-            )
-
+        if (
+            hasattr(self, "voltage_membrane_drop")
+            and iscale.get_scaling_factor(self.voltage_membrane_drop, warning=True)
+            is None
+        ):
             iscale.set_scaling_factor(self.voltage_membrane_drop, 1e0)
+
+        # The folloing Vars are built for constructing constraints and their sf are computed from other Vars.
 
         if iscale.get_scaling_factor(self.flux_splitting, warning=True) is None:
 
-            terms = 40
             sf = 0
-            for indx in range(terms):
+            for indx in range(self.config.terms_fE):
                 sf += (
                     2**indx
                     * iscale.get_scaling_factor(self.elec_field_non_dim) ** -indx
