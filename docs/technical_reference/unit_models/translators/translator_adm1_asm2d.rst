@@ -1,3 +1,5 @@
+.. _ADM1_ASM2d_translator:
+
 ADM1 to ASM2d Translator
 ========================
 
