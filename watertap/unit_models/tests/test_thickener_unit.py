@@ -535,8 +535,16 @@ class TestThickenerScaler:
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 1
+        assert len(sfx_unit) == 5
         assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1e-3, rel=1e-3)
+        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
+            1e1, rel=1e-3
+        )
+        assert sfx_unit[model.fs.unit.height] == pytest.approx(1, rel=1e-3)
+        assert sfx_unit[model.fs.unit.diameter] == pytest.approx(1, rel=1e-3)
+        assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
+            1e-4, rel=1e-3
+        )
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -653,10 +661,18 @@ class TestThickenerScaler:
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 64
+        assert len(sfx_unit) == 68
         assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1e-3, rel=1e-3)
+        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
+            1e1, rel=1e-3
+        )
+        assert sfx_unit[model.fs.unit.height] == pytest.approx(1, rel=1e-3)
+        assert sfx_unit[model.fs.unit.diameter] == pytest.approx(1, rel=1e-3)
+        assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
+            1e-4, rel=1e-3
+        )
         assert sfx_unit[model.fs.unit.eq_electricity_consumption[0]] == pytest.approx(
-            1, rel=1e-8
+            6.37450199, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.eq_hydraulic_retention[0]] == pytest.approx(
             0.001, rel=1e-8
@@ -838,7 +854,7 @@ class TestThickenerScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4.8463788512e2, rel=1e-3
+            4.83364614e2, rel=1e-3
         )
 
 
@@ -940,16 +956,16 @@ Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
 Unscaled                 || 1.384E+07 | Solved 1   ||
-Vars Only                || 7.865E+06 | Solved 1   || 2.767E+12 | Solved 1  
-Harmonic                 || 7.865E+06 | Solved 1   || 1.083E+03 | Solved 1  
-Inverse Sum              || 7.865E+06 | Solved 1   || 1.968E+03 | Solved 1  
-Inverse Root Sum Squares || 7.865E+06 | Solved 1   || 1.950E+03 | Solved 1  
-Inverse Maximum          || 7.865E+06 | Solved 1   || 1.968E+03 | Solved 1  
-Inverse Minimum          || 7.865E+06 | Solved 1   || 1.443E+03 | Solved 1  
-Nominal L1 Norm          || 7.865E+06 | Solved 1   || 4.416E+02 | Solved 1  
-Nominal L2 Norm          || 7.865E+06 | Solved 1   || 4.802E+02 | Solved 1  
-Actual L1 Norm           || 7.865E+06 | Solved 1   || 4.769E+02 | Solved 1  
-Actual L2 Norm           || 7.865E+06 | Solved 1   || 5.404E+02 | Solved 1  
+Vars Only                || 7.863E+06 | Solved 1   || 2.767E+12 | Solved 1  
+Harmonic                 || 7.863E+06 | Solved 1   || 1.083E+03 | Solved 1  
+Inverse Sum              || 7.863E+06 | Solved 1   || 1.968E+03 | Solved 1  
+Inverse Root Sum Squares || 7.863E+06 | Solved 1   || 1.950E+03 | Solved 1  
+Inverse Maximum          || 7.863E+06 | Solved 1   || 1.968E+03 | Solved 1  
+Inverse Minimum          || 7.863E+06 | Solved 1   || 1.443E+03 | Solved 1  
+Nominal L1 Norm          || 7.863E+06 | Solved 1   || 4.416E+02 | Solved 1  
+Nominal L2 Norm          || 7.863E+06 | Solved 1   || 4.802E+02 | Solved 1  
+Actual L1 Norm           || 7.863E+06 | Solved 1   || 4.769E+02 | Solved 1  
+Actual L2 Norm           || 7.863E+06 | Solved 1   || 5.404E+02 | Solved 1  
 ============================================================================
 """
 

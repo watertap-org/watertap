@@ -76,7 +76,9 @@ class DewatererScaler(CustomScalerBase):
     """
 
     DEFAULT_SCALING_FACTORS = {
-        "volume": 1e-3,
+        "volume": 1,
+        "electricity_consumption": 1e1,
+        "hydraulic_retention_time": 1e-3,
     }
 
     def variable_scaling_routine(
@@ -124,6 +126,12 @@ class DewatererScaler(CustomScalerBase):
 
         # Scale unit level variables
         self.scale_variable_by_default(model.volume[0], overwrite=overwrite)
+        self.scale_variable_by_default(
+            model.electricity_consumption[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(
+            model.hydraulic_retention_time[0], overwrite=overwrite
+        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None

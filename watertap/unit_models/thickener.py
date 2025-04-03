@@ -77,6 +77,10 @@ class ThickenerScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "volume": 1e-3,
+        "electricity_consumption": 1e1,
+        "height": 1,
+        "diameter": 1,
+        "hydraulic_retention_time": 1e-4,
     }
 
     def variable_scaling_routine(
@@ -124,6 +128,14 @@ class ThickenerScaler(CustomScalerBase):
 
         # Scale unit level variables
         self.scale_variable_by_default(model.volume[0], overwrite=overwrite)
+        self.scale_variable_by_default(
+            model.electricity_consumption[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(model.diameter, overwrite=overwrite)
+        self.scale_variable_by_default(model.height, overwrite=overwrite)
+        self.scale_variable_by_default(
+            model.hydraulic_retention_time[0], overwrite=overwrite
+        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -270,7 +282,7 @@ class ThickenerData(SeparatorData):
             initialize=1800,
             domain=NonNegativeReals,
             units=pyunits.m**3,
-            doc="Hydraulic retention time",
+            doc="Volume",
         )
 
         self.diameter = Var(

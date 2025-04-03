@@ -19,6 +19,7 @@ from pyomo.environ import (
     value,
     assert_optimal_termination,
     Suffix,
+    SolverFactory,
     TransformationFactory,
     units as pyunits,
 )
@@ -33,6 +34,14 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepSpecification,
+)
+from idaes.core.surrogate.pysmo.sampling import (
+    UniformSampling,
+)
+from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
 
@@ -925,8 +934,14 @@ class TestThickenerScaler:
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 1
-        assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1e-3, rel=1e-3)
+        assert len(sfx_unit) == 3
+        assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1, rel=1e-3)
+        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
+            1e1, rel=1e-3
+        )
+        assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
+            1e-3, rel=1e-3
+        )
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -1040,13 +1055,19 @@ class TestThickenerScaler:
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 63
-        assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1e-3, rel=1e-3)
+        assert len(sfx_unit) == 65
+        assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1, rel=1e-3)
+        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
+            1e1, rel=1e-3
+        )
+        assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
+            1e-3, rel=1e-3
+        )
         assert sfx_unit[model.fs.unit.eq_electricity_consumption[0]] == pytest.approx(
-            1, rel=1e-8
+            5.1722439, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.eq_hydraulic_retention[0]] == pytest.approx(
-            2.06559491e-6, rel=1e-8
+            5.55555556e-4, rel=1e-8
         )
         assert sfx_unit[
             model.fs.unit.overflow_particulate_fraction[0, "X_I"]
@@ -1183,7 +1204,7 @@ class TestThickenerScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.100583344e4, rel=1e-3
+            2.10895296e4, rel=1e-3
         )
 
 
