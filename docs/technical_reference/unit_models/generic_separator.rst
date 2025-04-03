@@ -1,5 +1,7 @@
-Generic separator unit
-=========================
+.. _generic_separator:
+
+Generic Separator Unit
+======================
 
 .. index::
    pair: watertap.unit_models.generic_separation;generic_separation
