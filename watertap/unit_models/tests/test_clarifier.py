@@ -398,8 +398,11 @@ class TestClarifierScaler:
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 1
+        assert len(sfx_unit) == 2
         assert sfx_unit[model.fs.unit.surface_area] == pytest.approx(1e-3, rel=1e-3)
+        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
+            1, rel=1e-3
+        )
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -468,8 +471,11 @@ class TestClarifierScaler:
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 48
+        assert len(sfx_unit) == 49
         assert sfx_unit[model.fs.unit.surface_area] == pytest.approx(1e-3, rel=1e-3)
+        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
+            1, rel=1e-3
+        )
         assert sfx_unit[model.fs.unit.rule_electricity_consumption[0]] == pytest.approx(
             0.162636886, rel=1e-8
         )

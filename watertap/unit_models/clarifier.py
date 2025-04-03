@@ -52,6 +52,7 @@ class ClarifierScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "surface_area": 1e-3,
+        "electricity_consumption": 1,
     }
 
     def variable_scaling_routine(
@@ -99,6 +100,9 @@ class ClarifierScaler(CustomScalerBase):
 
         # Scale unit level variables
         self.scale_variable_by_default(model.surface_area, overwrite=overwrite)
+        self.scale_variable_by_default(
+            model.electricity_consumption[0], overwrite=overwrite
+        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
