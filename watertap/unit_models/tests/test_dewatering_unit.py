@@ -19,7 +19,6 @@ from pyomo.environ import (
     value,
     assert_optimal_termination,
     Suffix,
-    SolverFactory,
     TransformationFactory,
     units as pyunits,
 )
@@ -34,14 +33,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.util.parameter_sweep import (
-    SequentialSweepRunner,
-    ParameterSweepSpecification,
-)
-from idaes.core.surrogate.pysmo.sampling import (
-    UniformSampling,
-)
-from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
 
