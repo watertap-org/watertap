@@ -1258,7 +1258,7 @@ class Test_NMSU_bench_scale:
             voltage_val[indx] = value(m.fs.unit.voltage_x[0, i])
             indx += 1
 
-        voltage_out = np.trapz(voltage_val, x=m.fs.unit.diluate.length_domain._fe)
+        voltage_out = np.trapezoid(voltage_val, x=m.fs.unit.diluate.length_domain._fe)
 
         assert voltage_out == pytest.approx(voltage_out_ref[ctr], rel=1e-3)
 
