@@ -206,7 +206,8 @@ class Test_membrane_characteristics:
         return m
 
     @pytest.mark.unit
-    def test_IV_curve(self, bped):
+    @pytest.mark.parametrize("indx", range(7))
+    def test_IV_curve(self, bped, indx):
 
         m = bped
 
@@ -225,29 +226,29 @@ class Test_membrane_characteristics:
             [19.250, 19.269, 19.606, 22.764, 29.009, 35.278, 99.223]
         )  # in mA/cm2 (computed numerically)
 
-        for indx, v in enumerate(expt_membrane_potential):
+        # for indx, v in enumerate(expt_membrane_potential):
 
-            m.fs.unit.voltage_membrane_drop[0, 1].fix(expt_membrane_potential[indx])
-            iscale.calculate_scaling_factors(m.fs)
-            initialization_tester(m)
+        m.fs.unit.voltage_membrane_drop[0, 1].fix(expt_membrane_potential[indx])
+        iscale.calculate_scaling_factors(m.fs)
+        initialization_tester(m)
 
-            assert_units_consistent(m)
-            assert degrees_of_freedom(m) == 0
+        assert_units_consistent(m)
+        assert degrees_of_freedom(m) == 0
 
-            results = solver.solve(m)
-            assert_optimal_termination(results)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
 
-            current_density_computed = (
-                pyunits.convert(
-                    m.fs.unit.current_density_x[0, 1],
-                    to_units=pyunits.amp * pyunits.meter**-2,
-                )
-                * 0.1
-            )  # convert to mA/cm2
-            assert value(current_density_computed) == pytest.approx(
-                expected_current_density[indx], rel=1e-3
+        current_density_computed = (
+            pyunits.convert(
+                m.fs.unit.current_density_x[0, 1],
+                to_units=pyunits.amp * pyunits.meter**-2,
             )
-            m.fs.unit.voltage_membrane_drop.unfix()
+            * 0.1
+        )  # convert to mA/cm2
+        assert value(current_density_computed) == pytest.approx(
+            expected_current_density[indx], rel=1e-3
+        )
+        m.fs.unit.voltage_membrane_drop.unfix()
 
     @pytest.mark.unit
     def test_limiting_current(self, bped):
@@ -852,9 +853,26 @@ class Test_NMSU_bench_scale:
         return m
 
     @pytest.mark.unit
+    @pytest.mark.parametrize("ctr", range(3))
     def test_data(
         self,
         bped,
+        # salt_in,
+        # acid_in,
+        # base_in,
+        # flow_in,
+        # current_in,
+        # salt_temperature,
+        # acid_temperature,
+        # base_temperature,
+        # salt_pressure,
+        # acid_pressure,
+        # base_pressure,
+        # salt_out_ref,
+        # acid_out_ref,
+        # base_out_ref ,
+        # voltage_out_ref,
+        ctr,
     ):
         # NMSU bench experiments input data
         salt_in = [120.89, 183.54, 173.42]
@@ -877,195 +895,190 @@ class Test_NMSU_bench_scale:
         base_out_ref = [5.74, 4.33, 8.83]
         voltage_out_ref = [15.96, 18.34, 16.86]
 
-        for ctr, current_data in enumerate(current_in):
-            m = bped
+        m = bped
 
-            init_arg_diluate = {
-                ("pressure", None): 101325 + salt_pressure[ctr] * 6894.76,
-                ("temperature", None): salt_temperature[ctr],
-                ("flow_vol_phase", "Liq"): (1 * 1e-3 / 60) * flow_in[ctr],
-                ("conc_mol_phase_comp", ("Liq", "Na_+")): salt_in[ctr]
-                / value(
-                    m.fs.unit.config.property_package.mw_comp["Na_+"]
-                    + m.fs.unit.config.property_package.mw_comp["Cl_-"]
-                ),
-                ("conc_mol_phase_comp", ("Liq", "Cl_-")): salt_in[ctr]
-                / value(
-                    m.fs.unit.config.property_package.mw_comp["Na_+"]
-                    + m.fs.unit.config.property_package.mw_comp["Cl_-"]
-                ),
-                ("conc_mass_phase_comp", ("Liq", "H_+")): 0,
-                ("conc_mol_phase_comp", ("Liq", "OH_-")): 0,
-            }
-            init_arg_acidic = {
-                ("pressure", None): 101325 + acid_pressure[ctr] * 6894.76,
-                ("temperature", None): acid_temperature[ctr],
-                ("flow_vol_phase", "Liq"): (1 * 1e-3 / 60) * flow_in[ctr],
-                ("conc_mol_phase_comp", ("Liq", "Na_+")): 0,
-                ("conc_mol_phase_comp", ("Liq", "Cl_-")): acid_in[ctr]
-                / value(
-                    m.fs.unit.config.property_package.mw_comp["H_+"]
-                    + m.fs.unit.config.property_package.mw_comp["Cl_-"]
-                ),
-                ("conc_mol_phase_comp", ("Liq", "H_+")): acid_in[ctr]
-                / value(
-                    m.fs.unit.config.property_package.mw_comp["H_+"]
-                    + m.fs.unit.config.property_package.mw_comp["Cl_-"]
-                ),
-                ("conc_mol_phase_comp", ("Liq", "OH_-")): 0,
-            }
-            init_arg_basic = {
-                ("pressure", None): 101325 + base_pressure[ctr] * 6894.76,
-                ("temperature", None): base_temperature[ctr],
-                ("flow_vol_phase", "Liq"): (1 * 1e-3 / 60) * flow_in[ctr],
-                ("conc_mol_phase_comp", ("Liq", "Na_+")): base_in[ctr]
-                / value(
-                    m.fs.unit.config.property_package.mw_comp["Na_+"]
-                    + m.fs.unit.config.property_package.mw_comp["OH_-"]
-                ),
-                ("conc_mol_phase_comp", ("Liq", "Cl_-")): 0,
-                ("conc_mol_phase_comp", ("Liq", "H_+")): 0,
-                ("conc_mol_phase_comp", ("Liq", "OH_-")): base_in[ctr]
-                / value(
-                    m.fs.unit.config.property_package.mw_comp["Na_+"]
-                    + m.fs.unit.config.property_package.mw_comp["OH_-"]
-                ),
-            }
-            #
-            m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
+        init_arg_diluate = {
+            ("pressure", None): 101325 + salt_pressure[ctr] * 6894.76,
+            ("temperature", None): salt_temperature[ctr],
+            ("flow_vol_phase", "Liq"): (1 * 1e-3 / 60) * flow_in[ctr],
+            ("conc_mol_phase_comp", ("Liq", "Na_+")): salt_in[ctr]
+            / value(
+                m.fs.unit.config.property_package.mw_comp["Na_+"]
+                + m.fs.unit.config.property_package.mw_comp["Cl_-"]
+            ),
+            ("conc_mol_phase_comp", ("Liq", "Cl_-")): salt_in[ctr]
+            / value(
+                m.fs.unit.config.property_package.mw_comp["Na_+"]
+                + m.fs.unit.config.property_package.mw_comp["Cl_-"]
+            ),
+            ("conc_mass_phase_comp", ("Liq", "H_+")): 0,
+            ("conc_mol_phase_comp", ("Liq", "OH_-")): 0,
+        }
+        init_arg_acidic = {
+            ("pressure", None): 101325 + acid_pressure[ctr] * 6894.76,
+            ("temperature", None): acid_temperature[ctr],
+            ("flow_vol_phase", "Liq"): (1 * 1e-3 / 60) * flow_in[ctr],
+            ("conc_mol_phase_comp", ("Liq", "Na_+")): 0,
+            ("conc_mol_phase_comp", ("Liq", "Cl_-")): acid_in[ctr]
+            / value(
+                m.fs.unit.config.property_package.mw_comp["H_+"]
+                + m.fs.unit.config.property_package.mw_comp["Cl_-"]
+            ),
+            ("conc_mol_phase_comp", ("Liq", "H_+")): acid_in[ctr]
+            / value(
+                m.fs.unit.config.property_package.mw_comp["H_+"]
+                + m.fs.unit.config.property_package.mw_comp["Cl_-"]
+            ),
+            ("conc_mol_phase_comp", ("Liq", "OH_-")): 0,
+        }
+        init_arg_basic = {
+            ("pressure", None): 101325 + base_pressure[ctr] * 6894.76,
+            ("temperature", None): base_temperature[ctr],
+            ("flow_vol_phase", "Liq"): (1 * 1e-3 / 60) * flow_in[ctr],
+            ("conc_mol_phase_comp", ("Liq", "Na_+")): base_in[ctr]
+            / value(
+                m.fs.unit.config.property_package.mw_comp["Na_+"]
+                + m.fs.unit.config.property_package.mw_comp["OH_-"]
+            ),
+            ("conc_mol_phase_comp", ("Liq", "Cl_-")): 0,
+            ("conc_mol_phase_comp", ("Liq", "H_+")): 0,
+            ("conc_mol_phase_comp", ("Liq", "OH_-")): base_in[ctr]
+            / value(
+                m.fs.unit.config.property_package.mw_comp["Na_+"]
+                + m.fs.unit.config.property_package.mw_comp["OH_-"]
+            ),
+        }
+        #
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Na_+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e4, index=("Liq", "H_+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e4, index=("Liq", "OH_-")
+        )
+
+        m.fs.feed_diluate = Feed(property_package=m.fs.properties)
+        m.fs.feed_acidic = Feed(property_package=m.fs.properties)
+        m.fs.feed_basic = Feed(property_package=m.fs.properties)
+
+        m.fs.feed_diluate.properties.calculate_state(
+            init_arg_diluate,
+            hold_state=True,
+        )
+        m.fs.feed_acidic.properties.calculate_state(
+            init_arg_acidic,
+            hold_state=True,
+        )
+        m.fs.feed_basic.properties.calculate_state(
+            init_arg_basic,
+            hold_state=True,
+        )
+
+        m.fs.feed_diluate.initialize()
+        m.fs.feed_acidic.initialize()
+        m.fs.feed_basic.initialize()
+
+        m.fs.arc0 = Arc(
+            source=m.fs.feed_diluate.outlet, destination=m.fs.unit.inlet_diluate
+        )
+        m.fs.arc1 = Arc(
+            source=m.fs.feed_acidic.outlet, destination=m.fs.unit.inlet_acidic
+        )
+        m.fs.arc2 = Arc(
+            source=m.fs.feed_basic.outlet, destination=m.fs.unit.inlet_basic
+        )
+
+        propagate_state(m.fs.arc0)
+        propagate_state(m.fs.arc1)
+        propagate_state(m.fs.arc2)
+
+        TransformationFactory("network.expand_arcs").apply_to(m)
+
+        m.fs.unit.current_applied.fix(current_in[ctr])
+
+        iscale.calculate_scaling_factors(m.fs)
+        m.fs.unit.initialize()
+
+        assert_units_consistent(m)
+        assert degrees_of_freedom(m) == 0
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
+        conc_unit = 1 * pyunits.mole * pyunits.meter**-3
+        salt_out = value(
+            smooth_min(
+                m.fs.unit.diluate.properties[0, 1].conc_mol_phase_comp["Liq", "Na_+"]
+                / conc_unit,
+                m.fs.unit.diluate.properties[0, 1].conc_mol_phase_comp["Liq", "Cl_-"]
+                / conc_unit,
             )
-            m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp", 1e4, index=("Liq", "Na_+")
+            * conc_unit
+            * (
+                m.fs.unit.config.property_package.mw_comp["Na_+"]
+                + m.fs.unit.config.property_package.mw_comp["Cl_-"]
             )
-            m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
+        )
+
+        acid_out = value(
+            smooth_min(
+                m.fs.unit.acidic.properties[0, 1].conc_mol_phase_comp["Liq", "H_+"]
+                / conc_unit,
+                m.fs.unit.acidic.properties[0, 1].conc_mol_phase_comp["Liq", "Cl_-"]
+                / conc_unit,
             )
-            m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp", 1e4, index=("Liq", "H_+")
+            * conc_unit
+            * (
+                m.fs.unit.config.property_package.mw_comp["H_+"]
+                + m.fs.unit.config.property_package.mw_comp["Cl_-"]
             )
-            m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp", 1e4, index=("Liq", "OH_-")
+        )
+
+        base_out = value(
+            smooth_min(
+                m.fs.unit.basic.properties[0, 1].conc_mol_phase_comp["Liq", "Na_+"]
+                / conc_unit,
+                m.fs.unit.basic.properties[0, 1].conc_mol_phase_comp["Liq", "OH_-"]
+                / conc_unit,
             )
-
-            m.fs.feed_diluate = Feed(property_package=m.fs.properties)
-            m.fs.feed_acidic = Feed(property_package=m.fs.properties)
-            m.fs.feed_basic = Feed(property_package=m.fs.properties)
-
-            m.fs.feed_diluate.properties.calculate_state(
-                init_arg_diluate,
-                hold_state=True,
+            * conc_unit
+            * (
+                m.fs.unit.config.property_package.mw_comp["Na_+"]
+                + m.fs.unit.config.property_package.mw_comp["OH_-"]
             )
-            m.fs.feed_acidic.properties.calculate_state(
-                init_arg_acidic,
-                hold_state=True,
-            )
-            m.fs.feed_basic.properties.calculate_state(
-                init_arg_basic,
-                hold_state=True,
-            )
+        )
 
-            m.fs.feed_diluate.initialize()
-            m.fs.feed_acidic.initialize()
-            m.fs.feed_basic.initialize()
+        m.fs.feed_diluate.flow_mol_phase_comp.unfix()
+        m.fs.feed_diluate.temperature.unfix()
+        m.fs.feed_diluate.pressure.unfix()
 
-            m.fs.arc0 = Arc(
-                source=m.fs.feed_diluate.outlet, destination=m.fs.unit.inlet_diluate
-            )
-            m.fs.arc1 = Arc(
-                source=m.fs.feed_acidic.outlet, destination=m.fs.unit.inlet_acidic
-            )
-            m.fs.arc2 = Arc(
-                source=m.fs.feed_basic.outlet, destination=m.fs.unit.inlet_basic
-            )
+        m.fs.feed_acidic.flow_mol_phase_comp.unfix()
+        m.fs.feed_acidic.temperature.unfix()
+        m.fs.feed_acidic.pressure.unfix()
 
-            propagate_state(m.fs.arc0)
-            propagate_state(m.fs.arc1)
-            propagate_state(m.fs.arc2)
+        m.fs.feed_basic.flow_mol_phase_comp.unfix()
+        m.fs.feed_basic.temperature.unfix()
+        m.fs.feed_basic.pressure.unfix()
 
-            TransformationFactory("network.expand_arcs").apply_to(m)
+        assert salt_out == pytest.approx(salt_out_ref[ctr], rel=1e-2)
+        assert acid_out == pytest.approx(acid_out_ref[ctr], rel=1e-2)
+        assert base_out == pytest.approx(base_out_ref[ctr], rel=1e-2)
 
-            m.fs.unit.current_applied.fix(current_data)
+        domain_length = []
+        voltage_out = []
 
-            iscale.calculate_scaling_factors(m.fs)
-            m.fs.unit.initialize()
+        for i in m.fs.unit.diluate.length_domain._fe:
+            domain_length.append(i)
+            voltage_out.append(value(m.fs.unit.voltage_x[0, i]))
 
-            assert_units_consistent(m)
-            assert degrees_of_freedom(m) == 0
-            results = solver.solve(m)
-            assert_optimal_termination(results)
-
-            conc_unit = 1 * pyunits.mole * pyunits.meter**-3
-            salt_out = value(
-                smooth_min(
-                    m.fs.unit.diluate.properties[0, 1].conc_mol_phase_comp[
-                        "Liq", "Na_+"
-                    ]
-                    / conc_unit,
-                    m.fs.unit.diluate.properties[0, 1].conc_mol_phase_comp[
-                        "Liq", "Cl_-"
-                    ]
-                    / conc_unit,
-                )
-                * conc_unit
-                * (
-                    m.fs.unit.config.property_package.mw_comp["Na_+"]
-                    + m.fs.unit.config.property_package.mw_comp["Cl_-"]
-                )
-            )
-
-            acid_out = value(
-                smooth_min(
-                    m.fs.unit.acidic.properties[0, 1].conc_mol_phase_comp["Liq", "H_+"]
-                    / conc_unit,
-                    m.fs.unit.acidic.properties[0, 1].conc_mol_phase_comp["Liq", "Cl_-"]
-                    / conc_unit,
-                )
-                * conc_unit
-                * (
-                    m.fs.unit.config.property_package.mw_comp["H_+"]
-                    + m.fs.unit.config.property_package.mw_comp["Cl_-"]
-                )
-            )
-
-            base_out = value(
-                smooth_min(
-                    m.fs.unit.basic.properties[0, 1].conc_mol_phase_comp["Liq", "Na_+"]
-                    / conc_unit,
-                    m.fs.unit.basic.properties[0, 1].conc_mol_phase_comp["Liq", "OH_-"]
-                    / conc_unit,
-                )
-                * conc_unit
-                * (
-                    m.fs.unit.config.property_package.mw_comp["Na_+"]
-                    + m.fs.unit.config.property_package.mw_comp["OH_-"]
-                )
-            )
-
-            m.fs.feed_diluate.flow_mol_phase_comp.unfix()
-            m.fs.feed_diluate.temperature.unfix()
-            m.fs.feed_diluate.pressure.unfix()
-
-            m.fs.feed_acidic.flow_mol_phase_comp.unfix()
-            m.fs.feed_acidic.temperature.unfix()
-            m.fs.feed_acidic.pressure.unfix()
-
-            m.fs.feed_basic.flow_mol_phase_comp.unfix()
-            m.fs.feed_basic.temperature.unfix()
-            m.fs.feed_basic.pressure.unfix()
-
-            assert salt_out == pytest.approx(salt_out_ref[ctr], rel=1e-2)
-            assert acid_out == pytest.approx(acid_out_ref[ctr], rel=1e-2)
-            assert base_out == pytest.approx(base_out_ref[ctr], rel=1e-2)
-
-            domain_length = []
-            voltage_out = []
-
-            for i in m.fs.unit.diluate.length_domain._fe:
-                domain_length.append(i)
-                voltage_out.append(value(m.fs.unit.voltage_x[0, i]))
-
-            assert voltage_out[-1] == pytest.approx(voltage_out_ref[ctr], rel=1e-3)
+        assert voltage_out[-1] == pytest.approx(voltage_out_ref[ctr], rel=1e-3)
 
 
 class Test_BPED_pressure_drop_components:
