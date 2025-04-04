@@ -50,6 +50,7 @@ class CSTRScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "volume": 1e-3,
+        "hydraulic_retention_time": 1e-3,
     }
 
     def variable_scaling_routine(
@@ -96,6 +97,9 @@ class CSTRScaler(CustomScalerBase):
         self.scale_variable_by_default(
             model.control_volume.volume[0], overwrite=overwrite
         )
+        self.scale_variable_by_default(
+            model.hydraulic_retention_time[0], overwrite=overwrite
+        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -138,6 +142,13 @@ class CSTRScaler(CustomScalerBase):
         if hasattr(model, "CSTR_retention_time"):
             self.scale_constraint_by_nominal_value(
                 model.CSTR_retention_time[0],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+        for c in model.component_data_objects(Constraint, descend_into=False):
+            self.scale_constraint_by_nominal_value(
+                c,
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )

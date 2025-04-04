@@ -19,6 +19,7 @@ NOTE: This is likely a temporary model until a more detailed model is available.
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
+    Constraint,
     Reference,
     Var,
     Param,
@@ -74,6 +75,8 @@ class CSTR_InjectionScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "volume": 1e-3,
+        "hydraulic_retention_time": 1e-3,
+        "KLa": 1e-1,
     }
 
     def variable_scaling_routine(
@@ -120,6 +123,10 @@ class CSTR_InjectionScaler(CustomScalerBase):
         self.scale_variable_by_default(
             model.control_volume.volume[0], overwrite=overwrite
         )
+        self.scale_variable_by_default(
+            model.hydraulic_retention_time[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(model.KLa, overwrite=overwrite)
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -159,6 +166,14 @@ class CSTR_InjectionScaler(CustomScalerBase):
         )
 
         # Scale unit level constraints
+        if hasattr(model, "cstr_performance_eqn"):
+            for r in model.control_volume.config.reaction_package.rate_reaction_idx:
+                self.scale_constraint_by_nominal_value(
+                    model.cstr_performance_eqn[0, r],
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
         if hasattr(model, "eq_hydraulic_retention_time"):
             self.scale_constraint_by_nominal_value(
                 model.eq_hydraulic_retention_time[0],
@@ -176,6 +191,13 @@ class CSTR_InjectionScaler(CustomScalerBase):
         if hasattr(model, "eq_electricity_consumption"):
             self.scale_constraint_by_nominal_value(
                 model.eq_electricity_consumption[0],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+        for c in model.component_data_objects(Constraint, descend_into=False):
+            self.scale_constraint_by_nominal_value(
+                c,
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )

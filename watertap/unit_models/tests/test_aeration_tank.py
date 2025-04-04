@@ -504,7 +504,7 @@ class TestAerationTankScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 3
+        assert len(sfx_unit) == 11
         assert sfx_unit[model.fs.unit.eq_hydraulic_retention_time[0]] == pytest.approx(
             4.77962962e-4, rel=1e-8
         )
@@ -614,15 +614,15 @@ class TestAerationTankScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 3
+        assert len(sfx_unit) == 13
         assert sfx_unit[model.fs.unit.eq_hydraulic_retention_time[0]] == pytest.approx(
             0.00047796296, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.eq_mass_transfer[0]] == pytest.approx(
-            0.004, rel=1e-8
+            0.002, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.eq_electricity_consumption[0]] == pytest.approx(
-            0.09, rel=1e-8
+            0.045, rel=1e-8
         )
 
     # TODO: Remove test once iscale is deprecated
@@ -787,7 +787,7 @@ class TestAerationTankScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            5.09707868988e11, rel=1e-3
+            6.45206195087e11, rel=1e-3
         )
 
 
@@ -936,16 +936,16 @@ Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
 Unscaled                 || 1.826E+16 | Solved 14  ||
-Vars Only                || 4.843E+13 | Solved 13  || 2.014E+21 | Solved 4  
-Harmonic                 || 9.974E+17 | Solved 50  || 4.443E+22 | Solved 27 
-Inverse Sum              || 3.001E+17 | Solved 4   || 2.399E+14 | Solved 4  
-Inverse Root Sum Squares || 3.001E+17 | Solved 4   || 3.412E+14 | Solved 4  
-Inverse Maximum          || 3.001E+17 | Solved 4   || 4.809E+14 | Solved 4  
-Inverse Minimum          || 9.974E+17 | Solved 29  || 4.455E+22 | Solved 24 
-Nominal L1 Norm          || 2.365E+09 | Solved 14  || 2.842E+14 | Solved 3  
-Nominal L2 Norm          || 1.648E+09 | Solved 14  || 3.755E+14 | Solved 3  
-Actual L1 Norm           || 8.636E+08 | Solved 14  || 5.461E+13 | Solved 4  
-Actual L2 Norm           || 7.902E+08 | Solved 11  || 6.491E+13 | Solved 4  
+Vars Only                || 6.130E+13 | Solved 13  || 2.014E+21 | Solved 4  
+Harmonic                 || 1.187E+18 | Solved 4   || 4.443E+22 | Solved 27 
+Inverse Sum              || 2.740E+17 | Solved 4   || 2.399E+14 | Solved 4  
+Inverse Root Sum Squares || 2.740E+17 | Solved 4   || 3.412E+14 | Solved 4  
+Inverse Maximum          || 2.740E+17 | Solved 4   || 4.809E+14 | Solved 4  
+Inverse Minimum          || 1.187E+18 | Solved 4   || 4.455E+22 | Solved 24 
+Nominal L1 Norm          || 5.869E+08 | Solved 14  || 2.842E+14 | Solved 3  
+Nominal L2 Norm          || 5.862E+08 | Solved 14  || 3.755E+14 | Solved 3  
+Actual L1 Norm           || 5.918E+08 | Solved 14  || 5.461E+13 | Solved 4  
+Actual L2 Norm           || 5.911E+08 | Solved 11  || 6.491E+13 | Solved 4  
 ============================================================================
 """
 

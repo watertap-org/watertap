@@ -561,7 +561,7 @@ class TestCSTRScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 1
+        assert len(sfx_unit) == 9
         assert sfx_unit[model.fs.unit.CSTR_retention_time[0]] == pytest.approx(
             1.2199e-3, rel=1e-8
         )
@@ -665,9 +665,9 @@ class TestCSTRScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 1
+        assert len(sfx_unit) == 10
         assert sfx_unit[model.fs.unit.CSTR_retention_time[0]] == pytest.approx(
-            0.0012199, rel=1e-8
+            0.001, rel=1e-8
         )
 
     # TODO: Remove test once iscale is deprecated
@@ -823,7 +823,7 @@ class TestCSTRScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.626085e10, rel=1e-3
+            1.6976779336e10, rel=1e-3
         )
 
 
@@ -963,16 +963,16 @@ Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
 Unscaled                 || 1.196E+12 | Solved 4   ||
-Vars Only                || 4.434E+10 | Solved 5   || 1.674E+17 | Solved 1  
-Harmonic                 || 1.124E+10 | Solved 5   || 1.161E+05 | Solved 3  
-Inverse Sum              || 2.031E+07 | Solved 5   || 2.054E+02 | Solved 3  
-Inverse Root Sum Squares || 3.266E+07 | Solved 5   || 2.131E+02 | Solved 3  
-Inverse Maximum          || 4.057E+07 | Solved 5   || 2.427E+02 | Solved 3  
-Inverse Minimum          || 1.089E+10 | Solved 5   || 1.317E+05 | Solved 3  
-Nominal L1 Norm          || 1.799E+04 | Solved 5   || 2.183E+02 | Solved 3  
-Nominal L2 Norm          || 1.789E+04 | Solved 5   || 2.051E+02 | Solved 3  
-Actual L1 Norm           || 1.548E+04 | Solved 5   || 2.146E+02 | Solved 3  
-Actual L2 Norm           || 1.569E+04 | Solved 5   || 2.114E+02 | Solved 3  
+Vars Only                || 2.066E+10 | Solved 5   || 1.674E+17 | Solved 1  
+Harmonic                 || 5.225E+09 | Solved 5   || 1.161E+05 | Solved 3  
+Inverse Sum              || 9.082E+06 | Solved 5   || 2.054E+02 | Solved 3  
+Inverse Root Sum Squares || 1.453E+07 | Solved 5   || 2.131E+02 | Solved 3  
+Inverse Maximum          || 1.801E+07 | Solved 5   || 2.427E+02 | Solved 3  
+Inverse Minimum          || 5.059E+09 | Solved 5   || 1.317E+05 | Solved 3  
+Nominal L1 Norm          || 6.995E+03 | Solved 5   || 2.183E+02 | Solved 3  
+Nominal L2 Norm          || 7.614E+03 | Solved 5   || 2.051E+02 | Solved 3  
+Actual L1 Norm           || 6.836E+03 | Solved 5   || 2.146E+02 | Solved 3  
+Actual L2 Norm           || 6.974E+03 | Solved 5   || 2.114E+02 | Solved 3  
 ============================================================================
 """
 
