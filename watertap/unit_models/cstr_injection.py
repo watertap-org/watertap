@@ -19,6 +19,7 @@ NOTE: This is likely a temporary model until a more detailed model is available.
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
+    Constraint,
     Reference,
     Var,
     Param,
@@ -36,6 +37,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
@@ -48,8 +50,6 @@ from watertap.core import InitializationMixin
 from watertap.costing.unit_models.cstr_injection import cost_cstr_injection
 
 __author__ = "Andrew Lee, Adam Atia, Vibhav Dabadghao"
-
-from enum import Enum, auto
 
 
 class ElectricityConsumption(Enum):
@@ -64,11 +64,152 @@ class ElectricityConsumption(Enum):
     calculated = auto()
 
 
+class CSTR_InjectionScaler(CustomScalerBase):
+    """
+    Default modular scaler for CSTR with injection.
+
+    This Scaler relies on the associated property and reaction packages,
+    either through user provided options (submodel_scalers argument) or by default
+    Scalers assigned to the packages.
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "volume": 1e-3,
+        "hydraulic_retention_time": 1e-3,
+        "KLa": 1e-1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.properties_in,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.propagate_state_scaling(
+            target_state=model.control_volume.properties_out,
+            source_state=model.control_volume.properties_in,
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.properties_out,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.reactions,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # Scaling control volume variables
+        self.scale_variable_by_default(
+            model.control_volume.volume[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(
+            model.hydraulic_retention_time[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(model.KLa, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Submodel Scalers are called for the property and reaction blocks. All other constraints
+        are scaled using the inverse maximum scheme.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.properties_in,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.properties_out,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.reactions,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # Scale unit level constraints
+        if hasattr(model, "cstr_performance_eqn"):
+            for r in model.control_volume.config.reaction_package.rate_reaction_idx:
+                self.scale_constraint_by_nominal_value(
+                    model.cstr_performance_eqn[0, r],
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "eq_hydraulic_retention_time"):
+            self.scale_constraint_by_nominal_value(
+                model.eq_hydraulic_retention_time[0],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+        if hasattr(model, "eq_mass_transfer"):
+            self.scale_constraint_by_nominal_value(
+                model.eq_mass_transfer[0],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+        if hasattr(model, "eq_electricity_consumption"):
+            self.scale_constraint_by_nominal_value(
+                model.eq_electricity_consumption[0],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+        for c in model.component_data_objects(Constraint, descend_into=False):
+            self.scale_constraint_by_nominal_value(
+                c,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+
 @declare_process_block_class("CSTR_Injection")
 class CSTR_InjectionData(InitializationMixin, UnitModelBlockData):
     """
     CSTR Unit Model with Injection Class
     """
+
+    default_scaler = CSTR_InjectionScaler
 
     CONFIG = UnitModelBlockData.CONFIG()
 
