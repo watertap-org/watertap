@@ -32,6 +32,7 @@ def is_constant_up_to_units(expr):
     return True
 
 
+# TODO: Should substitiute instances of this with the IDAES function once IDAES #1603 is merged
 def smooth_heaviside(x, k):
     """
     Provides a smooth, continuous approximation of a discontinuous function
@@ -41,5 +42,5 @@ def smooth_heaviside(x, k):
     Returns:
         function : Continuous approximation of a discontinuous function
     """
-    function = 1 / (1 + exp(-2 * k * x))
+    function = 1 / (1 + exp(-k * x))
     return function
