@@ -43,7 +43,6 @@ import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
 from idaes.core.util.parameter_sweep import (
-    SequentialSweepRunner,
     ParameterSweepSpecification,
 )
 from idaes.core.surrogate.pysmo.sampling import (
