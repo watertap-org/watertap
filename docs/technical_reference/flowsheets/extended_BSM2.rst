@@ -1,10 +1,12 @@
+.. _extended_BSM2_flowsheet:
+
 Extended Benchmark Simulation Model No.2
 ========================================
 
 Introduction
 ------------
 
-Like the conventional Benchmark Simulation Model No.2 `(BSM2) <https://watertap.readthedocs.io/en/latest/technical_reference/flowsheets/BSM2.html>`_,
+Like the conventional Benchmark Simulation Model No.2 :ref:`(BSM2) <BSM2_flowsheet>`,
 extended BSM2 is an industry benchmark for modeling a full biological wastewater
 treatment plant that includes a primary clarifier, the activated sludge process, and an anaerobic digester.
 These unit processes are driven by biological reaction models that relate soluble and particulate wastewater
@@ -41,22 +43,22 @@ The flowsheet relies on the following key assumptions:
     Figure 1. BSM2 flowsheet
 
 Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
-    * `Thickener <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/thickener.html>`_
-    * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
-    * `Dewatering unit <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/dewatering_unit.html>`_
+    * :ref:`Thickener <thickener>`
+    * :ref:`Anaerobic digester <anaerobic_digester>`
+    * :ref:`Dewatering unit <dewatering>`
     * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
-    * `ADM1 to ASM2d Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_adm1_asm2d.html>`_
-    * `ASM2d to ADM1 Translator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/translators/translator_asm2d_adm1.html>`_
-    * `Aeration tank <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/aeration_tank.html>`_
-    * `Primary clarifier <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/clarifier.html>`_
-    * `Secondary clarifier <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/clarifier.html>`_
+    * :ref:`ADM1 to ASM2d Translator <ADM1_ASM2d_translator>`
+    * :ref:`ASM2d to ADM1 Translator <ASM2d_ADM1_translator>`
+    * :ref:`Aeration Tank <aeration_tank>`
+    * :ref:`Primary Clarifier <clarifier>`
+    * :ref:`Secondary Clarifier <clarifier>`
 
 Documentation for each of the property models can be found below.
-    * `Modified ASM2d <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ASM2D.html>`_
-    * `Modified ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/modified_ADM1.html>`_
+    * :ref:`Modified ASM2d <modified_ASM2d>`
+    * :ref:`Modified ADM1 <modified_ADM1>`
 
 Documentation for the costing relationships can be found below.
-    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+    * :ref:`WaterTAP Costing Package <watertap_costing>`
 
 The objective function is to minimize the levelized cost of water, which can be represented by the following equation
 where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
