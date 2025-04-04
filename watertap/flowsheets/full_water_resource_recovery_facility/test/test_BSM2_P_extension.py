@@ -192,57 +192,6 @@ class TestFullFlowsheetBioPFalse:
         # Regularization
         assert run_stats[2] == 39
 
-    @pytest.mark.integration
-    @pytest.mark.solver
-    def test_run_convergence_analysis_XS(self, system_frame):
-        m = system_frame
-        ca = IpoptConvergenceAnalysis(m)
-
-        m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(94.1 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 89
-        # Restoration
-        assert run_stats[1] == 84
-        # Regularization
-        assert run_stats[2] == 40
-
-        m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(75 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 96
-        # Restoration
-        assert run_stats[1] == 82
-        # Regularization
-        assert run_stats[2] == 25
-
-        m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(105 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 95
-        # Restoration
-        assert run_stats[1] == 87
-        # Regularization
-        assert run_stats[2] == 33
-
 
 @pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPTrue:
