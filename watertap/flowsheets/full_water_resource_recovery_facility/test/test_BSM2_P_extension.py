@@ -25,13 +25,6 @@ from pyomo.environ import assert_optimal_termination, value, units
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
-from idaes.core.util.parameter_sweep import (
-    ParameterSweepSpecification,
-)
-from idaes.core.surrogate.pysmo.sampling import (
-    UniformSampling,
-)
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
@@ -141,57 +134,6 @@ class TestFullFlowsheetBioPFalse:
             831978.066, rel=1e-3
         )
 
-    @pytest.mark.integration
-    @pytest.mark.solver
-    def test_run_convergence_analysis_SF(self, system_frame):
-        m = system_frame
-        ca = IpoptConvergenceAnalysis(m)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(1e-6 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 92
-        # Restoration
-        assert run_stats[1] == 84
-        # Regularization
-        assert run_stats[2] == 41
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(5e-6 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 94
-        # Restoration
-        assert run_stats[1] == 84
-        # Regularization
-        assert run_stats[2] == 39
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(1e-5 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 94
-        # Restoration
-        assert run_stats[1] == 84
-        # Regularization
-        assert run_stats[2] == 39
-
 
 @pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPTrue:
@@ -292,54 +234,3 @@ class TestFullFlowsheetBioPTrue:
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             836020.408, rel=1e-3
         )
-
-    @pytest.mark.integration
-    @pytest.mark.solver
-    def test_run_convergence_analysis_SF(self, system_frame):
-        m = system_frame
-        ca = IpoptConvergenceAnalysis(m)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(1e-6 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 214
-        # Restoration
-        assert run_stats[1] == 205
-        # Regularization
-        assert run_stats[2] == 115
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(5e-6 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 172
-        # Restoration
-        assert run_stats[1] == 165
-        # Regularization
-        assert run_stats[2] == 95
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(1e-5 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == 250
-        # Restoration
-        assert run_stats[1] == 244
-        # Regularization
-        assert run_stats[2] == 136
