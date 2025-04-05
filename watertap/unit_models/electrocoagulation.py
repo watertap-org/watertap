@@ -921,7 +921,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.electrolysis_time, 0.1)
 
         if iscale.get_scaling_factor(self.applied_current) is None:
-            iscale.set_scaling_factor(self.applied_current, 1e-4)
+            iscale.set_scaling_factor(self.applied_current, 1)
 
         if iscale.get_scaling_factor(self.current_efficiency) is None:
             iscale.set_scaling_factor(self.current_efficiency, 1)
