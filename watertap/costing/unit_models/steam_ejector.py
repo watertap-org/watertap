@@ -9,7 +9,7 @@ def build_steam_ejector_cost_param_block(blk):
     blk.base_cost = pyo.Var(
         initialize=1949,
         doc="Base cost coefficient for steam ejector",
-        units=pyo.units.USD_2020,
+        units=pyo.units.USD_2018,
     )
     blk.cost_exponent = pyo.Var(
         initialize=0.3,
@@ -17,13 +17,10 @@ def build_steam_ejector_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    blk.steam_cost = pyo.Var(
-        initialize=0.008,
-        units=pyo.units.USD_2018 / pyo.units.kg,
-        doc="Steam cost per kg",
-    )
+    
 
-    blk.parent_block().register_flow_type("steam", blk.steam_cost)
+
+
 
 
 @register_costing_parameter_block(
@@ -57,12 +54,14 @@ def cost_steam_ejector(blk, cost_steam_flow=False):
         to_units=pyo.units.kg / pyo.units.hour,
     )
 
+    dimensionless_flow = (S + EV) / (pyo.units.kg / pyo.units.hour)
+
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == blk.cost_factor
         * pyo.units.convert(
             blk.costing_package.steam_ejector.base_cost
-            * (S + EV) ** blk.costing_package.steam_ejector.cost_exponent,
+            * dimensionless_flow ** blk.costing_package.steam_ejector.cost_exponent,
             to_units=blk.costing_package.base_currency,
         )
     )
