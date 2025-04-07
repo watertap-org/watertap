@@ -448,7 +448,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         self.anode_area = Var(
             initialize=1,
-            bounds=(0, None),
+            bounds=(1e-6, None),
             units=pyunits.m**2,
             doc="Area of anode",
         )
@@ -724,9 +724,12 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Charge loading rate equation")
         def eq_charge_loading_rate(b):
-            return b.charge_loading_rate == pyunits.convert(
-                b.applied_current / prop_in.flow_vol_phase["Liq"],
-                to_units=pyunits.coulomb / pyunits.liter,
+            return (
+                pyunits.convert(
+                    b.charge_loading_rate * prop_in.flow_vol_phase["Liq"],
+                    to_units=pyunits.ampere,
+                )
+                == b.applied_current
             )
 
         @self.Constraint(doc="Total flocculation tank volume")
@@ -783,8 +786,9 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Ohmic resistance")
         def eq_ohmic_resistance(b):
-            return b.ohmic_resistance == pyunits.convert(
-                b.electrode_gap / b.conductivity, to_units=pyunits.ohm * pyunits.m**2
+            return (
+                pyunits.convert(b.ohmic_resistance * b.conductivity, to_units=pyunits.m)
+                == b.electrode_gap
             )
 
         @self.Constraint(doc="Electrode mass")
