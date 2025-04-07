@@ -1,5 +1,7 @@
+.. _steam_ejector:
+
 Steam Jet Ejector
-================================
+=================
 This Steam Jet Ejector unit model:
    * Simulates the performance of a steam jet ejector for thermal vapor compression.
    * Uses semi-empirical correlations for entrainment ratio, pressure correction factor (PCF), and temperature correction factor (TCF), based on El-Dessouky (1997).
