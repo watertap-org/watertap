@@ -78,6 +78,90 @@ DOI: 10.1021/ie801086c
 """
 
 
+class ElectrocoagulationInitializer(ModularInitializerBase):
+    """
+    Initializer for Electrocoagulation models.
+    """
+
+    CONFIG = ModularInitializerBase.CONFIG()
+
+    def initialize_main_model(self, model):
+        # Get loggers
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = self._get_solver()
+
+        prop_init = self.get_submodel_initializer(model.properties_in)
+
+        if prop_init is not None:
+            prop_init.initialize(
+                model=model.properties_in,
+                output_level=self.get_output_level(),
+            )
+        else:
+            raise ValueError(
+                "No Initializer found for property package. Please provide "
+                "sub-model initializers or assign a default Initializer."
+            )
+
+        init_log.info_high("Initialization Step 1 (Inlet State) Complete.")
+
+        for t, in_state in model.properties_in.items():
+            state_vars = in_state.define_state_vars()
+            state_vars_out = model.properties_out[t].define_state_vars()
+            state_vars_waste = model.properties_waste[t].define_state_vars()
+
+            for n, sv in state_vars.items():
+                sv_out = state_vars_out[n]
+                sv_waste = state_vars_waste[n]
+
+                if sv_out.is_indexed():
+                    for j, svo in sv_out.items():
+                        if j == "H2O":
+                            svo.set_value(
+                                value(sv) * self.removal_frac_mass_water.value
+                            )
+                        else:
+                            svo.set_value(
+                                value(sv) * (1 - self.removal_frac_mass_comp[j].value)
+                            )
+                if sv_waste.is_indexed():
+                    for j, svw in sv_waste.items():
+                        if j == "H2O":
+                            svw.set_value(
+                                value(sv) * (1 - self.removal_frac_mass_water.value)
+                            )
+                        else:
+                            svw.set_value(
+                                value(sv) * self.removal_frac_mass_comp[j].value
+                            )
+        prop_init.initialize(
+            model=model.properties_retentate,
+            output_level=self.get_output_level(),
+        )
+        prop_init.initialize(
+            model=model.properties_permeate,
+            output_level=self.get_output_level(),
+        )
+
+        init_log.info_high("Initialization Step 2 (Outlet States) Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve full model
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+
+        init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
+
+        return res
+
+
 class ElectrocoagulationScaler(CustomScalerBase):
     """
     Scaler class for Electrocoagulation models
