@@ -89,7 +89,7 @@ def build_ec1():
         hold_state=True,
     )
 
-    ec.electrode_thick.fix(electrode_thickness)
+    ec.electrode_thickness.fix(electrode_thickness)
     ec.cell_voltage.fix(10)
     ec.electrode_gap.fix(gap)
     ec.coagulant_dose.fix(metal_loading)
