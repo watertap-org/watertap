@@ -192,7 +192,7 @@ see reaction package for documentation.}""",
             doc="Smoothing factor",
         )
         self.heaviside_k = Param(
-            initialize=2e1,
+            initialize=1e1,
             units=pyunits.dimensionless,
             mutable=True,
             doc="Smooth heaviside k parameter",
