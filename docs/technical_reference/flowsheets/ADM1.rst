@@ -1,3 +1,5 @@
+.. _ADM1_flowsheet:
+
 Anaerobic Digestion Model No. 1
 ===============================
 
@@ -6,8 +8,7 @@ Introduction
 
 The IWA created Anaerobic Digestion Model No. 1 (ADM1) with a mathematical model to predict anaerobic digestion scenarios. 
 The objective of the mathematical model is to simulate biological reactions simultaneously with the disintegration, uptake, and decay of microorganisms
-in anaerobic sludge. The property and reaction relationships `ADM1
-<https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+in anaerobic sludge. The property and reaction relationships :ref:`ADM1 <ADM1>`
 of an anaerobic digestion model for industrial wastewater treatment from food and beverage production using an anaerobic digester as provided in 
 `Batstone, D. J. et al. (2002) 
 <https://iwaponline.com/wst/article-abstract/45/10/65/6034/The-IWA-Anaerobic-Digestion-Model-No-1-ADM1?redirectedFrom=fulltext>`_ and `Rosen, C. et al. 
@@ -31,10 +32,10 @@ The flowsheet relies on the following key assumptions:
     Figure 1. ADM1 flowsheet
 
 Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
-    * `Anaerobic digester <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/anaerobic_digester.html>`_
+    * :ref:`Anaerobic digester <anaerobic_digester>`
 
 Documentation for the property model can be found below.
-    * `ADM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+    * :ref:`ADM1 <ADM1>`
 
 Degrees of Freedom
 ------------------
