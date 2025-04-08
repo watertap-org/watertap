@@ -1185,10 +1185,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                     )
 
                 else:
-                    return (
-                        self.generation_cel_flux[t, x, p, j]
-                        == 0 * pyunits.mol * pyunits.meter**-2 * pyunits.s**-1
-                    )
+                    self.generation_cel_flux[t, x, p, j].fix(0)
+                    return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().time,
@@ -1208,10 +1206,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                         == -0.5 * self.flux_splitting[t, x]
                     )
                 else:
-                    return (
-                        self.generation_ael_flux[t, x, p, j]
-                        == 0 * pyunits.mol * pyunits.meter**-2 * pyunits.s**-1
-                    )
+                    self.generation_ael_flux[t, x, p, j].fix(0)
+                    return Constraint.Skip
 
         @self.Constraint(
             self.flowsheet().time,
@@ -1367,10 +1363,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
 
             else:
-                return (
-                    self.nonelec_bpem_flux[t, x, p, j]
-                    == 0 * pyunits.mol * pyunits.m**-2 * pyunits.s**-1
-                )
+                self.nonelec_bpem_flux[t, x, p, j].fix(0)
+                return Constraint.Skip
 
         # Add constraints for mass transfer terms (diluate)
         @self.Constraint(

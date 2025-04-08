@@ -651,6 +651,85 @@ class Test_Operation:
             bped_m[1].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "H2O"]
         ) == pytest.approx(0.22267, rel=1e-3)
 
+        # Test for no badly scaled variables. For this we set inlet flows that are typically zero to non-zero values
+
+        bped_m[1].fs.unit.current_applied.fix(2e2)
+        bped_m[1].fs.unit.inlet_basic.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-3)
+        bped_m[1].fs.unit.inlet_basic.flow_mol_phase_comp[0, "Liq", "H_+"].fix(7.38e-3)
+        bped_m[1].fs.unit.inlet_acidic.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(
+            7.38e-3
+        )
+        bped_m[1].fs.unit.inlet_acidic.flow_mol_phase_comp[0, "Liq", "OH_-"].fix(
+            7.38e-3
+        )
+        bped_m[1].fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H_+"].fix(
+            7.38e-3
+        )
+        bped_m[1].fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "OH_-"].fix(
+            7.38e-3
+        )
+        bped_m[1].fs.unit.inlet_basic.pressure.fix(101325 * 20)
+        bped_m[1].fs.unit.inlet_acidic.pressure.fix(101325 * 10)
+
+        iscale.calculate_scaling_factors(bped_m[1])
+
+        assert degrees_of_freedom(bped_m[1]) == 0
+        initialization_tester(bped_m[1])
+        badly_scaled_var_values = {
+            var.name: val for (var, val) in iscale.badly_scaled_var_generator(bped_m[1])
+        }
+        assert not badly_scaled_var_values
+
+        assert_units_consistent(bped_m[1])
+
+        assert value(
+            bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(0.0514, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(0.0509, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.04105, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H_+"]
+        ) == pytest.approx(0.00738, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "OH_-"]
+        ) == pytest.approx(0.00738, rel=1e-3)
+
+        assert value(
+            bped_m[1].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "H_+"]
+        ) == pytest.approx(0.09233, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "OH_-"]
+        ) == pytest.approx(0.0080, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(0.010299, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(0.093828, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_acidic.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.43915, rel=1e-3)
+
+        assert value(
+            bped_m[1].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "H_+"]
+        ) == pytest.approx(0.0080, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "OH_-"]
+        ) == pytest.approx(0.092331, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(0.09325, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(0.010225, rel=1e-3)
+        assert value(
+            bped_m[1].fs.unit.outlet_basic.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.22064, rel=1e-3)
+
         # Test constant Voltage operation with salt calculation
 
         bped_m[2].fs.unit.voltage_applied.fix(1e1)
@@ -1632,7 +1711,7 @@ class Test_BPED_pressure_drop_components:
         )
 
         # Test bped_m1
-        bped_m[1].fs.unit.friction_factor.fix(20)
+        bped_m[1].fs.unit.friction_factor.fix(10)
         iscale.calculate_scaling_factors(bped_m[1])
 
         assert degrees_of_freedom(bped_m[1]) == 0
@@ -1644,11 +1723,11 @@ class Test_BPED_pressure_drop_components:
         assert value(bped_m[1].fs.unit.N_Re) == pytest.approx(3.4456, rel=1e-3)
 
         assert value(bped_m[1].fs.unit.pressure_drop[0]) == pytest.approx(
-            760.09, rel=1e-3
+            380.05, rel=1e-3
         )
 
         assert value(bped_m[1].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            600.472, rel=1e-3
+            300.236, rel=1e-3
         )
 
         # Test bped_m2
