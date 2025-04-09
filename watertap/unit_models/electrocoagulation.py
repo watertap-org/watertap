@@ -14,7 +14,6 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Constraint,
     Var,
     check_optimal_termination,
     Param,
@@ -31,12 +30,10 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.initialization import ModularInitializerBase
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.misc import StrEnum
-from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -76,209 +73,6 @@ Industrial & Engineering Chemistry Research 2009 Vol. 48 Issue 6 Pages 3112-3117
 DOI: 10.1021/ie801086c
 
 """
-
-
-class ElectrocoagulationInitializer(ModularInitializerBase):
-    """
-    Initializer for Electrocoagulation models.
-    """
-
-    CONFIG = ModularInitializerBase.CONFIG()
-
-    def initialize_main_model(self, model):
-        # Get loggers
-        init_log = idaeslog.getInitLogger(
-            model.name, self.get_output_level(), tag="unit"
-        )
-        solve_log = idaeslog.getSolveLogger(
-            model.name, self.get_output_level(), tag="unit"
-        )
-
-        # Create solver
-        solver = self._get_solver()
-
-        prop_init = self.get_submodel_initializer(model.properties_in)
-
-        if prop_init is not None:
-            prop_init.initialize(
-                model=model.properties_in,
-                output_level=self.get_output_level(),
-            )
-        else:
-            raise ValueError(
-                "No Initializer found for property package. Please provide "
-                "sub-model initializers or assign a default Initializer."
-            )
-
-        init_log.info_high("Initialization Step 1 (Inlet State) Complete.")
-
-        for t, in_state in model.properties_in.items():
-            state_vars = in_state.define_state_vars()
-            state_vars_out = model.properties_out[t].define_state_vars()
-            state_vars_waste = model.properties_waste[t].define_state_vars()
-
-            for n, sv in state_vars.items():
-                sv_out = state_vars_out[n]
-                sv_waste = state_vars_waste[n]
-
-                if sv_out.is_indexed():
-                    for j, svo in sv_out.items():
-                        if j == "H2O":
-                            svo.set_value(
-                                value(sv) * self.removal_frac_mass_water.value
-                            )
-                        else:
-                            svo.set_value(
-                                value(sv) * (1 - self.removal_frac_mass_comp[j].value)
-                            )
-                if sv_waste.is_indexed():
-                    for j, svw in sv_waste.items():
-                        if j == "H2O":
-                            svw.set_value(
-                                value(sv) * (1 - self.removal_frac_mass_water.value)
-                            )
-                        else:
-                            svw.set_value(
-                                value(sv) * self.removal_frac_mass_comp[j].value
-                            )
-        prop_init.initialize(
-            model=model.properties_retentate,
-            output_level=self.get_output_level(),
-        )
-        prop_init.initialize(
-            model=model.properties_permeate,
-            output_level=self.get_output_level(),
-        )
-
-        init_log.info_high("Initialization Step 2 (Outlet States) Complete.")
-
-        # ---------------------------------------------------------------------
-        # Solve full model
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(model, tee=slc.tee)
-
-        init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
-
-        return res
-
-
-class ElectrocoagulationScaler(CustomScalerBase):
-    """
-    Scaler class for Electrocoagulation models
-    """
-
-    DEFAULT_SCALING_FACTORS = {
-        "electrode_thickness": 1e3,
-        "electrode_gap": 10,
-        "electrolysis_time": 0.1,
-        "applied_current": 1,
-        "current_efficiency": 1,
-        "cell_volume": 0.1,
-        "ohmic_resistance": 1e3,
-        "charge_loading_rate": 1e-2,
-        "current_density": 1e-2,
-        "cell_voltage": 0.1,
-        "overpotential": 0.1,
-    }
-
-    def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        """
-        Apply variable scaling to model.
-
-        Args:
-            model: model to be scaled
-            overwrite: whether to overwrite existing scaling factors
-            submodel_scalers: ComponentMap of Scaler objects to be applied to sub-models
-
-        Returns:
-            None
-
-        """
-        # Scale inlet state
-        self.call_submodel_scaler_method(
-            submodel=model.properties_in,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-
-        # Propagate scaling from inlet state
-        self.propagate_state_scaling(
-            target_state=model.properties_out,
-            source_state=model.properties_in,
-            overwrite=overwrite,
-        )
-        self.propagate_state_scaling(
-            target_state=model.properties_waste,
-            source_state=model.properties_in,
-            overwrite=overwrite,
-        )
-
-        # Scale remaining states
-        self.call_submodel_scaler_method(
-            submodel=model.properties_retentate,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.properties_permeate,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-
-        # Scale remaining variables
-        # Variables with default scaling factors
-        for n in self.DEFAULT_SCALING_FACTORS.keys():
-            c = model.find_component(n)
-            for v in c.values():
-                self.scale_variable_by_default(v, overwrite=overwrite)
-
-    def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        """
-        Apply constraint scaling to model.
-
-        Args:
-            model: model to be scaled
-            overwrite: whether to overwrite existing scaling factors
-            submodel_scalers: ComponentMap of Scaler objects to be applied to sub-models
-
-        Returns:
-            None
-
-        """
-        # Call scaling methods for sub-models
-        self.call_submodel_scaler_method(
-            submodel=model.properties_in,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.properties_out,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.properties_waste,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-
-        # Scale remaining constraints
-        for c in model.component_data_objects(Constraint, descend_into=False):
-            self.scale_constraint_by_nominal_value(
-                c,
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
 
 
 @declare_process_block_class("Electrocoagulation")
@@ -697,7 +491,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         self.ohmic_resistance = Var(
             initialize=1e-5,
             bounds=(0, None),
-            units=pyunits.ohm * pyunits.m**2,
+            units=pyunits.ohm,
             doc="Ohmic resistance of solution",
         )
 
@@ -968,7 +762,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         def eq_cell_voltage(b):
             return b.cell_voltage == pyunits.convert(
                 b.overpotential
-                + b.applied_current * (b.ohmic_resistance / b.anode_area),
+                + b.applied_current * (b.ohmic_resistance),
                 to_units=pyunits.volt,
             )
 
@@ -992,10 +786,11 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Ohmic resistance")
         def eq_ohmic_resistance(b):
-            return (
-                pyunits.convert(b.ohmic_resistance * b.conductivity, to_units=pyunits.m)
-                == b.electrode_gap
-            )
+            return b.ohmic_resistance * b.conductivity * b.anode_area == b.electrode_gap
+            # return (
+            #     pyunits.convert(b.ohmic_resistance * b.conductivity, to_units=pyunits.m)
+            #     == b.electrode_gap
+            # )
 
         @self.Constraint(doc="Electrode mass")
         def eq_electrode_mass(b):
