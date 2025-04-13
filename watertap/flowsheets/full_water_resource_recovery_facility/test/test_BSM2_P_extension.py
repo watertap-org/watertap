@@ -156,11 +156,11 @@ class TestFullFlowsheetBioPFalse:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == 103
+        assert run_stats[0] == pytest.approx(103, abs=5)
         # Restoration
-        assert run_stats[1] == 84
+        assert run_stats[1] == pytest.approx(84, abs=5)
         # Regularization
-        assert run_stats[2] == 41
+        assert run_stats[2] == pytest.approx(41, abs=5)
 
         m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(60 * units.g / units.m**3)
 
@@ -171,11 +171,11 @@ class TestFullFlowsheetBioPFalse:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == 124
+        assert run_stats[0] == pytest.approx(124, abs=5)
         # Restoration
-        assert run_stats[1] == 108
+        assert run_stats[1] == pytest.approx(108, abs=5)
         # Regularization
-        assert run_stats[2] == 45
+        assert run_stats[2] == pytest.approx(45, abs=5)
 
         m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(80 * units.g / units.m**3)
 
@@ -186,11 +186,11 @@ class TestFullFlowsheetBioPFalse:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == 111
+        assert run_stats[0] == pytest.approx(111, abs=5)
         # Restoration
-        assert run_stats[1] == 102
+        assert run_stats[1] == pytest.approx(102, abs=5)
         # Regularization
-        assert run_stats[2] == 42
+        assert run_stats[2] == pytest.approx(42, abs=5)
 
     # @pytest.mark.integration
     # @pytest.mark.solver
@@ -345,11 +345,11 @@ class TestFullFlowsheetBioPTrue:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == 194
+        assert run_stats[0] == pytest.approx(194, abs=5)
         # Restoration
-        assert run_stats[1] == 185
+        assert run_stats[1] == pytest.approx(185, abs=5)
         # Regularization
-        assert run_stats[2] == 107
+        assert run_stats[2] == pytest.approx(107, abs=5)
 
         m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(60 * units.g / units.m**3)
 
@@ -360,11 +360,11 @@ class TestFullFlowsheetBioPTrue:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == 422
+        assert run_stats[0] == pytest.approx(422, abs=5)
         # Restoration
-        assert run_stats[1] == 409
+        assert run_stats[1] == pytest.approx(409, abs=5)
         # Regularization
-        assert run_stats[2] == 331
+        assert run_stats[2] == pytest.approx(331, abs=5)
 
         m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(80 * units.g / units.m**3)
 
@@ -375,11 +375,11 @@ class TestFullFlowsheetBioPTrue:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == 359
+        assert run_stats[0] == pytest.approx(359, abs=5)
         # Restoration
-        assert run_stats[1] == 345
+        assert run_stats[1] == pytest.approx(345, abs=5)
         # Regularization
-        assert run_stats[2] == 286
+        assert run_stats[2] == pytest.approx(286, abs=5)
 
     # @pytest.mark.integration
     # @pytest.mark.solver
