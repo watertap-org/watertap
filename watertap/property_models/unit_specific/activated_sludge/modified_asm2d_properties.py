@@ -176,7 +176,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             units=pyo.units.K,
         )
 
-        # COD to VSS coefficients
+        # COD to VSS coefficients [1]
         self.CODtoVSS_XI = pyo.Var(
             initialize=1.5686,
             units=pyo.units.dimensionless,
@@ -201,7 +201,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="mass COD per mass VSS of XPHA",
         )
-        # Inorganic solids parameters
+        # Inorganic solids parameters [1]
         self.ISS_P = pyo.Var(
             initialize=3.23,
             units=pyo.units.dimensionless,
