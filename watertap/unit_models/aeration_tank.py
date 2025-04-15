@@ -157,35 +157,6 @@ class AerationTankScaler(CustomScalerBase):
         )
 
         # Scale unit level constraints
-        if hasattr(model, "cstr_performance_eqn"):
-            for r in model.control_volume.config.reaction_package.rate_reaction_idx:
-                self.scale_constraint_by_nominal_value(
-                    model.cstr_performance_eqn[0, r],
-                    scheme=ConstraintScalingScheme.inverseMaximum,
-                    overwrite=overwrite,
-                )
-
-        if hasattr(model, "eq_hydraulic_retention_time"):
-            self.scale_constraint_by_nominal_value(
-                model.eq_hydraulic_retention_time[0],
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
-
-        if hasattr(model, "eq_mass_transfer"):
-            self.scale_constraint_by_nominal_value(
-                model.eq_mass_transfer[0],
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
-
-        if hasattr(model, "eq_electricity_consumption"):
-            self.scale_constraint_by_nominal_value(
-                model.eq_electricity_consumption[0],
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
-
         for c in model.component_data_objects(Constraint, descend_into=False):
             self.scale_constraint_by_nominal_value(
                 c,
