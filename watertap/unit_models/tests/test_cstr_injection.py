@@ -591,10 +591,13 @@ class TestCSTR_InjectionScaler:
         # Check that unit model has scaling factors
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
-        assert len(sfx_cv) == 1
+        assert len(sfx_cv) == 2
         assert sfx_cv[model.fs.unit.control_volume.volume[0]] == pytest.approx(
             1e-3, rel=1e-3
         )
+        assert sfx_cv[
+            model.fs.unit.control_volume.mass_transfer_term[0, "Liq", "S_O"]
+        ] == pytest.approx(1e2, rel=1e-3)
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -741,10 +744,13 @@ class TestCSTR_InjectionScaler:
         # Check that unit model has scaling factors
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
-        assert len(sfx_cv) == 1
+        assert len(sfx_cv) == 2
         assert sfx_cv[model.fs.unit.control_volume.volume[0]] == pytest.approx(
             1e-3, rel=1e-3
         )
+        assert sfx_cv[
+            model.fs.unit.control_volume.mass_transfer_term[0, "Liq", "S_O"]
+        ] == pytest.approx(1e2, rel=1e-3)
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
@@ -1078,7 +1084,7 @@ Inverse Sum              || 2.740E+17 | Solved 4   || 2.399E+14 | Solved 4
 Inverse Root Sum Squares || 2.740E+17 | Solved 4   || 3.412E+14 | Solved 4  
 Inverse Maximum          || 2.740E+17 | Solved 4   || 4.809E+14 | Solved 4  
 Inverse Minimum          || 1.187E+18 | Solved 8   || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 5.869E+08 | Solved 4   || 2.842E+14 | Solved 4  
+Nominal L1 Norm          || 5.868E+08 | Solved 4   || 2.842E+14 | Solved 4  
 Nominal L2 Norm          || 5.862E+08 | Solved 4   || 3.755E+14 | Solved 4  
 Actual L1 Norm           || 5.918E+08 | Solved 4   || 5.461E+13 | Solved 4  
 Actual L2 Norm           || 5.911E+08 | Solved 4   || 6.491E+13 | Solved 4  

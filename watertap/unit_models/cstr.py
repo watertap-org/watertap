@@ -139,12 +139,6 @@ class CSTRScaler(CustomScalerBase):
         )
 
         # Scale unit level constraints
-        if hasattr(model, "CSTR_retention_time"):
-            self.scale_constraint_by_nominal_value(
-                model.CSTR_retention_time[0],
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
 
         for c in model.component_data_objects(Constraint, descend_into=False):
             self.scale_constraint_by_nominal_value(
