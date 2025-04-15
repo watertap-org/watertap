@@ -45,6 +45,7 @@ class AerationTankScaler(CustomScalerBase):
         "volume": 1e-3,
         "hydraulic_retention_time": 1e-3,
         "KLa": 1e-1,
+        "mass_transfer_term": 1e2,
     }
 
     def variable_scaling_routine(
@@ -95,6 +96,28 @@ class AerationTankScaler(CustomScalerBase):
             model.hydraulic_retention_time[0], overwrite=overwrite
         )
         self.scale_variable_by_default(model.KLa, overwrite=overwrite)
+        if model.config.has_aeration:
+            if "S_O" and "S_O2" in model.config.property_package.component_list:
+                self.scale_variable_by_default(
+                    model.control_volume.mass_transfer_term[0, "Liq", "S_O"],
+                    overwrite=overwrite,
+                )
+                self.scale_variable_by_default(
+                    model.control_volume.mass_transfer_term[0, "Liq", "S_O2"],
+                    overwrite=overwrite,
+                )
+            elif "S_O" in model.config.property_package.component_list:
+                self.scale_variable_by_default(
+                    model.control_volume.mass_transfer_term[0, "Liq", "S_O"],
+                    overwrite=overwrite,
+                )
+            elif "S_O2" in model.config.property_package.component_list:
+                self.scale_variable_by_default(
+                    model.control_volume.mass_transfer_term[0, "Liq", "S_O2"],
+                    overwrite=overwrite,
+                )
+            else:
+                pass
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
