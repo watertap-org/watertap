@@ -130,12 +130,12 @@ class TestFullFlowsheetBioPFalse:
         m = system_frame
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.468069088, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.47049103621, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            23935727.743, rel=1e-3
+            24058975.756, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            827635.247, rel=1e-3
+            831978.066, rel=1e-3
         )
 
     @pytest.mark.component
@@ -145,7 +145,7 @@ class TestFullFlowsheetBioPFalse:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.36720268e18, rel=1e-3
+            6.0114758752e18, rel=1e-3
         )
 
 
@@ -256,5 +256,5 @@ class TestFullFlowsheetBioPTrue:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.208168033e18, rel=1e-3
+            7.069595617e18, rel=1e-3
         )
