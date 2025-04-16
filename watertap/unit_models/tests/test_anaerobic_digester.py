@@ -645,7 +645,176 @@ class TestADScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 0
+        assert len(sfx_unit) == 59
+        assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
+            0.00428359743328, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
+            0.005838808018, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
+            0.0198910588947, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(0.001, rel=1e-8)
+        assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
+            10760.40172166, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
+            2.3101604278, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sco2_conc[0]] == pytest.approx(
+            1.0695187166, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.flow_vol_vap[0]] == pytest.approx(
+            174.52240219, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
+            0.00027027027, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
+            5.3178178178e-7, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
+            0.0032451728, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
+            7.783208078e-10, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
+            0.04214223, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "H2O"]] == pytest.approx(
+            1e7, rel=1e-8
+        )
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_su"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_aa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_fa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_va"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_bu"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_pro"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_ac"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_h2"]
+        ] == pytest.approx(1e8, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_ch4"]
+        ] == pytest.approx(1e7, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_IC"]
+        ] == pytest.approx(1e7, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_IN"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "S_I"]] == pytest.approx(
+            1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "X_c"]] == pytest.approx(
+            1, rel=1e-8
+        )
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_ch"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_pr"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_li"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_su"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_aa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_fa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_c4"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_pro"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_ac"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_h2"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "X_I"]] == pytest.approx(
+            1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R1"]] == pytest.approx(
+            164.6795336, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R2"]] == pytest.approx(
+            90.9173561, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R3"]] == pytest.approx(
+            24.778234799, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R4"]] == pytest.approx(
+            86.2009516585, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R5"]] == pytest.approx(
+            86.40353908896, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R6"]] == pytest.approx(
+            24.7782347986, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R7"]] == pytest.approx(
+            92.3446301598, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R8"]] == pytest.approx(
+            117.4122343548, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R9"]] == pytest.approx(
+            91.0580950647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R10"]] == pytest.approx(
+            111.577256092, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R11"]] == pytest.approx(
+            24.108003857, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R12"]] == pytest.approx(
+            70.295804746, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R13"]] == pytest.approx(
+            3020.92899608, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R14"]] == pytest.approx(
+            1077.35401853, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R15"]] == pytest.approx(
+            5226.8997167, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R16"]] == pytest.approx(
+            2941.47061765, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R17"]] == pytest.approx(
+            9251.892011916, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R18"]] == pytest.approx(
+            1670.174032134, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R19"]] == pytest.approx(
+            4007.59840658, rel=1e-8
+        )
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -957,7 +1126,182 @@ class TestADScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 0
+        assert len(sfx_unit) == 61
+        assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
+            1e-6, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
+            1e-1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
+            0.00428359743328, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
+            0.005838808018, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
+            0.0198910588947, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(0.001, rel=1e-8)
+        assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
+            10760.40172166, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
+            2.3101604278, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.Sco2_conc[0]] == pytest.approx(
+            1.0695187166, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.flow_vol_vap[0]] == pytest.approx(
+            174.52240219, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
+            0.00027027027, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
+            5.3178178178e-7, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
+            0.0032451728, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
+            3.9557010468e-7, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
+            0.04214223, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "H2O"]] == pytest.approx(
+            1e7, rel=1e-8
+        )
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_su"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_aa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_fa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_va"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_bu"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_pro"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_ac"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_h2"]
+        ] == pytest.approx(1e8, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_ch4"]
+        ] == pytest.approx(1e7, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_IC"]
+        ] == pytest.approx(1e7, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "S_IN"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "S_I"]] == pytest.approx(
+            1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "X_c"]] == pytest.approx(
+            1, rel=1e-8
+        )
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_ch"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_pr"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_li"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_su"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_aa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_fa"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_c4"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_pro"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_ac"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[
+            model.fs.unit.unit_material_balance[0, "X_h2"]
+        ] == pytest.approx(1, rel=1e-8)
+        assert sfx_unit[model.fs.unit.unit_material_balance[0, "X_I"]] == pytest.approx(
+            1, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R1"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R2"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R3"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R4"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R5"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R6"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R7"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R8"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R9"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R10"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R11"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R12"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R13"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R14"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R15"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R16"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R17"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R18"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
+        assert sfx_unit[model.fs.unit.ad_performance_eqn[0, "R19"]] == pytest.approx(
+            0.0294117647, rel=1e-8
+        )
 
     # TODO: Remove test once iscale is deprecated
     @pytest.mark.integration
@@ -1098,7 +1442,7 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.97139638e11, rel=1e-3
+            3.99369304545e14, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -1183,5 +1527,5 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.86956021256e11, rel=1e-3
+            3.92081071893194e14, rel=1e-3
         )

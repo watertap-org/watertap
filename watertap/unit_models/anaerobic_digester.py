@@ -67,7 +67,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.scaling import CustomScalerBase
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 from watertap.costing.unit_models.anaerobic_digester import cost_anaerobic_digester
 
@@ -85,6 +85,8 @@ class ADScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "volume": 1e-2,
+        "hydraulic_retention_time": 1e-6,
+        "electricity_consumption": 1e-1,
     }
 
     def variable_scaling_routine(
@@ -131,6 +133,12 @@ class ADScaler(CustomScalerBase):
         self.scale_variable_by_default(
             model.liquid_phase.volume[0], overwrite=overwrite
         )
+        self.scale_variable_by_default(
+            model.hydraulic_retention_time[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(
+            model.electricity_consumption[0], overwrite=overwrite
+        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -168,6 +176,14 @@ class ADScaler(CustomScalerBase):
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
+
+        # Scale unit level constraints
+        for c in model.component_data_objects(Constraint, descend_into=False):
+            self.scale_constraint_by_nominal_value(
+                c,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
 
 
 @declare_process_block_class("AD")
