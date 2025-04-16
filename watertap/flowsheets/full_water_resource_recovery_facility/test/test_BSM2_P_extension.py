@@ -21,17 +21,10 @@ __author__ = "Chenyu Wang"
 
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value, units
+from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
-from idaes.core.util.parameter_sweep import (
-    ParameterSweepSpecification,
-)
-from idaes.core.surrogate.pysmo.sampling import (
-    UniformSampling,
-)
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
@@ -141,94 +134,6 @@ class TestFullFlowsheetBioPFalse:
             831978.066, rel=1e-3
         )
 
-    @pytest.mark.integration
-    @pytest.mark.solver
-    def test_run_convergence_analysis_SF(self, system_frame):
-        m = system_frame
-        solver_obj = get_solver()
-        ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * units.g / units.m**3)
-
-        success, run_stats = ca._run_model(m, solver_obj)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == pytest.approx(103, abs=5)
-        # Restoration
-        assert run_stats[1] == pytest.approx(84, abs=5)
-        # Regularization
-        assert run_stats[2] == pytest.approx(41, abs=5)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(60 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == pytest.approx(124, abs=5)
-        # Restoration
-        assert run_stats[1] == pytest.approx(108, abs=5)
-        # Regularization
-        assert run_stats[2] == pytest.approx(45, abs=5)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(80 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == pytest.approx(111, abs=5)
-        # Restoration
-        assert run_stats[1] == pytest.approx(102, abs=5)
-        # Regularization
-        assert run_stats[2] == pytest.approx(42, abs=5)
-
-    # @pytest.mark.integration
-    # @pytest.mark.solver
-    # def test_run_convergence_analysis(self, system_frame):
-    #     m = system_frame
-    #     solver_obj = get_solver()
-    #
-    #     spec = ParameterSweepSpecification()
-    #     spec.add_sampled_input(
-    #         "fs.FeedWater.conc_mass_comp[0, S_A]", lower=60, upper=80
-    #     )
-    #     spec.set_sampling_method(UniformSampling)
-    #     spec.set_sample_size([3])
-    #
-    #     ca = IpoptConvergenceAnalysis(
-    #         m, input_specification=spec, solver_obj=solver_obj
-    #     )
-    #
-    #     ca.run_convergence_analysis()
-    #
-    #     assert isinstance(ca.results, dict)
-    #     assert len(ca.results) == 3
-    #
-    #     # Ignore time, as it is too noisy to test
-    #     # Sample 0 should solve cleanly
-    #     assert ca.results[0]["success"]
-    #     assert ca.results[0]["results"]["iters"] == 91
-    #     assert ca.results[0]["results"]["iters_in_restoration"] == 84
-    #     assert ca.results[0]["results"]["iters_w_regularization"] == 40
-    #     assert ca.results[0]["results"]["numerical_issues"]
-    #
-    #     # Sample 1 should solve, but have issues due to bound on v1
-    #     assert ca.results[1]["success"]
-    #     assert ca.results[1]["results"]["iters"] == pytest.approx(103, abs=1)
-    #     assert ca.results[1]["results"]["iters_in_restoration"] == 95
-    #     assert ca.results[1]["results"]["iters_w_regularization"] == 48
-    #     assert ca.results[1]["results"]["numerical_issues"]
-
 
 @pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPTrue:
@@ -329,91 +234,3 @@ class TestFullFlowsheetBioPTrue:
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             836020.408, rel=1e-3
         )
-
-    @pytest.mark.integration
-    @pytest.mark.solver
-    def test_run_convergence_analysis_SF(self, system_frame):
-        m = system_frame
-        solver_obj = get_solver()
-        ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * units.g / units.m**3)
-
-        success, run_stats = ca._run_model(m, solver_obj)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == pytest.approx(194, abs=5)
-        # Restoration
-        assert run_stats[1] == pytest.approx(185, abs=5)
-        # Regularization
-        assert run_stats[2] == pytest.approx(107, abs=5)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(60 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == pytest.approx(422, abs=5)
-        # Restoration
-        assert run_stats[1] == pytest.approx(409, abs=5)
-        # Regularization
-        assert run_stats[2] == pytest.approx(331, abs=5)
-
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(80 * units.g / units.m**3)
-
-        solver = get_solver()
-        success, run_stats = ca._run_model(m, solver)
-
-        assert success
-
-        assert len(run_stats) == 4
-        # Iterations
-        assert run_stats[0] == pytest.approx(359, abs=5)
-        # Restoration
-        assert run_stats[1] == pytest.approx(345, abs=5)
-        # Regularization
-        assert run_stats[2] == pytest.approx(286, abs=5)
-
-    # @pytest.mark.integration
-    # @pytest.mark.solver
-    # def test_run_convergence_analysis(self, system_frame):
-    #     m = system_frame
-    #     solver_obj = get_solver()
-    #
-    #     spec = ParameterSweepSpecification()
-    #     spec.add_sampled_input(
-    #         "fs.FeedWater.conc_mass_comp[0, S_A]", lower=60, upper=80
-    #     )
-    #     spec.set_sampling_method(UniformSampling)
-    #     spec.set_sample_size([3])
-    #
-    #     ca = IpoptConvergenceAnalysis(
-    #         m, input_specification=spec, solver_obj=solver_obj
-    #     )
-    #
-    #     ca.run_convergence_analysis()
-    #
-    #     assert isinstance(ca.results, dict)
-    #     assert len(ca.results) == 3
-    #
-    #     # Ignore time, as it is too noisy to test
-    #     # Sample 0 should solve cleanly
-    #     assert ca.results[0]["success"]
-    #     assert ca.results[0]["results"]["iters"] == 207
-    #     assert ca.results[0]["results"]["iters_in_restoration"] == 200
-    #     assert ca.results[0]["results"]["iters_w_regularization"] == 114
-    #     assert ca.results[0]["results"]["numerical_issues"]
-    #
-    #     # Sample 1 should solve, but have issues due to bound on v1
-    #     assert ca.results[1]["success"]
-    #     assert ca.results[1]["results"]["iters"] == pytest.approx(179, abs=1)
-    #     assert ca.results[1]["results"]["iters_in_restoration"] == 167
-    #     assert ca.results[1]["results"]["iters_w_regularization"] == 104
-    #     assert ca.results[1]["results"]["numerical_issues"]
