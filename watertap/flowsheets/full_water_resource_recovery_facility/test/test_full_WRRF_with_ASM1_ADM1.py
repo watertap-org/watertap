@@ -32,6 +32,10 @@ from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 import watertap.flowsheets.full_water_resource_recovery_facility.BSM2 as BSM2
 
@@ -135,6 +139,16 @@ class TestFullFlowsheet:
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             638749.398846816, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            5.5020290179e19, rel=1e-3
         )
 
     @pytest.mark.component
@@ -251,6 +265,16 @@ class TestFullFlowsheet_with_equal_reactor_vols:
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             638749.398846816, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            5.5020290179e19, rel=1e-3
         )
 
     @pytest.mark.component
