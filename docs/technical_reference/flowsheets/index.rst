@@ -1,5 +1,7 @@
 Flowsheets
 ==========
+The flowsheets below can be accessed at the
+`WaterTAP <https://github.com/watertap-org/watertap/tree/main/watertap/flowsheets>`_ GitHub repository.
 
 .. toctree::
    :maxdepth: 1
