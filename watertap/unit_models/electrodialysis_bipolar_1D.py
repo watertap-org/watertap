@@ -62,7 +62,7 @@ __author__ = "Johnson Dhanasekaran"
 _log = idaeslog.getLogger(__name__)
 
 
-class LimitingCurrentDensitybpemMethod(Enum):
+class LimitingCurrentDensitybpmMethod(Enum):
     InitialValue = 0
     Empirical = 1
 
@@ -94,7 +94,7 @@ class HydraulicDiameterMethod(Enum):
 @declare_process_block_class("Electrodialysis_Bipolar_1D")
 class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
     """
-    0D Bipolar and Electrodialysis Model
+    1D Bipolar and Electrodialysis Model
     """
 
     # CONFIG are options for the unit model
@@ -150,7 +150,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
            :header: "Configuration Options", "Description"
 
            "``PressureDropMethod.none``", "The frictional pressure drop is neglected." 
-           "``PressureDropMethod.experimental``", "The pressure drop is calculated by an experimental data as pressure drop per unit lenght."
+           "``PressureDropMethod.experimental``", "The pressure drop is calculated by an experimental data as pressure drop per unit length."
            "``PressureDropMethod.Darcy_Weisbach``", "The pressure drop is calculated by the Darcy-Weisbach equation."
        """,
         ),
@@ -203,19 +203,19 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "limiting_current_density_method_bpem",
+        "limiting_current_density_method_bpm",
         ConfigValue(
-            default=LimitingCurrentDensitybpemMethod.InitialValue,
-            domain=In(LimitingCurrentDensitybpemMethod),
+            default=LimitingCurrentDensitybpmMethod.InitialValue,
+            domain=In(LimitingCurrentDensitybpmMethod),
             description="Configuration for method to compute the limiting current density across the bipolar membrane",
             doc="""
-               **default** - ``LimitingCurrentDensitybpemMethod.InitialValue``
+               **default** - ``LimitingCurrentDensitybpmMethod.InitialValue``
 
            .. csv-table::
                :header: "Configuration Options", "Description"
 
-               "``LimitingCurrentDensitybpemMethod.InitialValue``", "Limiting current is calculated from a single initial value given by the user."
-               "``LimitingCurrentDensitybpemMethod.Empirical``", "Limiting current density is calculated from the empirical equation"
+               "``LimitingCurrentDensitybpmMethod.InitialValue``", "Limiting current is calculated from a single initial value given by the user."
+               "``LimitingCurrentDensitybpmMethod.Empirical``", "Limiting current density is calculated from the empirical equation"
            """,
         ),
     )
@@ -231,7 +231,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "limiting_current_density_bpem_data",
+        "limiting_current_density_bpm_data",
         ConfigValue(
             default=0.5,
             description="Limiting current density data input for bipolar membrane",
@@ -424,7 +424,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
         self._validate_config()
 
         # Create essential sets.
-        self.membrane_set = Set(initialize=["cem", "aem", "bpem"])
+        self.membrane_set = Set(initialize=["cem", "aem", "bpm"])
         self.electrode_side = Set(initialize=["cathode_left", "anode_right"])
         add_object_reference(self, "ion_set", self.config.property_package.ion_set)
 
@@ -603,7 +603,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             initialize=0.7,
             bounds=(0.01, 1),
             units=pyunits.dimensionless,
-            doc='The prosity of spacer in the BMED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
+            doc='The porosity of spacer in the BMED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
         )
 
         # Material and Operational properties
@@ -642,12 +642,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             initialize=1e-14,
             units=pyunits.meter * pyunits.second**-1 * pyunits.pascal**-1,
             doc="Water permeability coefficient",
-        )
-        self.membrane_areal_resistance_combined = Var(
-            initialize=2e-4,
-            bounds=(0, 1e3),
-            units=pyunits.ohm * pyunits.meter**2,
-            doc="Surface resistance of membrane",
         )
         self.total_areal_resistance_x = Var(
             self.flowsheet().time,
@@ -825,7 +819,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mole * pyunits.meter**-3,
             doc="Salt concentration on the acid channel of the bipolar membrane",
         )
-        self.current_dens_lim_bpem = Var(
+        self.current_dens_lim_bpm = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=1e2,
@@ -864,7 +858,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mole * pyunits.meter**-2 * pyunits.second**-1,
             doc="Molar flux_in of a component generated by water splitting on the base channel of the bipolar membrane",
         )
-        self.elec_migration_bpem_flux = Var(
+        self.elec_migration_bpm_flux = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             self.config.property_package.phase_list,
@@ -872,7 +866,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.mole * pyunits.meter**-2 * pyunits.second**-1,
             doc="Molar flux_in of a component across the membrane driven by electrical migration across the bipolar membrane",
         )
-        self.nonelec_bpem_flux = Var(
+        self.nonelec_bpm_flux = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             self.config.property_package.phase_list,
@@ -1066,26 +1060,26 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             self.diluate.length_domain,
             doc="Calculate limiting current density across the bipolar membrane",
         )
-        def eq_current_dens_lim_bpem(self, t, x):
+        def eq_current_dens_lim_bpm(self, t, x):
             if (
-                self.config.limiting_current_density_method_bpem
-                == LimitingCurrentDensitybpemMethod.InitialValue
+                self.config.limiting_current_density_method_bpm
+                == LimitingCurrentDensitybpmMethod.InitialValue
             ):
-                return self.current_dens_lim_bpem[t, x] == (
-                    self.config.limiting_current_density_bpem_data
+                return self.current_dens_lim_bpm[t, x] == (
+                    self.config.limiting_current_density_bpm_data
                     * pyunits.amp
                     * pyunits.meter**-2
                 )
             elif (
-                self.config.limiting_current_density_method_bpem
-                == LimitingCurrentDensitybpemMethod.Empirical
+                self.config.limiting_current_density_method_bpm
+                == LimitingCurrentDensitybpmMethod.Empirical
             ):
-                return self.current_dens_lim_bpem[
+                return self.current_dens_lim_bpm[
                     t, x
                 ] == self.diffus_mass * Constants.faraday_constant * (
                     (self.salt_conc_ael_x[t, x] + self.salt_conc_cel_x[t, x]) * 0.5
                 ) ** 2 / (
-                    self.membrane_thickness["bpem"] * self.membrane_fixed_charge
+                    self.membrane_thickness["bpm"] * self.membrane_fixed_charge
                 )
 
         @self.Constraint(
@@ -1135,7 +1129,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             )
             def eq_current_relationship(self, t, x):
                 return self.current_density_x[t, x] == (
-                    self.current_dens_lim_bpem[t, x]
+                    self.current_dens_lim_bpm[t, x]
                     + self.flux_splitting[t, x] * Constants.faraday_constant
                 )
 
@@ -1262,30 +1256,28 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.component_list,
             doc="Equation for electrical migration across the bipolar membrane flux_in",
         )
-        def eq_elec_migration_bpem_flux(self, t, x, p, j):
+        def eq_elec_migration_bpm_flux(self, t, x, p, j):
             if j == "H2O":
-                return self.elec_migration_bpem_flux[t, x, p, j] == (
-                    self.water_trans_number_membrane["bpem"]
+                return self.elec_migration_bpm_flux[t, x, p, j] == (
+                    self.water_trans_number_membrane["bpm"]
                 ) * (self.current_density_x[t, x] / Constants.faraday_constant)
 
             elif j in self.ion_set:
                 if not (j == "H_+" or j == "OH_-"):
-                    return self.elec_migration_bpem_flux[t, x, p, j] == (
-                        self.ion_trans_number_membrane["bpem", j]
-                    ) * (
-                        self.current_utilization * self.current_dens_lim_bpem[t, x]
-                    ) / (
+                    return self.elec_migration_bpm_flux[t, x, p, j] == (
+                        self.ion_trans_number_membrane["bpm", j]
+                    ) * (self.current_utilization * self.current_dens_lim_bpm[t, x]) / (
                         self.config.property_package.charge_comp[j]
                         * Constants.faraday_constant
                     )
                 else:
 
-                    self.elec_migration_bpem_flux[t, x, p, j].fix(
+                    self.elec_migration_bpm_flux[t, x, p, j].fix(
                         0 * pyunits.mol * pyunits.m**-2 * pyunits.s**-1
                     )
                     return Constraint.Skip
             else:
-                self.elec_migration_bpem_flux[t, x, p, j].fix(
+                self.elec_migration_bpm_flux[t, x, p, j].fix(
                     0 * pyunits.mol * pyunits.m**-2 * pyunits.s**-1
                 )
                 return Constraint.Skip
@@ -1351,19 +1343,19 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.component_list,
             doc="Equation for non-electrical flux across the bipolar membrane flux_in",
         )
-        def eq_nonelec_bpem_flux(self, t, x, p, j):
+        def eq_nonelec_bpm_flux(self, t, x, p, j):
             if j == "H2O":
-                return self.nonelec_bpem_flux[
+                return self.nonelec_bpm_flux[
                     t, x, p, j
                 ] == self.water_density / self.config.property_package.mw_comp[j] * (
-                    self.water_permeability_membrane["bpem"]
+                    self.water_permeability_membrane["bpm"]
                 ) * (
                     self.basic.properties[t, x].pressure_osm_phase[p]
                     - self.acidic.properties[t, x].pressure_osm_phase[p]
                 )
 
             else:
-                self.nonelec_bpem_flux[t, x, p, j].fix(0)
+                self.nonelec_bpm_flux[t, x, p, j].fix(0)
                 return Constraint.Skip
 
         # Add constraints for mass transfer terms (diluate)
@@ -1400,8 +1392,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 self.basic.mass_transfer_term[t, x, p, j]
                 == (
                     self.generation_ael_flux[t, x, p, j]
-                    - self.elec_migration_bpem_flux[t, x, p, j]
-                    - self.nonelec_bpem_flux[t, x, p, j]
+                    - self.elec_migration_bpm_flux[t, x, p, j]
+                    - self.nonelec_bpm_flux[t, x, p, j]
                     + self.elec_migration_mono_cem_flux[t, x, p, j]
                     + self.nonelec_mono_cem_flux[t, x, p, j]
                 )
@@ -1422,8 +1414,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 self.acidic.mass_transfer_term[t, x, p, j]
                 == (
                     self.generation_cel_flux[t, x, p, j]
-                    + self.elec_migration_bpem_flux[t, x, p, j]
-                    + self.nonelec_bpem_flux[t, x, p, j]
+                    + self.elec_migration_bpm_flux[t, x, p, j]
+                    + self.nonelec_bpm_flux[t, x, p, j]
                     + self.elec_migration_mono_aem_flux[t, x, p, j]
                     + self.nonelec_mono_aem_flux[t, x, p, j]
                 )
@@ -1480,26 +1472,26 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             initialize=5e3,
             bounds=(1e-1, 1e5),
             units=pyunits.mole * pyunits.meter**-3,
-            doc="Membrane fixed charge",
+            doc="Catalyst - AEL of the BPM",
         )
         self.membrane_fixed_catalyst_cel = Var(
             initialize=5e3,
             bounds=(1e-1, 1e5),
             units=pyunits.mole * pyunits.meter**-3,
-            doc="Membrane fixed charge",
+            doc="Catalyst - CEL of the BPM",
         )
 
         self.k_a = Var(
             initialize=1e-3,
             bounds=(1e-6, 1e5),
             units=pyunits.mole * pyunits.meter**-3,
-            doc="Membrane fixed charge",
+            doc="Equilibrium constant of proton disassociation",
         )
         self.k_b = Var(
             initialize=3e-2,
             bounds=(1e-2, 1e5),
             units=pyunits.mole * pyunits.meter**-3,
-            doc="Membrane fixed charge",
+            doc="Equilibrium constant of hydroxide disassociation",
         )
 
         const = 0.0936 * pyunits.K**2 * pyunits.volt**-1 * pyunits.meter
@@ -2009,13 +2001,6 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.channel_height, 1e5)
         if iscale.get_scaling_factor(self.spacer_porosity, warning=True) is None:
             iscale.set_scaling_factor(self.spacer_porosity, 1)
-        if (
-            iscale.get_scaling_factor(
-                self.membrane_areal_resistance_combined, warning=True
-            )
-            is None
-        ):
-            iscale.set_scaling_factor(self.membrane_areal_resistance_combined, 1e5)
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e1)
         if hasattr(self, "voltage_applied") and (
@@ -2170,23 +2155,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
                 is None
             ):
-                sf = (
-                    iscale.get_scaling_factor(self.membrane_areal_resistance_combined)
-                    ** -1
-                    + iscale.get_scaling_factor(self.channel_height) ** -1
-                    * (
-                        iscale.get_scaling_factor(
-                            self.diluate.properties[ind].elec_cond_phase["Liq"]
-                        )
-                        + iscale.get_scaling_factor(
-                            self.acidic.properties[ind].elec_cond_phase["Liq"]
-                        )
-                        + iscale.get_scaling_factor(
-                            self.basic.properties[ind].elec_cond_phase["Liq"]
-                        )
-                    )
-                ) ** -1 * iscale.get_scaling_factor(self.cell_triplet_num)
-                iscale.set_scaling_factor(self.total_areal_resistance_x[ind], sf)
+                iscale.set_scaling_factor(self.total_areal_resistance_x[ind], 1e5)
 
         for ind in self.current_density_x:
             if (
@@ -2220,9 +2189,9 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 self.elec_migration_mono_aem_flux[ind],
                 iscale.get_scaling_factor(self.current_density_x[ind[0], ind[1]]) * 1e5,
             )
-        for ind in self.elec_migration_bpem_flux:
+        for ind in self.elec_migration_bpm_flux:
             iscale.set_scaling_factor(
-                self.elec_migration_bpem_flux[ind],
+                self.elec_migration_bpm_flux[ind],
                 iscale.get_scaling_factor(self.current_density_x[ind[0], ind[1]]) * 1e5,
             )
 
@@ -2288,7 +2257,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
             iscale.set_scaling_factor(self.nonelec_mono_aem_flux[ind], sf)
 
-        for ind in self.nonelec_bpem_flux:
+        for ind in self.nonelec_bpm_flux:
             if ind[3] == "H2O":
                 sf = (
                     1e-3
@@ -2302,16 +2271,16 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
             else:
                 sf = 1
-            iscale.set_scaling_factor(self.nonelec_bpem_flux[ind], sf)
+            iscale.set_scaling_factor(self.nonelec_bpm_flux[ind], sf)
 
         for ind in self.acidic.mass_transfer_term:
             if ind[3] == "H_+":
                 sf = iscale.get_scaling_factor(self.generation_cel_flux[ind])
             else:
                 if ind[3] == "H2O":
-                    sf = iscale.get_scaling_factor(self.nonelec_bpem_flux[ind])
+                    sf = iscale.get_scaling_factor(self.nonelec_bpm_flux[ind])
                 else:
-                    sf = iscale.get_scaling_factor(self.elec_migration_bpem_flux[ind])
+                    sf = iscale.get_scaling_factor(self.elec_migration_bpm_flux[ind])
 
             sf *= (
                 iscale.get_scaling_factor(self.cell_width)
@@ -2326,9 +2295,9 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.generation_ael_flux[ind])
             else:
                 if ind[3] == "H2O":
-                    sf = iscale.get_scaling_factor(self.nonelec_bpem_flux[ind])
+                    sf = iscale.get_scaling_factor(self.nonelec_bpm_flux[ind])
                 else:
-                    sf = iscale.get_scaling_factor(self.elec_migration_bpem_flux[ind])
+                    sf = iscale.get_scaling_factor(self.elec_migration_bpm_flux[ind])
 
             sf *= (
                 iscale.get_scaling_factor(self.cell_width)
@@ -2537,17 +2506,17 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 )
             iscale.set_scaling_factor(self.pressure_drop_total, sf)
 
-        if hasattr(self, "current_dens_lim_bpem"):
-            if iscale.get_scaling_factor(self.current_dens_lim_bpem) is None:
+        if hasattr(self, "current_dens_lim_bpm"):
+            if iscale.get_scaling_factor(self.current_dens_lim_bpm) is None:
                 if (
-                    self.config.limiting_current_density_method_bpem
-                    == LimitingCurrentDensitybpemMethod.InitialValue
+                    self.config.limiting_current_density_method_bpm
+                    == LimitingCurrentDensitybpmMethod.InitialValue
                 ):
                     sf = self.config.limiting_current_density_data**-1
-                    iscale.set_scaling_factor(self.current_dens_lim_bpem, sf)
+                    iscale.set_scaling_factor(self.current_dens_lim_bpm, sf)
                 elif (
-                    self.config.limiting_current_density_method_bpem
-                    == LimitingCurrentDensitybpemMethod.Empirical
+                    self.config.limiting_current_density_method_bpm
+                    == LimitingCurrentDensitybpmMethod.Empirical
                 ):
                     sf = (
                         iscale.get_scaling_factor(self.diffus_mass)
@@ -2559,13 +2528,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                         )
                     )
 
-                    iscale.set_scaling_factor(self.current_dens_lim_bpem, sf)
-
-        # Constraint scaling
-        # for ind, c in self.eq_current_voltage_relation.items():
-        #     iscale.constraint_scaling_transform(
-        #         c, iscale.get_scaling_factor(self.membrane_areal_resistance_combined)
-        #     )
+                    iscale.set_scaling_factor(self.current_dens_lim_bpm, sf)
 
         for ind, c in self.eq_get_current_density.items():
             iscale.constraint_scaling_transform(
@@ -2589,9 +2552,9 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 c, iscale.get_scaling_factor(self.elec_migration_mono_aem_flux[ind])
             )
-        for ind, c in self.eq_elec_migration_bpem_flux.items():
+        for ind, c in self.eq_elec_migration_bpm_flux.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.elec_migration_bpem_flux[ind])
+                c, iscale.get_scaling_factor(self.elec_migration_bpm_flux[ind])
             )
 
         for ind, c in self.eq_nonelec_mono_cem_flux.items():
@@ -2604,9 +2567,9 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 c, iscale.get_scaling_factor(self.nonelec_mono_aem_flux[ind])
             )
 
-        for ind, c in self.eq_nonelec_bpem_flux.items():
+        for ind, c in self.eq_nonelec_bpm_flux.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.nonelec_bpem_flux[ind])
+                c, iscale.get_scaling_factor(self.nonelec_bpm_flux[ind])
             )
 
         for ind, c in self.eq_mass_transfer_term_diluate.items():
@@ -2623,8 +2586,8 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 c,
                 min(
                     iscale.get_scaling_factor(self.generation_ael_flux[ind]),
-                    iscale.get_scaling_factor(self.elec_migration_bpem_flux[ind]),
-                    iscale.get_scaling_factor(self.nonelec_bpem_flux[ind]),
+                    iscale.get_scaling_factor(self.elec_migration_bpm_flux[ind]),
+                    iscale.get_scaling_factor(self.nonelec_bpm_flux[ind]),
                 )
                 * iscale.get_scaling_factor(self.cell_width)
                 * iscale.get_scaling_factor(self.shadow_factor)
@@ -2636,7 +2599,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 c,
                 min(
                     iscale.get_scaling_factor(self.generation_cel_flux[ind]),
-                    iscale.get_scaling_factor(self.nonelec_bpem_flux[ind]),
+                    iscale.get_scaling_factor(self.nonelec_bpm_flux[ind]),
                 )
                 * iscale.get_scaling_factor(self.cell_width)
                 * iscale.get_scaling_factor(self.shadow_factor)

@@ -36,7 +36,7 @@ from idaes.models.unit_models import Feed
 from watertap.unit_models.electrodialysis_bipolar_1D import (
     Electrodialysis_Bipolar_1D,
     ElectricalOperationMode,
-    LimitingCurrentDensitybpemMethod,
+    LimitingCurrentDensitybpmMethod,
     PressureDropMethod,
     FrictionFactorMethod,
     HydraulicDiameterMethod,
@@ -84,7 +84,7 @@ class Test_membrane_characteristics:
         m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             terms_fE=40,
         )
 
@@ -97,10 +97,10 @@ class Test_membrane_characteristics:
         m.fs.unit.k_a.fix(447)
         m.fs.unit.k_b.fix(5e4)
 
-        m.fs.unit.ion_trans_number_membrane["bpem", "Na_+"].fix(0)
-        m.fs.unit.ion_trans_number_membrane["bpem", "Cl_-"].fix(0)
-        m.fs.unit.ion_trans_number_membrane["bpem", "H_+"].fix(1)
-        m.fs.unit.ion_trans_number_membrane["bpem", "OH_-"].fix(1)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Na_+"].fix(0)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Cl_-"].fix(0)
+        m.fs.unit.ion_trans_number_membrane["bpm", "H_+"].fix(1)
+        m.fs.unit.ion_trans_number_membrane["bpm", "OH_-"].fix(1)
 
         m.fs.unit.ion_trans_number_membrane["cem", "Na_+"].fix(0.94)
         m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
@@ -112,10 +112,10 @@ class Test_membrane_characteristics:
         m.fs.unit.ion_trans_number_membrane["aem", "H_+"].fix(0.03)
         m.fs.unit.ion_trans_number_membrane["aem", "OH_-"].fix(0.03)
 
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Na_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Cl_-"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "H_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "OH_-"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Na_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Cl_-"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "H_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "OH_-"].fix(0)
 
         m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(
             (1.8e-10 + 1.25e-10) / 2
@@ -169,8 +169,8 @@ class Test_membrane_characteristics:
         m.fs.unit.water_trans_number_membrane["aem"].fix((5.8 + 4.3) / 2)
         m.fs.unit.water_permeability_membrane["aem"].fix((2.16e-14 + 1.75e-14) / 2)
 
-        m.fs.unit.water_trans_number_membrane["bpem"].fix((5.8 + 4.3) / 2)
-        m.fs.unit.water_permeability_membrane["bpem"].fix((2.16e-14 + 1.75e-14) / 2)
+        m.fs.unit.water_trans_number_membrane["bpm"].fix((5.8 + 4.3) / 2)
+        m.fs.unit.water_permeability_membrane["bpm"].fix((2.16e-14 + 1.75e-14) / 2)
         m.fs.unit.electrodes_resistance.fix(0)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.channel_height.fix(2.7e-4)
@@ -214,7 +214,7 @@ class Test_membrane_characteristics:
         m.fs.unit.salt_conc_ael_ref.fix(2000)
         m.fs.unit.salt_conc_cel_ref.fix(2000)
         m.fs.unit.membrane_fixed_charge.fix(5e3)
-        m.fs.unit.membrane_thickness["bpem"].fix(8e-4)
+        m.fs.unit.membrane_thickness["bpm"].fix(8e-4)
 
         # Experimental data from Wilhelm et al. (2002) with additional inputs from Mareev et al. (2020)
         expt_membrane_potential = np.array(
@@ -263,7 +263,7 @@ class Test_membrane_characteristics:
         m.fs.unit.salt_conc_ael_ref.fix(500 + 2 * 250)
         m.fs.unit.salt_conc_cel_ref.fix(500 + 2 * 250)
         m.fs.unit.membrane_fixed_charge.fix(1.5e3)
-        m.fs.unit.membrane_thickness["bpem"].fix(1.3e-4)
+        m.fs.unit.membrane_thickness["bpm"].fix(1.3e-4)
         m.fs.unit.current_applied.fix(1e2)
 
         # Test computing limiting current in  bipolar membrane
@@ -273,7 +273,7 @@ class Test_membrane_characteristics:
         initialization_tester(m)
         results = solver.solve(m)
         assert_optimal_termination(results)
-        assert value(m.fs.unit.current_dens_lim_bpem[0, 1]) == pytest.approx(
+        assert value(m.fs.unit.current_dens_lim_bpm[0, 1]) == pytest.approx(
             987.120, rel=1e-3
         )
 
@@ -310,7 +310,7 @@ class Test_Operation:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             salt_calculation=False,
         )
         return m
@@ -345,7 +345,7 @@ class Test_Operation:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             salt_calculation=False,
         )
         return m
@@ -380,7 +380,7 @@ class Test_Operation:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             salt_calculation=True,
         )
         return m
@@ -415,7 +415,7 @@ class Test_Operation:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             salt_calculation=True,
         )
         return m
@@ -448,10 +448,10 @@ class Test_Operation:
             m.fs.unit.k_a.fix(447)
             m.fs.unit.k_b.fix(5e4)
 
-            m.fs.unit.ion_trans_number_membrane["bpem", "Na_+"].fix(0)
-            m.fs.unit.ion_trans_number_membrane["bpem", "Cl_-"].fix(0)
-            m.fs.unit.ion_trans_number_membrane["bpem", "H_+"].fix(1)
-            m.fs.unit.ion_trans_number_membrane["bpem", "OH_-"].fix(1)
+            m.fs.unit.ion_trans_number_membrane["bpm", "Na_+"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["bpm", "Cl_-"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["bpm", "H_+"].fix(1)
+            m.fs.unit.ion_trans_number_membrane["bpm", "OH_-"].fix(1)
 
             m.fs.unit.ion_trans_number_membrane["cem", "Na_+"].fix(0.94)
             m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
@@ -463,10 +463,10 @@ class Test_Operation:
             m.fs.unit.ion_trans_number_membrane["aem", "H_+"].fix(0.03)
             m.fs.unit.ion_trans_number_membrane["aem", "OH_-"].fix(0.03)
 
-            m.fs.unit.solute_diffusivity_membrane["bpem", "Na_+"].fix(0)
-            m.fs.unit.solute_diffusivity_membrane["bpem", "Cl_-"].fix(0)
-            m.fs.unit.solute_diffusivity_membrane["bpem", "H_+"].fix(0)
-            m.fs.unit.solute_diffusivity_membrane["bpem", "OH_-"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "Na_+"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "Cl_-"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "H_+"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "OH_-"].fix(0)
 
             m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(
                 (1.8e-10 + 1.25e-10) / 2
@@ -520,8 +520,8 @@ class Test_Operation:
             m.fs.unit.water_trans_number_membrane["aem"].fix((5.8 + 4.3) / 2)
             m.fs.unit.water_permeability_membrane["aem"].fix((2.16e-14 + 1.75e-14) / 2)
 
-            m.fs.unit.water_trans_number_membrane["bpem"].fix((5.8 + 4.3) / 2)
-            m.fs.unit.water_permeability_membrane["bpem"].fix((2.16e-14 + 1.75e-14) / 2)
+            m.fs.unit.water_trans_number_membrane["bpm"].fix((5.8 + 4.3) / 2)
+            m.fs.unit.water_permeability_membrane["bpm"].fix((2.16e-14 + 1.75e-14) / 2)
             m.fs.unit.electrodes_resistance.fix(0)
             m.fs.unit.current_utilization.fix(1)
             m.fs.unit.channel_height.fix(2.7e-4)
@@ -529,7 +529,7 @@ class Test_Operation:
             m.fs.unit.membrane_areal_resistance_coef_1.fix(0)
             m.fs.unit.cell_width.fix(0.1)
             m.fs.unit.cell_length.fix(0.79)
-            m.fs.unit.membrane_thickness["bpem"].fix(8e-4)
+            m.fs.unit.membrane_thickness["bpm"].fix(8e-4)
             m.fs.unit.membrane_thickness["aem"].fix(4e-4)
             m.fs.unit.membrane_thickness["cem"].fix(4e-4)
 
@@ -860,22 +860,22 @@ class Test_NMSU_bench_scale:
             property_package=m.fs.properties,
             finite_elements=10,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
         )
 
-        m.fs.unit.water_trans_number_membrane["bpem"].fix((5.8 + 4.3) / 2)
-        m.fs.unit.water_permeability_membrane["bpem"].fix((2.16e-14 + 1.75e-14) / 2)
+        m.fs.unit.water_trans_number_membrane["bpm"].fix((5.8 + 4.3) / 2)
+        m.fs.unit.water_permeability_membrane["bpm"].fix((2.16e-14 + 1.75e-14) / 2)
         m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
         m.fs.unit.water_trans_number_membrane["aem"].fix(4.3)
         m.fs.unit.water_permeability_membrane["cem"].fix(2.16e-14)
         m.fs.unit.water_permeability_membrane["aem"].fix(1.75e-14)
 
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Na_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Cl_-"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "H_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "OH_-"].fix(0)
-        m.fs.unit.ion_trans_number_membrane["bpem", "Na_+"].fix(0.5)
-        m.fs.unit.ion_trans_number_membrane["bpem", "Cl_-"].fix(0.5)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Na_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Cl_-"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "H_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "OH_-"].fix(0)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Na_+"].fix(0.5)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Cl_-"].fix(0.5)
 
         m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(2.00e-10)
         m.fs.unit.solute_diffusivity_membrane["aem", "Na_+"].fix(7.50e-11)
@@ -903,7 +903,7 @@ class Test_NMSU_bench_scale:
         m.fs.unit.cell_length.fix(0.254)
         m.fs.unit.shadow_factor.fix(1)
 
-        m.fs.unit.membrane_thickness["bpem"].fix(1150e-6)
+        m.fs.unit.membrane_thickness["bpm"].fix(1150e-6)
         m.fs.unit.membrane_thickness["aem"].fix(570e-6)
         m.fs.unit.membrane_thickness["cem"].fix(580e-6)
 
@@ -962,22 +962,22 @@ class Test_NMSU_bench_scale:
             property_package=m.fs.properties,
             finite_elements=10,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
         )
 
-        m.fs.unit.water_trans_number_membrane["bpem"].fix((5.8 + 4.3) / 2)
-        m.fs.unit.water_permeability_membrane["bpem"].fix((2.16e-14 + 1.75e-14) / 2)
+        m.fs.unit.water_trans_number_membrane["bpm"].fix((5.8 + 4.3) / 2)
+        m.fs.unit.water_permeability_membrane["bpm"].fix((2.16e-14 + 1.75e-14) / 2)
         m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
         m.fs.unit.water_trans_number_membrane["aem"].fix(4.3)
         m.fs.unit.water_permeability_membrane["cem"].fix(2.16e-14)
         m.fs.unit.water_permeability_membrane["aem"].fix(1.75e-14)
 
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Na_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Cl_-"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "H_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "OH_-"].fix(0)
-        m.fs.unit.ion_trans_number_membrane["bpem", "Na_+"].fix(0.5)
-        m.fs.unit.ion_trans_number_membrane["bpem", "Cl_-"].fix(0.5)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Na_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Cl_-"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "H_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "OH_-"].fix(0)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Na_+"].fix(0.5)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Cl_-"].fix(0.5)
 
         m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(2.00e-10)
         m.fs.unit.solute_diffusivity_membrane["aem", "Na_+"].fix(7.50e-11)
@@ -1005,7 +1005,7 @@ class Test_NMSU_bench_scale:
         m.fs.unit.cell_length.fix(0.254)
         m.fs.unit.shadow_factor.fix(1)
 
-        m.fs.unit.membrane_thickness["bpem"].fix(1150e-6)
+        m.fs.unit.membrane_thickness["bpm"].fix(1150e-6)
         m.fs.unit.membrane_thickness["aem"].fix(570e-6)
         m.fs.unit.membrane_thickness["cem"].fix(580e-6)
 
@@ -1064,22 +1064,22 @@ class Test_NMSU_bench_scale:
             property_package=m.fs.properties,
             finite_elements=10,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
         )
 
-        m.fs.unit.water_trans_number_membrane["bpem"].fix((5.8 + 4.3) / 2)
-        m.fs.unit.water_permeability_membrane["bpem"].fix((2.16e-14 + 1.75e-14) / 2)
+        m.fs.unit.water_trans_number_membrane["bpm"].fix((5.8 + 4.3) / 2)
+        m.fs.unit.water_permeability_membrane["bpm"].fix((2.16e-14 + 1.75e-14) / 2)
         m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
         m.fs.unit.water_trans_number_membrane["aem"].fix(4.3)
         m.fs.unit.water_permeability_membrane["cem"].fix(2.16e-14)
         m.fs.unit.water_permeability_membrane["aem"].fix(1.75e-14)
 
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Na_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "Cl_-"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "H_+"].fix(0)
-        m.fs.unit.solute_diffusivity_membrane["bpem", "OH_-"].fix(0)
-        m.fs.unit.ion_trans_number_membrane["bpem", "Na_+"].fix(0.5)
-        m.fs.unit.ion_trans_number_membrane["bpem", "Cl_-"].fix(0.5)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Na_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "Cl_-"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "H_+"].fix(0)
+        m.fs.unit.solute_diffusivity_membrane["bpm", "OH_-"].fix(0)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Na_+"].fix(0.5)
+        m.fs.unit.ion_trans_number_membrane["bpm", "Cl_-"].fix(0.5)
 
         m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(2.00e-10)
         m.fs.unit.solute_diffusivity_membrane["aem", "Na_+"].fix(7.50e-11)
@@ -1107,7 +1107,7 @@ class Test_NMSU_bench_scale:
         m.fs.unit.cell_length.fix(0.254)
         m.fs.unit.shadow_factor.fix(1)
 
-        m.fs.unit.membrane_thickness["bpem"].fix(1150e-6)
+        m.fs.unit.membrane_thickness["bpm"].fix(1150e-6)
         m.fs.unit.membrane_thickness["aem"].fix(570e-6)
         m.fs.unit.membrane_thickness["cem"].fix(580e-6)
 
@@ -1374,7 +1374,7 @@ class Test_BPED_pressure_drop_components:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             pressure_drop_method=PressureDropMethod.experimental,
             has_pressure_change=True,
         )
@@ -1410,7 +1410,7 @@ class Test_BPED_pressure_drop_components:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.fixed,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
@@ -1448,7 +1448,7 @@ class Test_BPED_pressure_drop_components:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Gurreri,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
@@ -1486,7 +1486,7 @@ class Test_BPED_pressure_drop_components:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
@@ -1524,7 +1524,7 @@ class Test_BPED_pressure_drop_components:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.fixed,
@@ -1562,7 +1562,7 @@ class Test_BPED_pressure_drop_components:
         m.fs.unit = Electrodialysis_Bipolar_1D(
             property_package=m.fs.properties,
             salt_calculation=True,
-            limiting_current_density_method_bpem=LimitingCurrentDensitybpemMethod.Empirical,
+            limiting_current_density_method_bpm=LimitingCurrentDensitybpmMethod.Empirical,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
@@ -1588,10 +1588,10 @@ class Test_BPED_pressure_drop_components:
             m.fs.unit.k_a.fix(447)
             m.fs.unit.k_b.fix(5e4)
 
-            m.fs.unit.ion_trans_number_membrane["bpem", "Na_+"].fix(0)
-            m.fs.unit.ion_trans_number_membrane["bpem", "Cl_-"].fix(0)
-            m.fs.unit.ion_trans_number_membrane["bpem", "H_+"].fix(1)
-            m.fs.unit.ion_trans_number_membrane["bpem", "OH_-"].fix(1)
+            m.fs.unit.ion_trans_number_membrane["bpm", "Na_+"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["bpm", "Cl_-"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["bpm", "H_+"].fix(1)
+            m.fs.unit.ion_trans_number_membrane["bpm", "OH_-"].fix(1)
 
             m.fs.unit.ion_trans_number_membrane["cem", "Na_+"].fix(0.94)
             m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
@@ -1603,10 +1603,10 @@ class Test_BPED_pressure_drop_components:
             m.fs.unit.ion_trans_number_membrane["aem", "H_+"].fix(0.03)
             m.fs.unit.ion_trans_number_membrane["aem", "OH_-"].fix(0.03)
 
-            m.fs.unit.solute_diffusivity_membrane["bpem", "Na_+"].fix(0)
-            m.fs.unit.solute_diffusivity_membrane["bpem", "Cl_-"].fix(0)
-            m.fs.unit.solute_diffusivity_membrane["bpem", "H_+"].fix(0)
-            m.fs.unit.solute_diffusivity_membrane["bpem", "OH_-"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "Na_+"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "Cl_-"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "H_+"].fix(0)
+            m.fs.unit.solute_diffusivity_membrane["bpm", "OH_-"].fix(0)
 
             m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(
                 (1.8e-10 + 1.25e-10) / 2
@@ -1660,8 +1660,8 @@ class Test_BPED_pressure_drop_components:
             m.fs.unit.water_trans_number_membrane["aem"].fix((5.8 + 4.3) / 2)
             m.fs.unit.water_permeability_membrane["aem"].fix((2.16e-14 + 1.75e-14) / 2)
 
-            m.fs.unit.water_trans_number_membrane["bpem"].fix((5.8 + 4.3) / 2)
-            m.fs.unit.water_permeability_membrane["bpem"].fix((2.16e-14 + 1.75e-14) / 2)
+            m.fs.unit.water_trans_number_membrane["bpm"].fix((5.8 + 4.3) / 2)
+            m.fs.unit.water_permeability_membrane["bpm"].fix((2.16e-14 + 1.75e-14) / 2)
             m.fs.unit.electrodes_resistance.fix(0)
             m.fs.unit.current_utilization.fix(1)
             m.fs.unit.channel_height.fix(2.7e-4)
@@ -1669,7 +1669,7 @@ class Test_BPED_pressure_drop_components:
             m.fs.unit.membrane_areal_resistance_coef_1.fix(0)
             m.fs.unit.cell_width.fix(0.1)
             m.fs.unit.cell_length.fix(0.79)
-            m.fs.unit.membrane_thickness["bpem"].fix(8e-4)
+            m.fs.unit.membrane_thickness["bpm"].fix(8e-4)
             m.fs.unit.membrane_thickness["aem"].fix(4e-4)
             m.fs.unit.membrane_thickness["cem"].fix(4e-4)
 
@@ -1695,6 +1695,7 @@ class Test_BPED_pressure_drop_components:
             iscale.set_scaling_factor(m.fs.unit.k_b, 1e-4)
             iscale.set_scaling_factor(m.fs.unit.voltage_x, 1e-0)
             iscale.set_scaling_factor(m.fs.unit.flux_splitting, 1e4)
+            iscale.set_scaling_factor(m.fs.unit.total_areal_resistance_x, 1e4)
 
         # Test bped_m0
         bped_m[0].fs.unit.pressure_drop.fix(4e4)
