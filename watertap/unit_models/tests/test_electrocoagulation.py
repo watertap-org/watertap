@@ -33,7 +33,7 @@ solver = get_solver()
 
 def build_ec1():
     """
-    From Dubrawski (2014) paper
+    From Dubrawski et al (2014) paper
     Fig 6A
     For E_cell = 10, I_cell = ~4 Amp
     http://dx.doi.org/10.1016/j.electacta.2014.02.089
@@ -101,9 +101,10 @@ def build_ec1():
 
     return m
 
+
 def build_ec2():
     """
-    multi-component with Nernst overpotential calculation
+    Multi-component with Nernst overpotential calculation
     """
     ec_feed = {
         "solute_list": ["TDS", "Foo_2+", "Bar_-"],
@@ -165,6 +166,147 @@ def build_ec2():
 
     return m
 
+
+def build_ec3():
+    """
+    From Gu et al. (2009) paper
+    Fig 6A
+    For i = 8 mA/cm2, P_dF = ~15000 uW/cm2
+    https://doi.org/10.1021/ie801086c
+    """
+
+    flow_vol_phase = 0.1 * pyunits.liter / pyunits.minute
+    conc_tds = 1.05 * pyunits.kg / pyunits.m**3
+    electrolysis_time = 1 * pyunits.min
+    gap = 0.4 * pyunits.cm
+    anode_area = 34 * pyunits.cm * 3.2 * pyunits.cm
+    current_density = 8 * pyunits.milliamp / pyunits.cm**2
+    electrode_thickness = 0.32 * pyunits.cm
+    current_efficiency = 1.28
+    k1 = 430
+    k2 = 1000
+
+    ec_feed = {
+        "solute_list": ["TDS"],
+        "mw_data": {"TDS": 58.44e-3},  # NaCl
+        "material_flow_basis": MaterialFlowBasis.mass,
+    }
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(**ec_feed)
+    m.fs.unit = ec = Electrocoagulation(
+        property_package=m.fs.properties,
+        electrode_material="aluminum",
+        overpotential_calculation="regression",
+    )
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
+
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
+
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1e5)
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1e7)
+
+    set_scaling_factor(m.fs.unit.electrode_volume, 1e4)
+    set_scaling_factor(m.fs.unit.cell_volume, 1e4)
+    set_scaling_factor(m.fs.unit.floc_basin_vol, 1e4)
+    calculate_scaling_factors(m)
+
+    m.fs.unit.properties_in.calculate_state(
+        var_args={
+            ("flow_vol_phase", ("Liq")): flow_vol_phase,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): conc_tds,
+            ("temperature", None): 300,
+            ("pressure", None): 101325,
+        },
+        hold_state=True,
+    )
+
+    ec.electrode_thickness.fix(electrode_thickness)
+    ec.electrode_gap.fix(gap)
+    ec.current_density.fix(current_density)
+    ec.current_efficiency.fix(current_efficiency)
+    ec.electrolysis_time.fix(electrolysis_time)
+    ec.anode_area.fix(anode_area)
+    ec.floc_retention_time.fix(2)
+    ec.overpotential_k1.fix(k1)
+    ec.overpotential_k2.fix(k2)
+
+    return m
+
+
+def build_ec4():
+    """
+    From Gu et al. (2009) paper
+    Fig 6B
+    For i = 10 mA/cm2, P_dF = ~7400 uW/cm2
+    https://doi.org/10.1021/ie801086c
+    """
+
+    flow_vol_phase = 0.1 * pyunits.liter / pyunits.minute
+    conc_tds = 1.05 * pyunits.kg / pyunits.m**3
+    electrolysis_time = 1 * pyunits.min
+    gap = 0.4 * pyunits.cm
+    anode_area = 34 * pyunits.cm * 3.2 * pyunits.cm
+    current_density = 10 * pyunits.milliamp / pyunits.cm**2
+    electrode_thickness = 0.32 * pyunits.cm
+    current_efficiency = 1
+    k1 = 75
+    k2 = 600
+
+    ec_feed = {
+        "solute_list": ["TDS"],
+        "mw_data": {"TDS": 58.44e-3},  # NaCl
+        "material_flow_basis": MaterialFlowBasis.mass,
+    }
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(**ec_feed)
+    m.fs.unit = ec = Electrocoagulation(
+        property_package=m.fs.properties,
+        electrode_material="iron",
+        overpotential_calculation="regression",
+    )
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
+
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
+
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1e5)
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1e7)
+
+    set_scaling_factor(m.fs.unit.electrode_volume, 1e4)
+    set_scaling_factor(m.fs.unit.cell_volume, 1e4)
+    set_scaling_factor(m.fs.unit.floc_basin_vol, 1e4)
+    calculate_scaling_factors(m)
+
+    m.fs.unit.properties_in.calculate_state(
+        var_args={
+            ("flow_vol_phase", ("Liq")): flow_vol_phase,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): conc_tds,
+            ("temperature", None): 300,
+            ("pressure", None): 101325,
+        },
+        hold_state=True,
+    )
+
+    ec.electrode_thickness.fix(electrode_thickness)
+    ec.electrode_gap.fix(gap)
+    ec.current_density.fix(current_density)
+    ec.current_efficiency.fix(current_efficiency)
+    ec.electrolysis_time.fix(electrolysis_time)
+    ec.anode_area.fix(anode_area)
+    ec.floc_retention_time.fix(2)
+    ec.overpotential_k1.fix(k1)
+    ec.overpotential_k2.fix(k2)
+
+    return m
 
 
 class TestEC_noTDS:
@@ -241,4 +383,66 @@ class TestEC2(UnitTestHarness):
                 + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "Bar_-"],
             },
         }
+        return m
+
+
+class TestEC3(UnitTestHarness):
+    def configure(self):
+        m = build_ec3()
+
+        self.unit_solutions[m.fs.unit.coagulant_dose] = 0.062307
+        self.unit_solutions[m.fs.unit.electrode_mass] = 0.1887
+        self.unit_solutions[m.fs.unit.electrode_volume] = 6.963e-05
+        self.unit_solutions[m.fs.unit.current_density] = 80
+        self.unit_solutions[m.fs.unit.applied_current] = 0.8704
+        self.unit_solutions[m.fs.unit.ohmic_resistance] = 0.0190476
+        self.unit_solutions[m.fs.unit.charge_loading_rate] = 522.24
+        self.unit_solutions[m.fs.unit.current_efficiency] = 1.28
+        self.unit_solutions[m.fs.unit.cell_voltage] = 3.4179
+        self.unit_solutions[m.fs.unit.overpotential] = 1.8941
+        self.unit_solutions[m.fs.unit.power_density_faradaic] = (
+            15153.27  # ~15000 uW/cm2
+        )
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"],
+                "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"],
+            },
+        }
+
+        return m
+
+
+class TestEC4(UnitTestHarness):
+    def configure(self):
+        m = build_ec4()
+
+        self.unit_solutions[m.fs.unit.coagulant_dose] = 0.18891
+        self.unit_solutions[m.fs.unit.electrode_mass] = 0.54730
+        self.unit_solutions[m.fs.unit.electrode_volume] = 6.963e-05
+        self.unit_solutions[m.fs.unit.current_density] = 100
+        self.unit_solutions[m.fs.unit.applied_current] = 1.088
+        self.unit_solutions[m.fs.unit.ohmic_resistance] = 0.0190476
+        self.unit_solutions[m.fs.unit.charge_loading_rate] = 652.8
+        self.unit_solutions[m.fs.unit.current_efficiency] = 1
+        self.unit_solutions[m.fs.unit.cell_voltage] = 2.67745
+        self.unit_solutions[m.fs.unit.overpotential] = 0.77269
+        self.unit_solutions[m.fs.unit.power_density_faradaic] = 7726.93  # ~7400 uW/cm2
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"],
+                "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"],
+            },
+        }
+
         return m
