@@ -31,13 +31,13 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "WaterTAP"
-copyright = "2020-2024, NAWI"
+copyright = "2020-2025, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "1.3.dev0"
+release = "1.4.dev0"
 # The short X.Y version
-version = "1.3.dev0"
+version = "1.4.dev0"
 # -- General configuration ---------------------------------------------------
 
 
