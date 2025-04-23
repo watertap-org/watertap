@@ -205,7 +205,7 @@ def cost_electrocoagulation(blk):
     capital_cost_expr = 0
 
     ec_reactor_dim = pyo.units.convert(
-        ec.reactor_volume * pyo.units.m**-3, to_units=pyo.units.dimensionless
+        ec.cell_volume * pyo.units.m**-3, to_units=pyo.units.dimensionless
     )
     blk.capital_cost_reactor_constraint = pyo.Constraint(
         expr=blk.capital_cost_reactor
@@ -245,6 +245,17 @@ def cost_electrocoagulation(blk):
 
     capital_cost_expr += blk.capital_cost_power_supply
 
+    blk.capital_cost_floc_constraint = pyo.Constraint(
+        expr=blk.capital_cost_floc_reactor
+        == pyo.units.convert(
+            ec_params.floc_capital_cost_slope
+            * pyo.units.convert(ec.floc_basin_vol, to_units=pyo.units.Mgallons)
+            + ec_params.floc_capital_cost_intercept,
+            to_units=base_currency,
+        )
+    )
+    capital_cost_expr += blk.capital_cost_floc_reactor
+
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
         == pyo.units.convert(capital_cost_expr, to_units=base_currency)
@@ -264,7 +275,7 @@ def cost_electrocoagulation(blk):
 
     blk.annual_electrode_replacement_mass_flow = pyo.Expression(
         expr=pyo.units.convert(
-            ec.metal_loading * flow_m3_yr, to_units=pyo.units.kg / pyo.units.year
+            ec.coagulant_dose * flow_m3_yr, to_units=pyo.units.kg / pyo.units.year
         )
     )
 
