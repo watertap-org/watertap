@@ -11,7 +11,12 @@
 #################################################################################
 import pytest
 
-from pyomo.environ import ConcreteModel, units as pyunits
+from pyomo.environ import (
+    ConcreteModel,
+    assert_optimal_termination,
+    value,
+    units as pyunits,
+)
 
 from idaes.core import FlowsheetBlock, MaterialFlowBasis
 from idaes.core import UnitModelCostingBlock
@@ -21,8 +26,11 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     set_scaling_factor,
 )
+from idaes.core.util.testing import initialization_tester
 
 from watertap.costing import WaterTAPCosting
+from watertap.core.util.initialization import check_dof
+from watertap.core.solvers import get_solver
 from watertap.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrocoagulation import Electrocoagulation
@@ -104,71 +112,6 @@ def build_ec1():
 
 def build_ec2():
     """
-    Multi-component with Nernst overpotential calculation
-    """
-    ec_feed = {
-        "solute_list": ["TDS", "Foo_2+", "Bar_-"],
-        "mw_data": {"TDS": 31.4038218e-3, "Foo_2+": 100e-3, "Bar_-": 60e-3},
-        "material_flow_basis": "mass",
-    }
-
-    flow_vol_phase = 1 * pyunits.Mgallons / pyunits.day
-    conc_tds = 5.256 * pyunits.kg / pyunits.m**3
-    conc_foo = 1.5 * pyunits.kg / pyunits.m**3
-    conc_bar = 0.25 * pyunits.kg / pyunits.m**3
-
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.properties = MCASParameterBlock(**ec_feed)
-    m.fs.unit = ec = Electrocoagulation(property_package=m.fs.properties)
-
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e-2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1e2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "Bar_-"], 1e1)
-
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e-2)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 10)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1e3)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Bar_-"], 1e3)
-
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "Bar_-"], 1)
-
-    calculate_scaling_factors(m)
-
-    m.fs.unit.properties_in.calculate_state(
-        var_args={
-            ("flow_vol_phase", ("Liq")): flow_vol_phase,
-            ("conc_mass_phase_comp", ("Liq", "TDS")): conc_tds,
-            ("conc_mass_phase_comp", ("Liq", "Foo_2+")): conc_foo,
-            ("conc_mass_phase_comp", ("Liq", "Bar_-")): conc_bar,
-            ("temperature", None): 298,
-            ("pressure", None): 101325,
-        },
-        hold_state=True,
-    )
-
-    ec.electrode_thickness.fix(0.001)
-    ec.current_density.fix(200)
-    ec.electrolysis_time.fix(25)
-    ec.electrode_gap.fix(1e-2)
-    ec.current_efficiency.fix(1)
-    ec.overpotential.fix(1.5)
-    ec.charge_loading_rate.fix(60)
-    ec.floc_retention_time.fix(12)
-    ec.removal_frac_mass_comp["TDS"].set_value(0.1)
-    ec.removal_frac_mass_comp["Foo_2+"].set_value(0.98)
-    ec.removal_frac_mass_comp["Bar_-"].set_value(0.55)
-
-    return m
-
-
-def build_ec3():
-    """
     From Gu et al. (2009) paper
     Fig 6A
     For i = 8 mA/cm2, P_dF = ~15000 uW/cm2
@@ -238,7 +181,7 @@ def build_ec3():
     return m
 
 
-def build_ec4():
+def build_ec3():
     """
     From Gu et al. (2009) paper
     Fig 6B
@@ -309,6 +252,78 @@ def build_ec4():
     return m
 
 
+def build_ec_costing():
+    """
+    Multi-component with fixed overpotential.
+    Developed from NMSU Test Case #1
+    """
+    ec_feed = {
+        "solute_list": ["TDS", "Foo_2+", "Bar_-"],
+        "mw_data": {"TDS": 31.4038218e-3, "Foo_2+": 100e-3, "Bar_-": 60e-3},
+        "material_flow_basis": "mass",
+    }
+
+    flow_vol_phase = 0.5 * pyunits.Mgallons / pyunits.day
+    conc_tds = 130 * pyunits.kg / pyunits.m**3
+    conc_foo = 1.625 * pyunits.kg / pyunits.m**3
+    conc_bar = 3.821 * pyunits.kg / pyunits.m**3
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(**ec_feed)
+    m.fs.unit = ec = Electrocoagulation(
+        property_package=m.fs.properties,
+        overpotential_calculation="fixed",
+        reactor_material="stainless_steel",
+    )
+
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e-2)
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e2)
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1e2)
+    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "Bar_-"], 1e1)
+
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e-2)
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 10)
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1e3)
+    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Bar_-"], 1e3)
+
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1)
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1)
+    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "Bar_-"], 1)
+
+    set_scaling_factor(ec.applied_current, 1e-4)
+
+    calculate_scaling_factors(m)
+
+    m.fs.unit.properties_in.calculate_state(
+        var_args={
+            ("flow_vol_phase", ("Liq")): flow_vol_phase,
+            ("conc_mass_phase_comp", ("Liq", "TDS")): conc_tds,
+            ("conc_mass_phase_comp", ("Liq", "Foo_2+")): conc_foo,
+            ("conc_mass_phase_comp", ("Liq", "Bar_-")): conc_bar,
+            ("temperature", None): 298,
+            ("pressure", None): 101325,
+        },
+        hold_state=True,
+    )
+
+    ec.electrode_thickness.fix(0.02)
+    ec.current_density.fix(300)
+    ec.electrolysis_time.fix(30)
+    ec.electrode_gap.fix(0.02)
+    ec.current_efficiency.fix(1.5)
+    ec.charge_loading_rate.fix(668)
+    ec.cell_voltage.fix(10)
+    ec.floc_retention_time.fix(12)
+    ec.removal_frac_mass_comp["TDS"].set_value(0.1)
+    ec.removal_frac_mass_comp["Foo_2+"].set_value(0.98)
+    ec.removal_frac_mass_comp["Bar_-"].set_value(0.9)
+
+    return m
+
+
 class TestEC_noTDS:
     @pytest.mark.unit
     def test_no_tds_in_feed(self):
@@ -358,38 +373,6 @@ class TestEC2(UnitTestHarness):
     def configure(self):
         m = build_ec2()
 
-        self.unit_solutions[m.fs.unit.floc_basin_vol] = 31.545
-        self.unit_solutions[m.fs.unit.coagulant_dose] = 0.0055925
-        self.unit_solutions[m.fs.unit.electrode_mass] = 71.239
-        self.unit_solutions[m.fs.unit.electrode_volume] = 0.0262875
-        self.unit_solutions[m.fs.unit.cell_volume] = 65.718
-        self.unit_solutions[m.fs.unit.applied_current] = 2628.7
-        self.unit_solutions[m.fs.unit.ohmic_resistance] = 0.00951293
-        self.unit_solutions[m.fs.unit.cell_voltage] = 3.4025
-
-        self.conservation_equality = {
-            "Check 1": {
-                "in": m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
-                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "Bar_-"],
-                "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
-                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "Bar_-"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "Bar_-"],
-            },
-        }
-        return m
-
-
-class TestEC3(UnitTestHarness):
-    def configure(self):
-        m = build_ec3()
-
         self.unit_solutions[m.fs.unit.coagulant_dose] = 0.062307
         self.unit_solutions[m.fs.unit.electrode_mass] = 0.1887
         self.unit_solutions[m.fs.unit.electrode_volume] = 6.963e-05
@@ -418,9 +401,9 @@ class TestEC3(UnitTestHarness):
         return m
 
 
-class TestEC4(UnitTestHarness):
+class TestEC3(UnitTestHarness):
     def configure(self):
-        m = build_ec4()
+        m = build_ec3()
 
         self.unit_solutions[m.fs.unit.coagulant_dose] = 0.18891
         self.unit_solutions[m.fs.unit.electrode_mass] = 0.54730
@@ -446,3 +429,92 @@ class TestEC4(UnitTestHarness):
         }
 
         return m
+
+
+class TestECCosting(UnitTestHarness):
+    def configure(self):
+        m = build_ec_costing()
+
+        self.unit_solutions[m.fs.unit.floc_basin_vol] = 15.772
+        self.unit_solutions[m.fs.unit.coagulant_dose] = 0.093395
+        self.unit_solutions[m.fs.unit.electrode_mass] = 5287.542
+        self.unit_solutions[m.fs.unit.electrode_volume] = 1.9511
+        self.unit_solutions[m.fs.unit.cell_volume] = 39.43137
+        self.unit_solutions[m.fs.unit.applied_current] = 14633.42
+        self.unit_solutions[m.fs.unit.ohmic_resistance] = 0.0007692
+        self.unit_solutions[m.fs.unit.overpotential] = 9.7692
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"]
+                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
+                + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "Bar_-"],
+                "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
+                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
+                + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "Bar_-"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
+                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "Bar_-"],
+            },
+        }
+        return m
+
+    @pytest.mark.component
+    def test_costing(self):
+        m = build_ec_costing()
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyunits.USD_2023
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.electrocoagulation.sludge_handling_cost.fix(0.025)
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.unit.properties_out[0].flow_vol_phase["Liq"])
+        m.fs.costing.add_specific_energy_consumption(
+            m.fs.unit.properties_out[0].flow_vol_phase["Liq"], name="SEC"
+        )
+        check_dof(m, fail_flag=True)
+        initialization_tester(m)
+        results = solver.solve(m, tee=True)
+        assert_optimal_termination(results)
+
+        sys_cost_results = {
+            "aggregate_capital_cost": 1084304.64,
+            "aggregate_fixed_operating_cost": 311632.55,
+            "aggregate_variable_operating_cost": 0.0,
+            "aggregate_flow_electricity": 146.33,
+            "aggregate_flow_aluminum": 64565.49,
+            "aggregate_flow_costs": {"electricity": 118796.73, "aluminum": 162263.39},
+            "total_capital_cost": 1084304.64,
+            "total_operating_cost": 597115.8,
+            "LCOW": 1.165,
+            "SEC": 1.9064,
+        }
+
+        for v, r in sys_cost_results.items():
+            mv = getattr(m.fs.costing, v)
+            if mv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(mv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(mv)
+
+        ec_cost_results = {
+            "capital_cost": 1084304.64,
+            "fixed_operating_cost": 311632.55,
+            "capital_cost_reactor": 683600.09,
+            "capital_cost_electrodes": 23582.44,
+            "capital_cost_power_supply": 101782.18,
+            "capital_cost_floc_reactor": 275339.92,
+            "annual_sludge_management": 311632.55,
+            "annual_electrode_replacement_mass_flow": 64565.49,
+        }
+
+        for v, r in ec_cost_results.items():
+            mv = getattr(m.fs.unit.costing, v)
+            if mv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(mv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(mv)
