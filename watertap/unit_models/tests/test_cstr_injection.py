@@ -744,7 +744,7 @@ class TestCSTR_InjectionScaler:
         # Check that unit model has scaling factors
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
-        assert len(sfx_cv) == 2
+        assert len(sfx_cv) == 32
         assert sfx_cv[model.fs.unit.control_volume.volume[0]] == pytest.approx(
             1e-3, rel=1e-3
         )
@@ -929,7 +929,7 @@ class TestCSTR_InjectionScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.45206195087e11, rel=1e-3
+            6.732817e6, rel=1e-3
         )
 
 
@@ -1078,16 +1078,16 @@ Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
 Unscaled                 || 1.826E+16 | Solved 4   ||
-Vars Only                || 6.130E+13 | Solved 4   || 2.014E+21 | Solved 4  
-Harmonic                 || 1.187E+18 | Solved 4   || 4.443E+22 | Solved 18 
+Vars Only                || 2.740E+17 | Solved 4   || 2.014E+21 | Solved 4  
+Harmonic                 || 2.740E+17 | Solved 4   || 4.443E+22 | Solved 18 
 Inverse Sum              || 2.740E+17 | Solved 4   || 2.399E+14 | Solved 4  
 Inverse Root Sum Squares || 2.740E+17 | Solved 4   || 3.412E+14 | Solved 4  
 Inverse Maximum          || 2.740E+17 | Solved 4   || 4.809E+14 | Solved 4  
-Inverse Minimum          || 1.187E+18 | Solved 8   || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 5.868E+08 | Solved 4   || 2.842E+14 | Solved 4  
-Nominal L2 Norm          || 5.862E+08 | Solved 4   || 3.755E+14 | Solved 4  
-Actual L1 Norm           || 5.918E+08 | Solved 4   || 5.461E+13 | Solved 4  
-Actual L2 Norm           || 5.911E+08 | Solved 4   || 6.491E+13 | Solved 4  
+Inverse Minimum          || 2.740E+17 | Solved 4   || 4.455E+22 | Solved 18 
+Nominal L1 Norm          || 2.740E+17 | Solved 4   || 2.842E+14 | Solved 4  
+Nominal L2 Norm          || 2.740E+17 | Solved 4   || 3.755E+14 | Solved 4  
+Actual L1 Norm           || 2.740E+17 | Solved 4   || 5.461E+13 | Solved 4  
+Actual L2 Norm           || 2.740E+17 | Solved 4   || 6.491E+13 | Solved 4  
 ============================================================================
 """
 
