@@ -1,3 +1,5 @@
+.. _modified_ADM1:
+
 Modified ADM1 Property Package
 ==============================
 .. raw:: html
@@ -12,7 +14,7 @@ Modified ADM1 Property Package
 
 .. role:: blue
 
-This package is an extension of the `base Anaerobic Digestion Model no.1 (ADM1) <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_ and implements properties and reactions of an anaerobic digestion model for wastewater treatment using an anaerobic digester as provided in
+This package is an extension of the :ref:`base Anaerobic Digestion Model no.1 (ADM1) <ADM1>` and implements properties and reactions of an anaerobic digestion model for wastewater treatment using an anaerobic digester as provided in
 `Batstone, D. J. et al. (2002) <https://iwaponline.com/wst/article-abstract/45/10/65/6034>`_ and `Rosen and Jeppsson (2006) <https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf>`_.
 
 Throughout this documentation, text in :red:`red` has been removed in the Modified ADM1 model, text in :lime:`lime` has been added, and text in :blue:`blue` has been modified from its base ADM1 implementation.

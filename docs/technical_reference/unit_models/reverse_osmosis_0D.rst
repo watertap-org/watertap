@@ -1,3 +1,5 @@
+.. _RO_0D:
+
 Reverse Osmosis (0D)
 ====================
 This reverse osmosis (RO) unit model
