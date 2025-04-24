@@ -172,7 +172,7 @@ class ThickenerScaler(CustomScalerBase):
         )
 
         # Scale unit level constraints
-        for c in model.component_data_objects(Constraint, descend_into=False):
+        for c in model.component_data_objects(Constraint, descend_into=True):
             self.scale_constraint_by_nominal_value(
                 c,
                 scheme=ConstraintScalingScheme.inverseMaximum,
