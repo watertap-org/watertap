@@ -27,12 +27,6 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
-from idaes.core.util.parameter_sweep import (
-    ParameterSweepSpecification,
-)
-from idaes.core.surrogate.pysmo.sampling import (
-    UniformSampling,
-)
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
