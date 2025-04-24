@@ -645,19 +645,19 @@ class TestADScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 59
+        assert len(sfx_unit) == 58
         assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
-            0.00428359743328, rel=1e-8
+            0.29829311748943893, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
-            0.005838808018, rel=1e-8
+            0.174084061064375, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
             0.0198910588947, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(0.001, rel=1e-8)
         assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
-            10760.40172166, rel=1e-8
+            552429.6675191817, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
             2.3101604278, rel=1e-8
@@ -669,16 +669,13 @@ class TestADScaler:
             174.52240219, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
-            0.00027027027, rel=1e-8
+            0.0033333333333333335, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
             5.3178178178e-7, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
-            0.0032451728, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
-            7.783208078e-10, rel=1e-8
+            0.1, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
             0.04214223, rel=1e-8
@@ -1126,7 +1123,7 @@ class TestADScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
-        assert len(sfx_unit) == 61
+        assert len(sfx_unit) == 60
         assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
             1e-6, rel=1e-8
         )
@@ -1134,17 +1131,17 @@ class TestADScaler:
             1e-1, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.CO2_Henrys_law[0]] == pytest.approx(
-            0.00428359743328, rel=1e-8
+            0.29829311748943893, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.Ch4_Henrys_law[0]] == pytest.approx(
-            0.005838808018, rel=1e-8
+            0.174084061064375, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.H2_Henrys_law[0]] == pytest.approx(
             0.0198910588947, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.outlet_P[0]] == pytest.approx(0.001, rel=1e-8)
         assert sfx_unit[model.fs.unit.Sh2_conc[0]] == pytest.approx(
-            10760.40172166, rel=1e-8
+            552429.6675191817, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.Sch4_conc[0]] == pytest.approx(
             2.3101604278, rel=1e-8
@@ -1156,16 +1153,13 @@ class TestADScaler:
             174.52240219, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.ad_total_volume[0]] == pytest.approx(
-            0.00027027027, rel=1e-8
+            0.0033333333333333335, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.AD_retention_time[0]] == pytest.approx(
             5.3178178178e-7, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.unit_temperature_equality[0]] == pytest.approx(
-            0.0032451728, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.unit_enthalpy_balance[0]] == pytest.approx(
-            3.9557010468e-7, rel=1e-8
+            0.1, rel=1e-8
         )
         assert sfx_unit[model.fs.unit.unit_electricity_consumption[0]] == pytest.approx(
             0.04214223, rel=1e-8
@@ -1361,16 +1355,11 @@ class TestADScaler:
 
         iscale.calculate_scaling_factors(m.fs.unit)
 
-        # Set scaling factors for badly scaled variables
-        iscale.set_scaling_factor(
-            m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
-        )
-
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.8550325e12, rel=1e-3
+            2.36919186521693e14, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -1442,7 +1431,7 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.99369304545e14, rel=1e-3
+            7.7264875657494e13, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -1527,5 +1516,5 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.92081071893194e14, rel=1e-3
+            1.3134628077015e13, rel=1e-3
         )

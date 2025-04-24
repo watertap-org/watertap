@@ -178,12 +178,78 @@ class ADScaler(CustomScalerBase):
         )
 
         # Scale unit level constraints
-        for c in model.component_data_objects(Constraint, descend_into=False):
+        self.scale_constraint_by_nominal_value(
+            model.CO2_Henrys_law[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.Ch4_Henrys_law[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.H2_Henrys_law[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.outlet_P[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        for i in model.config.liquid_property_package.component_list:
             self.scale_constraint_by_nominal_value(
-                c,
+                model.unit_material_balance[0, i],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
+        self.scale_constraint_by_nominal_value(
+            model.Sh2_conc[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.Sch4_conc[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.Sco2_conc[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.flow_vol_vap[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.ad_total_volume[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.AD_retention_time[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        for i in model.config.reaction_package.rate_reaction_idx:
+            self.scale_constraint_by_nominal_value(
+                model.ad_performance_eqn[0, i],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        self.scale_constraint_by_nominal_value(
+            model.unit_temperature_equality[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.unit_electricity_consumption[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
 
 
 @declare_process_block_class("AD")
