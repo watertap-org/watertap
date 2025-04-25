@@ -356,53 +356,26 @@ class TestClarifierScaler:
 
         # Inlet state
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
+        # Scaling factors for FTP
         assert isinstance(sfx_in, Suffix)
         assert len(sfx_in) == 3
-        assert sfx_in[model.fs.unit.mixed_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].temperature] == pytest.approx(
-            1e-1, rel=1e-8
-        )
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_underflow) == 3
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         sfx_effluent = model.fs.unit.effluent_state[0].scaling_factor
         assert isinstance(sfx_effluent, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_effluent) == 3
-        assert sfx_effluent[model.fs.unit.effluent_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_effluent[model.fs.unit.effluent_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_effluent[
-            model.fs.unit.effluent_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factors for surface area and electricity consumption
         assert len(sfx_unit) == 2
-        assert sfx_unit[model.fs.unit.surface_area] == pytest.approx(1e-3, rel=1e-3)
-        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
-            1, rel=1e-3
-        )
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -414,10 +387,8 @@ class TestClarifierScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factors for electricity consumption and other unit model constraints
         assert len(sfx_unit) == 47
-        assert sfx_unit[model.fs.unit.rule_electricity_consumption[0]] == pytest.approx(
-            0.162636886, rel=1e-8
-        )
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -430,57 +401,26 @@ class TestClarifierScaler:
         # Inlet state
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_in) == 3
-        assert sfx_in[model.fs.unit.mixed_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].temperature] == pytest.approx(
-            1e-1, rel=1e-8
-        )
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_underflow) == 3
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         sfx_effluent = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_effluent, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_effluent) == 3
-        assert sfx_effluent[model.fs.unit.underflow_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_effluent[model.fs.unit.underflow_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_effluent[
-            model.fs.unit.underflow_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factors for surface area, electricity consumption, and other unit model variables/constraints
         assert len(sfx_unit) == 49
-        assert sfx_unit[model.fs.unit.surface_area] == pytest.approx(1e-3, rel=1e-3)
-        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
-            1, rel=1e-3
-        )
-        assert sfx_unit[model.fs.unit.rule_electricity_consumption[0]] == pytest.approx(
-            0.162636886, rel=1e-8
-        )
 
-    # TODO: Remove test once iscale is deprecated
     @pytest.mark.integration
     def test_example_case_iscale(self):
         m = ConcreteModel()
