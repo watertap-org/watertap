@@ -480,7 +480,6 @@ class TestAerationTankScaler:
         # Scaling factors for HRT, mass transfer, and other unit model variables/constraints
         assert len(sfx_unit) == 13
 
-    # TODO: Remove test once iscale is deprecated
     @pytest.mark.integration
     def test_example_case_iscale(self):
         m = ConcreteModel()
