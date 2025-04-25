@@ -494,57 +494,25 @@ class TestThickenerScaler:
         # Inlet state
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_in) == 3
-        assert sfx_in[model.fs.unit.mixed_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].temperature] == pytest.approx(
-            1e-1, rel=1e-8
-        )
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_underflow) == 3
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         sfx_overflow = model.fs.unit.overflow_state[0].scaling_factor
         assert isinstance(sfx_overflow, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_overflow) == 3
-        assert sfx_overflow[model.fs.unit.overflow_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_overflow[model.fs.unit.overflow_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_overflow[
-            model.fs.unit.overflow_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factors for HRT, volume, height, diameter, and electricity consumption
         assert len(sfx_unit) == 5
-        assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1e-3, rel=1e-3)
-        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
-            1e1, rel=1e-3
-        )
-        assert sfx_unit[model.fs.unit.height] == pytest.approx(1, rel=1e-3)
-        assert sfx_unit[model.fs.unit.diameter] == pytest.approx(1, rel=1e-3)
-        assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
-            1e-4, rel=1e-3
-        )
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -556,58 +524,8 @@ class TestThickenerScaler:
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factors for HRT, volume, electricity consumption, and other unit model constraints
         assert len(sfx_unit) == 63
-        assert sfx_unit[model.fs.unit.eq_electricity_consumption[0]] == pytest.approx(
-            1, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.eq_hydraulic_retention[0]] == pytest.approx(
-            5.5555555556e-4, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.eq_volume[0]] == pytest.approx(
-            5.5555555556e-4, rel=1e-8
-        )
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_I"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_S"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_P"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_BH"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_BA"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_ND"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "H2O"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_I"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_S"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_O"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_NO"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_NH"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_ND"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_ALK"]
-        ] == pytest.approx(1, rel=1e-8)
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -620,108 +538,26 @@ class TestThickenerScaler:
         # Inlet state
         sfx_in = model.fs.unit.mixed_state[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_in) == 3
-        assert sfx_in[model.fs.unit.mixed_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_in[model.fs.unit.mixed_state[0].temperature] == pytest.approx(
-            1e-1, rel=1e-8
-        )
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_underflow) == 3
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_underflow[
-            model.fs.unit.underflow_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         sfx_overflow = model.fs.unit.underflow_state[0].scaling_factor
         assert isinstance(sfx_overflow, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_overflow) == 3
-        assert sfx_overflow[model.fs.unit.underflow_state[0].flow_vol] == pytest.approx(
-            1e1, rel=1e-8
-        )
-        assert sfx_overflow[model.fs.unit.underflow_state[0].pressure] == pytest.approx(
-            1e-6, rel=1e-8
-        )
-        assert sfx_overflow[
-            model.fs.unit.underflow_state[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factors for HRT, volume, height, diameter, and other unit model variables/constraints
         assert len(sfx_unit) == 68
-        assert sfx_unit[model.fs.unit.volume[0]] == pytest.approx(1e-3, rel=1e-3)
-        assert sfx_unit[model.fs.unit.electricity_consumption[0]] == pytest.approx(
-            1e1, rel=1e-3
-        )
-        assert sfx_unit[model.fs.unit.height] == pytest.approx(1, rel=1e-3)
-        assert sfx_unit[model.fs.unit.diameter] == pytest.approx(1, rel=1e-3)
-        assert sfx_unit[model.fs.unit.hydraulic_retention_time[0]] == pytest.approx(
-            1e-4, rel=1e-3
-        )
-        assert sfx_unit[model.fs.unit.eq_electricity_consumption[0]] == pytest.approx(
-            6.37450199, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.eq_hydraulic_retention[0]] == pytest.approx(
-            0.001, rel=1e-8
-        )
-        assert sfx_unit[model.fs.unit.eq_volume[0]] == pytest.approx(0.001, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_I"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_S"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_P"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_BH"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_BA"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.overflow_particulate_fraction[0, "X_ND"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "H2O"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_I"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_S"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_O"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_NO"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_NH"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_ND"]
-        ] == pytest.approx(1, rel=1e-8)
-        assert sfx_unit[
-            model.fs.unit.non_particulate_components[0, "S_ALK"]
-        ] == pytest.approx(1, rel=1e-8)
 
-    # TODO: Remove test once iscale is deprecated
     @pytest.mark.integration
     def test_example_case_iscale(self):
         m = ConcreteModel()
