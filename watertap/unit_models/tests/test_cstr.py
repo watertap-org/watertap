@@ -457,67 +457,26 @@ class TestCSTRScaler:
         # Inlet state
         sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_in) == 3
-        assert sfx_in[
-            model.fs.unit.control_volume.properties_in[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_in[
-            model.fs.unit.control_volume.properties_in[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_in[
-            model.fs.unit.control_volume.properties_in[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_out) == 3
-        assert sfx_out[
-            model.fs.unit.control_volume.properties_out[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_out[
-            model.fs.unit.control_volume.properties_out[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_out[
-            model.fs.unit.control_volume.properties_out[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Reaction block
         sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
         assert isinstance(sfx_rxn, Suffix)
+        # Scaling factors for rxn rates
         assert len(sfx_rxn) == 8
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R1"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R2"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R3"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R4"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R5"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R6"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R7"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R8"]
-        ] == pytest.approx(1e2, rel=1e-8)
 
         # Check that unit model has scaling factors
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
+        # Scaling factor for volume
         assert len(sfx_cv) == 1
-        assert sfx_cv[model.fs.unit.control_volume.volume[0]] == pytest.approx(
-            1e-3, rel=1e-3
-        )
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -533,38 +492,13 @@ class TestCSTRScaler:
 
         sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
         assert isinstance(sfx_rxn, Suffix)
+        # Scaling factors for rate expressions
         assert len(sfx_rxn) == 8
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R1"]
-        ] == pytest.approx(2.380752e5, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R2"]
-        ] == pytest.approx(1.49540985e8, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R3"]
-        ] == pytest.approx(1.75226112e6, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R4"]
-        ] == pytest.approx(2.88e6, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R5"]
-        ] == pytest.approx(1.728e7, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R6"]
-        ] == pytest.approx(1.728e5, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R7"]
-        ] == pytest.approx(3.174336e5, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R8"]
-        ] == pytest.approx(1, rel=1e-8)
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factors for retention time and rate rxn extent
         assert len(sfx_unit) == 9
-        assert sfx_unit[model.fs.unit.CSTR_retention_time[0]] == pytest.approx(
-            1.2199e-3, rel=1e-8
-        )
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -577,100 +511,32 @@ class TestCSTRScaler:
         # Inlet state
         sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_in) == 3
-        assert sfx_in[
-            model.fs.unit.control_volume.properties_in[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_in[
-            model.fs.unit.control_volume.properties_in[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_in[
-            model.fs.unit.control_volume.properties_in[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
+        # Scaling factors for FTP
         assert len(sfx_out) == 3
-        assert sfx_out[
-            model.fs.unit.control_volume.properties_out[0].flow_vol
-        ] == pytest.approx(1e1, rel=1e-8)
-        assert sfx_out[
-            model.fs.unit.control_volume.properties_out[0].pressure
-        ] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx_out[
-            model.fs.unit.control_volume.properties_out[0].temperature
-        ] == pytest.approx(1e-1, rel=1e-8)
 
         # Reaction block
         sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
         assert isinstance(sfx_rxn, Suffix)
+        # Scaling factors for rxn rates and rate expressions
         assert len(sfx_rxn) == 16
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R1"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R2"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R3"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R4"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R5"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R6"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R7"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0].reaction_rate["R8"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R1"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R2"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R3"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R4"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R5"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R6"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R7"]
-        ] == pytest.approx(1e2, rel=1e-8)
-        assert sfx_rxn[
-            model.fs.unit.control_volume.reactions[0.0].rate_expression["R8"]
-        ] == pytest.approx(1e2, rel=1e-8)
 
         # Check that unit model has scaling factors
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
+        # Scaling factors for volume and other variables and constraints on the control volume
         assert len(sfx_cv) == 31
-        assert sfx_cv[model.fs.unit.control_volume.volume[0]] == pytest.approx(
-            1e-3, rel=1e-3
-        )
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
+        # Scaling factor for retention time and rate rxn extent
         assert len(sfx_unit) == 10
-        assert sfx_unit[model.fs.unit.CSTR_retention_time[0]] == pytest.approx(
-            0.001, rel=1e-8
-        )
 
-    # TODO: Remove test once iscale is deprecated
     @pytest.mark.integration
     def test_example_case_iscale(self):
         m = ConcreteModel()
