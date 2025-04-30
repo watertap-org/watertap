@@ -154,12 +154,12 @@ class TestFullFlowsheet:
         assert degrees_of_freedom(system_frame) == 10
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.349772203, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.3418676, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17379540.339857, rel=1e-5
+            17021486.95990, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            636129.6209807, rel=1e-5
+            618282.567574, rel=1e-5
         )
 
 
@@ -269,10 +269,10 @@ class TestFullFlowsheet_with_equal_reactor_vols:
         assert degrees_of_freedom(system_frame) == 8
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.349560273, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.31612352, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17370674.42102, rel=1e-5
+            15810923.42789, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            635577.7320509, rel=1e-5
+            564600.3927929, rel=1e-5
         )
