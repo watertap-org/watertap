@@ -76,6 +76,8 @@ setup(
         # for parameter_sweep
         "parameter-sweep >=0.1.0",
         "numpy",
+        "Click",
+        'cookiecutter'
     ],
     extras_require={
         "testing": [
@@ -108,6 +110,9 @@ setup(
         ],
     },
     entry_points={
+        "console_scripts": [
+            "watertap=watertap.watertap_cli:cli",  # CLI command
+        ],
         "watertap.flowsheets": [
             "nf = watertap.flowsheets.nf_dspmde.nf_ui",
             "bsm2 = watertap.flowsheets.full_water_resource_recovery_facility.BSM2_ui",
