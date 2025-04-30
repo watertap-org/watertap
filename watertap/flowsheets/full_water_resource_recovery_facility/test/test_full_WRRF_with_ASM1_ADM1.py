@@ -154,12 +154,12 @@ class TestFullFlowsheet:
         assert degrees_of_freedom(system_frame) == 10
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.3418676, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.35095605, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17021486.95990, rel=1e-5
+            17439642.35212, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            618282.567574, rel=1e-5
+            638154.763302, rel=1e-5
         )
 
 
@@ -167,7 +167,7 @@ class TestFullFlowsheet_with_equal_reactor_vols:
     @pytest.fixture(scope="class")
     def system_frame(self):
         m = BSM2.build()
-        BSM2.set_operating_conditions(m)
+        BSM2.set_operating_conditions(m, reactor_volume_equalities=True)
         for mx in m.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
@@ -269,10 +269,10 @@ class TestFullFlowsheet_with_equal_reactor_vols:
         assert degrees_of_freedom(system_frame) == 8
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.31612352, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.349560273, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            15810923.42789, rel=1e-5
+            17370674.42102, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            564600.3927929, rel=1e-5
+            635577.7320509, rel=1e-5
         )
