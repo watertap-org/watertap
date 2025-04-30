@@ -3077,6 +3077,7 @@ def build_flowsheet(build_options=None, **kwargs):
     setup_optimization(m, reactor_volume_equalities=True)
     results = solve(m)
     assert_optimal_termination(results)
+
     return m
 
 
