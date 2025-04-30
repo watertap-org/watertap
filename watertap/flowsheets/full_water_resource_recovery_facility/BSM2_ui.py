@@ -3058,7 +3058,7 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     m = build()
 
-    set_operating_conditions(m)
+    set_operating_conditions(m, reactor_volume_equalities=False)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
