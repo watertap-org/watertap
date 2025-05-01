@@ -94,8 +94,7 @@ class SteamHeater0DData(HeatExchangerData):
                 b.hot_side.properties_out[t].pressure
                 >= b.hot_side.properties_out[t].pressure_sat
             )
-        
-       
+
     def initialize_build(self, *args, **kwargs):
         """
         Initialization routine for both heater and condenser modes. For condenser mode with cooling water estimation, the initialization is performed based on a specified design temperature rise on the cold side.
@@ -110,8 +109,8 @@ class SteamHeater0DData(HeatExchangerData):
             self.hot_side_inlet.fix()
             self.cold_side_inlet.fix()
             self.hot_side_outlet.unfix()
-            #self.cold_side_outlet.unfix()
-            #self.area.fix()
+            # self.cold_side_outlet.unfix()
+            # self.area.fix()
 
             self.outlet_liquid_mass_balance.deactivate()
             self.outlet_pressure_sat.deactivate()
@@ -141,18 +140,18 @@ class SteamHeater0DData(HeatExchangerData):
             self.config.mode == Mode.CONDENSER
             and not self.config.estimate_cooling_water
         ):
-            
+
             self.hot_side_inlet.fix()
             self.cold_side_inlet.fix()
-            #self.hot_side_outlet.unfix()
-            #self.cold_side_outlet.unfix()
-            #self.cold_side_outlet.temperature.fix()
+            # self.hot_side_outlet.unfix()
+            # self.cold_side_outlet.unfix()
+            # self.cold_side_outlet.temperature.fix()
             # condenser mode without cooling water estimation
             self.outlet_liquid_mass_balance.deactivate()
             self.outlet_pressure_sat.deactivate()
             super().initialize_build(*args, **kwargs)
             opt = get_solver(solver, optarg)
-            #self.cold_side_outlet.temperature.unfix()
+            # self.cold_side_outlet.temperature.unfix()
 
             self.outlet_liquid_mass_balance.activate()
             self.outlet_pressure_sat.activate()
@@ -168,7 +167,7 @@ class SteamHeater0DData(HeatExchangerData):
             cold_side_outlet_temperature = self.cold_side_outlet.temperature[0].value
             self.hot_side_inlet.fix()
             self.cold_side_inlet.fix()
-            #self.hot_side_outlet.unfix()
+            # self.hot_side_outlet.unfix()
             self.cold_side_outlet.temperature.unfix()
             # condenser mode without cooling water estimation
             self.outlet_liquid_mass_balance.deactivate()
@@ -176,17 +175,19 @@ class SteamHeater0DData(HeatExchangerData):
             print(f"DOF 2: {degrees_of_freedom(self)}")
 
             super().initialize_build(*args, **kwargs)
-            #self.area.unfix()
-            #self.cold_side_outlet.temperature[0].fix(273.15+35)
+            # self.area.unfix()
+            # self.cold_side_outlet.temperature[0].fix(273.15+35)
             """
             for j in self.cold_side.config.property_package.solute_set:
                 self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j]
                 self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j].fix()
                 """
 
-            #for j in self.cold_side.config.property_package.component_list:
+            # for j in self.cold_side.config.property_package.component_list:
             self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-            self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].set_value(20)
+            self.cold_side.properties_in[0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ].set_value(20)
 
             self.outlet_liquid_mass_balance.activate()
             self.outlet_pressure_sat.activate()
@@ -202,10 +203,11 @@ class SteamHeater0DData(HeatExchangerData):
                 )
             )
 
-            #for j in self.cold_side.config.property_package.solute_set:
-             #   self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j].unfix()
-              #  self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", j].fix()
+            # for j in self.cold_side.config.property_package.solute_set:
+            #   self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j].unfix()
+            #  self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", j].fix()
             print(f"DOF 3: {degrees_of_freedom(self)}")
+
     """
                 opt = get_solver(solver, optarg)
 
@@ -217,6 +219,7 @@ class SteamHeater0DData(HeatExchangerData):
                     )
                 )
     """
+
     @property
     def default_costing_method(self):
         return cost_heat_exchanger

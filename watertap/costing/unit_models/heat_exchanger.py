@@ -37,7 +37,8 @@ def build_heat_exchanger_cost_param_block(blk):
     if not hasattr(blk.parent_block(), "steam"):
         blk.parent_block().register_flow_type("steam", blk.steam_cost)
 
-   # blk.parent_block().register_flow_type("steam", blk.steam_cost)
+
+# blk.parent_block().register_flow_type("steam", blk.steam_cost)
 
 
 @register_costing_parameter_block(

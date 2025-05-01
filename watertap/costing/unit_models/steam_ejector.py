@@ -17,11 +17,6 @@ def build_steam_ejector_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    
-
-
-
-
 
 @register_costing_parameter_block(
     build_rule=build_steam_ejector_cost_param_block,
@@ -61,7 +56,7 @@ def cost_steam_ejector(blk, cost_steam_flow=False):
         == blk.cost_factor
         * pyo.units.convert(
             blk.costing_package.steam_ejector.base_cost
-            * dimensionless_flow ** blk.costing_package.steam_ejector.cost_exponent,
+            * dimensionless_flow**blk.costing_package.steam_ejector.cost_exponent,
             to_units=blk.costing_package.base_currency,
         )
     )
