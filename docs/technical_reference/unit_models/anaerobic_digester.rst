@@ -3,6 +3,10 @@
 Anaerobic Digester
 ==================
 
+.. code-block:: python
+
+   from watertap.unit_models.anaerobic_digester import AD
+
 Introduction
 ------------
 

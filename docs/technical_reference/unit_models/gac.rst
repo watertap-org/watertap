@@ -2,6 +2,11 @@
 
 Granular Activated Carbon (GAC)
 ===============================
+
+.. code-block:: python
+
+   from watertap.unit_models.gac import GAC
+
 This is an empirical, performance-based granular activated carbon (GAC) model that works under the following criteria and assumptions:
    * simulation of this unit model is only supported with the Multi-Component Aqueous Solution (MCAS) property package
    * supports a single liquid phase only
