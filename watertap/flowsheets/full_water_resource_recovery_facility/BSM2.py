@@ -124,13 +124,13 @@ def main(reactor_volume_equalities=False, has_scalers=True):
 
     print("---Numerical Issues---")
     dt.report_numerical_issues()
-    dt.display_variables_with_extreme_jacobians()
-    dt.display_constraints_with_extreme_jacobians()
+    # dt.display_variables_with_extreme_jacobians()
+    # dt.display_constraints_with_extreme_jacobians()
 
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    # print("----------------   badly_scaled_var_list   ----------------")
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     # setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
     # results = solve(m, tee=True)
@@ -560,6 +560,23 @@ def scale_system(m, has_scalers=True):
                 sb.set_variable_scaling_factor(var, 1e2)
             if "alkalinity" in var.name:
                 sb.set_variable_scaling_factor(var, 1e3)
+
+        sb.set_variable_scaling_factor(
+            m.fs.MX1.mixed_state[0].flow_vol, 1, overwrite=True
+        )
+        # sb.set_variable_scaling_factor(m.fs.R1.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R1.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R2.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R2.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R3.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R3.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R4.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R4.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R5.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.R5.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.DU.underflow_state[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].flow_vol, 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].flow_vol, 1, overwrite=True)
 
         for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
             csb.scale_constraint_by_nominal_value(
