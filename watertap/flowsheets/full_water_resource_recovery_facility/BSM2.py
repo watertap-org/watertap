@@ -525,11 +525,50 @@ def scale_system(m, has_scalers=True):
         sb.set_variable_scaling_factor(
             m.fs.RADM.KH_ch4[0], 1e3
         )  # NOTE: This drastically reduced the number of iterations
-        # sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e3)
-        # sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e2)
+        sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.reactions[0].S_H, 1e7)
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.reactions[0].S_H, 1e8
-        )  # NOTE: Uncomment this for more balanced iterations
+            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "H2O"], 1e4
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_IC"], 1e3
+        )
+
+        for c in m.fs.props_ADM1.solute_set:
+            sb.set_variable_scaling_factor(
+                m.fs.RADM.liquid_phase.rate_reaction_generation[0, "Liq", c],
+                1e3,
+                overwrite=True,
+            )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.rate_reaction_generation[0, "Liq", "S_h2"],
+            1e8,
+            overwrite=True,
+        )
+        for r in m.fs.ADM1_rxn_props.rate_reaction_idx:
+            sb.set_variable_scaling_factor(
+                m.fs.RADM.liquid_phase.rate_reaction_extent[0, r],
+                1e3,
+                overwrite=True,
+            )
+        for r in m.fs.ADM1_rxn_props.rate_reaction_idx:
+            sb.set_variable_scaling_factor(
+                m.fs.RADM.liquid_phase.reactions[0].reaction_rate[r],
+                1e7,
+                overwrite=True,
+            )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.reactions[0].reaction_rate["R1"],
+            1e5,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.reactions[0].reaction_rate["R11"],
+            1e5,
+            overwrite=True,
+        )
 
         cstr_list = [m.fs.R1, m.fs.R2]
         cstr_scaler = CSTRScaler()
