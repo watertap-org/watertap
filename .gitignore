@@ -1,10 +1,14 @@
+# Branch-specific training files
+initialization_training/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# C and image extensions
 *.so
+*.png
 
 # Distribution / packaging
 .Python
