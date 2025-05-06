@@ -58,6 +58,7 @@ from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.models.unit_models.separator import SplittingType
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
+    ADM1VaporPropertiesScaler,
 )
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock, UnitModelBlockData
@@ -91,7 +92,7 @@ from watertap.costing.unit_models.clarifier import (
 from pyomo.util.check_units import assert_units_consistent
 
 
-def main(reactor_volume_equalities=False, has_scalers=True):
+def main(reactor_volume_equalities=True, has_scalers=True):
     m = build()
     set_operating_conditions(m)
 
@@ -122,15 +123,18 @@ def main(reactor_volume_equalities=False, has_scalers=True):
     # display_results(m)
     display_costing(m)
 
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
     print("---Numerical Issues---")
     dt.report_numerical_issues()
     # dt.display_variables_with_extreme_jacobians()
     # dt.display_constraints_with_extreme_jacobians()
-
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # print("----------------   badly_scaled_var_list   ----------------")
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+    # print("---SVD---")
+    # svd = dt.prepare_svd_toolbox()
+    # svd.display_underdetermined_variables_and_constraints()
 
     # setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
     # results = solve(m, tee=True)
@@ -447,25 +451,85 @@ def scale_system(m, has_scalers=True):
                 m.fs.RADM.liquid_phase.properties_in: ADM1PropertiesScaler,
                 m.fs.RADM.liquid_phase.properties_out: ADM1PropertiesScaler,
                 m.fs.RADM.liquid_phase.reactions: ADM1ReactionScaler,
+                m.fs.RADM.vapor_phase: ADM1VaporPropertiesScaler,
             },
         )
-        sb.set_variable_scaling_factor(m.fs.RADM.hydraulic_retention_time[0], 1e-6)
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.properties_in[0].flow_vol, 1e3, overwrite=True
+            m.fs.RADM.vapor_phase[0].temperature, 1e-1, overwrite=True
         )
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.properties_out[0].flow_vol, 1e3, overwrite=True
+            m.fs.RADM.vapor_phase[0].pressure, 1e-3, overwrite=True
         )
-        # sb.set_variable_scaling_factor(m.fs.RADM.KH_h2[0], 1e4)
-        # sb.set_variable_scaling_factor(m.fs.RADM.KH_h2[0], 1e3)
-        # sb.set_variable_scaling_factor(m.fs.RADM.KH_h2[0], 1e2)
-        # sb.set_variable_scaling_factor(m.fs.RADM.KH_ch4[0], 1e3)
-        # sb.set_variable_scaling_factor(m.fs.RADM.KH_ch4[0], 1e2)
-        # sb.set_variable_scaling_factor(m.fs.RADM.volume_AD[0], 1e3)
-        # sb.set_variable_scaling_factor(m.fs.RADM.vapor_phase[0].pressure, 1e-5, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.RADM.vapor_phase[0].pressure, 1e-6, overwrite=True)
+
+        for c in m.fs.props_vap.solute_set:
+            sb.set_variable_scaling_factor(
+                m.fs.RADM.vapor_phase[0].conc_mass_comp[c], 1e2, overwrite=True
+            )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.vapor_phase[0].conc_mass_comp["S_h2"], 1e3, overwrite=True
+        )
+
+        for c in m.fs.props_vap.component_list:
+            sb.set_variable_scaling_factor(
+                m.fs.RADM.vapor_phase[0].pressure_sat[c], 1e-3, overwrite=True
+            )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.vapor_phase[0].pressure_sat["S_h2"], 1e-2, overwrite=True
+        )
+
+        for c in m.fs.props_ADM1.solute_set:
+            sb.set_variable_scaling_factor(
+                m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp[c],
+                1e2,
+                overwrite=True,
+            )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_IN"],
+            1e0,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_c"],
+            1e0,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_I"],
+            1e2,
+            overwrite=True,
+        )
+
+        for c in m.fs.props_ADM1.solute_set:
+            sb.set_variable_scaling_factor(
+                m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp[c],
+                1e3,
+                overwrite=True,
+            )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_h2"],
+            1e7,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_su"],
+            1e1,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_ac"],
+            1e1,
+            overwrite=True,
+        )  # NOTE: This drastically decreases iterations
+
+        sb.set_variable_scaling_factor(m.fs.RADM.KH_h2[0], 1e4)
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.KH_ch4[0], 1e3
+        )  # NOTE: This drastically reduced the number of iterations
         # sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e3)
         # sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e2)
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.reactions[0].S_H, 1e8
+        )  # NOTE: Uncomment this for more balanced iterations
 
         cstr_list = [m.fs.R1, m.fs.R2]
         cstr_scaler = CSTRScaler()
@@ -478,7 +542,7 @@ def scale_system(m, has_scalers=True):
                     unit.control_volume.reactions: ASM1ReactionScaler,
                 },
             )
-            sb.set_variable_scaling_factor(unit.hydraulic_retention_time[0], 1e-2)
+            # sb.set_variable_scaling_factor(unit.hydraulic_retention_time[0], 1e-2)
 
         aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]
         aeration_scaler = AerationTankScaler()
@@ -523,7 +587,7 @@ def scale_system(m, has_scalers=True):
                 m.fs.DU.overflow_state: ASM1PropertiesScaler,
             },
         )
-        sb.set_variable_scaling_factor(m.fs.DU.volume[0], 1, overwrite=True)
+        # sb.set_variable_scaling_factor(m.fs.DU.volume[0], 1, overwrite=True)
 
         as_ad_scaler = ASM1ADM1Scaler()
         as_ad_scaler.scale_model(
@@ -547,7 +611,7 @@ def scale_system(m, has_scalers=True):
             if "flow_vol" in var.name:
                 sb.set_variable_scaling_factor(var, 1e2, overwrite=True)
             # if "flow_vol" in var.name:
-            #     sb.set_variable_scaling_factor(var, 1e2)
+            #     sb.set_variable_scaling_factor(var, 1e3)  # (1e2-3, 1, 1e0)
             if "temperature" in var.name:
                 sb.set_variable_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
@@ -561,42 +625,24 @@ def scale_system(m, has_scalers=True):
             if "alkalinity" in var.name:
                 sb.set_variable_scaling_factor(var, 1e3)
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.mixed_state[0].flow_vol, 1, overwrite=True
-        )
-        # sb.set_variable_scaling_factor(m.fs.R1.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R1.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R2.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R2.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R3.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R3.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R4.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R4.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R5.control_volume.properties_in[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.R5.control_volume.properties_out[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.DU.underflow_state[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].flow_vol, 1, overwrite=True)
-        # sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].flow_vol, 1, overwrite=True)
-
         for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
             csb.scale_constraint_by_nominal_value(
                 c,
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=True,
             )
-
-        # csb.scale_constraint_by_nominal_value(
-        #     m.fs.RADM.AD_retention_time[0],
-        #     scheme=ConstraintScalingScheme.inverseMaximum,
-        #     overwrite=True,
-        # )
-
-        # for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
-        #     csb.scale_constraint_by_nominal_value(
-        #         c,
-        #         scheme=ConstraintScalingScheme.inverseMaximum,
-        #         overwrite=False,
-        #     )
+            # if "rate_expression" in c.name:
+            #     csb.scale_constraint_by_nominal_value(
+            #         c,
+            #         scheme=ConstraintScalingScheme.harmonicMean,
+            #         overwrite=True,
+            #     )
+            # else:
+            #     csb.scale_constraint_by_nominal_value(
+            #         c,
+            #         scheme=ConstraintScalingScheme.inverseMaximum,
+            #         overwrite=True,
+            #     )
 
     else:
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -729,16 +775,25 @@ def add_costing(m, has_scalers=True):
 
     if has_scalers:
         sb = ScalerBase()
+        csb = CustomScalerBase()
 
         sb.set_variable_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
         sb.set_variable_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-6)
-        # sb.set_variable_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
-        # sb.set_variable_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
-        # sb.set_variable_scaling_factor(m.fs.costing.total_operating_cost, 1e-7)
+        sb.set_variable_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-2)
+        sb.set_variable_scaling_factor(
+            m.fs.costing.aggregate_flow_costs["electricity"], 1e-5
+        )
+        sb.set_variable_scaling_factor(m.fs.costing.total_operating_cost, 1e-4)
 
-        # for block in m.fs.component_objects(pyo.Block, descend_into=True):
-        #     if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
-        #         sb.set_variable_scaling_factor(block.costing.capital_cost, 1e-6)
+        for block in m.fs.component_objects(pyo.Block, descend_into=True):
+            if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
+                sb.set_variable_scaling_factor(block.costing.capital_cost, 1e-6)
+
+        # csb.scale_constraint_by_nominal_value(
+        #     m.fs.DU.costing.capital_cost_constraint,
+        #     scheme=ConstraintScalingScheme.inverseMaximum,
+        #     overwrite=True,
+        # )
         # sb.set_constraint_scaling_factor(m.fs.DU.costing.capital_cost_constraint, 1e-6)
         # sb.set_constraint_scaling_factor(
         #     m.fs.RADM.costing.capital_cost_constraint, 1e-6
