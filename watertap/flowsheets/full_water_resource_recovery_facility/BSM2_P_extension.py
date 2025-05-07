@@ -28,7 +28,7 @@ __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
@@ -41,7 +41,6 @@ from idaes.models.unit_models import (
     Mixer,
     PressureChanger,
 )
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 from idaes.models.unit_models.separator import SplittingType
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -52,8 +51,6 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 from watertap.unit_models.cstr_injection import CSTR_Injection
-
-from watertap.unit_models.aeration_tank import AerationTank
 from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
@@ -100,7 +97,7 @@ from watertap.costing.unit_models.clarifier import (
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-_log.debug
+
 
 def main(bio_P=False):
     m = build(bio_P=bio_P)
@@ -154,7 +151,7 @@ def main(bio_P=False):
     display_costing(m)
     display_performance_metrics(m)
 
-    return m, results, dt
+    return m, results
 
 
 def build(bio_P=False):
@@ -382,9 +379,6 @@ def build(bio_P=False):
         mutable=True,
         doc="Dissolved oxygen concentration at equilibrium",
     )
-    m.fs.R5.KLa = 240
-    m.fs.R6.KLa = 240
-    m.fs.R7.KLa = 84
 
     m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
     if bio_P:
@@ -497,9 +491,7 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].fix(1.91e-3)
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
-    # for R in m.fs.aerobic_reactors:
-    #     calculate_variable_from_constraint(R.KLa, R.eq_mass_transfer[0])
-    
+
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
