@@ -15,6 +15,12 @@ Flowsheet example full Water Resource Recovery Facility
 
 The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
 but comprises different specifications for default values than BSM2.
+
+[1] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
+C.Rosen, J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 2 (BSM2)", 2018
+
+[2] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
+J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 """
 
 # Some more information about this module
@@ -116,9 +122,10 @@ def main(bio_P=False):
     results = solve(m)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
-    m.fs.R5.KLa.fix(240)
-    m.fs.R6.KLa.fix(240)
-    m.fs.R7.KLa.fix(84)
+    # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
+    m.fs.R5.KLa.fix(240 / 24)
+    m.fs.R6.KLa.fix(240 / 24)
+    m.fs.R7.KLa.fix(84 / 24)
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
@@ -355,17 +362,17 @@ def build(bio_P=False):
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
     # Add additional parameter and constraints
     m.fs.R5.KLa = pyo.Var(
-        initialize=240,
+        initialize=240 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
     m.fs.R6.KLa = pyo.Var(
-        initialize=240,
+        initialize=240 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
     m.fs.R7.KLa = pyo.Var(
-        initialize=84,
+        initialize=84 / 24,
         units=pyo.units.hour**-1,
         doc="Lumped mass transfer coefficient for oxygen",
     )
@@ -380,9 +387,13 @@ def build(bio_P=False):
     m.fs.R7.KLa = 84
 
     m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
-    for R in m.fs.aerobic_reactors:
-        iscale.set_scaling_factor(R.KLa, 1e-2)
-        iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-3)
+    if bio_P:
+        for R in m.fs.aerobic_reactors:
+            iscale.set_scaling_factor(R.KLa, 1e-1)
+            iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-2)
+    else:
+        for R in m.fs.aerobic_reactors:
+            iscale.set_scaling_factor(R.KLa, 1e-1)
 
     @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):

@@ -1,5 +1,11 @@
+.. _pump:
+
 Pump
 ====
+
+.. code-block:: python
+
+   from watertap.unit_models.pressure_changer import Pump
 
 .. index::
    pair: watertap.unit_models.pump;pump
