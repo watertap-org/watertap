@@ -85,7 +85,7 @@ and the cost of the electrode material:
 .. math::
     C_e = \left( D_c q_{liq} c_{mat} m_{elec} \right) SF_{mat}
 
-And the annual cost of sludge management is from the total annual mass flow of all non-water components from the `waste` port 
+And the annual cost of sludge management is from the total annual mass flow of all non-water components from the `byproduct` port 
 on the electrocoagulation unit model:
 
 .. math::
