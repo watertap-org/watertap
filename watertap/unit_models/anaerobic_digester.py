@@ -875,8 +875,9 @@ see reaction package for documentation.}""",
 
         def AD_retention_time_rule(self, t):
             return (
-                self.hydraulic_retention_time[t]
-                == self.volume_AD[t] / self.liquid_phase.properties_in[t].flow_vol
+                self.volume_AD[t]
+                == self.hydraulic_retention_time[t]
+                * self.liquid_phase.properties_in[t].flow_vol
             )
 
         self.AD_retention_time = Constraint(
