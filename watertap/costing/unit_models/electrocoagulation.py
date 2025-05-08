@@ -160,7 +160,11 @@ def cost_electrocoagulation(blk):
 
     blk.annual_sludge_flow = pyo.units.convert(
         sum(
-            ec.properties_byproduct[0].flow_mass_phase_comp["Liq", j] if j != "H2O" else 0
+            (
+                ec.properties_byproduct[0].flow_mass_phase_comp["Liq", j]
+                if j != "H2O"
+                else 0
+            )
             for j in ec.properties_byproduct[0].params.component_list
         ),
         to_units=pyo.units.kg / pyo.units.year,
