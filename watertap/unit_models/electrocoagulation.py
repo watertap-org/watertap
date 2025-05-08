@@ -198,17 +198,17 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             **tmp_dict,
         )
 
-        self.properties_waste = self.config.property_package.state_block_class(
+        self.properties_byproduct = self.config.property_package.state_block_class(
             self.flowsheet().config.time, doc="Material properties of waste", **tmp_dict
         )
 
         prop_in = self.properties_in[0]
         prop_out = self.properties_out[0]
-        prop_waste = self.properties_waste[0]
+        prop_byproduct = self.properties_byproduct[0]
 
         self.add_port(name="inlet", block=self.properties_in)
         self.add_port(name="outlet", block=self.properties_out)
-        self.add_port(name="waste", block=self.properties_waste)
+        self.add_port(name="byproduct", block=self.properties_byproduct)
 
         removal_frac_dict = dict(
             zip(
@@ -225,7 +225,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             doc="Component removal efficiency on mass basis",
         )
 
-        self.recovery_frac_mass_water = Param(
+        self.recovery_frac_mass_H2O = Param(
             initialize=0.99,
             mutable=True,
             units=pyunits.dimensionless,
@@ -711,8 +711,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         def eq_water_recovery(b):
             return (
                 prop_out.flow_mass_phase_comp["Liq", "H2O"]
-                == prop_in.flow_mass_phase_comp["Liq", "H2O"]
-                * b.recovery_frac_mass_water
+                == prop_in.flow_mass_phase_comp["Liq", "H2O"] * b.recovery_frac_mass_H2O
             )
 
         @self.Constraint(doc="Water mass balance")
@@ -720,14 +719,14 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             return (
                 prop_in.flow_mass_phase_comp["Liq", "H2O"]
                 == prop_out.flow_mass_phase_comp["Liq", "H2O"]
-                + prop_waste.flow_mass_phase_comp["Liq", "H2O"]
+                + prop_byproduct.flow_mass_phase_comp["Liq", "H2O"]
             )
 
         @self.Constraint(solutes, doc="Component removal")
         def eq_component_removal(b, j):
             return (
                 b.removal_frac_mass_comp[j] * prop_in.flow_mass_phase_comp["Liq", j]
-                == prop_waste.flow_mass_phase_comp["Liq", j]
+                == prop_byproduct.flow_mass_phase_comp["Liq", j]
             )
 
         @self.Constraint(solutes, doc="Component mass balance")
@@ -735,7 +734,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             return (
                 prop_in.flow_mass_phase_comp["Liq", j]
                 == prop_out.flow_mass_phase_comp["Liq", j]
-                + prop_waste.flow_mass_phase_comp["Liq", j]
+                + prop_byproduct.flow_mass_phase_comp["Liq", j]
             )
 
         @self.Constraint(doc="Charge loading rate equation")
@@ -870,7 +869,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             if j == "H2O":
                 state_args_out["flow_mass_phase_comp"][("Liq", j)] = (
                     state_args["flow_mass_phase_comp"][("Liq", j)]
-                    * self.recovery_frac_mass_water.value
+                    * self.recovery_frac_mass_H2O.value
                 )
                 continue
             else:
@@ -887,18 +886,18 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         init_log.info("Initialization Step 1b Complete.")
 
         state_args_waste = deepcopy(state_args)
-        for j in self.properties_waste.component_list:
+        for j in self.properties_byproduct.component_list:
             if j == "H2O":
                 state_args_waste["flow_mass_phase_comp"][("Liq", j)] = state_args[
                     "flow_mass_phase_comp"
-                ][("Liq", j)] * (1 - self.recovery_frac_mass_water.value)
+                ][("Liq", j)] * (1 - self.recovery_frac_mass_H2O.value)
             else:
                 state_args_waste["flow_mass_phase_comp"][("Liq", j)] = (
                     state_args["flow_mass_phase_comp"][("Liq", j)]
                     * self.removal_frac_mass_comp[j].value
                 )
 
-        self.properties_waste.initialize(
+        self.properties_byproduct.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -975,17 +974,95 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             {
                 "Feed Inlet": self.inlet,
                 "Liquid Outlet": self.outlet,
-                "Waste Outlet": self.waste,
+                "Byproduct Outlet": self.byproduct,
             },
             time_point=time_point,
         )
 
     def _get_performance_contents(self, time_point=0):
 
-        # TODO
         var_dict = {}
+        var_dict["Voltage Required"] = self.cell_voltage
+        var_dict["Overpotential"] = self.overpotential
+        var_dict["Applied Current"] = self.applied_current
+        var_dict["Current Density"] = self.current_density
+        var_dict["Charge Loading Rate"] = self.charge_loading_rate
+        var_dict["Ohmic Resistance"] = self.ohmic_resistance
+        var_dict["Coagulant Dose"] = self.coagulant_dose
+        var_dict["Electrode Mass"] = self.electrode_mass
+        var_dict["Electrode Volume"] = self.electrode_volume
+        var_dict["Electrode Thickness"] = self.electrode_thickness
+        var_dict["Electrode Gap"] = self.electrode_gap
+        var_dict["Anode Area"] = self.anode_area
+        var_dict["Cathode Area"] = self.cathode_area
+        var_dict["Electrolysis Time"] = self.electrolysis_time
+        var_dict["Current Efficiency"] = self.current_efficiency
+        var_dict["Flocculation Basin Volume"] = self.floc_basin_vol
+        var_dict["Flocculation Retention Time"] = self.floc_retention_time
+        var_dict["EC Reactor Volume"] = self.reactor_volume
 
-        return {"vars": var_dict}
+        if self.config.overpotential_calculation == OverpotentialCalculation.regression:
+            var_dict["Overpotential Equation k1 Parameter"] = self.overpotential_k1
+            var_dict["Overpotential Equation k2 Parameter"] = self.overpotential_k2
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.detailed:
+            var_dict["Electrode Material Tafel Slope Anode"] = self.tafel_slope_anode
+            var_dict["Electrode Material Tafel Slope Cathode"] = (
+                self.tafel_slope_cathode
+            )
+
+        expr_dict = {}
+        expr_dict["Conductivity"] = self.conductivity
+        expr_dict["Total Power Required"] = self.power_required
+        expr_dict["Power Density Faradaic"] = self.power_density_faradaic
+        expr_dict["Power Density Total"] = self.power_density_total
+        expr_dict["Total Electrode Area"] = self.electrode_area_total
+
+        if self.config.overpotential_calculation == OverpotentialCalculation.detailed:
+            expr_dict["Temp. Adjusted Std Anode Potential"] = (
+                self.anode_cell_potential_temp_adj
+            )
+            expr_dict["Temp. Adjusted Std Cathode Potential"] = (
+                self.cathode_cell_potential_temp_adj
+            )
+            expr_dict["Anode Cell Potential"] = self.anode_cell_potential
+            expr_dict["Cathode Cell Potential"] = self.cathode_cell_potential
+            expr_dict["Anode Activation Overpotential"] = self.anode_overpotential
+            expr_dict["Cathode Activation Overpotential"] = self.cathode_overpotential
+
+        param_dict = {}
+        for s in self.config.property_package.solute_set:
+            param_dict["Removal Fraction " + s] = self.removal_frac_mass_comp[s]
+        param_dict["Water Recovery Fraction"] = self.recovery_frac_mass_H2O
+        param_dict["TDS to Conductivity Conversion"] = self.tds_to_cond_conversion
+        param_dict["Standard Temperature"] = self.standard_temperature
+        param_dict["Electrode Material Density"] = self.density_electrode_material
+        param_dict["Electrode Material MW"] = self.mw_electrode_material
+        param_dict["Electrode Material Stoichiometric Coefficient"] = self.stoic_coeff
+        param_dict["Electrode Material Charge Transfer Number"] = (
+            self.charge_transfer_number
+        )
+        if self.config.overpotential_calculation == OverpotentialCalculation.detailed:
+            param_dict["Electrode Material Standard Anodic Potential"] = (
+                self.anode_cell_potential_std
+            )
+            param_dict["Electrode Material Anodic Exchange Current Density"] = (
+                self.anodic_exchange_current_density
+            )
+            param_dict["Electrode Material Anodic Entropy Change"] = (
+                self.anode_entropy_change_std
+            )
+            param_dict["Electrode Material Standard Cathodic Potential"] = (
+                self.cathode_cell_potential_std
+            )
+            param_dict["Electrode Material Cathodic Exchange Current Density"] = (
+                self.cathodic_exchange_current_density
+            )
+            param_dict["Electrode Material Cathodic Entropy Change"] = (
+                self.cathode_entropy_change_std
+            )
+
+        return {"vars": var_dict, "params": param_dict, "exprs": expr_dict}
 
     @property
     def default_costing_method(self):
