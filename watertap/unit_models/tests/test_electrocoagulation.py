@@ -77,8 +77,12 @@ def build_ec0():
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 0.1)
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 10)
 
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 10)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 100)
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 10
+    )
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 100
+    )
 
     set_scaling_factor(ec.applied_current, 1e-4)
 
@@ -147,8 +151,12 @@ def build_ec1():
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
 
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1e5)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1e7)
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1e5
+    )
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1e7
+    )
 
     # only because dealing with bench scale
     set_scaling_factor(m.fs.unit.electrode_volume, 1e4)
@@ -220,8 +228,12 @@ def build_ec2():
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
 
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1e5)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1e7)
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1e5
+    )
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1e7
+    )
 
     set_scaling_factor(m.fs.unit.electrode_volume, 1e4)
     set_scaling_factor(m.fs.unit.reactor_volume, 1e4)
@@ -291,8 +303,12 @@ def build_ec3():
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
 
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1e5)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1e7)
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1e5
+    )
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1e7
+    )
 
     set_scaling_factor(m.fs.unit.electrode_volume, 1e4)
     set_scaling_factor(m.fs.unit.reactor_volume, 1e4)
@@ -358,10 +374,14 @@ def build_ec_costing():
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1e3)
     set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Bar_-"], 1e3)
 
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "H2O"], 1)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "TDS"], 1)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1)
-    set_scaling_factor(ec.properties_waste[0].flow_mass_phase_comp["Liq", "Bar_-"], 1)
+    set_scaling_factor(ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1)
+    set_scaling_factor(ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1)
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1
+    )
+    set_scaling_factor(
+        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "Bar_-"], 1
+    )
 
     set_scaling_factor(ec.applied_current, 1e-4)
 
@@ -431,8 +451,10 @@ class TestEC0(UnitTestHarness):
                 + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"],
                 "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
                 + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"],
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
             },
         }
         return m
@@ -460,8 +482,10 @@ class TestEC1(UnitTestHarness):
                 + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"],
                 "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
                 + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"],
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
             },
         }
         return m
@@ -491,8 +515,10 @@ class TestEC2(UnitTestHarness):
                 + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"],
                 "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
                 + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"],
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
             },
         }
 
@@ -521,8 +547,10 @@ class TestEC3(UnitTestHarness):
                 + m.fs.unit.properties_in[0.0].flow_mass_phase_comp["Liq", "TDS"],
                 "out": m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "H2O"]
                 + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"],
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp[
+                    "Liq", "TDS"
+                ],
             },
         }
 
@@ -552,10 +580,14 @@ class TestECCosting(UnitTestHarness):
                 + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "TDS"]
                 + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
                 + m.fs.unit.properties_out[0.0].flow_mass_phase_comp["Liq", "Bar_-"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "H2O"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "TDS"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "Foo_2+"]
-                + m.fs.unit.properties_waste[0.0].flow_mass_phase_comp["Liq", "Bar_-"],
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp["Liq", "H2O"]
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp["Liq", "TDS"]
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp[
+                    "Liq", "Foo_2+"
+                ]
+                + m.fs.unit.properties_byproduct[0.0].flow_mass_phase_comp[
+                    "Liq", "Bar_-"
+                ],
             },
         }
         return m
