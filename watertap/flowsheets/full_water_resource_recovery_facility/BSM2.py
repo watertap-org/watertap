@@ -89,6 +89,7 @@ from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
+from idaes.core.scaling import report_scaling_factors
 from pyomo.util.check_units import assert_units_consistent
 
 
@@ -103,6 +104,9 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     # TODO: Make sure to add the scaling transformation as done in PrOMMiS, but would need to modify tear guesses
     # So maybe this should be done after getting the system to converge regularly
     scale_system(m, has_scalers=has_scalers)
+
+    scaling = pyo.TransformationFactory("core.scale_model")
+    scaled_model = scaling.create_using(m, rename=False)
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
@@ -124,17 +128,20 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     display_costing(m)
 
     badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
+    print("----------------   badly_scaled_var_list 1   ----------------")
     for x in badly_scaled_var_list:
         print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
-    print("---Numerical Issues---")
+    print("--- Scaling Factors ---")
+    report_scaling_factors(m, descend_into=True)
+
+    print("---Numerical Issues 1---")
     dt.report_numerical_issues()
-    # dt.display_variables_with_extreme_jacobians()
-    # dt.display_constraints_with_extreme_jacobians()
-    # print("---SVD---")
-    # svd = dt.prepare_svd_toolbox()
-    # svd.display_underdetermined_variables_and_constraints()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
+    print("---SVD 1---")
+    svd = dt.prepare_svd_toolbox()
+    svd.display_underdetermined_variables_and_constraints()
 
     # setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
     # results = solve(m, tee=True)
@@ -154,6 +161,10 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     # dt.display_variables_at_or_outside_bounds()
     # dt.display_variables_with_extreme_jacobians()
     # dt.display_constraints_with_extreme_jacobians()
+
+    # print("---SVD 1---")
+    # svd = dt.prepare_svd_toolbox()
+    # svd.display_underdetermined_variables_and_constraints()
 
     return m, results
 
@@ -458,7 +469,13 @@ def scale_system(m, has_scalers=True):
             m.fs.RADM.vapor_phase[0].temperature, 1e-1, overwrite=True
         )
         sb.set_variable_scaling_factor(
-            m.fs.RADM.vapor_phase[0].pressure, 1e-3, overwrite=True
+            m.fs.RADM.vapor_phase[0].pressure, 1e-5, overwrite=True
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_in[0].flow_vol, 1e3, overwrite=True
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.properties_out[0].flow_vol, 1e3, overwrite=True
         )
 
         for c in m.fs.props_vap.solute_set:
@@ -752,6 +769,16 @@ def scale_system(m, has_scalers=True):
             #     overwrite=True,
             # )
             sb.set_variable_scaling_factor(
+                r.control_volume.properties_in[0].flow_vol,
+                1e0,
+                overwrite=True,
+            )
+            sb.set_variable_scaling_factor(
+                r.control_volume.properties_out[0].flow_vol,
+                1e0,
+                overwrite=True,
+            )
+            sb.set_variable_scaling_factor(
                 r.control_volume.properties_in[0].conc_mass_comp["X_BH"],
                 1e0,
                 overwrite=True,
@@ -885,7 +912,7 @@ def scale_system(m, has_scalers=True):
             m.fs.MX1.recycle_state[0].conc_mass_comp["X_P"], 1e1
         )
 
-        # sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].flow_vol, 1e0)
+        sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].flow_vol, 1e0)
         sb.set_variable_scaling_factor(
             m.fs.MX1.mixed_state[0].conc_mass_comp["X_I"], 1e0
         )
@@ -899,6 +926,7 @@ def scale_system(m, has_scalers=True):
             m.fs.MX1.mixed_state[0].conc_mass_comp["X_P"], 1e0
         )
 
+        sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].flow_vol, 1e1)
         sb.set_variable_scaling_factor(
             m.fs.SP5.mixed_state[0].conc_mass_comp["X_I"], 1e0
         )
@@ -1194,6 +1222,9 @@ def scale_system(m, has_scalers=True):
         )
 
         sb.set_variable_scaling_factor(
+            m.fs.DU.mixed_state[0].flow_vol, 1e3, overwrite=True
+        )
+        sb.set_variable_scaling_factor(
             m.fs.DU.mixed_state[0].conc_mass_comp["S_I"], 1e0
         )
         sb.set_variable_scaling_factor(
@@ -1230,6 +1261,9 @@ def scale_system(m, has_scalers=True):
             m.fs.DU.mixed_state[0].conc_mass_comp["X_P"], 1e10
         )
 
+        sb.set_variable_scaling_factor(
+            m.fs.DU.underflow_state[0].flow_vol, 1e5, overwrite=True
+        )
         sb.set_variable_scaling_factor(
             m.fs.DU.underflow_state[0].conc_mass_comp["S_I"], 1e0
         )
@@ -1301,6 +1335,9 @@ def scale_system(m, has_scalers=True):
             m.fs.DU.overflow_state[0].conc_mass_comp["X_P"], 1e10
         )
 
+        sb.set_variable_scaling_factor(
+            m.fs.TU.underflow_state[0].flow_vol, 1e4, overwrite=True
+        )
         sb.set_variable_scaling_factor(
             m.fs.TU.underflow_state[0].conc_mass_comp["X_I"], 1e0
         )
@@ -1393,6 +1430,7 @@ def scale_system(m, has_scalers=True):
             m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_P"], 1e0
         )
 
+        sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].flow_vol, 1e5)
         sb.set_variable_scaling_factor(
             m.fs.Sludge.properties[0].conc_mass_comp["S_I"], 1e0
         )
@@ -1462,6 +1500,12 @@ def scale_system(m, has_scalers=True):
                 overwrite=True,
             )
         sb.set_variable_scaling_factor(
+            m.fs.adm_asm.properties_in[0].flow_vol, 1e3, overwrite=True
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.adm_asm.properties_out[0].flow_vol, 1e3, overwrite=True
+        )
+        sb.set_variable_scaling_factor(
             m.fs.adm_asm.properties_in[0].conc_mass_comp["S_h2"], 1e6, overwrite=True
         )
         sb.set_variable_scaling_factor(
@@ -1483,7 +1527,9 @@ def scale_system(m, has_scalers=True):
         sb.set_variable_scaling_factor(
             m.fs.adm_asm.properties_out[0].conc_mass_comp["S_NO"], 1e10, overwrite=True
         )
-
+        sb.set_variable_scaling_factor(
+            m.fs.asm_adm.properties_in[0].flow_vol, 1e3, overwrite=True
+        )
         sb.set_variable_scaling_factor(
             m.fs.asm_adm.properties_in[0].conc_mass_comp["S_O"], 1e6, overwrite=True
         )
@@ -1494,6 +1540,9 @@ def scale_system(m, has_scalers=True):
             m.fs.asm_adm.properties_in[0].conc_mass_comp["S_ND"], 1e3, overwrite=True
         )
 
+        sb.set_variable_scaling_factor(
+            m.fs.asm_adm.properties_out[0].flow_vol, 1e3, overwrite=True
+        )
         sb.set_variable_scaling_factor(
             m.fs.asm_adm.properties_out[0].conc_mass_comp["S_fa"], 1e10, overwrite=True
         )
@@ -1550,10 +1599,10 @@ def scale_system(m, has_scalers=True):
         )
 
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                sb.set_variable_scaling_factor(var, 1e2, overwrite=True)
             # if "flow_vol" in var.name:
-            #     sb.set_variable_scaling_factor(var, 1e3)  # (1e2-3, 1, 1e0)
+            #     sb.set_variable_scaling_factor(var, 1e1, overwrite=True)
+            if "flow_vol" in var.name:
+                sb.set_variable_scaling_factor(var, 1e2)  # (1e2-3, 1, 1e0)
             if "temperature" in var.name:
                 sb.set_variable_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
@@ -1573,18 +1622,15 @@ def scale_system(m, has_scalers=True):
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=True,
             )
-            # if "rate_expression" in c.name:
-            #     csb.scale_constraint_by_nominal_value(
-            #         c,
-            #         scheme=ConstraintScalingScheme.harmonicMean,
-            #         overwrite=True,
-            #     )
-            # else:
-            #     csb.scale_constraint_by_nominal_value(
-            #         c,
-            #         scheme=ConstraintScalingScheme.inverseMaximum,
-            #         overwrite=True,
-            #     )
+
+        # csb.scale_constraint_by_nominal_value(
+        #     m.fs.MX1.enthalpy_mixing_equations[0],
+        #     scheme=ConstraintScalingScheme.harmonicMean,
+        #     overwrite=True,
+        # )
+        sb.set_constraint_scaling_factor(
+            m.fs.MX1.enthalpy_mixing_equations[0], 1e-2, overwrite=True
+        )
 
     else:
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -1718,6 +1764,9 @@ def add_costing(m, has_scalers=True):
     if has_scalers:
         sb = ScalerBase()
         csb = CustomScalerBase()
+
+        # sb.set_variable_scaling_factor(m.fs.costing.LCOW[0], 1e-10)
+        # iscale.set_scaling_factor(m.fs.costing.LCOW, 1e-3)
 
         sb.set_variable_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
         sb.set_variable_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-6)
@@ -1933,6 +1982,7 @@ def display_costing(m):
 
 
 def display_performance_metrics(m):
+    print("Levelized cost of water: %.1f $/m3" % pyo.value(m.fs.costing.LCOW))
     print(
         "Specific energy consumption with respect to influent flowrate: %.1f kWh/m3"
         % pyo.value(m.fs.costing.specific_energy_consumption)
