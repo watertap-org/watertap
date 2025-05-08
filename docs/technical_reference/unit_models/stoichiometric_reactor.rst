@@ -3,6 +3,10 @@
 Stoichiometric reactor
 ======================
 
+.. code-block:: python
+
+   from watertap.unit_models.stoichiometric_reactor import StoichiometricReactor
+
 .. index::
    pair: watertap.unit_models.stoichiometric_reactor;stoichiometric_reactor
 

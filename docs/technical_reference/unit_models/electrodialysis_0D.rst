@@ -3,6 +3,10 @@
 Electrodialysis (0D)
 ====================
 
+.. code-block:: python
+
+   from watertap.unit_models.electrodialysis_0D import Electrodialysis0D
+
 Introduction
 ------------
 
