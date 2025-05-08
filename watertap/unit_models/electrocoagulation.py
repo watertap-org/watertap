@@ -19,7 +19,6 @@ from pyomo.environ import (
     Param,
     Suffix,
     log,
-    log10,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
