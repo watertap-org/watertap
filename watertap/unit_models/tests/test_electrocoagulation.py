@@ -31,7 +31,6 @@ from idaes.core.util.testing import initialization_tester
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
 from watertap.core.solvers import get_solver
-from watertap.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrocoagulation import Electrocoagulation
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
@@ -69,7 +68,7 @@ def build_ec1():
     m.fs.unit = ec = Electrocoagulation(
         property_package=m.fs.properties,
         electrode_material="iron",
-        overpotential_calculation="nernst",
+        overpotential_calculation="detailed",
     )
     set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
     set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
@@ -170,11 +169,11 @@ def build_ec2():
 
     ec.electrode_thickness.fix(electrode_thickness)
     ec.electrode_gap.fix(gap)
+    ec.floc_retention_time.fix(2)
+    ec.electrolysis_time.fix(electrolysis_time)
     ec.current_density.fix(current_density)
     ec.current_efficiency.fix(current_efficiency)
-    ec.electrolysis_time.fix(electrolysis_time)
     ec.anode_area.fix(anode_area)
-    ec.floc_retention_time.fix(2)
     ec.overpotential_k1.fix(k1)
     ec.overpotential_k2.fix(k2)
 
@@ -241,11 +240,11 @@ def build_ec3():
 
     ec.electrode_thickness.fix(electrode_thickness)
     ec.electrode_gap.fix(gap)
+    ec.floc_retention_time.fix(2)
+    ec.electrolysis_time.fix(electrolysis_time)
     ec.current_density.fix(current_density)
     ec.current_efficiency.fix(current_efficiency)
-    ec.electrolysis_time.fix(electrolysis_time)
     ec.anode_area.fix(anode_area)
-    ec.floc_retention_time.fix(2)
     ec.overpotential_k1.fix(k1)
     ec.overpotential_k2.fix(k2)
 
@@ -344,8 +343,8 @@ class TestEC1(UnitTestHarness):
     def configure(self):
         m = build_ec1()
 
-        self.unit_solutions[m.fs.unit.tafel_slope_cathode] = 0.146
-        self.unit_solutions[m.fs.unit.tafel_slope_anode] = 0.093
+        self.unit_solutions[m.fs.unit.tafel_slope_cathode] = 0.06339
+        self.unit_solutions[m.fs.unit.tafel_slope_anode] = 0.04038
         self.unit_solutions[m.fs.unit.electrode_mass] = 0.1433663
         self.unit_solutions[m.fs.unit.electrode_volume] = 1.824e-05
         self.unit_solutions[m.fs.unit.current_density] = 421.9
