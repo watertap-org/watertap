@@ -12,7 +12,7 @@ def cli():
 @click.option('--extra-context', type=str, help="Comma-separated context: project_name=...,author_name=...")
 def project(no_input, extra_context):
     """Create a new WaterTAP project from GitHub (fallback to local if offline)"""
-    GITHUB_TEMPLATE = "https://github.com/zacharybinger/watertap_project_template"
+    GITHUB_TEMPLATE = "https://github.com/watertap-org/watertap_project_template"
     GITHUB_TEMPLATE_NAME = "watertap_project_template"
     CACHE_DIR = os.path.expanduser(f"~/.cookiecutters/{GITHUB_TEMPLATE_NAME}")
 
