@@ -144,7 +144,7 @@ The model provides three ports (Pyomo notation in parenthesis):
 
 * Inlet port (``inlet``)
 * Outlet port (``outlet``)
-* Waste port (``waste``)
+* Byproduct port (``byproduct``)
 
 
 Sets
@@ -250,7 +250,6 @@ If ``overpotential_calculation`` is set to ``detailed``, the following variables
 Degrees of Freedom
 --------------------
 
-
 Aside from the inlet feed state variables (temperature, pressure, component molar flowrate),
 the user must specify 8-9 degrees of freedom to fully specify the model, depending on the configuration.
 
@@ -324,9 +323,9 @@ Equations and Relationships
     "Power density total", ":math:`p_{tot} = \frac{P_{tot}}{A_{anode}}`"
     "Effluent temperature", ":math:`T_{out} = x_T T_{in}`"
     "Water recovery", ":math:`M_{H_2O, out} = M_{H_2O, in} \eta_w`"
-    "Water mass balance", ":math:`M_{H_2O, out} = M_{H_2O, in} - M_{H_2O, waste}`"
-    "Component mass balance", ":math:`M_{j, out} = M_{j, in} - M_{j, waste}`"
-    "Component removal efficiency", ":math:`M_{j, waste} = \eta_j M_{j, in}`"
+    "Water mass balance", ":math:`M_{H_2O, out} = M_{H_2O, in} - M_{H_2O, byprod}`"
+    "Component mass balance", ":math:`M_{j, out} = M_{j, in} - M_{j, byprod}`"
+    "Component removal efficiency", ":math:`M_{j, byprod} = \eta_j M_{j, in}`"
     "Charge loading rate", ":math:`CLR = \frac{I}{q_{liq}}`"
     "Floc reactor volume", ":math:`V_{floc} = q_{liq} t_{floc}`"
     "Faraday's Law", ":math:`D_c = \frac{I \eta MW}{q_{liq} z F}`"
