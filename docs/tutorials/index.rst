@@ -7,7 +7,7 @@ Browsing the tutorials
 The tutorials included with WaterTAP are available in the "tutorials" directory
 of the WaterTAP GitHub repository: `<https://github.com/watertap-org/watertap/tree/main/tutorials/>`_.
 
-To view a static version of the notebooks online, you can use the following link: `<https://nbviewer.org/github/watertap-org/watertap/blob/main/tutorials/00-index.ipynb>?flush_cache=true`_.
+To view a static version of the notebooks online, you can use the following link: `<https://nbviewer.org/github/watertap-org/watertap/blob/main/tutorials/00-index.ipynb?flush_cache=true>`_.
 
 Running the notebooks
 ---------------------
