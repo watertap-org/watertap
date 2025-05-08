@@ -400,9 +400,9 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                 self.anode_cell_potential_std.set_value(-0.41)
                 # = S / (Z * F); Bratsch, 1989; Dubrawski et al., 2014
                 self.anode_entropy_change_std.set_value(7e-5)
-                # Electrochemical Thermodynamics and Kinetics, pg 276
+                # Dubrawski et al., 2014
                 self.anodic_exchange_current_density.set_value(2.5e-4)
-                # Electrochemical Thermodynamics and Kinetics, pg 276
+                # Dubrawski et al., 2014
                 self.cathodic_exchange_current_density.set_value(1e-3)
 
         self.floc_basin_vol = Var(

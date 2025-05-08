@@ -8,17 +8,15 @@ Electrocoagulation (0D)
 
 The main assumptions of the implemented model are (partially adopted from Dubrawski, et al. 2014):
 
-1) Model dimensionality is limited to a 0D control volume
-2) Single liquid phase only
-3) Steady state only
-4) Single solvent (water) only
-5) Plug flow only
-6) The system is insulated and adiabatic
-7) No passivation on electrode surfaces
-8) Negligible internal circuit resistance
-9) Stoichiometric electrochemical reactions occur at cathode and anode
-10) Parallel plate electrodes
-11) Each electrode is the same material and same size
+1) Steady-state and plug flow
+2) Model dimensionality is limited to a 0D control volume
+3) Single liquid phase and solvent (water) only
+4) The system is insulated and adiabatic
+5) No passivation on electrode surfaces
+6) Negligible internal circuit resistance
+7) Stoichiometric electrochemical reactions occur at cathode and anode
+8) Parallel plate electrodes
+9) Each electrode is the same material and same size
 
 Introduction
 ------------
@@ -43,7 +41,7 @@ The EC model includes different configuration options for the electrode material
 
 - Electrode material: aluminum (default) and iron. 
 - Overpotential calculation: fixed (default), regression approximation, and a detailed calculation.
-- Reactor material: carbon steel, stainless steel (default) and PVC.
+- Reactor material: carbon steel (default), stainless steel, and PVC.
 
 Selecting either electrode material will properly set the WaterTAP model parameters for electrode density 
 (``density_electrode_material``), molecular weight (``mw_electrode_material``), charge transfer number
@@ -98,6 +96,7 @@ Detailed Calculation
 If the detailed calculation is selected, the model will use the Nernst equation to calculate the overpotential based on the standard cell potential,
 the entropy change, and the exchange current densities for the anodic and cathodic reactions, and a Tafel slope parameter to estimate the
 activation overpotential. 
+
 In general, the overpotential is calculated as follows:
 
 .. math::
@@ -112,7 +111,7 @@ The electrocoagulation model assumes the concentration overpotential is negligib
 The non-equilibrium electrode potentials at the cathode and anode are calculated via the Nernst equation:
 
 .. math::
-    E_a = E_{a}^0 + \frac{\Delta S_a (T - T_0)}{z_a F} + \frac{RT}{z_a F} \text{ln}\left( C_{i} \right)
+    E_a = E_{a}^0 + \frac{\Delta S_a (T - T_0)}{z_a F} - \frac{RT}{z_a F} \text{ln}\left( C_{i}^{-\nu} \right)
 
 
 .. math::
@@ -198,7 +197,7 @@ all configurations. These are provided in the table below.
 
    **Parameters**
    "Component removal efficiency on mass basis", ":math:`\eta_{j}`", "``removal_frac_mass_comp``", ``[j]``, ":math:`\text{dimensionless}`"
-   "Water recovery on mass basis", ":math:`\eta_{w}`", "``recovery_frac_mass_water``", None, ":math:`\text{dimensionless}`"
+   "Water recovery on mass basis", ":math:`\eta_{w}`", "``recovery_frac_mass_H2O``", None, ":math:`\text{dimensionless}`"
    "Conversion factor for mg/L TDS to S/m", ":math:`x`", "``tds_to_cond_conversion``", None, ":math:`\text{mg m }\text{L}^{-1}\text{ S}^{-1}`"
    "Standard temperature", ":math:`T_0`", "``standard_temperature``", None, ":math:`\text{K}`"
    "Electrode molecular weight", ":math:`MW`", "``mw_electrode_material``", None, ":math:`\text{kg mol}^{-1}`"
@@ -224,21 +223,23 @@ If ``overpotential_calculation`` is set to ``regression``, the following variabl
    "Overpotential regression coefficient 1", ":math:`k_1`", "``overpotential_k1``", None, ":math:`\text{mV}`"
    "Overpotential regression coefficient 2", ":math:`k_2`", "``overpotential_k2``", None, ":math:`\text{mV}`"
 
-If ``overpotential_calculation`` is set to ``detailed``, the following variables, parameters, and expressions are also created:
+If ``overpotential_calculation`` is set to ``detailed``, the following variables, parameters, and expressions are also created.
+Note that many of these parameters are dependent on the electrode material selected.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units", "Default Value"
 
    **Variables**
-   "Anodic Tafel slope", ":math:`b_a`", "``tafel_slope_anode``", None, ":math:`\text{V}`"
-   "Cathodic Tafel slope", ":math:`b_c`", "``tafel_slope_cathode``", None, ":math:`\text{V}`"
+   "Anodic Tafel slope", ":math:`b_a`", "``tafel_slope_anode``", None, ":math:`\text{V}`", 0.0403
+   "Cathodic Tafel slope", ":math:`b_c`", "``tafel_slope_cathode``", None, ":math:`\text{V}`", 0.0633
 
    **Parameters**
    "Anodic non-equilibrium cell potential, standard @ 25C", ":math:`E_{a}^0`", "``anode_cell_potential_std``", None, ":math:`\text{V}`", -0.5
    "Anodic entropy change", ":math:`\frac{\Delta S_a}{z_aF}`", "``anode_entropy_change_std``", None, ":math:`\text{V K}^{-1}`", 1e-4
    "Anodic exchange current density", ":math:`i_{a0}`", "``anodic_exchange_current_density``", None, ":math:`\text{A m}^{-2}`", 2e-5
    "Cathodic non-equilibrium cell potential, standard @ 25C", ":math:`E_{c}^0`", "``cathode_cell_potential_std``", None, ":math:`\text{V}`", -0.83
-   "Cathode entropy change", ":math:`\frac{\Delta S_c}{z_cF}`", "``cathode_entropy_change_std``", None, ":math:`\text{V K}^{-1}`", -0.000836
+   "Cathodic entropy change", ":math:`\frac{\Delta S_c}{z_cF}`", "``cathode_entropy_change_std``", None, ":math:`\text{V K}^{-1}`", -0.000836
+   "Cathodic exchange current density", ":math:`i_{a0}`", "``cathodic_exchange_current_density``", None, ":math:`\text{A m}^{-2}`", 1e-4
    "Cathode surface pH", ":math:`pH`", "``cathode_surface_pH``", None, ":math:`\text{dimensionless}`", 11
 
    **Expressions**
@@ -341,7 +342,7 @@ Equations and Relationships
     "Overpotential regression", ":math:`E_{over} = k_1 \text{ln}(i) + k_2`"
 
     **Detailed**
-    "Anodic cell potential", ":math:`E_a = E_{a}^0 + \frac{\Delta S_a (T - T_0)}{z_a F} + \frac{RT}{z_a F} \text{ln}(C_{i})`"
+    "Anodic cell potential", ":math:`E_a = E_{a}^0 + \frac{\Delta S_a (T - T_0)}{z_a F} - \frac{RT}{z_a F} \text{ln}\left( C_{i}^{-\nu} \right)`"
     "Cathodic cell potential", ":math:`E_c = E_{c}^0 + \frac{\Delta S_c (T - T_0)}{z_c F} + \frac{RT}{z_cF} \text{ln}(p_{H_2} (C_{OH})^2)`"
     "Anodic activation overpotential", ":math:`\varphi_a = b_a \text{ln}(i / i_{a0})`"
     "Cathodic activation overpotential", ":math:`\varphi_c = b_c \text{ln}(i / i_{c0})`"

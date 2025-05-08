@@ -12,15 +12,15 @@ when applying the ``cost_electrocoagulation`` costing method in the ``watertap_c
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units", "Notes"
 
-   "Reactor capital cost base parameter", ":math:`A_r`", ``reactor_capital_cost_base``, 11500, ":math:`\text{USD}_{2020}`", "Parameters from Table 2.1 for "Agitated Reactor" in Smith (2005)"
-   "Reactor capital cost exponent", ":math:`b_r`", ``reactor_capital_cost_exponent``, 0.45, ":math:`\text{dimensionless}`", "Parameters from Table 2.1 for "Agitated Reactor" in Smith (2005)"
-   "Reactor capital cost material coefficient", ":math:`x_{r,m}`", ``reactor_material_coeff``, 1.0, ":math:`\text{dimensionless}`", "1 for carbon steel; 3.4 for stainless steel; 0.062 for PVC"
+   "Reactor capital cost base parameter", ":math:`A_r`", ``reactor_capital_cost_base``, 11500, ":math:`\text{USD}_{2000}`", "Parameters from Table 2.1 for Agitated Reactor in Smith (2005)"
+   "Reactor capital cost exponent", ":math:`b_r`", ``reactor_capital_cost_exponent``, 0.45, ":math:`\text{dimensionless}`", "Parameters from Table 2.1 for Agitated Reactor in Smith (2005)"
+   "Reactor capital cost material coefficient", ":math:`x_{r,m}`", ``reactor_material_coeff``, 1.0, ":math:`\text{dimensionless}`", "1 for carbon steel; 3.4 for stainless steel; 0.55 for PVC"
    "Reactor capital cost safety factor", ":math:`SF_r`", ``reactor_capital_safety_factor``, 2.5, ":math:`\text{dimensionless}`", "Developed with feedback from industry experts"
-   "Power supply capital cost equation slope", ":math:`A_p`", ``power_supply_capital_slope``, 0.51972, ":math:`\text{USD}_{2020}\text{ W}^{-1}`", "DC power supply + transformer + electrical connection base cost, developed from magna-power.com"
+   "Power supply capital cost equation slope", ":math:`A_p`", ``power_supply_capital_slope``, 0.51972, ":math:`\text{USD}_{2020}\text{ W}^{-1}`", "DC power supply + transformer + electrical connection base cost; developed from magna-power.com"
    "Flocculator capital cost base parameter", ":math:`A_f`", ``floc_capital_cost_base``, 1075700, ":math:`\text{USD}_{2007}`", "Figure 5.5.22 in McGivney & Kawamura (2008); refit to power equation"
    "Flocculator capital cost equation exponent", ":math:`b_f`", ``floc_capital_cost_exponent``, -0.95139, ":math:`\text{dimensionless}`", "Figure 5.5.22 in McGivney & Kawamura (2008); refit to power equation"
    "Sludge handling cost", ":math:`c_{sh}`", ``sludge_handling_cost``, 0.0, ":math:`\text{USD}\text{ kg}^{-1}`", "Cost of sludge handling is assumed to be zero by default"
-   "Electrode material cost", ":math:`c_{mat}`", ``electrode_material_cost``, 2, ":math:`\text{USD}_{2021}\text{ kg}^{-1}`", "Cost per kg for electrode material; 2.23 for Al, 3.41 for Fe"
+   "Electrode material cost", ":math:`c_{mat}`", ``electrode_material_cost``, 2, ":math:`\text{USD}_{2021}\text{ kg}^{-1}`", "Cost per kg for electrode material; 2.23 for Al; 3.41 for Fe"
    "Electrode material cost safety factor", ":math:`SF_{mat}`", ``electrode_material_cost_safety_factor``, 2.0, ":math:`\text{dimensionless}`", "Developed with feedback from industry experts"
 
 
@@ -33,11 +33,11 @@ applying the ``cost_electrocoagulation`` costing method in the ``watertap_costin
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
    
-   "Capital cost of reactor", ":math:`C_{r}`", ``capital_cost_reactor``, None, ":math:`\text{USD}`",
-   "Capital cost of electrodes", ":math:`C_{e}`", ``capital_cost_electrodes``, None, ":math:`\text{USD}`",
-   "Capital cost of power supply", ":math:`C_{p}`", ``capital_cost_power_supply``, None, ":math:`\text{USD}`",
-   "Capital cost of floc reactor", ":math:`C_{f}`", ``capital_cost_floc_reactor``, None, ":math:`\text{USD}`",
-   "Annual cost of sludge management", ":math:`C_{sh}`", ``annual_sludge_management``, None, ":math:`\text{USD year}^{-1}`",
+   "Capital cost of reactor", ":math:`C_{r}`", ``capital_cost_reactor``, None, ":math:`\text{USD}`"
+   "Capital cost of electrodes", ":math:`C_{e}`", ``capital_cost_electrodes``, None, ":math:`\text{USD}`"
+   "Capital cost of power supply", ":math:`C_{p}`", ``capital_cost_power_supply``, None, ":math:`\text{USD}`"
+   "Capital cost of floc reactor", ":math:`C_{f}`", ``capital_cost_floc_reactor``, None, ":math:`\text{USD}`"
+   "Annual cost of sludge management", ":math:`C_{sh}`", ``annual_sludge_management``, None, ":math:`\text{USD year}^{-1}`"
 
 
 Capital Cost Calculations
@@ -103,3 +103,15 @@ References
 
 | Power supply cost estimation from magna-power.com
 | Linear equation fit to SL and MT series cost data
+
+| R. Smith (2005)
+| Chemical Process: Design and Integration, 1st ed.
+| ISBN: 978-0471486817
+
+| For material cost ratios (carbon steel = 1):
+| https://www.engineeringtoolbox.com/piping-materials-cost-ratios-d_864.html
+| https://web.mit.edu/course/3/3.11/www/modules/props.pdf
+
+| A. R. Anuf, K. Ramaraj, V. S. Sivasankarapillai, R. Dhanusuraman, J. P. Maran, G. Rajeshkumar (2022)
+| Optimization of electrocoagulation process for treatment of rice mill effluent using response surface methodology
+| DOI: 10.1016/j.jwpe.2022.103074
