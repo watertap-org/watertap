@@ -125,7 +125,7 @@ The ion exchange model includes many variables, parameters, and expressions that
    **Variables**
    "Inlet temperature", ":math:`T`", "``temperature``", "``[t]``", ":math:`\text{K}`"
    "Inlet pressure", ":math:`p`", "``pressure``", "``[t]``", ":math:`\text{Pa}`"
-   "Component molar flow rate", ":math:`N_j`", "``flow_mol_phase_comp``", "``[t, 'Liq', 'H2O']``", ":math:`\text{mol/s}`"
+   "Component molar flow rate", ":math:`N_j`", "``flow_mol_phase_comp``", "``[t, 'Liq', j]``", ":math:`\text{mol/s}`"
    "Control volume mass transfer term", ":math:`\dot{m}_j`", "``process_flow.mass_transfer_term``", "``[t, 'Liq', j]``", ":math:`\text{mol/s}`"
    "Service flow rate through resin bed in bed volumes per hour", ":math:`SFR`", "``service_flow_rate``", "None", ":math:`\text{hr}^{-1}`"
    "Linear velocity through bed", ":math:`u_{bed}`", "``vel_bed``", "None", ":math:`\text{m/s}`"
@@ -287,8 +287,6 @@ data is used to build a model is provided below.
     }
     m.fs.ix = IonExchange0D(**ix_config)
 
-
-.. .. code-block::
 
 Equations and Relationships
 ---------------------------
