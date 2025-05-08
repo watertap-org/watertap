@@ -56,7 +56,7 @@ class ReactorMaterial(StrEnum):
 
 
 class OverpotentialCalculation(StrEnum):
-    nernst = "nernst"
+    detailed = "detailed"
     fixed = "fixed"
     regression = "regression"
 
@@ -155,7 +155,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "reactor_material",
         ConfigValue(
-            default="pvc",
+            default="stainless_steel",
             domain=In(ReactorMaterial),
             description="Reactor material",
         ),
@@ -246,17 +246,17 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             doc="Standard temperature",
         )
 
-        self.ec_ion_mw = Param(
+        self.mw_electrode_material = Param(
             initialize=100e-3,
             units=pyunits.kg / pyunits.mol,
-            doc="Molecular weight of reactive species",
+            doc="Molecular weight of coagulant species",
         )
 
-        self.ec_ion_z = Param(
+        self.charge_transfer_number = Param(
             initialize=1,
             mutable=True,
             units=pyunits.dimensionless,
-            doc="Charge of reactive species",
+            doc="Charge transfer number of coagulant species",
         )
 
         self.stoic_coeff = Param(
@@ -279,7 +279,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             doc="Fractional increase in water temperature from inlet to outlet",
         )
 
-        if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+        if self.config.overpotential_calculation == OverpotentialCalculation.detailed:
 
             self.anode_cell_potential_std = Param(
                 initialize=-0.5,
@@ -303,7 +303,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             )
 
             self.cathodic_exchange_current_density = Param(
-                initialize=1.0e-4,
+                initialize=1e-4,
                 mutable=True,
                 units=pyunits.ampere / pyunits.m**2,
                 doc="Cathodic exchange current density",
@@ -338,14 +338,14 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             )
 
             self.tafel_slope_cathode = Var(
-                initialize=0.146,
+                initialize=0.146 / 2.303,  # default value used log10
                 bounds=(0, None),
                 units=pyunits.volt,  # volt per 10x change (decade)
                 doc="Tafel slope for cathode",
             )
 
             self.tafel_slope_anode = Var(
-                initialize=0.093,
+                initialize=0.093 / 2.303,  # default value used log10
                 bounds=(0, None),
                 units=pyunits.volt,  # volt per 10x change (decade)
                 doc="Tafel slope for anode",
@@ -360,12 +360,15 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             Al_3+ + 3OH_- <--> Al(OH)3(s)
             """
 
-            self.ec_ion_mw.set_value(26.98e-3)
-            self.ec_ion_z.set_value(3)
+            self.mw_electrode_material.set_value(26.98e-3)
+            self.charge_transfer_number.set_value(3)
             self.stoic_coeff.set_value(1)
             self.density_electrode_material.set_value(2710)
 
-            if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+            if (
+                self.config.overpotential_calculation
+                == OverpotentialCalculation.detailed
+            ):
                 # Dubrawski et al., 2014; Zhang et al., 2020
                 self.anode_cell_potential_std.set_value(-1.66)
                 # = S / (Z * F); Bratsch, 1989; Dubrawski et al., 2014
@@ -384,12 +387,15 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             Fe_2+ + 2OH_- <--> Fe(OH)2(s)
             """
 
-            self.ec_ion_mw.set_value(55.845e-3)
-            self.ec_ion_z.set_value(2)
+            self.mw_electrode_material.set_value(55.845e-3)
+            self.charge_transfer_number.set_value(2)
             self.stoic_coeff.set_value(1)
             self.density_electrode_material.set_value(7860)
 
-            if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+            if (
+                self.config.overpotential_calculation
+                == OverpotentialCalculation.detailed
+            ):
                 # Dubrawski et al., 2014; Zhang et al., 2020
                 self.anode_cell_potential_std.set_value(-0.41)
                 # = S / (Z * F); Bratsch, 1989; Dubrawski et al., 2014
@@ -535,10 +541,10 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         @self.Expression(doc="Theoretical metal loading")
         def theoretical_coagulant_dose(b):
             return pyunits.convert(
-                (b.applied_current * b.ec_ion_mw)
+                (b.applied_current * b.mw_electrode_material)
                 / (
                     Constants.faraday_constant
-                    * b.ec_ion_z
+                    * b.charge_transfer_number
                     * prop_in.flow_vol_phase["Liq"]
                 ),
                 to_units=pyunits.g / pyunits.liter,
@@ -572,15 +578,17 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
             self.overpotential_k1 = Var(
                 units=pyunits.millivolt,
-                doc="Constant k1 in overpotential equation from Gu (2009)",
+                doc="Constant k1 in overpotential equation from Gu et al. (2009)",
             )
 
             self.overpotential_k2 = Var(
                 units=pyunits.millivolt,
-                doc="Constant k2 in overpotential equation from Gu (2009)",
+                doc="Constant k2 in overpotential equation from Gu et al. (2009)",
             )
 
-            @self.Constraint(doc="Overpotential calculation")
+            @self.Constraint(
+                doc="Overpotential calculation - adapted from Eq. 18 in Gu et al. (2009)"
+            )
             def eq_overpotential(b):
                 cd_dimensionless = pyunits.convert(
                     b.current_density * pyunits.cm**2 / pyunits.milliampere,
@@ -591,7 +599,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                     to_units=pyunits.volt,
                 )
 
-        if self.config.overpotential_calculation == OverpotentialCalculation.nernst:
+        if self.config.overpotential_calculation == OverpotentialCalculation.detailed:
 
             @self.Expression(doc="Hydroxide concentration at cathode surface")
             def cathode_conc_mol_hydroxide(b):
@@ -612,21 +620,25 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                     to_units=pyunits.volt,
                 )
 
-            @self.Expression(doc="Anode equilibrium cell potential")
+            @self.Expression(
+                doc="Anode non-equilibrium cell potential via Nernst equation"
+            )
             def anode_cell_potential(b):
                 ec_dose_dimensionless = pyunits.convert(
-                    (b.coagulant_dose / b.ec_ion_mw) * pyunits.liter * pyunits.mol**-1,
+                    (b.coagulant_dose / b.mw_electrode_material)
+                    * pyunits.liter
+                    * pyunits.mol**-1,
                     to_units=pyunits.dimensionless,
                 )
                 return b.anode_cell_potential_temp_adj - (
                     pyunits.convert(
                         (
-                            (2.303 * Constants.gas_constant * prop_out.temperature)
-                            / (Constants.faraday_constant * b.ec_ion_z)
+                            (Constants.gas_constant * prop_out.temperature)
+                            / (Constants.faraday_constant * b.charge_transfer_number)
                         ),
                         to_units=pyunits.volt,
                     )
-                    * log10(ec_dose_dimensionless**-b.stoic_coeff)
+                    * log(ec_dose_dimensionless**-b.stoic_coeff)
                 )
 
             @self.Expression(
@@ -639,7 +651,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                     to_units=pyunits.volt,
                 )
 
-            @self.Expression(doc="Cathode equilibrium cell potential")
+            @self.Expression(doc="Cathode cell potential via Nernst equation")
             def cathode_cell_potential(b):
                 ccmh_dimensionless = pyunits.convert(
                     b.cathode_conc_mol_hydroxide * pyunits.liter / pyunits.mol,
@@ -651,26 +663,28 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                 )
                 return b.cathode_cell_potential_temp_adj - pyunits.convert(
                     (
-                        (2.303 * Constants.gas_constant * prop_out.temperature)
-                        / (Constants.faraday_constant * b.ec_ion_z)
+                        (Constants.gas_constant * prop_out.temperature)
+                        / (Constants.faraday_constant * b.charge_transfer_number)
                     ),
                     to_units=pyunits.volt,
-                ) * log10(ccmh_dimensionless**2 * ph2_dimensionless)
+                ) * log(ccmh_dimensionless**2 * ph2_dimensionless)
 
-            @self.Expression(doc="Anode overpotential")
+            # Eq. 6 in Zhang et al. (2020); Eq. 12 in Dubrawski et al. (2014)
+            @self.Expression(doc="Anode activation overpotential")
             def anode_overpotential(b):
-                return b.tafel_slope_anode * log10(
+                return b.tafel_slope_anode * log(
                     pyunits.convert(
                         b.current_density / b.anodic_exchange_current_density,
                         to_units=pyunits.dimensionless,
                     )
                 )
 
-            @self.Expression(doc="Cathode overpotential")
+            # Eq. 7 in Zhang et al. (2020); Eq. 11 in Dubrawski et al. (2014)
+            @self.Expression(doc="Cathode activation overpotential")
             def cathode_overpotential(b):
                 return -1 * (
                     b.tafel_slope_cathode
-                    * log10(
+                    * log(
                         pyunits.convert(
                             b.current_density / b.cathodic_exchange_current_density,
                             to_units=pyunits.dimensionless,
@@ -678,8 +692,10 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                     )
                 )
 
+            # See Eq. 3 in Zhang et al. (2020), Eq. 10 in Dubrawski et al. (2014)
+            # neglecting concentration/mass-transfer overpotential
             @self.Constraint(doc="Overpotential calculation")
-            def eq_nernst_overpotential(b):
+            def eq_total_overpotential(b):
                 return b.overpotential == abs(
                     b.cathode_cell_potential - b.anode_cell_potential
                 ) + b.anode_overpotential + abs(b.cathode_overpotential)
@@ -735,18 +751,18 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Total flocculation tank volume")
         def eq_floc_reactor_volume(b):
             return b.floc_basin_vol == pyunits.convert(
-                prop_in.flow_vol * b.floc_retention_time,
+                prop_in.flow_vol_phase["Liq"] * b.floc_retention_time,
                 to_units=pyunits.m**3,
             )
 
         @self.Constraint(doc="Faraday's Law")
         def eq_faraday(b):
             return (
-                b.applied_current * b.current_efficiency * b.ec_ion_mw
+                b.applied_current * b.current_efficiency * b.mw_electrode_material
                 == pyunits.convert(
                     prop_in.flow_vol_phase["Liq"]
                     * b.coagulant_dose
-                    * b.ec_ion_z
+                    * b.charge_transfer_number
                     * Constants.faraday_constant,
                     to_units=(pyunits.kg * pyunits.amp) / pyunits.mol,
                 )
