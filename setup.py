@@ -77,7 +77,7 @@ setup(
         "parameter-sweep >=0.1.0",
         "numpy",
         "Click",
-        'cookiecutter'
+        "cookiecutter",
     ],
     extras_require={
         "testing": [

@@ -2,14 +2,20 @@ import click
 import subprocess
 import os
 
+
 @click.group()
 def cli():
     """WaterTAP CLI for creating project templates and more."""
     pass
 
+
 @cli.command()
-@click.option('--no-input', is_flag=True, help="Skip prompts and use defaults")
-@click.option('--extra-context', type=str, help="Comma-separated context: project_name=...,author_name=...")
+@click.option("--no-input", is_flag=True, help="Skip prompts and use defaults")
+@click.option(
+    "--extra-context",
+    type=str,
+    help="Comma-separated context: project_name=...,author_name=...",
+)
 def project(no_input, extra_context):
     """Create a new WaterTAP project from GitHub (fallback to local if offline)"""
     GITHUB_TEMPLATE = "https://github.com/watertap-org/watertap_project_template"
@@ -23,6 +29,7 @@ def project(no_input, extra_context):
     # Always remove the cached template
     if os.path.exists(CACHE_DIR):
         import shutil
+
         shutil.rmtree(CACHE_DIR)
 
     def build_cmd(template_path):
@@ -42,5 +49,5 @@ def project(no_input, extra_context):
         subprocess.run(build_cmd(local_template))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
