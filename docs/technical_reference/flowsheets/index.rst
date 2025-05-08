@@ -25,4 +25,4 @@ The flowsheets below can be accessed at the
    seawater_RO_desalination
 
 Several zero-order flowsheets have been archived but can still be accessed via the WaterTAP
-`1.0 Release <https://github.com/watertap-org/watertap/releases/tag/1.0.0>`_.
+`0.12 Release <https://github.com/watertap-org/watertap/tree/0.12.0/watertap/examples/flowsheets/case_studies/wastewater_resource_recovery>`_.
