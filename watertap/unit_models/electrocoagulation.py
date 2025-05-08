@@ -51,6 +51,7 @@ class ElectrodeMaterial(StrEnum):
 
 class ReactorMaterial(StrEnum):
     pvc = "pvc"
+    carbon_steel = "carbon_steel"
     stainless_steel = "stainless_steel"
 
 
@@ -154,7 +155,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "reactor_material",
         ConfigValue(
-            default="stainless_steel",
+            default="carbon_steel",
             domain=In(ReactorMaterial),
             description="Reactor material",
         ),
@@ -474,11 +475,11 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
             doc="Electrolysis time",
         )
 
-        self.cell_volume = Var(
+        self.reactor_volume = Var(
             initialize=1,
             bounds=(0, None),
             units=pyunits.m**3,
-            doc="Volume of electrolytic cell",
+            doc="Volume of electrocoagulation reactor",
         )
 
         self.current_density = Var(
@@ -794,7 +795,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Total reactor volume")
         def eq_reactor_volume(b):
-            return b.cell_volume == pyunits.convert(
+            return b.reactor_volume == pyunits.convert(
                 prop_in.flow_vol_phase["Liq"] * b.electrolysis_time,
                 to_units=pyunits.m**3,
             )
@@ -945,8 +946,8 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.current_efficiency) is None:
             iscale.set_scaling_factor(self.current_efficiency, 1)
 
-        if iscale.get_scaling_factor(self.cell_volume) is None:
-            iscale.set_scaling_factor(self.cell_volume, 0.1)
+        if iscale.get_scaling_factor(self.reactor_volume) is None:
+            iscale.set_scaling_factor(self.reactor_volume, 0.1)
 
         if iscale.get_scaling_factor(self.ohmic_resistance) is None:
             iscale.set_scaling_factor(self.ohmic_resistance, 1e3)

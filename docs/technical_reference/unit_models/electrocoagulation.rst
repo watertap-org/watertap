@@ -43,7 +43,7 @@ The EC model includes different configuration options for the electrode material
 
 - Electrode material: aluminum (default) and iron. 
 - Overpotential calculation: fixed (default), regression approximation, and a detailed calculation.
-- Reactor material: stainless steel (default) and PVC.
+- Reactor material: carbon steel, stainless steel (default) and PVC.
 
 Selecting either electrode material will properly set the WaterTAP model parameters for electrode density 
 (``density_electrode_material``), molecular weight (``mw_electrode_material``), charge transfer number
@@ -71,6 +71,7 @@ The electrocoagulation model determines the total cell voltage required to drive
 
 Where :math:`E_{cell}` is the total cell voltage, :math:`E_{ohmic}` is the ohmic potential required, and 
 :math:`E_{over}` is the overpotential. 
+
 The WaterTAP electrocoagulation model provides three options for calculating the overpotential, outlined as follows.
 
 Fixed
@@ -176,7 +177,7 @@ all configurations. These are provided in the table below.
    "Inlet pressure", ":math:`p`", "``pressure``", "``[t]``", ":math:`\text{Pa}`"
    "Component mass flow rate", ":math:`M_j`", "``flow_mass_phase_comp``", "``[t, p, j]``", ":math:`\text{kg s}^{-1}`"
    "Phase volumetric flow rate", ":math:`q_j`", "``flow_vol_phase``", "``[t, p]``", ":math:`\text{m}^{3} \text{ s}^{-1}`"
-   "Coagulant dose", ":math:`C_{dose}`", "``coagulant_dose``", None, ":math:`\text{g L}^{-1}`"
+   "Coagulant dose", ":math:`D_c`", "``coagulant_dose``", None, ":math:`\text{g L}^{-1}`"
    "Electrode thickness", ":math:`d_{electrode}`", "``electrode_thickness``", None, ":math:`\text{m}`"
    "Electrode mass", ":math:`m_{electrode}`", "``electrode_mass``", None, ":math:`\text{kg}`"
    "Electrode volume", ":math:`V_{electrode}`", "``electrode_volume``", None, ":math:`\text{m}^3`"
@@ -191,7 +192,7 @@ all configurations. These are provided in the table below.
    "Cell voltage", ":math:`E_{cell}`", "``cell_voltage``", None, ":math:`\text{V}`"
    "Anode area", ":math:`A_{anode}`", "``anode_are``", None, ":math:`\text{m}^2`"
    "Cathode area", ":math:`A_{cathode}`", "``cathode_area``", None, ":math:`\text{m}^2`"
-   "Volume of electrolytic cell", ":math:`V_{cell}`", "``cell_volume``", None, ":math:`\text{m}^3`"
+   "Volume of electrocoagulation reactor", ":math:`V_{r}`", "``cell_volume``", None, ":math:`\text{m}^3`"
    "Total floc basin volume (flotation + sedimentation)", ":math:`V_{floc}`", "``floc_basin_vol``", None, ":math:`\text{m}^3`"
    "Floc basin retention time", ":math:`t_{floc}`", "``floc_retention_time``", None, ":math:`\text{min}`"
 
@@ -209,8 +210,9 @@ all configurations. These are provided in the table below.
    **Expressions**
    "Conductivity", ":math:`\kappa`", "``conductivity``", None, ":math:`\text{S m}^{-1}`"
    "Electrode area total", ":math:`A_{electrode}`", "``electrode_area_total``", None, ":math:`\text{m}^2`"
-   "Power density Faradaic", ":math:`P_{F}`", "``power_density_faradaic``", None, ":math:`\mu\text{W m}^{-2}`"
-   "Power density total", ":math:`P_{total}`", "``power_density_total``", None, ":math:`\mu\text{W m}^{-2}`"
+   "Total power required", ":math:`P_{tot}`", "``power_required``", None, ":math:`\text{W}`"
+   "Power density Faradaic", ":math:`p_{F}`", "``power_density_faradaic``", None, ":math:`\mu\text{W m}^{-2}`"
+   "Power density total", ":math:`p_{total}`", "``power_density_total``", None, ":math:`\mu\text{W m}^{-2}`"
 
 
 If ``overpotential_calculation`` is set to ``regression``, the following variables are also created:
@@ -290,7 +292,7 @@ An example configuration is provided below:
 .. code-block::
 
     ec_feed = {
-        "solute_list": ["TDS", "H2O", "Ca_2+", "Mg_2+"],
+        "solute_list": ["TDS", "Ca_2+", "Mg_2+"],
         "mw_data": {
             "TDS": 58.44e-3,
             "Ca_2+": 40.08e-3,
@@ -327,7 +329,7 @@ Equations and Relationships
     "Component removal efficiency", ":math:`M_{j, waste} = \eta_j M_{j, in}`"
     "Charge loading rate", ":math:`CLR = \frac{I}{q_{liq}}`"
     "Floc reactor volume", ":math:`V_{floc} = q_{liq} t_{floc}`"
-    "Faraday's Law", ":math:`C_{dose} = \frac{I \eta MW}{q_{liq} z F}`"
+    "Faraday's Law", ":math:`D_c = \frac{I \eta MW}{q_{liq} z F}`"
     "Anode area required", ":math:`A_{anode} = \frac{I}{i}`"
     "Cathode area required", ":math:`A_{cathode} = A_{anode}`"
     "Cell voltage required", ":math:`E_{cell} = E_{over} + \frac{I R_{ohmic}}{A_{anode}}`"
