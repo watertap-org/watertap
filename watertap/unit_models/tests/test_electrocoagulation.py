@@ -578,14 +578,15 @@ class TestECCosting(UnitTestHarness):
         assert_optimal_termination(results)
 
         sys_cost_results = {
-            "aggregate_capital_cost": 817849.66,
+            "aggregate_capital_cost": 1168409.07,
             "aggregate_fixed_operating_cost": 311632.55,
+            "aggregate_variable_operating_cost": 0.0,
             "aggregate_flow_electricity": 146.33,
             "aggregate_flow_aluminum": 64565.49,
             "aggregate_flow_costs": {"electricity": 118796.73, "aluminum": 162263.39},
-            "total_capital_cost": 817849.66,
-            "total_operating_cost": 589122.15,
-            "LCOW": 1.1078,
+            "total_capital_cost": 1168409.07,
+            "total_operating_cost": 599638.93,
+            "LCOW": 1.1831,
             "SEC": 1.9064,
         }
 
@@ -598,14 +599,14 @@ class TestECCosting(UnitTestHarness):
                 assert pytest.approx(r, rel=1e-3) == value(mv)
 
         ec_cost_results = {
-            "capital_cost": 817849.66,
+            "capital_cost": 1168409.07,
             "fixed_operating_cost": 311632.55,
-            "capital_cost_reactor": 683600.09,
+            "capital_cost_reactor": 1034159.79,
             "capital_cost_electrodes": 23582.44,
             "capital_cost_power_supply": 101782.18,
-            "capital_cost_floc_reactor": 8884.94,
+            "capital_cost_floc_reactor": 8884.65,
             "annual_sludge_management": 311632.55,
-            "direct_capital_cost": 198448.81,
+            "direct_capital_cost": 283511.02,
             "annual_electrode_replacement_mass_flow": 64565.49,
         }
 
