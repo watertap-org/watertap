@@ -60,6 +60,7 @@ environment*.yml @lbianchi-lbl
 /watertap/unit_models/cstr.py @adam-a-a @MarcusHolly
 /watertap/unit_models/cstr_injection.py @adam-a-a @MarcusHolly
 /watertap/unit_models/dewatering.py @adam-a-a @agarciadiego
+/watertap/unit_models/electrocoagulation.py @kurbansitterley @MuktaHardikar
 /watertap/unit_models/electrodialysis_0D.py @lbibl
 /watertap/unit_models/electrodialysis_1D.py @lbibl
 /watertap/unit_models/electrolyzer.py @adam-a-a @lbibl
