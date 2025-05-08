@@ -6,7 +6,6 @@ import os
 @click.group()
 def cli():
     """WaterTAP CLI for creating project templates and more."""
-    pass
 
 
 @cli.command()
