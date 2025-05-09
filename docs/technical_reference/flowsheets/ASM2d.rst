@@ -1,3 +1,5 @@
+.. _ASM2d_flowsheet:
+
 Activated Sludge Model No. 2d
 =============================
 
@@ -5,8 +7,7 @@ Introduction
 ------------
 
 The Activated Sludge Model No. 2d (ASM2d) represents a variation of the ASM1 model to account for biological phosphorus  with 
-nitrification-denitrification. The  `ASM2d
-<https://watertap.readthedocs.io/en/stable/technical_reference/property_models/ASM2D.html>`_ property and reaction relationships 
+nitrification-denitrification. The  :ref:`ASM2d <ASM2d>` property and reaction relationships
 of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with 
 biological phosphorus removal as provided in  `Henze, M. et al. (1999) 
 <https://iwaponline.com/wst/article-abstract/39/1/165/4841/Activated-Sludge-Model-No-2d-ASM2D>`_.
@@ -34,11 +35,11 @@ The flowsheet relies on the following key assumptions:
 
 Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
     * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
-    * `Aeration tank <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/aeration_tank.html>`_
-    * `Secondary clarifier <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/clarifier.html>`_
+    * :ref:`Aeration tank <aeration_tank>`
+    * :ref:`Secondary clarifier <clarifier>`
 
 Documentation for the property model can be found below.
-    * `ASM2d <https://watertap.readthedocs.io/en/stable/technical_reference/property_models/ASM2D.html>`_
+    * :ref:`ASM2d <ASM2d>`
 
 Degrees of Freedom
 ------------------
@@ -129,7 +130,7 @@ The following modifications to ASM2d are planned for development:
     * Replacing the ideal-separator formulation in the secondary clarifier with the widely used double-exponential settling model (i.e., the Takacs model)
 
 **NOTE:** The repository also contains flowsheets for ASM2d modified for phosphorous removal, for property and reaction reference:
-`modified ASM2d <https://watertap.readthedocs.io/en/stable/technical_reference/property_models/modified_ASM2D.html>`_
+:ref:`modified ASM2d <modified_ASM2d>`
 
 References
 ----------
