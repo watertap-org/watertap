@@ -95,7 +95,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 def main(reactor_volume_equalities=False, has_scalers=True):
     m = build()
-    set_operating_conditions(m)
+    set_operating_conditions(m, reactor_volume_equalities=reactor_volume_equalities)
 
     dt = DiagnosticsToolbox(m)
     print("---Structural Issues---")
@@ -345,7 +345,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m):
+def set_operating_conditions(m, reactor_volume_equalities=False):
     # Feed Water Conditions
     m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)

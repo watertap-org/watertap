@@ -3058,7 +3058,7 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     m = build()
 
-    set_operating_conditions(m)
+    set_operating_conditions(m, reactor_volume_equalities=True)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
@@ -3074,9 +3074,10 @@ def build_flowsheet(build_options=None, **kwargs):
     results = solve(m)
     assert_optimal_termination(results)
 
-    setup_optimization(m, reactor_volume_equalities=False)
+    setup_optimization(m, reactor_volume_equalities=True)
     results = solve(m)
     assert_optimal_termination(results)
+
     return m
 
 

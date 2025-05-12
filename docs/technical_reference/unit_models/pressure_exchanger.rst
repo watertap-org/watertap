@@ -2,6 +2,11 @@
 
 Pressure Exchanger
 ==================
+
+.. code-block:: python
+
+   from watertap.unit_models.pressure_exchanger import PressureExchanger
+
 This pressure exchanger unit model:
     * is 0-dimensional
     * is isothermal
