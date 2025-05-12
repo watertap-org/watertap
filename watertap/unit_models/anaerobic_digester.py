@@ -87,6 +87,9 @@ class ADScaler(CustomScalerBase):
         "volume": 1e-2,
         "hydraulic_retention_time": 1e-6,
         "electricity_consumption": 1e-1,
+        "rate_reaction_generation": 1e3,
+        "rate_reaction_extent": 1e3,
+        "reaction_rate": 1e8,
     }
 
     def variable_scaling_routine(
@@ -139,6 +142,15 @@ class ADScaler(CustomScalerBase):
         self.scale_variable_by_default(
             model.electricity_consumption[0], overwrite=overwrite
         )
+        for c in model.config.liquid_property_package.component_list:
+            self.scale_variable_by_default(
+                model.liquid_phase.rate_reaction_generation[0, "Liq", c],
+                overwrite=overwrite,
+            )
+        for rxn in model.config.reaction_package.rate_reaction_idx:
+            self.scale_variable_by_default(
+                model.liquid_phase.rate_reaction_extent[0, rxn], overwrite=overwrite
+            )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -234,9 +246,9 @@ class ADScaler(CustomScalerBase):
             scheme=ConstraintScalingScheme.inverseMaximum,
             overwrite=overwrite,
         )
-        for i in model.config.reaction_package.rate_reaction_idx:
+        for rxn in model.config.reaction_package.rate_reaction_idx:
             self.scale_constraint_by_nominal_value(
-                model.ad_performance_eqn[0, i],
+                model.ad_performance_eqn[0, rxn],
                 scheme=ConstraintScalingScheme.inverseMaximum,
                 overwrite=overwrite,
             )
