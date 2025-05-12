@@ -101,12 +101,7 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     print("---Structural Issues---")
     dt.report_structural_issues()
 
-    # TODO: Make sure to add the scaling transformation as done in PrOMMiS, but would need to modify tear guesses
-    # So maybe this should be done after getting the system to converge regularly
     scale_system(m, has_scalers=has_scalers)
-
-    scaling = pyo.TransformationFactory("core.scale_model")
-    scaled_model = scaling.create_using(m, rename=False)
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
@@ -128,43 +123,46 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     display_costing(m)
 
     badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list 1   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    print("--- Scaling Factors ---")
-    report_scaling_factors(m, descend_into=True)
-
-    print("---Numerical Issues 1---")
-    dt.report_numerical_issues()
-    dt.display_variables_with_extreme_jacobians()
-    dt.display_constraints_with_extreme_jacobians()
-    print("---SVD 1---")
-    svd = dt.prepare_svd_toolbox()
-    svd.display_underdetermined_variables_and_constraints()
-
-    # setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-    # results = solve(m, tee=True)
-    # pyo.assert_optimal_termination(results)
-    # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    # # display_results(m)
-    # display_costing(m)
-    # display_performance_metrics(m)
-    #
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # print("----------------   badly_scaled_var_list   ----------------")
+    # print("----------------   badly_scaled_var_list 1   ----------------")
     # for x in badly_scaled_var_list:
     #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    #
-    # print("---Numerical Issues---")
+
+    # print("--- Scaling Factors ---")
+    # report_scaling_factors(m, descend_into=True)
+
+    # print("---Numerical Issues 1---")
     # dt.report_numerical_issues()
-    # dt.display_variables_at_or_outside_bounds()
     # dt.display_variables_with_extreme_jacobians()
     # dt.display_constraints_with_extreme_jacobians()
-
     # print("---SVD 1---")
     # svd = dt.prepare_svd_toolbox()
     # svd.display_underdetermined_variables_and_constraints()
+
+    setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
+    results = solve(m, tee=True)
+    pyo.assert_optimal_termination(results)
+    print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
+    # display_results(m)
+    display_costing(m)
+    display_performance_metrics(m)
+
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   badly_scaled_var_list 2  ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    print("--- Scaling Factors 2 ---")
+    report_scaling_factors(m, descend_into=True)
+
+    print("---Numerical Issues 2---")
+    dt.report_numerical_issues()
+    dt.display_variables_at_or_outside_bounds()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
+
+    print("---SVD 2---")
+    svd = dt.prepare_svd_toolbox()
+    svd.display_underdetermined_variables_and_constraints()
 
     return m, results
 
