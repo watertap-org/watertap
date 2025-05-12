@@ -45,6 +45,7 @@ class TestFullFlowsheet:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
         assert_units_consistent(m)
+        BSM2.scale_system(m, has_scalers=True)
         BSM2.initialize_system(m)
         for mx in m.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -122,7 +123,7 @@ class TestFullFlowsheet:
     def test_costing(self, system_frame):
         m = system_frame
 
-        BSM2.add_costing(m)
+        BSM2.add_costing(m, has_scalers=True)
         m.fs.costing.initialize()
         results = BSM2.solve(m)
 
@@ -172,6 +173,7 @@ class TestFullFlowsheet_with_equal_reactor_vols:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
         assert_units_consistent(m)
+        BSM2.scale_system(m, has_scalers=True)
         BSM2.initialize_system(m)
         for mx in m.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -238,7 +240,7 @@ class TestFullFlowsheet_with_equal_reactor_vols:
     def test_costing(self, system_frame):
         m = system_frame
 
-        BSM2.add_costing(m)
+        BSM2.add_costing(m, has_scalers=True)
         m.fs.costing.initialize()
         results = BSM2.solve(m)
 
