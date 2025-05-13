@@ -16,10 +16,9 @@ Extensions Over IDAES Costing Framework
 
 The WaterTAP Costing Framework extends the functionality of the `IDAES Process Costing Framework <https://idaes-pse.readthedocs.io/en/stable/reference_guides/core/costing/costing_framework.html>`_ in several ways:
 
-1. Unit models can self-register a default costing method by specifying a `default_costing_method` attribute. This allows the costing method(s) to be specified with the unit model definition.
+1. Unit models can self-register a default costing method by specifying a ``default_costing_method`` attribute. This allows the costing method(s) to be specified with the unit model definition.
 
 .. testcode::
-
     import pyomo.environ as pyo
     import idaes.core as idc
     from watertap.costing import WaterTAPCosting
@@ -56,10 +55,9 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
     )
 
 
-2. The method `register_flow_type` will create a new Expression if a costing component is not already defined *and* the costing component is not constant. The default behavior in IDAES is to always create a new Var. This allows the user to specify intermediate values in `register_flow_type`. 
+2. The method ``register_flow_type`` will create a new Expression if a costing component is not already defined *and* the costing component is not constant. The default behavior in IDAES is to always create a new Var. This allows the user to specify intermediate values in ``register_flow_type``. 
 
 .. testcode::
-
     import pyomo.environ as pyo
     from idaes.core import FlowsheetBlock
     from watertap.costing import WaterTAPCosting
@@ -75,10 +73,10 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
         units=pyo.units.USD_2018 / pyo.units.kg,
     )
     m.fs.naocl_purity = pyo.Param(
-       mutable=True,
-       initialize=0.15,
-       doc="NaOCl purity",
-       units=pyo.units.dimensionless,
+        mutable=True,
+        initialize=0.15,
+        doc="NaOCl purity",
+        units=pyo.units.dimensionless,
     )
 
     # This will create an Expression m.fs.costing.naocl_cost whose expr is the second argument
@@ -90,7 +88,9 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
     m.fs.costing.register_flow_type("caoh2", 0.12 * pyo.units.USD_2018 / pyo.units.kg)
 
 
-3. Unit models specify one of the global indirect capital cost multipliers, either `TIC` or `TPEC` (defined below) when defining their capital costs. The costing package will then aggregate both direct and total capital costs.
+3. Unit models specify one of the global indirect capital cost multipliers, 
+either `TIC` or `TPEC` (defined below) when defining their capital costs. 
+The costing package will then aggregate both direct and total capital costs.
 
 .. testcode::
 
@@ -116,7 +116,7 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
 
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
-            == blk.cost_factor * ( 42 * pyo.units.USD_2018 )
+            == blk.cost_factor * (42 * pyo.units.USD_2018)
         )
 
     @idc.declare_process_block_class("MyUnitModel")
@@ -153,7 +153,8 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
         None : fs.my_unit.costing.capital_cost/fs.costing.TIC
 
 
-4. A helper utility for defining global-level parameters specific to a unit model without changing the base costing package implementation.
+4. A helper utility for defining global-level parameters specific to a unit model 
+without changing the base costing package implementation.
 
 .. testcode::
 
@@ -241,16 +242,26 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
 Costing Index and Technoeconomic Factors
 ----------------------------------------
 
-Default costing indices are provide with the WaterTAP Costing Framework, but the user is free to modify these for their needs.
+Default costing indices are provided with the WaterTAP Costing Framework, 
+but the user is free to modify these for their needs. Costs from year
+A to year B are adjusted according to:
 
-WaterTAP uses the CE (Chemical Engineering) Cost Index to help account for the time-value of investments and are used in the capital
-and operating cost calculations. Unit process capital costs are adjusted to the year of the case study. The default year is 2018.
+.. math::
+
+    \text{Cost in B} = \text{Cost in A} \left( \frac{\text{Index at B}}{\text{Index at A}} \right)
+
+
+WaterTAP uses the `Chemical Engineering Plant Cost Index <https://www.toweringskills.com/financial-analysis/cost-indices/>`_ (CEPCI) 
+to account for the time-value of investments. Aggregated capital and operating costs are 
+adjusted to the desired year for the model, accessible on the costing block as ``base_currency``. 
+The default costing year is 2018, but the user can directly set the ``base_currency`` at 
+the flowsheet level (e.g., ``m.fs.costing.base_currency = pyo.units.USD_2020``).
 
 
 Common Global Costing Parameters
 --------------------------------
 
-The `build_global_params` method builds common cost factor parameters necessary to calculate aggregates such as levelized cost of water (LCOW).
+The ``build_global_params`` method builds common cost factor parameters necessary to calculate aggregated metrics such as levelized cost of water (LCOW).
 Note that the default values can be overwritten in the derived class.
 
 =============================================  ====================  =====================================  ===============  ==============================================================================
@@ -344,13 +355,13 @@ The total variable operating cost is the sum of the total variable operating cos
         C_{op,var} = C_{vop,u} + f_{util} C_{flow,tot}
 
 
-Aggregates Metrics
+Aggregate Metrics
 ------------------
 
 Levelized Cost of Water (LCOW)
 ++++++++++++++++++++++++++++++
 
-For a given volumetric flow :math:`Q`, the LCOW, :math:`LCOW_{Q}` is calculated by the `add_LCOW` method as
+For a given volumetric flow :math:`Q`, the LCOW, :math:`LCOW_{Q}` is calculated by the ``add_LCOW`` method as
 
     .. math::
   
@@ -359,7 +370,7 @@ For a given volumetric flow :math:`Q`, the LCOW, :math:`LCOW_{Q}` is calculated 
 Specific Energy Consumption
 +++++++++++++++++++++++++++
 
-For a given volumetric flow `Q`, the specific energy consumption, :math:`E_{spec,Q}` is calculated by the `add_specific_energy_consumption` method as
+For a given volumetric flow `Q`, the specific energy consumption, :math:`E_{spec,Q}` is calculated by the ``add_specific_energy_consumption`` method as
 
     .. math::
   
@@ -368,7 +379,7 @@ For a given volumetric flow `Q`, the specific energy consumption, :math:`E_{spec
 Specific Electrical Carbon Intensity
 ++++++++++++++++++++++++++++++++++++
 
-For a given volumetric flow `Q`, the specific electrical carbon intensity, :math:`E^{C}_{spec,Q}` is calculated by the `add_specific_electrical_carbon_intensity` method as
+For a given volumetric flow `Q`, the specific electrical carbon intensity, :math:`E^{C}_{spec,Q}` is calculated by the ``add_specific_electrical_carbon_intensity`` method as
 
     .. math::
   
@@ -377,7 +388,7 @@ For a given volumetric flow `Q`, the specific electrical carbon intensity, :math
 Annual Water Production
 +++++++++++++++++++++++
 
-For a given volumetric flow `Q`, the annual water production, :math:`W^{A}_{Q}` is calculated by the `add_annual_water_production` method as
+For a given volumetric flow `Q`, the annual water production, :math:`W^{A}_{Q}` is calculated by the ``add_annual_water_production`` method as
 
     .. math::
    
@@ -387,7 +398,8 @@ For a given volumetric flow `Q`, the annual water production, :math:`W^{A}_{Q}` 
 Default Costing Methods
 -----------------------
 
-While the expectation is that unit models use the self-registration process noted above, for interoperability with IDAES unit models the WaterTAPCostingBlockData class defines default costing methods for IDAES unit models:
+While the expectation is that unit models use the self-registration process noted above, 
+for interoperability with IDAES unit models the WaterTAPCostingBlockData class defines default costing methods for IDAES unit models:
 
 * Mixer - :py:func:`watertap.costing.unit_models.mixer.cost_mixer`
 * HeatExchanger - :py:func:`watertap.costing.unit_models.heat_exchanger.cost_heat_exchanger`

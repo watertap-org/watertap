@@ -18,7 +18,7 @@ The ZeroOrderCosting class contains all the variables and constraints needed to 
 
 The code below shows an outline of how the ZeroOrderCostingData class is intended to be used to cost zero-order type models.
 
-.. doctest::
+.. testcode::
 
   from pyomo.environ import ConcreteModel
 
@@ -67,10 +67,18 @@ Calculations for each of these costs are presented below.
 Costing Index and Technoeconomic Factors
 ----------------------------------------
 
-Costing indices are available in ``default_case_study.yaml`` located in the data/techno_economic folder.
+Costing indices are available in ``default_case_study.yaml`` located in the data/techno_economic folder. 
+Costs from year A to year B are adjusted according to:
 
-WaterTAP uses the CE (Chemical Engineering) Cost Index to help account for the time-value of investments and are used in the capital
-and operating cost calculations. Unit process capital costs are adjusted to the year of the case study. The default year is 2018.
+.. math::
+
+    \text{Cost in B} = \text{Cost in A} \left( \frac{\text{Index at B}}{\text{Index at A}} \right)
+
+WaterTAP uses the `Chemical Engineering Plant Cost Index <https://www.toweringskills.com/financial-analysis/cost-indices/>`_ (CEPCI) 
+to account for the time-value of investments. Aggregated capital and operating costs are 
+adjusted to the desired year for the model, accessible on the costing block as ``base_currency``. 
+The default costing year is 2018, but the user can directly set the ``base_currency`` at 
+the flowsheet level (e.g., ``m.fs.costing.base_currency = pyo.units.USD_2020``) or via a provided case study ``.yaml``.
 
 Other technoeconomic factors used to calculate various system metrics, capital, and operating costs are presented in the table below:
 
@@ -164,7 +172,7 @@ Zero order models that have custom capital costing methods include:
 * UV + AOP - ``cost_uv_aop()``
 * Well field - ``cost_well_field()``
 
-To add a custom capital calculation method, the unit model class must register its custom costing method by setting its `default_costing_method` attribute.
+To add a custom capital calculation method, the unit model class must register its custom costing method by setting the ``default_costing_method`` attribute.
 
 
 Operating Cost Calculations
@@ -219,7 +227,7 @@ The annual electricity costs are calculated as:
 LCOW Calculation
 ++++++++++++++++
 
-The Levelized Cost Of Water (LCOW) [$/m3] is a metric used to assess the technoeconomics of a unit process:
+The Levelized Cost Of Water (LCOW) is a metric used to assess the technoeconomics of a unit process:
 
     .. math::
 
