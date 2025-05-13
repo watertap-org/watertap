@@ -18,7 +18,7 @@ The ZeroOrderCosting class contains all the variables and constraints needed to 
 
 The code below shows an outline of how the ZeroOrderCostingData class is intended to be used to cost zero-order type models.
 
-.. testcode::
+.. code-block::
 
   from pyomo.environ import ConcreteModel
 
