@@ -101,7 +101,9 @@ def main(reactor_volume_equalities=False, has_scalers=True):
     print("---Structural Issues---")
     dt.report_structural_issues()
 
-    scale_system(m, has_scalers=has_scalers)
+    scale_system(
+        m, reactor_volume_equalities=reactor_volume_equalities, has_scalers=has_scalers
+    )
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
@@ -126,12 +128,12 @@ def main(reactor_volume_equalities=False, has_scalers=True):
     # print("----------------   badly_scaled_var_list 1   ----------------")
     # for x in badly_scaled_var_list:
     #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
+    #
     # print("--- Scaling Factors ---")
     # report_scaling_factors(m, descend_into=True)
-
-    print("---Numerical Issues 1---")
-    dt.report_numerical_issues()
+    #
+    # print("---Numerical Issues 1---")
+    # dt.report_numerical_issues()
     # dt.display_variables_with_extreme_jacobians()
     # dt.display_constraints_with_extreme_jacobians()
     # print("---SVD 1---")
@@ -154,11 +156,11 @@ def main(reactor_volume_equalities=False, has_scalers=True):
     # print("--- Scaling Factors 2 ---")
     # report_scaling_factors(m, descend_into=True)
 
-    print("---Numerical Issues 2---")
-    dt.report_numerical_issues()
-    dt.display_variables_at_or_outside_bounds()
-    dt.display_variables_with_extreme_jacobians()
-    dt.display_constraints_with_extreme_jacobians()
+    # print("---Numerical Issues 2---")
+    # dt.report_numerical_issues()
+    # dt.display_variables_at_or_outside_bounds()
+    # dt.display_variables_with_extreme_jacobians()
+    # dt.display_constraints_with_extreme_jacobians()
 
     # print("---SVD 2---")
     # svd = dt.prepare_svd_toolbox()
@@ -448,7 +450,7 @@ def set_operating_conditions(m, reactor_volume_equalities=False):
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
-def scale_system(m, has_scalers=True):
+def scale_system(m, has_scalers=True, reactor_volume_equalities=False):
     if has_scalers:
         sb = ScalerBase()
         csb = CustomScalerBase()
@@ -1454,8 +1456,13 @@ def scale_system(m, has_scalers=True):
                 iscale.set_scaling_factor(var, 1e-1)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-6)
+            if "hydraulic_retention_time" in var.name:
+                iscale.set_scaling_factor(var, 1e-2)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+                if reactor_volume_equalities:
+                    iscale.set_scaling_factor(var, 1e2)
+                else:
+                    iscale.set_scaling_factor(var, 1e3)
 
         iscale.calculate_scaling_factors(m)
 
@@ -1565,22 +1572,9 @@ def add_costing(m, has_scalers=True):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-    # iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
-    # iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
-    #
-    # for block in m.fs.component_objects(pyo.Block, descend_into=True):
-    #     if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
-    #         iscale.set_scaling_factor(block.costing.capital_cost, 1e-6)
-    #
-    # iscale.constraint_scaling_transform(m.fs.DU.costing.capital_cost_constraint, 1e-6)
-    # iscale.constraint_scaling_transform(m.fs.RADM.costing.capital_cost_constraint, 1e-6)
 
     if has_scalers:
         sb = ScalerBase()
-        csb = CustomScalerBase()
-
-        # sb.set_variable_scaling_factor(m.fs.costing.LCOW[0], 1e-10)
-        # iscale.set_scaling_factor(m.fs.costing.LCOW, 1e-3)
 
         sb.set_variable_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
         sb.set_variable_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-6)
@@ -1594,15 +1588,6 @@ def add_costing(m, has_scalers=True):
             if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
                 sb.set_variable_scaling_factor(block.costing.capital_cost, 1e-6)
 
-        # csb.scale_constraint_by_nominal_value(
-        #     m.fs.DU.costing.capital_cost_constraint,
-        #     scheme=ConstraintScalingScheme.inverseMaximum,
-        #     overwrite=True,
-        # )
-        # sb.set_constraint_scaling_factor(m.fs.DU.costing.capital_cost_constraint, 1e-6)
-        # sb.set_constraint_scaling_factor(
-        #     m.fs.RADM.costing.capital_cost_constraint, 1e-6
-        # )
     else:
         iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
         iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
@@ -1621,13 +1606,19 @@ def add_costing(m, has_scalers=True):
 
 def setup_optimization(m, reactor_volume_equalities=False):
 
-    for i in ["R1", "R2", "R3", "R4", "R5"]:
-        reactor = getattr(m.fs, i)
-        reactor.volume.unfix()
-        reactor.volume.setlb(1)
-        # reactor.volume.setub(2000)
     if reactor_volume_equalities:
-        add_reactor_volume_equalities(m)
+        for i in ["R1", "R2", "R3", "R4", "R5"]:
+            reactor = getattr(m.fs, i)
+            reactor.volume.unfix()
+            reactor.volume.setlb(1)
+            add_reactor_volume_equalities(m)
+    else:
+        for i in ["R1", "R2", "R3", "R4", "R5"]:
+            reactor = getattr(m.fs, i)
+            reactor.volume.unfix()
+            reactor.volume.setlb(1)
+            reactor.volume.setub(2000)
+
     m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
     m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
 
@@ -1860,4 +1851,4 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(has_scalers=True)
+    m, results = main(reactor_volume_equalities=True, has_scalers=False)
