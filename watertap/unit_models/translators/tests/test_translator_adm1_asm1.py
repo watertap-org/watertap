@@ -372,13 +372,13 @@ class TestADM1ASM1Scaler:
         # Inlet state
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        # Scaling factors for FTPx
+        assert len(sfx_in) == 27
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
-        # Scaling factors for FTP
+        # Scaling factors for FTPx
         assert len(sfx_underflow) == 3
 
     @pytest.mark.component
@@ -406,7 +406,7 @@ class TestADM1ASM1Scaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 27
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor

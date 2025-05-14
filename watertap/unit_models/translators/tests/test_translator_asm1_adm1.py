@@ -523,8 +523,8 @@ class TestASM1ADM1Scaler:
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_underflow) == 3
+        # Scaling factors for FTPx
+        assert len(sfx_underflow) == 27
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -556,13 +556,13 @@ class TestASM1ADM1Scaler:
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_underflow) == 3
+        # Scaling factors for FTPx
+        assert len(sfx_underflow) == 27
 
         sfx_overflow = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_overflow, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_overflow) == 3
+        # Scaling factors for FTPx
+        assert len(sfx_overflow) == 27
 
         # Check that unit model has scaling factors
         sfx_unit = model.fs.unit.scaling_factor
@@ -700,5 +700,5 @@ class TestASM1ADM1Scaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.2518e4, rel=1e-3
+            2.20621e5, rel=1e-3
         )
