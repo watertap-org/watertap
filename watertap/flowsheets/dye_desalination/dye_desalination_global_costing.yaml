@@ -1,4 +1,4 @@
-base_currency: USD_2020
+base_currency: USD_2023
 base_period: year
 defined_flows:
   electricity:
