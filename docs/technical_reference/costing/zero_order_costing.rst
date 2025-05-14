@@ -78,7 +78,7 @@ WaterTAP uses the `Chemical Engineering Plant Cost Index <https://www.toweringsk
 to account for the time-value of investments. Aggregated capital and operating costs are 
 adjusted to the desired year for the model, accessible on the costing block as ``base_currency``. 
 The default costing year is 2018, but the user can directly set the ``base_currency`` at 
-the flowsheet level (e.g., ``m.fs.costing.base_currency = pyo.units.USD_2020``) or via a provided case study ``.yaml``.
+the flowsheet level (e.g., ``m.fs.costing.base_currency = pyo.units.USD_2023``) or via a provided case study ``.yaml``.
 
 Other technoeconomic factors used to calculate various system metrics, capital, and operating costs are presented in the table below:
 
