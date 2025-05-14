@@ -835,8 +835,8 @@ Inverse Sum              || 1.801E+07 | Solved 5   || 2.054E+02 | Solved 3
 Inverse Root Sum Squares || 1.801E+07 | Solved 5   || 2.131E+02 | Solved 3  
 Inverse Maximum          || 1.801E+07 | Solved 5   || 2.427E+02 | Solved 3  
 Inverse Minimum          || 1.801E+07 | Solved 5   || 1.317E+05 | Solved 3  
-Nominal L1 Norm          || 1.801E+07 | Solved 5   || 2.183E+02 | Solved 3  
-Nominal L2 Norm          || 1.801E+07 | Solved 5   || 2.051E+02 | Solved 3  
+Nominal L1 Norm          || 1.801E+07 | Solved 5   || 2.185E+02 | Solved 3  
+Nominal L2 Norm          || 1.801E+07 | Solved 5   || 2.053E+02 | Solved 3  
 Actual L1 Norm           || 1.801E+07 | Solved 5   || 2.146E+02 | Solved 3  
 Actual L2 Norm           || 1.801E+07 | Solved 5   || 2.114E+02 | Solved 3  
 ============================================================================
@@ -870,8 +870,8 @@ Inverse Sum              || 2.885E+07 | Solved 5   || 2.054E+02 | Solved 3
 Inverse Root Sum Squares || 3.046E+07 | Solved 5   || 2.131E+02 | Solved 3  
 Inverse Maximum          || 3.164E+07 | Solved 5   || 2.427E+02 | Solved 3  
 Inverse Minimum          || 1.879E+10 | Solved 5   || 1.317E+05 | Solved 3  
-Nominal L1 Norm          || 1.261E+09 | Solved 5   || 2.183E+02 | Solved 3  
-Nominal L2 Norm          || 9.543E+08 | Solved 5   || 2.051E+02 | Solved 3  
+Nominal L1 Norm          || 1.261E+09 | Solved 5   || 2.185E+02 | Solved 3  
+Nominal L2 Norm          || 9.543E+08 | Solved 5   || 2.053E+02 | Solved 3  
 Actual L1 Norm           || 1.665E+06 | Solved 4   || 2.146E+02 | Solved 3  
 Actual L2 Norm           || 1.736E+06 | Solved 4   || 2.114E+02 | Solved 3  
 ============================================================================
