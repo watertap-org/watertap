@@ -65,8 +65,8 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 
 atmospheric_pressure = 101325 * pyunits.Pa
 
-convert_dict = json.load(open(f"{__location__}/column_convert.json"))
-mp_results_cols = json.load(open(f"{__location__}/mp_results_cols.json"))
+# convert_dict = json.load(open(f"{__location__}/column_convert.json"))
+# mp_results_cols = json.load(open(f"{__location__}/mp_results_cols.json"))
 
 
 def get_variable_pairs(t1, t2):
@@ -219,7 +219,6 @@ class CCRO:
         )
 
         m.fs.dead_volume = DeadVolume0D(property_package=m.fs.properties)
-
         # connect unit models
         m.fs.feed_to_P1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
         m.fs.P1_to_M1 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.inlet_1)
@@ -287,22 +286,14 @@ class CCRO:
         m.fs.M1.mixed_state[0].flow_vol_phase
         m.fs.M1.mixed_state[0].conc_mass_phase_comp
 
-        dv = m.fs.dead_volume.dead_volume
-        dv.properties_in[0].flow_vol_phase["Liq"]
-        dv.properties_in[0].conc_mass_phase_comp["Liq", "NaCl"]
-        dv.properties_out[0].flow_vol_phase["Liq"]
-        dv.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
-
         ### MUST BUILD THIS ON THE MODEL BEFORE PASSING INTO MULTIPERIOD MODEL BLOCK
         m.fs.feed_flow_mass_water_constraint = Constraint(
             expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+            # == m.fs.feed_flow_vol_water * self.rho
             == m.fs.feed_flow_mass_water
         )
-
-        m.fs.feed.properties[0].dens_mass_phase["Liq"].set_value(self.rho)
         m.fs.feed_flow_salt_constraint = Constraint(
-            expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-            * m.fs.feed.properties[0].dens_mass_phase["Liq"]
+            expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"] * self.rho
             == m.fs.feed_flow_mass_water * self.feed_conc
         )
         return m
@@ -345,8 +336,6 @@ class CCRO:
 
         set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
         set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
-        # set_scaling_factor(m.fs.P1.control_volume.work, 1e-5)
-        # set_scaling_factor(m.fs.P2.control_volume.work, 1e-5)
         set_scaling_factor(m.fs.RO.area, 1e-2)
 
         set_scaling_factor(m.fs.water_recovery, 10)
@@ -414,7 +403,6 @@ class CCRO:
         m.fs.RO.feed_side.cp_modulus.setub(50)
         m.fs.RO.feed_side.cp_modulus.setlb(0.1)
         m.fs.RO.deltaP.setlb(None)
-
         for e in m.fs.RO.permeate_side:
             if e[-1] != 0:
                 m.fs.RO.permeate_side[e].pressure_osm_phase["Liq"].setlb(200)
@@ -533,20 +521,13 @@ class CCRO:
             model_data_kwargs=self.flowsheet_options,
             # unfix_dof_options={"water_recovery": self.water_recovery, "Q_ro": self.inlet_flow_mass_water},
         )
-
-        tot_perm_vol = 0
-        tot_brine_vol = 0
         for t, m in enumerate(mp.get_active_process_blocks()):
-            tot_perm_vol += m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"]
-            tot_brine_vol += m.fs.RO.feed_side.properties[0, 1.0].flow_vol_phase["Liq"]
             if t == 0:
-                self.m0 = m
                 self.fix_dof_and_initialize(m=m)
                 self.unfix_dof(
                     m=m, time_idx=t
                 )  # ensure we do not unfix dead volume stuff
                 old_m = m
-                self.add_costing(m=m)
             else:
                 self.copy_state_prop_time_period_links(old_m, m)
 
@@ -554,10 +535,6 @@ class CCRO:
             assert_optimal_termination(results)
             self.unfix_dof(m=m, time_idx=t)
             old_m = m
-
-        mp.recovery = Expression(
-            expr=tot_perm_vol / (tot_perm_vol + tot_brine_vol),
-        )
 
     def copy_state_prop_time_period_links(self, m_old, m_new):
         self.copy_state(m_old, m_new)
@@ -593,7 +570,18 @@ class CCRO:
         """
         if m is None:
             m = self.m
-        m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+        # m.fs.feed_flow_vol_water.unfix()
+        # m.fs.feed_flow_mass_water.unfix()
+        # m.fs.RO.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        #     self.inlet_flow_mass_water
+        # )
+        # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+
+        # m.fs.recov_constr = Constraint(expr=m.fs.RO.recovery_vol_phase[0, "Liq"] >= self.water_recovery)
+        # m.fs.eq_flow_eq = Constraint(
+        #     expr=m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"]
+        #     == m.fs.feed.properties[0].flow_vol_phase["Liq"]
+        # )
         m.fs.P1.control_volume.properties_out[0].pressure.unfix()
         m.fs.P2.control_volume.properties_out[0].pressure.unfix()
 
@@ -602,6 +590,9 @@ class CCRO:
         )
 
         if time_idx > 0:
+            # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+            # m.fs.P1.control_volume.properties_out[0].pressure.unfix()
+            # m.fs.P2.control_volume.properties_out[0].pressure.unfix()
             m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
             m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
 
@@ -651,7 +642,7 @@ class CCRO:
         if mp is None:
             mp = self.mp
 
-        unit_model_blocks = ["feed", "P1", "M1", "P2", "RO", "dead_volume", "product"]
+        unit_model_blocks = ["feed", "P1", "M1", "P2", "RO", "recirc", "product"]
         self.results_dict = results_dict = dict()
 
         for t, m in enumerate(mp.get_active_process_blocks()):
@@ -693,11 +684,9 @@ class CCRO:
         for t, d in results_dict.items():
             for b, p in d.items():
                 for k, v in p.items():
-                    if "costing" in k:
-                        continue
                     if b in mp_results_cols.keys():
-                        # if k in mp_results_cols[b]:
-                        mp_results_dict[f"{b}.{k}"].append(v)
+                        if k in mp_results_cols[b]:
+                            mp_results_dict[f"{b}.{k}"].append(v)
 
         self.mp_df = mp_df = pd.DataFrame.from_dict(mp_results_dict)
 
@@ -717,8 +706,6 @@ class CCRO:
                 mp_df[convert_dict[c]["col_name"]] = mp_df[c].apply(
                     lambda x: value(pyunits.convert(x * from_units, to_units=to_units))
                 )
-        for i in mp_df.index:
-            mp_df.at[i, "time"] = i * value(self.accumulation_time)
 
 
 if __name__ == "__main__":
