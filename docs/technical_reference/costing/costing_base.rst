@@ -19,6 +19,7 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
 1. Unit models can self-register a default costing method by specifying a ``default_costing_method`` attribute. This allows the costing method(s) to be specified with the unit model definition.
 
 .. testcode::
+
     import pyomo.environ as pyo
     import idaes.core as idc
     from watertap.costing import WaterTAPCosting
@@ -58,12 +59,13 @@ The WaterTAP Costing Framework extends the functionality of the `IDAES Process C
 2. The method ``register_flow_type`` will create a new Expression if a costing component is not already defined *and* the costing component is not constant. The default behavior in IDAES is to always create a new Var. This allows the user to specify intermediate values in ``register_flow_type``. 
 
 .. testcode::
+
     import pyomo.environ as pyo
-    from idaes.core import FlowsheetBlock
+    import idaes.core as idc
     from watertap.costing import WaterTAPCosting
 
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs = idc.FlowsheetBlock(dynamic=False)
     m.fs.costing = WaterTAPCosting()
 
     m.fs.naocl_bulk_cost = pyo.Param(
