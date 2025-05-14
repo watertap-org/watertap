@@ -118,9 +118,10 @@ class CCRO:
         membrane_length=0.9626,  # m
         channel_height=1e-3,
         spacer_porosity=0.97,
-        include_costing=False,
+        include_costing=True,
         dead_volume=0.1,
         accumulation_time=300,
+        flusing_frac=0.25,
     ):
         self.rho = rho * pyunits.kg / pyunits.m**3
         self.dead_volume = dead_volume * pyunits.m**3
@@ -183,6 +184,7 @@ class CCRO:
         self.spacer_porosity = spacer_porosity * pyunits.dimensionless
 
         self.include_costing = include_costing
+        self.flusing_frac = flusing_frac
 
         watertap_solver = get_solver()
 
@@ -208,7 +210,11 @@ class CCRO:
         m.fs.product = Product(property_package=m.fs.properties)
 
         m.fs.P1 = Pump(property_package=m.fs.properties)
-        m.fs.P2 = Pump(property_package=m.fs.properties)
+        # P2 is recirculation pump
+        m.fs.P2 = Pump(
+            property_package=m.fs.properties,
+            # variable_efficiency="flow",
+        )
 
         m.fs.M1 = Mixer(
             property_package=m.fs.properties,
@@ -228,7 +234,6 @@ class CCRO:
             finite_elements=10,
             module_type="spiral_wound",
             has_full_reporting=True,
-            # feed_pump=m.fs.P1,
         )
 
         m.fs.dead_volume = DeadVolume0D(property_package=m.fs.properties)
@@ -300,11 +305,11 @@ class CCRO:
         m.fs.M1.mixed_state[0].flow_vol_phase
         m.fs.M1.mixed_state[0].conc_mass_phase_comp
 
-        dv = m.fs.dead_volume.dead_volume
-        dv.properties_in[0].flow_vol_phase["Liq"]
-        dv.properties_in[0].conc_mass_phase_comp["Liq", "NaCl"]
-        dv.properties_out[0].flow_vol_phase["Liq"]
-        dv.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
+        # dv = m.fs.dead_volume.dead_volume
+        # dv.properties_in[0].flow_vol_phase["Liq"]
+        # dv.properties_in[0].conc_mass_phase_comp["Liq", "NaCl"]
+        # dv.properties_out[0].flow_vol_phase["Liq"]
+        # dv.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
 
         ### MUST BUILD THIS ON THE MODEL BEFORE PASSING INTO MULTIPERIOD MODEL BLOCK
         m.fs.feed_flow_mass_water_constraint = Constraint(
@@ -318,6 +323,15 @@ class CCRO:
             * m.fs.feed.properties[0].dens_mass_phase["Liq"]
             == m.fs.feed_flow_mass_water * self.feed_conc
         )
+        # m.fs.feed_flow_mass_water_constraint = Constraint(
+        #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        #     # == m.fs.feed_flow_vol_water * self.rho
+        #     == m.fs.feed_flow_mass_water
+        # )
+        # m.fs.feed_flow_salt_constraint = Constraint(
+        #     expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"] * self.rho
+        #     == m.fs.feed_flow_mass_water * self.feed_conc
+        # )
         return m
 
     def add_costing(self, m=None):
@@ -338,9 +352,9 @@ class CCRO:
         m.fs.costing.cost_process()
 
         m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol_phase["Liq"])
-        m.fs.costing.add_specific_energy_consumption(
-            m.fs.product.properties[0].flow_vol_phase["Liq"], name="SEC"
-        )
+        # m.fs.costing.add_specific_energy_consumption(
+        #     m.fs.product.properties[0].flow_vol_phase["Liq"], name="SEC"
+        # )
 
     def scale_system(self, m=None):
         """
@@ -406,6 +420,9 @@ class CCRO:
         Pump 2 operating conditions
         """
 
+        # m.fs.P2.bep_flow.fix()
+        # m.fs.P2.bep_eta.fix()
+        # m.fs.P2.flow_ratio[0].fix()
         m.fs.P2.efficiency_pump.fix(self.p2_eff)
         # m.fs.P2.control_volume.properties_out[0].pressure.set_value(self.p2_pressure_start)
 
@@ -446,8 +463,10 @@ class CCRO:
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(
             self.reject_conc_start
         )
+
         solver = get_solver()
         solver.solve(m.fs.feed)
+
         m.fs.feed.properties[0].flow_vol_phase["Liq"].unfix()
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].unfix()
 
@@ -464,10 +483,13 @@ class CCRO:
         # initialize feed to desired flow and conc
         m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(self.feed_flow)
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(self.feed_conc)
+
         solver = get_solver()
         solver.solve(m.fs.feed)
+
         m.fs.feed.properties[0].flow_vol_phase["Liq"].unfix()
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].unfix()
+
         print("DOF =", degrees_of_freedom(m))
         print("DOF FEED =", degrees_of_freedom(m.fs.feed))
         print("DOF PUMP 1 =", degrees_of_freedom(m.fs.P1))
@@ -475,6 +497,7 @@ class CCRO:
         print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
         print("DOF RO =", degrees_of_freedom(m.fs.RO))
         print("DOF Dead Volume =", degrees_of_freedom(m.fs.dead_volume))
+
         assert_no_degrees_of_freedom(m)
         self.scale_system(m)
 
@@ -493,10 +516,10 @@ class CCRO:
 
         propagate_state(m.fs.feed_to_P1)
         m.fs.P1.outlet.pressure[0].fix(
-            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 5
+            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 2 + 2e5
         )
         m.fs.P2.outlet.pressure[0].fix(
-            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 5
+            m.fs.feed.properties[0].pressure_osm_phase["Liq"].value * 2 + 2e5
         )
 
         m.fs.P1.initialize()
@@ -517,6 +540,9 @@ class CCRO:
         m.fs.P2.outlet.pressure[0].unfix()
         propagate_state(m.fs.P2_to_M1)
         m.fs.product.initialize()
+
+        # if self.include_costing:
+        #     m.fs.costing.initialize()
 
     def create_multiperiod(self):
         """
@@ -556,12 +582,13 @@ class CCRO:
             tot_brine_vol += m.fs.RO.feed_side.properties[0, 1.0].flow_vol_phase["Liq"]
             if t == 0:
                 self.m0 = m
+                # if self.include_costing:
+                #     self.add_costing(m=m)
                 self.fix_dof_and_initialize(m=m)
                 self.unfix_dof(
                     m=m, time_idx=t
                 )  # ensure we do not unfix dead volume stuff
                 old_m = m
-                self.add_costing(m=m)
             else:
                 self.copy_state_prop_time_period_links(old_m, m)
 
@@ -650,6 +677,39 @@ class CCRO:
             # check_jac(model)
             assert False
 
+    def check_jac(self, m, print_extreme_jacobian_values=True):
+        jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(m, min_scale=1e-8)
+        try:
+            cond_number = iscale.jacobian_cond(m, jac=jac_scaled) / 1e10
+            print("--------------------------")
+            print("COND NUMBER:", cond_number)
+        except:
+            print("Cond number failed")
+            cond_number = None
+        if print_extreme_jacobian_values:
+            print("--------------------------")
+            print("Extreme Jacobian entries:")
+            extreme_entries = iscale.extreme_jacobian_entries(
+                m, jac=jac_scaled, nlp=nlp, zero=1e-20, large=100
+            )
+            for val, var, con in extreme_entries:
+                print(val, var.name, con.name)
+            print("--------------------------")
+            print("Extreme Jacobian columns:")
+            extreme_cols = iscale.extreme_jacobian_columns(
+                m, jac=jac_scaled, nlp=nlp, small=1e-3
+            )
+            for val, var in extreme_cols:
+                print(val, var.name)
+            print("------------------------")
+            print("Extreme Jacobian rows:")
+            extreme_rows = iscale.extreme_jacobian_rows(
+                m, jac=jac_scaled, nlp=nlp, small=1e-3
+            )
+            for val, con in extreme_rows:
+                print(val, con.name)
+        return cond_number
+
     def extract_multiperiod_data(self, mp=None):
         """
         Extract results from MP model as time series.
@@ -734,20 +794,39 @@ class CCRO:
 
 if __name__ == "__main__":
 
+    # initial_conditions = {
+    #     "feed_flow": 2.92,
+    #     "feed_conc": 3.4,
+    #     "reject_flow": 45.25,
+    #     "reject_conc_start": 3.9,
+    #     "temperature_start": 25,  # degC
+    #     "p1_pressure_start": 306,  # psi
+    #     "A_comp": 4.422e-12,
+    #     "B_comp": 5.613e-8,
+    #     "channel_height": 0.0008636,
+    #     "spacer_porosity": 0.7081,
+    #     "water_recovery": 0.063,
+    #     "n_time_points": 3,
+    # }
     initial_conditions = {
-        "feed_flow": 2.92,
-        "feed_conc": 3.4,
-        "reject_flow": 45.25,
-        "reject_conc_start": 3.9,
+        "feed_flow": 1.8,
+        "feed_conc": 5.8,
+        "reject_flow": 49.911,
+        "reject_conc_start": 11.7,
         "temperature_start": 25,  # degC
         "p1_pressure_start": 306,  # psi
-        "A_comp": 4.422e-12,
-        "B_comp": 5.613e-8,
-        "channel_height": 0.0008636,
-        "spacer_porosity": 0.7081,
+        "A_comp": 5.963600814843386e-12,
+        "B_comp": 3.0790017613480806e-08,
+        "channel_height": 0.0008636000000000001,
+        "spacer_porosity": 0.85,
         "water_recovery": 0.063,
-        "n_time_points": 3,
+        "membrane_area": 7.9,
+        "membrane_length": 1,
+        "n_time_points": 22,
+        "accumulation_time": 60,
+        "dead_volume": 0.01251,
     }
+
 
     ccro = CCRO(**initial_conditions)
 
