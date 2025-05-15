@@ -3,6 +3,10 @@
 Membrane Distillation (1D)
 =========================================
 
+.. code-block:: python
+
+   from watertap.unit_models.MD.membrane_distillation_1D import MembraneDistillation1D
+
 This Membrane Distillation (MD) unit model:
    * supports the following configurations: 
 
