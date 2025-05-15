@@ -233,7 +233,7 @@ The Levelized Cost Of Water (LCOW) is a metric used to assess the technoeconomic
 
         LCOW = \frac{ f_{crf} C_{ZO,tot} + C_{op,tot} }{Q f_{util} }
 
-Other aggregates, like specific energy consumption, are provided through the :ref:`WaterTAPCostingBlockData`: :ref:`technical_reference/costing/costing_base:Aggregates Metrics`. 
+Other aggregates, like specific energy consumption, are provided through the :ref:`WaterTAPCostingBlockData`: :ref:`technical_reference/costing/costing_base:Aggregate Metrics`. 
 
 Class Documentation
 -------------------

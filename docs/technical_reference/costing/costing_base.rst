@@ -234,7 +234,7 @@ without changing the base costing package implementation.
 
     m.fs.my_unit_2 = MyUnitModel()
 
-    # Here everythin as before, but the global parameter block
+    # Here everything as before, but the global parameter block
     # m.fs.costing.my_unit is not re-built.
     m.fs.my_unit_2.costing = idc.UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
