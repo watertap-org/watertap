@@ -157,6 +157,12 @@ class TestAeration_withASM1(object):
         m.fs.unit.injection.fix(0)
         m.fs.unit.injection[0, "Liq", "S_O"].fix(2e-3)
 
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            4.99607739e12, rel=1e-3
+        )
+
         return m
 
     @pytest.mark.build

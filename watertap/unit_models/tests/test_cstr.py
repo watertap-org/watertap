@@ -107,7 +107,11 @@ def build():
         m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-6
     )
 
-    iscale.calculate_scaling_factors(m.fs.unit)
+    sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+    jac, _ = get_jacobian(sm, scaled=False)
+    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        3.30803146e10, rel=1e-3
+    )
 
     return m
 
