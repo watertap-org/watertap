@@ -906,7 +906,7 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
         )
     else:
         m.fs.water_recovery_revenue = Expression(
-            expr=(0 * pyunits.USD_2020 / pyunits.year),
+            expr=(0 * pyunits.USD_2023 / pyunits.year),
             doc="Savings from water recovered back to the plant",
         )
 
