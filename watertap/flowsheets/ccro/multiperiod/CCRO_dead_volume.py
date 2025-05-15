@@ -65,8 +65,8 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 
 atmospheric_pressure = 101325 * pyunits.Pa
 
-# convert_dict = json.load(open(f"{__location__}/column_convert.json"))
-# mp_results_cols = json.load(open(f"{__location__}/mp_results_cols.json"))
+convert_dict = json.load(open(f"{__location__}/column_convert.json"))
+mp_results_cols = json.load(open(f"{__location__}/mp_results_cols.json"))
 
 
 def get_variable_pairs(t1, t2):
@@ -737,4 +737,4 @@ if __name__ == "__main__":
     mp_df = ModelState()
     mp_df.add_expected_outputs(ccro.mp, scenario="base_scenario", number_of_cases=1)
     mp_df.update_stored_outputs(ccro.mp, scenario="base_scenario")
-    mp_df.save_model_outputs_to_json("CCRO_dead_volume")
+    # mp_df.save_model_outputs_to_json("CCRO_dead_volume")

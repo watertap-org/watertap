@@ -341,7 +341,15 @@ class CCRO:
         if m is None:
             m = self.m
         m.fs.costing = WaterTAPCosting()
-        m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        if self.mp is not None:
+            costing_method_arguments = dict(mp=self.mp)
+        else:
+            costing_method_arguments = dict()
+
+        m.fs.RO.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments=costing_method_arguments,
+        )
         # m.fs.P1.costing = UnitModelCostingBlock(
         #     flowsheet_costing_block=m.fs.costing,
         # )
@@ -351,10 +359,12 @@ class CCRO:
 
         m.fs.costing.cost_process()
 
-        m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol_phase["Liq"])
-        # m.fs.costing.add_specific_energy_consumption(
-        #     m.fs.product.properties[0].flow_vol_phase["Liq"], name="SEC"
-        # )
+        m.fs.costing.add_LCOW(self.mp.avg_product_flow_rate)
+        m.fs.costing.add_specific_energy_consumption(
+            self.mp.avg_product_flow_rate, name="SEC"
+        )
+
+        self.costing = m.fs.costing
 
     def scale_system(self, m=None):
         """
@@ -575,15 +585,29 @@ class CCRO:
             # unfix_dof_options={"water_recovery": self.water_recovery, "Q_ro": self.inlet_flow_mass_water},
         )
 
+        mp.avg_product_flow_rate = Var(initialize=1, units=pyunits.m**3 / pyunits.s)
+        mp.system_recovery = Var(
+            initialize=0.5, units=pyunits.dimensionless, bounds=(0, None)
+        )
+
+        tot_feed_vol = 0
         tot_perm_vol = 0
         tot_brine_vol = 0
         for t, m in enumerate(mp.get_active_process_blocks()):
-            tot_perm_vol += m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"]
-            tot_brine_vol += m.fs.RO.feed_side.properties[0, 1.0].flow_vol_phase["Liq"]
+            tot_feed_vol += (
+                m.fs.feed.properties[0].flow_vol_phase["Liq"]
+                * m.fs.dead_volume.accumulation_time[0]
+            )
+            tot_perm_vol += (
+                m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"]
+                * m.fs.dead_volume.accumulation_time[0]
+            )
+            tot_brine_vol += (
+                m.fs.RO.feed_side.properties[0, 1.0].flow_vol_phase["Liq"]
+                * m.fs.dead_volume.accumulation_time[0]
+            )
             if t == 0:
                 self.m0 = m
-                # if self.include_costing:
-                #     self.add_costing(m=m)
                 self.fix_dof_and_initialize(m=m)
                 self.unfix_dof(
                     m=m, time_idx=t
@@ -597,9 +621,23 @@ class CCRO:
             self.unfix_dof(m=m, time_idx=t)
             old_m = m
 
+        if self.include_costing:
+            self.add_costing(m=self.m0)
+            self.m0.fs.costing.initialize()
+
         mp.recovery = Expression(
-            expr=tot_perm_vol / (tot_perm_vol + tot_brine_vol),
+            expr=tot_perm_vol / (tot_feed_vol),
         )
+        mp.eq_avg_product_flow_rate = Constraint(
+            expr=mp.avg_product_flow_rate
+            == pyunits.convert(
+                tot_perm_vol
+                / (self.accumulation_time * len(mp.get_active_process_blocks())),
+                to_units=pyunits.m**3 / pyunits.s,
+            )
+        )
+        mp.eq_system_recovery = Constraint(
+            expr=mp.system_recovery==mp.recovery)
 
     def copy_state_prop_time_period_links(self, m_old, m_new):
         self.copy_state(m_old, m_new)
@@ -635,10 +673,12 @@ class CCRO:
         """
         if m is None:
             m = self.m
-        m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
+        # m.fs.RO.recovery_vol_phase[0, "Liq"].fix(self.water_recovery)
         m.fs.P1.control_volume.properties_out[0].pressure.unfix()
         m.fs.P2.control_volume.properties_out[0].pressure.unfix()
-
+        m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
+            self.reject_flow
+        )
         if time_idx > 0:
             m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
             m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
@@ -794,20 +834,6 @@ class CCRO:
 
 if __name__ == "__main__":
 
-    # initial_conditions = {
-    #     "feed_flow": 2.92,
-    #     "feed_conc": 3.4,
-    #     "reject_flow": 45.25,
-    #     "reject_conc_start": 3.9,
-    #     "temperature_start": 25,  # degC
-    #     "p1_pressure_start": 306,  # psi
-    #     "A_comp": 4.422e-12,
-    #     "B_comp": 5.613e-8,
-    #     "channel_height": 0.0008636,
-    #     "spacer_porosity": 0.7081,
-    #     "water_recovery": 0.063,
-    #     "n_time_points": 3,
-    # }
     initial_conditions = {
         "feed_flow": 1.8,
         "feed_conc": 5.8,
@@ -822,15 +848,19 @@ if __name__ == "__main__":
         "water_recovery": 0.063,
         "membrane_area": 7.9,
         "membrane_length": 1,
-        "n_time_points": 22,
-        "accumulation_time": 60,
+        # "n_time_points": 22,
+        # "accumulation_time": 60,
+        "n_time_points": 11,
+        "accumulation_time": 120,
         "dead_volume": 0.01251,
+        "include_costing": True,
     }
-
 
     ccro = CCRO(**initial_conditions)
 
     ccro.create_multiperiod()
     ccro.solve(tee=True)
-    ccro.extract_multiperiod_data()
-    ccro.mp_df
+
+    ccro.costing.LCOW.display()
+    ccro.costing.SEC.display()
+
