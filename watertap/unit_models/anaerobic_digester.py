@@ -71,7 +71,7 @@ from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 from watertap.costing.unit_models.anaerobic_digester import cost_anaerobic_digester
 
-__author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu"
+__author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu, Marcus Holly"
 
 
 class ADScaler(CustomScalerBase):
