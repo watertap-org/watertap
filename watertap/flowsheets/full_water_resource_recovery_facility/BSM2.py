@@ -73,7 +73,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 def main(reactor_volume_equalities=False):
     m = build()
-    set_operating_conditions(m)
+    set_operating_conditions(m, reactor_volume_equalities=reactor_volume_equalities)
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
@@ -283,7 +283,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m):
+def set_operating_conditions(m, reactor_volume_equalities=False):
     # Feed Water Conditions
     m.fs.FeedWater.flow_vol.fix(20648 * pyo.units.m**3 / pyo.units.day)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
@@ -393,7 +393,10 @@ def set_operating_conditions(m):
         if "pressure" in var.name:
             iscale.set_scaling_factor(var, 1e-6)
         if "conc_mass_comp" in var.name:
-            iscale.set_scaling_factor(var, 1e1)
+            if reactor_volume_equalities:
+                iscale.set_scaling_factor(var, 1e1)
+            else:
+                iscale.set_scaling_factor(var, 1e3, overwrite=False)
 
     iscale.calculate_scaling_factors(m)
 

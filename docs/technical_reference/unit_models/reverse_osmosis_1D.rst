@@ -2,6 +2,11 @@
 
 Reverse Osmosis (1D)
 ====================
+
+.. code-block:: python
+
+   from watertap.unit_models.reverse_osmosis_1D import ReverseOsmosis1D
+
 This reverse osmosis (RO) unit model
    * is 1-dimensional
    * supports a single liquid phase only
