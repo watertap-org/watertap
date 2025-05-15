@@ -124,6 +124,13 @@ def build():
     )
     iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
 
+    # Check condition number to confirm scaling
+    sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+    jac, _ = get_jacobian(sm, scaled=False)
+    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        1.627338069e15, rel=1e-3
+    )
+
     return m
 
 
