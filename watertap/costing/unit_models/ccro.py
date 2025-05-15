@@ -11,10 +11,8 @@
 #################################################################################
 
 import pyomo.environ as pyo
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import StrEnum
+from idaes.core.util.math import smooth_max
 from ..util import (
-    cost_membrane,
     register_costing_parameter_block,
     make_capital_cost_var,
     make_fixed_operating_cost_var,
@@ -38,18 +36,66 @@ def build_ccro_cost_param_block(blk):
         doc="Membrane cost",
         units=pyo.units.USD_2018 / (pyo.units.meter**2),
     )
+    blk.pump_cost = pyo.Var(
+        initialize=53 / 1e5 * 3600,
+        bounds=(0, None),
+        doc="High pressure pump cost",
+        units=pyo.units.USD_2018 / pyo.units.watt,
+    )
 
 
 @register_costing_parameter_block(
     build_rule=build_ccro_cost_param_block,
     parameter_block_name="ccro",
 )
-def cost_ccro(blk, feed_pump=None, recirculation_pump=None, mp=None):
+def cost_ccro(blk, feed_pump=None, mp=None):
     """
     CCRO costing method
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
+
+    bs = mp.get_active_process_blocks()
+    feed_pumps = [b.fs.P1 for b in bs]
+    recirc_pumps = [b.fs.P2 for b in bs]
+    feed_pump_work = feed_pumps[0].work_mechanical[0]
+    recirc_pump_work = recirc_pumps[-1].work_mechanical[0]
+    acc_time = bs[0].fs.dead_volume.accumulation_time[0]
+    total_time = acc_time * len(bs)
+
+    blk.feed_pumping_energy = [
+        pyo.units.convert(
+            b.fs.P1.work_mechanical[0] * acc_time,
+            to_units=pyo.units.joule,
+        )
+        for b in bs
+    ]
+    blk.recirc_pumping_energy = [
+        pyo.units.convert(
+            b.fs.P2.work_mechanical[0] * acc_time,
+            to_units=pyo.units.joule,
+        )
+        for b in bs
+    ]
+
+    blk.feed_pumping_power = pyo.Expression(
+        expr=pyo.units.convert(
+            sum(blk.feed_pumping_energy) / total_time,
+            to_units=pyo.units.kilowatt,
+        )
+    )
+    blk.recirc_pumping_power = pyo.Expression(
+        expr=pyo.units.convert(
+            sum(blk.recirc_pumping_energy) / total_time,
+            to_units=pyo.units.kilowatt,
+        )
+    )
+    blk.total_pumping_power = pyo.Expression(
+        expr=pyo.units.convert(
+            sum(blk.feed_pumping_energy + blk.recirc_pumping_energy) / total_time,
+            to_units=pyo.units.kilowatt,
+        )
+    )
 
     blk.costing_package.add_cost_factor(blk, "TIC")
 
@@ -81,15 +127,74 @@ def cost_ccro(blk, feed_pump=None, recirculation_pump=None, mp=None):
         doc="Capital cost of side conduit pressure vessel",
     )
 
+    # blk.max_feed_pump_work = pyo.Var(
+    #     initialize=1e5,
+    #     domain=pyo.NonNegativeReals,
+    #     units=pyo.units.kilowatt,
+    #     doc="Maximum recirculation pump work",
+    # )
 
+    blk.max_recirculation_pump_work = pyo.Var(
+        initialize=1e5,
+        domain=pyo.NonNegativeReals,
+        units=pyo.units.watt,
+        doc="Maximum recirculation pump work",
+    )
 
-    blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost
-        == blk.cost_factor
-        * pyo.units.convert(
+    for t in mp.TIME:
+        if t == 0:
+            max_rpw = smooth_max(0, recirc_pumps[t].work_mechanical[0])
+            # max_fpw = smooth_max(0, feed_pumps[t].work_mechanical[0])
+        else:
+            max_rpw = smooth_max(max_rpw, recirc_pumps[t].work_mechanical[0])
+            # max_fpw = smooth_max(max_fpw, feed_pumps[t].work_mechanical[0])
+
+    blk.max_recirculation_pump_work_constraint = pyo.Constraint(
+        expr=blk.max_recirculation_pump_work == max_rpw
+    )
+
+    # blk.max_feed_pump_work_constraint = pyo.Constraint(
+    #     expr=blk.max_feed_pump_work == max_fpw
+    # )
+
+    capital_cost_expr = 0
+
+    blk.capital_cost_membrane_constraint = pyo.Constraint(
+        expr=blk.capital_cost_membrane
+        == pyo.units.convert(
             blk.costing_package.ccro.membrane_cost * blk.unit_model.area,
             to_units=blk.costing_package.base_currency,
         )
+    )
+
+    capital_cost_expr += blk.capital_cost_membrane
+
+    blk.capital_cost_feed_pump_constraint = pyo.Constraint(
+        expr=blk.capital_cost_feed_pump
+        == pyo.units.convert(
+            blk.costing_package.ccro.pump_cost
+            * pyo.units.convert(feed_pump_work, to_units=pyo.units.watt),
+            to_units=blk.costing_package.base_currency,
+        )
+    )
+
+    capital_cost_expr += blk.capital_cost_feed_pump
+
+    blk.capital_cost_recirc_pump_constraint = pyo.Constraint(
+        expr=blk.capital_cost_recirculation_pump
+        == pyo.units.convert(
+            blk.costing_package.ccro.pump_cost
+            * pyo.units.convert(
+                blk.max_recirculation_pump_work, to_units=pyo.units.watt
+            ),
+            to_units=blk.costing_package.base_currency,
+        )
+    )
+
+    capital_cost_expr += blk.capital_cost_recirculation_pump
+
+    blk.capital_cost_constraint = pyo.Constraint(
+        expr=blk.capital_cost == blk.cost_factor * capital_cost_expr
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
@@ -102,8 +207,4 @@ def cost_ccro(blk, feed_pump=None, recirculation_pump=None, mp=None):
         )
     )
 
-    # cost_membrane(
-    #     blk,
-    #     blk.costing_package.ccro.membrane_cost,
-    #     blk.costing_package.ccro.factor_membrane_replacement,
-    # )
+    blk.costing_package.cost_flow(blk.total_pumping_power, "electricity")
