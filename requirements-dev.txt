@@ -1,5 +1,6 @@
 black==24.3.0
 pre-commit
+cookiecutter
 
 # coverage
 pytest-cov
