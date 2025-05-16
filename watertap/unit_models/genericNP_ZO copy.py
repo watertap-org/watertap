@@ -18,8 +18,9 @@ from pyomo.environ import (
     NonNegativeReals,
     units as pyunits,
     Constraint,
+    ConfigValue,
+    In,
 )
-from pyomo.common.config import ConfigValue, In
 from idaes.models.unit_models.separator import SeparatorData, SplittingType
 
 # Import IDAES cores
@@ -111,7 +112,7 @@ class GenericNPZOdata(SeparatorData):
         )
         self.frac_mass_H2O_treated.fix()
 
-        # Define default removal factors for each component
+        # Define removal factors for each component
         self.removal_factors = Var(
             ["S_PO4", "S_NH4", "S_NO3", "S_NO2"],
             within=NonNegativeReals,
@@ -119,6 +120,7 @@ class GenericNPZOdata(SeparatorData):
             doc="Removal fraction for components on a mass basis",
             units=pyunits.dimensionless,
         )
+        # Set default values
         self.removal_factors["S_PO4"].fix(0.98)
         self.removal_factors["S_NH4"].fix(0.5)
         self.removal_factors["S_NO3"].fix(0.0)
@@ -192,7 +194,7 @@ class GenericNPZOdata(SeparatorData):
                 return b.electricity[t] == sum(
                     b.energy_electric_flow[j]
                     * pyunits.convert(
-                        b.properties_byproduct[t].get_material_flow_terms("Liq", j),
+                        b.properties_byproduct[t].flow_mass_phase_comp["Liq", j],
                         to_units=pyunits.kg / pyunits.hour,
                     )
                     for j in b.config.property_package.component_list
@@ -202,7 +204,7 @@ class GenericNPZOdata(SeparatorData):
                 return b.electricity[t] == sum(
                     b.energy_electric_flow[j]
                     * pyunits.convert(
-                        b.properties_byproduct[t].get_material_flow_terms("Liq", j),
+                        b.properties_byproduct[t].flow_mol_phase_comp["Liq", j],
                         to_units=pyunits.mol / pyunits.hour,
                     )
                     for j in b.config.property_package.component_list
@@ -251,9 +253,9 @@ class GenericNPZOdata(SeparatorData):
                 return b.MgCl2_flowrate[t] == (
                     b.magnesium_chloride_dosage
                     * pyunits.convert(
-                        b.properties_byproduct[t].get_material_flow_terms(
+                        b.properties_byproduct[t].flow_mass_phase_comp[
                             "Liq", target_component
-                        ),
+                        ],
                         to_units=pyunits.kg / pyunits.hour,
                     )
                 )
@@ -261,9 +263,9 @@ class GenericNPZOdata(SeparatorData):
                 return b.MgCl2_flowrate[t] == (
                     b.magnesium_chloride_dosage
                     * pyunits.convert(
-                        b.properties_byproduct[t].get_material_flow_terms(
+                        b.properties_byproduct[t].flow_mol_phase_comp[
                             "Liq", target_component
-                        ),
+                        ],
                         to_units=pyunits.mol / pyunits.hour,
                     )
                 )

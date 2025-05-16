@@ -17,7 +17,7 @@ from ..util import (
 )
 
 
-def build_electroNP_cost_param_block(blk):
+def build_genericNP_cost_param_block(blk):
     blk.HRT = pyo.Var(
         initialize=1.3333,
         doc="Hydraulic retention time",
@@ -46,21 +46,33 @@ def build_electroNP_cost_param_block(blk):
     )
     costing.register_flow_type("phosphorus salt product", blk.phosphorus_recovery_value)
 
+    blk.ammonia_recovery_value = pyo.Param(
+        mutable=True,
+        initialize=-0.07,
+        doc="Ammonia recovery value",
+        units=pyo.units.USD_2020 / pyo.units.kg,
+    )
+    costing.register_flow_type("ammonia product", blk.ammonia_recovery_value)
+
 
 @register_costing_parameter_block(
-    build_rule=build_electroNP_cost_param_block,
-    parameter_block_name="electroNP",
+    build_rule=build_genericNP_cost_param_block,
+    parameter_block_name="genericNP",
 )
-def cost_electroNP(
-    blk, cost_electricity_flow=True, cost_MgCl2_flow=True, cost_phosphorus_flow=True
+def cost_genericNP(
+    blk,
+    cost_electricity_flow=True,
+    cost_MgCl2_flow=True,
+    cost_phosphorus_flow=False,
+    cost_ammonia_flow=False,
 ):
     """
-    ElectroNP costing method
+    genericNP costing method
     """
-    cost_electroNP_capital(
+    cost_genericNP_capital(
         blk,
-        blk.costing_package.electroNP.HRT,
-        blk.costing_package.electroNP.sizing_cost,
+        blk.costing_package.genericNP.HRT,
+        blk.costing_package.genericNP.sizing_cost,
     )
 
     t0 = blk.flowsheet().time.first()
@@ -92,10 +104,20 @@ def cost_electroNP(
             "phosphorus salt product",
         )
 
+    if cost_ammonia_flow:
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                blk.unit_model.byproduct.flow_vol[t0]
+                * blk.unit_model.byproduct.conc_mass_comp[t0, "S_NH4"],
+                to_units=pyo.units.kg / pyo.units.hr,
+            ),
+            "ammonia product",
+        )
 
-def cost_electroNP_capital(blk, HRT, sizing_cost):
+
+def cost_genericNP_capital(blk, HRT, sizing_cost):
     """
-    Generic function for costing an ElectroNP system.
+    Generic function for costing an genericNP system.
     """
     make_capital_cost_var(blk)
 
