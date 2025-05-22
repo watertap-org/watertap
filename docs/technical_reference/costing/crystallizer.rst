@@ -4,7 +4,7 @@ Crystallizer Costing Method
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.crystallizer`) when applying the `cost_crystallizer` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.crystallizer``) when applying the ``cost_crystallizer`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -39,7 +39,7 @@ The mass-based capital cost is dependent upon the mass of solid crystals produce
 
     .. math::
 
-        C_{cap,tot} = IEC * Cost_{ref} * (\frac{S}{size_{ref}})^{n}
+        C_{cap,tot} = IEC * Cost_{ref} * \left( \frac{S}{size_{ref}} \right)^{n}
 
 The volume-based capital cost is dependent upon the unit's volume, :math:`V`, as shown in the equation below.
 
