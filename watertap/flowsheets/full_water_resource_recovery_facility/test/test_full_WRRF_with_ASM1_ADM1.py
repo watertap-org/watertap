@@ -32,6 +32,10 @@ from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 import watertap.flowsheets.full_water_resource_recovery_facility.BSM2 as BSM2
 
@@ -138,6 +142,16 @@ class TestFullFlowsheet:
         )
 
     @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            5.5020290179e19, rel=1e-3
+        )
+
+    @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
         BSM2.display_results(m)
@@ -154,12 +168,12 @@ class TestFullFlowsheet:
         assert degrees_of_freedom(system_frame) == 10
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.349772203, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.35095605, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17379540.339857, rel=1e-5
+            17439642.35212, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            636129.6209807, rel=1e-5
+            638154.763302, rel=1e-5
         )
 
 
@@ -167,7 +181,7 @@ class TestFullFlowsheet_with_equal_reactor_vols:
     @pytest.fixture(scope="class")
     def system_frame(self):
         m = BSM2.build()
-        BSM2.set_operating_conditions(m)
+        BSM2.set_operating_conditions(m, reactor_volume_equalities=True)
         for mx in m.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
@@ -251,6 +265,16 @@ class TestFullFlowsheet_with_equal_reactor_vols:
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             638749.398846816, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            5.5020290179e19, rel=1e-3
         )
 
     @pytest.mark.component

@@ -11,7 +11,7 @@ based on volume flow of acid per day.
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.stoichiometric_reactor`) when applying the `cost_stoichiometric_reactor` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.stoichiometric_reactor``) when applying the ``cost_stoichiometric_reactor`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"

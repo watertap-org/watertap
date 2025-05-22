@@ -3,6 +3,10 @@
 Energy Recovery Device
 ======================
 
+.. code-block:: python
+
+   from watertap.unit_models.pressure_changer import EnergyRecoveryDevice
+
 .. index::
    pair: watertap.unit_models.energy_recovery_device;energy_recovery_device
 
