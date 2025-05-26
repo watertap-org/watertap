@@ -3,6 +3,10 @@
 Crystallizer (0D)
 =================
 
+.. code-block:: python
+
+   from watertap.unit_models.crystallizer import Crystallization
+
 Introduction
 -------------
 Crystallization from solution is a separation technique where a solid phase is separated from a mother

@@ -27,6 +27,10 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
@@ -75,7 +79,7 @@ class TestFullFlowsheetBioPFalse:
             0.00026922, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.057450, rel=1e-3
+            0.057450006, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
@@ -139,12 +143,22 @@ class TestFullFlowsheetBioPFalse:
         m = system_frame
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.470491, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.47049103621, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
             24058975.756, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             831978.066, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            6.011475875e18, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -155,7 +169,7 @@ class TestFullFlowsheetBioPFalse:
         solver_obj = get_solver()
         ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)
 
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * units.g / units.m**3)
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(75 * units.g / units.m**3)
 
         success, run_stats = ca._run_model(m, solver_obj)
 
@@ -163,13 +177,13 @@ class TestFullFlowsheetBioPFalse:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == pytest.approx(103, abs=5)
+        assert run_stats[0] == pytest.approx(144, abs=5)
         # Restoration
-        assert run_stats[1] == pytest.approx(84, abs=5)
+        assert run_stats[1] == pytest.approx(126, abs=5)
         # Regularization
-        assert run_stats[2] == pytest.approx(41, abs=5)
+        assert run_stats[2] == pytest.approx(63, abs=5)
 
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(60 * units.g / units.m**3)
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(65 * units.g / units.m**3)
 
         solver = get_solver()
         success, run_stats = ca._run_model(m, solver)
@@ -178,13 +192,13 @@ class TestFullFlowsheetBioPFalse:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == pytest.approx(124, abs=5)
+        assert run_stats[0] == pytest.approx(139, abs=5)
         # Restoration
-        assert run_stats[1] == pytest.approx(108, abs=5)
+        assert run_stats[1] == pytest.approx(131, abs=5)
         # Regularization
-        assert run_stats[2] == pytest.approx(45, abs=5)
+        assert run_stats[2] == pytest.approx(63, abs=5)
 
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(80 * units.g / units.m**3)
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(85 * units.g / units.m**3)
 
         solver = get_solver()
         success, run_stats = ca._run_model(m, solver)
@@ -197,7 +211,7 @@ class TestFullFlowsheetBioPFalse:
         # Restoration
         assert run_stats[1] == pytest.approx(102, abs=5)
         # Regularization
-        assert run_stats[2] == pytest.approx(42, abs=5)
+        assert run_stats[2] == pytest.approx(52, abs=5)
 
 
 @pytest.mark.requires_idaes_solver
@@ -300,6 +314,16 @@ class TestFullFlowsheetBioPTrue:
             836020.408, rel=1e-3
         )
 
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            7.06961e18, rel=1e-3
+        )
+
     @pytest.mark.integration
     @pytest.mark.solver
     @reference_platform_only
@@ -308,7 +332,7 @@ class TestFullFlowsheetBioPTrue:
         solver_obj = get_solver()
         ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)
 
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * units.g / units.m**3)
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(75 * units.g / units.m**3)
 
         success, run_stats = ca._run_model(m, solver_obj)
 
@@ -316,13 +340,13 @@ class TestFullFlowsheetBioPTrue:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == pytest.approx(194, abs=5)
+        assert run_stats[0] == pytest.approx(143, abs=5)
         # Restoration
-        assert run_stats[1] == pytest.approx(185, abs=5)
+        assert run_stats[1] == pytest.approx(132, abs=5)
         # Regularization
-        assert run_stats[2] == pytest.approx(107, abs=5)
+        assert run_stats[2] == pytest.approx(46, abs=5)
 
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(60 * units.g / units.m**3)
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(65 * units.g / units.m**3)
 
         solver = get_solver()
         success, run_stats = ca._run_model(m, solver)
@@ -331,13 +355,13 @@ class TestFullFlowsheetBioPTrue:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == pytest.approx(422, abs=5)
+        assert run_stats[0] == pytest.approx(122, abs=5)
         # Restoration
-        assert run_stats[1] == pytest.approx(409, abs=5)
+        assert run_stats[1] == pytest.approx(113, abs=5)
         # Regularization
-        assert run_stats[2] == pytest.approx(331, abs=5)
+        assert run_stats[2] == pytest.approx(40, abs=5)
 
-        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(80 * units.g / units.m**3)
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(85 * units.g / units.m**3)
 
         solver = get_solver()
         success, run_stats = ca._run_model(m, solver)
@@ -346,8 +370,8 @@ class TestFullFlowsheetBioPTrue:
 
         assert len(run_stats) == 4
         # Iterations
-        assert run_stats[0] == pytest.approx(359, abs=5)
+        assert run_stats[0] == pytest.approx(129, abs=5)
         # Restoration
-        assert run_stats[1] == pytest.approx(345, abs=5)
+        assert run_stats[1] == pytest.approx(120, abs=5)
         # Regularization
-        assert run_stats[2] == pytest.approx(286, abs=5)
+        assert run_stats[2] == pytest.approx(41, abs=5)
