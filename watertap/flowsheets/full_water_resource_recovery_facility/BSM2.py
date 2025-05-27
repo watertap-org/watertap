@@ -89,18 +89,18 @@ from watertap.costing.unit_models.clarifier import (
 )
 
 
-def main(reactor_volume_equalities=True, has_scalers=True):
+def main(reactor_volume_equalities=True):
     m = build()
     set_operating_conditions(m)
 
     print("---System Initialization---")
     initialize_system(m)
 
-    add_costing(m, has_scalers=True)
+    add_costing(m)
     print("---Costing Initialization---")
     m.fs.costing.initialize()
 
-    scale_system(m, has_scalers=has_scalers)
+    scale_system(m)
 
     scaling = pyo.TransformationFactory("core.scale_model")
     scaled_model = scaling.create_using(m, rename=False)
@@ -409,1005 +409,837 @@ def set_operating_conditions(m):
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
-def scale_system(m, has_scalers=True):
+def scale_system(m):
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
 
-    if has_scalers:
-        sb = ScalerBase()
-        csb = CustomScalerBase()
+    sb = ScalerBase()
+    csb = CustomScalerBase()
 
-        ad_scaler = ADScaler()
-        ad_scaler.scale_model(
-            m.fs.RADM,
+    ad_scaler = ADScaler()
+    ad_scaler.scale_model(
+        m.fs.RADM,
+        submodel_scalers={
+            m.fs.RADM.liquid_phase.properties_in: ADM1PropertiesScaler,
+            m.fs.RADM.liquid_phase.properties_out: ADM1PropertiesScaler,
+            m.fs.RADM.liquid_phase.reactions: ADM1ReactionScaler,
+            m.fs.RADM.vapor_phase: ADM1VaporPropertiesScaler,
+        },
+    )
+    # Poorly scaled Jacobians
+    sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e-3, overwrite=True)
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.enthalpy_transfer[0], 1e-2, overwrite=True
+    )
+    sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.reactions[0].S_H, 1e7)
+
+    for c in m.fs.props_vap.solute_set:
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.vapor_phase[0].conc_mass_comp[c], 1e2, overwrite=True
+        )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.vapor_phase[0].conc_mass_comp["S_h2"], 1e3, overwrite=True
+    )
+
+    for c in m.fs.props_vap.component_list:
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.vapor_phase[0].pressure_sat[c], 1e-3, overwrite=True
+        )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_aa"],
+        1,
+        overwrite=True,
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_h2"],
+        1,
+        overwrite=True,
+    )
+
+    sb.set_variable_scaling_factor(m.fs.RADM.KH_h2[0], 1e4)
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.KH_ch4[0], 1e3
+    )  # NOTE: This drastically reduced the number of iterations
+    for c in m.fs.props_ADM1.solute_set:
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", c],
+            1e10,
+            overwrite=True,
+        )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "H2O"],
+        1e4,
+        overwrite=True,
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"],
+        1e2,
+        overwrite=True,
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_ch4"],
+        1e2,
+        overwrite=True,
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_cat"],
+        1e9,
+        overwrite=True,
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_an"],
+        1e9,
+        overwrite=True,
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_IC"],
+        1e3,
+        overwrite=True,
+    )
+
+    for rxn in m.fs.ADM1_rxn_props.rate_reaction_idx:
+        sb.set_variable_scaling_factor(
+            m.fs.RADM.liquid_phase.reactions[0].reaction_rate[rxn],
+            1e7,
+            overwrite=True,
+        )
+
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.reactions[0].reaction_rate["R1"],
+        1e5,
+        overwrite=True,
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.RADM.liquid_phase.reactions[0].reaction_rate["R11"],
+        1e5,
+        overwrite=True,
+    )
+
+    cstr_list = [m.fs.R1, m.fs.R2]
+    cstr_scaler = CSTRScaler()
+    for unit in cstr_list:
+        cstr_scaler.scale_model(
+            unit,
             submodel_scalers={
-                m.fs.RADM.liquid_phase.properties_in: ADM1PropertiesScaler,
-                m.fs.RADM.liquid_phase.properties_out: ADM1PropertiesScaler,
-                m.fs.RADM.liquid_phase.reactions: ADM1ReactionScaler,
-                m.fs.RADM.vapor_phase: ADM1VaporPropertiesScaler,
+                unit.control_volume.properties_in: ASM1PropertiesScaler,
+                unit.control_volume.properties_out: ASM1PropertiesScaler,
+                unit.control_volume.reactions: ASM1ReactionScaler,
             },
         )
-        # Poorly scaled Jacobians
-        sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.heat[0], 1e-3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.enthalpy_transfer[0], 1e-2, overwrite=True
-        )
-        sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.reactions[0].S_H, 1e7)
 
-        for c in m.fs.props_vap.solute_set:
-            sb.set_variable_scaling_factor(
-                m.fs.RADM.vapor_phase[0].conc_mass_comp[c], 1e2, overwrite=True
-            )
-        sb.set_variable_scaling_factor(
-            m.fs.RADM.vapor_phase[0].conc_mass_comp["S_h2"], 1e3, overwrite=True
+    aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]
+    aeration_scaler = AerationTankScaler()
+    for unit in aeration_list:
+        aeration_scaler.scale_model(
+            unit,
+            submodel_scalers={
+                unit.control_volume.properties_in: ASM1PropertiesScaler,
+                unit.control_volume.properties_out: ASM1PropertiesScaler,
+                unit.control_volume.reactions: ASM1ReactionScaler,
+            },
         )
 
-        for c in m.fs.props_vap.component_list:
-            sb.set_variable_scaling_factor(
-                m.fs.RADM.vapor_phase[0].pressure_sat[c], 1e-3, overwrite=True
-            )
+    reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5]
+    for r in reactor_list:
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_aa"],
-            1,
+            r.control_volume.properties_in[0].flow_vol,
+            1e0,
             overwrite=True,
         )
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_h2"],
-            1,
-            overwrite=True,
-        )
-
-        sb.set_variable_scaling_factor(m.fs.RADM.KH_h2[0], 1e4)
-        sb.set_variable_scaling_factor(
-            m.fs.RADM.KH_ch4[0], 1e3
-        )  # NOTE: This drastically reduced the number of iterations
-        for c in m.fs.props_ADM1.solute_set:
-            sb.set_variable_scaling_factor(
-                m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", c],
-                1e10,
-                overwrite=True,
-            )
-        sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "H2O"],
-            1e4,
+            r.control_volume.properties_out[0].flow_vol,
+            1e0,
             overwrite=True,
         )
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"],
-            1e2,
+            r.control_volume.properties_in[0].conc_mass_comp["X_BH"],
+            1e0,
             overwrite=True,
         )
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_ch4"],
-            1e2,
+            r.control_volume.properties_in[0].conc_mass_comp["X_BA"],
+            1e0,
             overwrite=True,
         )
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_cat"],
-            1e9,
-            overwrite=True,
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_an"],
-            1e9,
-            overwrite=True,
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.mass_transfer_term[0, "Liq", "S_IC"],
-            1e3,
+            r.control_volume.properties_in[0].conc_mass_comp["X_P"],
+            1e0,
             overwrite=True,
         )
 
-        for rxn in m.fs.ADM1_rxn_props.rate_reaction_idx:
-            sb.set_variable_scaling_factor(
-                m.fs.RADM.liquid_phase.reactions[0].reaction_rate[rxn],
-                1e7,
-                overwrite=True,
-            )
-
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.reactions[0].reaction_rate["R1"],
-            1e5,
+            r.control_volume.properties_out[0].conc_mass_comp["X_I"],
+            1e0,
             overwrite=True,
         )
         sb.set_variable_scaling_factor(
-            m.fs.RADM.liquid_phase.reactions[0].reaction_rate["R11"],
-            1e5,
+            r.control_volume.properties_out[0].conc_mass_comp["X_BH"],
+            1e0,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            r.control_volume.properties_out[0].conc_mass_comp["X_BA"],
+            1e0,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            r.control_volume.properties_out[0].conc_mass_comp["X_P"],
+            1e0,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            r.control_volume.properties_out[0].conc_mass_comp["S_O"],
+            1e6,
             overwrite=True,
         )
 
-        cstr_list = [m.fs.R1, m.fs.R2]
-        cstr_scaler = CSTRScaler()
-        for unit in cstr_list:
-            cstr_scaler.scale_model(
-                unit,
-                submodel_scalers={
-                    unit.control_volume.properties_in: ASM1PropertiesScaler,
-                    unit.control_volume.properties_out: ASM1PropertiesScaler,
-                    unit.control_volume.reactions: ASM1ReactionScaler,
-                },
-            )
-
-        aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]
-        aeration_scaler = AerationTankScaler()
-        for unit in aeration_list:
-            aeration_scaler.scale_model(
-                unit,
-                submodel_scalers={
-                    unit.control_volume.properties_in: ASM1PropertiesScaler,
-                    unit.control_volume.properties_out: ASM1PropertiesScaler,
-                    unit.control_volume.reactions: ASM1ReactionScaler,
-                },
-            )
-
-        reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5]
-        for r in reactor_list:
+        for c in m.fs.props_ASM1.component_list:
             sb.set_variable_scaling_factor(
-                r.control_volume.properties_in[0].flow_vol,
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                r.control_volume.properties_out[0].flow_vol,
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                r.control_volume.properties_in[0].conc_mass_comp["X_BH"],
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                r.control_volume.properties_in[0].conc_mass_comp["X_BA"],
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                r.control_volume.properties_in[0].conc_mass_comp["X_P"],
-                1e0,
+                r.control_volume.rate_reaction_generation[0, "Liq", c],
+                1e3,
                 overwrite=True,
             )
 
+        for rxn in m.fs.ASM1_rxn_props.rate_reaction_idx:
             sb.set_variable_scaling_factor(
-                r.control_volume.properties_out[0].conc_mass_comp["X_I"],
-                1e0,
+                r.control_volume.rate_reaction_extent[0, rxn],
+                1e3,
                 overwrite=True,
             )
             sb.set_variable_scaling_factor(
-                r.control_volume.properties_out[0].conc_mass_comp["X_BH"],
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                r.control_volume.properties_out[0].conc_mass_comp["X_BA"],
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                r.control_volume.properties_out[0].conc_mass_comp["X_P"],
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                r.control_volume.properties_out[0].conc_mass_comp["S_O"],
+                r.control_volume.reactions[0].reaction_rate[rxn],
                 1e6,
                 overwrite=True,
             )
 
-            for c in m.fs.props_ASM1.component_list:
-                sb.set_variable_scaling_factor(
-                    r.control_volume.rate_reaction_generation[0, "Liq", c],
-                    1e3,
-                    overwrite=True,
-                )
-
-            for rxn in m.fs.ASM1_rxn_props.rate_reaction_idx:
-                sb.set_variable_scaling_factor(
-                    r.control_volume.rate_reaction_extent[0, rxn],
-                    1e3,
-                    overwrite=True,
-                )
-                sb.set_variable_scaling_factor(
-                    r.control_volume.reactions[0].reaction_rate[rxn],
-                    1e6,
-                    overwrite=True,
-                )
-
-        clarifier_list = [m.fs.CL, m.fs.CL1]
-        clarifier_scaler = ClarifierScaler()
-        for unit in clarifier_list:
-            clarifier_scaler.scale_model(
-                unit,
-                submodel_scalers={
-                    unit.mixed_state: ASM1PropertiesScaler,
-                    unit.underflow_state: ASM1PropertiesScaler,
-                    unit.effluent_state: ASM1PropertiesScaler,
-                },
-            )
-
-        thickener_scaler = ThickenerScaler()
-        thickener_scaler.scale_model(
-            m.fs.TU,
+    clarifier_list = [m.fs.CL, m.fs.CL1]
+    clarifier_scaler = ClarifierScaler()
+    for unit in clarifier_list:
+        clarifier_scaler.scale_model(
+            unit,
             submodel_scalers={
-                m.fs.TU.mixed_state: ASM1PropertiesScaler,
-                m.fs.TU.underflow_state: ASM1PropertiesScaler,
-                m.fs.TU.overflow_state: ASM1PropertiesScaler,
+                unit.mixed_state: ASM1PropertiesScaler,
+                unit.underflow_state: ASM1PropertiesScaler,
+                unit.effluent_state: ASM1PropertiesScaler,
             },
         )
 
-        dewaterer_scaler = DewatererScaler()
-        dewaterer_scaler.scale_model(
-            m.fs.DU,
-            submodel_scalers={
-                m.fs.DU.mixed_state: ASM1PropertiesScaler,
-                m.fs.DU.underflow_state: ASM1PropertiesScaler,
-                m.fs.DU.overflow_state: ASM1PropertiesScaler,
-            },
-        )
+    thickener_scaler = ThickenerScaler()
+    thickener_scaler.scale_model(
+        m.fs.TU,
+        submodel_scalers={
+            m.fs.TU.mixed_state: ASM1PropertiesScaler,
+            m.fs.TU.underflow_state: ASM1PropertiesScaler,
+            m.fs.TU.overflow_state: ASM1PropertiesScaler,
+        },
+    )
 
-        as_ad_scaler = ASM1ADM1Scaler()
-        as_ad_scaler.scale_model(
-            m.fs.asm_adm,
-            submodel_scalers={
-                m.fs.asm_adm.properties_in: ASM1PropertiesScaler,
-                m.fs.asm_adm.properties_out: ADM1PropertiesScaler,
-            },
-        )
+    dewaterer_scaler = DewatererScaler()
+    dewaterer_scaler.scale_model(
+        m.fs.DU,
+        submodel_scalers={
+            m.fs.DU.mixed_state: ASM1PropertiesScaler,
+            m.fs.DU.underflow_state: ASM1PropertiesScaler,
+            m.fs.DU.overflow_state: ASM1PropertiesScaler,
+        },
+    )
 
-        ad_as_scaler = ADM1ASM1Scaler()
-        ad_as_scaler.scale_model(
-            m.fs.adm_asm,
-            submodel_scalers={
-                m.fs.adm_asm.properties_in: ADM1PropertiesScaler,
-                m.fs.adm_asm.properties_out: ASM1PropertiesScaler,
-            },
-        )
+    as_ad_scaler = ASM1ADM1Scaler()
+    as_ad_scaler.scale_model(
+        m.fs.asm_adm,
+        submodel_scalers={
+            m.fs.asm_adm.properties_in: ASM1PropertiesScaler,
+            m.fs.asm_adm.properties_out: ADM1PropertiesScaler,
+        },
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.feed_water_state[0].conc_mass_comp["S_I"], 1e1
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.feed_water_state[0].conc_mass_comp["X_S"], 1e2
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.feed_water_state[0].conc_mass_comp["S_O"], 1e6
-        )
+    ad_as_scaler = ADM1ASM1Scaler()
+    ad_as_scaler.scale_model(
+        m.fs.adm_asm,
+        submodel_scalers={
+            m.fs.adm_asm.properties_in: ADM1PropertiesScaler,
+            m.fs.adm_asm.properties_out: ASM1PropertiesScaler,
+        },
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.recycle_state[0].conc_mass_comp["X_I"], 1e1
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.recycle_state[0].conc_mass_comp["X_BA"], 1e1
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.recycle_state[0].conc_mass_comp["X_P"], 1e1
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.MX1.feed_water_state[0].conc_mass_comp["S_I"], 1e1
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX1.feed_water_state[0].conc_mass_comp["X_S"], 1e2
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX1.feed_water_state[0].conc_mass_comp["S_O"], 1e6
+    )
 
-        sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].flow_vol, 1e0)
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.mixed_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.mixed_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.mixed_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX1.mixed_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.MX1.recycle_state[0].conc_mass_comp["X_I"], 1e1)
+    sb.set_variable_scaling_factor(
+        m.fs.MX1.recycle_state[0].conc_mass_comp["X_BA"], 1e1
+    )
+    sb.set_variable_scaling_factor(m.fs.MX1.recycle_state[0].conc_mass_comp["X_P"], 1e1)
 
-        sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].flow_vol, 1e1)
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.mixed_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.mixed_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.mixed_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.mixed_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].flow_vol, 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX1.mixed_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.underflow_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.underflow_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.underflow_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.underflow_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].flow_vol, 1e1)
+    sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP5.mixed_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.overflow_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.overflow_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.overflow_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP5.overflow_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.underflow_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.underflow_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.underflow_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.underflow_state[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.mixed_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.mixed_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.mixed_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.mixed_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.overflow_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.overflow_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.overflow_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.overflow_state[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.underflow_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.underflow_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.underflow_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.underflow_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL1.underflow_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.CL1.mixed_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.CL1.mixed_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.CL1.mixed_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.CL1.mixed_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.mixed_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.mixed_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.mixed_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.mixed_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.mixed_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.CL1.underflow_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL1.underflow_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL1.underflow_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL1.underflow_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL1.underflow_state[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.recycle_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.recycle_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.recycle_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.recycle_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.recycle_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.SP6.mixed_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.mixed_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.mixed_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.mixed_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.mixed_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.waste_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.waste_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.waste_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.waste_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.SP6.waste_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.SP6.recycle_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.recycle_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(
+        m.fs.SP6.recycle_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.SP6.recycle_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(m.fs.SP6.recycle_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.mixed_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.mixed_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.mixed_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.mixed_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.SP6.waste_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.waste_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.waste_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.waste_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.SP6.waste_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.reactor_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.reactor_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.reactor_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.reactor_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.MX6.mixed_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX6.mixed_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX6.mixed_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX6.mixed_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.clarifier_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.clarifier_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.clarifier_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.clarifier_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX6.clarifier_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.MX6.reactor_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(
+        m.fs.MX6.reactor_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX6.reactor_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(m.fs.MX6.reactor_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.mixed_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.mixed_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.mixed_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.mixed_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.mixed_state[0].conc_mass_comp["X_P"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.mixed_state[0].conc_mass_comp["X_ND"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.MX6.clarifier_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX6.clarifier_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX6.clarifier_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX6.clarifier_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX6.clarifier_state[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.thickener_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.thickener_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.thickener_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.thickener_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.thickener_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.MX4.mixed_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX4.mixed_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX4.mixed_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX4.mixed_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX4.mixed_state[0].conc_mass_comp["X_P"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX4.mixed_state[0].conc_mass_comp["X_ND"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.clarifier_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.clarifier_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.clarifier_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.clarifier_state[0].conc_mass_comp["S_O"], 1e6
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX4.clarifier_state[0].conc_mass_comp["X_ND"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.thickener_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.thickener_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.thickener_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.thickener_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.thickener_state[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.feed_water2_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.feed_water2_state[0].conc_mass_comp["X_BA"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.feed_water2_state[0].conc_mass_comp["X_P"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.feed_water2_state[0].conc_mass_comp["S_O"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.feed_water2_state[0].conc_mass_comp["S_NO"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.recycle2_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.mixed_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX3.mixed_state[0].conc_mass_comp["S_O"], 1e6
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.clarifier_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.clarifier_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.clarifier_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.clarifier_state[0].conc_mass_comp["S_O"], 1e6
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX4.clarifier_state[0].conc_mass_comp["X_ND"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["S_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["S_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["S_O"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["S_NO"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["S_NH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.recycle1_state[0].conc_mass_comp["S_ND"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.MX3.feed_water2_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX3.feed_water2_state[0].conc_mass_comp["X_BA"], 1e8
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX3.feed_water2_state[0].conc_mass_comp["X_P"], 1e8
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX3.feed_water2_state[0].conc_mass_comp["S_O"], 1e8
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX3.feed_water2_state[0].conc_mass_comp["S_NO"], 1e8
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX3.recycle2_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(m.fs.MX3.mixed_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX3.mixed_state[0].conc_mass_comp["S_O"], 1e6)
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.feed_water1_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.feed_water1_state[0].conc_mass_comp["X_BA"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.feed_water1_state[0].conc_mass_comp["X_P"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.feed_water1_state[0].conc_mass_comp["S_O"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.feed_water1_state[0].conc_mass_comp["S_NO"], 1e8
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["S_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["S_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["S_O"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["S_NO"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["S_NH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.recycle1_state[0].conc_mass_comp["S_ND"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.mixed_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.mixed_state[0].conc_mass_comp["X_BA"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.mixed_state[0].conc_mass_comp["X_P"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.mixed_state[0].conc_mass_comp["S_O"], 1e8
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.MX2.mixed_state[0].conc_mass_comp["S_NO"], 1e8
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.feed_water1_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.feed_water1_state[0].conc_mass_comp["X_BA"], 1e8
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.feed_water1_state[0].conc_mass_comp["X_P"], 1e8
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.feed_water1_state[0].conc_mass_comp["S_O"], 1e8
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.MX2.feed_water1_state[0].conc_mass_comp["S_NO"], 1e8
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].flow_vol, 1e3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["S_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["S_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["X_I"], 1e-2
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["X_S"], 1e-2
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["S_NH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["S_ND"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["X_ND"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["X_BH"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["S_O"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["S_NO"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["X_BA"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.mixed_state[0].conc_mass_comp["X_P"], 1e10
-        )
+    sb.set_variable_scaling_factor(m.fs.MX2.mixed_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.MX2.mixed_state[0].conc_mass_comp["X_BA"], 1e8)
+    sb.set_variable_scaling_factor(m.fs.MX2.mixed_state[0].conc_mass_comp["X_P"], 1e8)
+    sb.set_variable_scaling_factor(m.fs.MX2.mixed_state[0].conc_mass_comp["S_O"], 1e8)
+    sb.set_variable_scaling_factor(m.fs.MX2.mixed_state[0].conc_mass_comp["S_NO"], 1e8)
 
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].flow_vol, 1e5, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["S_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["S_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["X_I"], 1e-2
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["X_S"], 1e-2
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["S_NH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["S_ND"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["X_ND"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["X_BH"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["S_O"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["S_NO"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["X_BA"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.underflow_state[0].conc_mass_comp["X_P"], 1e10
-        )
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].flow_vol, 1e3, overwrite=True)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["S_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["S_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["X_I"], 1e-2)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["X_S"], 1e-2)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["S_NH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["S_ND"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["X_ND"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["X_BH"], 1e10)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["S_O"], 1e10)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["S_NO"], 1e10)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["X_BA"], 1e10)
+    sb.set_variable_scaling_factor(m.fs.DU.mixed_state[0].conc_mass_comp["X_P"], 1e10)
 
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["S_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["S_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["S_NH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["S_ND"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["X_BH"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["S_O"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["S_NO"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["X_BA"], 1e10
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.DU.overflow_state[0].conc_mass_comp["X_P"], 1e10
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].flow_vol, 1e5, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["S_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["S_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["X_I"], 1e-2
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["X_S"], 1e-2
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["S_NH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["S_ND"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["X_ND"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["X_BH"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["S_O"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["S_NO"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["X_BA"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.underflow_state[0].conc_mass_comp["X_P"], 1e10
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.TU.underflow_state[0].flow_vol, 1e4, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.underflow_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.underflow_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.underflow_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.underflow_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.underflow_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.DU.overflow_state[0].conc_mass_comp["S_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.overflow_state[0].conc_mass_comp["S_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.overflow_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.DU.overflow_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["S_NH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["S_ND"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["X_BH"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["S_O"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["S_NO"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["X_BA"], 1e10
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["X_P"], 1e10
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.TU.mixed_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.mixed_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.mixed_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.mixed_state[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.TU.mixed_state[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.TU.underflow_state[0].flow_vol, 1e4, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.TU.underflow_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.TU.underflow_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.TU.underflow_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.TU.underflow_state[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.TU.underflow_state[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.TU.overflow_state[0].conc_mass_comp["X_BH"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.TU.mixed_state[0].conc_mass_comp["X_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.TU.mixed_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.TU.mixed_state[0].conc_mass_comp["X_BH"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.TU.mixed_state[0].conc_mass_comp["X_BA"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.TU.mixed_state[0].conc_mass_comp["X_P"], 1e0)
 
-        sb.set_variable_scaling_factor(
-            m.fs.CL.effluent_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL.effluent_state[0].conc_mass_comp["S_O"], 1e6
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.TU.overflow_state[0].conc_mass_comp["X_BH"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.CL.mixed_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL.mixed_state[0].conc_mass_comp["S_O"], 1e6
-        )
+    sb.set_variable_scaling_factor(m.fs.CL.effluent_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.CL.effluent_state[0].conc_mass_comp["S_O"], 1e6)
 
-        sb.set_variable_scaling_factor(
-            m.fs.CL.underflow_state[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL.underflow_state[0].conc_mass_comp["X_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL.underflow_state[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL.underflow_state[0].conc_mass_comp["X_ND"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.CL.underflow_state[0].conc_mass_comp["S_O"], 1e6
-        )
+    sb.set_variable_scaling_factor(m.fs.CL.mixed_state[0].conc_mass_comp["X_S"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.CL.mixed_state[0].conc_mass_comp["S_O"], 1e6)
 
-        sb.set_variable_scaling_factor(m.fs.P1.control_volume.work[0], 1e-4)
-        sb.set_variable_scaling_factor(m.fs.P1.control_volume.deltaP[0], 1e-3)
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.CL.underflow_state[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL.underflow_state[0].conc_mass_comp["X_S"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL.underflow_state[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL.underflow_state[0].conc_mass_comp["X_ND"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.CL.underflow_state[0].conc_mass_comp["S_O"], 1e6
+    )
 
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_BH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_BA"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_P"], 1e0
-        )
+    sb.set_variable_scaling_factor(m.fs.P1.control_volume.work[0], 1e-4)
+    sb.set_variable_scaling_factor(m.fs.P1.control_volume.deltaP[0], 1e-3)
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_in[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].flow_vol, 1e5)
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["S_I"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["S_S"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["X_I"], 1e-2
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["X_S"], 1e-2
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["X_BH"], 1e9
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["X_BA"], 1e9
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["X_P"], 1e9
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["S_O"], 1e9
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["S_NO"], 1e9
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["S_NH"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["S_ND"], 1e0
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.Sludge.properties[0].conc_mass_comp["X_ND"], 1e0
-        )
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_I"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_BH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_BA"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.P1.control_volume.properties_out[0].conc_mass_comp["X_P"], 1e0
+    )
 
-        for c in m.fs.props_ASM1.component_list:
-            if c in ["X_I", "X_S", "X_BH", "X_BA", "X_P", "X_ND"]:
-                sb.set_variable_scaling_factor(
-                    m.fs.CL.split_fraction[0, "underflow", c],
-                    1e1,
-                    overwrite=True,
-                )
-            else:
-                sb.set_variable_scaling_factor(
-                    m.fs.CL.split_fraction[0, "underflow", c],
-                    1e3,
-                    overwrite=True,
-                )
+    sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].flow_vol, 1e5)
+    sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].conc_mass_comp["S_I"], 1e0)
+    sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].conc_mass_comp["S_S"], 1e0)
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["X_I"], 1e-2
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["X_S"], 1e-2
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["X_BH"], 1e9
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["X_BA"], 1e9
+    )
+    sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].conc_mass_comp["X_P"], 1e9)
+    sb.set_variable_scaling_factor(m.fs.Sludge.properties[0].conc_mass_comp["S_O"], 1e9)
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["S_NO"], 1e9
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["S_NH"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["S_ND"], 1e0
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.Sludge.properties[0].conc_mass_comp["X_ND"], 1e0
+    )
 
-        for c in m.fs.props_ADM1.solute_set:
+    for c in m.fs.props_ASM1.component_list:
+        if c in ["X_I", "X_S", "X_BH", "X_BA", "X_P", "X_ND"]:
             sb.set_variable_scaling_factor(
-                m.fs.adm_asm.properties_in[0].conc_mass_comp[c],
-                1e0,
+                m.fs.CL.split_fraction[0, "underflow", c],
+                1e1,
                 overwrite=True,
             )
-        for c in m.fs.props_ASM1.solute_set:
+        else:
             sb.set_variable_scaling_factor(
-                m.fs.adm_asm.properties_out[0].conc_mass_comp[c],
-                1e0,
-                overwrite=True,
-            )
-            sb.set_variable_scaling_factor(
-                m.fs.asm_adm.properties_in[0].conc_mass_comp[c],
-                1e0,
-                overwrite=True,
-            )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_in[0].flow_vol, 1e3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_out[0].flow_vol, 1e3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_in[0].conc_mass_comp["S_h2"], 1e3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_in[0].conc_mass_comp["S_aa"], 1e3, overwrite=True
-        )
-
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_out[0].conc_mass_comp["X_BH"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_out[0].conc_mass_comp["X_BA"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_out[0].conc_mass_comp["X_P"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_out[0].conc_mass_comp["S_O"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.adm_asm.properties_out[0].conc_mass_comp["S_NO"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_in[0].flow_vol, 1e3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_in[0].conc_mass_comp["S_O"], 1e6, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_in[0].conc_mass_comp["S_NO"], 1e3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_in[0].conc_mass_comp["S_ND"], 1e3, overwrite=True
-        )
-
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].flow_vol, 1e3, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_fa"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_va"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_bu"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_pro"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_ac"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_h2"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_ch4"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["S_IN"], 1e0, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_c"], 1e0, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_pr"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_su"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_aa"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_fa"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_c4"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_pro"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_ac"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_h2"], 1e10, overwrite=True
-        )
-        sb.set_variable_scaling_factor(
-            m.fs.asm_adm.properties_out[0].conc_mass_comp["X_I"], 1e0, overwrite=True
-        )
-
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                sb.set_variable_scaling_factor(var, 1e2)
-            if "temperature" in var.name:
-                sb.set_variable_scaling_factor(var, 1e-2)
-            if "pressure" in var.name:
-                sb.set_variable_scaling_factor(var, 1e-5)
-            if "conc_mass_comp" in var.name:
-                sb.set_variable_scaling_factor(var, 1e3)
-            if "conc_mol" in var.name:
-                sb.set_variable_scaling_factor(var, 1e2)
-            if "alkalinity" in var.name:
-                sb.set_variable_scaling_factor(var, 1e3)
-
-        for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
-            csb.scale_constraint_by_nominal_value(
-                c,
-                scheme=ConstraintScalingScheme.inverseMaximum,
+                m.fs.CL.split_fraction[0, "underflow", c],
+                1e3,
                 overwrite=True,
             )
 
+    for c in m.fs.props_ADM1.solute_set:
+        sb.set_variable_scaling_factor(
+            m.fs.adm_asm.properties_in[0].conc_mass_comp[c],
+            1e0,
+            overwrite=True,
+        )
+    for c in m.fs.props_ASM1.solute_set:
+        sb.set_variable_scaling_factor(
+            m.fs.adm_asm.properties_out[0].conc_mass_comp[c],
+            1e0,
+            overwrite=True,
+        )
+        sb.set_variable_scaling_factor(
+            m.fs.asm_adm.properties_in[0].conc_mass_comp[c],
+            1e0,
+            overwrite=True,
+        )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_in[0].flow_vol, 1e3, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_out[0].flow_vol, 1e3, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_in[0].conc_mass_comp["S_h2"], 1e3, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_in[0].conc_mass_comp["S_aa"], 1e3, overwrite=True
+    )
+
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_out[0].conc_mass_comp["X_BH"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_out[0].conc_mass_comp["X_BA"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_out[0].conc_mass_comp["X_P"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_out[0].conc_mass_comp["S_O"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.adm_asm.properties_out[0].conc_mass_comp["S_NO"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_in[0].flow_vol, 1e3, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_in[0].conc_mass_comp["S_O"], 1e6, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_in[0].conc_mass_comp["S_NO"], 1e3, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_in[0].conc_mass_comp["S_ND"], 1e3, overwrite=True
+    )
+
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].flow_vol, 1e3, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_fa"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_va"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_bu"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_pro"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_ac"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_h2"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_ch4"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["S_IN"], 1e0, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_c"], 1e0, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_pr"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_su"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_aa"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_fa"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_c4"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_pro"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_ac"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_h2"], 1e10, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.asm_adm.properties_out[0].conc_mass_comp["X_I"], 1e0, overwrite=True
+    )
+
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            sb.set_variable_scaling_factor(var, 1e2)
+        if "temperature" in var.name:
+            sb.set_variable_scaling_factor(var, 1e-2)
+        if "pressure" in var.name:
+            sb.set_variable_scaling_factor(var, 1e-5)
+        if "conc_mass_comp" in var.name:
+            sb.set_variable_scaling_factor(var, 1e3)
+        if "conc_mol" in var.name:
+            sb.set_variable_scaling_factor(var, 1e2)
+        if "alkalinity" in var.name:
+            sb.set_variable_scaling_factor(var, 1e3)
+
+    for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
         csb.scale_constraint_by_nominal_value(
-            m.fs.MX1.enthalpy_mixing_equations[0],
+            c,
             scheme=ConstraintScalingScheme.inverseMaximum,
             overwrite=True,
         )
 
-    else:
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-            if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-1)
-            if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-6)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-
-        iscale.calculate_scaling_factors(m)
+    csb.scale_constraint_by_nominal_value(
+        m.fs.MX1.enthalpy_mixing_equations[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
 
 
 def initialize_system(m):
@@ -1520,7 +1352,7 @@ def initialize_system(m):
         mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
-def add_costing(m, has_scalers=True):
+def add_costing(m):
     m.fs.costing = WaterTAPCosting()
     m.fs.costing.base_currency = pyo.units.USD_2020
 
@@ -1562,46 +1394,19 @@ def add_costing(m, has_scalers=True):
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
 
-    if has_scalers:
-        sb = ScalerBase()
+    sb = ScalerBase()
 
-        sb.set_variable_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
-        sb.set_variable_scaling_factor(
-            m.fs.costing.aggregate_capital_cost, 1e-8
-        )  # 1e-8
-        sb.set_variable_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-1)
-        sb.set_variable_scaling_factor(
-            m.fs.costing.aggregate_flow_costs["electricity"], 1e-3
-        )
-        sb.set_variable_scaling_factor(m.fs.costing.total_operating_cost, 1e-4)
+    sb.set_variable_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
+    sb.set_variable_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-8)
+    sb.set_variable_scaling_factor(m.fs.costing.aggregate_flow_electricity, 1e-1)
+    sb.set_variable_scaling_factor(
+        m.fs.costing.aggregate_flow_costs["electricity"], 1e-3
+    )
+    sb.set_variable_scaling_factor(m.fs.costing.total_operating_cost, 1e-4)
 
-        for block in m.fs.component_objects(pyo.Block, descend_into=True):
-            if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
-                sb.set_variable_scaling_factor(block.costing.capital_cost, 1e-7)
-
-        # csb.scale_constraint_by_nominal_value(
-        #     m.fs.DU.costing.capital_cost_constraint,
-        #     scheme=ConstraintScalingScheme.inverseMaximum,
-        #     overwrite=True,
-        # )
-        # sb.set_constraint_scaling_factor(m.fs.DU.costing.capital_cost_constraint, 1e-6)
-        # sb.set_constraint_scaling_factor(
-        #     m.fs.RADM.costing.capital_cost_constraint, 1e-6
-        # )
-    else:
-        iscale.set_scaling_factor(m.fs.costing.LCOW, 1e3)
-        iscale.set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
-
-        for block in m.fs.component_objects(pyo.Block, descend_into=True):
-            if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
-                iscale.set_scaling_factor(block.costing.capital_cost, 1e-6)
-
-        iscale.constraint_scaling_transform(
-            m.fs.DU.costing.capital_cost_constraint, 1e-6
-        )
-        iscale.constraint_scaling_transform(
-            m.fs.RADM.costing.capital_cost_constraint, 1e-6
-        )
+    for block in m.fs.component_objects(pyo.Block, descend_into=True):
+        if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
+            sb.set_variable_scaling_factor(block.costing.capital_cost, 1e-7)
 
 
 def setup_optimization(m, reactor_volume_equalities=False):
@@ -1895,7 +1700,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(has_scalers=True, reactor_volume_equalities=True)
+    m, results = main(reactor_volume_equalities=True)
     print(f"TSS is : {pyo.value(m.fs.CL1.effluent_state[0].TSS)}")
     print(f"TSS limit is : {pyo.value(m.fs.props_ASM1.TSS_max)}")
     print(f"COD is : {pyo.value(m.fs.CL1.effluent_state[0].COD)}")
