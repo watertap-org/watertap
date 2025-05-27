@@ -116,7 +116,7 @@ def main(reactor_volume_equalities=True):
 
     setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
 
-    rescale_system(m)
+    rescale_system(m, reactor_volume_equalities=reactor_volume_equalities)
 
     rescaling = pyo.TransformationFactory("core.scale_model")
     rescaled_model = rescaling.create_using(m, rename=False)
@@ -124,6 +124,11 @@ def main(reactor_volume_equalities=True):
     solve(rescaled_model, tee=True)
 
     results = scaling.propagate_solution(rescaled_model, m)
+
+    print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
+    display_results(scaled_model)
+    display_costing(scaled_model)
+    display_performance_metrics(scaled_model)
 
     return m, results
 
@@ -1409,7 +1414,7 @@ def add_costing(m):
             sb.set_variable_scaling_factor(block.costing.capital_cost, 1e-7)
 
 
-def setup_optimization(m, reactor_volume_equalities=False):
+def setup_optimization(m, reactor_volume_equalities=True):
 
     for i in ["R1", "R2", "R3", "R4", "R5"]:
         reactor = getattr(m.fs, i)
@@ -1483,7 +1488,7 @@ def add_reactor_volume_equalities(m):
         return m.fs.R5.volume[0] >= m.fs.R4.volume[0] * 0.5
 
 
-def rescale_system(m):
+def rescale_system(m, reactor_volume_equalities=True):
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     sb = ScalerBase()
     csb = CustomScalerBase()
@@ -1495,21 +1500,23 @@ def rescale_system(m):
         m.fs.DU.overflow_state[0].conc_mass_comp["X_BA"], 1e5, overwrite=True
     )
 
-    csb.scale_constraint_by_nominal_value(
-        m.fs.Vol_1[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
-    csb.scale_constraint_by_nominal_value(
-        m.fs.Vol_2[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
-    csb.scale_constraint_by_nominal_value(
-        m.fs.Vol_3[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
+    if reactor_volume_equalities:
+        csb.scale_constraint_by_nominal_value(
+            m.fs.Vol_1[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=True,
+        )
+        csb.scale_constraint_by_nominal_value(
+            m.fs.Vol_2[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=True,
+        )
+        csb.scale_constraint_by_nominal_value(
+            m.fs.Vol_3[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=True,
+        )
+
     csb.scale_constraint_by_nominal_value(
         m.fs.eq_COD_max[0],
         scheme=ConstraintScalingScheme.inverseMaximum,
