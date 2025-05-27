@@ -21,7 +21,6 @@ __author__ = "Alejandro Garciadiego, Adam Atia, Marcus Holly, Chenyu Wang, Ben K
 
 import pyomo.environ as pyo
 
-from pyomo.util.infeasible import log_infeasible_constraints
 from pyomo.network import Arc, SequentialDecomposition
 from watertap.unit_models.anaerobic_digester import AD, ADScaler
 from watertap.unit_models.thickener import Thickener, ThickenerScaler
@@ -38,10 +37,8 @@ from watertap.unit_models.translators.translator_adm1_asm1 import (
     ADM1ASM1Scaler,
 )
 
-import idaes.logger as idaeslog
 from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.core.util import DiagnosticsToolbox
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.custom_scaler_base import (
@@ -85,14 +82,11 @@ from watertap.property_models.unit_specific.activated_sludge.asm1_reactions impo
     ASM1ReactionParameterBlock,
     ASM1ReactionScaler,
 )
-from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
-from idaes.core.scaling import report_scaling_factors
-from pyomo.util.check_units import assert_units_consistent
 
 
 def main(reactor_volume_equalities=True, has_scalers=True):
@@ -111,46 +105,9 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     scaling = pyo.TransformationFactory("core.scale_model")
     scaled_model = scaling.create_using(m, rename=False)
 
-    dt = DiagnosticsToolbox(scaled_model)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
-
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(scaled_model, large=1e2, small=1e-2)
-    # print("----------------   badly_scaled_var_list 1   ----------------")
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    #
-    # print("--- Scaling Factors ---")
-    # report_scaling_factors(scaled_model, descend_into=True)
-    #
-    print("---Numerical Issues 1---")
-    dt.report_numerical_issues()
-    # dt.display_variables_with_extreme_jacobians()
-    # dt.display_constraints_with_extreme_jacobians()
-    #
-    # print("---SVD 1---")
-    # svd = dt.prepare_svd_toolbox()
-    # svd.display_underdetermined_variables_and_constraints()
-
     solve(scaled_model)
 
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(scaled_model, large=1e2, small=1e-2)
-    # print("----------------   badly_scaled_var_list 2   ----------------")
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    #
-    # print("--- Scaling Factors 2 ---")
-    # report_scaling_factors(scaled_model, descend_into=True)
-    #
-    # print("---Numerical Issues 2---")
-    # dt.report_numerical_issues()
-    # dt.display_variables_with_extreme_jacobians()
-    # dt.display_constraints_with_extreme_jacobians()
-    # print("---SVD 2---")
-    # svd = dt.prepare_svd_toolbox()
-    # svd.display_underdetermined_variables_and_constraints()
-
-    results = scaling.propagate_solution(scaled_model, m)
+    scaling.propagate_solution(scaled_model, m)
 
     print("\n\n=============SIMULATION RESULTS=============\n\n")
 
@@ -164,44 +121,9 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     rescaling = pyo.TransformationFactory("core.scale_model")
     rescaled_model = rescaling.create_using(m, rename=False)
 
-    dt_rescaled = DiagnosticsToolbox(rescaled_model)
-    print("---Structural Issues 3---")
-    dt_rescaled.report_structural_issues()
-
     solve(rescaled_model, tee=True)
 
-    print("--- Scaling Factors 3 ---")
-    report_scaling_factors(rescaled_model, descend_into=True)
-
-    print("---Numerical Issues 3---")
-    dt_rescaled.report_numerical_issues()
-    dt_rescaled.display_variables_with_extreme_jacobians()
-    dt_rescaled.display_constraints_with_extreme_jacobians()
-    # print("---SVD 3---")
-    # svd = dt.prepare_svd_toolbox()
-    # svd.display_underdetermined_variables_and_constraints()
-    # pyo.assert_optimal_termination(results)
-    # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    # # display_results(scaled_model)
-    # display_costing(scaled_model)
-    # display_performance_metrics(scaled_model)
-    #
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(scaled_model, large=1e2, small=1e-2)
-    # print("----------------   badly_scaled_var_list   ----------------")
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    #
-    # print("---Numerical Issues 2---")
-    # dt.report_numerical_issues()
-    # dt.display_variables_at_or_outside_bounds()
-    # dt.display_variables_with_extreme_jacobians()
-    # dt.display_constraints_with_extreme_jacobians()
-
-    # print("---SVD 1---")
-    # svd = dt.prepare_svd_toolbox()
-    # svd.display_underdetermined_variables_and_constraints()
-
-    # optimized_results = scaling.propagate_solution(scaled_model2, m)
+    results = scaling.propagate_solution(rescaled_model, m)
 
     return m, results
 
@@ -1703,7 +1625,8 @@ def setup_optimization(m, reactor_volume_equalities=False):
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()
-    # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
+    m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
+    m.fs.SP5.split_fraction[:, "overflow"].setlb(0.45)
     m.fs.SP6.split_fraction[:, "recycle"].unfix()
 
     add_effluent_violations(m)
@@ -1756,56 +1679,58 @@ def add_reactor_volume_equalities(m):
 
 
 def rescale_system(m):
+    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     sb = ScalerBase()
     csb = CustomScalerBase()
-    # scale_system(m)
-    # Default Jacobian Condition Number: 1.125e13
-    # Best Jacobian Condition Number: 2.815e13
 
     sb.set_variable_scaling_factor(
-        m.fs.SP5.split_fraction[0, "overflow"], 1e8, overwrite=True
+        m.fs.DU.overflow_state[0].conc_mass_comp["X_BH"], 1e5, overwrite=True
+    )
+    sb.set_variable_scaling_factor(
+        m.fs.DU.overflow_state[0].conc_mass_comp["X_BA"], 1e5, overwrite=True
     )
 
-    # sb.set_variable_scaling_factor(
-    #     m.fs.MX6.mixed_state[0].conc_mass_comp["S_I"], 1e2, overwrite=True
-    # )
-
-    # for c in m.fs.props_ASM1.solute_set:
-    #     sb.set_variable_scaling_factor(
-    #         m.fs.P1.control_volume.properties_in[0].conc_mass_comp[c], 1e0, overwrite=True
-    #     )
-    #     sb.set_variable_scaling_factor(
-    #         m.fs.MX6.reactor_state[0].conc_mass_comp[c], 1e0, overwrite=True
-    #     ) # 1e0, 1e9
-    # sb.set_variable_scaling_factor(
-    #     m.fs.MX6.mixed_state[0].conc_mass_comp[c], 1e9, overwrite=True
-    # ) 1e2, 1e9
-    # sb.set_variable_scaling_factor(
-    #     m.fs.MX6.reactor_state[0].conc_mass_comp["S_I"], 1e2, overwrite=True
-    # )
-
-    # for c in m.fs.props_vap.solute_set:
-    # sb.set_variable_scaling_factor(
-    #     m.fs.SP5.split_fraction[0, "overflow"], 1e1, overwrite=True
-    # )   # 1e1, 1e8, 1e10
-    # sb.set_variable_scaling_factor(
-    #     m.fs.SP5.split_fraction[0, "underflow"], 1e1, overwrite=True
-    # )
-
-    # for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
-    #     csb.scale_constraint_by_nominal_value(
-    #         c,
-    #         scheme=ConstraintScalingScheme.inverseMaximum,
-    #         overwrite=True,
-    #     )
+    csb.scale_constraint_by_nominal_value(
+        m.fs.Vol_1[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
+    csb.scale_constraint_by_nominal_value(
+        m.fs.Vol_2[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
+    csb.scale_constraint_by_nominal_value(
+        m.fs.Vol_3[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
+    csb.scale_constraint_by_nominal_value(
+        m.fs.eq_COD_max[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
+    csb.scale_constraint_by_nominal_value(
+        m.fs.eq_totalN_max[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
+    csb.scale_constraint_by_nominal_value(
+        m.fs.eq_BOD5_max[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
+    csb.scale_constraint_by_nominal_value(
+        m.fs.eq_TSS_max[0],
+        scheme=ConstraintScalingScheme.inverseMaximum,
+        overwrite=True,
+    )
 
 
 def solve(blk, solver=None, tee=True):
     if solver is None:
-        # solver = get_solver()
-        solver = get_solver(options={"max_iter": 500})
+        solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    # pyo.assert_optimal_termination(results)
     return results
 
 
