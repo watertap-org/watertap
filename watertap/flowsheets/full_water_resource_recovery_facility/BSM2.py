@@ -127,40 +127,60 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     dt.report_numerical_issues()
     # dt.display_variables_with_extreme_jacobians()
     # dt.display_constraints_with_extreme_jacobians()
-
+    #
     # print("---SVD 1---")
     # svd = dt.prepare_svd_toolbox()
     # svd.display_underdetermined_variables_and_constraints()
 
     solve(scaled_model)
 
-    print("\n\n=============SIMULATION RESULTS=============\n\n")
-
-    # TODO: These showed the scaled cost results - should move to after the propagation
-
-    # display_results(scaled_model)
-    # display_costing(scaled_model)
-
     # badly_scaled_var_list = iscale.badly_scaled_var_generator(scaled_model, large=1e2, small=1e-2)
     # print("----------------   badly_scaled_var_list 2   ----------------")
     # for x in badly_scaled_var_list:
     #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    print("--- Scaling Factors 2 ---")
-    report_scaling_factors(scaled_model, descend_into=True)
-
-    print("---Numerical Issues 2---")
-    dt.report_numerical_issues()
-    dt.display_variables_with_extreme_jacobians()
-    dt.display_constraints_with_extreme_jacobians()
+    #
+    # print("--- Scaling Factors 2 ---")
+    # report_scaling_factors(scaled_model, descend_into=True)
+    #
+    # print("---Numerical Issues 2---")
+    # dt.report_numerical_issues()
+    # dt.display_variables_with_extreme_jacobians()
+    # dt.display_constraints_with_extreme_jacobians()
     # print("---SVD 2---")
     # svd = dt.prepare_svd_toolbox()
     # svd.display_underdetermined_variables_and_constraints()
 
-    setup_optimization(
-        scaled_model, reactor_volume_equalities=reactor_volume_equalities
-    )
-    results = solve(scaled_model, tee=True)
+    results = scaling.propagate_solution(scaled_model, m)
+
+    print("\n\n=============SIMULATION RESULTS=============\n\n")
+
+    display_results(m)
+    display_costing(m)
+
+    setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
+
+    rescale_system(m)
+
+    rescaling = pyo.TransformationFactory("core.scale_model")
+    rescaled_model = rescaling.create_using(m, rename=False)
+
+    dt_rescaled = DiagnosticsToolbox(rescaled_model)
+    print("---Structural Issues 3---")
+    dt_rescaled.report_structural_issues()
+
+    solve(rescaled_model, tee=True)
+
+    print("--- Scaling Factors 3 ---")
+    report_scaling_factors(rescaled_model, descend_into=True)
+
+    print("---Numerical Issues 3---")
+    dt_rescaled.report_numerical_issues()
+    dt_rescaled.display_variables_with_extreme_jacobians()
+    dt_rescaled.display_constraints_with_extreme_jacobians()
+    # print("---SVD 3---")
+    # svd = dt.prepare_svd_toolbox()
+    # svd.display_underdetermined_variables_and_constraints()
+    # pyo.assert_optimal_termination(results)
     # print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
     # # display_results(scaled_model)
     # display_costing(scaled_model)
@@ -181,7 +201,7 @@ def main(reactor_volume_equalities=True, has_scalers=True):
     # svd = dt.prepare_svd_toolbox()
     # svd.display_underdetermined_variables_and_constraints()
 
-    results = scaling.propagate_solution(scaled_model, m)
+    # optimized_results = scaling.propagate_solution(scaled_model2, m)
 
     return m, results
 
@@ -492,20 +512,6 @@ def scale_system(m, has_scalers=True):
             m.fs.RADM.liquid_phase.enthalpy_transfer[0], 1e-2, overwrite=True
         )
         sb.set_variable_scaling_factor(m.fs.RADM.liquid_phase.reactions[0].S_H, 1e7)
-        # --------------------------------------------------------------------------------------------
-
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.vapor_phase[0].temperature, 1e-1, overwrite=True
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.vapor_phase[0].pressure, 1e-5, overwrite=True
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].flow_vol, 1e3, overwrite=True
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].flow_vol, 1e3, overwrite=True
-        # )
 
         for c in m.fs.props_vap.solute_set:
             sb.set_variable_scaling_factor(
@@ -519,213 +525,16 @@ def scale_system(m, has_scalers=True):
             sb.set_variable_scaling_factor(
                 m.fs.RADM.vapor_phase[0].pressure_sat[c], 1e-3, overwrite=True
             )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.vapor_phase[0].pressure_sat["S_h2"], 1e-2, overwrite=True
-        # )
-        #
-        # for c in m.fs.props_ADM1.solute_set:
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp[c],
-        #     1e2,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp[c],
-        #     1e2,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.rate_reaction_generation[0, "Liq", c],
-        #     1e3,
-        #     overwrite=True,
-        # )
-        #
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_IN"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_fa"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_va"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_bu"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_pro"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_ac"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_su"],
-        #     1e1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_h2"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["S_ch4"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_c"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_ch"],
-        #     1e5,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_pr"],
-        #     1e5,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_li"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_su"],
-        #     1,
-        #     overwrite=True,
-        # )
         sb.set_variable_scaling_factor(
             m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_aa"],
             1,
             overwrite=True,
         )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_li"],
-        #     1e5,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_fa"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_c4"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_pro"],
-        #     1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_ac"],
-        #     1,
-        #     overwrite=True,
-        # )
         sb.set_variable_scaling_factor(
             m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_h2"],
             1,
             overwrite=True,
         )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_IN"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_su"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_IC"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_fa"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_I"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_c"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_aa"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_fa"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_c4"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_fa"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_h2"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_I"],
-        #     1e0,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp["X_I"],
-        #     1e2,
-        #     overwrite=True,
-        # )
-        #
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["S_h2"],
-        #     1e4,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_su"],
-        #     1e1,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.properties_out[0].conc_mass_comp["X_ac"],
-        #     1e1,
-        #     overwrite=True,
-        # )  # NOTE: This drastically decreases iterations
 
         sb.set_variable_scaling_factor(m.fs.RADM.KH_h2[0], 1e4)
         sb.set_variable_scaling_factor(
@@ -768,22 +577,7 @@ def scale_system(m, has_scalers=True):
             overwrite=True,
         )
 
-        # sb.set_variable_scaling_factor(
-        #     m.fs.RADM.liquid_phase.rate_reaction_generation[0, "Liq", "S_h2"],
-        #     1e2,
-        #     overwrite=True,
-        # )
-        # sb.set_variable_scaling_factor(
-        #     m.fs.ADM1_rxn_props.K_S_IN,
-        #     1e2,
-        #     overwrite=True,
-        # )
         for rxn in m.fs.ADM1_rxn_props.rate_reaction_idx:
-            # sb.set_variable_scaling_factor(
-            #     m.fs.RADM.liquid_phase.rate_reaction_extent[0, rxn],
-            #     1e3,
-            #     overwrite=True,
-            # )
             sb.set_variable_scaling_factor(
                 m.fs.RADM.liquid_phase.reactions[0].reaction_rate[rxn],
                 1e7,
@@ -812,7 +606,6 @@ def scale_system(m, has_scalers=True):
                     unit.control_volume.reactions: ASM1ReactionScaler,
                 },
             )
-            # sb.set_variable_scaling_factor(unit.hydraulic_retention_time[0], 1e-2)
 
         aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]
         aeration_scaler = AerationTankScaler()
@@ -828,11 +621,6 @@ def scale_system(m, has_scalers=True):
 
         reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5]
         for r in reactor_list:
-            # sb.set_variable_scaling_factor(
-            #     r.control_volume.properties_in[0].conc_mass_comp["X_I"],
-            #     1e0,
-            #     overwrite=True,
-            # )
             sb.set_variable_scaling_factor(
                 r.control_volume.properties_in[0].flow_vol,
                 1e0,
@@ -858,11 +646,6 @@ def scale_system(m, has_scalers=True):
                 1e0,
                 overwrite=True,
             )
-            # sb.set_variable_scaling_factor(
-            #     r.control_volume.properties_in[0].conc_mass_comp["S_O"],
-            #     1e4,
-            #     overwrite=True,
-            # )
 
             sb.set_variable_scaling_factor(
                 r.control_volume.properties_out[0].conc_mass_comp["X_I"],
@@ -940,7 +723,6 @@ def scale_system(m, has_scalers=True):
                 m.fs.DU.overflow_state: ASM1PropertiesScaler,
             },
         )
-        # sb.set_variable_scaling_factor(m.fs.DU.volume[0], 1, overwrite=True)
 
         as_ad_scaler = ASM1ADM1Scaler()
         as_ad_scaler.scale_model(
@@ -1241,9 +1023,6 @@ def scale_system(m, has_scalers=True):
         sb.set_variable_scaling_factor(
             m.fs.MX2.recycle1_state[0].conc_mass_comp["X_S"], 1e0
         )
-        # sb.set_variable_scaling_factor(m.fs.MX2.recycle1_state[0].conc_mass_comp["X_BH"], 1e10)
-        # sb.set_variable_scaling_factor(m.fs.MX2.recycle1_state[0].conc_mass_comp["X_BA"], 1e10)
-        # sb.set_variable_scaling_factor(m.fs.MX2.recycle1_state[0].conc_mass_comp["X_P"], 1e10)
         sb.set_variable_scaling_factor(
             m.fs.MX2.recycle1_state[0].conc_mass_comp["S_O"], 1e10
         )
@@ -1669,18 +1448,14 @@ def scale_system(m, has_scalers=True):
         )
 
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            # if "flow_vol" in var.name:
-            #     sb.set_variable_scaling_factor(var, 1e3, overwrite=True)
             if "flow_vol" in var.name:
-                sb.set_variable_scaling_factor(var, 1e2)  # (1e2-3, 1, 1e0)
+                sb.set_variable_scaling_factor(var, 1e2)
             if "temperature" in var.name:
                 sb.set_variable_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 sb.set_variable_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
                 sb.set_variable_scaling_factor(var, 1e3)
-            # if "cation" in var.name:
-            #     sb.set_variable_scaling_factor(var, 1e3)
             if "conc_mol" in var.name:
                 sb.set_variable_scaling_factor(var, 1e2)
             if "alkalinity" in var.name:
@@ -1698,9 +1473,6 @@ def scale_system(m, has_scalers=True):
             scheme=ConstraintScalingScheme.inverseMaximum,
             overwrite=True,
         )
-        # sb.set_constraint_scaling_factor(
-        #     m.fs.MX1.enthalpy_mixing_equations[0], 1e-2, overwrite=True
-        # )
 
     else:
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
@@ -1983,10 +1755,57 @@ def add_reactor_volume_equalities(m):
         return m.fs.R5.volume[0] >= m.fs.R4.volume[0] * 0.5
 
 
+def rescale_system(m):
+    sb = ScalerBase()
+    csb = CustomScalerBase()
+    # scale_system(m)
+    # Default Jacobian Condition Number: 1.125e13
+    # Best Jacobian Condition Number: 2.815e13
+
+    sb.set_variable_scaling_factor(
+        m.fs.SP5.split_fraction[0, "overflow"], 1e8, overwrite=True
+    )
+
+    # sb.set_variable_scaling_factor(
+    #     m.fs.MX6.mixed_state[0].conc_mass_comp["S_I"], 1e2, overwrite=True
+    # )
+
+    # for c in m.fs.props_ASM1.solute_set:
+    #     sb.set_variable_scaling_factor(
+    #         m.fs.P1.control_volume.properties_in[0].conc_mass_comp[c], 1e0, overwrite=True
+    #     )
+    #     sb.set_variable_scaling_factor(
+    #         m.fs.MX6.reactor_state[0].conc_mass_comp[c], 1e0, overwrite=True
+    #     ) # 1e0, 1e9
+    # sb.set_variable_scaling_factor(
+    #     m.fs.MX6.mixed_state[0].conc_mass_comp[c], 1e9, overwrite=True
+    # ) 1e2, 1e9
+    # sb.set_variable_scaling_factor(
+    #     m.fs.MX6.reactor_state[0].conc_mass_comp["S_I"], 1e2, overwrite=True
+    # )
+
+    # for c in m.fs.props_vap.solute_set:
+    # sb.set_variable_scaling_factor(
+    #     m.fs.SP5.split_fraction[0, "overflow"], 1e1, overwrite=True
+    # )   # 1e1, 1e8, 1e10
+    # sb.set_variable_scaling_factor(
+    #     m.fs.SP5.split_fraction[0, "underflow"], 1e1, overwrite=True
+    # )
+
+    # for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
+    #     csb.scale_constraint_by_nominal_value(
+    #         c,
+    #         scheme=ConstraintScalingScheme.inverseMaximum,
+    #         overwrite=True,
+    #     )
+
+
 def solve(blk, solver=None, tee=True):
     if solver is None:
-        solver = get_solver()
+        # solver = get_solver()
+        solver = get_solver(options={"max_iter": 500})
     results = solver.solve(blk, tee=tee)
+    # pyo.assert_optimal_termination(results)
     return results
 
 
