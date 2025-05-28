@@ -38,7 +38,6 @@ from watertap.unit_models.translators.translator_adm1_asm1 import (
 )
 
 from watertap.core.solvers import get_solver
-import idaes.core.util.scaling as iscale
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.custom_scaler_base import (
@@ -123,12 +122,12 @@ def main(reactor_volume_equalities=True):
 
     solve(rescaled_model, tee=True)
 
-    results = scaling.propagate_solution(rescaled_model, m)
+    results = rescaling.propagate_solution(rescaled_model, m)
 
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    display_results(scaled_model)
-    display_costing(scaled_model)
-    display_performance_metrics(scaled_model)
+    display_results(m)
+    display_costing(m)
+    display_performance_metrics(m)
 
     return m, results
 
@@ -1310,45 +1309,9 @@ def initialize_system(m):
     seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
 
     initializer = BlockTriangularizationInitializer()
-    list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5]
 
     def function(unit):
-        # unit.initialize(outlvl=idaeslog.INFO_HIGH)
         initializer.initialize(unit)
-        # if unit in list:
-        #     initializer.initialize(unit)
-        # else:
-        #     unit.initialize(outlvl=idaeslog.INFO_HIGH)
-        # if unit == m.fs.R5:
-        #     print(f"Initializing {unit} manually")
-        #     m.fs.R5.control_volume.properties_in[0].flow_vol.fix()
-        #     m.fs.R5.control_volume.properties_in[0].conc_mass_comp.fix()
-        #     # Re-solve leach unit
-        #     solver = get_solver()
-        #     solver.solve(m.fs.R5, tee=True)
-        #     # Unfix feed states
-        #     m.fs.R5.control_volume.properties_in[0].flow_vol.unfix()
-        #     m.fs.R5.control_volume.properties_in[0].conc_mass_comp.unfix()
-        # if unit == m.fs.RADM:
-        #     print(f"Initializing {unit} manually")
-        #     m.fs.RADM.liquid_phase.properties_in[0].flow_vol.fix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp.fix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].temperature.fix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].pressure.fix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].cations.fix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].anions.fix()
-        #     # Re-solve RADM unit
-        #     solver = get_solver()
-        #     solver.solve(m.fs.RADM, tee=True)
-        #     # Unfix feed states
-        #     m.fs.RADM.liquid_phase.properties_in[0].flow_vol.unfix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].conc_mass_comp.unfix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].temperature.unfix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].pressure.unfix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].cations.unfix()
-        #     m.fs.RADM.liquid_phase.properties_in[0].anions.unfix()
-        # else:
-        #     unit.initialize(outlvl=idaeslog.INFO_HIGH)
 
     seq.run(m, function)
 
