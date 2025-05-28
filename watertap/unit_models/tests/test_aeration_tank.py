@@ -191,9 +191,9 @@ class TestAeration_withASM1(object):
                 == model.fs.unit.control_volume.mass_transfer_term[k]
             )
 
-        assert number_variables(model) == 100
+        assert number_variables(model) == 104
         assert number_total_constraints(model) == 49
-        assert number_unused_variables(model) == 1
+        assert number_unused_variables(model) == 5
 
     @pytest.mark.component
     def test_units(self, model):

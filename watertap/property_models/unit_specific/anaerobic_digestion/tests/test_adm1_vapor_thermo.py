@@ -275,18 +275,18 @@ class TestADM1VaporPropertiesScaler:
         scaler.variable_scaling_routine(model.props[1])
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 7
+        assert len(sfx) == 10
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e2, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
         assert sfx[model.props[1].pressure_sat["S_ch4"]] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-3, rel=1e-8
         )
         assert sfx[model.props[1].pressure_sat["S_co2"]] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-3, rel=1e-8
         )
-        assert sfx[model.props[1].pressure_sat["S_h2"]] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx[model.props[1].pressure_sat["H2O"]] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx[model.props[1].pressure_sat["S_h2"]] == pytest.approx(1e-3, rel=1e-8)
+        assert sfx[model.props[1].pressure_sat["H2O"]] == pytest.approx(1e-3, rel=1e-8)
 
     @pytest.mark.unit
     def test_constraint_scaling_routine(self):
@@ -315,26 +315,26 @@ class TestADM1VaporPropertiesScaler:
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 11
+        assert len(sfx) == 14
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e2, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
         assert sfx[model.props[1].pressure_sat["S_ch4"]] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-3, rel=1e-8
         )
         assert sfx[model.props[1].pressure_sat["S_co2"]] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-3, rel=1e-8
         )
-        assert sfx[model.props[1].pressure_sat["S_h2"]] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx[model.props[1].pressure_sat["H2O"]] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx[model.props[1].pressure_sat["S_h2"]] == pytest.approx(1e-3, rel=1e-8)
+        assert sfx[model.props[1].pressure_sat["H2O"]] == pytest.approx(1e-3, rel=1e-8)
         assert sfx[model.props[1]._pressure_sat["S_ch4"]] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-3, rel=1e-8
         )
         assert sfx[model.props[1]._pressure_sat["S_co2"]] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-3, rel=1e-8
         )
         assert sfx[model.props[1]._pressure_sat["S_h2"]] == pytest.approx(
-            1e-6, rel=1e-8
+            1e-3, rel=1e-8
         )
         assert sfx[model.props[1]._pressure_sat["H2O"]] == pytest.approx(
             1.8903591682e-3, rel=1e-8
