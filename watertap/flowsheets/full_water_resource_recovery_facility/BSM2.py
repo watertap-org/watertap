@@ -91,41 +91,30 @@ from watertap.costing.unit_models.clarifier import (
 def main(reactor_volume_equalities=True):
     m = build()
     set_operating_conditions(m)
-
-    print("---System Initialization---")
     initialize_system(m)
-
     add_costing(m)
-    print("---Costing Initialization---")
     m.fs.costing.initialize()
 
     scale_system(m)
-
     scaling = pyo.TransformationFactory("core.scale_model")
     scaled_model = scaling.create_using(m, rename=False)
-
     solve(scaled_model)
-
     scaling.propagate_solution(scaled_model, m)
 
     print("\n\n=============SIMULATION RESULTS=============\n\n")
-
-    display_results(m)
+    # display_results(m)
     display_costing(m)
 
     setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-
     rescale_system(m, reactor_volume_equalities=reactor_volume_equalities)
-
     rescaling = pyo.TransformationFactory("core.scale_model")
     rescaled_model = rescaling.create_using(m, rename=False)
-
     solve(rescaled_model, tee=True)
 
     results = rescaling.propagate_solution(rescaled_model, m)
 
     print("\n\n=============OPTIMIZATION RESULTS=============\n\n")
-    display_results(m)
+    # display_results(m)
     display_costing(m)
     display_performance_metrics(m)
 

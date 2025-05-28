@@ -30,7 +30,6 @@ import pytest
 
 from pyomo.environ import (
     assert_optimal_termination,
-    Objective,
     TransformationFactory,
     value,
 )

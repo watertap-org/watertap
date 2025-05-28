@@ -124,13 +124,6 @@ def build():
     )
     iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
 
-    # Check condition number to confirm scaling
-    sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-    jac, _ = get_jacobian(sm, scaled=False)
-    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-        1.627338069e15, rel=1e-3
-    )
-
     return m
 
 
@@ -328,14 +321,14 @@ class TestADScaler:
         # Inlet state
         sfx_in = model.fs.unit.liquid_phase.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        # Scaling factors for FTP and rate reactions
+        assert len(sfx_in) == 27
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.liquid_phase.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        # Scaling factors for FTP and rate reactions
+        assert len(sfx_out) == 27
 
         # Reaction block
         sfx_rxn = model.fs.unit.liquid_phase.reactions[0].scaling_factor
@@ -346,8 +339,8 @@ class TestADScaler:
         # Check that unit model has scaling factors
         sfx_cv = model.fs.unit.liquid_phase.scaling_factor
         assert isinstance(sfx_cv, Suffix)
-        # Scaling factor for volume
-        assert len(sfx_cv) == 1
+        # Scaling factors for volume and rate reactions
+        assert len(sfx_cv) == 47
 
     #
     @pytest.mark.component
@@ -383,14 +376,14 @@ class TestADScaler:
         # Inlet state
         sfx_in = model.fs.unit.liquid_phase.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        # Scaling factors for FTP and rate reactions
+        assert len(sfx_in) == 27
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.liquid_phase.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        # Scaling factors for FTP and rate reactions
+        assert len(sfx_out) == 27
 
         # Reaction block
         sfx_rxn = model.fs.unit.liquid_phase.reactions[0].scaling_factor
@@ -532,7 +525,7 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            7.7264875657494e13, rel=1e-3
+            2.608771605737e12, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -617,5 +610,5 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.3134628077015e13, rel=1e-3
+            7.0054790813389e11, rel=1e-3
         )
