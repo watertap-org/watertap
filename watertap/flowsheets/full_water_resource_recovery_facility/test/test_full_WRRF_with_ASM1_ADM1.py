@@ -28,7 +28,7 @@ __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia, Marcus Holly"
 
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value
+from pyomo.environ import assert_optimal_termination, TransformationFactory, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -41,17 +41,26 @@ class TestFullFlowsheet:
     def system_frame(self):
         m = BSM2.build()
         BSM2.set_operating_conditions(m)
+
         for mx in m.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
         assert_units_consistent(m)
-        BSM2.scale_system(m, has_scalers=True, reactor_volume_equalities=False)
+
         BSM2.initialize_system(m)
+        BSM2.add_costing(m)
+        m.fs.costing.initialize()
+
         for mx in m.mixers:
             mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
 
-        m.results = BSM2.solve(m)
+        BSM2.scale_system(m)
+        scaling = TransformationFactory("core.scale_model")
+        scaled_model = scaling.create_using(m, rename=False)
+
+        BSM2.solve(scaled_model)
+        m.results = scaling.propagate_solution(scaled_model, m)
 
         return m
 
@@ -118,18 +127,6 @@ class TestFullFlowsheet:
         assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
             20.4775, rel=1e-3
         )
-
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        BSM2.add_costing(m, has_scalers=True)
-        m.fs.costing.initialize()
-        results = BSM2.solve(m)
-
-        assert_optimal_termination(results)
-
-        # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(0.351097, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
             17443323.82075141, rel=1e-3
@@ -147,11 +144,18 @@ class TestFullFlowsheet:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_optimization(self, system_frame):
+    def test_optimization_equal_volumes(self, system_frame):
         m = system_frame
-        BSM2.setup_optimization(system_frame, reactor_volume_equalities=False)
-        results = BSM2.solve(system_frame)
+        BSM2.setup_optimization(system_frame, reactor_volume_equalities=True)
+        BSM2.rescale_system(m, reactor_volume_equalities=True)
+
+        rescaling = TransformationFactory("core.scale_model")
+        rescaled_model = rescaling.create_using(system_frame, rename=False)
+
+        BSM2.solve(rescaled_model)
+        results = scaling.propagate_solution(rescaled_model, m)
         assert_optimal_termination(results)
+
         assert degrees_of_freedom(system_frame) == 10
 
         # check costing
@@ -163,362 +167,27 @@ class TestFullFlowsheet:
             521690.032, rel=1e-5
         )
 
-
-class TestFullFlowsheet_with_iscale:
-    @pytest.fixture(scope="class")
-    def system_frame(self):
-        m = BSM2.build()
-        BSM2.set_operating_conditions(m)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-        assert_units_consistent(m)
-        BSM2.scale_system(m, has_scalers=False, reactor_volume_equalities=False)
-        BSM2.initialize_system(m)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-
-        m.results = BSM2.solve(m)
-
-        return m
-
-    @pytest.mark.integration
-    def test_square_problem(self, system_frame):
-        assert_units_consistent(system_frame)
-        assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.results)
-
-    @pytest.mark.component
-    def test_square_solve(self, system_frame):
-        m = system_frame
-
-        assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-            0.23889, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].alkalinity) == pytest.approx(
-            3.8096e-3, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.061909, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_S"]) == pytest.approx(
-            0.00087127, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0054462, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00020555, rel=1e-3
-        )
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_BH"]
-        ) == pytest.approx(0.010903, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_BA"]
-        ) == pytest.approx(0.00078876, rel=1e-3)
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_P"]) == pytest.approx(
-            0.0022565, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_O"]) == pytest.approx(
-            0.000449, rel=1e-3
-        )
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_NO"]
-        ) == pytest.approx(0.0155, rel=1e-2)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_NH"]
-        ) == pytest.approx(0.00091693, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_ND"]
-        ) == pytest.approx(0.00064661, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
-        ) == pytest.approx(1.4159e-5, rel=1e-3)
-
-        # Check electricity consumption for each aerobic reactor
-        assert value(m.fs.R3.electricity_consumption[0]) == pytest.approx(
-            73.8694, rel=1e-3
-        )
-        assert value(m.fs.R4.electricity_consumption[0]) == pytest.approx(
-            69.9669, rel=1e-3
-        )
-        assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
-            20.4775, rel=1e-3
-        )
-
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        BSM2.add_costing(m, has_scalers=False)
-        m.fs.costing.initialize()
-        results = BSM2.solve(m)
-
-        assert_optimal_termination(results)
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.351097, rel=1e-3)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17443323.82075141, rel=1e-3
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            638749.398846816, rel=1e-3
-        )
-
-    @pytest.mark.component
-    def test_display(self, system_frame):
-        m = system_frame
-        BSM2.display_results(m)
-        BSM2.display_costing(m)
-        BSM2.display_performance_metrics(m)
-
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_optimization(self, system_frame):
+    def test_optimization_unequal_volumes(self, system_frame):
         m = system_frame
         BSM2.setup_optimization(system_frame, reactor_volume_equalities=False)
-        results = BSM2.solve(system_frame)
+        BSM2.rescale_system(m, reactor_volume_equalities=False)
+
+        rescaling = TransformationFactory("core.scale_model")
+        rescaled_model = rescaling.create_using(system_frame, rename=False)
+
+        BSM2.solve(rescaled_model)
+        results = scaling.propagate_solution(rescaled_model, m)
         assert_optimal_termination(results)
+
         assert degrees_of_freedom(system_frame) == 10
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.2858398, rel=1e-5)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.2857926, rel=1e-5)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            14182715.5449, rel=1e-5
+            14181310.8469, rel=1e-5
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            521870.215, rel=1e-5
-        )
-
-
-class TestFullFlowsheet_with_equal_reactor_vols:
-    @pytest.fixture(scope="class")
-    def system_frame(self):
-        m = BSM2.build()
-        BSM2.set_operating_conditions(m, reactor_volume_equalities=True)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-        assert_units_consistent(m)
-        BSM2.scale_system(m, has_scalers=True, reactor_volume_equalities=True)
-        BSM2.initialize_system(m)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-
-        m.results = BSM2.solve(m)
-
-        return m
-
-    @pytest.mark.integration
-    def test_square_problem(self, system_frame):
-        assert_units_consistent(system_frame)
-        assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.results)
-
-    @pytest.mark.component
-    def test_square_solve(self, system_frame):
-        m = system_frame
-
-        assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-            0.23889, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].alkalinity) == pytest.approx(
-            3.8096e-3, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.061909, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_S"]) == pytest.approx(
-            0.00087127, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0054462, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00020555, rel=1e-3
-        )
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_BH"]
-        ) == pytest.approx(0.010903, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_BA"]
-        ) == pytest.approx(0.00078876, rel=1e-3)
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_P"]) == pytest.approx(
-            0.0022565, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_O"]) == pytest.approx(
-            0.000449, rel=1e-3
-        )
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_NO"]
-        ) == pytest.approx(0.0155, rel=1e-2)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_NH"]
-        ) == pytest.approx(0.00091693, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_ND"]
-        ) == pytest.approx(0.00064661, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
-        ) == pytest.approx(1.4159e-5, rel=1e-3)
-
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        BSM2.add_costing(m, has_scalers=True)
-        m.fs.costing.initialize()
-        results = BSM2.solve(m)
-
-        assert_optimal_termination(results)
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.351097, rel=1e-3)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17443323.82075141, rel=1e-3
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            638749.398846816, rel=1e-3
-        )
-
-    @pytest.mark.component
-    def test_display(self, system_frame):
-        m = system_frame
-        BSM2.display_results(m)
-        BSM2.display_costing(m)
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_optimization(self, system_frame):
-        m = system_frame
-        BSM2.setup_optimization(system_frame, reactor_volume_equalities=True)
-        results = BSM2.solve(system_frame)
-        assert_optimal_termination(results)
-        assert degrees_of_freedom(system_frame) == 8
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.2773028, rel=1e-5)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            13799544.0286, rel=1e-5
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            502242.237, rel=1e-5
-        )
-
-
-class TestFullFlowsheet_with_equal_reactor_vols_iscale:
-    @pytest.fixture(scope="class")
-    def system_frame(self):
-        m = BSM2.build()
-        BSM2.set_operating_conditions(m, reactor_volume_equalities=True)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-        assert_units_consistent(m)
-        BSM2.scale_system(m, has_scalers=False, reactor_volume_equalities=True)
-        BSM2.initialize_system(m)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-
-        m.results = BSM2.solve(m)
-
-        return m
-
-    @pytest.mark.integration
-    def test_square_problem(self, system_frame):
-        assert_units_consistent(system_frame)
-        assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.results)
-
-    @pytest.mark.component
-    def test_square_solve(self, system_frame):
-        m = system_frame
-
-        assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-            0.23889, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].alkalinity) == pytest.approx(
-            3.8096e-3, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.061909, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_S"]) == pytest.approx(
-            0.00087127, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0054462, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00020555, rel=1e-3
-        )
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_BH"]
-        ) == pytest.approx(0.010903, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_BA"]
-        ) == pytest.approx(0.00078876, rel=1e-3)
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["X_P"]) == pytest.approx(
-            0.0022565, rel=1e-3
-        )
-        assert value(m.fs.Treated.properties[0].conc_mass_comp["S_O"]) == pytest.approx(
-            0.000449, rel=1e-3
-        )
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_NO"]
-        ) == pytest.approx(0.0155, rel=1e-2)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_NH"]
-        ) == pytest.approx(0.00091693, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["S_ND"]
-        ) == pytest.approx(0.00064661, rel=1e-3)
-        assert value(
-            m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
-        ) == pytest.approx(1.4159e-5, rel=1e-3)
-
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        BSM2.add_costing(m, has_scalers=False)
-        m.fs.costing.initialize()
-        results = BSM2.solve(m)
-
-        assert_optimal_termination(results)
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.351097, rel=1e-3)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17443323.82075141, rel=1e-3
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            638749.398846816, rel=1e-3
-        )
-
-    @pytest.mark.component
-    def test_display(self, system_frame):
-        m = system_frame
-        BSM2.display_results(m)
-        BSM2.display_costing(m)
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_optimization(self, system_frame):
-        m = system_frame
-        BSM2.setup_optimization(system_frame, reactor_volume_equalities=True)
-        results = BSM2.solve(system_frame)
-        assert_optimal_termination(results)
-        assert degrees_of_freedom(system_frame) == 8
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.304886116, rel=1e-5)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            15195824.972, rel=1e-5
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            549836.226, rel=1e-5
+            521690.032, rel=1e-5
         )

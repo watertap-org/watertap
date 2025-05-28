@@ -1425,13 +1425,13 @@ def setup_optimization(m, reactor_volume_equalities=True):
         add_reactor_volume_equalities(m)
 
     m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
 
     m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
 
     m.fs.R5.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8e-3)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()
@@ -1708,12 +1708,3 @@ def display_performance_metrics(m):
 
 if __name__ == "__main__":
     m, results = main(reactor_volume_equalities=True)
-    print(f"TSS is : {pyo.value(m.fs.CL1.effluent_state[0].TSS)}")
-    print(f"TSS limit is : {pyo.value(m.fs.props_ASM1.TSS_max)}")
-    print(f"COD is : {pyo.value(m.fs.CL1.effluent_state[0].COD)}")
-    print(f"COD limit is : {pyo.value(m.fs.props_ASM1.COD_max)}")
-    print(f"Total N is : {pyo.value(m.fs.CL1.effluent_state[0].Total_N)}")
-    print(f"Total N limit is : {pyo.value(m.fs.props_ASM1.totalN_max)}")
-    BOD5_output = pyo.value(m.fs.CL1.effluent_state[0].BOD5["effluent"])
-    print(f"BOD5 is : {BOD5_output}")
-    print(f"BOD5 limit is : {pyo.value(m.fs.props_ASM1.BOD5_max)}")
