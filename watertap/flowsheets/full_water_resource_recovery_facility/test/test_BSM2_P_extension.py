@@ -25,6 +25,10 @@ from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension import (
     main,
@@ -62,7 +66,7 @@ class TestFullFlowsheetBioPFalse:
             0.00026922, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.057450, rel=1e-3
+            0.057450006, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
@@ -126,12 +130,22 @@ class TestFullFlowsheetBioPFalse:
         m = system_frame
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.470491, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.47049103621, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
             24058975.756, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             831978.066, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            6.0114758752e18, rel=1e-3
         )
 
 
@@ -233,4 +247,14 @@ class TestFullFlowsheetBioPTrue:
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
             836020.408, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            7.069595617e18, rel=1e-3
         )
