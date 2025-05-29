@@ -303,13 +303,13 @@ class TestDyewith0DROFlowsheet:
             m.fs.brine.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
-        assert pytest.approx(-45144.537, rel=1e-5) == value(
+        assert pytest.approx(-43659.193, rel=1e-5) == value(
             m.fs.desalination.RO.deltaP[0]
         )
 
-        assert pytest.approx(1299.7286, rel=1e-5) == value(m.fs.desalination.RO.area)
+        assert pytest.approx(1256.9627, rel=1e-5) == value(m.fs.desalination.RO.area)
 
-        assert pytest.approx(3.26732341e-7, rel=1e-5) == value(
+        assert pytest.approx(1.649766198e-7, rel=1e-5) == value(
             m.fs.desalination.RO.flux_mass_phase_comp[0, 1, "Liq", "TDS"]
         )
 

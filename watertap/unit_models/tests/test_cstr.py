@@ -206,6 +206,7 @@ class TestCSTR(UnitTestHarness):
         self.unit_solutions[m.fs.unit.outlet.pressure[0]] = 101325.0
         self.unit_solutions[m.fs.unit.outlet.temperature[0]] = 304.09
         self.unit_solutions[m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]] = 20.32
+        self.unit_solutions[m.fs.unit.hydraulic_retention_time[0]] = 1.5
 
         self.conservation_equality = {
             "Check 1": {
