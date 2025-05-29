@@ -3,6 +3,10 @@
 Nanofiltration- Donnan Steric Pore Model with Dielectric Exclusion (0D)
 =======================================================================
 
+.. code-block:: python
+
+   from watertap.unit_models.nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
+
 This unit model implements the Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE) for nanofiltration.
 
 .. note::

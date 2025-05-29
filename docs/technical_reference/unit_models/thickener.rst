@@ -3,6 +3,10 @@
 Thickener
 =========
 
+.. code-block:: python
+
+   from watertap.unit_models.thickener import Thickener
+
 .. index::
    pair: watertap.unit_models.thickener;thickener
 
