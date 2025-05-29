@@ -548,9 +548,9 @@ def set_operating_conditions(m, bio_P=False):
             if "conc_mass_comp" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
             if "anions" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
-            if "cations" in var.name:
                 iscale.set_scaling_factor(var, 1e0)
+            if "cations" in var.name:
+                iscale.set_scaling_factor(var, 1e1)
 
     for unit in ("R1", "R2", "R3", "R4"):
         block = getattr(m.fs, unit)
@@ -987,7 +987,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
