@@ -272,8 +272,6 @@ class ADM1_vaporStateBlockData(StateBlockData):
             units=pyo.units.Pa,
         )
 
-        eps = 1e-30
-
         def pressure_sat_rule(b, j):
             if j == "S_h2":
                 return b.pressure_sat[j] == pyo.units.convert(
@@ -294,7 +292,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
                     to_units=pyo.units.Pa,
                 )
             elif j == "H2O":
-                return pyo.log(b.pressure_sat[j] / pyo.units.Pa + eps) == (
+                return pyo.log(b.pressure_sat[j] / pyo.units.Pa) == (
                     pyo.log(0.0313)
                     + 5290
                     * pyo.units.K

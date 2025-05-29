@@ -675,17 +675,15 @@ see reaction package for documentation.}""",
             doc="Electricity intensity with respect to inlet flow",
         )
 
-        eps = 1e-30 * pyunits.kmol / pyunits.m**3 * pyunits.bar**-1
-
         def CO2_Henrys_law_rule(self, t):
             return log(
-                (self.KH_co2[t] + eps) / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+                self.KH_co2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
             ) == (
                 log(0.035)
                 + -19410
                 / pyunits.mole
                 * pyunits.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * (
                     (1 / self.config.vapor_property_package.temperature_ref)
                     - (1 / self.vapor_phase[t].temperature)
@@ -700,13 +698,13 @@ see reaction package for documentation.}""",
 
         def Ch4_Henrys_law_rule(self, t):
             return log(
-                (self.KH_ch4[t] + eps) / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+                self.KH_ch4[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
             ) == (
                 log(0.0014)
                 + -14240
                 / pyunits.mole
                 * pyunits.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * (
                     (1 / self.config.vapor_property_package.temperature_ref)
                     - (1 / self.vapor_phase[t].temperature)
@@ -721,13 +719,13 @@ see reaction package for documentation.}""",
 
         def H2_Henrys_law_rule(self, t):
             return log(
-                (self.KH_h2[t] + eps) / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
+                self.KH_h2[t] / (pyunits.kmol / pyunits.m**3 * pyunits.bar**-1)
             ) == (
                 log(7.8e-4)
                 + -4180
                 / pyunits.mole
                 * pyunits.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * (
                     (1 / self.config.vapor_property_package.temperature_ref)
                     - (1 / self.vapor_phase[t].temperature)
