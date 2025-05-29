@@ -3074,8 +3074,8 @@ def build_flowsheet(build_options=None, **kwargs):
     scaling.propagate_solution(scaled_model, m)
 
     # Set up optimization with additional scaling
-    setup_optimization(m)
-    rescale_system(m)
+    setup_optimization(m, reactor_volume_equalities=True)
+    rescale_system(m, reactor_volume_equalities=True)
     rescaling = TransformationFactory("core.scale_model")
     rescaled_model = rescaling.create_using(m, rename=False)
     solve(rescaled_model, tee=True)

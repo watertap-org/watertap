@@ -158,31 +158,6 @@ class ASM1ParameterData(PhysicalParameterBlock):
             doc="Conversion factor for BOD5",
         )
 
-        # Effluent violations
-        self.TSS_max = pyo.Var(
-            initialize=0.03,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Maximum TSS effluent concentration",
-        )
-        self.COD_max = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Maximum COD effluent concentration",
-        )
-        self.totalN_max = pyo.Var(
-            initialize=0.018,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Maximum total nitrogen effluent concentration",
-        )
-        self.BOD5_max = pyo.Var(
-            initialize=0.01,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Maximum BOD5 effluent concentration",
-        )
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
