@@ -583,8 +583,6 @@ def set_operating_conditions(m, bio_P=False):
     iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
 
-    # iscale.constraint_scaling_transform(m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-6)
-
     if bio_P:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
         iscale.constraint_scaling_transform(
@@ -599,6 +597,11 @@ def set_operating_conditions(m, bio_P=False):
     # Apply scaling
     scale_variables(m)
     iscale.calculate_scaling_factors(m)
+
+    if bio_P:
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"], 1e6
+        )
 
 
 def initialize_system(m, bio_P=False, solver=None):
@@ -1001,7 +1004,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
@@ -1023,3 +1026,4 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    m.fs.Treated.display()
