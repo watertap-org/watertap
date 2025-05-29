@@ -95,6 +95,9 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
+from idaes.core.util import DiagnosticsToolbox
+from idaes.core.scaling import report_scaling_factors
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -150,6 +153,15 @@ def main(bio_P=False):
 
     display_costing(m)
     display_performance_metrics(m)
+
+    print("--- Scaling Factors ---")
+    report_scaling_factors(m, descend_into=True)
+
+    dt = DiagnosticsToolbox(m)
+    print("Numerical Issues")
+    dt.report_numerical_issues()
+    dt.display_variables_with_extreme_jacobians()
+    dt.display_constraints_with_extreme_jacobians()
 
     return m, results
 
@@ -571,6 +583,8 @@ def set_operating_conditions(m, bio_P=False):
     iscale.set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
     iscale.set_scaling_factor(m.fs.AD.KH_h2, 1e2)
 
+    # iscale.constraint_scaling_transform(m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-6)
+
     if bio_P:
         iscale.set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
         iscale.constraint_scaling_transform(
@@ -659,16 +673,16 @@ def initialize_system(m, bio_P=False, solver=None):
         tear_guesses = {
             "flow_vol": {0: 1.2368},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0006,
-                (0, "S_F"): 0.0004,
-                (0, "S_I"): 0.057,
+                (0, "S_A"): 0.00057,
+                (0, "S_F"): 0.0003975,
+                (0, "S_I"): 0.05745,
                 (0, "S_N2"): 0.047,
                 (0, "S_NH4"): 0.0075,
                 (0, "S_NO3"): 0.003,
                 (0, "S_O2"): 0.0019,
                 (0, "S_PO4"): 0.73,
                 (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.020,
+                (0, "S_Mg"): 0.021,
                 (0, "S_IC"): 0.13,
                 (0, "X_AUT"): 0.11,
                 (0, "X_H"): 3.5,
@@ -686,9 +700,9 @@ def initialize_system(m, bio_P=False, solver=None):
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
                 (0, "S_A"): 0.097,
-                (0, "S_F"): 0.15,
+                (0, "S_F"): 0.14,
                 (0, "S_I"): 0.057,
-                (0, "S_N2"): 0.036,
+                (0, "S_N2"): 0.03617,
                 (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 0.002,
                 (0, "S_O2"): 0.0013,
@@ -987,7 +1001,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
