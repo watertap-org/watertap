@@ -1,3 +1,5 @@
+.. _MVC_flowsheet:
+
 Mechanical Vapor Compression
 ============================
 
@@ -33,9 +35,9 @@ system. The flowsheet relies on the following key assumptions:
 
 Documentation for each of the WaterTAP unit models can be found below.
     * `Pressure Changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_
-    * `Evaporator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
-    * `Compressor <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
-    * `Condenser <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
+    * :ref:`Evaporator <MVC>`
+    * :ref:`Compressor <MVC>`
+    * :ref:`Condenser <MVC>`
 
 Documentation for each of the IDAES unit models can be found below.
     * `Feed <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/feed.html>`_
@@ -46,11 +48,11 @@ Documentation for each of the IDAES unit models can be found below.
     * `Translator <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/translator.html>`_
 
 Documentation for each of the property models can be found below.
-    * `Water <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/water.html>`_
-    * `Seawater <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_
+    * :ref:`Water <water>`
+    * :ref:`Seawater <seawater>`
 
 Documentation for the costing relationships can be found below.
-    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+    * :ref:`WaterTAP Costing Package <watertap_costing>`
 
 The objective function is to minimize the levelized cost of water, which can be represented by the following equation
 where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
