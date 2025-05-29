@@ -1,3 +1,5 @@
+.. _ASM1_flowsheet:
+
 Activated Sludge Model No. 1
 ============================
 
@@ -6,8 +8,7 @@ Introduction
 
 Activated Sludge Model No. 1 (ASM1) was created by the International Water Association (IWA) to create a mathematical model to predict the output of activated sludge 
 models. The model aims to incorporate carbon oxidation, nitrification, and denitrification. The model quantifies 
-the kinetics and stoichiometry of each process. The `ASM1
-<https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_ property and reaction relationships 
+the kinetics and stoichiometry of each process. The :ref:`ASM1 <ASM1>` property and reaction relationships
 are based on the relationships for the activated sludge biological reactor provided in `Henze, M. et al. (1987) 
 <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
 
@@ -34,11 +35,11 @@ The flowsheet relies on the following key assumptions:
 
 Documentation for each of the unit models can be found below. All unit models were set up with their default configuration arguments.
     * `CSTR <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/cstr.html>`_
-    * `Aeration tank <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/aeration_tank.html>`_
-    * `Secondary clarifier <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/clarifier.html>`_
+    * :ref:`Aeration tank <aeration_tank>`
+    * :ref:`Secondary clarifier <clarifier>`
 
 Documentation for the property model can be found below.
-    * `ASM1 <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
+    * :ref:`ASM1 <ASM1>`
 
 Degrees of Freedom
 ------------------

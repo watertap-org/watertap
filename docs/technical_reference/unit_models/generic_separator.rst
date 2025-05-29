@@ -1,5 +1,11 @@
-Generic separator unit
-=========================
+.. _generic_separator:
+
+Generic Separator Unit
+======================
+
+.. code-block:: python
+
+   from watertap.unit_models.generic_separation import GenericSeparation
 
 .. index::
    pair: watertap.unit_models.generic_separation;generic_separation

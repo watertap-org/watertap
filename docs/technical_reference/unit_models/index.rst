@@ -15,6 +15,7 @@ Unit Models
    dewatering
    electrodialysis_0D
    electrodialysis_1D
+   electrodialysis_bipolar_1D
    electrolyzer
    electroNP_ZO
    energy_recovery_device

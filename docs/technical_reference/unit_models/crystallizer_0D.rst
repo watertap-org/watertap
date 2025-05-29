@@ -1,6 +1,11 @@
+.. _crystallizer_0D:
 
-Crystallization (0D)
-=======================
+Crystallizer (0D)
+=================
+
+.. code-block:: python
+
+   from watertap.unit_models.crystallizer import Crystallization
 
 Introduction
 -------------

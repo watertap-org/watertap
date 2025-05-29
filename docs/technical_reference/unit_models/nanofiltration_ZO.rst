@@ -1,5 +1,12 @@
+.. _nanofiltration_ZO:
+
 Nanofiltration (ZO)
 ====================
+
+.. code-block:: python
+
+   from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
+
 This nanofiltration (NF) unit model
    * is a zero-order model that enables the user to specify performance in terms of membrane solvent flux and solute/ion rejection
    * supports a single liquid phase only

@@ -4,7 +4,7 @@ ElectroN-P Costing Method
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.electroNP`) when applying the `cost_electroNP` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.electroNP``) when applying the ``cost_electroNP`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -19,7 +19,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_electroNP` costing method in the ``watertap_costing_package``:
+The following variables are used on the unit block (e.g., ``m.fs.unit.costing``) when applying the ``cost_electroNP`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
