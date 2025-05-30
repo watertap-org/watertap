@@ -586,6 +586,11 @@ def set_operating_conditions(m, bio_P=False):
     scale_variables(m)
     iscale.calculate_scaling_factors(m)
 
+    if bio_P:
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"], 1e6
+        )
+
 
 def initialize_system(m, bio_P=False, solver=None):
     # Initialize flowsheet
@@ -604,7 +609,7 @@ def initialize_system(m, bio_P=False, solver=None):
 
     if bio_P:
         tear_guesses = {
-            "flow_vol": {0: 1.23682},
+            "flow_vol": {0: 1.2368},
             "conc_mass_comp": {
                 (0, "S_A"): 0.0006,
                 (0, "S_F"): 0.0004,
@@ -623,7 +628,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_PAO"): 3.6,
                 (0, "X_PHA"): 0.094,
                 (0, "X_PP"): 1.16,
-                (0, "X_S"): 0.0594,
+                (0, "X_S"): 0.059,
             },
             "temperature": {0: 308.15},
             "pressure": {0: 101325},

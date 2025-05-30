@@ -73,7 +73,7 @@ class TestFullFlowsheet:
         return m
 
     @pytest.fixture(scope="class")
-    def optimized_system_frame_equal_volumes(self, reactor_volume_equalities=True):
+    def optimized_system_frame(self):
         m = BSM2.build()
         BSM2.set_operating_conditions(m)
 
@@ -100,48 +100,8 @@ class TestFullFlowsheet:
         m.scaled_results = BSM2.solve(m.scaled_model)
         m.results = scaling.propagate_solution(m.scaled_model, m)
 
-        BSM2.setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-        BSM2.rescale_system(m, reactor_volume_equalities=reactor_volume_equalities)
-
-        rescaling = TransformationFactory("core.scale_model")
-        m.rescaled_model = rescaling.create_using(m, rename=False)
-
-        m.scaled_results = BSM2.solve(m.rescaled_model)
-
-        m.optimized_results = rescaling.propagate_solution(m.rescaled_model, m)
-
-        return m
-
-    @pytest.fixture(scope="class")
-    def optimized_system_frame_unequal_volumes(self, reactor_volume_equalities=False):
-        m = BSM2.build()
-        BSM2.set_operating_conditions(m)
-
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-        assert_units_consistent(m)
-
-        BSM2.initialize_system(m)
-        BSM2.add_costing(m)
-        m.fs.costing.initialize()
-
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-
-        BSM2.scale_system(m)
-        scaling = TransformationFactory("core.scale_model")
-        m.scaled_model = scaling.create_using(m, rename=False)
-
-        # Need to deactivate the objective in the unscaled model since only one can be active at a time
-        m.fs.objective.deactivate()
-
-        m.scaled_results = BSM2.solve(m.scaled_model)
-        m.results = scaling.propagate_solution(m.scaled_model, m)
-
-        BSM2.setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-        BSM2.rescale_system(m, reactor_volume_equalities=reactor_volume_equalities)
+        BSM2.setup_optimization(m)
+        BSM2.rescale_system(m)
 
         rescaling = TransformationFactory("core.scale_model")
         m.rescaled_model = rescaling.create_using(m, rename=False)
@@ -242,8 +202,8 @@ class TestFullFlowsheet:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_optimization_equal_volumes(self, optimized_system_frame_equal_volumes):
-        m = optimized_system_frame_equal_volumes
+    def test_optimization(self, optimized_system_frame):
+        m = optimized_system_frame
         assert_optimal_termination(m.scaled_results)
 
         assert degrees_of_freedom(m) == 16
@@ -252,18 +212,4 @@ class TestFullFlowsheet:
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             9.0326812e11, rel=1e-3
-        )
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_optimization_unequal_volumes(self, optimized_system_frame_unequal_volumes):
-        m = optimized_system_frame_unequal_volumes
-        assert_optimal_termination(m.scaled_results)
-
-        assert degrees_of_freedom(m) == 20
-
-        # Check condition number to confirm scaling
-        jac, _ = get_jacobian(m.rescaled_model, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.02059357e11, rel=1e-3
         )
