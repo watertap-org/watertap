@@ -157,6 +157,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="Conversion factor for BOD5",
         )
+
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()

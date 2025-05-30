@@ -540,17 +540,17 @@ def set_operating_conditions(m, bio_P=False):
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e0)
+                iscale.set_scaling_factor(var, 1e2)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-5)
             if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+                iscale.set_scaling_factor(var, 1e2)
             if "anions" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e0)
             if "cations" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
+                iscale.set_scaling_factor(var, 1e1)
 
     for unit in ("R1", "R2", "R3", "R4"):
         block = getattr(m.fs, unit)
@@ -585,6 +585,11 @@ def set_operating_conditions(m, bio_P=False):
     # Apply scaling
     scale_variables(m)
     iscale.calculate_scaling_factors(m)
+
+    if bio_P:
+        iscale.constraint_scaling_transform(
+            m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"], 1e6
+        )
 
 
 def initialize_system(m, bio_P=False, solver=None):
@@ -659,16 +664,16 @@ def initialize_system(m, bio_P=False, solver=None):
         tear_guesses = {
             "flow_vol": {0: 1.2368},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0006,
-                (0, "S_F"): 0.0004,
-                (0, "S_I"): 0.057,
+                (0, "S_A"): 0.00057,
+                (0, "S_F"): 0.0003975,
+                (0, "S_I"): 0.05745,
                 (0, "S_N2"): 0.047,
                 (0, "S_NH4"): 0.0075,
                 (0, "S_NO3"): 0.003,
                 (0, "S_O2"): 0.0019,
                 (0, "S_PO4"): 0.73,
                 (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.020,
+                (0, "S_Mg"): 0.021,
                 (0, "S_IC"): 0.13,
                 (0, "X_AUT"): 0.11,
                 (0, "X_H"): 3.5,
@@ -686,9 +691,9 @@ def initialize_system(m, bio_P=False, solver=None):
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
                 (0, "S_A"): 0.097,
-                (0, "S_F"): 0.15,
+                (0, "S_F"): 0.14,
                 (0, "S_I"): 0.057,
-                (0, "S_N2"): 0.036,
+                (0, "S_N2"): 0.03617,
                 (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 0.002,
                 (0, "S_O2"): 0.0013,
@@ -987,7 +992,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
