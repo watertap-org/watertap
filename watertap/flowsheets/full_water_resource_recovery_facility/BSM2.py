@@ -89,6 +89,7 @@ from watertap.costing.unit_models.clarifier import (
 )
 
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.scaling import report_scaling_factors
 
 
 def main(reactor_volume_equalities=True):
@@ -116,6 +117,8 @@ def main(reactor_volume_equalities=True):
 
     dt = DiagnosticsToolbox(rescaled_model)
     dt.report_numerical_issues()
+    # print("---Scaling Factors---")
+    # report_scaling_factors(rescaled_model, descend_into=True)
 
     results = rescaling.propagate_solution(rescaled_model, m)
 
@@ -1027,6 +1030,8 @@ def scale_system(m):
             set_scaling_factor(var, 1e2)
         if "alkalinity" in var.name:
             set_scaling_factor(var, 1e3)
+        if "split_fraction" in var.name:
+            set_scaling_factor(var, 1e1)
 
     for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
         csb.scale_constraint_by_nominal_value(
@@ -1186,7 +1191,7 @@ def setup_optimization(m, reactor_volume_equalities=True):
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()
-    m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
+    # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
     m.fs.SP5.split_fraction[:, "overflow"].setlb(0.45)
     m.fs.SP6.split_fraction[:, "recycle"].unfix()
 
