@@ -40,24 +40,20 @@ from watertap.unit_models.translators.translator_adm1_asm1 import (
 from watertap.core.solvers import get_solver
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.scaling import set_scaling_factor
-from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
-    ADM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
-    ADM1ReactionScaler,
 )
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.models.unit_models.separator import SplittingType
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
-    ADM1VaporPropertiesScaler,
 )
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock, UnitModelBlockData
@@ -80,16 +76,12 @@ from watertap.property_models.unit_specific.activated_sludge.asm1_properties imp
 )
 from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
-    ASM1ReactionScaler,
 )
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
-
-from idaes.core.util import DiagnosticsToolbox
-from idaes.core.scaling import report_scaling_factors
 
 
 def main(reactor_volume_equalities=True):
@@ -114,11 +106,6 @@ def main(reactor_volume_equalities=True):
     rescaling = pyo.TransformationFactory("core.scale_model")
     rescaled_model = rescaling.create_using(m, rename=False)
     solve(rescaled_model, tee=True)
-
-    dt = DiagnosticsToolbox(rescaled_model)
-    dt.report_numerical_issues()
-    # print("---Scaling Factors---")
-    # report_scaling_factors(rescaled_model, descend_into=True)
 
     results = rescaling.propagate_solution(rescaled_model, m)
 
@@ -417,15 +404,7 @@ def scale_system(m):
     csb = CustomScalerBase()
 
     ad_scaler = ADScaler()
-    ad_scaler.scale_model(
-        m.fs.RADM,
-        submodel_scalers={
-            m.fs.RADM.liquid_phase.properties_in: ADM1PropertiesScaler,
-            m.fs.RADM.liquid_phase.properties_out: ADM1PropertiesScaler,
-            m.fs.RADM.liquid_phase.reactions: ADM1ReactionScaler,
-            m.fs.RADM.vapor_phase: ADM1VaporPropertiesScaler,
-        },
-    )
+    ad_scaler.scale_model(m.fs.RADM)
     # Poorly scaled Jacobians
     set_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e-3, overwrite=True)
     set_scaling_factor(
@@ -518,26 +497,12 @@ def scale_system(m):
     cstr_list = [m.fs.R1, m.fs.R2]
     cstr_scaler = CSTRScaler()
     for unit in cstr_list:
-        cstr_scaler.scale_model(
-            unit,
-            submodel_scalers={
-                unit.control_volume.properties_in: ASM1PropertiesScaler,
-                unit.control_volume.properties_out: ASM1PropertiesScaler,
-                unit.control_volume.reactions: ASM1ReactionScaler,
-            },
-        )
+        cstr_scaler.scale_model(unit)
 
     aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]
     aeration_scaler = AerationTankScaler()
     for unit in aeration_list:
-        aeration_scaler.scale_model(
-            unit,
-            submodel_scalers={
-                unit.control_volume.properties_in: ASM1PropertiesScaler,
-                unit.control_volume.properties_out: ASM1PropertiesScaler,
-                unit.control_volume.reactions: ASM1ReactionScaler,
-            },
-        )
+        aeration_scaler.scale_model(unit)
 
     reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5]
     for r in reactor_list:
@@ -615,52 +580,19 @@ def scale_system(m):
     clarifier_list = [m.fs.CL, m.fs.CL1]
     clarifier_scaler = ClarifierScaler()
     for unit in clarifier_list:
-        clarifier_scaler.scale_model(
-            unit,
-            submodel_scalers={
-                unit.mixed_state: ASM1PropertiesScaler,
-                unit.underflow_state: ASM1PropertiesScaler,
-                unit.effluent_state: ASM1PropertiesScaler,
-            },
-        )
+        clarifier_scaler.scale_model(unit)
 
     thickener_scaler = ThickenerScaler()
-    thickener_scaler.scale_model(
-        m.fs.TU,
-        submodel_scalers={
-            m.fs.TU.mixed_state: ASM1PropertiesScaler,
-            m.fs.TU.underflow_state: ASM1PropertiesScaler,
-            m.fs.TU.overflow_state: ASM1PropertiesScaler,
-        },
-    )
+    thickener_scaler.scale_model(m.fs.TU)
 
     dewaterer_scaler = DewatererScaler()
-    dewaterer_scaler.scale_model(
-        m.fs.DU,
-        submodel_scalers={
-            m.fs.DU.mixed_state: ASM1PropertiesScaler,
-            m.fs.DU.underflow_state: ASM1PropertiesScaler,
-            m.fs.DU.overflow_state: ASM1PropertiesScaler,
-        },
-    )
+    dewaterer_scaler.scale_model(m.fs.DU)
 
     as_ad_scaler = ASM1ADM1Scaler()
-    as_ad_scaler.scale_model(
-        m.fs.asm_adm,
-        submodel_scalers={
-            m.fs.asm_adm.properties_in: ASM1PropertiesScaler,
-            m.fs.asm_adm.properties_out: ADM1PropertiesScaler,
-        },
-    )
+    as_ad_scaler.scale_model(m.fs.asm_adm)
 
     ad_as_scaler = ADM1ASM1Scaler()
-    ad_as_scaler.scale_model(
-        m.fs.adm_asm,
-        submodel_scalers={
-            m.fs.adm_asm.properties_in: ADM1PropertiesScaler,
-            m.fs.adm_asm.properties_out: ASM1PropertiesScaler,
-        },
-    )
+    ad_as_scaler.scale_model(m.fs.adm_asm)
 
     set_scaling_factor(m.fs.MX1.feed_water_state[0].conc_mass_comp["S_I"], 1e1)
     set_scaling_factor(m.fs.MX1.feed_water_state[0].conc_mass_comp["X_S"], 1e2)
@@ -1156,8 +1088,6 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
-
-    sb = ScalerBase()
 
     set_scaling_factor(m.fs.costing.total_capital_cost, 1e-7)
     set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-8)
