@@ -525,7 +525,7 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.608771605737e12, rel=1e-3
+            3.41888877e11, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -610,5 +610,5 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            7.0054790813389e11, rel=1e-3
+            7.986901e10, rel=1e-3
         )

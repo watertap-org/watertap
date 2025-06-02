@@ -132,6 +132,13 @@ class ADScaler(CustomScalerBase):
             overwrite=overwrite,
         )
 
+        self.call_submodel_scaler_method(
+            submodel=model.vapor_phase,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
         # Scaling control volume variables
         self.scale_variable_by_default(
             model.liquid_phase.volume[0], overwrite=overwrite
