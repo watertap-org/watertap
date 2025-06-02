@@ -190,7 +190,7 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.scaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.22807438e10, rel=1e-3
+            5.4097699e9, rel=1e-3
         )
 
     @pytest.mark.component
@@ -211,5 +211,5 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            9.0326812e11, rel=1e-3
+            4.803245e11, rel=1e-3
         )
