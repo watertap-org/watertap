@@ -1242,43 +1242,13 @@ def add_reactor_volume_equalities(m):
 def rescale_system(m, reactor_volume_equalities=True):
     csb = CustomScalerBase()
 
-    if reactor_volume_equalities:
+    # Scales the new constraints from setup_optimzation
+    for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
         csb.scale_constraint_by_nominal_value(
-            m.fs.Vol_1[0],
+            c,
             scheme=ConstraintScalingScheme.inverseMaximum,
             overwrite=True,
         )
-        csb.scale_constraint_by_nominal_value(
-            m.fs.Vol_2[0],
-            scheme=ConstraintScalingScheme.inverseMaximum,
-            overwrite=True,
-        )
-        csb.scale_constraint_by_nominal_value(
-            m.fs.Vol_3[0],
-            scheme=ConstraintScalingScheme.inverseMaximum,
-            overwrite=True,
-        )
-
-    csb.scale_constraint_by_nominal_value(
-        m.fs.eq_COD_max[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
-    csb.scale_constraint_by_nominal_value(
-        m.fs.eq_totalN_max[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
-    csb.scale_constraint_by_nominal_value(
-        m.fs.eq_BOD5_max[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
-    csb.scale_constraint_by_nominal_value(
-        m.fs.eq_TSS_max[0],
-        scheme=ConstraintScalingScheme.inverseMaximum,
-        overwrite=True,
-    )
 
 
 def solve(blk, solver=None, tee=True):
