@@ -1441,16 +1441,15 @@ def add_reactor_volume_equalities(m):
 
 
 def rescale_system(m, reactor_volume_equalities=True):
-    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     sb = ScalerBase()
     csb = CustomScalerBase()
 
-    sb.set_variable_scaling_factor(
-        m.fs.DU.overflow_state[0].conc_mass_comp["X_BH"], 1e5, overwrite=True
-    )
-    sb.set_variable_scaling_factor(
-        m.fs.DU.overflow_state[0].conc_mass_comp["X_BA"], 1e5, overwrite=True
-    )
+    # sb.set_variable_scaling_factor(
+    #     m.fs.DU.overflow_state[0].conc_mass_comp["X_BH"], 1e5, overwrite=True
+    # )
+    # sb.set_variable_scaling_factor(
+    #     m.fs.DU.overflow_state[0].conc_mass_comp["X_BA"], 1e5, overwrite=True
+    # )
 
     if reactor_volume_equalities:
         csb.scale_constraint_by_nominal_value(
