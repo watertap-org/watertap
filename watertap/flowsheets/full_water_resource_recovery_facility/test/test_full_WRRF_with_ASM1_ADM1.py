@@ -50,8 +50,6 @@ class TestFullFlowsheet:
         m = BSM2.build()
         BSM2.set_operating_conditions(m)
 
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
         assert_units_consistent(m)
 
@@ -59,8 +57,6 @@ class TestFullFlowsheet:
         BSM2.add_costing(m)
         m.fs.costing.initialize()
 
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
 
         BSM2.scale_system(m)
@@ -77,8 +73,6 @@ class TestFullFlowsheet:
         m = BSM2.build()
         BSM2.set_operating_conditions(m)
 
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
         assert_units_consistent(m)
 
@@ -86,8 +80,6 @@ class TestFullFlowsheet:
         BSM2.add_costing(m)
         m.fs.costing.initialize()
 
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
         assert degrees_of_freedom(m) == 0
 
         BSM2.scale_system(m)
@@ -106,7 +98,7 @@ class TestFullFlowsheet:
         rescaling = TransformationFactory("core.scale_model")
         m.rescaled_model = rescaling.create_using(m, rename=False)
 
-        m.scaled_results = BSM2.solve(m.rescaled_model)
+        m.rescaled_results = BSM2.solve(m.rescaled_model)
 
         m.optimized_results = rescaling.propagate_solution(m.rescaled_model, m)
 
@@ -204,12 +196,12 @@ class TestFullFlowsheet:
     @pytest.mark.component
     def test_optimization(self, optimized_system_frame):
         m = optimized_system_frame
-        assert_optimal_termination(m.scaled_results)
+        assert_optimal_termination(m.rescaled_results)
 
         assert degrees_of_freedom(m) == 16
 
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4.803245e11, rel=1e-3
+            1.2944686e12, rel=1e-3
         )

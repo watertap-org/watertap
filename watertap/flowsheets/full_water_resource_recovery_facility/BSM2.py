@@ -101,7 +101,7 @@ def main(reactor_volume_equalities=True):
     display_costing(m)
 
     setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
-    rescale_system(m, reactor_volume_equalities=reactor_volume_equalities)
+    rescale_system(m)
     rescaling = pyo.TransformationFactory("core.scale_model")
     rescaled_model = rescaling.create_using(m, rename=False)
     solve(rescaled_model, tee=True)
@@ -1110,18 +1110,17 @@ def setup_optimization(m, reactor_volume_equalities=True):
         add_reactor_volume_equalities(m)
 
     m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8.3e-3)
 
     m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8.3e-3)
 
     m.fs.R5.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8.3e-3)
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()
     # m.fs.SP5.split_fraction[:, "underflow"].setlb(0.45)
-    m.fs.SP5.split_fraction[:, "overflow"].setlb(0.45)
     m.fs.SP6.split_fraction[:, "recycle"].unfix()
 
     add_effluent_violations(m)
@@ -1173,10 +1172,10 @@ def add_reactor_volume_equalities(m):
         return m.fs.R5.volume[0] >= m.fs.R4.volume[0] * 0.5
 
 
-def rescale_system(m, reactor_volume_equalities=True):
+def rescale_system(m):
     csb = CustomScalerBase()
 
-    # Scales the new constraints from setup_optimzation
+    # Scales the new constraints from setup_optimization
     for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
         csb.scale_constraint_by_nominal_value(
             c,
