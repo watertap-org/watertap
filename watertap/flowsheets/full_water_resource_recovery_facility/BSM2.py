@@ -502,6 +502,9 @@ def scale_system(m):
     aeration_scaler = AerationTankScaler()
     for unit in aeration_list:
         aeration_scaler.scale_model(unit)
+    set_scaling_factor(m.fs.R3.outlet.conc_mass_comp[0, "S_O"], 1e3)
+    set_scaling_factor(m.fs.R4.outlet.conc_mass_comp[0, "S_O"], 1e3)
+    set_scaling_factor(m.fs.R5.outlet.conc_mass_comp[0, "S_O"], 1e3)
 
     reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5]
     for r in reactor_list:
@@ -1105,18 +1108,18 @@ def setup_optimization(m, reactor_volume_equalities=True):
         reactor = getattr(m.fs, i)
         reactor.volume.unfix()
         reactor.volume.setlb(1)
-        # reactor.volume.setub(2000)
+        reactor.volume.setub(2000)
     if reactor_volume_equalities:
         add_reactor_volume_equalities(m)
 
     m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8.3e-3)
+    m.fs.R3.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
 
     m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8.3e-3)
+    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
 
     m.fs.R5.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8.3e-3)
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].setub(8.2e-3)
 
     # Unfix fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP5.split_fraction[:, "underflow"].unfix()

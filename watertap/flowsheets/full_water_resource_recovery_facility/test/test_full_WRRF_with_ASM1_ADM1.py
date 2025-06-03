@@ -203,5 +203,5 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.2944686e12, rel=1e-3
+            3.1695338e11, rel=1e-3
         )
