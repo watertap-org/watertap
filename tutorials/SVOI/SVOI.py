@@ -17,6 +17,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+
 def build_sweep(
     inlet_flow_rate=100,
     inlet_concentration=35,
@@ -63,9 +64,9 @@ def solve(model, solver=None, tee=True, raise_on_failure=True):
 
 
 cwd = get_working_dir()
-yaml_file = os.path.join(cwd, "tutorials", "SVOI","diff_param_sweep.yaml")
+yaml_file = os.path.join(cwd, "tutorials", "SVOI", "diff_param_sweep.yaml")
 save_name = "sweep"
-save_dir = os.path.join(cwd, "tutorials", "SVOI","sweep")
+save_dir = os.path.join(cwd, "tutorials", "SVOI", "sweep")
 
 print(yaml_file)
 print(save_dir)
@@ -86,53 +87,51 @@ solver.options["max_iter"] = 3000
 
 
 file = os.path.join(save_dir, "output", "sweep_analysisType_example_diff_analysis.h5")
-data_manager = psDataManager(
-            file
-        )
+data_manager = psDataManager(file)
 
 VOI = data_manager.get_voi(yaml_file)
 
 # print(VOI)
 
-frames = [pd.DataFrame({'VOI': VOI[key]['VOI'], 'Sweep': key}) for key in VOI.keys()]
+frames = [pd.DataFrame({"VOI": VOI[key]["VOI"], "Sweep": key}) for key in VOI.keys()]
 df = pd.concat(frames, ignore_index=True)
 
 
 def plot_voi(df):
-    fig, ax = plt.subplots(figsize=(7,9))
+    fig, ax = plt.subplots(figsize=(7, 9))
     sns.boxplot(
         df,
-        x='VOI',
-        y='Sweep',
+        x="VOI",
+        y="Sweep",
         gap=0.1,
         fliersize=0,
-
-    )   
+    )
 
     ax.set_xlim(0, 1)
-    ax.set_ylim(-0.5, len(df['Sweep'].unique())-0.5)
-    ax.tick_params(axis='both', which='major', labelsize=14)
-    ax.set_ylabel('')
+    ax.set_ylim(-0.5, len(df["Sweep"].unique()) - 0.5)
+    ax.tick_params(axis="both", which="major", labelsize=14)
+    ax.set_ylabel("")
     ax.set_xlabel("VOI (%$_{\Delta LCOW}$/%$_{\Delta performance}$)", fontsize=16)
     color_bands = ["#d1d1d1", "white"]
     for i in range(0, len(ax.get_yticks())):
-        ax.axhspan(i - 0.5, i + 0.5, facecolor=color_bands[i%2], alpha=0.75)
+        ax.axhspan(i - 0.5, i + 0.5, facecolor=color_bands[i % 2], alpha=0.75)
 
     plt.legend(
-        bbox_to_anchor=(-0.3, 1.1), 
-        loc='upper left',
-        ncol=len(df['Sweep'].unique()), 
-        frameon=False, 
+        bbox_to_anchor=(-0.3, 1.1),
+        loc="upper left",
+        ncol=len(df["Sweep"].unique()),
+        frameon=False,
         fontsize=14,
-        alignment='left',
-        handlelength=1, 
-        handleheight=1)
+        alignment="left",
+        handlelength=1,
+        handleheight=1,
+    )
 
     plt.tight_layout()
     plt.show()
 
 
-yaml_file = os.path.join(cwd, "tutorials", "SVOI","diff_param_sweep_full.yaml")
+yaml_file = os.path.join(cwd, "tutorials", "SVOI", "diff_param_sweep_full.yaml")
 
 # lT = loopTool(
 #         yaml_file,
@@ -146,13 +145,13 @@ yaml_file = os.path.join(cwd, "tutorials", "SVOI","diff_param_sweep_full.yaml")
 #     )
 
 # Load results file
-results_file = os.path.join(save_dir, "output", "sweep_analysisType_example_diff_analysis_full.h5")
+results_file = os.path.join(
+    save_dir, "output", "sweep_analysisType_example_diff_analysis_full.h5"
+)
 
-data_manager = psDataManager(
-            results_file
-        )
+data_manager = psDataManager(results_file)
 VOI = data_manager.get_voi(yaml_file)
-frames = [pd.DataFrame({'VOI': VOI[key]['VOI'], 'Sweep': key}) for key in VOI.keys()]
+frames = [pd.DataFrame({"VOI": VOI[key]["VOI"], "Sweep": key}) for key in VOI.keys()]
 df = pd.concat(frames, ignore_index=True)
 
 plot_voi(df)
