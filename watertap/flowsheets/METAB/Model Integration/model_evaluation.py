@@ -236,23 +236,29 @@ def run_model(df):
         gas_extraction = "M"
         t_span = 200
 
-        # set model
-        sys = create_system(
-            n_stages=n_stages,  # number of stages
-            reactor_type=reactor_type,  # PB for packed bed, FB for fluidized bed, or UASB
-            gas_extraction=gas_extraction,  # M for membrane gas extraction, V for vacuum extraction, P for passive venting
-            Q=inf_fr,  # influent flowrate in m3/d
-            T=temp,  # reactor temperature in degree C
-            tot_HRT=hrt,  # total HRT in d
-        )
+        try:
 
-        # run model
-        sys.simulate(state_reset_hook="reset_cache", t_span=(0, t_span), method="BDF")
+            # set model
+            sys = create_system(
+                n_stages=n_stages,  # number of stages
+                reactor_type=reactor_type,  # PB for packed bed, FB for fluidized bed, or UASB
+                gas_extraction=gas_extraction,  # M for membrane gas extraction, V for vacuum extraction, P for passive venting
+                Q=inf_fr,  # influent flowrate in m3/d
+                T=temp,  # reactor temperature in degree C
+                tot_HRT=hrt,  # total HRT in d
+            )
 
-        # collect output data
-        if idx == 0:
-            output_data = None
-        output_data = collect_results(case=sys, results=output_data)
+            # run model
+            sys.simulate(
+                state_reset_hook="reset_cache", t_span=(0, t_span), method="BDF"
+            )
+
+            # collect output data
+            if idx == 0:
+                output_data = None
+            output_data = collect_results(case=sys, results=output_data)
+        except:
+            pass
 
     return output_data
 

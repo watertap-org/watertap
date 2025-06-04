@@ -52,4 +52,4 @@ if __name__ == "__main__":
         "hrt": (1, 12),
     }
 
-    create_samples(method="LHS", input_var_info=input_var_info, sample_numbers=150)
+    create_samples(method="LHS", input_var_info=input_var_info, sample_numbers=20)
