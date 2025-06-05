@@ -23,11 +23,11 @@ The ``Nanofiltration0D`` model has the following degrees of freedom
 
    * inlet state
    * permeate pressure
-   * solvent recovery fraction (``solvent_recovery``)
-   * solute rejection fractions (``rejection_comp``) for all solutes EXCEPT the one identified as the electroneutrality species.
-   * membrane area
+   * solvent recovery fraction (``recovery_solvent``)
+   * solute rejection fractions (``rejection_comp``) for all solutes except the one identified as the electroneutrality species.
+   * membrane area (``area``)
 
-The following additional degrees of freedom  may exist depending on configuration options
+The following additional degrees of freedom may exist depending on configuration options:
 
    * retentate pressure drop (``deltaP``)
 
@@ -43,10 +43,10 @@ Variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Solvent recovery", ":math:`Q_{solvent}`", "solvent_recovery", None, ":math:`\text{dimensionless}`"
-   "Solute rejection", ":math:`R_j`", "rejection_comp", [j], ":math:`\text{dimensionless}`"
-   "Retentate pressure drop", ":math:`\deltaP`", "deltaP", [t], ":math:`\text{pressure}`"
-   "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
+   "Solvent recovery", ":math:`Q_{solvent}`", "``recovery_solvent``", None, ":math:`\text{dimensionless}`"
+   "Solute rejection", ":math:`r_j`", "``rejection_comp``", [j], ":math:`\text{dimensionless}`"
+   "Retentate pressure drop", ":math:`\Delta P`", "``deltaP``", [t], ":math:`\text{Pa}`"
+   "Membrane area", ":math:`A_m`", "``area``", "None", ":math:`\text{m}^2`"
 
 .. _NF0D_equations:
 
@@ -58,16 +58,27 @@ Here :math:`F` represents component flowrate and :math:`Z_j` is the charge on sp
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Component material balances", ":math:`F_{in, j} = F_{retentate, j} + F_{permeate, j}`"
-   "Solvent recovery",":math:`Q_{solvent} \times F_{in, j} = F_{permeate_j}`"
-   "Solute rejection",":math:`R_j = 1 - \frac{C_{permeate, j}}{C_{feed_j}}`"
-   "Permeate electroneutrality",":math:`0 = F_{permeate, j} \times Z_{j}`"
-   "Retentate pressure balance",":math:`P_{in} = P_{retentate} - \deltaP`"
+   "Component material balances", ":math:`F_{in, j} = F_{retentate, j} + F_{perm, j}`"
+   "Solvent recovery",":math:`Q_{solvent} \times F_{in, j} = F_{p, j}`"
+   "Solute rejection",":math:`r_j = 1 - \frac{C_{perm, j}}{C_{feed_j}}`"
+   "Permeate electroneutrality",":math:`0 = F_{perm, j} \times Z_{j}`"
+   "Retentate pressure balance",":math:`P_{in} = P_{retentate} - \Delta P`"
    "Retentate temperature equality", ":math:`T_{in} = T_{retentate}`"
-   "Permeate temperature equality", ":math:`T_{in} = T_{permeate}`"
+   "Permeate temperature equality", ":math:`T_{in} = T_{perm}`"
    "Solvent mass transfer", ":math:`M_{p, solv} = A_m J_{solv} \rho_{solvent}`"
    "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
    "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
+
+
+
+References
+----------
+
+| O. Labban, C. Liu, T. H. Chong and J. H. Lienhard V (2017)
+| Fundamentals of low-pressure nanofiltration: Membrane characterization, modeling, and understanding the multi-ionic interactions in water softening
+| *Journal of Membrane Science* 2017 Vol. 521 Pages 18-32
+| doi: 10.1016/j.memsci.2016.08.062
+
 
 Class Documentation
 -------------------
