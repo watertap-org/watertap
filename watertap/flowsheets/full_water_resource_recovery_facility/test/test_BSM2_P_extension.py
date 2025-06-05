@@ -19,12 +19,14 @@ but comprises different specifications for default values than BSM2.
 # Some more information about this module
 __author__ = "Chenyu Wang"
 
+import platform
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value
+from pyomo.environ import assert_optimal_termination, value, units
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
@@ -36,6 +38,17 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
 from watertap.core.solvers import get_solver
 
 solver = get_solver()
+
+is_reference_platform = (
+    platform.system() == "Windows"
+    and platform.python_version_tuple()[:2] == ("3", "11")
+)
+reference_platform_only = pytest.mark.xfail(
+    condition=(not is_reference_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the reference platform (Python 3.11 on Windows)",
+)
 
 
 @pytest.mark.requires_idaes_solver
@@ -145,8 +158,60 @@ class TestFullFlowsheetBioPFalse:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.0114758752e18, rel=1e-3
+            6.011475875e18, rel=1e-3
         )
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    @reference_platform_only
+    def test_run_convergence_analysis_SF(self, system_frame):
+        m = system_frame
+        solver_obj = get_solver()
+        ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)
+
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(75 * units.g / units.m**3)
+
+        success, run_stats = ca._run_model(m, solver_obj)
+
+        assert success
+
+        assert len(run_stats) == 4
+        # Iterations
+        assert run_stats[0] == pytest.approx(144, abs=5)
+        # Restoration
+        assert run_stats[1] == pytest.approx(126, abs=5)
+        # Regularization
+        assert run_stats[2] == pytest.approx(63, abs=5)
+
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(65 * units.g / units.m**3)
+
+        solver = get_solver()
+        success, run_stats = ca._run_model(m, solver)
+
+        assert success
+
+        assert len(run_stats) == 4
+        # Iterations
+        assert run_stats[0] == pytest.approx(139, abs=5)
+        # Restoration
+        assert run_stats[1] == pytest.approx(131, abs=5)
+        # Regularization
+        assert run_stats[2] == pytest.approx(63, abs=5)
+
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(85 * units.g / units.m**3)
+
+        solver = get_solver()
+        success, run_stats = ca._run_model(m, solver)
+
+        assert success
+
+        assert len(run_stats) == 4
+        # Iterations
+        assert run_stats[0] == pytest.approx(111, abs=5)
+        # Restoration
+        assert run_stats[1] == pytest.approx(102, abs=5)
+        # Regularization
+        assert run_stats[2] == pytest.approx(52, abs=5)
 
 
 @pytest.mark.requires_idaes_solver
@@ -256,5 +321,57 @@ class TestFullFlowsheetBioPTrue:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            7.069595617e18, rel=1e-3
+            7.06961e18, rel=1e-3
         )
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    @reference_platform_only
+    def test_run_convergence_analysis_SF(self, system_frame):
+        m = system_frame
+        solver_obj = get_solver()
+        ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)
+
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(75 * units.g / units.m**3)
+
+        success, run_stats = ca._run_model(m, solver_obj)
+
+        assert success
+
+        assert len(run_stats) == 4
+        # Iterations
+        assert run_stats[0] == pytest.approx(143, abs=5)
+        # Restoration
+        assert run_stats[1] == pytest.approx(132, abs=5)
+        # Regularization
+        assert run_stats[2] == pytest.approx(46, abs=5)
+
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(65 * units.g / units.m**3)
+
+        solver = get_solver()
+        success, run_stats = ca._run_model(m, solver)
+
+        assert success
+
+        assert len(run_stats) == 4
+        # Iterations
+        assert run_stats[0] == pytest.approx(122, abs=5)
+        # Restoration
+        assert run_stats[1] == pytest.approx(113, abs=5)
+        # Regularization
+        assert run_stats[2] == pytest.approx(40, abs=5)
+
+        m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(85 * units.g / units.m**3)
+
+        solver = get_solver()
+        success, run_stats = ca._run_model(m, solver)
+
+        assert success
+
+        assert len(run_stats) == 4
+        # Iterations
+        assert run_stats[0] == pytest.approx(129, abs=5)
+        # Restoration
+        assert run_stats[1] == pytest.approx(120, abs=5)
+        # Regularization
+        assert run_stats[2] == pytest.approx(41, abs=5)
