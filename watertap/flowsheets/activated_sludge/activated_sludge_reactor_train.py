@@ -88,8 +88,9 @@ def build_flowsheet():
     # Mixer for feed water and recycled sludge
     m.fs.M1 = Mixer(property_package=m.fs.props, 
                     inlet_list=["feed", "recycle"],
-                    # momentum_mixing_type=MomentumMixingType.equality
+                    momentum_mixing_type=MomentumMixingType.none
                     )
+    m.fs.M1.outlet.pressure.fix()
     # m.fs.M1.pressure_equality_constraints[0,2].deactivate()
     # First reactor (anoxic) 
     m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
@@ -99,8 +100,10 @@ def build_flowsheet():
     
     
     # Mixer for R1 and R2 outlets
-    m.fs.M2= Mixer(property_package=m.fs.props, inlet_list=["R1_outlet", "R2_outlet"])
-    
+    m.fs.M2= Mixer(property_package=m.fs.props, inlet_list=["R1_outlet", "R2_outlet"],
+                   momentum_mixing_type=MomentumMixingType.none
+                    )
+    m.fs.M2.outlet.pressure.fix()
 
     # Third reactor (anoxic)
     m.fs.R3 = CSTR(
@@ -213,7 +216,7 @@ def scale_flowsheet(m):
         if "temperature" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
         if "pressure" in var.name:
-            iscale.set_scaling_factor(var, 1e-6)
+            iscale.set_scaling_factor(var, 1e-4)
         if "conc_mass_comp" in var.name:
             iscale.set_scaling_factor(var, 1e2)
     iscale.calculate_scaling_factors(m.fs)
