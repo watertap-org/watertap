@@ -144,7 +144,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="Mass fraction of N per COD in particulates, i_xp",
         )
-        self.COD_to_SS = pyo.Var(
+        self.COD_to_SS = pyo.Param(
             initialize=0.75,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
