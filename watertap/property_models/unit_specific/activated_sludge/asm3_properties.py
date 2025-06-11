@@ -67,8 +67,8 @@ class ASM3ParameterData(PhysicalParameterBlock):
         self.S_O = Solute(doc="Dissolved Oxygen, S_O")
         self.S_I = Solute(doc="Inert soluble organic material, S_I")
         self.S_S = Solute(doc="Readily biodegradable substrates, S_S")
-        self.S_NH = Solute(
-            doc="Ammonium plus ammonia nitrogen (NH4+ + NH3 nitrogen), S_NH"
+        self.S_NH4 = Solute(
+            doc="Ammonium plus ammonia nitrogen (NH4+ + NH3 nitrogen), S_NH4"
         )
         self.S_N2 = Solute(doc="Dinitrogen (N2), S_N2")
         self.S_NOX = Solute(
@@ -92,7 +92,7 @@ class ASM3ParameterData(PhysicalParameterBlock):
                 "S_O",
                 "S_I",
                 "S_S",
-                "S_NH",
+                "S_NH4",
                 "S_N2",
                 "S_NOX",
                 "S_ALK",
@@ -139,6 +139,12 @@ class ASM3ParameterData(PhysicalParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Production of S_I in hydrolysis (g-COD-S_I / g-COD-X_S)",
         )
+        self.f_XI = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of X_I in endog. respiration (g-COD-X_I / g-COD-X_BM)",
+        )
         self.i_NSI = pyo.Var(
             initialize=0.01,
             units=pyo.units.dimensionless,
@@ -169,25 +175,25 @@ class ASM3ParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="N content of biomass, X_H, X_A (g-N / g-COD-X_H or X_A)",
         )
-        self.i_TSXI = pyo.Var(
+        self.i_SSXI = pyo.Var(
             initialize=0.75,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="TSS to COD ratio for X_I (g-TSS / g-COD-X_I)",
         )
-        self.i_TSXS = pyo.Var(
+        self.i_SSXS = pyo.Var(
             initialize=0.75,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="TSS to COD ratio for X_S (g-TSS / g-COD-X_S)",
         )
-        self.i_TSBM = pyo.Var(
+        self.i_SSBM = pyo.Var(
             initialize=0.90,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="TSS to COD ratio for for biomass,X_H, X_A (g-TSS / g-COD-X_H or X_A)",
         )
-        self.i_TSSTO = pyo.Var(
+        self.i_SSSTO = pyo.Var(
             initialize=0.60,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
@@ -547,7 +553,7 @@ class ASM3StateBlockData(StateBlockData):
         #
         # def _TKN(self):
         #     tkn = (
-        #         self.conc_mass_comp["S_NH"]
+        #         self.conc_mass_comp["S_NH4"]
         #         + self.conc_mass_comp["S_ND"]
         #         + self.conc_mass_comp["X_ND"]
         #         + self.params.i_xb

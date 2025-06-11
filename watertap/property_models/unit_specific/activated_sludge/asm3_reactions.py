@@ -131,15 +131,16 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         )
 
         add_object_reference(self, "f_SI", self.config.property_package.f_SI)
+        add_object_reference(self, "f_XI", self.config.property_package.f_XI)
         add_object_reference(self, "i_NSI", self.config.property_package.i_NSI)
         add_object_reference(self, "i_NSS", self.config.property_package.i_NSS)
         add_object_reference(self, "i_NXI", self.config.property_package.i_NXI)
         add_object_reference(self, "i_NXS", self.config.property_package.i_NXS)
         add_object_reference(self, "i_NBM", self.config.property_package.i_NBM)
-        add_object_reference(self, "i_TSXI", self.config.property_package.i_TSXI)
-        add_object_reference(self, "i_TSXS", self.config.property_package.i_TSXS)
-        add_object_reference(self, "i_TSBM", self.config.property_package.i_TSBM)
-        add_object_reference(self, "i_TSSTO", self.config.property_package.i_TSSTO)
+        add_object_reference(self, "i_SSXI", self.config.property_package.i_SSXI)
+        add_object_reference(self, "i_SSXS", self.config.property_package.i_SSXS)
+        add_object_reference(self, "i_SSBM", self.config.property_package.i_SSBM)
+        add_object_reference(self, "i_SSSTO", self.config.property_package.i_SSSTO)
 
         # Kinetic Parameters
         k_H_dict = {"10C": 2, "20C": 3}
@@ -150,91 +151,199 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             units=pyo.units.day**-1,
             doc="Hydrolysis rate constant (g-COD-X_S / g-COD-X_H / day)",
         )
-
-        self.mu_A = pyo.Var(
-            initialize=0.5,
-            units=1 / pyo.units.day,
+        self.K_X = pyo.Var(
+            initialize=1,
+            units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Maximum specific growth rate for autotrophic biomass, mu_A",
+            doc="Hydrolysis saturation constant (g-COD-X_S / g-COD-X_H)",
         )
-        self.mu_H = pyo.Var(
-            initialize=4,
-            units=1 / pyo.units.day,
+
+        # Heterotrophic organisms X_H, aerobic and denitrifying activity
+        k_STO_dict = {"10C": 2.5, "20C": 5}
+        self.k_STO = pyo.Var(
+            k_STO_dict.keys(),
             domain=pyo.PositiveReals,
-            doc="Maximum specific growth rate for heterotrophic biomass, mu_H",
+            initialize=k_STO_dict,
+            units=pyo.units.day**-1,
+            doc="Storage rate constant (g-COD-S_S / g-COD-X_H / day)",
+        )
+        self.eta_NOX = pyo.Var(
+            initialize=0.6,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Anoxic reduction factor",
+        )
+        self.K_O2 = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.g / pyo.units.m**3,
+            domain=pyo.PositiveReals,
+            doc="Saturation constant for S_NO2 (g-O2 / m3)",
+        )
+        self.K_NOX = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.g / pyo.units.m**3,
+            domain=pyo.PositiveReals,
+            doc="Saturation constant for S_NOX (g-N-NO3 / m3)",
         )
         self.K_S = pyo.Var(
-            initialize=10e-3,
-            units=pyo.units.kg / pyo.units.m**3,
+            initialize=2,
+            units=pyo.units.g / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Half-saturation coefficient for heterotrophic biomass, K_S",
+            doc="Saturation constant for for substrate S_S (g-COD-S_S / m3)",
         )
-        self.K_OH = pyo.Var(
-            initialize=0.2e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H",
-        )
-        self.K_OA = pyo.Var(
-            initialize=0.4e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Oxygen half-saturation coefficient for autotrophic biomass, K_O,A",
-        )
-        self.K_NO = pyo.Var(
-            initialize=0.5e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO",
-        )
-        self.b_H = pyo.Var(
-            initialize=0.3,
-            units=1 / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Decay coefficient for heterotrophic biomass, b_H",
-        )
-        self.b_A = pyo.Var(
-            initialize=0.05,
-            units=1 / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Decay coefficient for autotrophic biomass, b_A",
-        )
-        self.eta_g = pyo.Var(
-            initialize=0.8,
+        self.K_STO = pyo.Var(
+            initialize=1,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Correction factor for mu_H under anoxic conditions, eta_g",
+            doc="Saturation constant for for X_STO (g-COD-X_STO / g-COD-X_H)",
         )
-        self.eta_h = pyo.Var(
-            initialize=0.8,
-            units=pyo.units.dimensionless,
+        mu_H_dict = {"10C": 1, "20C": 2}
+        self.mu_H = pyo.Var(
+            mu_H_dict.keys(),
             domain=pyo.PositiveReals,
-            doc="Correction factor for hydrolysis under anoxic conditions, eta_h",
+            initialize=mu_H_dict,
+            units=pyo.units.day**-1,
+            doc="Heterotrophic max. growth rate of X_H (day^-1)",
         )
-        self.k_h = pyo.Var(
-            initialize=3,
-            units=1 / pyo.units.day,
+        self.K_NH4 = pyo.Var(
+            initialize=0.01,
+            units=pyo.units.g / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Maximum specific hydrolysis rate, k_h",
+            doc="Saturation constant for ammonium, S_NH4 (g-N / m3)",
         )
-        self.K_X = pyo.Var(
+        self.K_ALK = pyo.Var(
             initialize=0.1,
-            units=pyo.units.dimensionless,
+            units=pyo.units.mol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X",
+            doc="Saturation constant for alkalinity for X_H (mol-HCO3- / m3)",
         )
-        self.K_NH = pyo.Var(
-            initialize=1e-3,
-            units=pyo.units.kg / pyo.units.m**3,
+        b_H_O2_dict = {"10C": 0.1, "20C": 0.2}
+        self.b_H_O2 = pyo.Var(
+            b_H_O2_dict.keys(),
             domain=pyo.PositiveReals,
-            doc="Ammonia Half-saturation coefficient for autotrophic biomass, K_NH",
+            initialize=b_H_O2_dict,
+            units=pyo.units.day**-1,
+            doc="Aerobic endogenous respiration rate of X_H (day^-1)",
         )
-        self.k_a = pyo.Var(
-            initialize=0.05e3,
-            units=pyo.units.m**3 / pyo.units.kg / pyo.units.day,
+        b_H_NOX_dict = {"10C": 0.05, "20C": 0.1}
+        self.b_H_NOX = pyo.Var(
+            b_H_NOX_dict.keys(),
             domain=pyo.PositiveReals,
-            doc="Ammonification rate, k_a",
+            initialize=b_H_NOX_dict,
+            units=pyo.units.day**-1,
+            doc="Anoxic endogenous respiration rate of X_H (day^-1)",
         )
+        b_STO_O2_dict = {"10C": 0.1, "20C": 0.2}
+        self.b_STO_O2 = pyo.Var(
+            b_STO_O2_dict.keys(),
+            domain=pyo.PositiveReals,
+            initialize=b_STO_O2_dict,
+            units=pyo.units.day**-1,
+            doc="Aerobic respiration rate for X_STO (day^-1)",
+        )
+        b_STO_NOX_dict = {"10C": 0.05, "20C": 0.1}
+        self.b_STO_NOX = pyo.Var(
+            b_STO_NOX_dict.keys(),
+            domain=pyo.PositiveReals,
+            initialize=b_STO_NOX_dict,
+            units=pyo.units.day**-1,
+            doc="Anoxic respiration rate for X_STO (day^-1)",
+        )
+
+        # Autotrophic organisms X_A, nitrifying activity
+        mu_A_dict = {"10C": 0.35, "20C": 1}
+        self.mu_A = pyo.Var(
+            mu_A_dict.keys(),
+            domain=pyo.PositiveReals,
+            initialize=mu_A_dict,
+            units=pyo.units.day**-1,
+            doc="Autotrophic max. growth rate of X_A (day^-1)",
+        )
+        self.K_A_NH4 = pyo.Var(
+            initialize=1,
+            units=pyo.units.g / pyo.units.m**3,
+            domain=pyo.PositiveReals,
+            doc="Ammonium substrate saturation for X_A (g-N / m3)",
+        )
+        self.K_A_O2 = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.g / pyo.units.m**3,
+            domain=pyo.PositiveReals,
+            doc="Oxygen saturation for nitrifiers (g-O2 / m3)",
+        )
+        self.K_A_ALK = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.mol / pyo.units.m**3,
+            domain=pyo.PositiveReals,
+            doc="Bicarbonate saturation for nitrifiers (mol-HCO3- / m3)",
+        )
+        b_A_O2_dict = {"10C": 0.05, "20C": 0.15}
+        self.b_A_O2 = pyo.Var(
+            b_A_O2_dict.keys(),
+            domain=pyo.PositiveReals,
+            initialize=b_A_O2_dict,
+            units=pyo.units.day**-1,
+            doc="Aerobic endogenous respiration rate of X_A (day^-1)",
+        )
+        b_A_NOX_dict = {"10C": 0.02, "20C": 0.05}
+        self.b_A_NOX = pyo.Var(
+            b_A_NOX_dict.keys(),
+            domain=pyo.PositiveReals,
+            initialize=b_A_NOX_dict,
+            units=pyo.units.day**-1,
+            doc="Anoxic endogenous respiration rate of X_A (day^-1)",
+        )
+
+        # Stoichiometric numbers from Table 1
+        # obtained by \sum_i^12 νji*ikI
+        x1 = 1.0 - self.f_SI
+        x2 = -1.0 + self.Y_STO_O2
+        x3 = (-1.0 + self.Y_STO_NOX) / (64.0 / 14.0 - 24.0 / 14.0)
+        x4 = 1.0 - 1.0 / self.Y_H_O2
+        x5 = (+1.0 - 1.0 / self.Y_H_NOX) / (64.0 / 14.0 - 24.0 / 14.0)
+        x6 = -1.0 + self.f_XI
+        x7 = (self.f_XI - 1.0) / (64.0 / 14.0 - 24.0 / 14.0)
+        x8 = -1.0
+        x9 = -1.0 / (64.0 / 14.0 - 24.0 / 14.0)
+        x10 = -(64.0 / 14.0) / self.Y_A + 1.0
+        x11 = self.f_XI - 1.0
+        x12 = (self.f_XI - 1.0) / (64.0 / 14.0 - 24.0 / 14.0)
+
+        y1 = -self.f_SI * self.i_NSI - (1.0 - self.f_SI) * self.i_NSS + self.i_NXS
+        y2 = self.i_NSS
+        y3 = self.i_NSS
+        y4 = -self.i_NBM
+        y5 = -self.i_NBM
+        y6 = -self.f_XI * self.i_NXI + self.i_NBM
+        y7 = -self.f_XI * self.i_NXI + self.i_NBM
+        y10 = -1.0 / self.Y_A - self.i_NBM
+        y11 = -self.f_XI * self.i_NXI + self.i_NBM
+        y12 = -self.f_XI * self.i_NXI + self.i_NBM
+
+        z1 = y1 / 14.0
+        z2 = y2 / 14.0
+        z3 = y3 / 14.0 - x3 / 14.0
+        z4 = y4 / 14.0
+        z5 = y5 / 14.0 - x5 / 14.0
+        z6 = y6 / 14.0
+        z7 = y7 / 14.0 - x7 / 14.0
+        z9 = -x9 / 14.0
+        z10 = y10 / 14.0 - 1.0 / (self.Y_A * 14.0)
+        z11 = y11 / 14.0
+        z12 = y12 / 14.0 - x12 / 14.0
+
+        t1 = -self.i_SSXS
+        t2 = self.Y_STO_O2 * self.i_SSSTO
+        t3 = self.Y_STO_NOX * self.i_SSSTO
+        t4 = self.i_SSBM - 1.0 / self.Y_H_O2 * self.i_SSSTO
+        t5 = self.i_SSBM - 1.0 / self.Y_H_NOX * self.i_SSSTO
+        t6 = self.f_XI * self.i_SSXI - self.i_SSBM
+        t7 = self.f_XI * self.i_SSXI - self.i_SSBM
+        t8 = -self.i_SSSTO
+        t9 = -self.i_SSSTO
+        t10 = self.i_SSBM
+        t11 = self.f_XI * self.i_SSXI - self.i_SSBM
+        t12 = self.f_XI * self.i_SSXI - self.i_SSBM
 
         # Reaction Stoichiometry
         # This is the stoichiometric part the Peterson matrix in dict form
@@ -244,128 +353,190 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         mw_alk = 12 * pyo.units.kg / pyo.units.kmol
         mw_n = 14 * pyo.units.kg / pyo.units.kmol
         self.rate_reaction_stoichiometry = {
-            # R1: Aerobic growth of heterotrophs
+            # R1: Hydrolysis
             ("R1", "Liq", "H2O"): 0,
-            ("R1", "Liq", "S_I"): 0,
-            ("R1", "Liq", "S_S"): -1 / self.Y_H,
+            ("R1", "Liq", "S_O"): 0,
+            ("R1", "Liq", "S_I"): self.f_SI,
+            ("R1", "Liq", "S_S"): x1,
+            ("R1", "Liq", "S_NH4"): y1,
+            ("R1", "Liq", "S_N2"): 0,
+            ("R1", "Liq", "S_NOX"): 0,
+            ("R1", "Liq", "S_ALK"): z1,
             ("R1", "Liq", "X_I"): 0,
-            ("R1", "Liq", "X_S"): 0,
-            ("R1", "Liq", "X_BH"): 1,
-            ("R1", "Liq", "X_BA"): 0,
-            ("R1", "Liq", "X_P"): 0,
-            ("R1", "Liq", "S_O"): -(1 - self.Y_H) / self.Y_H,
-            ("R1", "Liq", "S_NO"): 0,
-            ("R1", "Liq", "S_NH"): -self.i_xb,
-            ("R1", "Liq", "S_ND"): 0,
-            ("R1", "Liq", "X_ND"): 0,
-            ("R1", "Liq", "S_ALK"): -self.i_xb * (mw_alk / mw_n),
-            # R2: Anoxic growth of heterotrophs
+            ("R1", "Liq", "X_S"): -1,
+            ("R1", "Liq", "X_H"): 0,
+            ("R1", "Liq", "X_STO"): 0,
+            ("R1", "Liq", "X_A"): 0,
+            ("R1", "Liq", "X_TSS"): -self.i_SSXS,
+            # Heterotrophic organisms, aerobic and denitrifying activity
+            # R2: Aerobic storage of S_S
             ("R2", "Liq", "H2O"): 0,
+            ("R2", "Liq", "S_O"): x2,
             ("R2", "Liq", "S_I"): 0,
-            ("R2", "Liq", "S_S"): -1 / self.Y_H,
+            ("R2", "Liq", "S_S"): -1,
+            ("R2", "Liq", "S_NH4"): y2,
+            ("R2", "Liq", "S_N2"): 0,
+            ("R2", "Liq", "S_NOX"): 0,
+            ("R2", "Liq", "S_ALK"): z2,
             ("R2", "Liq", "X_I"): 0,
             ("R2", "Liq", "X_S"): 0,
-            ("R2", "Liq", "X_BH"): 1,
-            ("R2", "Liq", "X_BA"): 0,
-            ("R2", "Liq", "X_P"): 0,
-            ("R2", "Liq", "S_O"): 0,
-            ("R2", "Liq", "S_NO"): -(1 - self.Y_H) / (2.86 * self.Y_H),
-            ("R2", "Liq", "S_NH"): -self.i_xb,
-            ("R2", "Liq", "S_ND"): 0,
-            ("R2", "Liq", "X_ND"): 0,
-            ("R2", "Liq", "S_ALK"): ((1 - self.Y_H) / (2.86 * self.Y_H) - self.i_xb)
-            * (mw_alk / mw_n),
-            # R3: Aerobic growth of autotrophs
+            ("R2", "Liq", "X_H"): 0,
+            ("R2", "Liq", "X_STO"): self.Y_STO_O2,
+            ("R2", "Liq", "X_A"): 0,
+            ("R2", "Liq", "X_TSS"): t2,
+            # R3: Anoxic storage of S_S
             ("R3", "Liq", "H2O"): 0,
+            ("R3", "Liq", "S_O"): 0,
             ("R3", "Liq", "S_I"): 0,
-            ("R3", "Liq", "S_S"): 0,
+            ("R3", "Liq", "S_S"): -1,
+            ("R3", "Liq", "S_NH4"): y3,
+            ("R3", "Liq", "S_N2"): -x3,
+            ("R3", "Liq", "S_NOX"): x3,
+            ("R3", "Liq", "S_ALK"): z3,
             ("R3", "Liq", "X_I"): 0,
             ("R3", "Liq", "X_S"): 0,
-            ("R3", "Liq", "X_BH"): 0,
-            ("R3", "Liq", "X_BA"): 1,
-            ("R3", "Liq", "X_P"): 0,
-            ("R3", "Liq", "S_O"): -(4.57 - self.Y_A) / self.Y_A,
-            ("R3", "Liq", "S_NO"): 1 / self.Y_A,
-            ("R3", "Liq", "S_NH"): -self.i_xb - 1 / self.Y_A,
-            ("R3", "Liq", "S_ND"): 0,
-            ("R3", "Liq", "X_ND"): 0,
-            ("R3", "Liq", "S_ALK"): (-self.i_xb - 2 / (self.Y_A)) * (mw_alk / mw_n),
-            # R4: Decay of heterotrophs
+            ("R3", "Liq", "X_H"): 0,
+            ("R3", "Liq", "X_STO"): self.Y_STO_NOX,
+            ("R3", "Liq", "X_A"): 0,
+            ("R3", "Liq", "X_TSS"): t3,
+            # R4: Aerobic growth of X_H
             ("R4", "Liq", "H2O"): 0,
+            ("R4", "Liq", "S_O"): x4,
             ("R4", "Liq", "S_I"): 0,
             ("R4", "Liq", "S_S"): 0,
+            ("R4", "Liq", "S_NH4"): y4,
+            ("R4", "Liq", "S_N2"): 0,
+            ("R4", "Liq", "S_NOX"): 0,
+            ("R4", "Liq", "S_ALK"): z4,
             ("R4", "Liq", "X_I"): 0,
-            ("R4", "Liq", "X_S"): 1 - self.f_p,
-            ("R4", "Liq", "X_BH"): -1,
-            ("R4", "Liq", "X_BA"): 0,
-            ("R4", "Liq", "X_P"): self.f_p,
-            ("R4", "Liq", "S_O"): 0,
-            ("R4", "Liq", "S_NO"): 0,
-            ("R4", "Liq", "S_NH"): 0,
-            ("R4", "Liq", "S_ND"): 0,
-            ("R4", "Liq", "X_ND"): self.i_xb - self.f_p * self.i_xp,
-            ("R4", "Liq", "S_ALK"): 0,
-            # R5: Decay of autotrophs
+            ("R4", "Liq", "X_S"): 0,
+            ("R4", "Liq", "X_H"): 1,
+            ("R4", "Liq", "X_STO"): -1 / self.Y_H_O2,
+            ("R4", "Liq", "X_A"): 0,
+            ("R4", "Liq", "X_TSS"): t4,
+            # R5: Anoxic growth (denitrific.)
             ("R5", "Liq", "H2O"): 0,
+            ("R5", "Liq", "S_O"): 0,
             ("R5", "Liq", "S_I"): 0,
             ("R5", "Liq", "S_S"): 0,
+            ("R5", "Liq", "S_NH4"): y4,
+            ("R5", "Liq", "S_N2"): -x5,
+            ("R5", "Liq", "S_NOX"): x5,
+            ("R5", "Liq", "S_ALK"): z5,
             ("R5", "Liq", "X_I"): 0,
-            ("R5", "Liq", "X_S"): 1 - self.f_p,
-            ("R5", "Liq", "X_BH"): 0,
-            ("R5", "Liq", "X_BA"): -1,
-            ("R5", "Liq", "X_P"): self.f_p,
-            ("R5", "Liq", "S_O"): 0,
-            ("R5", "Liq", "S_NO"): 0,
-            ("R5", "Liq", "S_NH"): 0,
-            ("R5", "Liq", "S_ND"): 0,
-            ("R5", "Liq", "X_ND"): self.i_xb - self.f_p * self.i_xp,
-            ("R5", "Liq", "S_ALK"): 0,
-            # R6: Ammonification of soluble organic nitrogen
+            ("R5", "Liq", "X_S"): 0,
+            ("R5", "Liq", "X_H"): 1,
+            ("R5", "Liq", "X_STO"): -1 / self.Y_H_NOX,
+            ("R5", "Liq", "X_A"): 0,
+            ("R5", "Liq", "X_TSS"): t5,
+            # R6: Aerobic endog. respiration
             ("R6", "Liq", "H2O"): 0,
+            ("R6", "Liq", "S_O"): x6,
             ("R6", "Liq", "S_I"): 0,
             ("R6", "Liq", "S_S"): 0,
-            ("R6", "Liq", "X_I"): 0,
+            ("R6", "Liq", "S_NH4"): y6,
+            ("R6", "Liq", "S_N2"): 0,
+            ("R6", "Liq", "S_NOX"): 0,
+            ("R6", "Liq", "S_ALK"): z6,
+            ("R6", "Liq", "X_I"): self.f_XI,
             ("R6", "Liq", "X_S"): 0,
-            ("R6", "Liq", "X_BH"): 0,
-            ("R6", "Liq", "X_BA"): 0,
-            ("R6", "Liq", "X_P"): 0,
-            ("R6", "Liq", "S_O"): 0,
-            ("R6", "Liq", "S_NO"): 0,
-            ("R6", "Liq", "S_NH"): 1,
-            ("R6", "Liq", "S_ND"): -1,
-            ("R6", "Liq", "X_ND"): 0,
-            ("R6", "Liq", "S_ALK"): 1 * (mw_alk / mw_n),
-            # R7: Hydrolysis of entrapped organics
+            ("R6", "Liq", "X_H"): -1,
+            ("R6", "Liq", "X_STO"): 0,
+            ("R6", "Liq", "X_A"): 0,
+            ("R6", "Liq", "X_TSS"): t6,
+            # R7: Anoxic endog. respiration
             ("R7", "Liq", "H2O"): 0,
-            ("R7", "Liq", "S_I"): 0,
-            ("R7", "Liq", "S_S"): 1,
-            ("R7", "Liq", "X_I"): 0,
-            ("R7", "Liq", "X_S"): -1,
-            ("R7", "Liq", "X_BH"): 0,
-            ("R7", "Liq", "X_BA"): 0,
-            ("R7", "Liq", "X_P"): 0,
             ("R7", "Liq", "S_O"): 0,
-            ("R7", "Liq", "S_NO"): 0,
-            ("R7", "Liq", "S_NH"): 0,
-            ("R7", "Liq", "S_ND"): 0,
-            ("R7", "Liq", "X_ND"): 0,
-            ("R7", "Liq", "S_ALK"): 0,
-            # R8: Hydrolysis of entrapped organic nitrogen
+            ("R7", "Liq", "S_I"): 0,
+            ("R7", "Liq", "S_S"): 0,
+            ("R7", "Liq", "S_NH4"): y7,
+            ("R7", "Liq", "S_N2"): -x7,
+            ("R7", "Liq", "S_NOX"): x7,
+            ("R7", "Liq", "S_ALK"): z7,
+            ("R7", "Liq", "X_I"): self.f_XI,
+            ("R7", "Liq", "X_S"): 0,
+            ("R7", "Liq", "X_H"): -1,
+            ("R7", "Liq", "X_STO"): 0,
+            ("R7", "Liq", "X_A"): 0,
+            ("R7", "Liq", "X_TSS"): t7,
+            # R8: Aerobic respiration of X_STO
             ("R8", "Liq", "H2O"): 0,
+            ("R8", "Liq", "S_O"): x8,
             ("R8", "Liq", "S_I"): 0,
             ("R8", "Liq", "S_S"): 0,
+            ("R8", "Liq", "S_NH4"): 0,
+            ("R8", "Liq", "S_N2"): 0,
+            ("R8", "Liq", "S_NOX"): 0,
+            ("R8", "Liq", "S_ALK"): 0,
             ("R8", "Liq", "X_I"): 0,
             ("R8", "Liq", "X_S"): 0,
-            ("R8", "Liq", "X_BH"): 0,
-            ("R8", "Liq", "X_BA"): 0,
-            ("R8", "Liq", "X_P"): 0,
-            ("R8", "Liq", "S_O"): 0,
-            ("R8", "Liq", "S_NO"): 0,
-            ("R8", "Liq", "S_NH"): 0,
-            ("R8", "Liq", "S_ND"): 1,
-            ("R8", "Liq", "X_ND"): -1,
-            ("R8", "Liq", "S_ALK"): 0,
+            ("R8", "Liq", "X_H"): 0,
+            ("R8", "Liq", "X_STO"): -1,
+            ("R8", "Liq", "X_A"): 0,
+            ("R8", "Liq", "X_TSS"): t8,
+            # R9: Anoxic respiration of X_STO
+            ("R9", "Liq", "H2O"): 0,
+            ("R9", "Liq", "S_O"): 0,
+            ("R9", "Liq", "S_I"): 0,
+            ("R9", "Liq", "S_S"): 0,
+            ("R9", "Liq", "S_NH4"): 0,
+            ("R9", "Liq", "S_N2"): -x9,
+            ("R9", "Liq", "S_NOX"): x9,
+            ("R9", "Liq", "S_ALK"): z9,
+            ("R9", "Liq", "X_I"): 0,
+            ("R9", "Liq", "X_S"): 0,
+            ("R9", "Liq", "X_H"): 0,
+            ("R9", "Liq", "X_STO"): -1,
+            ("R9", "Liq", "X_A"): 0,
+            ("R9", "Liq", "X_TSS"): t9,
+            # Autotrophic organisms, nitrifying activity
+            # R10: Aerobic growth of X_A
+            ("R10", "Liq", "H2O"): 0,
+            ("R10", "Liq", "S_O"): x10,
+            ("R10", "Liq", "S_I"): 0,
+            ("R10", "Liq", "S_S"): 0,
+            ("R10", "Liq", "S_NH4"): y10,
+            ("R10", "Liq", "S_N2"): 0,
+            ("R10", "Liq", "S_NOX"): 1 / self.Y_A,
+            ("R10", "Liq", "S_ALK"): z10,
+            ("R10", "Liq", "X_I"): 0,
+            ("R10", "Liq", "X_S"): 0,
+            ("R10", "Liq", "X_H"): 0,
+            ("R10", "Liq", "X_STO"): 0,
+            ("R10", "Liq", "X_A"): 1,
+            ("R10", "Liq", "X_TSS"): t10,
+            # R11: Aerobic endog. respiration
+            ("R11", "Liq", "H2O"): 0,
+            ("R11", "Liq", "S_O"): x11,
+            ("R11", "Liq", "S_I"): 0,
+            ("R11", "Liq", "S_S"): 0,
+            ("R11", "Liq", "S_NH4"): y11,
+            ("R11", "Liq", "S_N2"): 0,
+            ("R11", "Liq", "S_NOX"): 0,
+            ("R11", "Liq", "S_ALK"): z11,
+            ("R11", "Liq", "X_I"): self.f_XI,
+            ("R11", "Liq", "X_S"): 0,
+            ("R11", "Liq", "X_H"): 0,
+            ("R11", "Liq", "X_STO"): 0,
+            ("R11", "Liq", "X_A"): -1,
+            ("R11", "Liq", "X_TSS"): t11,
+            # R12: Anoxic endog. respiration
+            ("R12", "Liq", "H2O"): 0,
+            ("R12", "Liq", "S_O"): 0,
+            ("R12", "Liq", "S_I"): 0,
+            ("R12", "Liq", "S_S"): 0,
+            ("R12", "Liq", "S_NH4"): y12,
+            ("R12", "Liq", "S_N2"): -x12,
+            ("R12", "Liq", "S_NOX"): x12,
+            ("R12", "Liq", "S_ALK"): z12,
+            ("R12", "Liq", "X_I"): self.f_XI,
+            ("R12", "Liq", "X_S"): 0,
+            ("R12", "Liq", "X_H"): 0,
+            ("R12", "Liq", "X_STO"): 0,
+            ("R12", "Liq", "X_A"): -1,
+            ("R12", "Liq", "X_TSS"): t12,
         }
+
         # Fix all the variables we just created
         for v in self.component_objects(pyo.Var, descend_into=False):
             v.fix()
@@ -472,111 +643,201 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
 
             def rate_expression_rule(b, r):
                 if r == "R1":
-                    # R1: Aerobic growth of heterotrophs
+                    # R1: Hydrolysis
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_H
-                        * (
-                            b.conc_mass_comp_ref["S_S"]
-                            / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
+                        b.params.k_H["20C"]
+                        * (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                        / (
+                            b.params.K_X
+                            + b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"]
                         )
-                        * (
-                            b.conc_mass_comp_ref["S_O"]
-                            / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                        )
-                        * b.conc_mass_comp_ref["X_BH"],
+                        * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
+                # Heterotrophic organisms, aerobic and denitrifying activity
                 elif r == "R2":
-                    # R2: Anoxic growth of heterotrophs
+                    # R2: Aerobic storage of S_S
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_H
+                        b.params.k_STO["20C"]
+                        * (
+                            b.conc_mass_comp_ref["S_O"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
                         * (
                             b.conc_mass_comp_ref["S_S"]
                             / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
                         )
-                        * (
-                            b.params.K_OH
-                            / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_NO"]
-                            / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
-                        )
-                        * b.params.eta_g
-                        * b.conc_mass_comp_ref["X_BH"],
+                        * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R3":
-                    # R3: Aerobic growth of autotrophs
+                    # R3: Anoxic storage of S_S
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_A
+                        b.params.k_STO["20C"]
+                        * b.params.eta_NOX
                         * (
-                            b.conc_mass_comp_ref["S_NH"]
-                            / (b.params.K_NH + b.conc_mass_comp_ref["S_NH"])
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
                         )
                         * (
-                            b.conc_mass_comp_ref["S_O"]
-                            / (b.params.K_OA + b.conc_mass_comp_ref["S_O"])
+                            b.conc_mass_comp_ref["S_NOX"]
+                            / (b.params.K_NOX + b.conc_mass_comp_ref["S_NOX"])
                         )
-                        * b.conc_mass_comp_ref["X_BA"],
+                        * (
+                            b.conc_mass_comp_ref["S_S"]
+                            / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R4":
-                    # R4: Decay of heterotrophs
+                    # R4: Aerobic growth
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_H * b.conc_mass_comp_ref["X_BH"],
+                        b.params.mu_H["20C"]
+                        * (
+                            b.conc_mass_comp_ref["S_O"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_ALK"]
+                            / (b.params.K_ALK + b.conc_mass_comp_ref["S_ALK"])
+                        )
+                        * (b.conc_mass_comp_ref["X_STO"] / b.conc_mass_comp_ref["X_H"])
+                        / (
+                            b.params.K_STO
+                            + b.conc_mass_comp_ref["X_STO"]
+                            / b.conc_mass_comp_ref["X_H"]
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R5":
-                    # R5: Decay of autotrophs
+                    # R5: Anoxic growth
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_A * b.conc_mass_comp_ref["X_BA"],
+                        b.params.mu_H["20C"]
+                        * b.params.eta_NOX
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_ALK"]
+                            / (b.params.K_ALK + b.conc_mass_comp_ref["S_ALK"])
+                        )
+                        * (b.conc_mass_comp_ref["X_STO"] / b.conc_mass_comp_ref["X_H"])
+                        / (
+                            b.params.K_STO
+                            + b.conc_mass_comp_ref["X_STO"]
+                            / b.conc_mass_comp_ref["X_H"]
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R6":
-                    # R6: Ammonification of soluble organic nitrogen
+                    # R6: Aerobic endogenous respiration
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_a
-                        * b.conc_mass_comp_ref["S_ND"]
-                        * b.conc_mass_comp_ref["X_BH"],
+                        b.params.b_H_O2["20C"]
+                        * (
+                            b.conc_mass_comp_ref["S_O"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R7":
-                    # R7: Hydrolysis of entrapped organics
+                    # R7: Anoxic endogenous respiration
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_h
-                        * b.conc_mass_comp_ref["X_S"]
-                        / (
-                            b.params.K_X * b.conc_mass_comp_ref["X_BH"]
-                            + b.conc_mass_comp_ref["X_S"]
+                        b.params.b_H_NOX["20C"]
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
                         )
                         * (
-                            (
-                                b.conc_mass_comp_ref["S_O"]
-                                / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                            )
-                            + b.params.eta_h
-                            * b.params.K_OH
-                            / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                            * (
-                                b.conc_mass_comp_ref["S_NO"]
-                                / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
-                            )
+                            b.conc_mass_comp_ref["S_NOX"]
+                            / (b.params.K_NOX + b.conc_mass_comp_ref["S_NOX"])
                         )
-                        * b.conc_mass_comp_ref["X_BH"],
+                        * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R8":
-                    # R8: Hydrolysis of entrapped organic nitrogen
-                    return b.reaction_rate[r] == (
-                        b.reaction_rate["R7"]
+                    # R8: Aerobic respiration of X_STO
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_STO_O2["20C"]
                         * (
-                            b.conc_mass_comp_ref["X_ND"]
-                            / (
-                                b.conc_mass_comp_ref["X_S"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
-                            )
+                            b.conc_mass_comp_ref["S_O"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
                         )
+                        * b.conc_mass_comp_ref["X_STO"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R9":
+                    # R9: Anoxic respiration of X_STO
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_STO_NOX["20C"]
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NOX"]
+                            / (b.params.K_NOX + b.conc_mass_comp_ref["S_NOX"])
+                        )
+                        * b.conc_mass_comp_ref["X_STO"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                # Autotrophic organisms, nitrifying activity
+                elif r == "R10":
+                    # R10: Aerobic growth of X_A, nitrification
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.mu_A["20C"]
+                        * (
+                            b.conc_mass_comp_ref["S_O"]
+                            / (b.params.K_A_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_A_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_ALK"]
+                            / (b.params.K_A_ALK + b.conc_mass_comp_ref["S_ALK"])
+                        )
+                        * b.conc_mass_comp_ref["X_A"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R11":
+                    # R11: Aerobic endogenous respiration
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_A_O2["20C"]
+                        * (
+                            b.conc_mass_comp_ref["S_O"]
+                            / (b.params.K_A_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
+                        * b.conc_mass_comp_ref["X_A"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R12":
+                    # R12: Anoxic endogenous respiration
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_A_NOX["20C"]
+                        * (
+                            b.params.K_A_O2
+                            / (b.params.K_A_O2 + b.conc_mass_comp_ref["S_O"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NOX"]
+                            / (b.params.K_A_NOX + b.conc_mass_comp_ref["S_NOX"])
+                        )
+                        * b.conc_mass_comp_ref["X_A"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 else:
                     raise BurntToast()
@@ -598,6 +859,6 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
-        iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
-        iscale.constraint_scaling_transform(self.rate_expression["R4"], 1e3)
+        # iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
+        # iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
+        # iscale.constraint_scaling_transform(self.rate_expression["R4"], 1e3)
