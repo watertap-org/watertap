@@ -367,7 +367,7 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "X_H"): 0,
             ("R1", "Liq", "X_STO"): 0,
             ("R1", "Liq", "X_A"): 0,
-            ("R1", "Liq", "X_TSS"): -self.i_SSXS,
+            ("R1", "Liq", "X_TSS"): t1,
             # Heterotrophic organisms, aerobic and denitrifying activity
             # R2: Aerobic storage of S_S
             ("R2", "Liq", "H2O"): 0,
