@@ -171,8 +171,8 @@ class DewateringData(SeparatorData):
         @self.Constraint(self.flowsheet().time, doc="Hydraulic retention time equation")
         def eq_hydraulic_retention(blk, t):
             return (
-                self.hydraulic_retention_time[t]
-                == self.volume[t] / self.inlet.flow_vol[t]
+                self.hydraulic_retention_time[t] * self.inlet.flow_vol[t]
+                == self.volume[t]
             )
 
         @self.Expression(self.flowsheet().time, doc="Suspended solid concentration")
@@ -200,7 +200,7 @@ class DewateringData(SeparatorData):
 
         @self.Expression(self.flowsheet().time, doc="Dewatering factor")
         def f_dewat(blk, t):
-            return blk.p_dewat * (10 / (blk.TSS_in[t]))
+            return blk.p_dewat * (10 / blk.TSS_in[t])
 
         @self.Expression(self.flowsheet().time, doc="Remove factor")
         def f_q_du(blk, t):
