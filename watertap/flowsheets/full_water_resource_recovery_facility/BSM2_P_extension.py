@@ -43,6 +43,7 @@ from idaes.models.unit_models import (
 )
 from idaes.models.unit_models.separator import SplittingType
 from watertap.core.solvers import get_solver
+from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.scaling import set_scaling_factor
 import idaes.logger as idaeslog
@@ -55,7 +56,6 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
-from watertap.unit_models.cstr_injection import CSTR_Injection, CSTR_InjectionScaler
 from watertap.unit_models.aeration_tank import (
     AerationTank,
     AerationTankScaler,
@@ -139,7 +139,6 @@ def main(bio_P=False):
     print("---Adding costing---")
     add_costing(m)
     m.fs.costing.initialize()
-    # interval_initializer(m.fs.costing)
 
     print("---Scaling system---")
     scale_system(m)
@@ -155,19 +154,11 @@ def main(bio_P=False):
     print("---Numerical Issues---")
     dt.report_numerical_issues()
 
-    # print("---Initial Results---")
-    # print("---R3 Results---")
-    # scaled_model.fs.R3.inlet.display()
-    # print("---ASM2d/ADM1 Results---")
-    # scaled_model.fs.translator_asm2d_adm1.inlet.display()
-
-    # print("--- Scaling Factors ---")
-    # report_scaling_factors(m, descend_into=True)
+    print("--- Scaling Factors ---")
+    report_scaling_factors(scaled_model, descend_into=True)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
-    # TODO: May need to reapply any scaling factors manually here - divded by 10 to account for sf
-    # Should still double check these values in report_scaling_factors
     scaled_model.fs.R5.KLa.fix(24.0 / 24)
     scaled_model.fs.R6.KLa.fix(24.0 / 24)
     scaled_model.fs.R7.KLa.fix(8.4 / 24)
@@ -178,10 +169,23 @@ def main(bio_P=False):
     # Re-solve with controls in place
     print("---Resolving system with controls---")
     solve(scaled_model)
+
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+    print("---SVD---")
+    svd = dt.prepare_svd_toolbox()
+    svd.display_underdetermined_variables_and_constraints()
+
     results = scaling.propagate_solution(scaled_model, m)
 
     display_costing(m)
     display_performance_metrics(m)
+
+    # print("---Initial Results---")
+    # print("---R3 Results---")
+    # m.fs.R3.inlet.display()
+    # print("---ASM2d/ADM1 Results---")
+    # m.fs.translator_asm2d_adm1.inlet.display()
 
     return m, results
 
@@ -244,13 +248,13 @@ def build(bio_P=False):
         electricity_consumption=ElectricityConsumption.calculated,
     )
     # Sixth reactor (aerobic) - CSTR with injection
-    m.fs.R6 = CSTR_Injection(
+    m.fs.R6 = AerationTank(
         property_package=m.fs.props_ASM2D,
         reaction_package=m.fs.rxn_props_ASM2D,
         electricity_consumption=ElectricityConsumption.calculated,
     )
     # Seventh reactor (aerobic) - CSTR with injection
-    m.fs.R7 = CSTR_Injection(
+    m.fs.R7 = AerationTank(
         property_package=m.fs.props_ASM2D,
         reaction_package=m.fs.rxn_props_ASM2D,
         electricity_consumption=ElectricityConsumption.calculated,
@@ -572,7 +576,7 @@ def scale_system(m, bio_P=False):
     csb = CustomScalerBase()
 
     ad_scaler = ADScaler()
-    ad_scaler.scale_model(m.fs.RADM)
+    ad_scaler.scale_model(m.fs.AD)
 
     set_scaling_factor(m.fs.AD.KH_co2, 1e1)
     set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
@@ -602,15 +606,14 @@ def scale_system(m, bio_P=False):
         cstr_scaler.scale_model(unit)
 
     for unit in cstr_list:
-        block = getattr(m.fs, unit)
-        set_scaling_factor(block.hydraulic_retention_time, 1e-3)
+        set_scaling_factor(unit.hydraulic_retention_time, 1e-3)
 
-    cstr_injection_list = [m.fs.R5, m.fs.R6, m.fs.R7]
-    cstr_injection_scaler = CSTR_InjectionScaler()
-    for unit in cstr_injection_list:
-        cstr_injection_scaler.scale_model(unit)
+    aeration_list = [m.fs.R5, m.fs.R6, m.fs.R7]
+    aeration_scaler = AerationTankScaler()
+    for unit in aeration_list:
+        aeration_scaler.scale_model(unit)
 
-    for R in cstr_injection_list:
+    for R in aeration_list:
         set_scaling_factor(R.KLa, 1e-1)
     # if bio_P:
     #     for R in m.fs.aerobic_reactors:
@@ -623,13 +626,12 @@ def scale_system(m, bio_P=False):
 
     reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5, m.fs.R6, m.fs.R7]
     for unit in reactor_list:
-        block = getattr(m.fs, unit)
-        set_scaling_factor(block.control_volume.reactions[0.0].rate_expression, 1e3)
-        set_scaling_factor(block.cstr_performance_eqn, 1e3)
+        set_scaling_factor(unit.control_volume.reactions[0.0].rate_expression, 1e3)
+        set_scaling_factor(unit.cstr_performance_eqn, 1e3)
         set_scaling_factor(
-            block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
+            unit.control_volume.rate_reaction_stoichiometry_constraint, 1e3
         )
-        set_scaling_factor(block.control_volume.material_balances, 1e3)
+        set_scaling_factor(unit.control_volume.material_balances, 1e3)
 
     clarifier_list = [m.fs.CL, m.fs.CL2]
     clarifier_scaler = ClarifierScaler()
@@ -637,16 +639,18 @@ def scale_system(m, bio_P=False):
         clarifier_scaler.scale_model(unit)
 
     thickener_scaler = ThickenerScaler()
-    thickener_scaler.scale_model(m.fs.TU)
+    thickener_scaler.scale_model(m.fs.thickener)
 
     dewaterer_scaler = DewatererScaler()
-    dewaterer_scaler.scale_model(m.fs.DU)
+    dewaterer_scaler.scale_model(m.fs.dewater)
 
     as_ad_scaler = ASM2dADM1Scaler()
     as_ad_scaler.scale_model(m.fs.translator_asm2d_adm1)
 
     ad_as_scaler = ADM1ASM2dScaler()
     ad_as_scaler.scale_model(m.fs.translator_adm1_asm2d)
+
+    set_scaling_factor(m.fs.P1.control_volume.work[0], 1e-2)
 
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
@@ -749,16 +753,16 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "S_NH4"): 0.0075,
                 (0, "S_NO3"): 0.003,
                 (0, "S_O2"): 0.0019,
-                (0, "S_PO4"): 0.73,
+                (0, "S_PO4"): 0.7,
                 (0, "S_K"): 0.37,
                 (0, "S_Mg"): 0.021,
                 (0, "S_IC"): 0.13,
                 (0, "X_AUT"): 0.11,
                 (0, "X_H"): 3.5,
                 (0, "X_I"): 3.2,
-                (0, "X_PAO"): 3.2,
+                (0, "X_PAO"): 3.4,
                 (0, "X_PHA"): 0.084,
-                (0, "X_PP"): 1.07,
+                (0, "X_PP"): 1.13,
                 (0, "X_S"): 0.057,
             },
             "temperature": {0: 308.15},
@@ -774,14 +778,14 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "S_N2"): 0.03617,
                 (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 0.002,
-                (0, "S_O2"): 0.0013,
-                (0, "S_PO4"): 0.74,
+                (0, "S_O2"): 0.000624,
+                (0, "S_PO4"): 0.777,
                 (0, "S_K"): 0.38,
                 (0, "S_Mg"): 0.024,
                 (0, "S_IC"): 0.075,
                 (0, "X_AUT"): 0.28,
-                (0, "X_H"): 23.4,
-                (0, "X_I"): 11.4,
+                (0, "X_H"): 23,
+                (0, "X_I"): 11.21,
                 (0, "X_PAO"): 10.1,
                 (0, "X_PHA"): 0.0044,
                 (0, "X_PP"): 2.7,
@@ -795,8 +799,10 @@ def initialize_system(m, bio_P=False, solver=None):
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
+    initializer = BlockTriangularizationInitializer()
+
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+        initializer.initialize(unit)
 
     seq.run(m, function)
 
@@ -845,16 +851,15 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(m.fs.FeedWater.properties[0].flow_vol)
 
     m.fs.objective = pyo.Objective(expr=m.fs.costing.LCOW)
+    # 9, 8.117e15, 9, 8.006e15
     set_scaling_factor(m.fs.costing.total_capital_cost, 1e-5)
+    set_scaling_factor(m.fs.costing.aggregate_capital_cost, 1e-5)
+    set_scaling_factor(m.fs.costing.total_operating_cost, 1e-5)
+    set_scaling_factor(m.fs.costing.aggregate_flow_costs["electricity"], 1e-5)
 
     for block in m.fs.component_objects(pyo.Block, descend_into=True):
         if isinstance(block, UnitModelBlockData) and hasattr(block, "costing"):
             set_scaling_factor(block.costing.capital_cost, 1e-5)
-
-    iscale.constraint_scaling_transform(m.fs.AD.costing.capital_cost_constraint, 1e-6)
-    iscale.constraint_scaling_transform(
-        m.fs.dewater.costing.capital_cost_constraint, 1e-6
-    )
 
 
 def display_costing(m):
@@ -1095,8 +1100,6 @@ if __name__ == "__main__":
 
 """
 TODO List
-- Update tear guesses based on initial results
-- Update scaling factors in set_scaling and/or add_costing based on diagnostics
-- Make sure KLa vars that are fixed in main are scaled down for scaled_model
-
+- Update tear guesses for bio_P=True
+- Update scaling for bio_P=True
 """
