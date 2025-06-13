@@ -21,7 +21,7 @@ __author__ = "Chenyu Wang"
 
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value, units
+from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
