@@ -19,7 +19,6 @@ but comprises different specifications for default values than BSM2.
 # Some more information about this module
 __author__ = "Chenyu Wang"
 
-import platform
 import pytest
 
 from pyomo.environ import assert_optimal_termination, value, units
