@@ -38,17 +38,6 @@ from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
-is_reference_platform = (
-    platform.system() == "Windows"
-    and platform.python_version_tuple()[:2] == ("3", "11")
-)
-reference_platform_only = pytest.mark.xfail(
-    condition=(not is_reference_platform),
-    run=True,
-    strict=False,
-    reason="These tests are expected to pass only on the reference platform (Python 3.11 on Windows)",
-)
-
 
 @pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPFalse:
@@ -162,7 +151,6 @@ class TestFullFlowsheetBioPFalse:
 
     @pytest.mark.integration
     @pytest.mark.solver
-    @reference_platform_only
     def test_run_convergence_analysis_SF(self, system_frame):
 
         try:
@@ -333,7 +321,6 @@ class TestFullFlowsheetBioPTrue:
 
     @pytest.mark.integration
     @pytest.mark.solver
-    @reference_platform_only
     def test_run_convergence_analysis_SF(self, system_frame):
 
         try:
