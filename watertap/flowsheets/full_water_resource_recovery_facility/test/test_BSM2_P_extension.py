@@ -26,7 +26,6 @@ from pyomo.environ import assert_optimal_termination, value, units
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
@@ -165,6 +164,14 @@ class TestFullFlowsheetBioPFalse:
     @pytest.mark.solver
     @reference_platform_only
     def test_run_convergence_analysis_SF(self, system_frame):
+
+        try:
+            from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
+        except ImportError:
+            pytest.skip(
+                "IpoptConvergenceAnalysis does not exist in this version of IDAES"
+            )
+
         m = system_frame
         solver_obj = get_solver()
         ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)
@@ -328,6 +335,14 @@ class TestFullFlowsheetBioPTrue:
     @pytest.mark.solver
     @reference_platform_only
     def test_run_convergence_analysis_SF(self, system_frame):
+
+        try:
+            from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
+        except ImportError:
+            pytest.skip(
+                "IpoptConvergenceAnalysis does not exist in this version of IDAES"
+            )
+
         m = system_frame
         solver_obj = get_solver()
         ca = IpoptConvergenceAnalysis(m, solver_obj=solver_obj)

@@ -41,7 +41,6 @@ from idaes.core.util.model_statistics import (
 
 import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
 from idaes.core.util.parameter_sweep import (
     ParameterSweepSpecification,
 )
@@ -645,6 +644,14 @@ class TestAsm2dAdm1_bioP_false(object):
     @pytest.mark.integration
     @pytest.mark.solver
     def test_run_convergence_analysis_SF(self, asmadm):
+
+        try:
+            from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
+        except ImportError:
+            pytest.skip(
+                "IpoptConvergenceAnalysis does not exist in this version of IDAES"
+            )
+
         spec = ParameterSweepSpecification()
         spec.add_sampled_input(
             "fs.unit.inlet.conc_mass_comp[0, S_F]", lower=0.001, upper=0.1
@@ -686,6 +693,14 @@ class TestAsm2dAdm1_bioP_false(object):
     @pytest.mark.integration
     @pytest.mark.solver
     def test_run_convergence_analysis_XS(self, asmadm):
+
+        try:
+            from idaes.core.util.model_diagnostics import IpoptConvergenceAnalysis
+        except ImportError:
+            pytest.skip(
+                "IpoptConvergenceAnalysis does not exist in this version of IDAES"
+            )
+
         spec = ParameterSweepSpecification()
         spec.add_sampled_input(
             "fs.unit.inlet.conc_mass_comp[0, X_S]", lower=1, upper=100
