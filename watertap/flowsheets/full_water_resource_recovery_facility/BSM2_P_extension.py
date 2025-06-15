@@ -47,7 +47,6 @@ from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.scaling import set_scaling_factor
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
@@ -101,8 +100,6 @@ from watertap.unit_models.thickener import (
 
 from watertap.core.util.initialization import (
     check_solve,
-    assert_degrees_of_freedom,
-    interval_initializer,
 )
 
 from watertap.costing import WaterTAPCosting
@@ -112,7 +109,6 @@ from watertap.costing.unit_models.clarifier import (
 )
 
 from idaes.core.util import DiagnosticsToolbox
-from idaes.core.scaling import report_scaling_factors
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -141,7 +137,7 @@ def main(bio_P=False):
     m.fs.costing.initialize()
 
     print("---Scaling system---")
-    scale_system(m)
+    scale_system(m, bio_P=bio_P)
     scaling = pyo.TransformationFactory("core.scale_model")
     scaled_model = scaling.create_using(m, rename=False)
 
@@ -153,9 +149,6 @@ def main(bio_P=False):
     dt.report_structural_issues()
     print("---Numerical Issues---")
     dt.report_numerical_issues()
-
-    print("--- Scaling Factors ---")
-    report_scaling_factors(scaled_model, descend_into=True)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
@@ -172,20 +165,16 @@ def main(bio_P=False):
 
     print("---Numerical Issues---")
     dt.report_numerical_issues()
-    print("---SVD---")
-    svd = dt.prepare_svd_toolbox()
-    svd.display_underdetermined_variables_and_constraints()
+    # dt.display_variables_with_extreme_jacobians()
+    # dt.display_constraints_with_extreme_jacobians()
+    # print("---SVD---")
+    # svd = dt.prepare_svd_toolbox()
+    # svd.display_underdetermined_variables_and_constraints()
 
     results = scaling.propagate_solution(scaled_model, m)
 
     display_costing(m)
     display_performance_metrics(m)
-
-    # print("---Initial Results---")
-    # print("---R3 Results---")
-    # m.fs.R3.inlet.display()
-    # print("---ASM2d/ADM1 Results---")
-    # m.fs.translator_asm2d_adm1.inlet.display()
 
     return m, results
 
@@ -581,24 +570,12 @@ def scale_system(m, bio_P=False):
     set_scaling_factor(m.fs.AD.KH_co2, 1e1)
     set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
     set_scaling_factor(m.fs.AD.KH_h2, 1e2)
+    set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e1)
 
-    set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
-
-    # if bio_P:
-    #     set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e3)
-    #     iscale.constraint_scaling_transform(
-    #         m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-6
-    #     )
-    # else:
-    #     set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e2)
-    #     iscale.constraint_scaling_transform(
-    #         m.fs.AD.liquid_phase.enthalpy_balances[0], 1e-3
-    #     )
-    #
-    # if bio_P:
-    #     iscale.constraint_scaling_transform(
-    #         m.fs.AD.liquid_phase.reactions[0].rate_expression["R24"], 1e6
-    #     )
+    if bio_P:
+        set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e1)
+    else:
+        set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e2)
 
     cstr_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4]
     cstr_scaler = CSTRScaler()
@@ -615,14 +592,8 @@ def scale_system(m, bio_P=False):
 
     for R in aeration_list:
         set_scaling_factor(R.KLa, 1e-1)
-    # if bio_P:
-    #     for R in m.fs.aerobic_reactors:
-    #         set_scaling_factor(R.KLa, 1e-1)
-    #         set_scaling_factor(R.hydraulic_retention_time[0], 1e-2)
-    # else:
-    #     for R in m.fs.aerobic_reactors:
-    #         set_scaling_factor(R.KLa, 1e-1)
-    #
+        if bio_P:
+            set_scaling_factor(R.hydraulic_retention_time[0], 1e-2)
 
     reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5, m.fs.R6, m.fs.R7]
     for unit in reactor_list:
@@ -632,6 +603,11 @@ def scale_system(m, bio_P=False):
             unit.control_volume.rate_reaction_stoichiometry_constraint, 1e3
         )
         set_scaling_factor(unit.control_volume.material_balances, 1e3)
+
+    if bio_P:
+        set_scaling_factor(
+            m.fs.R5.control_volume.rate_reaction_generation[0, "Liq", "S_I"], 1e-3
+        )
 
     clarifier_list = [m.fs.CL, m.fs.CL2]
     clarifier_scaler = ClarifierScaler()
@@ -665,6 +641,8 @@ def scale_system(m, bio_P=False):
             set_scaling_factor(var, 1e0)
         if "cations" in var.name:
             set_scaling_factor(var, 1e1)
+        if "mass_transfer_term" in var.name:
+            set_scaling_factor(var, 1e1)
 
     for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
         csb.scale_constraint_by_nominal_value(
@@ -694,7 +672,7 @@ def initialize_system(m, bio_P=False, solver=None):
             "flow_vol": {0: 1.2368},
             "conc_mass_comp": {
                 (0, "S_A"): 0.0006,
-                (0, "S_F"): 0.0004,
+                (0, "S_F"): 0.00047,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.045,
                 (0, "S_NH4"): 0.0075,
@@ -708,7 +686,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_H"): 3.6,
                 (0, "X_I"): 3.2,
                 (0, "X_PAO"): 3.6,
-                (0, "X_PHA"): 0.094,
+                (0, "X_PHA"): 0.09,
                 (0, "X_PP"): 1.16,
                 (0, "X_S"): 0.059,
             },
@@ -719,18 +697,18 @@ def initialize_system(m, bio_P=False, solver=None):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.10,
+                (0, "S_A"): 0.082,
                 (0, "S_F"): 0.16,
                 (0, "S_I"): 0.057,
-                (0, "S_N2"): 0.036,
+                (0, "S_N2"): 0.0249,
                 (0, "S_NH4"): 0.03,
                 (0, "S_NO3"): 0.002,
                 (0, "S_O2"): 0.0013,
                 (0, "S_PO4"): 0.024,
                 (0, "S_K"): 0.38,
                 (0, "S_Mg"): 0.027,
-                (0, "S_IC"): 0.072,
-                (0, "X_AUT"): 0.25,
+                (0, "S_IC"): 0.07,
+                (0, "X_AUT"): 4.011e-8,
                 (0, "X_H"): 23.0,
                 (0, "X_I"): 11.3,
                 (0, "X_PAO"): 10.9,
@@ -802,7 +780,11 @@ def initialize_system(m, bio_P=False, solver=None):
     initializer = BlockTriangularizationInitializer()
 
     def function(unit):
-        initializer.initialize(unit)
+        # TODO: Resolve why bio_P=True does not work with the BTInitializer
+        if bio_P:
+            unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+        else:
+            initializer.initialize(unit)
 
     seq.run(m, function)
 
@@ -1075,7 +1057,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
@@ -1100,6 +1082,6 @@ if __name__ == "__main__":
 
 """
 TODO List
-- Update tear guesses for bio_P=True
-- Update scaling for bio_P=True
+- For bio_P=True, need to use unit.initialize temporarily
+- Update testing
 """
