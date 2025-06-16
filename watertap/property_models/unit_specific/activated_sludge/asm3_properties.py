@@ -244,16 +244,16 @@ class ASM3ParameterData(PhysicalParameterBlock):
                 "conc_mass_comp": {"method": None},
             }
         )
-        # obj.define_custom_properties(
-        #     {
-        #         "alkalinity": {"method": None},
-        #         "TSS": {"method": "_TSS"},
-        #         "BOD5": {"method": "_BOD5"},
-        #         "TKN": {"method": "_TKN"},
-        #         "Total_N": {"method": "_Total_N"},
-        #         "COD": {"method": "_COD"},
-        #     }
-        # )
+        obj.define_custom_properties(
+            {
+                "alkalinity": {"method": None},
+                # "TSS": {"method": "_TSS"},
+                # "BOD5": {"method": "_BOD5"},
+                # "TKN": {"method": "_TKN"},
+                # "Total_N": {"method": "_Total_N"},
+                # "COD": {"method": "_COD"},
+            }
+        )
         obj.add_default_units(
             {
                 "time": pyo.units.s,
@@ -450,11 +450,11 @@ class ASM3StateBlockData(StateBlockData):
             if j == "H2O":
                 return self.flow_vol * self.params.dens_mass
             elif j == "S_ALK":
-                # Convert moles of alkalinity to mass of C assuming all is HCO3-
+                # Convert moles of alkalinity to mass assuming all is HCO3-
                 return (
                     self.flow_vol
                     * self.alkalinity
-                    * (12 * pyo.units.kg / pyo.units.kmol)
+                    * (61 * pyo.units.kg / pyo.units.kmol)
                 )
             else:
                 return self.flow_vol * self.conc_mass_comp[j]

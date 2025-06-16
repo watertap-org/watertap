@@ -174,22 +174,22 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             doc="Anoxic reduction factor",
         )
         self.K_O2 = pyo.Var(
-            initialize=0.2,
-            units=pyo.units.g / pyo.units.m**3,
+            initialize=0.2e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Saturation constant for S_NO2 (g-O2 / m3)",
+            doc="Saturation constant for S_NO2 (kg-O2 / m3)",
         )
         self.K_NOX = pyo.Var(
-            initialize=0.5,
-            units=pyo.units.g / pyo.units.m**3,
+            initialize=0.5e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Saturation constant for S_NOX (g-N-NO3 / m3)",
+            doc="Saturation constant for S_NOX (kg-N-NO3 / m3)",
         )
         self.K_S = pyo.Var(
-            initialize=2,
-            units=pyo.units.g / pyo.units.m**3,
+            initialize=2e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Saturation constant for for substrate S_S (g-COD-S_S / m3)",
+            doc="Saturation constant for substrate S_S (kg-COD-S_S / m3)",
         )
         self.K_STO = pyo.Var(
             initialize=1,
@@ -206,16 +206,16 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             doc="Heterotrophic max. growth rate of X_H (day^-1)",
         )
         self.K_NH4 = pyo.Var(
-            initialize=0.01,
-            units=pyo.units.g / pyo.units.m**3,
+            initialize=0.01e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Saturation constant for ammonium, S_NH4 (g-N / m3)",
+            doc="Saturation constant for ammonium, S_NH4 (kg-N / m3)",
         )
         self.K_ALK = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.mol / pyo.units.m**3,
+            initialize=0.1e-3,
+            units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Saturation constant for alkalinity for X_H (mol-HCO3- / m3)",
+            doc="Saturation constant for alkalinity for X_H (kmol-HCO3- / m3)",
         )
         b_H_O2_dict = {"10C": 0.1, "20C": 0.2}
         self.b_H_O2 = pyo.Var(
@@ -260,22 +260,22 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             doc="Autotrophic max. growth rate of X_A (day^-1)",
         )
         self.K_A_NH4 = pyo.Var(
-            initialize=1,
-            units=pyo.units.g / pyo.units.m**3,
+            initialize=1e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Ammonium substrate saturation for X_A (g-N / m3)",
+            doc="Ammonium substrate saturation for X_A (kg-N / m3)",
         )
         self.K_A_O2 = pyo.Var(
-            initialize=0.5,
-            units=pyo.units.g / pyo.units.m**3,
+            initialize=0.5e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Oxygen saturation for nitrifiers (g-O2 / m3)",
+            doc="Oxygen saturation for nitrifiers (kg-O2 / m3)",
         )
         self.K_A_ALK = pyo.Var(
-            initialize=0.5,
-            units=pyo.units.mol / pyo.units.m**3,
+            initialize=0.5e-3,
+            units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Bicarbonate saturation for nitrifiers (mol-HCO3- / m3)",
+            doc="Bicarbonate saturation for nitrifiers (kmol-HCO3- / m3)",
         )
         b_A_O2_dict = {"10C": 0.05, "20C": 0.15}
         self.b_A_O2 = pyo.Var(
@@ -703,8 +703,8 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
-                            b.conc_mass_comp_ref["S_ALK"]
-                            / (b.params.K_ALK + b.conc_mass_comp_ref["S_ALK"])
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (b.conc_mass_comp_ref["X_STO"] / b.conc_mass_comp_ref["X_H"])
                         / (
@@ -729,8 +729,8 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
-                            b.conc_mass_comp_ref["S_ALK"]
-                            / (b.params.K_ALK + b.conc_mass_comp_ref["S_ALK"])
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * (b.conc_mass_comp_ref["X_STO"] / b.conc_mass_comp_ref["X_H"])
                         / (
@@ -807,8 +807,8 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_A_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
                         * (
-                            b.conc_mass_comp_ref["S_ALK"]
-                            / (b.params.K_A_ALK + b.conc_mass_comp_ref["S_ALK"])
+                            b.state_ref.alkalinity
+                            / (b.params.K_A_ALK + b.state_ref.alkalinity)
                         )
                         * b.conc_mass_comp_ref["X_A"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -834,7 +834,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.conc_mass_comp_ref["S_NOX"]
-                            / (b.params.K_A_NOX + b.conc_mass_comp_ref["S_NOX"])
+                            / (b.params.K_NOX + b.conc_mass_comp_ref["S_NOX"])
                         )
                         * b.conc_mass_comp_ref["X_A"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
