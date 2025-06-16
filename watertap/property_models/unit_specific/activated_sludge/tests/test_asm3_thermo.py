@@ -192,7 +192,7 @@ class TestStateBlock(object):
                 assert str(model.props[1].material_flow_expression[j].expr) == str(
                     model.props[1].flow_vol
                     * model.props[1].alkalinity
-                    * (12 * units.kg / units.kmol)
+                    * (61 * units.kg / units.kmol)
                 )
             else:
                 assert str(model.props[1].material_flow_expression[j].expr) == str(
