@@ -36,7 +36,6 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
-import idaes.core.util.scaling as iscale
 
 # Some more information about this module
 __author__ = "Chenyu Wang, Adam Atia"
