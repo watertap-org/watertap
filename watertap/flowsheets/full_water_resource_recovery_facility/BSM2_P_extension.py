@@ -108,8 +108,6 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
-from idaes.core.util import DiagnosticsToolbox
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -124,7 +122,6 @@ def main(bio_P=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
-    print("---Initializing system---")
     initialize_system(m, bio_P=bio_P)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -132,23 +129,14 @@ def main(bio_P=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    print("---Adding costing---")
     add_costing(m)
     m.fs.costing.initialize()
 
-    print("---Scaling system---")
     scale_system(m, bio_P=bio_P)
     scaling = pyo.TransformationFactory("core.scale_model")
     scaled_model = scaling.create_using(m, rename=False)
 
-    print("---Solving scaled system---")
     solve(scaled_model)
-
-    dt = DiagnosticsToolbox(scaled_model)
-    print("---Structural Issues---")
-    dt.report_structural_issues()
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
@@ -160,16 +148,7 @@ def main(bio_P=False):
     scaled_model.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Re-solve with controls in place
-    print("---Resolving system with controls---")
     solve(scaled_model)
-
-    print("---Numerical Issues---")
-    dt.report_numerical_issues()
-    # dt.display_variables_with_extreme_jacobians()
-    # dt.display_constraints_with_extreme_jacobians()
-    # print("---SVD---")
-    # svd = dt.prepare_svd_toolbox()
-    # svd.display_underdetermined_variables_and_constraints()
 
     results = scaling.propagate_solution(scaled_model, m)
 
@@ -1057,7 +1036,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
@@ -1079,9 +1058,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-
-"""
-TODO List
-- For bio_P=True, need to use unit.initialize temporarily
-- Update testing
-"""
