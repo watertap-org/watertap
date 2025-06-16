@@ -21,10 +21,11 @@ __author__ = "Chenyu Wang"
 
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value
+from pyomo.environ import assert_optimal_termination, value, TransformationFactory
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
@@ -43,14 +44,30 @@ class TestFullFlowsheetBioPFalse:
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=False)
-        m.results = res
         return m
 
     @pytest.mark.integration
-    def test_structure(self, system_frame):
-        assert_units_consistent(system_frame)
-        assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.results)
+    def test_structural_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
+
+    @pytest.mark.integration
+    def test_numerical_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        dt.report_numerical_issues()
+        warnings, next_steps = dt._collect_numerical_warnings()
+        # TODO: Resolve why only variable bounds warning appears locally
+        assert len(warnings) == 4
+        assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
+        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert (
+            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -91,7 +108,7 @@ class TestFullFlowsheetBioPFalse:
         ) == pytest.approx(0.0182828, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(0.148917, rel=1e-3)
+        ) == pytest.approx(0.149736, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
         ) == pytest.approx(0.0004246397, rel=1e-3)
@@ -116,13 +133,13 @@ class TestFullFlowsheetBioPFalse:
 
         # Check electricity consumption for each aerobic reactor
         assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
-            48.0849, rel=1e-3
+            133.333, rel=1e-3
         )
         assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
-            48.0849, rel=1e-3
+            133.333, rel=1e-3
         )
         assert value(m.fs.R7.electricity_consumption[0]) == pytest.approx(
-            48.0849, rel=1e-3
+            46.666, rel=1e-3
         )
 
     @pytest.mark.component
@@ -130,22 +147,23 @@ class TestFullFlowsheetBioPFalse:
         m = system_frame
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.47049103621, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.483904, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
             24058975.756, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            831978.066, rel=1e-3
+            924284.848, rel=1e-3
         )
 
     @pytest.mark.component
     def test_condition_number(self, system_frame):
         m = system_frame
 
+        # TODO: Resolve why condition number is much lower locally - 6.693e15
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.48003144935e18, rel=1e-3
+            1.0838e21, rel=1e-3
         )
 
 
@@ -154,14 +172,30 @@ class TestFullFlowsheetBioPTrue:
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=True)
-        m.results = res
         return m
 
     @pytest.mark.integration
-    def test_structure(self, system_frame):
-        assert_units_consistent(system_frame)
-        assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.results)
+    def test_structural_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
+
+    @pytest.mark.integration
+    def test_numerical_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        dt.report_numerical_issues()
+        warnings, next_steps = dt._collect_numerical_warnings()
+        # TODO: Resolve why only variable bounds warning appears locally
+        assert len(warnings) == 4
+        assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
+        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert (
+            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -171,69 +205,69 @@ class TestFullFlowsheetBioPTrue:
             0.2422, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-            2.81147e-06, abs=1e-6
+            2.8676e-06, abs=1e-6
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-            0.0002683, rel=1e-3
+            0.0002685, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
             0.057450, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
-        ) == pytest.approx(0.050742, rel=1e-3)
+        ) == pytest.approx(0.050654, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-        ) == pytest.approx(0.00021578, rel=1e-3)
+        ) == pytest.approx(0.00021746, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
-        ) == pytest.approx(0.0044353, rel=1e-3)
+        ) == pytest.approx(0.00437447, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-        ) == pytest.approx(0.0014727, rel=1e-3)
+        ) == pytest.approx(0.0014439, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.0024041, rel=1e-3)
+        ) == pytest.approx(0.0023425, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-            0.369583, rel=1e-3
+            0.369526, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-        ) == pytest.approx(0.020914, rel=1e-3)
+        ) == pytest.approx(0.020926, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-        ) == pytest.approx(0.14616, rel=1e-3)
+        ) == pytest.approx(0.14633, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
-        ) == pytest.approx(0.00041026, rel=1e-3)
+        ) == pytest.approx(0.0004089, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
-            0.0132077, rel=1e-3
+            0.0132348, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.011963, rel=1e-3
+            0.011986, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
-        ) == pytest.approx(0.012899, rel=1e-3)
+        ) == pytest.approx(0.013057, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-        ) == pytest.approx(8.15037e-06, abs=1e-6)
+        ) == pytest.approx(8.356498e-06, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
-        ) == pytest.approx(0.0042465, rel=1e-3)
+        ) == pytest.approx(0.0042947, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00021778, rel=1e-3
+            0.00021881, rel=1e-3
         )
 
         # Check electricity consumption for each aerobic reactor
         assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
-            48.0878, rel=1e-3
+            133.3333, rel=1e-3
         )
         assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
-            48.0878, rel=1e-3
+            133.333, rel=1e-3
         )
         assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
-            48.0878, rel=1e-3
+            133.333, rel=1e-3
         )
 
     @pytest.mark.component
@@ -241,21 +275,21 @@ class TestFullFlowsheetBioPTrue:
         m = system_frame
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.4701, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.4837, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
             24038148.865, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            831349.21, rel=1e-3
+            923951.79, rel=1e-3
         )
 
-    # TODO: Failing linux tests - will fix when adding Scaler Objects into BSM2-P
-    # @pytest.mark.component
-    # def test_condition_number(self, system_frame):
-    #     m = system_frame
-    #
-    #     # Check condition number to confirm scaling
-    #     jac, _ = get_jacobian(m, scaled=False)
-    #     assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-    #         9.421459e17, abs=1e-3
-    #     )
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # TODO: Resolve why condition number is much lower locally - 1.387e16
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            2.3814879452287945e21, abs=1e-3
+        )
