@@ -533,6 +533,10 @@ class ASM1StateBlockData(StateBlockData):
 
     def define_display_vars(self):
         return {
+            "TSS": self.TSS,
+            "COD": self.COD,
+            "BOD5": self.BOD5,
+            "TKN": self.TKN,
             "Volumetric Flowrate": self.flow_vol,
             "Molar Alkalinity": self.alkalinity,
             "Mass Concentration": self.conc_mass_comp,

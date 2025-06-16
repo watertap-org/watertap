@@ -66,17 +66,15 @@ class CSTRData(CSTRIDAESData):
             doc="Hydraulic retention time",
         )
 
-        def CSTR_retention_time_rule(self, t):
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Hydraulic retention time equation",
+        )
+        def eq_hydraulic_retention_time(self, t):
             return (
                 self.hydraulic_retention_time[t]
                 == self.volume[t] / self.control_volume.properties_in[t].flow_vol
             )
-
-        self.CSTR_retention_time = Constraint(
-            self.flowsheet().time,
-            rule=CSTR_retention_time_rule,
-            doc="Total CSTR retention time",
-        )
 
     @property
     def default_costing_method(self):

@@ -41,7 +41,6 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Mixer,
     Separator,
@@ -60,7 +59,7 @@ from idaes.core.util.tables import (
 )
 from idaes.core.util.initialization import propagate_state
 
-from watertap.unit_models import AerationTank
+from watertap.unit_models import AerationTank, CSTR
 
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
@@ -120,26 +119,11 @@ def build_flowsheet():
     m.fs.S1 = Separator(
         property_package=m.fs.props, outlet_list=["effluent","M1_inlet", "R2_inlet"]
     )
-    # Clarifier
-    # # TODO: Replace with more detailed model when available
-    # m.fs.CL1 = Separator(
-    #     property_package=m.fs.props,
-    #     outlet_list=["underflow", "effluent"],
-    #     split_basis=SplittingType.componentFlow,
-    # )
-    # # Sludge purge splitter
-    # m.fs.SP6 = Separator(
-    #     property_package=m.fs.props,
-    #     outlet_list=["recycle", "waste"],
-    #     split_basis=SplittingType.totalFlow,
-    # )
-    # # Mixing sludge recycle and R5 underflow
-    # m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
+
     
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props)
-    # Recycle pressure changer - use a simple isothermal unit for now
-    # m.fs.P1 = PressureChanger(property_package=m.fs.props)
+
 
     # Link units
     m.fs.feed_to_m1 = Arc(source=m.fs.feed.outlet, destination=m.fs.M1.feed)
@@ -153,8 +137,7 @@ def build_flowsheet():
     m.fs.s1_to_effluent = Arc(source=m.fs.S1.effluent, destination=m.fs.Treated.inlet)
     m.fs.s1_to_m1 = Arc(source=m.fs.S1.M1_inlet, destination=m.fs.M1.recycle)
     m.fs.s1_to_r2 = Arc(source=m.fs.S1.R2_inlet, destination=m.fs.R2.inlet)
-    # m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.P1.inlet)
-    # m.fs.stream15 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
+
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
     
     return m
@@ -181,9 +164,9 @@ def set_operating_conditions(m):
     # Reactor sizing
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
     m.fs.R2.volume.fix(1000 * pyo.units.m**3)
-    m.fs.R3.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R4.volume.fix(1333 * pyo.units.m**3)
-    m.fs.R5.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R3.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R4.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R5.volume.fix(1000 * pyo.units.m**3)
 
     # Injection rates to Reactors 2 and 4
     for j in m.fs.props.component_list:
@@ -191,9 +174,9 @@ def set_operating_conditions(m):
             # All components except S_O have no injection
             m.fs.R2.injection[:, :, j].fix(0)
             m.fs.R4.injection[:, :, j].fix(0)
-    # Then set injections rates for O2
-    m.fs.R2.outlet.conc_mass_comp[:, "S_O"].fix(1.72e-3)
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].fix(2.43e-3)
+
+    m.fs.R2.KLa.fix(240)
+    m.fs.R4.KLa.fix(240)
 
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.S1.split_fraction[:, "M1_inlet"].fix(0.5)
@@ -201,8 +184,6 @@ def set_operating_conditions(m):
     # Set fraction of outflow from reactor 5 that goes to effluent
     m.fs.S1.split_fraction[:, "effluent"].fix(0.4)
 
-    # # Outlet pressure from recycle pump
-    # m.fs.P1.outlet.pressure.fix(101325)
 
     # Check degrees of freedom
     print("DOF = ", degrees_of_freedom(m))
@@ -307,31 +288,7 @@ def initialize_flowsheet(m):
     # for o in order:
     #     print(o[0].name)
 
-    # # Initial guesses for flow into first reactor
-    # tear_guesses = {
-    #     "flow_vol": {0: 1.0675},
-    #     "conc_mass_comp": {
-    #         (0, "S_I"): 0.03,
-    #         (0, "S_S"): 0.0146,
-    #         (0, "X_I"): 1.149,
-    #         (0, "X_S"): 0.0893,
-    #         (0, "X_BH"): 2.542,
-    #         (0, "X_BA"): 0.149,
-    #         (0, "X_P"): 0.448,
-    #         (0, "S_O"): 3.93e-4,
-    #         (0, "S_NO"): 8.32e-3,
-    #         (0, "S_NH"): 7.7e-3,
-    #         (0, "S_ND"): 1.94e-3,
-    #         (0, "X_ND"): 5.62e-3,
-    #     },
-    #     "alkalinity": {0: 5e-3},
-    #     "temperature": {0: 298.15},
-    #     "pressure": {0: 101325},
-    # }
-
-    # # Pass the tear_guess to the SD tool
-    # seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
-
+  
     def function(unit):
         unit.initialize(outlvl=idaeslog.DEBUG)
 
@@ -340,23 +297,8 @@ def initialize_flowsheet(m):
 def solve_flowsheet(m):
     # Solve overall flowsheet to close recycle loop
     solver = get_solver()
-    results = solver.solve(m)
-    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
-
-    # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
-    m.fs.R2.KLa.fix(10)
-    m.fs.R4.KLa.fix(10)
-    m.fs.R2.outlet.conc_mass_comp[:, "S_O"].unfix()
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
-
-    # Resolve with controls in place
     results = solver.solve(m, tee=True)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
+    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     return m, results
 
@@ -394,3 +336,5 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    m.fs.R2._get_performance_contents()
+    m.fs.R4._get_performance_contents()
