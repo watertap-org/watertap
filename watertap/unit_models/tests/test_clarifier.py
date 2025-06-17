@@ -121,7 +121,6 @@ def build():
     iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["S_O"], 1e7)
     iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].conc_mass_comp["S_NO"], 1e7)
 
-    # iscale.calculate_scaling_factors(m.fs.unit)
 
     # Check condition number to confirm scaling
     sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
