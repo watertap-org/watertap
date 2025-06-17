@@ -74,6 +74,7 @@ class TestFullFlowsheet:
 
     @pytest.mark.solver
     @pytest.mark.component
+    @reference_platform_only
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
@@ -192,6 +193,7 @@ class TestFullFlowsheetUnequalVolumes:
 
     @pytest.mark.solver
     @pytest.mark.component
+    @reference_platform_only
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
@@ -210,6 +212,7 @@ class TestFullFlowsheetUnequalVolumes:
         )
 
     @pytest.mark.component
+    @reference_platform_only
     def test_square_solve(self, system_frame):
         m = system_frame
 
@@ -276,6 +279,7 @@ class TestFullFlowsheetUnequalVolumes:
 
     @pytest.mark.solver
     @pytest.mark.component
+    @reference_platform_only
     def test_condition_number(self, system_frame):
         m = system_frame
 
