@@ -221,7 +221,7 @@ class ThickenerData(SeparatorData):
 
         @self.Expression(self.flowsheet().time, doc="Thickening factor")
         def f_thick(blk, t):
-            return blk.p_thick * (10 / (blk.TSS_in[t]))
+            return blk.p_thick * (10 / blk.TSS_in[t])
 
         @self.Expression(self.flowsheet().time, doc="Remove factor")
         def f_q_du(blk, t):
