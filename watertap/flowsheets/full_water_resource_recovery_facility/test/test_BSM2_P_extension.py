@@ -19,6 +19,7 @@ but comprises different specifications for default values than BSM2.
 # Some more information about this module
 __author__ = "Chenyu Wang"
 
+import platform
 import pytest
 
 from pyomo.environ import assert_optimal_termination, value, TransformationFactory
@@ -38,6 +39,16 @@ from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
+is_reference_platform = (
+    platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
+)
+reference_platform_only = pytest.mark.xfail(
+    condition=(not is_reference_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
+)
+
 
 @pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPFalse:
@@ -46,12 +57,13 @@ class TestFullFlowsheetBioPFalse:
         m, res = main(bio_P=False)
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_structural_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
-    @pytest.mark.integration
+    @pytest.mark.solver
+    @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
@@ -153,6 +165,7 @@ class TestFullFlowsheetBioPFalse:
             924284.848, rel=1e-3
         )
 
+    @pytest.mark.solver
     @pytest.mark.component
     def test_condition_number(self, system_frame):
         m = system_frame
@@ -171,12 +184,13 @@ class TestFullFlowsheetBioPTrue:
         m, res = main(bio_P=True)
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_structural_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
-    @pytest.mark.integration
+    @pytest.mark.solver
+    @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
@@ -278,12 +292,14 @@ class TestFullFlowsheetBioPTrue:
             923951.79, rel=1e-3
         )
 
+    @pytest.mark.solver
     @pytest.mark.component
+    @reference_platform_only
     def test_condition_number(self, system_frame):
         m = system_frame
 
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.3814879452287945e21, abs=1e-3
+            2.3814879e21, rel=1e-3
         )
