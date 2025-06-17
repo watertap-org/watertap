@@ -29,11 +29,6 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension 
     scale_system,
 )
 
-from watertap.core.util.initialization import (
-    assert_degrees_of_freedom,
-    interval_initializer,
-)
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 

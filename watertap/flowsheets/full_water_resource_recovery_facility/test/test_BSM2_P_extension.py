@@ -22,10 +22,8 @@ __author__ = "Chenyu Wang"
 import platform
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value, TransformationFactory
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import value
 
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.scaling import (
     get_jacobian,
