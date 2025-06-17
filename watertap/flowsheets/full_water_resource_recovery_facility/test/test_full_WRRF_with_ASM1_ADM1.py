@@ -26,6 +26,7 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia, Marcus Holly"
 
+import platform
 import pytest
 
 from pyomo.environ import (
@@ -39,6 +40,16 @@ from idaes.core.util.scaling import (
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2 import main
 
+is_reference_platform = (
+    platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
+)
+reference_platform_only = pytest.mark.xfail(
+    condition=(not is_reference_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
+)
+
 
 class TestFullFlowsheet:
     @pytest.fixture(scope="class")
@@ -47,7 +58,7 @@ class TestFullFlowsheet:
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_structural_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_structural_warnings()
@@ -61,7 +72,8 @@ class TestFullFlowsheet:
         )
         assert "WARNING: Found 57 potential evaluation errors." in warnings
 
-    @pytest.mark.integration
+    @pytest.mark.solver
+    @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
@@ -145,6 +157,7 @@ class TestFullFlowsheet:
             608797.421, rel=1e-3
         )
 
+    @pytest.mark.solver
     @pytest.mark.component
     def test_condition_number(self, system_frame):
         m = system_frame
@@ -163,7 +176,7 @@ class TestFullFlowsheetUnequalVolumes:
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_structural_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_structural_warnings()
@@ -177,7 +190,8 @@ class TestFullFlowsheetUnequalVolumes:
         )
         assert "WARNING: Found 57 potential evaluation errors." in warnings
 
-    @pytest.mark.integration
+    @pytest.mark.solver
+    @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
@@ -260,6 +274,7 @@ class TestFullFlowsheetUnequalVolumes:
             600748.3343, rel=1e-3
         )
 
+    @pytest.mark.solver
     @pytest.mark.component
     def test_condition_number(self, system_frame):
         m = system_frame
