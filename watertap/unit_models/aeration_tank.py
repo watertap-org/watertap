@@ -97,16 +97,7 @@ class AerationTankScaler(CustomScalerBase):
         )
         self.scale_variable_by_default(model.KLa, overwrite=overwrite)
         if model.config.has_aeration:
-            if "S_O" and "S_O2" in model.config.property_package.component_list:
-                self.scale_variable_by_default(
-                    model.control_volume.mass_transfer_term[0, "Liq", "S_O"],
-                    overwrite=overwrite,
-                )
-                self.scale_variable_by_default(
-                    model.control_volume.mass_transfer_term[0, "Liq", "S_O2"],
-                    overwrite=overwrite,
-                )
-            elif "S_O" in model.config.property_package.component_list:
+            if "S_O" in model.config.property_package.component_list:
                 self.scale_variable_by_default(
                     model.control_volume.mass_transfer_term[0, "Liq", "S_O"],
                     overwrite=overwrite,

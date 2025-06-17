@@ -515,8 +515,9 @@ see reaction package for documentation.}""",
         )
         def eq_hydraulic_retention_time(self, t):
             return (
-                self.hydraulic_retention_time[t]
-                == self.volume[t] / self.control_volume.properties_in[t].flow_vol
+                self.volume[t]
+                == self.hydraulic_retention_time[t]
+                * self.control_volume.properties_in[t].flow_vol
             )
 
         if self.config.has_aeration:
