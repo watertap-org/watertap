@@ -54,9 +54,7 @@ class TestFullFlowsheetBioPFalse:
     @pytest.mark.integration
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
-        dt.report_numerical_issues()
         warnings, next_steps = dt._collect_numerical_warnings()
-        # TODO: Resolve why only variable bounds warning appears locally
         assert len(warnings) == 4
         assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
@@ -159,7 +157,6 @@ class TestFullFlowsheetBioPFalse:
     def test_condition_number(self, system_frame):
         m = system_frame
 
-        # TODO: Resolve why condition number is much lower locally - 6.693e15
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
@@ -182,9 +179,7 @@ class TestFullFlowsheetBioPTrue:
     @pytest.mark.integration
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
-        dt.report_numerical_issues()
         warnings, next_steps = dt._collect_numerical_warnings()
-        # TODO: Resolve why only variable bounds warning appears locally
         assert len(warnings) == 4
         assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
@@ -287,7 +282,6 @@ class TestFullFlowsheetBioPTrue:
     def test_condition_number(self, system_frame):
         m = system_frame
 
-        # TODO: Resolve why condition number is much lower locally - 1.387e16
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
