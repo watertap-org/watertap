@@ -26,121 +26,139 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia, Marcus Holly"
 
+import platform
 import pytest
 
-from pyomo.environ import assert_optimal_termination, value
-from pyomo.util.check_units import assert_units_consistent
-
-from idaes.core.util.model_statistics import degrees_of_freedom
+from pyomo.environ import (
+    value,
+)
+from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
 
-import watertap.flowsheets.full_water_resource_recovery_facility.BSM2 as BSM2
+from watertap.flowsheets.full_water_resource_recovery_facility.BSM2 import main
+
+is_reference_platform = (
+    platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
+)
+reference_platform_only = pytest.mark.xfail(
+    condition=(not is_reference_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
+)
 
 
 class TestFullFlowsheet:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = BSM2.build()
-        BSM2.set_operating_conditions(m)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-        assert_units_consistent(m)
-        BSM2.initialize_system(m)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-
-        m.results = BSM2.solve(m)
+        m, res = main(reactor_volume_equalities=True)
 
         return m
 
-    @pytest.mark.integration
-    def test_square_problem(self, system_frame):
-        assert_units_consistent(system_frame)
-        assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.results)
+    @pytest.mark.component
+    def test_structural_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        warnings, next_steps = dt._collect_structural_warnings()
+        # These warnings are expected for an optimization problem
+        assert len(warnings) == 3
+        assert "WARNING: 8 Degrees of Freedom" in warnings
+        assert (
+            "WARNING: Structural singularity found\n        "
+            "Under-Constrained Set: 1096 variables, 1088 constraints\n        "
+            "Over-Constrained Set: 0 variables, 0 constraints" in warnings
+        )
+        assert "WARNING: Found 57 potential evaluation errors." in warnings
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @reference_platform_only
+    def test_numerical_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        warnings, next_steps = dt._collect_numerical_warnings()
+        assert len(warnings) == 4
+        assert "WARNING: 3 Constraints with large residuals (>1.0E-05)" in warnings
+        assert (
+            "WARNING: 18 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 10 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 10 pairs of variables are parallel (to tolerance 1.0E-08)"
+            in warnings
+        )
 
     @pytest.mark.component
     def test_square_solve(self, system_frame):
         m = system_frame
 
         assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-            0.23889, rel=1e-3
+            0.23888, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].alkalinity) == pytest.approx(
-            3.8096e-3, rel=1e-3
+            0.00448496, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.061909, rel=1e-3
+            0.072778, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_S"]) == pytest.approx(
-            0.00087127, rel=1e-3
+            0.001147498, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0054462, rel=1e-3
+            0.0039446, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00020555, rel=1e-3
+            0.0003547, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_BH"]
-        ) == pytest.approx(0.010903, rel=1e-3)
+        ) == pytest.approx(0.0189457, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_BA"]
-        ) == pytest.approx(0.00078876, rel=1e-3)
+        ) == pytest.approx(0.00043924, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_P"]) == pytest.approx(
-            0.0022565, rel=1e-3
+            0.00239016, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_O"]) == pytest.approx(
-            0.000449, rel=1e-3
+            0.00139752, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO"]
-        ) == pytest.approx(0.0155, rel=1e-2)
+        ) == pytest.approx(0.0035384, rel=1e-2)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH"]
-        ) == pytest.approx(0.00091693, rel=1e-3)
+        ) == pytest.approx(0.0118178, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_ND"]
-        ) == pytest.approx(0.00064661, rel=1e-3)
+        ) == pytest.approx(0.00068862, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
-        ) == pytest.approx(1.4159e-5, rel=1e-3)
+        ) == pytest.approx(2.42495e-5, rel=1e-3)
 
         # Check electricity consumption for each aerobic reactor
         assert value(m.fs.R3.electricity_consumption[0]) == pytest.approx(
-            73.8694, rel=1e-3
+            96.5031, rel=1e-3
         )
         assert value(m.fs.R4.electricity_consumption[0]) == pytest.approx(
-            69.9669, rel=1e-3
+            59.2925, rel=1e-3
         )
         assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
-            20.4775, rel=1e-3
+            30.8469, rel=1e-3
         )
-
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        BSM2.add_costing(m)
-        m.fs.costing.initialize()
-        results = BSM2.solve(m)
-
-        assert_optimal_termination(results)
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.351097, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.3247, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17443323.82075141, rel=1e-3
+            15953549.8985, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            638749.398846816, rel=1e-3
+            608797.421, rel=1e-3
         )
 
+    @pytest.mark.solver
     @pytest.mark.component
     def test_condition_number(self, system_frame):
         m = system_frame
@@ -148,155 +166,125 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            5.5020290179e19, rel=1e-3
-        )
-
-    @pytest.mark.component
-    def test_display(self, system_frame):
-        m = system_frame
-        BSM2.display_results(m)
-        BSM2.display_costing(m)
-        BSM2.display_performance_metrics(m)
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_optimization(self, system_frame):
-        m = system_frame
-        BSM2.setup_optimization(system_frame, reactor_volume_equalities=False)
-        results = BSM2.solve(system_frame)
-        assert_optimal_termination(results)
-        assert degrees_of_freedom(system_frame) == 10
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.35095605, rel=1e-5)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17439642.35212, rel=1e-5
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            638154.763302, rel=1e-5
+            1.945e13, rel=1e-3
         )
 
 
-class TestFullFlowsheet_with_equal_reactor_vols:
+class TestFullFlowsheetUnequalVolumes:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = BSM2.build()
-        BSM2.set_operating_conditions(m, reactor_volume_equalities=True)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-        assert_units_consistent(m)
-        BSM2.initialize_system(m)
-        for mx in m.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        assert degrees_of_freedom(m) == 0
-
-        m.results = BSM2.solve(m)
+        m, res = main(reactor_volume_equalities=False)
 
         return m
 
-    @pytest.mark.integration
-    def test_square_problem(self, system_frame):
-        assert_units_consistent(system_frame)
-        assert degrees_of_freedom(system_frame) == 0
-        assert_optimal_termination(system_frame.results)
+    @pytest.mark.component
+    def test_structural_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        warnings, next_steps = dt._collect_structural_warnings()
+        # These warnings are expected for an optimization problem
+        assert len(warnings) == 3
+        assert "WARNING: 10 Degrees of Freedom" in warnings
+        assert (
+            "WARNING: Structural singularity found\n        "
+            "Under-Constrained Set: 1096 variables, 1086 constraints\n        "
+            "Over-Constrained Set: 0 variables, 0 constraints" in warnings
+        )
+        assert "WARNING: Found 57 potential evaluation errors." in warnings
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @reference_platform_only
+    def test_numerical_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        warnings, next_steps = dt._collect_numerical_warnings()
+        assert len(warnings) == 3
+        assert (
+            "WARNING: 18 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 10 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 10 pairs of variables are parallel (to tolerance 1.0E-08)"
+            in warnings
+        )
 
     @pytest.mark.component
+    @reference_platform_only
     def test_square_solve(self, system_frame):
         m = system_frame
 
         assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-            0.23889, rel=1e-3
+            0.23887, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].alkalinity) == pytest.approx(
-            3.8096e-3, rel=1e-3
+            0.0045008, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-            0.061909, rel=1e-3
+            0.072718, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_S"]) == pytest.approx(
-            0.00087127, rel=1e-3
+            0.0012095, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-            0.0054462, rel=1e-3
+            0.0039537, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-            0.00020555, rel=1e-3
+            0.000354, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_BH"]
-        ) == pytest.approx(0.010903, rel=1e-3)
+        ) == pytest.approx(0.018921, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_BA"]
-        ) == pytest.approx(0.00078876, rel=1e-3)
+        ) == pytest.approx(0.0004384, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["X_P"]) == pytest.approx(
-            0.0022565, rel=1e-3
+            0.0024055, rel=1e-3
         )
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_O"]) == pytest.approx(
-            0.000449, rel=1e-3
+            0.0011943, rel=1e-3
         )
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NO"]
-        ) == pytest.approx(0.0155, rel=1e-2)
+        ) == pytest.approx(0.00344795, rel=1e-2)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_NH"]
-        ) == pytest.approx(0.00091693, rel=1e-3)
+        ) == pytest.approx(0.0119078, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_ND"]
-        ) == pytest.approx(0.00064661, rel=1e-3)
+        ) == pytest.approx(0.00068968, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["X_ND"]
-        ) == pytest.approx(1.4159e-5, rel=1e-3)
+        ) == pytest.approx(2.420995e-5, rel=1e-3)
 
-    @pytest.mark.component
-    def test_costing(self, system_frame):
-        m = system_frame
-
-        BSM2.add_costing(m)
-        m.fs.costing.initialize()
-        results = BSM2.solve(m)
-
-        assert_optimal_termination(results)
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.351097, rel=1e-3)
+        # Check electricity consumption for each aerobic reactor
+        assert value(m.fs.R3.electricity_consumption[0]) == pytest.approx(
+            140.7362, rel=1e-3
+        )
+        assert value(m.fs.R4.electricity_consumption[0]) == pytest.approx(
+            21.1950, rel=1e-3
+        )
+        assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
+            21.1529, rel=1e-3
+        )
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.3206, rel=1e-3)
         assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17443323.82075141, rel=1e-3
+            15750479.5860, rel=1e-3
         )
         assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            638749.398846816, rel=1e-3
+            600748.3343, rel=1e-3
         )
 
+    @pytest.mark.solver
     @pytest.mark.component
+    @reference_platform_only
     def test_condition_number(self, system_frame):
         m = system_frame
 
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            5.5020290179e19, rel=1e-3
-        )
-
-    @pytest.mark.component
-    def test_display(self, system_frame):
-        m = system_frame
-        BSM2.display_results(m)
-        BSM2.display_costing(m)
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_optimization(self, system_frame):
-        m = system_frame
-        BSM2.setup_optimization(system_frame, reactor_volume_equalities=True)
-        results = BSM2.solve(system_frame)
-        assert_optimal_termination(results)
-        assert degrees_of_freedom(system_frame) == 8
-
-        # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.349560273, rel=1e-5)
-        assert value(m.fs.costing.total_capital_cost) == pytest.approx(
-            17370674.42102, rel=1e-5
-        )
-        assert value(m.fs.costing.total_operating_cost) == pytest.approx(
-            635577.7320509, rel=1e-5
+            2.230e13, rel=1e-3
         )
