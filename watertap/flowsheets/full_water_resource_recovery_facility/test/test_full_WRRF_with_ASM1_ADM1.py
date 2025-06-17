@@ -150,9 +150,9 @@ class TestFullFlowsheet:
         m = system_frame
 
         # Check condition number to confirm scaling
-        jac, _ = get_jacobian(m)
+        jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.9782656e12, rel=1e-3
+            1.945e13, rel=1e-3
         )
 
 
@@ -265,5 +265,7 @@ class TestFullFlowsheetUnequalVolumes:
         m = system_frame
 
         # Check condition number to confirm scaling
-        jac, _ = get_jacobian(m)
-        assert (jacobian_cond(jac=jac)) == pytest.approx(3e12, rel=1e-3)
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            2.230e13, rel=1e-3
+        )
