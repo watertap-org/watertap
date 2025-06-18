@@ -181,6 +181,7 @@ def report_st(m):
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    stream_table.to_csv("influent_values.csv")
 
 
 if __name__ == "__main__":
@@ -191,6 +192,6 @@ if __name__ == "__main__":
     model_checker(m, True)
     report_st(m)
     # m = set_port_values(m)
-    m = reset_influent(m)
-    model_checker(m, True)
-    report_st(m)
+    # m = reset_influent(m)
+    # model_checker(m, True)
+    # report_st(m)
