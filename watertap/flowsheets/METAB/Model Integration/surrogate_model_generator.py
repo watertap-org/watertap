@@ -61,9 +61,51 @@ def get_data(
     return feed_data, input_data, output_data
 
 
+def outputs_selections(output_data):
+    outputs_list = [
+        "S_su",
+        "S_aa",
+        "S_fa",
+        "S_va",
+        "S_bu",
+        "S_pro",
+        "S_ac",
+        "S_h2",
+        "S_ch4",
+        "S_IC",
+        "S_IN",
+        "S_I",
+        "X_c",
+        "X_ch",
+        "X_pr",
+        "X_li",
+        "X_su",
+        "X_aa",
+        "X_fa",
+        "X_c4",
+        "X_pro",
+        "X_ac",
+        "X_h2",
+        "X_I",
+        "VolumetricFlowrate",
+    ]
+
+    # output_data = output_data[(output_data >= 0).all(axis=1)]
+    print(output_data)
+    output_data.columns = output_data.columns.str.replace(" ", "")
+    output_data = output_data[outputs_list]
+
+    print(output_data)
+
+    return output_data
+
+
 def gen_surrogate_model(
     tool="idaes", method="poly", feed_data=None, input_data=None, output_data=None
 ):
+    if feed_data == None:
+        feed_data = pd.concat([input_data, output_data], axis=1)
+
     input_labels = list(input_data.columns)
     output_labels = list(output_data.columns)
     xmin, xmax = input_data.min().tolist(), input_data.max().tolist()
@@ -168,6 +210,7 @@ def gen_surrogate_model(
 if __name__ == "__main__":
 
     feed_data, input_data, output_data = get_data()
+    output_data = outputs_selections(output_data)
     gen_surrogate_model(
         tool="idaes",
         method="rbf",  # kri, poly,rbf,alamo
