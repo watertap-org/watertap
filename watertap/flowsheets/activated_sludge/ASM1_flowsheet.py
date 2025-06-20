@@ -39,12 +39,13 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
-    CSTR,
+    # CSTR,
     Feed,
     Mixer,
     Separator,
     PressureChanger,
     Product,
+    MomentumMixingType,
 )
 from idaes.models.unit_models.separator import SplittingType
 from watertap.core.solvers import get_solver
@@ -56,7 +57,8 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 
-from watertap.unit_models.cstr_injection import CSTR_Injection
+from watertap.unit_models import AerationTank, CSTR
+# from watertap.unit_models import CSTR_Injection
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
@@ -78,23 +80,26 @@ def build_flowsheet():
     m.fs.props = ASM1ParameterBlock()
     m.fs.rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props)
     # Feed water stream
-    m.fs.FeedWater = Feed(property_package=m.fs.props)
+    m.fs.feed = Feed(property_package=m.fs.props)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
-    # First reactor (anoxic) - standard CSTR
+    m.fs.MX1 = Mixer(property_package=m.fs.props, 
+                    inlet_list=["feed_water", "recycle"],
+                    momentum_mixing_type=MomentumMixingType.none
+                    )
+    m.fs.MX1.outlet.pressure.fix()    # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Second reactor (anoxic) - standard CSTR
     m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Third reactor (aerobic) - CSTR with injection
-    m.fs.R3 = CSTR_Injection(
+    m.fs.R3 = AerationTank(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fourth reactor (aerobic) - CSTR with injection
-    m.fs.R4 = CSTR_Injection(
+    m.fs.R4 = AerationTank(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fifth reactor (aerobic) - CSTR with injection
-    m.fs.R5 = CSTR_Injection(
+    m.fs.R5 = AerationTank(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     m.fs.SP5 = Separator(
@@ -114,7 +119,10 @@ def build_flowsheet():
         split_basis=SplittingType.totalFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
+    m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"],
+                    momentum_mixing_type=MomentumMixingType.none
+                    )
+    m.fs.MX6.outlet.pressure.fix()    
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props)
     m.fs.Sludge = Product(property_package=m.fs.props)
@@ -122,7 +130,7 @@ def build_flowsheet():
     m.fs.P1 = PressureChanger(property_package=m.fs.props)
 
     # Link units
-    m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX1.feed_water)
+    m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.MX1.feed_water)
     m.fs.stream2 = Arc(source=m.fs.MX1.outlet, destination=m.fs.R1.inlet)
     m.fs.stream3 = Arc(source=m.fs.R1.outlet, destination=m.fs.R2.inlet)
     m.fs.stream4 = Arc(source=m.fs.R2.outlet, destination=m.fs.R3.inlet)
@@ -141,60 +149,60 @@ def build_flowsheet():
 
     # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
     # Add additional parameter and constraints
-    m.fs.R3.KLa = pyo.Var(
-        initialize=7.6,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.R4.KLa = pyo.Var(
-        initialize=5.7,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.S_O_eq = pyo.Param(
-        default=8e-3,
-        units=pyo.units.kg / pyo.units.m**3,
-        mutable=True,
-        doc="Dissolved oxygen concentration at equilibrium",
-    )
+    # m.fs.R3.KLa = pyo.Var(
+    #     initialize=7.6,
+    #     units=pyo.units.hour**-1,
+    #     doc="Lumped mass transfer coefficient for oxygen",
+    # )
+    # m.fs.R4.KLa = pyo.Var(
+    #     initialize=5.7,
+    #     units=pyo.units.hour**-1,
+    #     doc="Lumped mass transfer coefficient for oxygen",
+    # )
+    # m.fs.S_O_eq = pyo.Param(
+    #     default=8e-3,
+    #     units=pyo.units.kg / pyo.units.m**3,
+    #     mutable=True,
+    #     doc="Dissolved oxygen concentration at equilibrium",
+    # )
 
-    @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
-    def mass_transfer_R3(self, t):
-        return pyo.units.convert(
-            m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R3.KLa
-            * m.fs.R3.volume[t]
-            * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
-        )
+    # @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
+    # def mass_transfer_R3(self, t):
+    #     return pyo.units.convert(
+    #         m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
+    #     ) == (
+    #         m.fs.R3.KLa
+    #         * m.fs.R3.volume[t]
+    #         * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
+    #     )
 
-    @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    def mass_transfer_R4(self, t):
-        return pyo.units.convert(
-            m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R4.KLa
-            * m.fs.R4.volume[t]
-            * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
-        )
+    # @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+    # def mass_transfer_R4(self, t):
+    #     return pyo.units.convert(
+    #         m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
+    #     ) == (
+    #         m.fs.R4.KLa
+    #         * m.fs.R4.volume[t]
+    #         * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
+    #     )
 
     # Feed Water Conditions
-    m.fs.FeedWater.flow_vol.fix(18446 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(298.15 * pyo.units.K)
-    m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
-    m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(30 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_S"].fix(69.5 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(51.2 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(202.32 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_BH"].fix(28.17 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_BA"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_P"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_O"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NO"].fix(0 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_NH"].fix(31.56 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_ND"].fix(6.95 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_ND"].fix(10.59 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)
+    m.fs.feed.flow_vol.fix(18446 * pyo.units.m**3 / pyo.units.day)
+    m.fs.feed.temperature.fix(298.15 * pyo.units.K)
+    m.fs.feed.pressure.fix(1 * pyo.units.atm)
+    m.fs.feed.conc_mass_comp[0, "S_I"].fix(30 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "S_S"].fix(69.5 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "X_I"].fix(51.2 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "X_S"].fix(202.32 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "X_BH"].fix(28.17 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "X_BA"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "X_P"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "S_O"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "S_NO"].fix(0 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "S_NH"].fix(31.56 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "S_ND"].fix(6.95 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.conc_mass_comp[0, "X_ND"].fix(10.59 * pyo.units.g / pyo.units.m**3)
+    m.fs.feed.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)
 
     # Reactor sizing
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
@@ -252,7 +260,7 @@ def build_flowsheet():
         if "temperature" in var.name:
             iscale.set_scaling_factor(var, 1e-1)
         if "pressure" in var.name:
-            iscale.set_scaling_factor(var, 1e-6)
+            iscale.set_scaling_factor(var, 1e-3)
         if "conc_mass_comp" in var.name:
             iscale.set_scaling_factor(var, 1e1)
     iscale.calculate_scaling_factors(m.fs)
@@ -310,10 +318,13 @@ def build_flowsheet():
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
-    m.fs.R3.KLa.fix(10)
-    m.fs.R4.KLa.fix(10)
+    m.fs.R3.KLa.fix(240)
+    m.fs.R4.KLa.fix(240)
+    m.fs.R5.KLa.fix(240)
+
     m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
     m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O"].unfix()
 
     # Resolve with controls in place
     results = solver.solve(m, tee=True)
@@ -323,7 +334,6 @@ def build_flowsheet():
         logger=_log,
         fail_flag=True,
     )
-
     return m, results
 
 
@@ -334,7 +344,7 @@ if __name__ == "__main__":
 
     stream_table = create_stream_table_dataframe(
         {
-            "Feed": m.fs.FeedWater.outlet,
+            "Feed": m.fs.feed.outlet,
             "R1": m.fs.R1.outlet,
             "R2": m.fs.R2.outlet,
             "R3": m.fs.R3.outlet,
@@ -344,3 +354,109 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    m.fs.report()
+
+    comps=[
+        "S_I",
+        "S_S",
+        "X_I",
+        "X_S",
+        "X_BH",
+        "X_BA",
+        "X_P",
+        "S_O",
+        "S_NO",
+        "S_NH",
+        "S_ND",
+        "X_ND",
+    ]
+
+    comp_vals=[
+        0.086312003,
+        0.039661279,
+        0.11152474,
+        0.749114341,
+        0, #1.40E-10,
+        0, #1.40E-10,
+        0, #1.40E-10,
+        0, #1.40E-10,
+        0, #1.40E-10,
+        0.205778397,
+        0.005252493,
+        0.058108176,
+    ]
+    new_comps={comps[i]:comp_vals[i] for i in range(len(comps))}
+    solver = get_solver()
+    solve_stat = {}
+    clones = {}
+    for i, (k,v) in enumerate(new_comps.items()):
+        clone_name = f"clone_change_{k}"
+        m_clone = m.clone()
+        old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0,k])
+        m_clone.fs.feed.conc_mass_comp[0,k].fix(v)
+        print(f"{k} was fixed.")
+        res = solver.solve(m_clone, tee=True)
+        if pyo.check_optimal_termination(res):
+            solve_stat[k]=1
+        else:
+            solve_stat[k]=0
+        
+        clones[clone_name] = m_clone
+        m_clone.fs.feed.conc_mass_comp[0,k].fix(old_val)
+        del m_clone
+        
+    for i, (k,v) in enumerate(new_comps.items()):
+        print(f"{k} was fixed.")
+        m.fs.feed.conc_mass_comp[0,k].fix(v)
+    
+    m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
+    m.fs.feed.flow_vol.fix(0.00011 * 1e4
+                        #    134500221723699
+                           )
+
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            iscale.set_scaling_factor(var, 1* pyo.value(var))
+    m.fs.feed.temperature.fix(308)
+    m.fs.R1.volume.fix(1000 *5e-4 * pyo.units.m**3)
+    m.fs.R2.volume.fix(1000 *5e-4 * pyo.units.m**3)
+    m.fs.R3.volume.fix(1333 *5e-4* pyo.units.m**3)
+    m.fs.R4.volume.fix(1333 *5e-4* pyo.units.m**3)
+    m.fs.R5.volume.fix(1333 *5e-4* pyo.units.m**3)
+    for i in range(5):
+        blk = getattr(m.fs,f"R{i+1}")
+        iscale.set_scaling_factor(blk.volume, 1e2)
+    iscale.calculate_scaling_factors(m)
+
+    res = solver.solve(m, tee=True)
+    if pyo.check_optimal_termination(res):
+        print("Success!")
+    # m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
+    
+    scales = [1e3, 1e2,1e1,1e0]
+    flow_solves={}
+    
+    for i in scales:
+        m.fs.feed.flow_vol.fix(0.00011 * i
+                            #    134500221723699
+                            )
+
+        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+            if "flow_vol" in var.name:
+                iscale.set_scaling_factor(var, 1* pyo.value(var))
+        iscale.calculate_scaling_factors(m)
+
+        resy = solver.solve(m,tee=True)
+        if pyo.check_optimal_termination(resy):
+            flow_solves[str(pyo.value(m.fs.feed.flow_vol[0]))]= 1
+        else:
+            flow_solves[str(pyo.value(m.fs.feed.flow_vol[0]))]= 0
+            from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+            dt = DiagnosticsToolbox(m)
+            dt.report_numerical_issues()
+            dh = dt.prepare_degeneracy_hunter()
+            svd =dt.prepare_svd_toolbox()
+            dh.report_irreducible_degenerate_sets()
+            svd.display_underdetermined_variables_and_constraints()
+            svd.display_constraints_including_variable(m.fs.feed.flow_vol[0])
+            assert False
