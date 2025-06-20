@@ -1,41 +1,17 @@
-,Units,from metab,Influent
-Volumetric Flowrate,meter ** 3 / second,0.00010624999999999994,0.00010624999999999994
-Molar anions,mole / meter ** 3,20.0,-
-Molar cations,mole / meter ** 3,40.0,-
-Mass Concentration S_su,kilogram / meter ** 3,3.0000000000000004,-
-Mass Concentration S_aa,kilogram / meter ** 3,0.6,-
-Mass Concentration S_fa,kilogram / meter ** 3,0.4000000000000001,-
-Mass Concentration S_va,kilogram / meter ** 3,0.4000000000000001,-
-Mass Concentration S_bu,kilogram / meter ** 3,0.4000000000000001,-
-Mass Concentration S_pro,kilogram / meter ** 3,0.4000000000000001,-
-Mass Concentration S_ac,kilogram / meter ** 3,0.4000000000000001,-
-Mass Concentration S_h2,kilogram / meter ** 3,5.000000000000001e-09,-
-Mass Concentration S_ch4,kilogram / meter ** 3,4.999999999999999e-06,-
-Mass Concentration S_IC,kilogram / meter ** 3,0.48042800000000013,-
-Mass Concentration S_IN,kilogram / meter ** 3,0.140067,-
-Mass Concentration S_I,kilogram / meter ** 3,0.02,0.02
-Mass Concentration X_c,kilogram / meter ** 3,0.10000000000000002,-
-Mass Concentration X_ch,kilogram / meter ** 3,0.3,-
-Mass Concentration X_pr,kilogram / meter ** 3,0.5000000000000001,-
-Mass Concentration X_li,kilogram / meter ** 3,0.25000000000000006,-
-Mass Concentration X_su,kilogram / meter ** 3,0.0,-
-Mass Concentration X_aa,kilogram / meter ** 3,0.001,-
-Mass Concentration X_fa,kilogram / meter ** 3,0.001,-
-Mass Concentration X_c4,kilogram / meter ** 3,0.001,-
-Mass Concentration X_pro,kilogram / meter ** 3,0.001,-
-Mass Concentration X_ac,kilogram / meter ** 3,0.001,-
-Mass Concentration X_h2,kilogram / meter ** 3,0.001,-
-Mass Concentration X_I,kilogram / meter ** 3,0.025000000000000005,0.02500000000000001
-Temperature,kelvin,308.15,308.15
-Pressure,pascal,101325.0,101325.0
-Molar Alkalinity,mole / meter ** 3,-,40.03566666666668
-Mass Concentration S_S,kilogram / meter ** 3,-,5.600000000000001
-Mass Concentration X_S,kilogram / meter ** 3,-,1.1559999999999995
-Mass Concentration X_BH,kilogram / meter ** 3,-,1.0000000000000002e-10
-Mass Concentration X_BA,kilogram / meter ** 3,-,1.0000000000000002e-10
-Mass Concentration X_P,kilogram / meter ** 3,-,1.0000000000000002e-10
-Mass Concentration S_O,kilogram / meter ** 3,-,1.0000000000000002e-10
-Mass Concentration S_NO,kilogram / meter ** 3,-,1.0000000000000002e-10
-Mass Concentration S_NH,kilogram / meter ** 3,-,0.140067
-Mass Concentration S_ND,kilogram / meter ** 3,-,0.05999999999999999
-Mass Concentration X_ND,kilogram / meter ** 3,-,0.053240000000000016
+,Units,brewery in ASM1
+Volumetric Flowrate,meter ** 3 / second,0.00010624999999999994
+Molar Alkalinity,mole / meter ** 3,40.03566666666668
+Mass Concentration S_I,kilogram / meter ** 3,0.02
+Mass Concentration S_S,kilogram / meter ** 3,5.600000000000001
+Mass Concentration X_I,kilogram / meter ** 3,0.02500000000000001
+Mass Concentration X_S,kilogram / meter ** 3,1.1559999999999995
+Mass Concentration X_BH,kilogram / meter ** 3,1.0000000000000002e-10
+Mass Concentration X_BA,kilogram / meter ** 3,1.0000000000000002e-10
+Mass Concentration X_P,kilogram / meter ** 3,1.0000000000000002e-10
+Mass Concentration S_O,kilogram / meter ** 3,1.0000000000000002e-10
+Mass Concentration S_NO,kilogram / meter ** 3,1.0000000000000002e-10
+Mass Concentration S_NH,kilogram / meter ** 3,0.140067
+Mass Concentration S_ND,kilogram / meter ** 3,0.05999999999999999
+Mass Concentration X_ND,kilogram / meter ** 3,0.053240000000000016
+Temperature,kelvin,308.15
+Pressure,pascal,101325.0

@@ -193,7 +193,7 @@ if __name__ == "__main__":
     m = build_estimator(m, mass=True)
     model_checker(m, True)
     output = {
-        "brewery in ADM1": m.fs.metab_effluent.inlet,
+        # "brewery in ADM1": m.fs.metab_effluent.inlet,
         "brewery in ASM1": m.fs.metab_effluent.outlet,
     }
     stream_table = create_stream_table_dataframe(
@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
     m.fs.metab_effluent.display()
 
-    # stream_table.to_csv("brewery_ins_asm1.csv")
+    stream_table.to_csv("brewery_ins_asm1.csv")
 
     blk = m.fs.metab_effluent.properties_out[0]
 
@@ -215,5 +215,5 @@ if __name__ == "__main__":
 
     # print("TSS : ", print(blk.TSS[None]))
     # print("BOD5 : ", pyo.value(blk.BOD5[0]) )
-# print("COD : ", pyo.value(blk.COD[0]) )
-# print("TKN : ", pyo.value(blk.TKN[0]) )
+    # print("COD : ", pyo.value(blk.COD[0]) )
+    # print("TKN : ", pyo.value(blk.TKN[0]) )
