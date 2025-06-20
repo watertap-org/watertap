@@ -90,15 +90,15 @@ def build_flowsheet():
     m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Second reactor (anoxic) - standard CSTR
     m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-    # Third reactor (aerobic) - CSTR with injection
+    # Third reactor (aerobic) 
     m.fs.R3 = AerationTank(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
-    # Fourth reactor (aerobic) - CSTR with injection
+    # Fourth reactor (aerobic) 
     m.fs.R4 = AerationTank(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
-    # Fifth reactor (aerobic) - CSTR with injection
+    # Fifth reactor (aerobic)
     m.fs.R5 = AerationTank(
         property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
@@ -147,44 +147,6 @@ def build_flowsheet():
     m.fs.stream15 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
-    # Add additional parameter and constraints
-    # m.fs.R3.KLa = pyo.Var(
-    #     initialize=7.6,
-    #     units=pyo.units.hour**-1,
-    #     doc="Lumped mass transfer coefficient for oxygen",
-    # )
-    # m.fs.R4.KLa = pyo.Var(
-    #     initialize=5.7,
-    #     units=pyo.units.hour**-1,
-    #     doc="Lumped mass transfer coefficient for oxygen",
-    # )
-    # m.fs.S_O_eq = pyo.Param(
-    #     default=8e-3,
-    #     units=pyo.units.kg / pyo.units.m**3,
-    #     mutable=True,
-    #     doc="Dissolved oxygen concentration at equilibrium",
-    # )
-
-    # @m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
-    # def mass_transfer_R3(self, t):
-    #     return pyo.units.convert(
-    #         m.fs.R3.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-    #     ) == (
-    #         m.fs.R3.KLa
-    #         * m.fs.R3.volume[t]
-    #         * (m.fs.S_O_eq - m.fs.R3.outlet.conc_mass_comp[t, "S_O"])
-    #     )
-
-    # @m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    # def mass_transfer_R4(self, t):
-    #     return pyo.units.convert(
-    #         m.fs.R4.injection[t, "Liq", "S_O"], to_units=pyo.units.kg / pyo.units.hour
-    #     ) == (
-    #         m.fs.R4.KLa
-    #         * m.fs.R4.volume[t]
-    #         * (m.fs.S_O_eq - m.fs.R4.outlet.conc_mass_comp[t, "S_O"])
-    #     )
 
     # Feed Water Conditions
     m.fs.feed.flow_vol.fix(18446 * pyo.units.m**3 / pyo.units.day)
@@ -262,7 +224,8 @@ def build_flowsheet():
         if "pressure" in var.name:
             iscale.set_scaling_factor(var, 1e-3)
         if "conc_mass_comp" in var.name:
-            iscale.set_scaling_factor(var, 1e1)
+            print(var.name)
+            iscale.set_scaling_factor(var, 1/(pyo.value(var)+1e-10))
     iscale.calculate_scaling_factors(m.fs)
 
     # Initialize flowsheet
@@ -314,13 +277,13 @@ def build_flowsheet():
 
     # Solve overall flowsheet to close recycle loop
     solver = get_solver()
-    results = solver.solve(m)
+    results = solver.solve(m,tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
-    m.fs.R3.KLa.fix(240)
-    m.fs.R4.KLa.fix(240)
-    m.fs.R5.KLa.fix(240)
+    m.fs.R3.KLa.fix(10)
+    m.fs.R4.KLa.fix(10)
+    m.fs.R5.KLa.fix(10)
 
     m.fs.R3.outlet.conc_mass_comp[:, "S_O"].unfix()
     m.fs.R4.outlet.conc_mass_comp[:, "S_O"].unfix()
@@ -376,87 +339,186 @@ if __name__ == "__main__":
         0.039661279,
         0.11152474,
         0.749114341,
-        0, #1.40E-10,
-        0, #1.40E-10,
-        0, #1.40E-10,
-        0, #1.40E-10,
-        0, #1.40E-10,
+        1.40E-10,
+        1.40E-10,
+        1.40E-10,
+        1.40E-10,
+        1.40E-10,
         0.205778397,
         0.005252493,
         0.058108176,
     ]
+
+    m.fs.R3.KLa.fix(20)
+    m.fs.R4.KLa.fix(20)
+    m.fs.R5.KLa.fix(20)
     new_comps={comps[i]:comp_vals[i] for i in range(len(comps))}
     solver = get_solver()
+    # solve_stat = {}
+    # clones = {}
+    # for i, (k,v) in enumerate(new_comps.items()):
+    #     clone_name = f"clone_change_{k}"
+    #     m_clone = m.clone()
+    #     old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0,k])
+    #     m_clone.fs.feed.conc_mass_comp[0,k].fix(v)
+    #     print(f"{k} was fixed.")
+    #     res = solver.solve(m_clone, tee=True)
+    #     if pyo.check_optimal_termination(res):
+    #         solve_stat[k]=1
+    #     else:
+    #         solve_stat[k]=0
+        
+    #     clones[clone_name] = m_clone
+    #     m_clone.fs.feed.conc_mass_comp[0,k].fix(old_val)
+    #     del m_clone
+        
+    # assert False
+    for i, (k,v) in enumerate(new_comps.items()):
+        print(f"{k} was fixed.")
+        m.fs.feed.conc_mass_comp[0,k].fix(v)
+
+    res = solver.solve(m, tee=True)
+
+    if pyo.check_optimal_termination(res):
+        print("Success!")
+    else:
+        raise RuntimeError("Failed to solve")
+    m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
+    m.fs.feed.temperature.fix(308)
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        # if "flow_vol" in var.name:
+        #     iscale.set_scaling_factor(var, 1e1)
+        # if "temperature" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-1)
+        # if "pressure" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-3)
+        if "conc_mass_comp" in var.name:
+            print(var.name)
+            iscale.set_scaling_factor(var, 10/(pyo.value(var)+1e-6))
+    iscale.calculate_scaling_factors(m.fs)
+    
+    m.fs.R3.KLa.fix(20)
+    m.fs.R4.KLa.fix(20)
+    m.fs.R5.KLa.fix(20)
+    # m.fs.feed.flow_vol.fix(0.00011 * 1e4
+    #                     #    134500221723699
+    #                        )
+
+    # for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    #     if "flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1* pyo.value(var))
+    # m.fs.R1.volume.fix(1000 *5e-4 * pyo.units.m**3)
+    # m.fs.R2.volume.fix(1000 *5e-4 * pyo.units.m**3)
+    # m.fs.R3.volume.fix(1333 *5e-4* pyo.units.m**3)
+    # m.fs.R4.volume.fix(1333 *5e-4* pyo.units.m**3)
+    # m.fs.R5.volume.fix(1333 *5e-4* pyo.units.m**3)
+    # for i in range(5):
+    #     blk = getattr(m.fs,f"R{i+1}")
+    #     iscale.set_scaling_factor(blk.volume, 1e2)
+    # iscale.calculate_scaling_factors(m)
+
+    res = solver.solve(m, tee=True)
+    if pyo.check_optimal_termination(res):
+        print("Success overall!")
+    else:
+        RuntimeError
+    # # m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
+    
+    # scales = [1e3, 1e2,1e1,1e0]
+    # flow_solves={}
+    
+    # for i in scales:
+    #     m.fs.feed.flow_vol.fix(0.00011 * i
+    #                         #    134500221723699
+    #                         )
+
+    #     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    #         if "flow_vol" in var.name:
+    #             iscale.set_scaling_factor(var, 1* pyo.value(var))
+    #     iscale.calculate_scaling_factors(m)
+
+    #     resy = solver.solve(m,tee=True)
+    #     if pyo.check_optimal_termination(resy):
+    #         flow_solves[str(pyo.value(m.fs.feed.flow_vol[0]))]= 1
+    #     else:
+    #         flow_solves[str(pyo.value(m.fs.feed.flow_vol[0]))]= 0
+    #         from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+    #         dt = DiagnosticsToolbox(m)
+    #         dt.report_numerical_issues()
+    #         dh = dt.prepare_degeneracy_hunter()
+    #         svd =dt.prepare_svd_toolbox()
+    #         dh.report_irreducible_degenerate_sets()
+    #         svd.display_underdetermined_variables_and_constraints()
+    #         svd.display_constraints_including_variable(m.fs.feed.flow_vol[0])
+    #         assert False
+    brew_comp_vals = [
+    0.02,
+    5.6,
+    0.025,
+    1.156,
+    1.00E-10,
+    1.00E-10,
+    1.00E-10,
+    1.00E-10,
+    1.00E-10,
+    0.140067,
+    0.06,
+    0.05324,
+    ]
+    m.fs.feed.alkalinity.fix(40.0*pyo.units.mol/pyo.units.m**3)
+    m.fs.feed.temperature.fix(308)
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        # if "flow_vol" in var.name:
+        #     iscale.set_scaling_factor(var, 1e1)
+        # if "temperature" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-1)
+        # if "pressure" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-3)
+        if "conc_mass_comp" in var.name:
+            # if pyo.value(var) <= 1e-10:
+            #     iscale.set_scaling_factor(var, 1)
+            # else:
+            iscale.set_scaling_factor(var, 1e-3/(pyo.value(var)+1e-10))
+    iscale.calculate_scaling_factors(m.fs)
+    brew_comps={comps[i]:brew_comp_vals[i] for i in range(len(comps))}
     solve_stat = {}
     clones = {}
-    for i, (k,v) in enumerate(new_comps.items()):
+    for i, (k,v) in enumerate(brew_comps.items()):
         clone_name = f"clone_change_{k}"
         m_clone = m.clone()
         old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0,k])
         m_clone.fs.feed.conc_mass_comp[0,k].fix(v)
-        print(f"{k} was fixed.")
         res = solver.solve(m_clone, tee=True)
         if pyo.check_optimal_termination(res):
             solve_stat[k]=1
         else:
             solve_stat[k]=0
-        
+        print(f"{k} was fixed.")
+
         clones[clone_name] = m_clone
         m_clone.fs.feed.conc_mass_comp[0,k].fix(old_val)
         del m_clone
-        
-    for i, (k,v) in enumerate(new_comps.items()):
+    print(solve_stat)
+
+    for i, (k,v) in enumerate(brew_comps.items()):
         print(f"{k} was fixed.")
         m.fs.feed.conc_mass_comp[0,k].fix(v)
-    
-    m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
-    m.fs.feed.flow_vol.fix(0.00011 * 1e4
-                        #    134500221723699
-                           )
-
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-        if "flow_vol" in var.name:
-            iscale.set_scaling_factor(var, 1* pyo.value(var))
-    m.fs.feed.temperature.fix(308)
-    m.fs.R1.volume.fix(1000 *5e-4 * pyo.units.m**3)
-    m.fs.R2.volume.fix(1000 *5e-4 * pyo.units.m**3)
-    m.fs.R3.volume.fix(1333 *5e-4* pyo.units.m**3)
-    m.fs.R4.volume.fix(1333 *5e-4* pyo.units.m**3)
-    m.fs.R5.volume.fix(1333 *5e-4* pyo.units.m**3)
-    for i in range(5):
-        blk = getattr(m.fs,f"R{i+1}")
-        iscale.set_scaling_factor(blk.volume, 1e2)
-    iscale.calculate_scaling_factors(m)
-
+    # for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    #     # if "flow_vol" in var.name:
+    #     #     iscale.set_scaling_factor(var, 1e1)
+    #     # if "temperature" in var.name:
+    #     #     iscale.set_scaling_factor(var, 1e-1)
+    #     # if "pressure" in var.name:
+    #     #     iscale.set_scaling_factor(var, 1e-3)
+    #     if "conc_mass_comp" in var.name:
+    #         # if pyo.value(var) <= 1e-10:
+    #         #     iscale.set_scaling_factor(var, 1)
+    #         # else:
+    #         iscale.set_scaling_factor(var, 1e-1/(pyo.value(var)+1e-10))
+    # iscale.calculate_scaling_factors(m.fs)
     res = solver.solve(m, tee=True)
+
     if pyo.check_optimal_termination(res):
         print("Success!")
-    # m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
-    
-    scales = [1e3, 1e2,1e1,1e0]
-    flow_solves={}
-    
-    for i in scales:
-        m.fs.feed.flow_vol.fix(0.00011 * i
-                            #    134500221723699
-                            )
-
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1* pyo.value(var))
-        iscale.calculate_scaling_factors(m)
-
-        resy = solver.solve(m,tee=True)
-        if pyo.check_optimal_termination(resy):
-            flow_solves[str(pyo.value(m.fs.feed.flow_vol[0]))]= 1
-        else:
-            flow_solves[str(pyo.value(m.fs.feed.flow_vol[0]))]= 0
-            from idaes.core.util.model_diagnostics import DiagnosticsToolbox
-            dt = DiagnosticsToolbox(m)
-            dt.report_numerical_issues()
-            dh = dt.prepare_degeneracy_hunter()
-            svd =dt.prepare_svd_toolbox()
-            dh.report_irreducible_degenerate_sets()
-            svd.display_underdetermined_variables_and_constraints()
-            svd.display_constraints_including_variable(m.fs.feed.flow_vol[0])
-            assert False
+    else:
+        raise RuntimeError("Failed to solve")
