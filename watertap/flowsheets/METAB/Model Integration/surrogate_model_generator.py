@@ -128,6 +128,8 @@ def gen_surrogate_model(
         # Train surrogate (calls PySMO through IDAES Python wrapper)
         poly_train = trainer.train_surrogate()
 
+        trainer._get_metrics()
+
         poly_surr = PysmoSurrogate(
             poly_train, input_labels, output_labels, input_bounds
         )
@@ -213,7 +215,7 @@ if __name__ == "__main__":
     output_data = outputs_selections(output_data)
     gen_surrogate_model(
         tool="idaes",
-        method="rbf",  # kri, poly,rbf,alamo
+        method="poly",  # kri, poly,rbf,alamo
         feed_data=feed_data,
         input_data=input_data,
         output_data=output_data,

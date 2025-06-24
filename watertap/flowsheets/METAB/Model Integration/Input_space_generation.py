@@ -33,7 +33,7 @@ def create_samples(method=None, input_var_info=None, sample_numbers=10):
         rounded_samples = [[round(sample, 2) for sample in row] for row in samples]
         print(type(rounded_samples))
 
-    csv_file = "input_data.csv"
+    csv_file = "./results/input_data.csv"
 
     # Writing to CSV file
     with open(csv_file, "w", newline="") as file:

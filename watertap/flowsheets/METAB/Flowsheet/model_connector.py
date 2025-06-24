@@ -144,7 +144,7 @@ def get_influent(m):
     return df
 
 
-def build_metab(m, mass=False):
+def build_metab(m, mass=False, idx=1):
 
     if mass:
         df_metab = get_influent(m)
@@ -155,7 +155,7 @@ def build_metab(m, mass=False):
             has_phase_equilibrium=False,
             outlet_state_defined=True,
         )
-        idx = 1
+        # idx = 1
         comp_list = [
             "H2O",
             "S_su",
@@ -218,7 +218,7 @@ def build_metab(m, mass=False):
             has_phase_equilibrium=False,
             outlet_state_defined=True,
         )
-        idx = 1  # 1-20
+        # idx = 1  # 1-20
         comp = "H2O"
         print(get_mw(df_mw, comp))
         print(df_metab)
