@@ -42,7 +42,6 @@ from idaes.models.unit_models import (
     Feed,
     Mixer,
     Separator,
-    PressureChanger,
     Product,
     MomentumMixingType,
 )
