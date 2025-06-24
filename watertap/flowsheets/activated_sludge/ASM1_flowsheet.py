@@ -126,8 +126,7 @@ def build_flowsheet():
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props)
     m.fs.Sludge = Product(property_package=m.fs.props)
-    # Recycle pressure changer - use a simple isothermal unit for now
-    m.fs.P1 = PressureChanger(property_package=m.fs.props)
+
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.MX1.feed_water)
@@ -143,8 +142,7 @@ def build_flowsheet():
     m.fs.stream11 = Arc(source=m.fs.CL1.underflow, destination=m.fs.SP6.inlet)
     m.fs.stream102 = Arc(source=m.fs.SP6.waste, destination=m.fs.Sludge.inlet)
     m.fs.stream13 = Arc(source=m.fs.SP6.recycle, destination=m.fs.MX6.clarifier)
-    m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.P1.inlet)
-    m.fs.stream15 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
+    m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.MX1.recycle)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
 
@@ -208,8 +206,6 @@ def build_flowsheet():
     # Sludge purge separator
     m.fs.SP6.split_fraction[:, "recycle"].fix(0.97955)
 
-    # Outlet pressure from recycle pump
-    m.fs.P1.outlet.pressure.fix(101325)
 
     # Check degrees of freedom
     print(degrees_of_freedom(m))
@@ -333,7 +329,8 @@ if __name__ == "__main__":
         "S_ND",
         "X_ND",
     ]
-
+    
+    # composition values for treated effluent after METAB
     comp_vals=[
         0.086312003,
         0.039661279,
@@ -422,6 +419,8 @@ if __name__ == "__main__":
         print("Success overall!")
     else:
         RuntimeError
+    COD_removal_w_metab = pyo.value(1-m.fs.Treated.properties[0].COD/m.fs.feed.properties[0].COD)
+
     # # m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
     
     # scales = [1e3, 1e2,1e1,1e0]
@@ -451,6 +450,9 @@ if __name__ == "__main__":
     #         svd.display_underdetermined_variables_and_constraints()
     #         svd.display_constraints_including_variable(m.fs.feed.flow_vol[0])
     #         assert False
+    
+    
+    # composition value for brewery ww
     brew_comp_vals = [
     0.02,
     5.6,
@@ -499,7 +501,9 @@ if __name__ == "__main__":
         m_clone.fs.feed.conc_mass_comp[0,k].fix(old_val)
         del m_clone
     print(solve_stat)
-
+    m.fs.R3.KLa.fix(20)
+    m.fs.R4.KLa.fix(20)
+    m.fs.R5.KLa.fix(20)
     for i, (k,v) in enumerate(brew_comps.items()):
         print(f"{k} was fixed.")
         m.fs.feed.conc_mass_comp[0,k].fix(v)
@@ -518,7 +522,14 @@ if __name__ == "__main__":
     # iscale.calculate_scaling_factors(m.fs)
     res = solver.solve(m, tee=True)
 
+    from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+    dt = DiagnosticsToolbox(m)
     if pyo.check_optimal_termination(res):
         print("Success!")
     else:
         raise RuntimeError("Failed to solve")
+
+    COD_removal_no_metab = pyo.value(1-m.fs.Treated.properties[0].COD/m.fs.feed.properties[0].COD)
+    
+    print(f"COD removal w/o METAB: {COD_removal_no_metab}")
+    print(f"COD removal w/METAB: {COD_removal_w_metab}")
