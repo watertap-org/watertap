@@ -136,7 +136,7 @@ Kinetic Parameters
    ":blue:`Maximum rate for fermentation`", ":math:`q_{fe}`", "q_fe", 2.11, ":math:`\text{kg S_F/}\text{kg X_H . day}`"
    ":blue:`Rate constant for lysis and decay`", ":math:`b_H`", "b_H", 0.28, ":math:`\text{day}^{-1}`"
    "Saturation coefficient for growth on SF", ":math:`K_F`", "K_F", 0.004, ":math:`\text{kg COD/}\text{m}^{3}`"
-   "Saturation coefficient for fermentation of SF", ":math:`K_{fe}`", "K_fe", 0.004, ":math:`\text{d}^{-1}`"
+   "Saturation coefficient for fermentation of SF", ":math:`K_{fe}`", "K_fe", 0.004, ":math:`\text{kg COD/}\text{m}^{3}`"
    "Saturation coefficient for growth on acetate SA", ":math:`KH_A`", "KH_A", 0.004, ":math:`\text{kg COD/}\text{m}^{3}`"
    "Saturation coefficient for ammonium (nutrient)", ":math:`KH_{NH4}`", "KH_NH4", 0.00005, ":math:`\text{kg N/}\text{m}^{3}`"
    "Saturation coefficient for phosphate (nutrient)", ":math:`KH_{PO4}`", "KH_PO4", 0.00001, ":math:`\text{kg P/}\text{m}^{3}`"
