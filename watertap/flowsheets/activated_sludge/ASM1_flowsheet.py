@@ -39,7 +39,6 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
-    # CSTR,
     Feed,
     Mixer,
     Separator,
@@ -58,6 +57,7 @@ from idaes.core.util.tables import (
 )
 
 from watertap.unit_models import AerationTank, CSTR
+
 # from watertap.unit_models import CSTR_Injection
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
@@ -82,26 +82,21 @@ def build_flowsheet():
     # Feed water stream
     m.fs.feed = Feed(property_package=m.fs.props)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(property_package=m.fs.props, 
-                    inlet_list=["feed_water", "recycle"],
-                    momentum_mixing_type=MomentumMixingType.none
-                    )
-    m.fs.MX1.outlet.pressure.fix()    # First reactor (anoxic) - standard CSTR
+    m.fs.MX1 = Mixer(
+        property_package=m.fs.props,
+        inlet_list=["feed_water", "recycle"],
+        momentum_mixing_type=MomentumMixingType.none,
+    )
+    m.fs.MX1.outlet.pressure.fix()  # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Second reactor (anoxic) - standard CSTR
     m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-    # Third reactor (aerobic) 
-    m.fs.R3 = AerationTank(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
-    )
-    # Fourth reactor (aerobic) 
-    m.fs.R4 = AerationTank(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
-    )
+    # Third reactor (aerobic)
+    m.fs.R3 = AerationTank(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    # Fourth reactor (aerobic)
+    m.fs.R4 = AerationTank(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Fifth reactor (aerobic)
-    m.fs.R5 = AerationTank(
-        property_package=m.fs.props, reaction_package=m.fs.rxn_props
-    )
+    m.fs.R5 = AerationTank(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     m.fs.SP5 = Separator(
         property_package=m.fs.props, outlet_list=["underflow", "overflow"]
     )
@@ -119,14 +114,15 @@ def build_flowsheet():
         split_basis=SplittingType.totalFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"],
-                    momentum_mixing_type=MomentumMixingType.none
-                    )
-    m.fs.MX6.outlet.pressure.fix()    
+    m.fs.MX6 = Mixer(
+        property_package=m.fs.props,
+        inlet_list=["clarifier", "reactor"],
+        momentum_mixing_type=MomentumMixingType.none,
+    )
+    m.fs.MX6.outlet.pressure.fix()
     # Product Blocks
     m.fs.Treated = Product(property_package=m.fs.props)
     m.fs.Sludge = Product(property_package=m.fs.props)
-
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.feed.outlet, destination=m.fs.MX1.feed_water)
@@ -144,7 +140,6 @@ def build_flowsheet():
     m.fs.stream13 = Arc(source=m.fs.SP6.recycle, destination=m.fs.MX6.clarifier)
     m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.MX1.recycle)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
-
 
     # Feed Water Conditions
     m.fs.feed.flow_vol.fix(18446 * pyo.units.m**3 / pyo.units.day)
@@ -206,7 +201,6 @@ def build_flowsheet():
     # Sludge purge separator
     m.fs.SP6.split_fraction[:, "recycle"].fix(0.97955)
 
-
     # Check degrees of freedom
     print(degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
@@ -221,7 +215,7 @@ def build_flowsheet():
             iscale.set_scaling_factor(var, 1e-3)
         if "conc_mass_comp" in var.name:
             print(var.name)
-            iscale.set_scaling_factor(var, 1/(pyo.value(var)+1e-10))
+            iscale.set_scaling_factor(var, 1 / (pyo.value(var) + 1e-10))
     iscale.calculate_scaling_factors(m.fs)
 
     # Initialize flowsheet
@@ -273,7 +267,7 @@ def build_flowsheet():
 
     # Solve overall flowsheet to close recycle loop
     solver = get_solver()
-    results = solver.solve(m,tee=True)
+    results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
@@ -315,7 +309,7 @@ if __name__ == "__main__":
     print(stream_table_dataframe_to_string(stream_table))
     m.fs.report()
 
-    comps=[
+    comps = [
         "S_I",
         "S_S",
         "X_I",
@@ -329,18 +323,18 @@ if __name__ == "__main__":
         "S_ND",
         "X_ND",
     ]
-    
+
     # composition values for treated effluent after METAB
-    comp_vals=[
+    comp_vals = [
         0.086312003,
         0.039661279,
         0.11152474,
         0.749114341,
-        1.40E-10,
-        1.40E-10,
-        1.40E-10,
-        1.40E-10,
-        1.40E-10,
+        1.40e-10,
+        1.40e-10,
+        1.40e-10,
+        1.40e-10,
+        1.40e-10,
         0.205778397,
         0.005252493,
         0.058108176,
@@ -349,7 +343,7 @@ if __name__ == "__main__":
     m.fs.R3.KLa.fix(20)
     m.fs.R4.KLa.fix(20)
     m.fs.R5.KLa.fix(20)
-    new_comps={comps[i]:comp_vals[i] for i in range(len(comps))}
+    new_comps = {comps[i]: comp_vals[i] for i in range(len(comps))}
     solver = get_solver()
     # solve_stat = {}
     # clones = {}
@@ -364,15 +358,15 @@ if __name__ == "__main__":
     #         solve_stat[k]=1
     #     else:
     #         solve_stat[k]=0
-        
+
     #     clones[clone_name] = m_clone
     #     m_clone.fs.feed.conc_mass_comp[0,k].fix(old_val)
     #     del m_clone
-        
+
     # assert False
-    for i, (k,v) in enumerate(new_comps.items()):
+    for i, (k, v) in enumerate(new_comps.items()):
         print(f"{k} was fixed.")
-        m.fs.feed.conc_mass_comp[0,k].fix(v)
+        m.fs.feed.conc_mass_comp[0, k].fix(v)
 
     res = solver.solve(m, tee=True)
 
@@ -380,7 +374,7 @@ if __name__ == "__main__":
         print("Success!")
     else:
         raise RuntimeError("Failed to solve")
-    m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
+    m.fs.feed.alkalinity.fix(47.7 * pyo.units.mol / pyo.units.m**3)
     m.fs.feed.temperature.fix(308)
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         # if "flow_vol" in var.name:
@@ -391,9 +385,9 @@ if __name__ == "__main__":
         #     iscale.set_scaling_factor(var, 1e-3)
         if "conc_mass_comp" in var.name:
             print(var.name)
-            iscale.set_scaling_factor(var, 10/(pyo.value(var)+1e-6))
+            iscale.set_scaling_factor(var, 10 / (pyo.value(var) + 1e-6))
     iscale.calculate_scaling_factors(m.fs)
-    
+
     m.fs.R3.KLa.fix(20)
     m.fs.R4.KLa.fix(20)
     m.fs.R5.KLa.fix(20)
@@ -419,13 +413,15 @@ if __name__ == "__main__":
         print("Success overall!")
     else:
         RuntimeError
-    COD_removal_w_metab = pyo.value(1-m.fs.Treated.properties[0].COD/m.fs.feed.properties[0].COD)
+    COD_removal_w_metab = pyo.value(
+        1 - m.fs.Treated.properties[0].COD / m.fs.feed.properties[0].COD
+    )
 
     # # m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
-    
+
     # scales = [1e3, 1e2,1e1,1e0]
     # flow_solves={}
-    
+
     # for i in scales:
     #     m.fs.feed.flow_vol.fix(0.00011 * i
     #                         #    134500221723699
@@ -450,24 +446,23 @@ if __name__ == "__main__":
     #         svd.display_underdetermined_variables_and_constraints()
     #         svd.display_constraints_including_variable(m.fs.feed.flow_vol[0])
     #         assert False
-    
-    
+
     # composition value for brewery ww
     brew_comp_vals = [
-    0.02,
-    5.6,
-    0.025,
-    1.156,
-    1.00E-10,
-    1.00E-10,
-    1.00E-10,
-    1.00E-10,
-    1.00E-10,
-    0.140067,
-    0.06,
-    0.05324,
+        0.02,
+        5.6,
+        0.025,
+        1.156,
+        1.00e-10,
+        1.00e-10,
+        1.00e-10,
+        1.00e-10,
+        1.00e-10,
+        0.140067,
+        0.06,
+        0.05324,
     ]
-    m.fs.feed.alkalinity.fix(40.0*pyo.units.mol/pyo.units.m**3)
+    m.fs.feed.alkalinity.fix(40.0 * pyo.units.mol / pyo.units.m**3)
     m.fs.feed.temperature.fix(308)
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         # if "flow_vol" in var.name:
@@ -480,33 +475,33 @@ if __name__ == "__main__":
             # if pyo.value(var) <= 1e-10:
             #     iscale.set_scaling_factor(var, 1)
             # else:
-            iscale.set_scaling_factor(var, 1e-3/(pyo.value(var)+1e-10))
+            iscale.set_scaling_factor(var, 1e-3 / (pyo.value(var) + 1e-10))
     iscale.calculate_scaling_factors(m.fs)
-    brew_comps={comps[i]:brew_comp_vals[i] for i in range(len(comps))}
+    brew_comps = {comps[i]: brew_comp_vals[i] for i in range(len(comps))}
     solve_stat = {}
     clones = {}
-    for i, (k,v) in enumerate(brew_comps.items()):
+    for i, (k, v) in enumerate(brew_comps.items()):
         clone_name = f"clone_change_{k}"
         m_clone = m.clone()
-        old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0,k])
-        m_clone.fs.feed.conc_mass_comp[0,k].fix(v)
+        old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0, k])
+        m_clone.fs.feed.conc_mass_comp[0, k].fix(v)
         res = solver.solve(m_clone, tee=True)
         if pyo.check_optimal_termination(res):
-            solve_stat[k]=1
+            solve_stat[k] = 1
         else:
-            solve_stat[k]=0
+            solve_stat[k] = 0
         print(f"{k} was fixed.")
 
         clones[clone_name] = m_clone
-        m_clone.fs.feed.conc_mass_comp[0,k].fix(old_val)
+        m_clone.fs.feed.conc_mass_comp[0, k].fix(old_val)
         del m_clone
     print(solve_stat)
     m.fs.R3.KLa.fix(20)
     m.fs.R4.KLa.fix(20)
     m.fs.R5.KLa.fix(20)
-    for i, (k,v) in enumerate(brew_comps.items()):
+    for i, (k, v) in enumerate(brew_comps.items()):
         print(f"{k} was fixed.")
-        m.fs.feed.conc_mass_comp[0,k].fix(v)
+        m.fs.feed.conc_mass_comp[0, k].fix(v)
     # for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
     #     # if "flow_vol" in var.name:
     #     #     iscale.set_scaling_factor(var, 1e1)
@@ -523,13 +518,16 @@ if __name__ == "__main__":
     res = solver.solve(m, tee=True)
 
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+
     dt = DiagnosticsToolbox(m)
     if pyo.check_optimal_termination(res):
         print("Success!")
     else:
         raise RuntimeError("Failed to solve")
 
-    COD_removal_no_metab = pyo.value(1-m.fs.Treated.properties[0].COD/m.fs.feed.properties[0].COD)
-    
+    COD_removal_no_metab = pyo.value(
+        1 - m.fs.Treated.properties[0].COD / m.fs.feed.properties[0].COD
+    )
+
     print(f"COD removal w/o METAB: {COD_removal_no_metab}")
     print(f"COD removal w/METAB: {COD_removal_w_metab}")
