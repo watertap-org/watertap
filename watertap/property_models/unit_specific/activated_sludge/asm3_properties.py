@@ -223,13 +223,13 @@ class ASM3ParameterData(PhysicalParameterBlock):
         #     domain=pyo.PositiveReals,
         #     doc="Conversion factor applied for TSS calculation",
         # )
-        self.BOD5_factor = pyo.Param(
-            ["raw", "effluent"],
-            initialize={"raw": 0.65, "effluent": 0.25},
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Conversion factor for BOD5",
-        )
+        # self.BOD5_factor = pyo.Param(
+        #     ["raw", "effluent"],
+        #     initialize={"raw": 0.65, "effluent": 0.25},
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Conversion factor for BOD5",
+        # )
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
@@ -512,21 +512,21 @@ class ASM3StateBlockData(StateBlockData):
             doc="Total suspended solids (TSS)",
         )
 
-        def _BOD5(self, i):
-            bod5 = (
-                self.conc_mass_comp["S_S"]
-                + (1 - self.params.f_SI) * self.conc_mass_comp["X_S"]
-                + (1 - self.params.f_XIH) * self.conc_mass_comp["X_H"]
-                + (1 - self.params.f_XIA) * self.conc_mass_comp["X_AUT"]
-            )
-            # TODO: 0.25 should be a parameter instead as it changes by influent/effluent
-            return self.params.BOD5_factor[i] * bod5
-
-        self.BOD5 = pyo.Expression(
-            ["raw", "effluent"],
-            rule=_BOD5,
-            doc="Five-day Biological Oxygen Demand (BOD5)",
-        )
+        # def _BOD5(self, i):
+        #     bod5 = (
+        #         self.conc_mass_comp["S_S"]
+        #         + (1 - self.params.f_SI) * self.conc_mass_comp["X_S"]
+        #         + (1 - self.params.f_XIH) * self.conc_mass_comp["X_H"]
+        #         + (1 - self.params.f_XIA) * self.conc_mass_comp["X_AUT"]
+        #     )
+        #     # TODO: 0.25 should be a parameter instead as it changes by influent/effluent
+        #     return self.params.BOD5_factor[i] * bod5
+        #
+        # self.BOD5 = pyo.Expression(
+        #     ["raw", "effluent"],
+        #     rule=_BOD5,
+        #     doc="Five-day Biological Oxygen Demand (BOD5)",
+        # )
 
         def _COD(self):
             cod = (
