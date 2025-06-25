@@ -78,7 +78,7 @@ from idaes.core.util import DiagnosticsToolbox
 from pyomo.environ import units
 import pandas as pd
 
-import ASM1_flowsheet as asm1
+import ASM1_flowsheet_AA as asm1
 import model_connector as metab
 
 
@@ -86,17 +86,17 @@ def model_checker(model, solver_info):
     dof = degrees_of_freedom(model)
     assert dof == 0, f"Error: Degrees of freedom is {dof}, but it should be 0."
     print("DOF check passed")
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-        if "flow_vol" in var.name:
-            iscale.set_scaling_factor(var, 1e1)
-        if "temperature" in var.name:
-            iscale.set_scaling_factor(var, 1e-1)
-        if "pressure" in var.name:
-            iscale.set_scaling_factor(var, 1e-4)
-        if "conc_mass_comp" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
+    # for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    #     if "flow_vol" in var.name:
+    #         iscale.set_scaling_factor(var, 1e1)
+    #     if "temperature" in var.name:
+    #         iscale.set_scaling_factor(var, 1e-1)
+    #     if "pressure" in var.name:
+    #         iscale.set_scaling_factor(var, 1e-4)
+    #     if "conc_mass_comp" in var.name:
+    #         iscale.set_scaling_factor(var, 1e3)
 
-    iscale.calculate_scaling_factors(m)
+    # iscale.calculate_scaling_factors(m)
     solver = get_solver()
     results = solver.solve(model, tee=solver_info)
     print(results)
@@ -109,6 +109,76 @@ def build_asm1():
     m, results = asm1.build_flowsheet()
 
     return m
+
+
+def get_influent_asm1(test=True):
+    if test:
+        comps = [
+            "S_I",
+            "S_S",
+            "X_I",
+            "X_S",
+            "X_BH",
+            "X_BA",
+            "X_P",
+            "S_O",
+            "S_NO",
+            "S_NH",
+            "S_ND",
+            "X_ND",
+        ]
+
+        # composition values for treated effluent after METAB
+        comp_vals = [
+            0.086312003,
+            0.039661279,
+            0.11152474,
+            0.749114341,
+            1.40e-10,
+            1.40e-10,
+            1.40e-10,
+            1.40e-10,
+            1.40e-10,
+            0.205778397,
+            0.005252493,
+            0.058108176,
+        ]
+        new_comps = {comps[i]: comp_vals[i] for i in range(len(comps))}
+    else:
+        print("ONLY WORK in TETS MODE")
+
+    return new_comps
+
+
+def exam_influent_values(m, new_comps):
+    solver = get_solver()
+    solve_stat = {}
+    clones = {}
+    for i, (k, v) in enumerate(new_comps.items()):
+        clone_name = f"clone_change_{k}"
+        m_clone = m.clone()
+        # m_clone.display()
+        old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0, k])
+        m_clone.fs.feed.conc_mass_comp[0, k].fix(v)
+        print(f"{k} was fixed.")
+        res = solver.solve(m_clone, tee=True)
+        if pyo.check_optimal_termination(res):
+            solve_stat[k] = 1
+        else:
+            solve_stat[k] = 0
+
+        clones[clone_name] = m_clone
+        m_clone.fs.feed.conc_mass_comp[0, k].fix(old_val)
+        del m_clone
+
+    return solve_stat
+
+
+def check_solve_stat(solve_status):
+    for val in solve_status.values():
+        if val != 1:
+            return False  # Found a value that's not 1
+    return True
 
 
 def add_metab(m):
@@ -188,14 +258,56 @@ if __name__ == "__main__":
 
     # TODO: NEED to update parameters
     m = build_asm1()
-    m = add_metab(m)
     model_checker(m, True)
-    report_st(m)
-    m = set_port_values(m)
-    m = reset_influent(m)
+    new_comps = get_influent_asm1(test=True)
     m.fs.R3.KLa.fix(20)
     m.fs.R4.KLa.fix(20)
     m.fs.R5.KLa.fix(20)
+    solve_status = exam_influent_values(m=m, new_comps=new_comps)
+    print(solve_status)
+    if check_solve_stat(solve_status):
+        print("Model is ready to use new influent comps")
+    else:
+        print("Please check the bad comps")
+    for i, (k, v) in enumerate(new_comps.items()):
+        print(f"{k} was fixed.")
+        m.fs.feed.conc_mass_comp[0, k].fix(v)
+    solver = get_solver()
+    res = solver.solve(m, tee=True)
 
-    model_checker(m, True)
-    report_st(m)
+    print("=" * 10)
+    print("Model solve with new comps")
+    if pyo.check_optimal_termination(res):
+        print("Success!")
+    else:
+        raise RuntimeError("Failed to solve")
+
+    m.fs.feed.alkalinity.fix(47.7 * pyo.units.mol / pyo.units.m**3)
+    m.fs.feed.temperature.fix(308)
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "conc_mass_comp" in var.name:
+            print(var.name)
+            iscale.set_scaling_factor(var, 10 / (pyo.value(var) + 1e-6))
+    iscale.calculate_scaling_factors(m.fs)
+    print("=" * 10)
+    print("Model solve with alk and temp")
+    res = solver.solve(m, tee=True)
+    if pyo.check_optimal_termination(res):
+        print("Success overall!")
+    else:
+        RuntimeError
+    COD_removal_w_metab = pyo.value(
+        1 - m.fs.Treated.properties[0].COD / m.fs.feed.properties[0].COD
+    )
+
+    # m = add_metab(m)
+
+    # report_st(m)
+    # m = set_port_values(m)
+    # m = reset_influent(m)
+    # m.fs.R3.KLa.fix(20)
+    # m.fs.R4.KLa.fix(20)
+    # m.fs.R5.KLa.fix(20)
+
+    # model_checker(m, True)
+    # report_st(m)

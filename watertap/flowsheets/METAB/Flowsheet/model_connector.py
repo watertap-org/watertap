@@ -305,7 +305,7 @@ if __name__ == "__main__":
     m = build_metab(m, mass=True)
     model_checker(m, True)
     output = {
-        "from metab": m.fs.metab_effluent.inlet,
+        # "from metab": m.fs.metab_effluent.inlet,
         "Influent": m.fs.metab_effluent.outlet,
     }
     stream_table = create_stream_table_dataframe(

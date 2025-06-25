@@ -18,7 +18,12 @@ import csv
 __author__ = "Maojian Wang"
 
 
-def create_samples(method=None, input_var_info=None, sample_numbers=10):
+def create_samples(
+    method=None,
+    input_var_info=None,
+    sample_numbers=10,
+    csv_file="./results/input_data.csv",
+):
     if method == None:
         print("Please pick a sampling method")
     elif method == "LHS":
@@ -32,8 +37,6 @@ def create_samples(method=None, input_var_info=None, sample_numbers=10):
         # Round each number in the matrix to 2 decimal places
         rounded_samples = [[round(sample, 2) for sample in row] for row in samples]
         print(type(rounded_samples))
-
-    csv_file = "./results/input_data.csv"
 
     # Writing to CSV file
     with open(csv_file, "w", newline="") as file:

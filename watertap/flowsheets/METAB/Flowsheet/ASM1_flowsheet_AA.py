@@ -344,23 +344,23 @@ if __name__ == "__main__":
     m.fs.R5.KLa.fix(20)
     new_comps = {comps[i]: comp_vals[i] for i in range(len(comps))}
     solver = get_solver()
-    # solve_stat = {}
-    # clones = {}
-    # for i, (k,v) in enumerate(new_comps.items()):
-    #     clone_name = f"clone_change_{k}"
-    #     m_clone = m.clone()
-    #     old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0,k])
-    #     m_clone.fs.feed.conc_mass_comp[0,k].fix(v)
-    #     print(f"{k} was fixed.")
-    #     res = solver.solve(m_clone, tee=True)
-    #     if pyo.check_optimal_termination(res):
-    #         solve_stat[k]=1
-    #     else:
-    #         solve_stat[k]=0
+    solve_stat = {}
+    clones = {}
+    for i, (k, v) in enumerate(new_comps.items()):
+        clone_name = f"clone_change_{k}"
+        m_clone = m.clone()
+        old_val = pyo.value(m_clone.fs.feed.conc_mass_comp[0, k])
+        m_clone.fs.feed.conc_mass_comp[0, k].fix(v)
+        print(f"{k} was fixed.")
+        res = solver.solve(m_clone, tee=True)
+        if pyo.check_optimal_termination(res):
+            solve_stat[k] = 1
+        else:
+            solve_stat[k] = 0
 
-    #     clones[clone_name] = m_clone
-    #     m_clone.fs.feed.conc_mass_comp[0,k].fix(old_val)
-    #     del m_clone
+        clones[clone_name] = m_clone
+        m_clone.fs.feed.conc_mass_comp[0, k].fix(old_val)
+        del m_clone
 
     # assert False
     for i, (k, v) in enumerate(new_comps.items()):
