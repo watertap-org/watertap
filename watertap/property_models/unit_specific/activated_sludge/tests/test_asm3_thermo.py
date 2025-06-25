@@ -341,15 +341,12 @@ class TestStateBlock(object):
     def check_units(self, model):
         assert_units_consistent(model)
 
-
-#     @pytest.mark.unit
-#     def test_expressions(self, model):
-#         assert value(model.props[1].TSS) == 0.375
-#         assert value(model.props[1].COD) == pytest.approx(0.7, rel=1e-3)
-#         assert value(model.props[1].BOD5["effluent"]) == 0.096
-#         assert value(model.props[1].BOD5["raw"]) == 0.096 * 0.65 / 0.25
-#         assert value(model.props[1].TKN) == pytest.approx(0.328, rel=1e-3)
-#         assert value(model.props[1].Total_N) == pytest.approx(0.428, rel=1e-3)
+    @pytest.mark.unit
+    def test_expressions(self, model):
+        assert value(model.props[1].TSS) == 0.1
+        assert value(model.props[1].COD) == pytest.approx(0.5, rel=1e-3)
+        assert value(model.props[1].TKN) == pytest.approx(0.124, rel=1e-3)
+        assert value(model.props[1].Total_N) == pytest.approx(0.224, rel=1e-3)
 
 
 class TestASM3PropertiesScaler:
