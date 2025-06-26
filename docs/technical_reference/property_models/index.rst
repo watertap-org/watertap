@@ -14,5 +14,5 @@ Property Models
    ADM1
    modified_ADM1
    modified_ASM2D
-   ASM2d_N2O
+   ASM2D_N2O
    mc_aq_sol
