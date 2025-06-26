@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with ASM1 reactions.
+Thermophysical property package to be used in conjunction with ASM3 reactions.
 """
 
 # Import Pyomo libraries
@@ -37,14 +37,14 @@ from idaes.core.base.property_base import PhysicalParameterBlock
 import idaes.core.util.scaling as iscale
 
 # Some more information about this module
-__author__ = "Andrew Lee, Adam Atia, Xinhong Liu"
+__author__ = "Chenyu Wang"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ASM1ParameterBlock")
-class ASM1ParameterData(PhysicalParameterBlock):
+@declare_process_block_class("ASM3ParameterBlock")
+class ASM3ParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -55,7 +55,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = ASM1StateBlock
+        self._state_block_class = ASM3StateBlock
 
         # Add Phase objects
         self.Liq = LiquidPhase()
@@ -63,39 +63,44 @@ class ASM1ParameterData(PhysicalParameterBlock):
         # Add Component objects
         self.H2O = Solvent()
 
-        self.S_I = Solute(doc="Soluble inert organic matter, S_I")
-        self.S_S = Solute(doc="Readily biodegradable substrate, S_S")
-        self.X_I = Solute(doc="Particulate inert organic matter, X_I")
-        self.X_S = Solute(doc="Slowly biodegradable substrate, X_S")
-        self.X_BH = Solute(doc="Active heterotrophic biomass, X_B,H")
-        self.X_BA = Solute(doc="Active autotrophic biomass, X_B,A")
-        self.X_P = Solute(doc="Particulate products arising from biomass decay, X_P")
-        self.S_O = Solute(doc="Oxygen, S_O")
-        self.S_NO = Solute(doc="Nitrate and nitrite nitrogen, S_NO")
-        self.S_NH = Solute(doc="NH4+ + NH3 nitrogen, S_NH")
-        self.S_ND = Solute(doc="Soluble biodegradable organic nitrogen, S_ND")
-        self.X_ND = Solute(doc="Particulate biodegradable organic nitrogen, X_ND")
+        # Soluble Components
+        self.S_O = Solute(doc="Dissolved Oxygen, S_O")
+        self.S_I = Solute(doc="Inert soluble organic material, S_I")
+        self.S_S = Solute(doc="Readily biodegradable substrates, S_S")
+        self.S_NH4 = Solute(
+            doc="Ammonium plus ammonia nitrogen (NH4+ + NH3 nitrogen), S_NH4"
+        )
+        self.S_N2 = Solute(doc="Dinitrogen (N2), S_N2")
+        self.S_NOX = Solute(
+            doc="Nitrate plus nitrite nitrogen (NO3- + NO2- nitrogen), S_NOX"
+        )
+        self.S_ALK = Component(doc="Alkalinity (HCO3-), S_ALK")
 
-        self.S_ALK = Component(doc="Alkalinity, S_ALK")
+        # Particulate Components
+        self.X_I = Solute(doc="Inert particulate organic matter, X_I")
+        self.X_S = Solute(doc="Slowly biodegradable substrates, X_S")
+        self.X_H = Solute(doc="Heterotrophic organisms, X_H")
+        self.X_STO = Solute(
+            doc="A cell internal storage product of heterotrophic organisms, X_STO"
+        )
+        self.X_A = Solute(doc="Nitrifying organisms, X_A")
+        self.X_TSS = Solute(doc="Total suspended solids, X_TSS")
 
         # Create sets for use across ASM models and associated unit models (e.g., thickener, dewaterer)
         self.non_particulate_component_set = pyo.Set(
             initialize=[
+                "S_O",
                 "S_I",
                 "S_S",
-                "S_O",
-                "S_NO",
-                "S_NH",
-                "S_ND",
-                "H2O",
+                "S_NH4",
+                "S_N2",
+                "S_NOX",
                 "S_ALK",
+                "H2O",
             ]
         )
         self.particulate_component_set = pyo.Set(
-            initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA", "X_ND"]
-        )
-        self.tss_component_set = pyo.Set(
-            initialize=["X_I", "X_S", "X_P", "X_BH", "X_BA"]
+            initialize=["X_I", "X_S", "X_H", "X_STO", "X_A", "X_TSS"]
         )
 
         # Heat capacity of water
@@ -126,37 +131,75 @@ class ASM1ParameterData(PhysicalParameterBlock):
             doc="Reference temperature",
             units=pyo.units.K,
         )
-        self.f_p = pyo.Var(
-            initialize=0.08,
+
+        # Typical stoichiometric and composition parametersfor ASM3
+        self.f_SI = pyo.Var(
+            initialize=0,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of S_I in hydrolysis (g-COD-S_I / g-COD-X_S)",
+        )
+        self.f_XI = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of X_I in endog. respiration (g-COD-X_I / g-COD-X_BM)",
+        )
+        self.i_NSI = pyo.Var(
+            initialize=0.01,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Fraction of biomass yielding particulate products, f_p",
+            doc="N content of S_I (g-N / g-COD-S_I)",
         )
-        self.i_xb = pyo.Var(
-            initialize=0.08,
+        self.i_NSS = pyo.Var(
+            initialize=0.03,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in biomass, i_xb",
+            doc="N content of S_S (g-N / g-COD-S_S)",
         )
-        self.i_xp = pyo.Var(
-            initialize=0.06,
+        self.i_NXI = pyo.Var(
+            initialize=0.02,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in particulates, i_xp",
+            doc="N content of X_I (g-N / g-COD-X_I)",
         )
-        self.COD_to_SS = pyo.Param(
+        self.i_NXS = pyo.Var(
+            initialize=0.04,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="N content of X_S (g-N / g-COD-X_S)",
+        )
+        self.i_NBM = pyo.Var(
+            initialize=0.07,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="N content of biomass, X_H, X_A (g-N / g-COD-X_H or X_A)",
+        )
+        self.i_SSXI = pyo.Var(
             initialize=0.75,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Conversion factor applied for TSS calculation",
+            doc="TSS to COD ratio for X_I (g-TSS / g-COD-X_I)",
         )
-        self.BOD5_factor = pyo.Param(
-            ["raw", "effluent"],
-            initialize={"raw": 0.65, "effluent": 0.25},
+        self.i_SSXS = pyo.Var(
+            initialize=0.75,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Conversion factor for BOD5",
+            doc="TSS to COD ratio for X_S (g-TSS / g-COD-X_S)",
         )
+        self.i_SSBM = pyo.Var(
+            initialize=0.90,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for for biomass,X_H, X_A (g-TSS / g-COD-X_H or X_A)",
+        )
+        self.i_SSSTO = pyo.Var(
+            initialize=0.60,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for X_STO based on PHB (g-TSS / g-X_STO)",
+        )
+
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
@@ -175,7 +218,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
             {
                 "alkalinity": {"method": None},
                 "TSS": {"method": "_TSS"},
-                "BOD5": {"method": "_BOD5"},
+                # "BOD5": {"method": "_BOD5"},
                 "TKN": {"method": "_TKN"},
                 "Total_N": {"method": "_Total_N"},
                 "COD": {"method": "_COD"},
@@ -192,7 +235,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
         )
 
 
-class ASM1PropertiesScaler(CustomScalerBase):
+class ASM3PropertiesScaler(CustomScalerBase):
     """
     Scaler for the Activated Sludge Model No.1 property package.
 
@@ -224,13 +267,13 @@ class ASM1PropertiesScaler(CustomScalerBase):
         pass
 
 
-class _ASM1StateBlock(StateBlock):
+class _ASM3StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    default_scaler = ASM1PropertiesScaler
+    default_scaler = ASM3PropertiesScaler
 
     def initialize(
         self,
@@ -324,10 +367,10 @@ class _ASM1StateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-@declare_process_block_class("ASM1StateBlock", block_class=_ASM1StateBlock)
-class ASM1StateBlockData(StateBlockData):
+@declare_process_block_class("ASM3StateBlock", block_class=_ASM3StateBlock)
+class ASM3StateBlockData(StateBlockData):
     """
-    StateBlock for calculating thermophysical properties associated with the ASM1
+    StateBlock for calculating thermophysical properties associated with the ASM3
     reaction system.
     """
 
@@ -377,11 +420,11 @@ class ASM1StateBlockData(StateBlockData):
             if j == "H2O":
                 return self.flow_vol * self.params.dens_mass
             elif j == "S_ALK":
-                # Convert moles of alkalinity to mass of C assuming all is HCO3-
+                # Convert moles of alkalinity to mass assuming all is HCO3-
                 return (
                     self.flow_vol
                     * self.alkalinity
-                    * (12 * pyo.units.kg / pyo.units.kmol)
+                    * (61 * pyo.units.kg / pyo.units.kmol)
                 )
             else:
                 return self.flow_vol * self.conc_mass_comp[j]
@@ -431,34 +474,12 @@ class ASM1StateBlockData(StateBlockData):
         )
 
         def _TSS(self):
-            tss = (
-                self.conc_mass_comp["X_S"]
-                + self.conc_mass_comp["X_I"]
-                + self.conc_mass_comp["X_BH"]
-                + self.conc_mass_comp["X_BA"]
-                + self.conc_mass_comp["X_P"]
-            )
-            return self.params.COD_to_SS * tss
+            tss = self.conc_mass_comp["X_TSS"]
+            return tss
 
         self.TSS = pyo.Expression(
             rule=_TSS,
             doc="Total suspended solids (TSS)",
-        )
-
-        def _BOD5(self, i):
-            bod5 = (
-                self.conc_mass_comp["S_S"]
-                + self.conc_mass_comp["X_S"]
-                + (1 - self.params.f_p)
-                * (self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
-            )
-            # TODO: 0.25 should be a parameter instead as it changes by influent/effluent
-            return self.params.BOD5_factor[i] * bod5
-
-        self.BOD5 = pyo.Expression(
-            ["raw", "effluent"],
-            rule=_BOD5,
-            doc="Five-day Biological Oxygen Demand (BOD5)",
         )
 
         def _COD(self):
@@ -467,9 +488,7 @@ class ASM1StateBlockData(StateBlockData):
                 + self.conc_mass_comp["S_I"]
                 + self.conc_mass_comp["X_S"]
                 + self.conc_mass_comp["X_I"]
-                + self.conc_mass_comp["X_BH"]
-                + self.conc_mass_comp["X_BA"]
-                + self.conc_mass_comp["X_P"]
+                + self.conc_mass_comp["X_STO"]
             )
             return cod
 
@@ -480,13 +499,13 @@ class ASM1StateBlockData(StateBlockData):
 
         def _TKN(self):
             tkn = (
-                self.conc_mass_comp["S_NH"]
-                + self.conc_mass_comp["S_ND"]
-                + self.conc_mass_comp["X_ND"]
-                + self.params.i_xb
-                * (self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
-                + self.params.i_xp
-                * (self.conc_mass_comp["X_P"] + self.conc_mass_comp["X_I"])
+                self.conc_mass_comp["S_NH4"]
+                + self.params.i_NSS * self.conc_mass_comp["S_S"]
+                + self.params.i_NSI * self.conc_mass_comp["S_I"]
+                + self.params.i_NXI * self.conc_mass_comp["X_I"]
+                + self.params.i_NXS * self.conc_mass_comp["X_S"]
+                + self.params.i_NBM
+                * (self.conc_mass_comp["X_H"] + self.conc_mass_comp["X_A"])
             )
             return tkn
 
@@ -496,7 +515,7 @@ class ASM1StateBlockData(StateBlockData):
         )
 
         def _Total_N(self):
-            totaln = self.TKN + self.conc_mass_comp["S_NO"]
+            totaln = self.TKN + self.conc_mass_comp["S_NOX"]
             return totaln
 
         self.Total_N = pyo.Expression(
@@ -533,10 +552,6 @@ class ASM1StateBlockData(StateBlockData):
 
     def define_display_vars(self):
         return {
-            "TSS": self.TSS,
-            "COD": self.COD,
-            "BOD5": self.BOD5,
-            "TKN": self.TKN,
             "Volumetric Flowrate": self.flow_vol,
             "Molar Alkalinity": self.alkalinity,
             "Mass Concentration": self.conc_mass_comp,
