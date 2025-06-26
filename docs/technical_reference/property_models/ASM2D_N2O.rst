@@ -218,17 +218,17 @@ Kinetic Parameters
    ":lime:`Maximum N2O production rate by ND pathway`", ":math:`q_{AOB, N2O, ND}`", "q_AOB,N2O,ND", 1.3008, ":math:`\text{kg AOB/}\text{kg PAO . day}`"
    ":lime:`Decay rate of AOB`", ":math:`b_{AOB}`", "b_AOB", 0.096, ":math:`\text{day}^{-1}`"
    ":lime:`Anoxic reduction factor for AOB decay`", ":math:`h_{AOB, NO3, end}`", "h_AOB,NO3,end", 0.33, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for oxygen (AMO reaction)`", ":math:`K_{AOB1, O2}`", "K_AOB1,O2", 1, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for NH4`", ":math:`K_{AOB, NH4}`", "K_AOB,NH4", 0.004, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for oxygen (AMO reaction)`", ":math:`K_{AOB2, O2}`", "K_AOB2,O2", 0.6, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for NH2OH`", ":math:`K_{AOB, NH2OH}`", "K_AOB,NH2OH", 0.3, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for phosphate`", ":math:`K_{AOB, P}`", "K_AOB,P", 0.01, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for NO (from HAO)`", ":math:`K_{AOB, HAO, NO}`", "K_AOB,HAO,NO", 0.0003, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for NO (from NirK)`", ":math:`K_{AOB, NN, NO}`", "K_AOB,NN,NO", 0.008, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for free nitrous acid`", ":math:`K_{AOB, HNO2}`", "K_AOB,HNO2", 0.0006, ":math:`\text{dimensionless}`"
-   ":lime:`AOB constant for O2 effect on the ND pathway`", ":math:`K_{AOB, ND, O2}`", "K_AOB,ND,O2", 0.5, ":math:`\text{dimensionless}`"
-   ":lime:`N2O constant for production inhibition by O2`", ":math:`K_{AOB, I, O2}`", "K_AOB,I,O2", 0.8, ":math:`\text{dimensionless}`"
-   ":lime:`AOB affinity constant for nitrate`", ":math:`K_{AOB, NO3}`", "K_AOB,NO3", 0.5, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for oxygen (AMO reaction)`", ":math:`KAOB1_{O2}`", "KAOB1_O2", 1, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for NH4`", ":math:`KAOB_{NH4}`", "KAOB_NH4", 0.004, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for oxygen (AMO reaction)`", ":math:`KAOB_{O2}`", "KAOB2_O2", 0.6, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for NH2OH`", ":math:`KAOB_{NH2OH}`", "KAOB_NH2OH", 0.3, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for phosphate`", ":math:`KAOB_{P}`", "KAOB_P", 0.01, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for NO (from HAO)`", ":math:`KAOB_{HAO, NO}`", "KAOB_HAO,NO", 0.0003, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for NO (from NirK)`", ":math:`KAOB_{NN, NO}`", "KAOB_NN,NO", 0.008, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for free nitrous acid`", ":math:`KAOB_{HNO2}`", "KAOB_HNO2", 0.0006, ":math:`\text{dimensionless}`"
+   ":lime:`AOB constant for O2 effect on the ND pathway`", ":math:`KAOB_{ND, O2}`", "KAOB_ND,O2", 0.5, ":math:`\text{dimensionless}`"
+   ":lime:`N2O constant for production inhibition by O2`", ":math:`KAOB_{I, O2}`", "KAOB_I,O2", 0.8, ":math:`\text{dimensionless}`"
+   ":lime:`AOB affinity constant for nitrate`", ":math:`KAOB_{NO3}`", "KAOB_NO3", 0.5, ":math:`\text{dimensionless}`"
    ":lime:`Maximum NOB growth rate`", ":math:`µ_{NOB}`", "mu_NOB", 0.61, ":math:`\text{day}^{-1}`"
    ":lime:`Decay rate of  NOB`", ":math:`b_{NOB}`", "b_NOB", 0.096, ":math:`\text{day}^{-1}`"
    ":lime:`Anoxic reduction factor for NOB decay`", ":math:`h_{NOB, NO3, end}`", "h_NOB,NO3,end", 0.33, ":math:`\text{dimensionless}`"
@@ -250,80 +250,68 @@ Process Rate Equations
 ----------------------
 Equations marked "(with decay)" indicate that the decay of heterotrophs and autotrophs is dependent on the electron acceptor present. Equations marked "(without decay)" indicate that the decay of heterotrophs and autotrophs does not change.
 
-:red:`Red` text indicates the equation has been removed in the Modified ASM2d model, and :blue:`blue` text indicates the equation has been modified from its base ASM2d implementation.
+:Note: Process rate equations found in asm2d_PSFe_GHG.c: https://app.box.com/file/1812340348414
+
+.. csv-table::
+   :header: "Description", "Expression"
+
+   "MonodX", ":math:`(\frac{X_{S}/X_{H}}{KL_{X}+X_{S}/X_{H}})`"
+   "MonodPHA", ":math:`(\frac{X_{PHA}/(X_{PAO}+1e-6)}{KP_{PHA}+X_{PHA}/(X_{PAO}+1e-6)})`"
+   "MonodIPP", ":math:`(\frac{K_{MAX} - X_{PP}/(X_{PAO}+1e-6)}{K_{IPP}+K_{MAX} - X_{PP}/(X_{PAO}+1e-6)})`"
+   "MonodPP", ":math:`(\frac{X_{PP}/(X_{PAO}+1e-6)}{KP_{PP}+X_{PP}/(X_{PAO}+1e-6)})`"
+   "MonodPO4", ":math:`(\frac{S_{PO4}}{KH_{PO4}+S_{PO4}})`"
+   "MonodNH4", ":math:`(\frac{S_{NH4}}{KH_{NH4}+S_{NH4}})`"
+   "MonodSPO4_P", ":math:`(\frac{S_{PO4}}{KP_{P}+S_{PO4}})`"
+   "MonodSNH4_P", ":math:`(\frac{S_{NH4}}{KP_{NH4}+S_{NH4}})`"
+   "fSO2", ":math:`(/frac{S_{O2}}{KAOB_{ND,O2}+(1-2(/frac{KAOB_{ND,O2}}{KAOB_{I_O2}})^(0.5)S_{O2})+(/frac{S_{O2}^{2}}{KAOB_{I,O2}})})`"
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Aerobic hydrolysis", ":math:`ρ_1 = K_{H}(\frac{S_{O2}}{KL_{O2}+S_{O2}})(\frac{X_{S}/X_{H}}{KL_{X}+X_{S}/X_{H}})X_{H}`"
-   "Anoxic hydrolysis", ":math:`ρ_2 = K_{H}η_{NO3}(\frac{KL_{O2}}{KL_{O2}+S_{O2}})(\frac{S_{NO3}}{KL_{NO3}+S_{NO3}})(\frac{X_{S}/X_{H}}{KL_{X}+X_{S}/X_{H}})X_{H}`"
-   "Anaerobic hydrolysis", ":math:`ρ_3 = K_{H}η_{fe}(\frac{KL_{O2}}{KL_{O2}+S_{O2}})(\frac{KL_{NO3}}{KL_{NO3}+S_{NO3}})(\frac{X_{S}/X_{H}}{KL_{X}+X_{S}/X_{H}})X_{H}`"
-   ":blue:`Growth on fermentable substrates, S_F`", ":math:`ρ_4 = µ_{H}(\frac{S_{O2}}{KH_{O2}+S_{O2}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NH4}}{KH_{NH4}+S_{NH4}})(\frac{S_{PO4}}{KH_{PO4}+S_{PO4}})X_{H}`"
-   ":blue:`Growth on fermentation products, S_A`", ":math:`ρ_5 = µ_{H}(\frac{S_{O2}}{KH_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NH4}}{KH_{NH4}+S_{NH4}})(\frac{S_{PO4}}{KH_{PO4}+S_{PO4}})X_{H}`"
-   ":blue:`Denitrification with fermentable substrates, S_F`", ":math:`ρ_6 = µ_{H}hH_{NO3}(\frac{KH_{O2}}{KH_{O2}+S_{O2}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NH4}}{KH_{NH4}+S_{NH4}})(\frac{S_{PO4}}{KH_{PO4}+S_{PO4}})X_{H}`"
-   ":blue:`Denitrification with fermentation products, S_A`", ":math:`ρ_7 = µ_{H}hH_{NO3}(\frac{KH_{O2}}{KH_{O2}+S_{O2}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})(\frac{S_{A}}{KH_{A}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NH4}}{KH_{NH4}+S_{NH4}})(\frac{S_{PO4}}{KH_{PO4}+S_{PO4}})X_{H}`"
-   ":blue:`Fermentation`", ":math:`ρ_8 = q_{fe}(\frac{KH_{O2}}{KH_{O2}+S_{O2}})(\frac{KH_{NO3}}{KH_{NO3}+S_{NO3}})(\frac{S_{F}}{K_{fe}+S_{F}})X_{H}`"
-   "Lysis (without decay)", ":math:`ρ_9 = b_{H}X_{H}`"
-   ":lime:`Lysis (with decay)`", ":math:`ρ_9 = b_{H}(\frac{S_{O2}}{KH_{O2}+S_{O2}})+hH_{NO3,end}(\frac{KH_{O2}}{KH_{O2}+S_{O2}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})X_{H}`"
-   ":blue:`Storage of X_PHA`", ":math:`ρ_{10} = q_{PHA}(\frac{S_{A}}{KP_{A}+S_{A}})(\frac{X_{PP}/X_{PAO}}{KP_{PP}+X_{PP}/X_{PAO}})X_{PAO}`"
-   ":blue:`Aerobic storage of X_PP`", ":math:`ρ_{11} = q_{PP}(\frac{S_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{PO4}}{KP_{P}+S_{PO4}})(\frac{X_{PHA}/X_{PAO}}{KP_{PHA}+X_{PHA}/X_{PAO}})(\frac{K_{MAX} - X_{PP}/X_{PAO}}{K_{IPP}+K_{MAX} - X_{PP}/X_{PAO}})X_{PAO}`"
-   ":blue:`Anoxic storage of X_PP`", ":math:`ρ_{12} = q_{PP}hP_{NO3}(\frac{KP_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{NO3}}{KP_{NO3}+S_{NO3}})(\frac{S_{PO4}}{KP_{P}+S_{PO4}})(\frac{X_{PHA}/X_{PAO}}{KP_{PHA}+X_{PHA}/X_{PAO}})(\frac{K_{MAX} - X_{PP}/X_{PAO}}{K_{IPP}+K_{MAX} - X_{PP}/X_{PAO}})X_{PAO}`"
-   ":blue:`Aerobic growth on X_PHA`", ":math:`ρ_{13} = µ_{PAO}(\frac{S_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{NH4}}{KP_{NH4}+S_{NH4}})(\frac{S_{PO4}}{KP_{PO4}+S_{PO4}})(\frac{X_{PHA}/X_{PAO}}{KP_{PHA}+X_{PHA}/X_{PAO}})X_{PAO}`"
-   ":blue:`Anoxic growth on X_PHA`", ":math:`ρ_{14} = µ_{PAO}hP_{NO3}(\frac{KP_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{NO3}}{KP_{NO3}+S_{NO3}})(\frac{S_{NH4}}{KP_{NH4}+S_{NH4}})(\frac{S_{PO4}}{KP_{PO4}+S_{PO4}})(\frac{X_{PHA}/X_{PAO}}{KP_{PHA}+X_{PHA}/X_{PAO}})X_{PAO}`"
-   ":blue:`Lysis of X_PAO (without decay)`", ":math:`ρ_{15} = b_{PAO}X_{PAO}`"
-   ":lime:`Lysis of X_PAO (with decay)`", ":math:`ρ_{15} = b_{PAO}(\frac{S_{O2}}{KP_{O2}+S_{O2}})+hP_{NO3,end}(\frac{KP_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{NO3}}{KP_{NO3}+S_{NO3}})X_{PAO}`"
-   ":blue:`Lysis of X_PP (without decay)`", ":math:`ρ_{16} = b_{PP}X_{PP}`"
-   ":lime:`Lysis of X_PP (with decay)`", ":math:`ρ_{16} = b_{PP}(\frac{S_{O2}}{KP_{O2}+S_{O2}})+hPP_{NO3,end}(\frac{KP_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{NO3}}{KP_{NO3}+S_{NO3}})X_{PP}`"
-   ":blue:`Lysis of X_PHA (without decay)`", ":math:`ρ_{17} = b_{PHA}X_{PHA}`"
-   ":lime:`Lysis of X_PHA (with decay)`", ":math:`ρ_{17} = b_{PHA}(\frac{S_{O2}}{KP_{O2}+S_{O2}})+hPHA_{NO3,end}(\frac{KP_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{NO3}}{KP_{NO3}+S_{NO3}})X_{PHA}`"
-   ":blue:`Aerobic growth of X_AUT`", ":math:`ρ_{18} = µ_{AUT}(\frac{S_{O2}}{KA_{O2}+S_{O2}})(\frac{S_{NH4}}{KA_{NH4}+S_{NH4}})(\frac{S_{PO4}}{KA_{PO4}+S_{PO4}})X_{AUT}`"
-   "Lysis of X_AUT (without decay)", ":math:`ρ_{19} = b_{AUT}X_{AUT}`"
-   ":lime:`Lysis of X_AUT (with decay)`", ":math:`ρ_{19} = b_{AUT}(\frac{S_{O2}}{KP_{O2}+S_{O2}})+hAUT_{NO3,end}(\frac{KP_{O2}}{KP_{O2}+S_{O2}})(\frac{S_{NO3}}{KP_{NO3}+S_{NO3}})X_{AUT}`"
-   ":red:`Precipitation of phosphorus with ferric hydroxide`", ":math:`ρ_{20} = k_{PRE}S_{PO4}X_{MeOH}`"
-   ":red:`Redissolution`", ":math:`ρ_{21} = k_{RED}X_{MeP}(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})`"
-
-Scaling
--------
-A thorough scaling routine for the ASM2D property package has yet to be implemented.
-
-Class Documentation
--------------------
-.. currentmodule:: watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties
-
-.. autoclass:: ModifiedASM2dParameterBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ModifiedASM2dParameterData
-    :members:
-    :noindex:
-
-.. autoclass:: _ModifiedASM2dStateBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ModifiedASM2dStateBlockData
-    :members:
-    :noindex:
-
-.. currentmodule:: watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions
-
-.. autoclass:: ModifiedASM2dReactionParameterBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ModifiedASM2dReactionParameterData
-    :members:
-    :noindex:
-
-.. autoclass:: _ModifiedASM2dReactionBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ModifiedASM2dReactionBlockData
-    :members:
-    :noindex:
-
+   "Process 1", ":math:`ρ_1 = K_{H}(\frac{S_{O2}}{KL_{O2}+S_{O2}})MonodX*X_{H}`"
+   "Process 2", ":math:`ρ_2 = K_{H}hl_{NO3}(\frac{KL_{O2}}{KL_{O2}+S_{O2}S_{NO3}/(KL_{NO3}+S_{NO3})})MonodX*X_{H}`"
+   "Process 3", ":math:`ρ_3 = K_{H}hl_{NO2}(\frac{KL_{O2}}{KL_{O2}+S_{O2}S_{NO2}/(KL_{NO3}+S_{NO2})})MonodX*X_{H}`"
+   "Process 4", ":math:`ρ_4 = K_{H}hl_{fe}(\frac{KL_{O2}}{KL_{O2}+S_{O2}})(/frac{KL_{NO3}}{KL_{NO3}+S_{NO3}+S_{NO2}})MonodX*X_{H}`"
+   "Process 5", ":math:`ρ_5 = µ_{H}(\frac{S_{O2}}{KH_{O2}+S_{O2}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 6", ":math:`ρ_6 = µ_{H}(\frac{S_{O2}}{KH_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 7", ":math:`ρ_7 = µ_{H}hH_{NO3}(\frac{KH2_{O2}}{KH2_{O2}+S_{O2}})(\frac{S_{F}}{K_{F2}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 8", ":math:`ρ_8 = µ_{H}hH_{NO2}(\frac{KH3_{O2}}{KH3_{O2}+S_{O2}})(\frac{S_{F}}{K_{F3}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NO2}}{KH_{NO2}+S_{NO2}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 9", ":math:`ρ_9 = µ_{H}hH_{NO}(\frac{KH4_{O2}}{KH4_{O2}+S_{O2}})(\frac{S_{F}}{K_{F4}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NO}}{KH_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 10", ":math:`ρ_10 = µ_{H}hH_{N2O}(\frac{KH5_{O2}}{KH5_{O2}+S_{O2}})(\frac{S_{F}}{K_{F5}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{N2O}}{KH_{N2O}+S_{N2O}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 11", ":math:`ρ_11 = µ_{H}hH_{NO3}(\frac{KH2_{O2}}{KH2_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A2}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 12", ":math:`ρ_12 = µ_{H}hH_{NO2}(\frac{KH3_{O2}}{KH3_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A3}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO2}}{KH_{NO2}+S_{NO2}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 13", ":math:`ρ_13 = µ_{H}hH_{NO}(\frac{KH4_{O2}}{KH4_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A4}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO}}{KH_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 14", ":math:`ρ_14 = µ_{H}hH_{N2O}(\frac{KH5_{O2}}{KH5_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A5}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{N2O}}{KH_{N2O}+S_{N2O}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 15", ":math:`ρ_15 = q_{fe}(\frac{KH_{O2}}{KH_{O2}+S_{O2}})(\frac{KH_{NO3}}{KH_{NO3}+S_{NO3}+S_{NO2}})(\frac{S_{F}}{K_{fe}+S_{F}})X_{H}`"
+   "Process 16 (with decay)", ":math:`ρ_16 = b_{H}((/frac{S_{O2}}{KH_{O2}+S_{O2}})+(/frac{hH_{NO3,end}KH_{O2}}{KH_{O2}+(/frac{S_{O2}S_{NO3}{KH_{NO3}+S_{NO3}})})*X_{H}`"
+   "Process 16 (without decay)", ":math:`ρ_16 = b_{H}X_{H}`"
+   "Process 17", ":math:`ρ_17 = q_{PHA}(/frac{S_{A}}{KP_{A}+S_{A}})MonodPP*X_{PAO}`"
+   "Process 18", ":math:`ρ_18 = q_{PP}(/frac{S_{O2}}{KP_{O2}+S_{O2}})MonodSPO4*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 19", ":math:`ρ_19 = q_{PP}*hP_{NO3}(/frac{KP2_{O2}}{KP2_{O2}+S_{O2}})(/frac{S_{NO3}}{KP_{NO3}+S_{NO3}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 20", ":math:`ρ_20 = q_{PP}*hP_{NO2}(/frac{KP3_{O2}}{KP3_{O2}+S_{O2}})(/frac{S_{NO2}}{KP_{NO2}+S_{NO2}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 21", ":math:`ρ_21 = q_{PP}*hP_{NO}(/frac{KP4_{O2}}{KP4_{O2}+S_{O2}})(/frac{S_{NO}}{KP_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 22", ":math:`ρ_22 = q_{PP}*hP_{N2O}(/frac{KP5_{O2}}{KP5_{O2}+S_{O2}})(/frac{S_{N2O}}{KP_{N2O}+S_{N2O}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 23", ":math:`ρ_23 = µ_{PAO}(/frac{S_{O2}}{KP_{O2}+S_{O2}})MonodSNH4_{P}(/frac{S_{PO4}}{KP_{PO4}+S_{PO4}})MonodPHA*X_{PAO}`"
+   "Process 24", ":math:`ρ_24 = µ_{PAO}*hP_{NO3}(/frac{KP2_{O2}}{KP2_{O2}+S_{O2}})(/frac{S_{NO3}}{KP_{NO3}+S_{NO3}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 25", ":math:`ρ_25 = µ_{PAO}*hP_{NO2}(/frac{KP3_{O2}}{KP3_{O2}+S_{O2}})(/frac{S_{NO2}}{KP_{NO2}+S_{NO2}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 26", ":math:`ρ_26 = µ_{PAO}*hP_{NO}(/frac{KP4_{O2}}{KP4_{O2}+S_{O2}})(/frac{S_{NO}}{KP_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 27", ":math:`ρ_27 = µ_{PAO}*hP_{N2O}(/frac{KP5_{O2}}{KP5_{O2}+S_{O2}})(/frac{S_{N2O}}{KP_{N2O}+S_{N2O}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 28 (with decay)", ":math:`ρ_28 = b_{PAO}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hP_{NO3,end}KP_{O2}}{KP_{O2}+(/frac{S_{O2}S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PAO}`"
+   "Process 28 (without decay)", ":math:`ρ_28 = b_{PAO}X_{PAO}`"
+   "Process 29 (with decay)", ":math:`ρ_29 = b_{PP}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hPP_{NO3,end}KP_{O2}}{KP_{O2}+(/frac{S_{O2}S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PP}`"
+   "Process 29 (without decay)", ":math:`ρ_29 = b_{PP}X_{Pp}`"
+   "Process 30 (with decay)", ":math:`ρ_30 = b_{PHA}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hPHA_{NO3,end}KP_{O2}}{KP_{O2}+(/frac{S_{O2}S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PHA}`"
+   "Process 30 (without decay)", ":math:`ρ_30 = b_{PHA}X_{PHA}`"
+   "Process 31", ":math:`ρ_31 = q_{AOB,AMO}(/frac{S_{O2}}{KAOB1_{O2}+S_{O2}})(/frac{S_{FA}}{KAOB_{NH4}+S_{FA}})*X_{AOB}`"
+   "Process 32", ":math:`ρ_32 = µ_{AOB,HAO}(/frac{S_{O2}}{KAOB2_{O2}+S_{O2}})(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{NH4}}{S_{NH4}+1e-12})(/frac{S_{PO4}}{KAOB_{P}+S_{PO4}})(/frac{X_{AOB}}{1+S_{IS}/K_I_IS_XAOB})`"
+   "Process 33", ":math:`ρ_33 = q_{AOB,HAO}(/frac{S_{O2}}{KAOB2_{O2}+S_{O2}})(/frac{S_{NO}}{KAOB_{HAO,NO}+S_{NO}})*X_{AOB}`"
+   "Process 34", ":math:`ρ_34 = q_{AOB,N2O,NN}(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{NO}}{KAOB_{NN,NO}+S_{NO}})*X_{AOB}`"
+   "Process 35", ":math:`ρ_35 = q_{AOB,N2O,ND}(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{FNA}}{KAOB_{NH2OH}+S_FNA})*fSO2*X_{AOB}`"
+   "Process 36", ":math:`ρ_36 = µ_{NOB}(/frac{S_{O2}}{KNOB_{O2}+S_{O2}})(/frac{S_{FNA}}{KNOB_{NO2}+S_FNA})*(/frac{S_{PO4}}{KNOB_{P}+S_{PO4}})(/frac{X_{NOB}}{1+S_{IS}/K_{I,IS,XNOB}})*X_{AOB}`"
+   "Process 37 (with decay)", ":math:`ρ_37 = b_{AOB}((/frac{S_{O2}}{KAOB1_{O2}+S_{O2}})+(/frac{hAOB_{NO3,end}KAOB1_{O2}}{KAOB1_{O2}+S_{O2}})(/frac{S_{NO3}}{KAOB_{NO3}+S_{NO3}})*X_{AOB}`"
+   "Process 37 (without decay)", ":math:`ρ_37 = b_{AOB}X_{AOB}`"
+   "Process 38 (with decay)", ":math:`ρ_38 = b_{NOB}((/frac{S_{O2}}{KNOB_{O2}+S_{O2}})+(/frac{hNOB_{NO3,end}KNOB_{O2}}{KNOB_{O2}+S_{O2}})(/frac{S_{NO3}}{KNOB_{NO3}+S_{NO3}})*X_{NOB}`"
+   "Process 38 (without decay)", ":math:`ρ_38 = b_{NOB}X_{NOB}`"
 
 References
 ----------
