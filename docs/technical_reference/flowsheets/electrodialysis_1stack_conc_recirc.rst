@@ -55,7 +55,7 @@ The electrodialysis 1D block is set up with the following configuration argument
  The product water salinity is set to 0.1 :math:`g L^{-1}`.
 
 Documentation for unit models from WaterTAP: 
-    * :ref:`NaCl Property Package <ED_1D>`
+    * :ref:`NaCl Property Package <nacl>`
     * :ref:`Pressure exchanger <pressure_exchanger>`
 Documentation for unit models from IDAES: 
     * `Feed block <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/feed.html>`_
