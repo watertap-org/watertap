@@ -43,11 +43,12 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
     Set,
-    Expr_if,
     value,
 )
 
 from idaes.core.util.exceptions import InitializationError
+
+from watertap.core.util.misc import smooth_heaviside
 
 __author__ = "Marcus Holly"
 
@@ -138,7 +139,6 @@ class TranslatorDataASM2dADM1(TranslatorData):
 
     CONFIG = TranslatorData.CONFIG()
 
-    # TODO: Change the default to False
     CONFIG.declare(
         "bio_P",
         ConfigValue(
@@ -266,6 +266,12 @@ see reaction package for documentation.}""",
             units=pyunits.kg / pyunits.m**3,
             mutable=True,
             doc="Smoothing factor",
+        )
+        self.heaviside_k = Param(
+            initialize=2e1,
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="Smooth heaviside k parameter",
         )
 
         @self.Constraint(
@@ -731,14 +737,16 @@ see reaction package for documentation.}""",
                     blk.eps_smooth,
                 )
 
-            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    blk.SF_AS3[t],
-                    blk.XN_org[t],
+                x = (
+                    (blk.XN_org[t] - blk.properties_in[t].conc_mass_comp["X_S"])
+                    * pyunits.m**3
+                    / pyunits.kg
                 )
+                return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
+                    x=x, k=self.heaviside_k
+                ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):
@@ -1179,14 +1187,16 @@ see reaction package for documentation.}""",
                     blk.eps_smooth,
                 )
 
-            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    blk.SF_AS3[t],
-                    blk.XN_org[t],
+                x = (
+                    (blk.XN_org[t] - blk.properties_in[t].conc_mass_comp["X_S"])
+                    * pyunits.m**3
+                    / pyunits.kg
                 )
+                return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
+                    x=x, k=self.heaviside_k
+                ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):

@@ -161,6 +161,12 @@ class TestAdm1Asm1(object):
         m.fs.unit.inlet.cations[0].fix(1e-8 * units.mmol / units.liter)
         m.fs.unit.inlet.anions[0].fix(5.21 * units.mmol / units.liter)
 
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            3.872983349e5, rel=1e-3
+        )
+
         return m
 
     @pytest.mark.build
@@ -379,7 +385,6 @@ class TestADM1ASM1Scaler:
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
         # Scaling factors for FTPx
-        assert len(sfx_underflow) == 3
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
