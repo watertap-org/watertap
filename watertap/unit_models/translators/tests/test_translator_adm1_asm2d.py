@@ -180,6 +180,12 @@ class TestAdm1Asm2d(object):
         m.fs.unit.inlet.cations[0].fix(0.04)
         m.fs.unit.inlet.anions[0].fix(0.02)
 
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            4.472136e5, rel=1e-3
+        )
+
         return m
 
     @pytest.mark.build
