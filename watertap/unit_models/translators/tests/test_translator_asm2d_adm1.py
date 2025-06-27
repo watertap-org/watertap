@@ -49,6 +49,12 @@ from idaes.core.scaling.scaling_base import ScalerBase
 
 import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.parameter_sweep import (
+    ParameterSweepSpecification,
+)
+from idaes.core.surrogate.pysmo.sampling import (
+    UniformSampling,
+)
 
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
