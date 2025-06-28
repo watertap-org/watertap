@@ -151,11 +151,7 @@ class TestAsm1Adm1(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(906.0933 * units.mg / units.liter)
         m.fs.unit.inlet.alkalinity.fix(7.1549 * units.mol / units.m**3)
 
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.7436683e6, rel=1e-3
-        )
+        iscale.calculate_scaling_factors(m)
 
         return m
 

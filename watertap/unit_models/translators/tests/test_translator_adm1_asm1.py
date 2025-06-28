@@ -14,7 +14,7 @@ Tests for Translator ADM1-ASM1 unit model.
 
 Verified against approximated results from:
 
-Nopens, I., Batstone, D, Copp, J, Jeppsson, U. Rosen, C., Volcke, E., Alex, J., 
+Nopens, I., Batstone, D, Copp, J, Jeppsson, U. Rosen, C., Volcke, E., Alex, J.,
 and Vanrolleghem, P.
 water Research Vol. 43 pp.1913–1923.
 """
