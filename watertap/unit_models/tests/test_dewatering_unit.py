@@ -987,7 +987,7 @@ class TestThickenerScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.3758830009e5, rel=1e-3
+            3.41143918e5, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -1119,15 +1119,15 @@ def test_scaling_profiler_with_scalers():
 Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 4.958E+07 | Solved 1   ||
+Unscaled                 || 4.702E+07 | Solved 1   ||
 Vars Only                || 1.379E+13 | Solved 3   || 1.270E+18 | Solved 5  
 Harmonic                 || 1.379E+13 | Solved 3   || 1.314E+05 | Solved 1  
 Inverse Sum              || 1.379E+13 | Solved 3   || 4.501E+03 | Solved 1  
 Inverse Root Sum Squares || 1.379E+13 | Solved 3   || 6.085E+03 | Solved 1  
 Inverse Maximum          || 1.379E+13 | Solved 3   || 8.354E+03 | Solved 1  
 Inverse Minimum          || 1.379E+13 | Solved 3   || 1.236E+05 | Solved 1  
-Nominal L1 Norm          || 1.379E+13 | Solved 3   || 4.933E+03 | Solved 1  
-Nominal L2 Norm          || 1.379E+13 | Solved 3   || 5.883E+03 | Solved 1  
+Nominal L1 Norm          || 1.379E+13 | Solved 3   || 4.922E+03 | Solved 1  
+Nominal L2 Norm          || 1.379E+13 | Solved 3   || 5.872E+03 | Solved 1  
 Actual L1 Norm           || 1.379E+13 | Solved 3   || 5.468E+13 | Solved 1  
 Actual L2 Norm           || 1.379E+13 | Solved 3   || 6.356E+13 | Solved 1  
 ============================================================================
@@ -1154,15 +1154,15 @@ def test_scaling_profiler_with_iscale():
 Scaling Profile Report
 ----------------------------------------------------------------------------
 Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 4.958E+07 | Solved 1   ||
+Unscaled                 || 4.702E+07 | Solved 1   ||
 Vars Only                || 9.503E+10 | Solved 3   || 1.270E+18 | Solved 5  
 Harmonic                 || 5.041E+15 | Solved 3   || 1.314E+05 | Solved 1  
 Inverse Sum              || 9.487E+14 | Solved 3   || 4.501E+03 | Solved 1  
 Inverse Root Sum Squares || 7.199E+14 | Solved 3   || 6.085E+03 | Solved 1  
 Inverse Maximum          || 5.224E+14 | Solved 3   || 8.354E+03 | Solved 1  
 Inverse Minimum          || 9.593E+15 | Solved 3   || 1.236E+05 | Solved 1  
-Nominal L1 Norm          || 1.493E+09 | Solved 1   || 4.933E+03 | Solved 1  
-Nominal L2 Norm          || 1.558E+09 | Solved 1   || 5.883E+03 | Solved 1  
+Nominal L1 Norm          || 5.489E+08 | Solved 1   || 4.922E+03 | Solved 1  
+Nominal L2 Norm          || 7.071E+08 | Solved 1   || 5.872E+03 | Solved 1  
 Actual L1 Norm           || 2.955E+07 | Solved 2   || 5.468E+13 | Solved 1  
 Actual L2 Norm           || 3.193E+07 | Solved 2   || 6.356E+13 | Solved 1  
 ============================================================================

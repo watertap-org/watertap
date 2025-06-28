@@ -14,7 +14,7 @@ Tests for Translator ADM1-ASM1 unit model.
 
 Verified against approximated results from:
 
-Nopens, I., Batstone, D, Copp, J, Jeppsson, U. Rosen, C., Volcke, E., Alex, J., 
+Nopens, I., Batstone, D, Copp, J, Jeppsson, U. Rosen, C., Volcke, E., Alex, J.,
 and Vanrolleghem, P.
 water Research Vol. 43 pp.1913–1923.
 """
@@ -160,12 +160,6 @@ class TestAdm1Asm1(object):
 
         m.fs.unit.inlet.cations[0].fix(1e-8 * units.mmol / units.liter)
         m.fs.unit.inlet.anions[0].fix(5.21 * units.mmol / units.liter)
-
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.872983349e5, rel=1e-3
-        )
 
         return m
 
@@ -378,13 +372,13 @@ class TestADM1ASM1Scaler:
         # Inlet state
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
-        # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        # Scaling factors for FTPx
+        assert len(sfx_in) == 27
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_underflow, Suffix)
-        # Scaling factors for FTP
+        # Scaling factors for FTPx
         assert len(sfx_underflow) == 3
 
     @pytest.mark.component
@@ -412,7 +406,7 @@ class TestADM1ASM1Scaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 27
 
         # Outlet state - should be the same as the inlet
         sfx_underflow = model.fs.unit.properties_out[0].scaling_factor

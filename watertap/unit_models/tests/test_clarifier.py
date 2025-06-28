@@ -123,13 +123,6 @@ def build():
 
     iscale.calculate_scaling_factors(m.fs.unit)
 
-    # Check condition number to confirm scaling
-    sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-    jac, _ = get_jacobian(sm, scaled=False)
-    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-        2.955746851e9, rel=1e-3
-    )
-
     return m
 
 
@@ -427,6 +420,92 @@ class TestClarifierScaler:
         assert isinstance(sfx_unit, Suffix)
         # Scaling factors for surface area, electricity consumption, and other unit model variables/constraints
         assert len(sfx_unit) == 49
+
+    @pytest.mark.integration
+    def test_example_case_iscale(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = ASM1ParameterBlock()
+
+        m.fs.unit = Clarifier(
+            property_package=m.fs.properties,
+            outlet_list=["underflow", "effluent"],
+            split_basis=SplittingType.componentFlow,
+        )
+
+        m.fs.unit.inlet.temperature.fix(298.15 * units.K)
+        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
+
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(27 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(58 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(92 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(363 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(50 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-3 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(1e-3 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-3 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-3 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(23 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(5 * units.g / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(16 * units.g / units.m**3)
+
+        # Alkalinity was given in mg/L based on C
+        m.fs.unit.inlet.alkalinity[0].fix(7 * units.mol / units.m**3)
+
+        # Unit option
+        m.fs.unit.split_fraction[0, "effluent", "H2O"].fix(0.993)
+        m.fs.unit.split_fraction[0, "effluent", "S_I"].fix(0.993)
+        m.fs.unit.split_fraction[0, "effluent", "S_S"].fix(0.993)
+        m.fs.unit.split_fraction[0, "effluent", "X_I"].fix(0.5192)
+        m.fs.unit.split_fraction[0, "effluent", "X_S"].fix(0.5192)
+        m.fs.unit.split_fraction[0, "effluent", "X_BH"].fix(0.5192)
+        m.fs.unit.split_fraction[0, "effluent", "X_BA"].fix(0.5192)
+        m.fs.unit.split_fraction[0, "effluent", "X_P"].fix(0.5192)
+        m.fs.unit.split_fraction[0, "effluent", "S_O"].fix(0.993)
+        m.fs.unit.split_fraction[0, "effluent", "S_NO"].fix(0.993)
+        m.fs.unit.split_fraction[0, "effluent", "S_NH"].fix(0.993)
+        m.fs.unit.split_fraction[0, "effluent", "S_ND"].fix(0.993)
+        m.fs.unit.split_fraction[0, "effluent", "X_ND"].fix(0.5192)
+        m.fs.unit.split_fraction[0, "effluent", "S_ALK"].fix(0.993)
+
+        # Set scaling factors for badly scaled variables
+        iscale.set_scaling_factor(m.fs.unit.underflow_state[0.0].pressure, 1e-5)
+        iscale.set_scaling_factor(
+            m.fs.unit.underflow_state[0.0].conc_mass_comp["X_BA"], 1e3
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.underflow_state[0.0].conc_mass_comp["X_P"], 1e3
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.underflow_state[0.0].conc_mass_comp["S_O"], 1e3
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.underflow_state[0.0].conc_mass_comp["S_NO"], 1e3
+        )
+        iscale.set_scaling_factor(m.fs.unit.effluent_state[0.0].pressure, 1e-5)
+        iscale.set_scaling_factor(
+            m.fs.unit.effluent_state[0.0].conc_mass_comp["X_BA"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.effluent_state[0.0].conc_mass_comp["X_P"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.effluent_state[0.0].conc_mass_comp["S_O"], 1e7
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.effluent_state[0.0].conc_mass_comp["S_NO"], 1e7
+        )
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            2.955746851e9, rel=1e-3
+        )
 
     @pytest.mark.integration
     def test_example_case_scaler(self):

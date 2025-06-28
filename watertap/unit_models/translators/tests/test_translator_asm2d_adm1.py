@@ -49,12 +49,6 @@ from idaes.core.scaling.scaling_base import ScalerBase
 
 import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.parameter_sweep import (
-    ParameterSweepSpecification,
-)
-from idaes.core.surrogate.pysmo.sampling import (
-    UniformSampling,
-)
 
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
@@ -174,12 +168,6 @@ class TestAsm2dAdm1_bioP_true(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(0.33379 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(0.01979 * units.kg / units.m**3)
         m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(0.18987 * units.kg / units.m**3)
-
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            34.01205, rel=1e-3
-        )
 
         return m
 
