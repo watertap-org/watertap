@@ -724,6 +724,10 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                             / (b.params.K_O2 + b.conc_mass_comp_ref["S_O"])
                         )
                         * (
+                            b.conc_mass_comp_ref["S_NOX"]
+                            / (b.params.K_NOX + b.conc_mass_comp_ref["S_NOX"])
+                        )
+                        * (
                             b.conc_mass_comp_ref["S_NH4"]
                             / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
                         )
