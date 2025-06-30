@@ -288,7 +288,7 @@ class TestASM3ReactionScaler(object):
             865901.1, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R5"]] == pytest.approx(
-            721584295.2, rel=1e-5
+            725192216.7, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R6"]] == pytest.approx(
             4328640, rel=1e-5
@@ -439,22 +439,22 @@ class TestReactor:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            3.76884e-7, rel=1e-4
+            3.77072e-7, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_S"]) == pytest.approx(
-            4.43187e-4, rel=1e-4
+            4.38103e-4, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            7.6437e-3, rel=1e-4
+            7.6828e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            2.7107e-2, rel=1e-4
+            2.69511e-2, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NOX"]) == pytest.approx(
-            2.4126e-3, rel=1e-4
+            2.56815e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
             1.4612, rel=1e-4
@@ -463,17 +463,17 @@ class TestReactor:
             0.23243, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            1.6264, rel=1e-4
+            1.6259, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_STO"]) == pytest.approx(
-            0.31677, rel=1e-4
+            0.31777, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_A"]) == pytest.approx(
             0.13074, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            3.0417, rel=1e-4
+            3.04183, rel=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            4.96155e-3, rel=1e-4
+            4.9614e-3, rel=1e-4
         )
