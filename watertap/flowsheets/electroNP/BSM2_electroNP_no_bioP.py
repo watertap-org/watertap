@@ -527,7 +527,7 @@ def set_operating_conditions(m):
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e0)
+                iscale.set_scaling_factor(var, 1e2)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
