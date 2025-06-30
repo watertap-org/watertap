@@ -347,7 +347,7 @@ def solve_flowsheet(m):
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
-    return m, results
+    return results
 
 
 if __name__ == "__main__":
@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
     scale_flowsheet(m)
 
-    m, res = solve_flowsheet(m)
+    res = solve_flowsheet(m)
 
     stream_table = create_stream_table_dataframe(
         {
