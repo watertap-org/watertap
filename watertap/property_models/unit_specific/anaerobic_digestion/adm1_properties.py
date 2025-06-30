@@ -261,8 +261,9 @@ class ADM1PropertiesScaler(CustomScalerBase):
     }
 
     DEFAULT_SCALING_FACTORS = {
-        "flow_vol": 1e5,
+        "flow_vol": 1e3,
         "temperature": 1e-1,
+        "conc_mass_comp": 1e2,
     }
 
     def variable_scaling_routine(
@@ -271,6 +272,8 @@ class ADM1PropertiesScaler(CustomScalerBase):
         self.scale_variable_by_default(model.temperature, overwrite=overwrite)
         self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
         self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for c in model.params.solute_set:
+            self.scale_variable_by_default(model.conc_mass_comp[c], overwrite=overwrite)
 
     # There are currently no constraints in this model
     def constraint_scaling_routine(

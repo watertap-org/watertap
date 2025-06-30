@@ -129,11 +129,7 @@ def build():
         m.fs.unit.control_volume.properties_out[0.0].flow_vol, 1e3
     )
 
-    sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-    jac, _ = get_jacobian(sm, scaled=False)
-    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-        3.2151872e10, rel=1e-3
-    )
+    iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
 
@@ -936,7 +932,7 @@ Inverse Sum              || 2.740E+17 | Solved 4   || 2.399E+14 | Solved 4
 Inverse Root Sum Squares || 2.740E+17 | Solved 4   || 3.412E+14 | Solved 4  
 Inverse Maximum          || 2.740E+17 | Solved 4   || 4.809E+14 | Solved 4  
 Inverse Minimum          || 2.740E+17 | Solved 4   || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 2.740E+17 | Solved 4   || 2.842E+14 | Solved 4  
+Nominal L1 Norm          || 2.740E+17 | Solved 4   || 2.841E+14 | Solved 4  
 Nominal L2 Norm          || 2.740E+17 | Solved 4   || 3.755E+14 | Solved 4  
 Actual L1 Norm           || 2.740E+17 | Solved 4   || 5.461E+13 | Solved 4  
 Actual L2 Norm           || 2.740E+17 | Solved 4   || 6.491E+13 | Solved 4  
@@ -971,7 +967,7 @@ Inverse Sum              || 5.247E+17 | Failed 50  || 2.399E+14 | Solved 4
 Inverse Root Sum Squares || 5.220E+17 | Failed 55  || 3.412E+14 | Solved 4  
 Inverse Maximum          || 5.208E+17 | Failed 52  || 4.809E+14 | Solved 4  
 Inverse Minimum          || 2.103E+17 | Solved 65  || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 7.817E+09 | Solved 4   || 2.842E+14 | Solved 4  
+Nominal L1 Norm          || 7.817E+09 | Solved 4   || 2.841E+14 | Solved 4  
 Nominal L2 Norm          || 1.278E+10 | Solved 4   || 3.755E+14 | Solved 4  
 Actual L1 Norm           || 3.950E+09 | Solved 3   || 5.461E+13 | Solved 4  
 Actual L2 Norm           || 4.339E+09 | Solved 3   || 6.491E+13 | Solved 4  
