@@ -143,6 +143,10 @@ def cost_ccro(blk, feed_pump=None, mp=None):
 
     for t in mp.TIME:
         if t == 0:
+            # change eps=1e-8
+            # for optimization, set as inequality constraint, 
+            # provide manual scaling factors, 
+            # define maximum pump work for each pump and set as the smooth_min factor
             max_rpw = smooth_max(0, recirc_pumps[t].work_mechanical[0])
             # max_fpw = smooth_max(0, feed_pumps[t].work_mechanical[0])
         else:
