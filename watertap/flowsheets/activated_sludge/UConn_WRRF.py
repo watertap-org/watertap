@@ -322,7 +322,7 @@ def initialize_flowsheet(m):
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.select_tear_method = "heuristic"
-    seq.options.tear_method = "Wegstein"
+    seq.options.tear_method = "Direct"
     seq.options.iterLim = 1
 
     G = seq.create_graph(m)

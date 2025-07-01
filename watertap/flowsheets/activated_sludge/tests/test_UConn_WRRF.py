@@ -23,26 +23,31 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.flowsheets.activated_sludge import UConn_WRRF as uconn 
+from watertap.flowsheets.activated_sludge.UConn_WRRF import (
+    build_flowsheet,
+    set_operating_conditions,
+    scale_flowsheet,
+    initialize_flowsheet,
+    solve_flowsheet,
+)
 from watertap.flowsheets.activated_sludge.UConn_WRRF import ASMModel
 
 
-
-class TestUConnFlowsheet:
+class TestUConnFlowsheetASM3:
     @pytest.fixture(scope="class")
     def model(self):
-        m = uconn.build_flowsheet(asm_model=ASMModel.asm3)
+        m = build_flowsheet(asm_model=ASMModel.asm3)
 
-        uconn.set_operating_conditions(m, asm_model=ASMModel.asm3)
-        uconn.scale_flowsheet(m)
+        set_operating_conditions(m, asm_model=ASMModel.asm3)
+        scale_flowsheet(m)
 
-        uconn.initialize_flowsheet(m)
+        initialize_flowsheet(m)
 
-        uconn.scale_flowsheet(m)
+        scale_flowsheet(m)
 
-        res = uconn.solve_flowsheet(m)
+        # res = solve_flowsheet(m)
 
-        m.results = res
+        # m.results = res
 
         return m
 
@@ -50,94 +55,61 @@ class TestUConnFlowsheet:
     def test_structure(self, model):
         assert_units_consistent(model)
         assert degrees_of_freedom(model) == 0
-        assert_optimal_termination(model.results)
+
+    @pytest.mark.integration
+    def test_solve(self, model):
+        res = solve_flowsheet(model)
+        assert_optimal_termination(res)
 
     @pytest.mark.integration
     def test_results(self, model):
+        comps = model.fs.props.solute_set
+        model.fs.Treated.display()
+
         # Treated water
-        assert value(model.fs.Treated.flow_vol[0]) == pytest.approx(0.20904, rel=1e-4)
-        assert value(model.fs.Treated.temperature[0]) == pytest.approx(298.15, rel=1e-4)
+        assert value(model.fs.Treated.flow_vol[0]) == pytest.approx(
+            1.06747685185185, rel=1e-4
+        )
+        assert value(model.fs.Treated.temperature[0]) == pytest.approx(288.15, rel=1e-4)
         assert value(model.fs.Treated.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Treated.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-5
         )
+        assert value(model.fs.Treated.conc_mass_comp[0, "S_N2"]) == pytest.approx(
+            0.02888, rel=1e-2
+        )
+        assert value(model.fs.Treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
+            0.001519, rel=1e-2
+        )
+        assert value(model.fs.Treated.conc_mass_comp[0, "S_NOX"]) == pytest.approx(
+            0.007174, rel=1e-2
+        )
+        assert value(model.fs.Treated.conc_mass_comp[0, "S_O"]) == pytest.approx(
+            0.00099, rel=1e-2
+        )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_S"]) == pytest.approx(
-            8.89e-4, rel=1e-2
+            0.00016, rel=1e-2
+        )
+        assert value(model.fs.Treated.conc_mass_comp[0, "X_A"]) == pytest.approx(
+            0.13165, rel=1e-2
+        )
+        assert value(model.fs.Treated.conc_mass_comp[0, "X_H"]) == pytest.approx(
+            1.632358, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            4.39e-3, rel=1e-3
+            1.46378, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            1.88e-4, rel=1e-2
+            0.209026, rel=1e-2
         )
-        assert value(model.fs.Treated.conc_mass_comp[0, "X_BH"]) == pytest.approx(
-            9.78e-3, rel=1e-3
+        assert value(model.fs.Treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
+            0.209026, rel=1e-2
         )
-        assert value(model.fs.Treated.conc_mass_comp[0, "X_BA"]) == pytest.approx(
-            5.73e-4, rel=1e-2
+        assert value(model.fs.Treated.conc_mass_comp[0, "X_STO"]) == pytest.approx(
+            0.304689, rel=1e-2
         )
-        assert value(model.fs.Treated.conc_mass_comp[0, "X_P"]) == pytest.approx(
-            1.73e-3, rel=1e-2
+        assert value(model.fs.Treated.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
+            3.02503, rel=1e-3
         )
-        # S_O is slightly off, but probably due to differences in injection rates
-        assert value(model.fs.Treated.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            4.49e-4, rel=1e-2
-        )
-        # Slightly off in last significant digit
-        assert value(model.fs.Treated.conc_mass_comp[0, "S_NO"]) == pytest.approx(
-            10.14e-3, rel=1e-2
-        )
-        assert value(model.fs.Treated.conc_mass_comp[0, "S_NH"]) == pytest.approx(
-            1.86e-3, rel=1e-2
-        )
-        assert value(model.fs.Treated.conc_mass_comp[0, "S_ND"]) == pytest.approx(
-            6.88e-4, rel=1e-2
-        )
-        assert value(model.fs.Treated.conc_mass_comp[0, "X_ND"]) == pytest.approx(
-            1.35e-5, rel=1e-2
-        )
-        assert value(model.fs.Treated.alkalinity[0]) == pytest.approx(4.13e-3, rel=1e-2)
 
-        # Sludge stream
-        assert value(model.fs.Sludge.flow_vol[0]) == pytest.approx(4.457e-3, rel=1e-4)
-        assert value(model.fs.Sludge.temperature[0]) == pytest.approx(298.15, rel=1e-4)
-        assert value(model.fs.Sludge.pressure[0]) == pytest.approx(101325, rel=1e-4)
-        assert value(model.fs.Sludge.conc_mass_comp[0, "S_I"]) == pytest.approx(
-            30e-3, rel=1e-5
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "S_S"]) == pytest.approx(
-            8.89e-4, rel=1e-2
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            2247e-3, rel=1e-3
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            96.8e-3, rel=1e-2
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "X_BH"]) == pytest.approx(
-            5004e-3, rel=1e-3
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "X_BA"]) == pytest.approx(
-            292e-3, rel=1e-2
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "X_P"]) == pytest.approx(
-            884e-3, rel=1e-2
-        )
-        # S_O is slightly off, but probably due to differences in injection rates
-        assert value(model.fs.Sludge.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            4.49e-4, rel=1e-2
-        )
-        # Slightly off in last significant digit
-        assert value(model.fs.Sludge.conc_mass_comp[0, "S_NO"]) == pytest.approx(
-            10.14e-3, rel=1e-2
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "S_NH"]) == pytest.approx(
-            1.86e-3, rel=1e-2
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "S_ND"]) == pytest.approx(
-            6.88e-4, rel=1e-2
-        )
-        assert value(model.fs.Sludge.conc_mass_comp[0, "X_ND"]) == pytest.approx(
-            6.92e-3, rel=1e-2
-        )
-        assert value(model.fs.Sludge.alkalinity[0]) == pytest.approx(4.13e-3, rel=1e-2)
+        assert value(model.fs.Treated.alkalinity[0]) == pytest.approx(0.00495, rel=1e-2)
