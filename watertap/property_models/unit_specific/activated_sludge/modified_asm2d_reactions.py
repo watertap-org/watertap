@@ -1056,6 +1056,7 @@ class ModifiedASM2dReactionBlockData(ReactionBlockDataBase):
         super().build()
 
         # Create references to state vars
+        # Concentration
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
 
     # Rate of reaction method

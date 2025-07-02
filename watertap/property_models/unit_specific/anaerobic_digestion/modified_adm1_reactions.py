@@ -2075,7 +2075,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                 + 55900
                 / pyo.units.mole
                 * pyo.units.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * ((1 / ref_temp) - (1 / self.temperature))
             )
 
@@ -2090,7 +2090,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                 + 7646
                 / pyo.units.mole
                 * pyo.units.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * ((1 / self.params.temperature_ref) - (1 / self.temperature))
             )
 
@@ -2105,7 +2105,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                 + 51965
                 / pyo.units.mole
                 * pyo.units.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * ((1 / self.params.temperature_ref) - (1 / self.temperature))
             )
 

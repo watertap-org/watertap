@@ -1609,7 +1609,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
 
         def rule_I_IN_lim(self):
             return 1 / (
-                1 + self.params.K_S_IN / ((self.conc_mass_comp_ref["S_IN"]) / mw_n)
+                1 + self.params.K_S_IN / (self.conc_mass_comp_ref["S_IN"] / mw_n)
             )
 
         self.I_IN_lim = pyo.Expression(
