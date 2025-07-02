@@ -9,335 +9,324 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+"""
+Tests for full Water Resource Recovery Facility with ASM2d and ADM1
+(WRRF; a.k.a., wastewater treatment plant) flowsheet example with ASM1 and ADM1.
+The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
+but comprises different specifications for default values than BSM2.
+"""
+
+# Some more information about this module
+__author__ = "Chenyu Wang"
+
+import pandas as pd
+import pyomo.environ as pyo
 import pytest
-from pyomo.environ import (
-    ConcreteModel,
-    Block,
-    Var,
-    Constraint,
-    Expression,
-    value,
-    Objective,
-    assert_optimal_termination,
-)
-from idaes.core import FlowsheetBlock
+import os
+
+from watertap.flowsheets.flex_desal import flowsheet as fs
+from watertap.flowsheets.flex_desal import utils
+from watertap.flowsheets.flex_desal.params import FlexDesalParams
+from watertap.flowsheets.flex_desal.price_taker_model import (
+    PriceTakerModel,
+)  # Use this until IDAES is updated
 from watertap.core.solvers import get_solver
-from idaes.models.unit_models import Feed, Product, Mixer, Separator
-from idaes.models.unit_models.heat_exchanger import HeatExchanger
-from idaes.models.unit_models.translator import Translator
-from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util.model_statistics import degrees_of_freedom, number_total_objectives
-
-from watertap.flowsheets.mvc.mvc_single_stage import (
-    build,
-    set_operating_conditions,
-    add_Q_ext,
-    initialize_system,
-    scale_costs,
-    fix_outlet_pressures,
-    solve,
-    set_up_optimization,
-    main,
-)
-
-import watertap.property_models.seawater_prop_pack as props_seawater
-import watertap.property_models.water_prop_pack as props_water
-from watertap.unit_models.pressure_changer import Pump
-from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
-
 
 solver = get_solver()
 
 
-class TestMVC:
+@pytest.mark.requires_idaes_solver
+class TestPriceTakerWorkflow:
     @pytest.fixture(scope="class")
-    def mvc_single_stage(self):
-        m = build()
-        add_Q_ext(m, time_point=m.fs.config.time)
-        return m
-
-    @pytest.mark.unit
-    def test_build_model(self, mvc_single_stage):
-        m = mvc_single_stage
-
-        # test model set up
-        assert isinstance(m, ConcreteModel)
-        assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties_feed, props_seawater.SeawaterParameterBlock)
-        assert isinstance(m.fs.properties_vapor, props_water.WaterParameterBlock)
-        assert isinstance(m.fs.costing, Block)
-
-        # test unit models
-        assert isinstance(m.fs.feed, Feed)
-        assert isinstance(m.fs.distillate, Product)
-        assert isinstance(m.fs.brine, Product)
-        assert isinstance(m.fs.pump_feed, Pump)
-        assert isinstance(m.fs.pump_distillate, Pump)
-        assert isinstance(m.fs.pump_brine, Pump)
-        assert isinstance(m.fs.separator_feed, Separator)
-        assert isinstance(m.fs.hx_distillate, HeatExchanger)
-        assert isinstance(m.fs.hx_brine, HeatExchanger)
-        assert isinstance(m.fs.mixer_feed, Mixer)
-        assert isinstance(m.fs.evaporator, Evaporator)
-        assert isinstance(m.fs.compressor, Compressor)
-        assert isinstance(m.fs.condenser, Condenser)
-        assert isinstance(m.fs.tb_distillate, Translator)
-
-        # unit model options
-        assert isinstance(m.fs.hx_distillate.cold.deltaP, Var)
-        assert isinstance(m.fs.hx_distillate.hot.deltaP, Var)
-        assert isinstance(m.fs.hx_brine.cold.deltaP, Var)
-        assert isinstance(m.fs.hx_brine.hot.deltaP, Var)
-
-        # additional constraints, variables, and expressions
-        assert isinstance(m.fs.recovery, Var)
-        assert isinstance(m.fs.recovery_equation, Constraint)
-        assert isinstance(m.fs.split_ratio_recovery_equality, Constraint)
-        assert isinstance(m.fs.Q_ext, Var)
-        assert isinstance(m.fs.costing.annual_water_production, Expression)
-        assert isinstance(m.fs.costing.specific_energy_consumption, Expression)
-
-        # costing blocks
-        for blk_str in ("evaporator", "compressor", "hx_distillate", "hx_brine"):
-            blk = getattr(m.fs, blk_str)
-            c_blk = getattr(blk, "costing")
-            assert isinstance(c_blk, Block)
-            assert isinstance(getattr(c_blk, "capital_cost"), Var)
-
-        var_str_list = [
-            "total_capital_cost",
-            "total_operating_cost",
+    def system_frame(self):
+        filepath = os.path.join("..", "sbce_pricesignal.csv")
+        price_data = pd.read_csv(filepath)
+        price_data["Energy Rate"] = (
+            price_data["electric_energy_0_2022-07-05_2022-07-14_0"]
+            + price_data["electric_energy_1_2022-07-05_2022-07-14_0"]
+            + price_data["electric_energy_2_2022-07-05_2022-07-14_0"]
+            + price_data["electric_energy_3_2022-07-05_2022-07-14_0"]
+        )
+        price_data["Fixed Demand Rate"] = price_data[
+            "electric_demand_maximum_2022-07-05_2022-07-14_0"
         ]
-        for var_str in var_str_list:
-            var = getattr(m.fs.costing, var_str)
-            assert isinstance(var, Var)
+        price_data["Var Demand Rate"] = price_data[
+            "electric_demand_peak-summer_2022-07-05_2022-07-14_0"
+        ]
+        price_data["Emissions Intensity"] = 0
+        price_data["Customer Cost"] = price_data[
+            "electric_customer_0_2022-07-05_2022-07-14_0"
+        ]
 
-        # arcs
-        arc_dict = {
-            m.fs.s01: (m.fs.feed.outlet, m.fs.pump_feed.inlet),
-            m.fs.s02: (m.fs.pump_feed.outlet, m.fs.separator_feed.inlet),
-            m.fs.s03: (
-                m.fs.separator_feed.hx_distillate_cold,
-                m.fs.hx_distillate.cold_inlet,
-            ),
-            m.fs.s04: (m.fs.separator_feed.hx_brine_cold, m.fs.hx_brine.cold_inlet),
-            m.fs.s05: (
-                m.fs.hx_distillate.cold_outlet,
-                m.fs.mixer_feed.hx_distillate_cold,
-            ),
-            m.fs.s06: (m.fs.hx_brine.cold_outlet, m.fs.mixer_feed.hx_brine_cold),
-            m.fs.s07: (m.fs.mixer_feed.outlet, m.fs.evaporator.inlet_feed),
-            m.fs.s08: (m.fs.evaporator.outlet_vapor, m.fs.compressor.inlet),
-            m.fs.s09: (m.fs.compressor.outlet, m.fs.condenser.inlet),
-            m.fs.s10: (m.fs.evaporator.outlet_brine, m.fs.pump_brine.inlet),
-            m.fs.s11: (m.fs.pump_brine.outlet, m.fs.hx_brine.hot_inlet),
-            m.fs.s12: (m.fs.hx_brine.hot_outlet, m.fs.brine.inlet),
-            m.fs.s13: (m.fs.condenser.outlet, m.fs.tb_distillate.inlet),
-            m.fs.s14: (m.fs.tb_distillate.outlet, m.fs.pump_distillate.inlet),
-            m.fs.s15: (m.fs.pump_distillate.outlet, m.fs.hx_distillate.hot_inlet),
-            m.fs.s16: (m.fs.hx_distillate.hot_outlet, m.fs.distillate.inlet),
-        }
-        for arc, port_tpl in arc_dict.items():
-            assert arc.source is port_tpl[0]
-            assert arc.destination is port_tpl[1]
+        m = PriceTakerModel()
 
-        # units
-        assert_units_consistent(m.fs)
-
-    @pytest.mark.component
-    def test_set_operating_conditions(self, mvc_single_stage):
-        m = mvc_single_stage
-        set_operating_conditions(m)
-
-        # check fixed variables
-        # feed
-        assert m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].is_fixed()
-        assert value(m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]) == 0.1
-        assert m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].is_fixed()
-        assert value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]) == 40
-        assert m.fs.feed.temperature[0].is_fixed()
-        assert value(m.fs.feed.temperature[0]) == 298.15
-        assert m.fs.feed.pressure[0].is_fixed()
-        assert value(m.fs.feed.pressure[0]) == 101325
-
-        # recovery
-        assert m.fs.recovery[0].is_fixed()
-        assert value(m.fs.recovery[0]) == 0.5
-
-        # pumps
-        assert m.fs.pump_feed.efficiency_pump[0].is_fixed()
-        assert value(m.fs.pump_feed.efficiency_pump[0]) == 0.8
-        assert m.fs.pump_feed.control_volume.deltaP[0].is_fixed()
-        assert value(m.fs.pump_feed.control_volume.deltaP[0]) == 7e3
-
-        assert m.fs.pump_distillate.efficiency_pump[0].is_fixed()
-        assert value(m.fs.pump_distillate.efficiency_pump[0]) == 0.8
-        assert m.fs.pump_distillate.control_volume.deltaP[0].is_fixed()
-        assert value(m.fs.pump_distillate.control_volume.deltaP[0]) == 4e4
-
-        assert m.fs.pump_brine.efficiency_pump[0].is_fixed()
-        assert value(m.fs.pump_brine.efficiency_pump[0]) == 0.8
-        assert m.fs.pump_brine.control_volume.deltaP[0].is_fixed()
-        assert value(m.fs.pump_brine.control_volume.deltaP[0]) == 4e4
-
-        # heat exchangers
-        assert m.fs.hx_distillate.overall_heat_transfer_coefficient[0].is_fixed()
-        assert value(m.fs.hx_distillate.overall_heat_transfer_coefficient[0]) == 2e3
-        assert m.fs.hx_distillate.area.is_fixed()
-        assert value(m.fs.hx_distillate.area) == 125
-        assert m.fs.hx_distillate.cold.deltaP[0].is_fixed()
-        assert value(m.fs.hx_distillate.cold.deltaP[0]) == 7e3
-        assert m.fs.hx_distillate.hot.deltaP[0].is_fixed()
-        assert value(m.fs.hx_distillate.hot.deltaP[0]) == 7e3
-
-        assert m.fs.hx_brine.overall_heat_transfer_coefficient[0].is_fixed()
-        assert value(m.fs.hx_brine.overall_heat_transfer_coefficient[0]) == 2e3
-        assert m.fs.hx_brine.area.is_fixed()
-        assert value(m.fs.hx_brine.area) == 115
-        assert m.fs.hx_brine.cold.deltaP[0].is_fixed()
-        assert value(m.fs.hx_brine.cold.deltaP[0]) == 7e3
-        assert m.fs.hx_brine.hot.deltaP[0].is_fixed()
-        assert value(m.fs.hx_brine.hot.deltaP[0]) == 7e3
-
-        # evaporator
-        assert m.fs.evaporator.outlet_brine.temperature[0].is_fixed()
-        assert value(m.fs.evaporator.outlet_brine.temperature[0]) == 343.15
-        assert m.fs.evaporator.U.is_fixed()
-        assert value(m.fs.evaporator.U) == 3e3
-
-        # compressor
-        assert m.fs.compressor.pressure_ratio.is_fixed()
-        assert value(m.fs.compressor.pressure_ratio) == 1.6
-        assert m.fs.compressor.efficiency.is_fixed()
-        assert value(m.fs.compressor.efficiency) == 0.8
-
-        # 0 TDS in distillate
-        assert (
-            m.fs.tb_distillate.properties_out[0]
-            .flow_mass_phase_comp["Liq", "TDS"]
-            .is_fixed()
+        m.params = FlexDesalParams(
+            start_date="2022-07-05 00:00:00",
+            end_date="2022-07-15 00:00:00",
+            annual_production_AF=3125,  # acrft/yr
         )
-        assert (
-            value(
-                m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"]
-            )
-            == 1e-5
+        m.params.intake.nominal_flowrate = 1063.5  # m3/hr
+        m.params.ro.update(
+            {
+                "startup_delay": 8,  # hours
+                "minimum_downtime": 4,  # hours
+                "nominal_flowrate": 337.670,  # m3/hr
+                "surrogate_type": "quadratic_surrogate",
+                "surrogate_a": 11.509,
+                "surrogate_b": -10.269,
+                "surrogate_c": 5.627,
+                "surrogate_d": 0,
+                "minimum_recovery": 0.4,
+                "nominal_recovery": 0.465,
+                "maximum_recovery": 0.52,
+                "allow_variable_recovery": True,
+            }
         )
 
-        # Costing
-        assert m.fs.costing.TIC.is_fixed()
-        assert value(m.fs.costing.TIC) == 2
-        assert m.fs.costing.heat_exchanger.material_factor_cost.is_fixed()
-        assert value(m.fs.costing.heat_exchanger.material_factor_cost) == 5
-        assert m.fs.costing.evaporator.material_factor_cost.is_fixed()
-        assert value(m.fs.costing.evaporator.material_factor_cost) == 5
-        assert m.fs.costing.compressor.unit_cost.is_fixed()
-        assert value(m.fs.costing.compressor.unit_cost) == 7364
+        # Append LMP data to the model
+        m.append_lmp_data(lmp_data=price_data["Energy Rate"])
 
-        # Temperature upper bounds
-        assert value(m.fs.evaporator.properties_vapor[0].temperature.ub) == 348.15
-        assert (
-            value(m.fs.compressor.control_volume.properties_out[0].temperature.ub)
-            == 450
+        m.build_multiperiod_model(
+            flowsheet_func=fs.build_desal_flowsheet,
+            flowsheet_options={"params": m.params},
         )
 
-        # check degrees of freedom
-        assert degrees_of_freedom(m) == 1
-
-    @pytest.mark.component
-    @pytest.mark.requires_idaes_solver
-    def test_initialize_system(self, mvc_single_stage):
-        m = mvc_single_stage
-
-        initialize_system(m)
-
-        # mass flows in evaporator
-        assert value(
-            m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
-        ) == pytest.approx(22.222, rel=1e-3)
-        assert value(
-            m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Liq", "H2O"]
-        ) == pytest.approx(1e-8, abs=1e-3)
-        assert value(
-            m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"]
-        ) == pytest.approx(17.777, rel=1e-3)
-        assert value(
-            m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"]
-        ) == pytest.approx(4.444, rel=1e-3)
-
-        # evaporator pressure
-        assert value(m.fs.evaporator.properties_vapor[0].pressure) == pytest.approx(
-            26.231e3, rel=1e-3
+        # Update the time-varying parameters other than the LMP, such as
+        # demand costs and emissions intensity. LMP value is updated by default
+        m.update_operation_params(
+            {
+                "fixed_demand_rate": price_data["Fixed Demand Rate"],
+                "variable_demand_rate": price_data["Var Demand Rate"],
+                "emissions_intensity": price_data["Emissions Intensity"],
+                "customer_cost": price_data["Customer Cost"],
+            }
         )
 
-        # compressor pressure outlet
-        assert value(m.fs.compressor.control_volume.properties_out[0].pressure) / value(
-            m.fs.compressor.control_volume.properties_in[0].pressure
-        ) == pytest.approx(1.6, rel=1e-3)
+        return m, price_data
 
-    @pytest.mark.component
-    @pytest.mark.requires_idaes_solver
-    def test_simulation_Q_ext(self, mvc_single_stage):
-        m = mvc_single_stage
-
-        scale_costs(m)
-        fix_outlet_pressures(m)
-
-        assert degrees_of_freedom(m) == 1
-
-        m.fs.objective = Objective(expr=m.fs.Q_ext[0])
-        results = solve(m, solver=solver, tee=False)
-        assert_optimal_termination(results)
-
-        # Check system metrics
-        assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            22.02, rel=1e-2
-        )
-        assert value(m.fs.costing.LCOW) == pytest.approx(23.47, rel=1e-2)
-
-        # Check mass balance
-        assert pytest.approx(
-            value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]), rel=1e-3
-        ) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]) + value(
-            m.fs.brine.inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        )
-        assert pytest.approx(
-            value(m.fs.feed.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]), rel=1e-3
-        ) == value(m.fs.distillate.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]) + value(
-            m.fs.brine.inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-        )
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_optimization(self, mvc_single_stage):
-        m = mvc_single_stage
-        m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
-        del m.fs.objective
-        set_up_optimization(m)
-        assert number_total_objectives(m) == 1
-        assert degrees_of_freedom(m) == 4
-        results = solve(m, solver=solver, tee=False)
-        assert_optimal_termination(results)
-        # Check decision variables
-        assert value(m.fs.evaporator.properties_brine[0].temperature) == pytest.approx(
-            348.15, rel=1e-2
-        )
-        assert value(m.fs.evaporator.properties_brine[0].pressure) == pytest.approx(
-            32448.24, rel=1e-2
-        )
-        assert value(m.fs.hx_brine.area) == pytest.approx(173.99, rel=1e-2)
-        assert value(m.fs.hx_distillate.area) == pytest.approx(206.31, rel=1e-2)
-        assert value(m.fs.compressor.pressure_ratio) == pytest.approx(1.61, rel=1e-2)
-        assert value(m.fs.evaporator.area) == pytest.approx(777.37, rel=1e-2)
-        assert value(m.fs.evaporator.lmtd) == pytest.approx(22.59, rel=1e-2)
-
-        # Check system metrics
-        assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            22.36, rel=1e-2
-        )
-        assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
-
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
-    def test_main_fun(self):
-        main()
+    def test_price_data_structure(self, system_frame):
+        m, price_data = system_frame
+
+        assert "Energy Rate" in price_data.columns
+        assert "Fixed Demand Rate" in price_data.columns
+        assert "Var Demand Rate" in price_data.columns
+        assert "Emissions Intensity" in price_data.columns
+        assert "Customer Cost" in price_data.columns
+        assert "electric_energy_0_2022-07-05_2022-07-14_0" in price_data.columns
+        assert "electric_energy_1_2022-07-05_2022-07-14_0" in price_data.columns
+        assert "electric_energy_2_2022-07-05_2022-07-14_0" in price_data.columns
+        assert "electric_energy_3_2022-07-05_2022-07-14_0" in price_data.columns
+        assert "electric_demand_maximum_2022-07-05_2022-07-14_0" in price_data.columns
+        assert (
+            "electric_demand_peak-summer_2022-07-05_2022-07-14_0" in price_data.columns
+        )
+        assert "electric_customer_0_2022-07-05_2022-07-14_0" in price_data.columns
+
+        assert hasattr(m.params.intake, "nominal_flowrate")
+        assert hasattr(m.params.ro, "startup_delay")
+        assert hasattr(m.params.ro, "minimum_downtime")
+        assert hasattr(m.params.ro, "nominal_flowrate")
+        assert hasattr(m.params.ro, "surrogate_type")
+        assert hasattr(m.params.ro, "surrogate_a")
+        assert hasattr(m.params.ro, "surrogate_b")
+        assert hasattr(m.params.ro, "surrogate_c")
+        assert hasattr(m.params.ro, "surrogate_d")
+        assert hasattr(m.params.ro, "minimum_recovery")
+        assert hasattr(m.params.ro, "nominal_recovery")
+        assert hasattr(m.params.ro, "maximum_recovery")
+        assert hasattr(m.params.ro, "allow_variable_recovery")
+
+    @pytest.mark.unit
+    def test_add_constraints(self, system_frame):
+        m, price_data = system_frame
+
+        # Add demand cost and fixed cost calculation constraints
+        fs.add_demand_and_fixed_costs(m)
+
+        assert isinstance(m.fixed_demand_cost, pyo.Var)
+        assert isinstance(m.variable_demand_cost, pyo.Var)
+        assert isinstance(m.fixed_monthly_cost, pyo.Var)
+        assert isinstance(m.calculate_fixed_demand_cost, pyo.Constraint)
+        assert isinstance(m.calculate_variable_demand_cost, pyo.Constraint)
+        assert isinstance(m.calculate_fixed_monthly_cost, pyo.Constraint)
+
+        # Add the startup delay constraints
+        fs.add_delayed_startup_constraints(m)
+        assert isinstance(m.posttreatment_unit_commitment, pyo.Constraint)
+        assert isinstance(m.brine_pump_unit_commitment, pyo.Constraint)
+
+    @pytest.mark.unit
+    def test_add_capacity_limits(self, system_frame):
+        m, price_data = system_frame
+
+        for skid in range(1, m.params.ro.num_ro_skids + 1):
+            m.add_capacity_limits(
+                op_block_name=f"reverse_osmosis.ro_skid[{skid}]",  # Name of the operation model block
+                commodity="feed_flowrate",
+                # Name of the commodity on the operation model that capacity constraints will be applied to (flow rate, power, etc.)
+                capacity=m.params.ro.nominal_flowrate,  # Maximum capacity on the commodity
+                op_range_lb=1,
+                # Ratio of the capacity at minimum stable operation to the maximum capacity. Must be between [0, 1]
+            )
+
+    @pytest.mark.unit
+    def test_constrain_water_production(self, system_frame):
+        m, price_data = system_frame
+
+        m.total_water_production = pyo.Expression(
+            expr=m.params.timestep_hours
+            * sum(m.period[:, :].posttreatment.product_flowrate)
+        )
+        m.total_energy_cost = pyo.Expression(expr=sum(m.period[:, :].energy_cost))
+        m.total_demand_cost = pyo.Expression(
+            expr=m.fixed_demand_cost + m.variable_demand_cost
+        )
+        m.total_customer_cost = pyo.Expression(
+            expr=sum(m.period[:, :].customer_cost) * m.params.num_months
+        )
+        m.total_electricity_cost = pyo.Expression(
+            expr=m.total_energy_cost + m.total_demand_cost + m.total_customer_cost
+        )
+
+        # Feed flow to the intake does not vary with time
+        m.fix_operation_var("intake.feed_flowrate", m.params.intake.nominal_flowrate)
+        # Pretreatment is either active (1) or inactive (0) for the entire run
+        m.fix_operation_var("pretreatment.op_mode", 1)
+
+        fs.constrain_water_production(m)
+
+        # If water recovery is static, it must be fixed
+        if not m.params.ro.allow_variable_recovery:
+            utils.fix_recovery(m, recovery=m.params.ro.nominal_recovery)
+
+    @pytest.mark.unit
+    def test_update_recovery_bounds(self, system_frame):
+        m, price_data = system_frame
+        utils.update_recovery_bounds(m, lb=0.4, ub=0.5)
+
+    @pytest.mark.unit
+    def test_get_baseline_model(self, system_frame):
+        m, price_data = system_frame
+        utils.get_baseline_model(m)
+
+    @pytest.mark.component
+    @pytest.mark.xfail
+    # This test will fail if the user does not have a Gurobi license
+    def test_gurobi_solve(self, system_frame):
+        m, price_data = system_frame
+
+        solver = pyo.SolverFactory("gurobi")
+        solver.options["MIPGap"] = 0.03
+        solver.solve(m)
+
+    @pytest.mark.component
+    @pytest.mark.xfail
+    # This test will fail if the user does not have a Gurobi license
+    def test_gurobi_util_solve(self, system_frame):
+        m, price_data = system_frame
+
+        solver = utils.get_gurobi_solver_model(m)
+        solver.solve(m)
+
+    # @pytest.mark.component
+    # def test_scip_solve(self, system_frame):
+    #     # Timed out after 2s
+    #     m, price_data = system_frame
+    #
+    #     solver = pyo.SolverFactory("scip")
+    #     solver.solve(m)
+
+    # @pytest.mark.component
+    # # Took 6 hours to solve locally
+    # def test_baron_solve(self, system_frame):
+    #     m, price_data = system_frame
+    #
+    #     solver = pyo.SolverFactory("gams")
+    #     solver.solve(
+    #         m, solver="baron", add_options=[f"options optcr={0.03};"]
+    #     )
+
+    # @pytest.mark.component
+    # # cplex unsuitable for model type (minlp)
+    # def test_cplex_solve(self, system_frame):
+    #     m, price_data = system_frame
+    #
+    #     solver = pyo.SolverFactory("gams")
+    #     solver.solve(
+    #         m, solver="cplex", add_options=[f"options optcr={0.03};"]
+    #     )
+
+    # @pytest.mark.component
+    # def test_results(self, system_frame):
+    #     m = system_frame
+    #
+    #     assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
+    #         0.24219, rel=1e-3
+    #     )
+    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
+    #         2.7392e-06, abs=1e-6
+    #     )
+    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
+    #         0.00026922, rel=1e-3
+    #     )
+    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
+    #         0.057450006, rel=1e-3
+    #     )
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
+    #     ) == pytest.approx(0.0516457, rel=1e-3)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
+    #     ) == pytest.approx(0.000209, rel=1e-3)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
+    #     ) == pytest.approx(0.00452157, rel=1e-3)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
+    #     ) == pytest.approx(0.0014803, rel=1e-3)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
+    #     ) == pytest.approx(0.755433, rel=1e-3)
+    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
+    #         0.3667916, rel=1e-3
+    #     )
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
+    #     ) == pytest.approx(0.0182828, rel=1e-3)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
+    #     ) == pytest.approx(0.1497356, rel=1e-3)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
+    #     ) == pytest.approx(0.0004246397, rel=1e-3)
+    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
+    #         0.01328946, rel=1e-3
+    #     )
+    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
+    #         0.0120139, rel=1e-3
+    #     )
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
+    #     ) == pytest.approx(0.01305288, rel=1e-3)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
+    #     ) == pytest.approx(7.7306e-06, abs=1e-6)
+    #     assert value(
+    #         m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
+    #     ) == pytest.approx(0.0043593, rel=1e-3)
+    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
+    #         0.00021958, rel=1e-3
+    #     )
+    #
+    #     # Check electricity consumption for each aerobic reactor
+    #     assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
+    #         48.0849, rel=1e-3
+    #     )
+    #     assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
+    #         48.0849, rel=1e-3
+    #     )
+    #     assert value(m.fs.R7.electricity_consumption[0]) == pytest.approx(
+    #         48.0849, rel=1e-3
+    #     )
+    #

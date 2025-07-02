@@ -24,8 +24,8 @@ from pyomo.environ import (
     Var,
     units as pyunits,
 )
-import params as um_params
-import unit_models as um
+from watertap.flowsheets.flex_desal import params as um_params
+from watertap.flowsheets.flex_desal import unit_models as um
 
 
 def add_operational_cost_expressions(blk, params: um_params.FlexDesalParams):

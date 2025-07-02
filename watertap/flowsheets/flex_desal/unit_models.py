@@ -25,7 +25,7 @@ from pyomo.environ import (
     exp,
     units as pyunits,
 )
-import params as um_params
+from watertap.flowsheets.flex_desal import params as um_params
 
 
 # NOTE: OperationModel class automatically adds startup, shutdown,
