@@ -2068,16 +2068,15 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def Dissociation_rule(self, t):
-            return pyo.log(
-                10**-self.pKW
-                == (
-                    pyo.log(1e-14)
-                    + 55900
-                    / pyo.units.mole
-                    * pyo.units.joule
-                    / Constants.gas_constant
-                    * ((1 / self.params.temperature_ref) - (1 / self.temperature))
-                )
+            ref_temp = self.params.temperature_ref + 1e-6 * pyo.units.K
+
+            return pyo.log(10**-self.pKW) == (
+                pyo.log(1e-14)
+                + 55900
+                / pyo.units.mole
+                * pyo.units.joule
+                / (Constants.gas_constant)
+                * ((1 / ref_temp) - (1 / self.temperature))
             )
 
         self.Dissociation = pyo.Constraint(
@@ -2091,7 +2090,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                 + 7646
                 / pyo.units.mole
                 * pyo.units.joule
-                / Constants.gas_constant
+                / (Constants.gas_constant)
                 * ((1 / self.params.temperature_ref) - (1 / self.temperature))
             )
 
@@ -2106,7 +2105,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
                 + 51965
                 / pyo.units.mole
                 * pyo.units.joule
-                / Constants.gas_constant
+                / (Constants.gas_constant)
                 * ((1 / self.params.temperature_ref) - (1 / self.temperature))
             )
 
@@ -2257,7 +2256,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         def rule_I_IN_lim(self):
             return 1 / (
-                1 + self.params.K_S_IN / ((self.conc_mass_comp_ref["S_IN"]) / mw_n)
+                1 + self.params.K_S_IN / (self.conc_mass_comp_ref["S_IN"] / mw_n)
             )
 
         self.I_IN_lim = pyo.Expression(
@@ -2267,7 +2266,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
 
         def rule_I_IP_lim(self):
             return 1 / (
-                1 + self.params.K_S_IP / ((self.conc_mass_comp_ref["S_IP"]) / mw_p)
+                1 + self.params.K_S_IP / (self.conc_mass_comp_ref["S_IP"] / mw_p)
             )
 
         self.I_IP_lim = pyo.Expression(
