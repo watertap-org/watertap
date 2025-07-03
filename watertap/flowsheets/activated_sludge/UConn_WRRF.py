@@ -222,11 +222,11 @@ def set_operating_conditions(m, asm_model=ASMModel.asm1):
             m.fs.R2.injection[:, :, j].fix(0)
             m.fs.R4.injection[:, :, j].fix(0)
 
-    m.fs.R2.KLa.fix(240)
-    m.fs.R4.KLa.fix(240)
+    m.fs.R2.KLa.fix(10 / pyo.units.hour)
+    m.fs.R4.KLa.fix(10 / pyo.units.hour)
 
-    # Set fraction of outflow from reactor 5 that goes to recycle
-    m.fs.S1.split_fraction[:, "M1_inlet"].fix(0.5)
+    # Set fraction of outflow from reactor 5 that recycles to M1 mixer
+    m.fs.S1.split_fraction[:, "M1_inlet"].fix(0.1)
 
     # Set fraction of outflow from reactor 5 that goes to effluent
     m.fs.S1.split_fraction[:, "effluent"].fix(0.4)
@@ -350,12 +350,49 @@ def solve_flowsheet(m):
     return results
 
 
+def reset_asm3_inlet_conditions(m, ini_dict):
+
+    for k in ini_dict.keys():
+        if k in m.fs.props.solute_set:
+            m.fs.feed.conc_mass_comp[0, k].fix(
+                ini_dict[k] * pyo.units.g / pyo.units.m**3
+            )
+        elif k == "alkalinity":
+            m.fs.feed.alkalinity[0].fix(ini_dict[k] * pyo.units.mol / pyo.units.m**3)
+        elif k == "temperature":
+            m.fs.feed.temperature[0].fix(ini_dict[k] + 273.15)
+
+        elif k == "flow_vol":
+            m.fs.feed.flow_vol[0].fix(ini_dict[k] * pyo.units.m**3 / pyo.units.day)
+        else:
+            raise
+
+
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge
     # flowsheet.
     # m, results = build_flowsheet()
     m = build_flowsheet(asm_model=ASMModel.asm3)
     set_operating_conditions(m, asm_model=ASMModel.asm3)
+    ini2 = {
+        "S_O": 2.00000074088136,
+        "S_I": 30,
+        "S_S": 1.99999995166373,
+        "S_NH4": 20.0000000011385,
+        "S_N2": 1.30283567480963e-18,
+        "S_NOX": 9.07971541001396e-10,
+        "alkalinity": 5.00000000001647,
+        "X_I": 100.000000001382,
+        "X_S": 39.9999999624405,
+        "X_H": 100.000000012367,
+        "X_STO": 40.0000000397251,
+        "X_A": 1.0000000001811,
+        "X_TSS": 200.000000007995,
+        "flow_vol": 36892,
+        "temperature": 14.8581001531874,
+    }
+
+    reset_asm3_inlet_conditions(m, ini2)
     scale_flowsheet(m)
 
     initialize_flowsheet(m)
@@ -383,3 +420,33 @@ if __name__ == "__main__":
     print(stream_table_dataframe_to_string(stream_table))
     m.fs.R2._get_performance_contents()
     m.fs.R4._get_performance_contents()
+
+    solution = {
+        "S_O": 6.07975,
+        "S_I": 30.0,
+        "S_S": 0.428786,
+        "S_NH4": 19.8235,
+        "S_N2": 0.0350126,
+        "S_NOX": 0.283642,
+        "alkalinity": 4.96736,
+        "X_I": 100.643,
+        "X_S": 31.7643,
+        "X_H": 103.536,
+        "X_STO": 39.5003,
+        "X_A": 1.08686,
+        "X_TSS": 197.27,
+    }
+
+    my_solution = {
+        k: pyo.value(m.fs.Treated.conc_mass_comp[0, k]) * 1e3
+        for k in solution.keys()
+        if k != "alkalinity"
+    }
+    import pandas as pd
+
+    df = pd.DataFrame({"watertap": my_solution, "julia": solution})
+    df.loc["alkalinity", "watertap"] = pyo.value(m.fs.Treated.alkalinity[0]) * 1e3
+    df["percent_difference"] = (df["watertap"] - df["julia"]) / df["julia"] * 100
+    df["percent_difference"] = df["percent_difference"].round(1)
+
+    df
