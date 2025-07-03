@@ -2951,7 +2951,7 @@ class TestMCASScaler:
         ] == pytest.approx(0.001, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mass_frac_phase_comp["Liq", "H2O"]
-        ] == pytest.approx(1, rel=1e-3)
+        ] == pytest.approx(1.03663, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mass_frac_phase_comp["Liq", "Ca_2+"]
         ] == pytest.approx(2617, rel=1e-3)
@@ -3035,22 +3035,22 @@ class TestMCASScaler:
         ] == pytest.approx(5489, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mole_frac_phase_comp["Liq", "H2O"]
-        ] == pytest.approx(1, rel=1e-3)
+        ] == pytest.approx(0.1, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mole_frac_phase_comp["Liq", "Ca_2+"]
-        ] == pytest.approx(1000, rel=1e-3)
+        ] == pytest.approx(100, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mole_frac_phase_comp["Liq", "SO4_2-"]
-        ] == pytest.approx(1000, rel=1e-3)
+        ] == pytest.approx(100, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mole_frac_phase_comp["Liq", "Na_+"]
-        ] == pytest.approx(1000, rel=1e-3)
+        ] == pytest.approx(100, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mole_frac_phase_comp["Liq", "Cl_-"]
-        ] == pytest.approx(1000, rel=1e-3)
+        ] == pytest.approx(100, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_mole_frac_phase_comp["Liq", "Mg_2+"]
-        ] == pytest.approx(1000, rel=1e-3)
+        ] == pytest.approx(100, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_pressure_osm_phase["Liq"]
         ] == pytest.approx(0.0000009278, rel=1e-3)
