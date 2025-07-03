@@ -1,6 +1,6 @@
-.. _ASM2d_N2O:
+.. _ASM2d_GHG:
 
-ASM2D-N2O Property Package
+ASM2D-GHG Property Package
 ===============================
 .. raw:: html
 
@@ -24,14 +24,13 @@ been added, and text in :blue:`blue` has been changed from the modified ASM2d im
 
 The following changes have been made to the modified ASM2d model as provided in [1]:
    * adds hydroxylamine (S_NH2OH), nitrous oxide (S_N2O), nitrogen monoxide (S_NO), and nitrite (S_NO2) as solutes
-   * splits X_AUT into X_AOB and X_NOB?
+   * replaces X_AUT with X_AOB and X_NOB
    * adds additional process rate equations for the new solutes
 
 
-This Modified Activated Sludge Model no.2D (ASM2D) property/reaction package:
+This Activated Sludge Model no.2D  (ASM2D-GHG) property/reaction package with greenhouse gas extensions:
    * supports 'H2O', 'S_O2', 'S_F', 'S_A', S_I, S_NH4, S_HN2OH, S_N2O, S_NO, S_NO2, S_NO3, S_N2, S_PO4, S_IC, X_I, X_S, X_H, X_PAO, X_PP, X_PHA, X_AOB, X_NOB, S_K, and S_Mg as components
    * supports only liquid phase
-   * supports liquid and vapor phases?
 
 
 Sets
@@ -39,7 +38,7 @@ Sets
 .. csv-table::
   :header: "Description", "Symbol", "Indices"
 
-  "Components", ":math:`j`", "['H2O', 'S_O2', 'S_F', 'S_A', S_I, S_NH4, S_HN2OH, S_N2O, S_NO, S_NO2, S_NO3, S_N2, S_PO4, S_IC, X_I, X_S, X_H, X_PAO, X_PP, X_PHA, X_AOB, X_NOB, S_K, S_Mg]"
+  "Components", ":math:`j`", "['H2O', 'S_O2', 'S_F', 'S_A', S_I, S_NH4, S_NH2OH, S_N2O, S_NO, S_NO2, S_NO3, S_N2, S_PO4, S_IC, X_I, X_S, X_H, X_PAO, X_PP, X_PHA, X_AOB, X_NOB, S_K, S_Mg]"
   "Phases", ":math:`p`", "['Liq']"
 
 Components
