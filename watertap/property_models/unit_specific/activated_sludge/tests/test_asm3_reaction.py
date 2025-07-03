@@ -58,7 +58,7 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_config(self, model):
-        assert len(model.rparams.config) == 2
+        assert len(model.rparams.config) == 3
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -477,3 +477,76 @@ class TestReactor:
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             4.9614e-3, rel=1e-4
         )
+
+
+class TestReactor10C:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ASM3ParameterBlock()
+        m.fs.rxn_props = ASM3ReactionParameterBlock(
+            property_package=m.fs.props, reference_temperature="10C"
+        )
+
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+
+        m.fs.R1.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
+        m.fs.R1.inlet.temperature.fix(288.15 * units.K)
+        m.fs.R1.inlet.pressure.fix(1 * units.atm)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_O"].fix(
+            0.0333140769653528 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_S"].fix(
+            1.79253833233150 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NH4"].fix(
+            7.47840572528914 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(
+            25.0222401125193 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NOX"].fix(
+            4.49343937121928 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.alkalinity.fix(4.95892616814772 * units.mol / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(
+            1460.88032984731 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(
+            239.049918909639 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(
+            1624.51533042293 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_STO"].fix(
+            316.937373308996 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_A"].fix(
+            130.798830163795 * units.g / units.m**3
+        )
+        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(
+            3044.89285508125 * units.g / units.m**3
+        )
+
+        m.fs.R1.volume.fix(1000 * units.m**3)
+        return m
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.unit
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, model):
+        model.fs.R1.initialize()
+
+        solver = get_solver()
+        results = solver.solve(model, tee=True)
+        assert check_optimal_termination(results)
