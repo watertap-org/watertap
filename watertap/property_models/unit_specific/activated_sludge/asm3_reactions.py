@@ -23,6 +23,8 @@ J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
+
+# from pyomo.environ import exp, log
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -655,36 +657,168 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
 
+        theta_T_k_H = pyo.log(self.params.k_H["10C"] / self.params.k_H["20C"]) / (
+            10 - 20
+        )
+        theta_T_k_STO = pyo.log(self.params.k_STO["10C"] / self.params.k_STO["20C"]) / (
+            10 - 20
+        )
+        theta_T_mu_H = pyo.log(self.params.mu_H["10C"] / self.params.mu_H["20C"]) / (
+            10 - 20
+        )
+        theta_T_b_H_O2 = pyo.log(
+            self.params.b_H_O2["10C"] / self.params.b_H_O2["20C"]
+        ) / (10 - 20)
+        theta_T_b_H_NOX = pyo.log(
+            self.params.b_H_NOX["10C"] / self.params.b_H_NOX["20C"]
+        ) / (10 - 20)
+        theta_T_b_STO_O2 = pyo.log(
+            self.params.b_STO_O2["10C"] / self.params.b_STO_O2["20C"]
+        ) / (10 - 20)
+        theta_T_b_STO_NOX = pyo.log(
+            self.params.b_STO_NOX["10C"] / self.params.b_STO_NOX["20C"]
+        ) / (10 - 20)
+        theta_T_mu_A = pyo.log(self.params.mu_A["10C"] / self.params.mu_A["20C"]) / (
+            10 - 20
+        )
+        theta_T_b_A_O2 = pyo.log(
+            self.params.b_A_O2["10C"] / self.params.b_A_O2["20C"]
+        ) / (10 - 20)
+        theta_T_b_A_NOX = pyo.log(
+            self.params.b_A_NOX["10C"] / self.params.b_A_NOX["20C"]
+        ) / (10 - 20)
+
+        k_H = self.params.k_H["20C"] * pyo.exp(
+            theta_T_k_H
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        k_STO = self.params.k_STO["20C"] * pyo.exp(
+            theta_T_k_STO
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        mu_H = self.params.mu_H["20C"] * pyo.exp(
+            theta_T_mu_H
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        b_H_O2 = self.params.b_H_O2["20C"] * pyo.exp(
+            theta_T_b_H_O2
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        b_H_NOX = self.params.b_H_NOX["20C"] * pyo.exp(
+            theta_T_b_H_NOX
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        b_STO_O2 = self.params.b_STO_O2["20C"] * pyo.exp(
+            theta_T_b_STO_O2
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        b_STO_NOX = self.params.b_STO_NOX["20C"] * pyo.exp(
+            theta_T_b_STO_NOX
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        mu_A = self.params.mu_A["20C"] * pyo.exp(
+            theta_T_mu_A
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        b_A_O2 = self.params.b_A_O2["20C"] * pyo.exp(
+            theta_T_b_A_O2
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+        b_A_NOX = self.params.b_A_NOX["20C"] * pyo.exp(
+            theta_T_b_A_NOX
+            * (
+                pyo.units.convert(
+                    self.state_ref.temperature / pyo.units.K,
+                    to_units=pyo.units.dimensionless,
+                )
+                - (20 + 273.15)
+            )
+        )
+
+        # if self.params.config.reference_temperature == "20C":
+        #     k_H = self.params.k_H["20C"]
+        #     k_STO = self.params.k_STO["20C"]
+        #     mu_H = self.params.mu_H["20C"]
+        #     b_H_O2 = self.params.b_H_O2["20C"]
+        #     b_H_NOX = self.params.b_H_NOX["20C"]
+        #     b_STO_O2 = self.params.b_STO_O2["20C"]
+        #     b_STO_NOX = self.params.b_STO_NOX["20C"]
+        #     mu_A = self.params.mu_A["20C"]
+        #     b_A_O2 = self.params.b_A_O2["20C"]
+        #     b_A_NOX = self.params.b_A_NOX["20C"]
+        # elif self.params.config.reference_temperature == "10C":
+        #     k_H = self.params.k_H["10C"]
+        #     k_STO = self.params.k_STO["10C"]
+        #     mu_H = self.params.mu_H["10C"]
+        #     b_H_O2 = self.params.b_H_O2["10C"]
+        #     b_H_NOX = self.params.b_H_NOX["10C"]
+        #     b_STO_O2 = self.params.b_STO_O2["10C"]
+        #     b_STO_NOX = self.params.b_STO_NOX["10C"]
+        #     mu_A = self.params.mu_A["10C"]
+        #     b_A_O2 = self.params.b_A_O2["10C"]
+        #     b_A_NOX = self.params.b_A_NOX["10C"]
+        # else:
+        #     raise ConfigurationError(
+        #         "Reference temperature only supports '10C' and '20C'"
+        #     )
+
         try:
 
             def rate_expression_rule(b, r):
-                if self.params.config.reference_temperature == "20C":
-                    k_H = b.params.k_H["20C"]
-                    k_STO = b.params.k_STO["20C"]
-                    mu_H = b.params.mu_H["20C"]
-                    b_H_O2 = b.params.b_H_O2["20C"]
-                    b_H_NOX = b.params.b_H_NOX["20C"]
-                    b_STO_O2 = b.params.b_STO_O2["20C"]
-                    b_STO_NOX = b.params.b_STO_NOX["20C"]
-                    mu_A = b.params.mu_A["20C"]
-                    b_A_O2 = b.params.b_A_O2["20C"]
-                    b_A_NOX = b.params.b_A_NOX["20C"]
-                elif self.params.config.reference_temperature == "10C":
-                    k_H = b.params.k_H["10C"]
-                    k_STO = b.params.k_STO["10C"]
-                    mu_H = b.params.mu_H["10C"]
-                    b_H_O2 = b.params.b_H_O2["10C"]
-                    b_H_NOX = b.params.b_H_NOX["10C"]
-                    b_STO_O2 = b.params.b_STO_O2["10C"]
-                    b_STO_NOX = b.params.b_STO_NOX["10C"]
-                    mu_A = b.params.mu_A["10C"]
-                    b_A_O2 = b.params.b_A_O2["10C"]
-                    b_A_NOX = b.params.b_A_NOX["10C"]
-                else:
-                    raise ConfigurationError(
-                        "Reference temperature only supports '10C' and '20C'"
-                    )
-
                 if r == "R1":
                     # R1: Hydrolysis
                     return b.reaction_rate[r] == pyo.units.convert(
