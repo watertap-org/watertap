@@ -24,9 +24,6 @@ J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 # Import Pyomo libraries
 import pyomo.environ as pyo
 
-# from pyomo.environ import exp, log
-from pyomo.common.config import ConfigValue, In
-
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
@@ -36,13 +33,12 @@ from idaes.core import (
     ReactionBlockBase,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 # Some more information about this module
 __author__ = "Chenyu Wang, Adam Atia"
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -53,22 +49,6 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
     """
     Reaction Parameter Block Class
     """
-
-    CONFIG = ReactionParameterBlock.CONFIG()
-
-    CONFIG.declare(
-        "reference_temperature",
-        ConfigValue(
-            default="20C",
-            domain=In(["10C", "20C"]),
-            description="Reference temperature for kinetic parameters",
-            doc="""Indicates reference temperature for kinetic parameters
-        **default** - "20C".
-        **Valid values:** {
-        **"10C"** - 10 Celsius degree,
-        **"20C"** - 20 Celsius degree}""",
-        ),
-    )
 
     def build(self):
         """
@@ -788,33 +768,6 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                 - (20 + 273.15)
             )
         )
-
-        # if self.params.config.reference_temperature == "20C":
-        #     k_H = self.params.k_H["20C"]
-        #     k_STO = self.params.k_STO["20C"]
-        #     mu_H = self.params.mu_H["20C"]
-        #     b_H_O2 = self.params.b_H_O2["20C"]
-        #     b_H_NOX = self.params.b_H_NOX["20C"]
-        #     b_STO_O2 = self.params.b_STO_O2["20C"]
-        #     b_STO_NOX = self.params.b_STO_NOX["20C"]
-        #     mu_A = self.params.mu_A["20C"]
-        #     b_A_O2 = self.params.b_A_O2["20C"]
-        #     b_A_NOX = self.params.b_A_NOX["20C"]
-        # elif self.params.config.reference_temperature == "10C":
-        #     k_H = self.params.k_H["10C"]
-        #     k_STO = self.params.k_STO["10C"]
-        #     mu_H = self.params.mu_H["10C"]
-        #     b_H_O2 = self.params.b_H_O2["10C"]
-        #     b_H_NOX = self.params.b_H_NOX["10C"]
-        #     b_STO_O2 = self.params.b_STO_O2["10C"]
-        #     b_STO_NOX = self.params.b_STO_NOX["10C"]
-        #     mu_A = self.params.mu_A["10C"]
-        #     b_A_O2 = self.params.b_A_O2["10C"]
-        #     b_A_NOX = self.params.b_A_NOX["10C"]
-        # else:
-        #     raise ConfigurationError(
-        #         "Reference temperature only supports '10C' and '20C'"
-        #     )
 
         try:
 

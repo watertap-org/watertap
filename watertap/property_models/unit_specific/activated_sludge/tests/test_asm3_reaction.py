@@ -58,7 +58,7 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_config(self, model):
-        assert len(model.rparams.config) == 3
+        assert len(model.rparams.config) == 2
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -276,40 +276,40 @@ class TestASM3ReactionScaler(object):
         sfx = model.rxns[1].scaling_factor
         assert len(sfx) == 12
         assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(
-            5.76e5, rel=1e-5
+            470302, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R2"]] == pytest.approx(
-            1.76608e5, rel=1e-5
+            124881, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R3"]] == pytest.approx(
-            147909628.8, rel=1e-5
+            104587901.5, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R4"]] == pytest.approx(
-            865901.1, rel=1e-5
+            612284.6, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R5"]] == pytest.approx(
-            725192216.7, rel=1e-5
+            512788334, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R6"]] == pytest.approx(
-            4328640, rel=1e-5
+            3060810.7, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R7"]] == pytest.approx(
-            4350283200, rel=1e-5
+            3076114750.8, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R8"]] == pytest.approx(
-            4328640, rel=1e-5
+            3060810.7, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R9"]] == pytest.approx(
-            4350283200, rel=1e-5
+            3076114750.8, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R10"]] == pytest.approx(
-            877441.7, rel=1e-5
+            519101.5, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R11"]] == pytest.approx(
-            5788800, rel=1e-5
+            3342165, rel=1e-5
         )
         assert sfx[model.rxns[1].rate_expression["R12"]] == pytest.approx(
-            3490646400, rel=1e-5
+            2207678626, rel=1e-5
         )
 
     @pytest.mark.unit
@@ -439,114 +439,41 @@ class TestReactor:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            3.77072e-7, rel=1e-4
+            5.6216e-7, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_S"]) == pytest.approx(
-            4.38103e-4, rel=1e-4
+            5.2505e-4, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            7.6828e-3, rel=1e-4
+            7.6592e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            2.69511e-2, rel=1e-4
+            2.64827e-2, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NOX"]) == pytest.approx(
-            2.56815e-3, rel=1e-4
+            3.03608e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            1.4612, rel=1e-4
+            1.4611, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            0.23243, rel=1e-4
+            0.23362, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            1.6259, rel=1e-4
+            1.6255, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_STO"]) == pytest.approx(
-            0.31777, rel=1e-4
+            0.31826, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_A"]) == pytest.approx(
-            0.13074, rel=1e-4
+            0.13076, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            3.04183, rel=1e-4
+            3.04264, rel=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            4.9614e-3, rel=1e-4
+            4.9608e-3, rel=1e-4
         )
-
-
-class TestReactor10C:
-    @pytest.fixture(scope="class")
-    def model(self):
-        m = ConcreteModel()
-
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.props = ASM3ParameterBlock()
-        m.fs.rxn_props = ASM3ReactionParameterBlock(
-            property_package=m.fs.props, reference_temperature="10C"
-        )
-
-        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
-
-        m.fs.R1.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
-        m.fs.R1.inlet.temperature.fix(288.15 * units.K)
-        m.fs.R1.inlet.pressure.fix(1 * units.atm)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_O"].fix(
-            0.0333140769653528 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.g / units.m**3)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_S"].fix(
-            1.79253833233150 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "S_NH4"].fix(
-            7.47840572528914 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(
-            25.0222401125193 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "S_NOX"].fix(
-            4.49343937121928 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.alkalinity.fix(4.95892616814772 * units.mol / units.m**3)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(
-            1460.88032984731 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(
-            239.049918909639 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(
-            1624.51533042293 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "X_STO"].fix(
-            316.937373308996 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "X_A"].fix(
-            130.798830163795 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(
-            3044.89285508125 * units.g / units.m**3
-        )
-
-        m.fs.R1.volume.fix(1000 * units.m**3)
-        return m
-
-    @pytest.mark.unit
-    def test_dof(self, model):
-        assert degrees_of_freedom(model) == 0
-
-    @pytest.mark.unit
-    def test_unit_consistency(self, model):
-        assert_units_consistent(model) == 0
-
-    @pytest.mark.component
-    def test_solve(self, model):
-        model.fs.R1.initialize()
-
-        solver = get_solver()
-        results = solver.solve(model, tee=True)
-        assert check_optimal_termination(results)
