@@ -481,7 +481,7 @@ class _ModifiedASM2dStateBlock(StateBlock):
 )
 class ModifiedASM2dStateBlockData(StateBlockData):
     """
-    StateBlock for calculating thermophysical properties associated with the ASM2d
+    StateBlock for calculating thermophysical proeprties associated with the ASM2d
     reaction system.
     """
 
