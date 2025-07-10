@@ -292,6 +292,21 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             doc="Anoxic endogenous respiration rate of X_A (day^-1)",
         )
 
+        # Reference temperature parameters
+        self.ref_temp_1 = pyo.Param(
+            domain=pyo.Reals,
+            initialize=10,
+            units=pyo.units.dimensionless,
+            doc="Dimensionless reference temperature (10 Celsius degree) for kinetic parameters",
+        )
+
+        self.ref_temp_2 = pyo.Param(
+            domain=pyo.Reals,
+            initialize=20,
+            units=pyo.units.dimensionless,
+            doc="Dimensionless reference temperature (20 Celsius degree) for kinetic parameters",
+        )
+
         # Stoichiometric numbers from Table 1
         # obtained by \sum_i^12 νji*ikI
         x1 = 1.0 - self.f_SI
@@ -638,35 +653,35 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
         )
 
         theta_T_k_H = pyo.log(self.params.k_H["10C"] / self.params.k_H["20C"]) / (
-            10 - 20
+            self.params.ref_temp_1 - self.params.ref_temp_2
         )
         theta_T_k_STO = pyo.log(self.params.k_STO["10C"] / self.params.k_STO["20C"]) / (
-            10 - 20
+            self.params.ref_temp_1 - self.params.ref_temp_2
         )
         theta_T_mu_H = pyo.log(self.params.mu_H["10C"] / self.params.mu_H["20C"]) / (
-            10 - 20
+            self.params.ref_temp_1 - self.params.ref_temp_2
         )
         theta_T_b_H_O2 = pyo.log(
             self.params.b_H_O2["10C"] / self.params.b_H_O2["20C"]
-        ) / (10 - 20)
+        ) / (self.params.ref_temp_1 - self.params.ref_temp_2)
         theta_T_b_H_NOX = pyo.log(
             self.params.b_H_NOX["10C"] / self.params.b_H_NOX["20C"]
-        ) / (10 - 20)
+        ) / (self.params.ref_temp_1 - self.params.ref_temp_2)
         theta_T_b_STO_O2 = pyo.log(
             self.params.b_STO_O2["10C"] / self.params.b_STO_O2["20C"]
-        ) / (10 - 20)
+        ) / (self.params.ref_temp_1 - self.params.ref_temp_2)
         theta_T_b_STO_NOX = pyo.log(
             self.params.b_STO_NOX["10C"] / self.params.b_STO_NOX["20C"]
-        ) / (10 - 20)
+        ) / (self.params.ref_temp_1 - self.params.ref_temp_2)
         theta_T_mu_A = pyo.log(self.params.mu_A["10C"] / self.params.mu_A["20C"]) / (
-            10 - 20
+            self.params.ref_temp_1 - self.params.ref_temp_2
         )
         theta_T_b_A_O2 = pyo.log(
             self.params.b_A_O2["10C"] / self.params.b_A_O2["20C"]
-        ) / (10 - 20)
+        ) / (self.params.ref_temp_1 - self.params.ref_temp_2)
         theta_T_b_A_NOX = pyo.log(
             self.params.b_A_NOX["10C"] / self.params.b_A_NOX["20C"]
-        ) / (10 - 20)
+        ) / (self.params.ref_temp_1 - self.params.ref_temp_2)
 
         k_H = self.params.k_H["20C"] * pyo.exp(
             theta_T_k_H
@@ -675,7 +690,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         k_STO = self.params.k_STO["20C"] * pyo.exp(
@@ -685,7 +700,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         mu_H = self.params.mu_H["20C"] * pyo.exp(
@@ -695,7 +710,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         b_H_O2 = self.params.b_H_O2["20C"] * pyo.exp(
@@ -705,7 +720,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         b_H_NOX = self.params.b_H_NOX["20C"] * pyo.exp(
@@ -715,7 +730,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         b_STO_O2 = self.params.b_STO_O2["20C"] * pyo.exp(
@@ -725,7 +740,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         b_STO_NOX = self.params.b_STO_NOX["20C"] * pyo.exp(
@@ -735,7 +750,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         mu_A = self.params.mu_A["20C"] * pyo.exp(
@@ -745,7 +760,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         b_A_O2 = self.params.b_A_O2["20C"] * pyo.exp(
@@ -755,7 +770,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
         b_A_NOX = self.params.b_A_NOX["20C"] * pyo.exp(
@@ -765,7 +780,7 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
                     self.state_ref.temperature / pyo.units.K,
                     to_units=pyo.units.dimensionless,
                 )
-                - (20 + 273.15)
+                - (self.params.ref_temp_2 + 273.15)
             )
         )
 
