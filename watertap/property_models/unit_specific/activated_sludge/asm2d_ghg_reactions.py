@@ -10,13 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Modified ASM2d reaction package.
+ASM2d-PSFe-GHG reaction package.
 
 Reference:
-
-X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
-Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
-Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
+[1] B. Solis, A. Guisasola, X. Flores-Alsina, U. Jeppsson, J.A. Baeza,
+A plant-wide model describing GHG emissions and nutrient recovery options for water resource recovery facilities,
+Water Research 215 (2022) https://www.sciencedirect.com/science/article/pii/S0043135422001865
 """
 
 # Import Pyomo libraries
@@ -40,15 +39,15 @@ from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 
 # Some more information about this module
-__author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
+__author__ = "Marcus Holly"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ModifiedASM2dReactionParameterBlock")
-class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
+@declare_process_block_class("ASM2dGHGReactionParameterBlock")
+class ASM2dGHGReactionParameterData(ReactionParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -75,29 +74,48 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
         """
         super().build()
 
-        self._reaction_block_class = ModifiedASM2dReactionBlock
+        self._reaction_block_class = ASM2dGHGReactionBlock
 
         # Reaction Index
         # Reaction names based on standard numbering in ASM2d paper
         # R1: Aerobic hydrolysis
-        # R2: Anoxic hydrolysis
-        # R3: Anaerobic hydrolysis
-        # R4: Aerobic growth on S_F
-        # R5: Aerobic growth on S_A
-        # R6: Anoxic growth on S_F
-        # R7: Anoxic growth on S_A, denitrification
-        # R8: Fermentation
-        # R9: Lysis
-        # R10: Storage of X_PHA
-        # R11: Aerobic storage of X_PP
-        # R12: Anoxic storage of X_PP
-        # R13: Aerobic growth of X_PAO
-        # R14: Anoxic growth of X_PAO
-        # R15: Lysis of X_PAO
-        # R16: Lysis of X_PP
-        # R17: Lysis of X_PHA
-        # R18: Aerobic growth of X_AUT
-        # R19: Lysis of X_AUT
+        # R2: Anoxic hydrolysis (NO3-)
+        # R3: Anoxic hydrolysis (NO2-)
+        # R4: Anaerobic hydrolysis
+        # R5: Aerobic growth on S_F
+        # R6: Aerobic growth on S_A
+        # R7: Anoxic growth on S_F (NO3- -> NO2-)
+        # R8: Anoxic growth on S_F (NO2- -> NO)
+        # R9: Anoxic growth on S_F (NO -> N2O)
+        # R10: Anoxic growth on S_F (N2O- -> N2)
+        # R11: Anoxic growth on S_A (NO3- -> NO2-)
+        # R12: Anoxic growth on S_A (NO2- -> NO)
+        # R13: Anoxic growth on S_A (NO -> N2O)
+        # R14: Anoxic growth on S_A (N2O- -> N2)
+        # R15: Fermentation
+        # R16: Lysis of X_H
+        # R17: Storage of X_PHA
+        # R18: Aerobic storage of X_PP
+        # R19: Anoxic storage of X_PP (NO3- -> NO2-)
+        # R20: Anoxic storage of X_PP (NO2- -> NO)
+        # R21: Anoxic storage of X_PP (NO -> N2O)
+        # R22: Anoxic storage of X_PP (N2O- -> N2)
+        # R23: Aerobic growth of X_PAO
+        # R24: Anoxic growth of X_PAO (NO3- -> NO2-)
+        # R25: Anoxic growth of X_PAO (NO2- -> NO)
+        # R26: Anoxic growth of X_PAO (NO -> N2O)
+        # R27: Anoxic growth of X_PAO (N2O- -> N2)
+        # R28: Lysis of X_PAO
+        # R29: Lysis of X_PP
+        # R30: Lysis of X_PHA
+        # R31: NH3 oxidation to NH2OH with O2 consumption
+        # R32: NH2OH to NO coupled with O2 reduction (X_AOB growth)
+        # R33: NO oxidation to NO2- coupled with O2 reduction
+        # R34: NO to N2O coupled with NH2OH to No2- (N2O from NN pathway)
+        # R35: HNO2 to N2O coupled with NH2OH to NO2- (N2O from ND pathway)
+        # R36: Aerobic growth of XNOB
+        # R37: Lysis of X_AOB
+        # R38: Lysis of X_NOB
         self.rate_reaction_idx = pyo.Set(
             initialize=[
                 "R1",
@@ -119,10 +137,95 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
                 "R17",
                 "R18",
                 "R19",
+                "R20",
+                "R21",
+                "R22",
+                "R23",
+                "R24",
+                "R25",
+                "R26",
+                "R27",
+                "R28",
+                "R29",
+                "R30",
+                "R31",
+                "R32",
+                "R33",
+                "R34",
+                "R35",
+                "R36",
+                "R37",
+                "R38",
             ]
         )
 
         # Stoichiometric Parameters
+        self.f_SI = pyo.Var(
+            initialize=0.00,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
+        )
+        self.Y_H = pyo.Var(
+            initialize=0.625,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Yield coefficient for heterotrophic biomass, [kg COD/kg COD]",
+        )
+        self.Y_PAO = pyo.Var(
+            initialize=0.625,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Yield coefficient for P accumulating organisms (biomass/PHA), [kg COD/kg COD]",
+        )
+        self.Y_PO4 = pyo.Var(
+            initialize=0.4,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="PP requirement (PO4 release) per PHA stored, [kg P/kg COD]",
+        )
+        self.Y_PHA = pyo.Var(
+            initialize=0.20,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="PHA requirement for PP storage, [kg COD/kg P]",
+        )
+        self.Y_AOB = pyo.Var(
+            initialize=0.18,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Yield of ammonia oxidizing bacteria, [kg COD/kg N]",
+        )
+        self.Y_NOB = pyo.Var(
+            initialize=0.08,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Yield of nitrite oxidizing bacteria, [kg COD/kg N]",
+        )
+        self.f_XIH = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
+        )
+        self.f_XIP = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
+        )
+        self.f_XIA = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
+        )
+        self.nG = pyo.Var(
+            initialize=1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic growth factor",
+        )
         self.i_CSI = pyo.Var(
             initialize=0.36178,
             units=pyo.units.dimensionless,
@@ -153,11 +256,17 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="C content of inert soluble COD X_S, [kg C/kg COD]",
         )
-        self.i_CXB = pyo.Var(
+        self.i_CBM = pyo.Var(
             initialize=0.36612,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD X_B, [kg C/kg COD]",
+            doc="C content of biomass, [kg C/kg COD]",
+        )
+        self.i_CXPHA = pyo.Var(
+            initialize=0.3,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="C content of XPHA, [kg C/kg COD]",
         )
         self.i_NSI = pyo.Var(
             initialize=0.06003,
@@ -189,6 +298,12 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="N content of biomass, X_H, X_PAO, X_AUT, [kg N/kg COD]",
         )
+        self.i_PSI = pyo.Var(
+            initialize=0.00649,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="P content of inert soluble COD, [kg P/kg COD]",
+        )
         self.i_PSF = pyo.Var(
             initialize=0.00559,
             units=pyo.units.dimensionless,
@@ -213,48 +328,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
         )
-        self.f_SI = pyo.Var(
-            initialize=0.00,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
-        )
-        self.Y_H = pyo.Var(
-            initialize=0.625,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Yield coefficient for heterotrophic biomass, [kg COD/kg COD]",
-        )
-        self.f_XI = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Fraction of inert COD generated in lysis, [kg COD/kg COD]",
-        )
-        self.Y_PAO = pyo.Var(
-            initialize=0.625,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Yield coefficient for P accumulating organisms (biomass/PHA), [kg COD/kg COD]",
-        )
-        self.Y_PO4 = pyo.Var(
-            initialize=0.0129,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="PP requirement (PO4 release) per PHA stored, [kg P/kg COD]",
-        )
-        self.Y_PHA = pyo.Var(
-            initialize=0.20,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="PHA requirement for PP storage, [kg COD/kg P]",
-        )
-        self.Y_A = pyo.Var(
-            initialize=0.24,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Yield of autotrophic biomass per NO3- N, [kg COD/kg N]",
-        )
+
         self.i_KXPP = pyo.Var(
             initialize=0.4204,
             units=pyo.units.dimensionless,
@@ -266,12 +340,6 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Magnesium coefficient for polyphosphates",
-        )
-        self.i_NOx_N2 = pyo.Var(
-            initialize=2.8571,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Nitrogen oxide coefficient for N2",
         )
 
         # Kinetic Parameters
@@ -285,7 +353,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             initialize=0.60,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Anoxic hydrolysis reduction factor",
+            doc="Anoxic hydrolysis reduction factor for nitrate",
         )
         self.hL_fe = pyo.Var(
             initialize=0.40,
@@ -293,41 +361,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Anaerobic hydrolysis reduction factor",
         )
-        self.KH_O2 = pyo.Var(
-            initialize=2e-4,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for oxygen, [kg O2/m^3]",
-        )
         self.KL_O2 = pyo.Var(
             initialize=2e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="Saturation/inhibition coefficient for oxygen, [kg O2/m^3]",
-        )
-        self.KA_O2 = pyo.Var(
-            initialize=5e-4,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation/inhibition coefficient for oxygen, [kg O2/m^3]",
-        )
-        self.KP_O2 = pyo.Var(
-            initialize=2e-4,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for oxygen, [kg O2/m^3]",
-        )
-        self.KH_NO3 = pyo.Var(
-            initialize=5e-4,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation/inhibition coefficient for nitrate, [kg N/m^3]",
-        )
-        self.KA_NO3 = pyo.Var(
-            initialize=5e-4,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation/inhibition coefficient for nitrate, [kg N/m^3]",
         )
         self.KL_NO3 = pyo.Var(
             initialize=5e-4,
@@ -335,19 +373,24 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Saturation/inhibition coefficient for nitrate, [kg N/m^3]",
         )
-        self.KP_NO3 = pyo.Var(
-            initialize=5e-4,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for nitrate, [kg N/m^3]",
-        )
         self.KL_X = pyo.Var(
             initialize=0.1,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for particulate COD, [kg X_S/kg X_H]",
         )
-
+        self.hL_NO2 = pyo.Var(
+            initialize=0.60,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic hydrolysis reduction factor for nitrite",
+        )
+        self.KL_NO2 = pyo.Var(
+            initialize=5e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for nitrite, [kg N/m^3]",
+        )
         self.mu_H = pyo.Var(
             initialize=4.23,
             units=1 / pyo.units.day,
@@ -360,11 +403,29 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Maximum rate for fermentation, [kg S_F/kg X_H/day]",
         )
+        self.hH_NO3 = pyo.Var(
+            initialize=0.28,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification (nitrate to nitrite)",
+        )
         self.b_H = pyo.Var(
             initialize=0.28,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for lysis and decay",
+        )
+        self.hH_NO3_end = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for endogenous respiration",
+        )
+        self.KH_O2 = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for oxygen, [kg O2/m^3]",
         )
         self.K_F = pyo.Var(
             initialize=4e-3,
@@ -384,11 +445,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for growth on acetate SA, [kg COD/m^3]",
         )
-        self.KP_A = pyo.Var(
-            initialize=4e-3,
+        self.KH_NO3 = pyo.Var(
+            initialize=5e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for acetate SA, [kg COD/m^3]",
+            doc="Saturation/inhibition coefficient for nitrate, [kg N/m^3]",
         )
         self.KH_NH4 = pyo.Var(
             initialize=5e-5,
@@ -396,37 +457,126 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for ammonium (nutrient), [kg N/m^3]",
         )
-        self.KA_NH4 = pyo.Var(
-            initialize=1e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for SNH4, [kg N/m^3]",
-        )
-        self.KP_NH4 = pyo.Var(
-            initialize=5e-5,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for ammonium, [kg N/m^3]",
-        )
         self.KH_PO4 = pyo.Var(
             initialize=1e-5,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for SPO4 as nutrient, [kg P/m^3]",
         )
-        self.KA_PO4 = pyo.Var(
-            initialize=1e-5,
+        self.hH_NO2 = pyo.Var(
+            initialize=0.16,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification (nitrite to nitric oxide)",
+        )
+        self.hH_NO = pyo.Var(
+            initialize=0.35,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification (nitric oxide to nitrous oxide)",
+        )
+        self.hH_N2O = pyo.Var(
+            initialize=0.35,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification (nitrous oxide to dinitrogen)",
+        )
+        self.KH2_O2 = pyo.Var(
+            initialize=1e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for SPO4, [kg P/m^3]",
+            doc="Saturation/inhibition coefficient for oxygen (nitrate to nitrite), [kg O2/m^3]",
         )
-        self.KP_PO4 = pyo.Var(
-            initialize=1e-5,
+        self.KH3_O2 = pyo.Var(
+            initialize=1e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
-            doc="Saturation coefficient for phosphate for growth, [kg P/m^3]",
+            doc="Saturation/inhibition coefficient for oxygen (nitrite to nitric oxide), [kg O2/m^3]",
         )
-
+        self.KH4_O2 = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for oxygen (nitric oxide to nitrous oxide), [kg O2/m^3]",
+        )
+        self.KH5_O2 = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for oxygen (nitrous oxide to dinitrogen), [kg O2/m^3]",
+        )
+        self.K_F2 = pyo.Var(
+            initialize=20e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on SF (nitrate to nitrite), [kg COD/m^3]",
+        )
+        self.K_F3 = pyo.Var(
+            initialize=20e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on SF (nitrite to nitric oxide), [kg COD/m^3]",
+        )
+        self.K_F4 = pyo.Var(
+            initialize=20e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on SF (nitric oxide to nitrous oxide, [kg COD/m^3]",
+        )
+        self.K_F5 = pyo.Var(
+            initialize=40e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on SF (nitrous oxide to dinitrogen), [kg COD/m^3]",
+        )
+        self.KH_A2 = pyo.Var(
+            initialize=20e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on acetate SA (nitrate to nitrite), [kg COD/m^3]",
+        )
+        self.KH_A3 = pyo.Var(
+            initialize=20e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on acetate SA (nitrite to nitric oxide), [kg COD/m^3]",
+        )
+        self.KH_A4 = pyo.Var(
+            initialize=20e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on acetate SA (nitric oxide to nitrous oxide), [kg COD/m^3]",
+        )
+        self.KH_A5 = pyo.Var(
+            initialize=40e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for growth on acetate SA (nitrous oxide to dinitrogen), [kg COD/m^3]",
+        )
+        self.KH_NO2 = pyo.Var(
+            initialize=2e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for nitrite, [kg COD/m^3]",
+        )
+        self.KH_NO = pyo.Var(
+            initialize=5e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for nitric oxide, [kg COD/m^3]",
+        )
+        self.KH_N2O = pyo.Var(
+            initialize=5e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation/inhibition coefficient for nitrous oxide, [kg COD/m^3]",
+        )
+        self.KI_NO = pyo.Var(
+            initialize=3e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Inhibition coefficient for nitric oxide, [kg COD/m^3]",
+        )
         self.q_PHA = pyo.Var(
             initialize=2.46,
             units=1 / pyo.units.day,
@@ -443,7 +593,13 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             initialize=0.82,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
-            doc="Maximum growth rate of PAO",
+            doc="Maximum growth rate of XPAO",
+        )
+        self.hP_NO3 = pyo.Var(
+            initialize=0.28,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor under anoxic conditions",
         )
         self.b_PAO = pyo.Var(
             initialize=0.14,
@@ -451,11 +607,23 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Rate for Lysis of X_PAO",
         )
+        self.hP_NO3_end = pyo.Var(
+            initialize=0.33,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for decay of PAOs",
+        )
         self.b_PP = pyo.Var(
             initialize=0.14,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate for Lysis of X_PP",
+        )
+        self.hPP_NO3_end = pyo.Var(
+            initialize=0.33,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for decay of PP",
         )
         self.b_PHA = pyo.Var(
             initialize=0.14,
@@ -463,11 +631,47 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Rate for Lysis of X_PHA",
         )
+        self.hPHA_NO3_end = pyo.Var(
+            initialize=0.33,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Anoxic reduction factor for decay of PHA",
+        )
+        self.KP_O2 = pyo.Var(
+            initialize=2e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for oxygen, [kg O2/m^3]",
+        )
+        self.KP_NO3 = pyo.Var(
+            initialize=5e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for nitrate, [kg N/m^3]",
+        )
+        self.KP_A = pyo.Var(
+            initialize=4e-3,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for acetate, [kg COD/m^3]",
+        )
+        self.KP_NH4 = pyo.Var(
+            initialize=5e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for ammonium, [kg N/m^3]",
+        )
         self.KP_P = pyo.Var(
             initialize=2e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for phosphate for XPP formation, [kg P/m^3]",
+        )
+        self.KP_PO4 = pyo.Var(
+            initialize=1e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for phosphate for growth, [kg P/m^3]",
         )
         self.KP_PP = pyo.Var(
             initialize=0.01,
@@ -493,61 +697,217 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for PHA, [kg PHA/kg PAO]",
         )
-
-        self.mu_AUT = pyo.Var(
+        self.hP_NO2 = pyo.Var(
+            initialize=0.16,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification (nitrite to nitric oxide)",
+        )
+        self.hP_NO = pyo.Var(
+            initialize=0.35,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification (nitric oxide to nitrous oxide)",
+        )
+        self.hP_N2O = pyo.Var(
+            initialize=0.35,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Reduction factor for denitrification (nitrous oxide to dinitrogen)",
+        )
+        self.KP2_O2 = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for oxygen (nitrate to nitrite), [kg O2/m^3]",
+        )
+        self.KP3_O2 = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for oxygen (nitrite to nitric oxide), [kg O2/m^3]",
+        )
+        self.KP4_O2 = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for oxygen (nitric oxide to nitrous oxide), [kg O2/m^3]",
+        )
+        self.KP5_O2 = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for oxygen (nitrous oxide to dinitrogen), [kg O2/m^3]",
+        )
+        self.KP_NO2 = pyo.Var(
+            initialize=2e-4,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for nitrite, [kg O2/m^3]",
+        )
+        self.KP_NO = pyo.Var(
+            initialize=5e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for nitric oxide), [kg O2/m^3]",
+        )
+        self.KP_N2O = pyo.Var(
+            initialize=5e-5,
+            units=pyo.units.kg / pyo.units.m**3,
+            domain=pyo.NonNegativeReals,
+            doc="Saturation coefficient for nitrous oxide), [kg O2/m^3]",
+        )
+        self.q_AOB_AOM = pyo.Var(
+            initialize=5.2,
+            units=1 / pyo.units.day,
+            domain=pyo.NonNegativeReals,
+            doc="Maximum rate for the AMO reaction",
+        )
+        self.mu_AOB_HAO = pyo.Var(
             initialize=0.61,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
-            doc="Maximum growth rate of X_AUT",
+            doc="Maximum growth rate of AOB",
         )
-        self.b_AUT = pyo.Var(
-            initialize=0.09,
+        self.q_AOB_HAO = pyo.Var(
+            initialize=5.2,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
-            doc="Decay rate of X_AUT",
+            doc="Maximum rate for the HAO reaction",
         )
-        self.hH_NO3 = pyo.Var(
-            initialize=0.8,
+        self.q_AOB_N2O_NN = pyo.Var(
+            initialize=0.0078,
+            units=1 / pyo.units.day,
+            domain=pyo.NonNegativeReals,
+            doc="Maximum N2O production rate by NH2OH oxidation pathway",
+        )
+        self.q_AOB_N2O_ND = pyo.Var(
+            initialize=1.3008,
+            units=1 / pyo.units.day,
+            domain=pyo.NonNegativeReals,
+            doc="Maximum N2O production rate by ND pathway",
+        )
+        self.b_AOB = pyo.Var(
+            initialize=0.096,
+            units=1 / pyo.units.day,
+            domain=pyo.NonNegativeReals,
+            doc="Decay rate of AOB",
+        )
+        self.hAOB_NO3_end = pyo.Var(
+            initialize=0.33,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Reduction factor for denitrification",
+            doc="Anoxic reduction factor for AOB decay",
         )
-        self.hH_NO3_end = pyo.Var(
-            initialize=0.5,
+        self.KAOB1_O2 = pyo.Var(
+            initialize=1,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Anoxic reduction factor for endogenous respiration",
+            doc="AOB affinity constant for oxygen (AMO reaction)",
         )
-        self.hP_NO3 = pyo.Var(
+        self.KAOB_NH4 = pyo.Var(
+            initialize=0.004,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB affinity constant for NH4",
+        )
+        self.KAOB2_O2 = pyo.Var(
             initialize=0.6,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Reduction factor under anoxic conditions",
+            doc="AOB affinity constant for oxygen (HAO reaction)",
         )
-        self.hP_NO3_end = pyo.Var(
+        self.KAOB_NH2OH = pyo.Var(
+            initialize=0.3,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB affinity constant for NH2OH",
+        )
+        self.KAOB_P = pyo.Var(
+            initialize=0.01,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB affinity constant for phosphate",
+        )
+        self.KAOB_HAO_NO = pyo.Var(
+            initialize=0.0003,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB affinity constant for NO (from HAO)",
+        )
+        self.KAOB_NN_NO = pyo.Var(
+            initialize=0.008,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB affinity constant for NO (form NirK)",
+        )
+        self.KAOB_HNO2 = pyo.Var(
+            initialize=0.0006,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB affinity constant for free nitrous acid",
+        )
+        self.KAOB_ND_O2 = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB constant for O2 effect on the ND pathway",
+        )
+        self.KAOB_I_O2 = pyo.Var(
+            initialize=0.8,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="N2O constant for production inhibition by O2",
+        )
+        self.KAOB_NO3 = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="AOB affinity constant for nitrate",
+        )
+        self.mu_NOB = pyo.Var(
+            initialize=0.61,
+            units=1 / pyo.units.day,
+            domain=pyo.NonNegativeReals,
+            doc="Maximum growth rate of NOB",
+        )
+        self.b_NOB = pyo.Var(
+            initialize=0.096,
+            units=1 / pyo.units.day,
+            domain=pyo.NonNegativeReals,
+            doc="Decay rate of NOB",
+        )
+        self.hNOB_NO3_end = pyo.Var(
             initialize=0.33,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Anoxic reduction factor for decay of PAOs",
+            doc="Anoxic reduction factor for NOB decay",
         )
-        self.hPP_NO3_end = pyo.Var(
-            initialize=0.33,
+        self.KNOB_O2 = pyo.Var(
+            initialize=1.2,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Anoxic reduction factor for decay of PP",
+            doc="NOB affinity constant for oxygen",
         )
-        self.hPHA_NO3_end = pyo.Var(
-            initialize=0.33,
+        self.KNOB_NO2 = pyo.Var(
+            initialize=1e-6,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Anoxic reduction factor for decay of PHA",
+            doc="NOB affinity constant for nitrite",
         )
-        self.hAUT_NO3_end = pyo.Var(
-            initialize=0.33,
+        self.KNOB_P = pyo.Var(
+            initialize=0.01,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="Anoxic reduction factor for decay of autotrophs",
+            doc="NOB affinity constant for phosphate",
         )
+        self.KNOB_NO3 = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="NOB affinity constant for nitrate",
+        )
+        # ----------------------------------------------------------------------------------------------------
 
         # Reaction Stoichiometry
         # This is the stoichiometric part the Peterson matrix in dict form

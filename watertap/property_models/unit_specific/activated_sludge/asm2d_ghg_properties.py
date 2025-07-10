@@ -10,17 +10,13 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with modified ASM2d reactions.
+Thermophysical property package to be used in conjunction with the ASM2d-PSFe-GHG reactions.
+The current version of this model does not include the S (sulfur) and Fe (iron) extensions.
 
 Reference:
-[1] X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
-Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
-Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
-
-[2] K. Solon, X. Flores-Alsina, C. Kazadi Mbamba, D. Ikumi, E.I.P. Volcke, C. Vaneeckhaute, G. Ekama,
-P.A. Vanrolleghem, D.J. Batstone, K.V. Gernaey, U. Jeppsson, Plant-wide modelling of phosphorus transformations in
-wastewater treatment systems: Impacts of control and operational strategies, Water Research. 113 (2017) 97-110
-https://www.sciencedirect.com/science/article/pii/S0043135417300829
+[1] B. Solis, A. Guisasola, X. Flores-Alsina, U. Jeppsson, J.A. Baeza,
+A plant-wide model describing GHG emissions and nutrient recovery options for water resource recovery facilities,
+Water Research 215 (2022) https://www.sciencedirect.com/science/article/pii/S0043135422001865
 
 """
 
@@ -46,15 +42,15 @@ from idaes.core.scaling import CustomScalerBase
 from idaes.core.base.property_base import PhysicalParameterBlock
 
 # Some more information about this module
-__author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
+__author__ = "Marcus Holly"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ModifiedASM2dParameterBlock")
-class ModifiedASM2dParameterData(PhysicalParameterBlock):
+@declare_process_block_class("ASM2dGHGParameterBlock")
+class ASM2dGHGParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -65,7 +61,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = ModifiedASM2dStateBlock
+        self._state_block_class = ASM2dGHGStateBlock
 
         # Add Phase objects
         self.Liq = LiquidPhase()
@@ -74,76 +70,71 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
         self.H2O = Solvent()
 
         # Soluble species
-        self.S_A = Solute(
-            doc="Fermentation products, considered to be acetate. [kg COD/m^3]"
-        )
+        self.S_O2 = Solute(doc="Dissolved oxygen. [kg O2/m^3]")
         self.S_F = Solute(
             doc="Fermentable, readily bio-degradable organic substrates. [kg COD/m^3]"
         )
+        self.S_A = Solute(
+            doc="Fermentation products, considered to be acetate. [kg COD/m^3]"
+        )
         self.S_I = Solute(doc="Inert soluble organic material. [kg COD/m^3]")
-        self.S_N2 = Solute(
-            doc="Dinitrogen, N2. SN2 is assumed to be the only nitrogenous product of denitrification. [kg N/m^3]"
-        )
         self.S_NH4 = Solute(doc="Ammonium plus ammonia nitrogen. [kg N/m^3]")
-        self.S_NO3 = Solute(
-            doc="Nitrate plus nitrite nitrogen (N03' + N02' -N). SN03 is assumed to include nitrate as well as nitrite nitrogen. [kg N/m^3]"
-        )
-        self.S_O2 = Solute(doc="Dissolved oxygen. [kg O2/m^3]")
+        self.S_NH2OH = Solute(doc="Hydroxylamine. [kg N/m^3]")
+        self.S_N2O = Solute(doc="Nitrous oxide. [kg N/m^3]")
+        self.S_NO = Solute(doc="Nitric oxide. [kg N/m^3]")
+        self.S_NO2 = Solute(doc="Nitrite. [kg N/m^3]")
+        self.S_NO3 = Solute(doc="Nitrate. [kg N/m^3]")
+        self.S_N2 = Solute(doc="Dinitrogen, N2. [kg N/m^3]")
         self.S_PO4 = Solute(
             doc="Inorganic soluble phosphorus, primarily ortho-phosphates. [kg P/m^3]"
         )
+        self.S_IC = Solute(doc="Inorganic carbon, [kg C/m^3]")
         self.S_K = Solute(doc="Potassium, [kg K/m^3]")
         self.S_Mg = Solute(doc="Magnesium, [kg Mg/m^3]")
-        self.S_IC = Solute(doc="Inorganic carbon, [kg C/m^3]")
 
         # Particulate species
-        self.X_AUT = Solute(doc="Autotrophic nitrifying organisms. [kg COD/m^3]")
-        self.X_H = Solute(doc="Heterotrophic organisms. [kg COD/m^3]")
         self.X_I = Solute(doc="Inert particulate organic material. [kg COD/m^3]")
+        self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
+        self.X_H = Solute(doc="Heterotrophic organisms. [kg COD/m^3]")
         self.X_PAO = Solute(doc="Phosphate-accumulating organisms. [kg COD/m^3]")
+        self.X_PP = Solute(doc="Poly-phosphate. [kg P/m^3]")
         self.X_PHA = Solute(
             doc="A cell internal storage product of phosphorus-accumulating organisms, primarily comprising poly-hydroxy-alkanoates (PHA). [kg COD/m^3]"
         )
-        self.X_PP = Solute(doc="Poly-phosphate. [kg P/m^3]")
-        self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
+        self.X_AOB = Solute(doc="Ammonia oxidizing bacteria. [kg N/m^3]")
+        self.X_NOB = Solute(doc="Nitrite oxidizing bacteria. [kg N/m^3]")
 
         # Create sets for use across ASM models and associated unit models
         self.non_particulate_component_set = pyo.Set(
             initialize=[
-                "S_A",
-                "S_F",
-                "S_I",
-                "S_N2",
-                "S_NH4",
-                "S_NO3",
                 "S_O2",
+                "S_F",
+                "S_A",
+                "S_I",
+                "S_NH4",
+                "S_NH2OH",
+                "S_N2O",
+                "S_NO",
+                "S_NO2",
+                "S_NO3",
+                "S_N2",
                 "S_PO4",
+                "S_IC",
                 "S_K",
                 "S_Mg",
-                "S_IC",
                 "H2O",
             ]
         )
         self.particulate_component_set = pyo.Set(
             initialize=[
-                "X_AUT",
-                "X_H",
                 "X_I",
-                "X_PAO",
-                "X_PHA",
-                "X_PP",
                 "X_S",
-            ]
-        )
-        self.tss_component_set = pyo.Set(
-            initialize=[
-                "X_AUT",
                 "X_H",
-                "X_I",
                 "X_PAO",
-                "X_PHA",
                 "X_PP",
-                "X_S",
+                "X_PHA",
+                "X_AOB",
+                "X_NOB",
             ]
         )
 
@@ -176,7 +167,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             units=pyo.units.K,
         )
 
-        # COD to VSS coefficients [1]
+        # COD to VSS coefficients - asm2dinit_bsm2.m [1]
         self.CODtoVSS_XI = pyo.Var(
             initialize=1.5686,
             units=pyo.units.dimensionless,
@@ -201,7 +192,7 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="mass COD per mass VSS of XPHA",
         )
-        # Inorganic solids parameters [1]
+        # Inorganic solids parameters - asm2dinit_bsm2.m [1]
         self.ISS_P = pyo.Var(
             initialize=3.23,
             units=pyo.units.dimensionless,
@@ -214,8 +205,26 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="ISS fractional content of biomass",
         )
+        self.ISS_XI = pyo.Var(
+            initialize=0.75,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for XI",
+        )
+        self.ISS_XS = pyo.Var(
+            initialize=0.75,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for XS",
+        )
+        self.ISS_BM = pyo.Var(
+            initialize=0.9,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for biomass",
+        )
 
-        # Effluent Quality Index (EQI) parameters [2]
+        # Effluent Quality Index (EQI) parameters - asm2dinit_bsm2.m [1]
         self.i_NSF = pyo.Var(
             initialize=0.03352,
             units=pyo.units.dimensionless,
@@ -300,13 +309,13 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
         )
-        self.BOD5_factor = pyo.Param(
-            ["raw", "effluent"],
-            initialize={"raw": 0.65, "effluent": 0.25},
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Conversion factor for BOD5",
-        )
+        # self.BOD5_factor = pyo.Param(
+        #     ["raw", "effluent"],
+        #     initialize={"raw": 0.65, "effluent": 0.25},
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Conversion factor for BOD5",
+        # )
 
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
@@ -346,9 +355,9 @@ class ModifiedASM2dParameterData(PhysicalParameterBlock):
         )
 
 
-class ModifiedASM2dPropertiesScaler(CustomScalerBase):
+class ASM2dGHGPropertiesScaler(CustomScalerBase):
     """
-    Scaler for the Activated Sludge Model No.2d property package.
+    Scaler for the ASM2d-PSFe-GHG property package.
     Flow and temperature are scaled by the default value (if no user input provided), and
     pressure is scaled assuming an order of magnitude of 1e5 Pa.
     """
@@ -377,13 +386,13 @@ class ModifiedASM2dPropertiesScaler(CustomScalerBase):
         pass
 
 
-class _ModifiedASM2dStateBlock(StateBlock):
+class _ASM2dGHGStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    default_scaler = ModifiedASM2dPropertiesScaler
+    default_scaler = ASM2dGHGPropertiesScaler
 
     def initialize(
         self,
@@ -476,12 +485,10 @@ class _ModifiedASM2dStateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-@declare_process_block_class(
-    "ModifiedASM2dStateBlock", block_class=_ModifiedASM2dStateBlock
-)
-class ModifiedASM2dStateBlockData(StateBlockData):
+@declare_process_block_class("ASM2dGHGStateBlock", block_class=_ASM2dGHGStateBlock)
+class ASM2dGHGStateBlockData(StateBlockData):
     """
-    StateBlock for calculating thermophysical proeprties associated with the ASM2d
+    StateBlock for calculating thermophysical properties associated with the ASM2d
     reaction system.
     """
 
@@ -520,7 +527,6 @@ class ModifiedASM2dStateBlockData(StateBlockData):
             units=pyo.units.kg / pyo.units.m**3,
         )
 
-        # TODO: X_SRB not included yet in biomass term summation
         def _VSS(self):
             vss = (
                 self.conc_mass_comp["X_I"] / self.params.CODtoVSS_XI
@@ -528,7 +534,8 @@ class ModifiedASM2dStateBlockData(StateBlockData):
                 + (
                     self.conc_mass_comp["X_H"]
                     + self.conc_mass_comp["X_PAO"]
-                    + self.conc_mass_comp["X_AUT"]
+                    + self.conc_mass_comp["X_AOB"]
+                    + self.conc_mass_comp["X_NOB"]
                 )
                 / self.params.CODtoVSS_XBM
                 + self.conc_mass_comp["X_PHA"] / self.params.CODtoVSS_XPHA
@@ -543,7 +550,8 @@ class ModifiedASM2dStateBlockData(StateBlockData):
                 * (
                     self.conc_mass_comp["X_H"]
                     + self.conc_mass_comp["X_PAO"]
-                    + self.conc_mass_comp["X_AUT"]
+                    + self.conc_mass_comp["X_AOB"]
+                    + self.conc_mass_comp["X_NOB"]
                 )
                 / self.params.CODtoVSS_XBM
                 + self.params.ISS_P * self.conc_mass_comp["X_PP"]
@@ -558,89 +566,91 @@ class ModifiedASM2dStateBlockData(StateBlockData):
 
         self.TSS = pyo.Expression(rule=_TSS, doc="Total suspended solids")
 
-        def _COD(self):
-            cod = (
-                self.conc_mass_comp["S_F"]
-                + self.conc_mass_comp["S_A"]
-                + self.conc_mass_comp["S_I"]
-                + self.conc_mass_comp["X_I"]
-                + self.conc_mass_comp["X_S"]
-                + self.conc_mass_comp["X_H"]
-                + self.conc_mass_comp["X_PAO"]
-                + self.conc_mass_comp["X_PHA"]
-                + self.conc_mass_comp["X_AUT"]
-            )
-            return cod
+        # TODO: Double check these effluent metrics
 
-        self.COD = pyo.Expression(rule=_COD, doc="Chemical oxygen demand")
-
-        def _TKN(self):
-            tkn = (
-                self.conc_mass_comp["S_NH4"]
-                + self.params.i_NSF * self.conc_mass_comp["S_F"]
-                + self.params.i_NSI * self.conc_mass_comp["S_I"]
-                + self.params.i_NXI * self.conc_mass_comp["X_I"]
-                + self.params.i_NXS * self.conc_mass_comp["X_S"]
-                + self.params.i_NBM
-                * (
-                    self.conc_mass_comp["X_H"]
-                    + self.conc_mass_comp["X_PAO"]
-                    + self.conc_mass_comp["X_AUT"]
-                )
-            )
-            return tkn
-
-        self.TKN = pyo.Expression(rule=_TKN, doc="Kjeldahl nitrogen")
-
-        def _SNOX(self):
-            snox = self.conc_mass_comp["S_NO3"]
-
-            return snox
-
-        self.SNOX = pyo.Expression(rule=_SNOX, doc="Nitrogen oxide")
-
-        def _BOD5(self, i):
-            bod5 = (
-                self.conc_mass_comp["S_F"]
-                + self.conc_mass_comp["S_A"]
-                + (1 - self.params.f_SI) * self.conc_mass_comp["X_S"]
-                + (1 - self.params.f_XIH) * self.conc_mass_comp["X_H"]
-                + (1 - self.params.f_XIP)
-                * (self.conc_mass_comp["X_PAO"] + self.conc_mass_comp["X_PHA"])
-                + (1 - self.params.f_XIA) * self.conc_mass_comp["X_AUT"]
-            )
-
-            return self.params.BOD5_factor[i] * bod5
-
-        self.BOD5 = pyo.Expression(
-            ["raw", "effluent"], rule=_BOD5, doc="Five-day biological oxygen demand"
-        )
-
-        def _SP_organic(self):
-            sp_organic = (
-                self.conc_mass_comp["X_PP"]
-                + self.params.i_PSF * self.conc_mass_comp["S_F"]
-                + self.params.i_PSI * self.conc_mass_comp["S_I"]
-                + self.params.i_PXI * self.conc_mass_comp["X_I"]
-                + self.params.i_PXS * self.conc_mass_comp["X_S"]
-                + self.params.i_PBM
-                * (
-                    self.conc_mass_comp["X_H"]
-                    + self.conc_mass_comp["X_PAO"]
-                    + self.conc_mass_comp["X_AUT"]
-                )
-            )
-            return sp_organic
-
-        self.SP_organic = pyo.Expression(rule=_SP_organic, doc="Organic phosphorus")
-
-        def _SP_inorganic(self):
-            sp_inorganic = self.conc_mass_comp["S_PO4"]
-            return sp_inorganic
-
-        self.SP_inorganic = pyo.Expression(
-            rule=_SP_inorganic, doc="Inorganic phosphorus"
-        )
+        # def _COD(self):
+        #     cod = (
+        #         self.conc_mass_comp["S_F"]
+        #         + self.conc_mass_comp["S_A"]
+        #         + self.conc_mass_comp["S_I"]
+        #         + self.conc_mass_comp["X_I"]
+        #         + self.conc_mass_comp["X_S"]
+        #         + self.conc_mass_comp["X_H"]
+        #         + self.conc_mass_comp["X_PAO"]
+        #         + self.conc_mass_comp["X_PHA"]
+        #         + self.conc_mass_comp["X_AUT"]
+        #     )
+        #     return cod
+        #
+        # self.COD = pyo.Expression(rule=_COD, doc="Chemical oxygen demand")
+        #
+        # def _TKN(self):
+        #     tkn = (
+        #         self.conc_mass_comp["S_NH4"]
+        #         + self.params.i_NSF * self.conc_mass_comp["S_F"]
+        #         + self.params.i_NSI * self.conc_mass_comp["S_I"]
+        #         + self.params.i_NXI * self.conc_mass_comp["X_I"]
+        #         + self.params.i_NXS * self.conc_mass_comp["X_S"]
+        #         + self.params.i_NBM
+        #         * (
+        #             self.conc_mass_comp["X_H"]
+        #             + self.conc_mass_comp["X_PAO"]
+        #             + self.conc_mass_comp["X_AUT"]
+        #         )
+        #     )
+        #     return tkn
+        #
+        # self.TKN = pyo.Expression(rule=_TKN, doc="Kjeldahl nitrogen")
+        #
+        # def _SNOX(self):
+        #     snox = self.conc_mass_comp["S_NO3"]
+        #
+        #     return snox
+        #
+        # self.SNOX = pyo.Expression(rule=_SNOX, doc="Nitrogen oxide")
+        #
+        # def _BOD5(self, i):
+        #     bod5 = (
+        #         self.conc_mass_comp["S_F"]
+        #         + self.conc_mass_comp["S_A"]
+        #         + (1 - self.params.f_SI) * self.conc_mass_comp["X_S"]
+        #         + (1 - self.params.f_XIH) * self.conc_mass_comp["X_H"]
+        #         + (1 - self.params.f_XIP)
+        #         * (self.conc_mass_comp["X_PAO"] + self.conc_mass_comp["X_PHA"])
+        #         + (1 - self.params.f_XIA) * self.conc_mass_comp["X_AUT"]
+        #     )
+        #
+        #     return self.params.BOD5_factor[i] * bod5
+        #
+        # self.BOD5 = pyo.Expression(
+        #     ["raw", "effluent"], rule=_BOD5, doc="Five-day biological oxygen demand"
+        # )
+        #
+        # def _SP_organic(self):
+        #     sp_organic = (
+        #         self.conc_mass_comp["X_PP"]
+        #         + self.params.i_PSF * self.conc_mass_comp["S_F"]
+        #         + self.params.i_PSI * self.conc_mass_comp["S_I"]
+        #         + self.params.i_PXI * self.conc_mass_comp["X_I"]
+        #         + self.params.i_PXS * self.conc_mass_comp["X_S"]
+        #         + self.params.i_PBM
+        #         * (
+        #             self.conc_mass_comp["X_H"]
+        #             + self.conc_mass_comp["X_PAO"]
+        #             + self.conc_mass_comp["X_AUT"]
+        #         )
+        #     )
+        #     return sp_organic
+        #
+        # self.SP_organic = pyo.Expression(rule=_SP_organic, doc="Organic phosphorus")
+        #
+        # def _SP_inorganic(self):
+        #     sp_inorganic = self.conc_mass_comp["S_PO4"]
+        #     return sp_inorganic
+        #
+        # self.SP_inorganic = pyo.Expression(
+        #     rule=_SP_inorganic, doc="Inorganic phosphorus"
+        # )
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
