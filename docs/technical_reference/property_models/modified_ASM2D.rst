@@ -89,7 +89,7 @@ Stoichiometric Coefficients
 .. csv-table::
    :header: "Description", "Symbol", "Parameter", "Default Value", "Units"
 
-   ":lime:`C content of inert soluble COD S_I`", ":math:`i_{CSI}`", "i_CSI", 0.36718, ":math:`\text{dimensionless}`"
+   ":lime:`C content of inert soluble COD S_I`", ":math:`i_{CSI}`", "i_CSI", 0.36178, ":math:`\text{dimensionless}`"
    ":lime:`C content of inert soluble COD S_F`", ":math:`i_{CSF}`", "i_CSF", 0.31843, ":math:`\text{dimensionless}`"
    ":lime:`C content of inert soluble COD S_A`", ":math:`i_{CSA}`", "i_CSA", 0.375, ":math:`\text{dimensionless}`"
    ":lime:`C content of inert soluble COD X_I`", ":math:`i_{CXI}`", "i_CXI", 0.36178, ":math:`\text{dimensionless}`"
@@ -111,6 +111,9 @@ Stoichiometric Coefficients
    "Production of S_I in hydrolysis", ":math:`f_{SI}`", "f_SI", 0, ":math:`\text{dimensionless}`"
    "Yield coefficient for heterotrophic biomass X_H", ":math:`Y_{H}`", "Y_H", 0.625, ":math:`\text{dimensionless}`"
    "Fraction of inert COD generated in lysis", ":math:`f_{XI}`", "f_XI", 0.1, ":math:`\text{dimensionless}`"
+   "Fraction of inert COD from lysis", ":math:`f_{XIH}`", "f_XIH", 0.1, ":math:`\text{dimensionless}`"
+   "Fraction of inert COD from lysis", ":math:`f_{XIP}`", "f_XIP", 0.1, ":math:`\text{dimensionless}`"
+   "Fraction of inert COD from lysis", ":math:`f_{XIA}`", "f_XIA", 0.1, ":math:`\text{dimensionless}`"
    "Yield coefficient for P accumulating organisms (biomass/PHA)", ":math:`Y_{PAO}`", "Y_PAO", 0.625, ":math:`\text{dimensionless}`"
    ":blue:`PP requirement (PO4 release) per PHA stored`", ":math:`Y_{PO4}`", "Y_PO4", 0.0129, ":math:`\text{dimensionless}`"
    ":blue:`PHA requirement for PP storage`", ":math:`Y_{PHA}`", "Y_PHA", 0.2, ":math:`\text{dimensionless}`"
