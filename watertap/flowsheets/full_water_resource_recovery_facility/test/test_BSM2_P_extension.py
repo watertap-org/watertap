@@ -52,7 +52,7 @@ reference_platform_only = pytest.mark.xfail(
 class TestFullFlowsheetBioPFalse:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, res = main(bio_P=False)
+        m, res, sm = main(bio_P=False)
         return m
 
     @pytest.mark.component
@@ -178,7 +178,7 @@ class TestFullFlowsheetBioPFalse:
 class TestFullFlowsheetBioPTrue:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, res = main(bio_P=True)
+        m, res, sm = main(bio_P=True)
         return m
 
     @pytest.mark.component
