@@ -140,14 +140,19 @@ def main(bio_P=False):
     scaled_model.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Re-solve with controls in place
-    solve(scaled_model)
+    scaled_results = solve(scaled_model)
+    pyo.assert_optimal_termination(scaled_results)
 
-    results = scaling.propagate_solution(scaled_model, m)
+    scaling.propagate_solution(scaled_model, m)
 
     display_costing(m)
     display_performance_metrics(m)
 
-    return m, results
+    return (
+        m,
+        scaled_results,
+        scaled_model,
+    )
 
 
 def build(bio_P=False):
@@ -366,7 +371,6 @@ def build(bio_P=False):
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-
     return m
 
 
@@ -443,7 +447,6 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.R5.KLa = 10 * pyo.units.hour**-1
     m.fs.R6.KLa = 10 * pyo.units.hour**-1
     m.fs.R7.KLa = 10 * pyo.units.hour**-1
-
 
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
@@ -988,7 +991,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results, scaled_model = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
