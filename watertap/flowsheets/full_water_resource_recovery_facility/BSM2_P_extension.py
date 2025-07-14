@@ -366,59 +366,6 @@ def build(bio_P=False):
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
-    # Add additional parameter and constraints
-    m.fs.R5.KLa = pyo.Var(
-        initialize=240 / 24,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.R6.KLa = pyo.Var(
-        initialize=240 / 24,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.R7.KLa = pyo.Var(
-        initialize=84 / 24,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.S_O_eq = pyo.Param(
-        default=8e-3,
-        units=pyo.units.kg / pyo.units.m**3,
-        mutable=True,
-        doc="Dissolved oxygen concentration at equilibrium",
-    )
-
-    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
-    def mass_transfer_R5(self, t):
-        return pyo.units.convert(
-            m.fs.R5.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R5.KLa
-            * m.fs.R5.volume[t]
-            * (m.fs.S_O_eq - m.fs.R5.outlet.conc_mass_comp[t, "S_O2"])
-        )
-
-    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    def mass_transfer_R6(self, t):
-        return pyo.units.convert(
-            m.fs.R6.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R6.KLa
-            * m.fs.R6.volume[t]
-            * (m.fs.S_O_eq - m.fs.R6.outlet.conc_mass_comp[t, "S_O2"])
-        )
-
-    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    def mass_transfer_R7(self, t):
-        return pyo.units.convert(
-            m.fs.R7.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R7.KLa
-            * m.fs.R7.volume[t]
-            * (m.fs.S_O_eq - m.fs.R7.outlet.conc_mass_comp[t, "S_O2"])
-        )
 
     return m
 
@@ -492,6 +439,11 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].fix(1.91e-3)
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
+
+    m.fs.R5.KLa = 10 * pyo.units.hour**-1
+    m.fs.R6.KLa = 10 * pyo.units.hour**-1
+    m.fs.R7.KLa = 10 * pyo.units.hour**-1
+
 
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)

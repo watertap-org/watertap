@@ -65,8 +65,7 @@ class TestFullFlowsheetBioPFalse:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 4
-        assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
+        assert len(warnings) == 3
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
         assert (
             "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
@@ -192,8 +191,7 @@ class TestFullFlowsheetBioPTrue:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 4
-        assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
+        assert len(warnings) == 3
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
         assert (
             "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
