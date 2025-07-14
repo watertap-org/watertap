@@ -116,17 +116,9 @@ def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m, bio_P=bio_P)
 
-    for mx in m.fs.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
     initialize_system(m, bio_P=bio_P)
-    for mx in m.fs.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
     add_costing(m)
@@ -191,8 +183,10 @@ def build(bio_P=False):
     m.fs.MX1 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["feed_water", "recycle"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
+    m.fs.MX1.outlet.pressure.fix()
+
     # First reactor (anaerobic) - standard CSTR
     m.fs.R1 = CSTR(
         property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
@@ -241,8 +235,11 @@ def build(bio_P=False):
     m.fs.MX2 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["reactor", "clarifier"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
+
+    m.fs.MX2.outlet.pressure.fix()
+
     # Sludge separator
     m.fs.SP2 = Separator(
         property_package=m.fs.props_ASM2D, outlet_list=["waste", "recycle"]
@@ -260,14 +257,17 @@ def build(bio_P=False):
     m.fs.MX3 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["feed_water", "recycle1", "recycle2"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
+
+    m.fs.MX3.outlet.pressure.fix()
     # Mixing sludge from thickener and primary clarifier
     m.fs.MX4 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["thickener", "clarifier"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
+    m.fs.MX4.outlet.pressure.fix()
 
     # ======================================================================
     # Anaerobic digester section
