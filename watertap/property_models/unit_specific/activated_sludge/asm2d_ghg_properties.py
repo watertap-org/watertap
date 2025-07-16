@@ -162,7 +162,7 @@ class ASM2dGHGParameterData(PhysicalParameterBlock):
         self.temperature_ref = pyo.Param(
             within=pyo.PositiveReals,
             mutable=True,
-            default=298.15,
+            default=288.15,
             doc="Reference temperature",
             units=pyo.units.K,
         )
