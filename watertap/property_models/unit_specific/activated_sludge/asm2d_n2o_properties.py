@@ -49,8 +49,8 @@ __author__ = "Marcus Holly"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ASM2dGHGParameterBlock")
-class ASM2dGHGParameterData(PhysicalParameterBlock):
+@declare_process_block_class("ASM2dN2OParameterBlock")
+class ASM2dN2OParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -355,7 +355,7 @@ class ASM2dGHGParameterData(PhysicalParameterBlock):
         )
 
 
-class ASM2dGHGPropertiesScaler(CustomScalerBase):
+class ASM2dN2OPropertiesScaler(CustomScalerBase):
     """
     Scaler for the ASM2d-PSFe-GHG property package.
     Flow and temperature are scaled by the default value (if no user input provided), and
@@ -386,13 +386,13 @@ class ASM2dGHGPropertiesScaler(CustomScalerBase):
         pass
 
 
-class _ASM2dGHGStateBlock(StateBlock):
+class _ASM2dN2OStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    default_scaler = ASM2dGHGPropertiesScaler
+    default_scaler = ASM2dN2OPropertiesScaler
 
     def initialize(
         self,
@@ -485,8 +485,8 @@ class _ASM2dGHGStateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-@declare_process_block_class("ASM2dGHGStateBlock", block_class=_ASM2dGHGStateBlock)
-class ASM2dGHGStateBlockData(StateBlockData):
+@declare_process_block_class("ASM2dN2OStateBlock", block_class=_ASM2dN2OStateBlock)
+class ASM2dN2OStateBlockData(StateBlockData):
     """
     StateBlock for calculating thermophysical properties associated with the ASM2d
     reaction system.
