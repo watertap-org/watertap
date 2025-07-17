@@ -61,7 +61,7 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = ASM2dGHGStateBlock
+        self._state_block_class = ASM2dN2OStateBlock
 
         # Add Phase objects
         self.Liq = LiquidPhase()
