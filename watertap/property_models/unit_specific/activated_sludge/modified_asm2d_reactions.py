@@ -552,6 +552,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
         # Reaction Stoichiometry
         # This is the stoichiometric part the Peterson matrix in dict form
         # Note that reaction stoichiometry is on a mass basis.
+        # TODO: Check that values that should be 0 are 0
 
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic hydrolysis
@@ -712,7 +713,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
             ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_NH4"): -self.i_NSF,
+            ("R8", "Liq", "S_NH4"): self.i_NSF,
             ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NO3"): 0,
             ("R8", "Liq", "S_PO4"): -(-self.i_PSF),
