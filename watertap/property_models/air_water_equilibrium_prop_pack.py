@@ -2173,6 +2173,7 @@ class AirWaterEqStateBlockData(StateBlockData):
         else:
             add_object_reference(self, "henry_comp", self.params.henry_comp)
 
+    # pylint: disable=function-redefinition
     def _pressure_vap_sat(self):
 
         if (
@@ -2276,6 +2277,7 @@ class AirWaterEqStateBlockData(StateBlockData):
         else:
             add_object_reference(self, "pressure_vap_sat", self.params.pressure_vap_sat)
 
+    # pylint: enable=function-redefinition
     def _pressure_vap(self):
 
         if (
