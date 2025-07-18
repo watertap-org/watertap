@@ -428,25 +428,6 @@ to all instantiated variables in the property model:
 Proper scaling of variables is, in many cases, crucial to solver's performance in finding an optimal solution of a problem. 
 While designing scaling can have a mathematical sophistication, a general rule is to scale all variables as close to 1 as possible (in the range of 1e-2 to 1e2). 
 
-Classes
--------
-.. currentmodule:: watertap_contrib.reflo.property_models.air_water_equilibrium_properties
-
-.. autoclass:: AirWaterEq
-    :members:
-    :noindex:
-
-.. autoclass:: AirWaterEqData
-    :members:
-    :noindex:
-
-.. autoclass:: _AirWaterEqStateBlock
-    :members:
-    :noindex:
-
-.. autoclass:: AirWaterEqStateBlockData
-    :members:
-    :noindex:
    
 Reference
 ---------
