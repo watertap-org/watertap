@@ -11,7 +11,7 @@
 #################################################################################
 """
 Tests for ASM2d-PSFe-GHG thermo property package.
-Author: Marcus Holly, Adam Atia
+Author: Marcus Holly
 """
 
 import pytest

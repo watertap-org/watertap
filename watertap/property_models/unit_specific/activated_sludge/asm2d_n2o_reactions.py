@@ -1017,7 +1017,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
         )
         # ----------------------------------------------------------------------------------------------------
 
-        # Reaction Stoichiometry
+        # Reaction Stoichiometry - see https://app.box.com/file/1812341593943
         # This is the stoichiometric part the Peterson matrix in dict form
         # Note that reaction stoichiometry is on a mass basis.
 

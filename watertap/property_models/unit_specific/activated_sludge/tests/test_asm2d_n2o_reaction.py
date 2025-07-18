@@ -10,14 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for modified ASM2d reaction package.
-Author: Marcus Holly, Adam Atia
+Tests for ASM2d-PSFe-GHG reaction package.
+Author: Marcus Holly
 
-References:
-
-X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
-Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
-Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
 import pytest
 
@@ -38,13 +33,13 @@ from idaes.core import MaterialFlowBasis
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
+from watertap.property_models.unit_specific.activated_sludge.asm2d_n2o_properties import (
+    ASM2dN2OParameterBlock,
 )
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
-    ModifiedASM2dReactionParameterBlock,
-    ModifiedASM2dReactionBlock,
-    ModifiedASM2dReactionScaler,
+from watertap.property_models.unit_specific.activated_sludge.asm2d_n2o_reactions import (
+    ASM2dN2OReactionParameterBlock,
+    ASM2dN2OReactionBlock,
+    ASM2dN2OReactionScaler,
 )
 import idaes.core.util.scaling as iscale
 
@@ -57,16 +52,14 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock()
-        model.rparams = ModifiedASM2dReactionParameterBlock(
-            property_package=model.pparams
-        )
+        model.pparams = ASM2dN2OParameterBlock()
+        model.rparams = ASM2dN2OReactionParameterBlock(property_package=model.pparams)
 
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.rparams.reaction_block_class is ModifiedASM2dReactionBlock
+        assert model.rparams.reaction_block_class is ASM2dN2OReactionBlock
 
         assert len(model.rparams.rate_reaction_idx) == 19
         for i in model.rparams.rate_reaction_idx:
@@ -90,10 +83,29 @@ class TestParamBlock(object):
                 "R17",
                 "R18",
                 "R19",
+                "R20",
+                "R21",
+                "R22",
+                "R23",
+                "R24",
+                "R25",
+                "R26",
+                "R27",
+                "R28",
+                "R29",
+                "R30",
+                "R31",
+                "R32",
+                "R33",
+                "R34",
+                "R35",
+                "R36",
+                "R37",
+                "R38",
             ]
 
         # Expected non-zero stoichiometries
-        # Values from Flores-Alsina BSM2.PSFe Gujer matrix Excel (https://github.com/wwtmodels/Plant-Wide-Models)
+        # Values in the Gujer matrix can be found here: https://app.box.com/file/1812341593943
         stoic = {
             # R1: Aerobic hydrolysis
             ("R1", "Liq", "S_F"): 1,
@@ -275,10 +287,8 @@ class TestReactionBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock()
-        model.rparams = ModifiedASM2dReactionParameterBlock(
-            property_package=model.pparams
-        )
+        model.pparams = ASM2dN2OParameterBlock()
+        model.rparams = ASM2dN2OReactionParameterBlock(property_package=model.pparams)
 
         model.props = model.pparams.build_state_block([1])
 
@@ -314,10 +324,8 @@ class TestASM1ReactionScaler(object):
     @pytest.mark.unit
     def test_variable_scaling_routine(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock()
-        model.rparams = ModifiedASM2dReactionParameterBlock(
-            property_package=model.pparams
-        )
+        model.pparams = ASM2dN2OParameterBlock()
+        model.rparams = ASM2dN2OReactionParameterBlock(property_package=model.pparams)
 
         model.props = model.pparams.build_state_block([1])
         model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
@@ -326,7 +334,7 @@ class TestASM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
-        assert isinstance(scaler, ModifiedASM2dReactionScaler)
+        assert isinstance(scaler, ASM2dN2OReactionScaler)
 
         scaler.variable_scaling_routine(model.rxns[1])
 
@@ -357,10 +365,8 @@ class TestASM1ReactionScaler(object):
     @pytest.mark.unit
     def test_constraint_scaling_routine(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock()
-        model.rparams = ModifiedASM2dReactionParameterBlock(
-            property_package=model.pparams
-        )
+        model.pparams = ASM2dN2OParameterBlock()
+        model.rparams = ASM2dN2OReactionParameterBlock(property_package=model.pparams)
 
         model.props = model.pparams.build_state_block([1])
         model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
@@ -369,7 +375,7 @@ class TestASM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
-        assert isinstance(scaler, ModifiedASM2dReactionScaler)
+        assert isinstance(scaler, ASM2dN2OReactionScaler)
 
         scaler.constraint_scaling_routine(model.rxns[1])
 
@@ -434,10 +440,8 @@ class TestASM1ReactionScaler(object):
     @pytest.mark.unit
     def test_scale_model(self):
         model = ConcreteModel()
-        model.pparams = ModifiedASM2dParameterBlock()
-        model.rparams = ModifiedASM2dReactionParameterBlock(
-            property_package=model.pparams
-        )
+        model.pparams = ASM2dN2OParameterBlock()
+        model.rparams = ASM2dN2OReactionParameterBlock(property_package=model.pparams)
 
         model.props = model.pparams.build_state_block([1])
         model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
@@ -446,7 +450,7 @@ class TestASM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
-        assert isinstance(scaler, ModifiedASM2dReactionScaler)
+        assert isinstance(scaler, ASM2dN2OReactionScaler)
 
         scaler.scale_model(model.rxns[1])
 
@@ -502,10 +506,8 @@ class TestAerobic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
-        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
-            property_package=m.fs.props
-        )
+        m.fs.props = ASM2dN2OParameterBlock()
+        m.fs.rxn_props = ASM2dN2OReactionParameterBlock(property_package=m.fs.props)
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
@@ -639,10 +641,8 @@ class TestAnoxic:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
-        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
-            property_package=m.fs.props
-        )
+        m.fs.props = ASM2dN2OParameterBlock()
+        m.fs.rxn_props = ASM2dN2OReactionParameterBlock(property_package=m.fs.props)
 
         m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
@@ -769,10 +769,8 @@ class TestAerobic15C:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
-        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
-            property_package=m.fs.props
-        )
+        m.fs.props = ASM2dN2OParameterBlock()
+        m.fs.rxn_props = ASM2dN2OReactionParameterBlock(property_package=m.fs.props)
 
         m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
         m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
@@ -913,10 +911,8 @@ class TestAnoxicPHA:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = ModifiedASM2dParameterBlock()
-        m.fs.rxn_props = ModifiedASM2dReactionParameterBlock(
-            property_package=m.fs.props
-        )
+        m.fs.props = ASM2dN2OParameterBlock()
+        m.fs.rxn_props = ASM2dN2OReactionParameterBlock(property_package=m.fs.props)
 
         m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
         m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
