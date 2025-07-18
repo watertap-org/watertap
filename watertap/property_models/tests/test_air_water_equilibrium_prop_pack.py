@@ -24,7 +24,6 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.core.util.initialization import check_dof
 from watertap.core.solvers import get_solver
