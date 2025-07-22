@@ -74,7 +74,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
         """
         super().build()
 
-        self._reaction_block_class = ASM2dGHGReactionBlock
+        self._reaction_block_class = ASM2dN2OReactionBlock
 
         # Reaction Index
         # Reaction names based on standard numbering in ASM2d paper
@@ -201,6 +201,12 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="Yield of nitrite oxidizing bacteria, [kg COD/kg N]",
+        )
+        self.f_XI = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Fraction of inert COD from lysis, [kg COD/kg COD]",
         )
         self.f_XIH = pyo.Var(
             initialize=0.1,
@@ -757,7 +763,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="Saturation coefficient for nitrous oxide), [kg O2/m^3]",
         )
-        self.q_AOB_AOM = pyo.Var(
+        self.q_AOB_AMO = pyo.Var(
             initialize=5.2,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
@@ -800,8 +806,8 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="Anoxic reduction factor for AOB decay",
         )
         self.KAOB1_O2 = pyo.Var(
-            initialize=1,
-            units=pyo.units.dimensionless,
+            initialize=1e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for oxygen (AMO reaction)",
         )
@@ -812,32 +818,32 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="AOB affinity constant for NH4",
         )
         self.KAOB2_O2 = pyo.Var(
-            initialize=0.6,
-            units=pyo.units.dimensionless,
+            initialize=0.6e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for oxygen (HAO reaction)",
         )
         self.KAOB_NH2OH = pyo.Var(
-            initialize=0.3,
-            units=pyo.units.dimensionless,
+            initialize=0.3e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for NH2OH",
         )
         self.KAOB_P = pyo.Var(
-            initialize=0.01,
-            units=pyo.units.dimensionless,
+            initialize=0.01e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for phosphate",
         )
         self.KAOB_HAO_NO = pyo.Var(
-            initialize=0.0003,
-            units=pyo.units.dimensionless,
+            initialize=0.0003e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for NO (from HAO)",
         )
         self.KAOB_NN_NO = pyo.Var(
-            initialize=0.008,
-            units=pyo.units.dimensionless,
+            initialize=0.008e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for NO (form NirK)",
         )
@@ -848,20 +854,20 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="AOB affinity constant for free nitrous acid",
         )
         self.KAOB_ND_O2 = pyo.Var(
-            initialize=0.5,
-            units=pyo.units.dimensionless,
+            initialize=0.5e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB constant for O2 effect on the ND pathway",
         )
         self.KAOB_I_O2 = pyo.Var(
-            initialize=0.8,
-            units=pyo.units.dimensionless,
+            initialize=0.8e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="N2O constant for production inhibition by O2",
         )
         self.KAOB_NO3 = pyo.Var(
-            initialize=0.5,
-            units=pyo.units.dimensionless,
+            initialize=0.5e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for nitrate",
         )
@@ -884,8 +890,8 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="Anoxic reduction factor for NOB decay",
         )
         self.KNOB_O2 = pyo.Var(
-            initialize=1.2,
-            units=pyo.units.dimensionless,
+            initialize=1.2e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="NOB affinity constant for oxygen",
         )
@@ -896,14 +902,14 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="NOB affinity constant for nitrite",
         )
         self.KNOB_P = pyo.Var(
-            initialize=0.01,
-            units=pyo.units.dimensionless,
+            initialize=0.01e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="NOB affinity constant for phosphate",
         )
         self.KNOB_NO3 = pyo.Var(
-            initialize=0.5,
-            units=pyo.units.dimensionless,
+            initialize=0.5e-3,
+            units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="NOB affinity constant for nitrate",
         )
@@ -1433,7 +1439,8 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R15", "Liq", "X_PAO"): 0,
             ("R15", "Liq", "X_PP"): 0,
             ("R15", "Liq", "X_PHA"): 0,
-            ("R15", "Liq", "X_AUT"): 0,
+            ("R15", "Liq", "X_AOB"): 0,
+            ("R15", "Liq", "X_NOB"): 0,
             ("R15", "Liq", "S_K"): 0,
             ("R15", "Liq", "S_Mg"): 0,
             # R16: Lysis of X_H
@@ -1739,7 +1746,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             / (0.5714286 * self.Y_PAO * self.nG),
             ("R27", "Liq", "S_NO3"): 0,
             ("R27", "Liq", "S_PO4"): -self.i_PBM,
-            ("R27", "Liq", "S_IC"): self.i_CBM - self.i_CXPHA / self.Y_PAO,
+            ("R27", "Liq", "S_IC"): -self.i_CBM + self.i_CXPHA / self.Y_PAO,
             ("R27", "Liq", "X_I"): 0,
             ("R27", "Liq", "X_S"): 0,
             ("R27", "Liq", "X_H"): 0,
@@ -1757,7 +1764,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R28", "Liq", "S_A"): 0,
             ("R28", "Liq", "S_I"): 0,
             ("R28", "Liq", "S_NH4"): -(
-                self.f_XI * self.I_NXI + (1 - self.f_XI) * self.I_NXS - self.I_NBM
+                self.f_XI * self.i_NXI + (1 - self.f_XI) * self.i_NXS - self.i_NBM
             ),
             ("R28", "Liq", "S_NH2OH"): 0,
             ("R28", "Liq", "S_N2O"): 0,
@@ -1766,7 +1773,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R28", "Liq", "S_N2"): 0,
             ("R28", "Liq", "S_NO3"): 0,
             ("R28", "Liq", "S_PO4"): -(
-                self.f_XI * self.I_PXI + (1 - self.f_XI) * self.I_PXS - self.I_PBM
+                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
             ),
             ("R28", "Liq", "S_IC"): -(
                 self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CBM
@@ -1988,7 +1995,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R37", "Liq", "S_A"): 0,
             ("R37", "Liq", "S_I"): 0,
             ("R37", "Liq", "S_NH4"): -(
-                self.f_XI * self.I_NXI + (1 - self.f_XI) * self.I_NXS - self.I_NBM
+                self.f_XI * self.i_NXI + (1 - self.f_XI) * self.i_NXS - self.i_NBM
             ),
             ("R37", "Liq", "S_NH2OH"): 0,
             ("R37", "Liq", "S_N2O"): 0,
@@ -1997,7 +2004,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R37", "Liq", "S_N2"): 0,
             ("R37", "Liq", "S_NO3"): 0,
             ("R37", "Liq", "S_PO4"): -(
-                self.f_XI * self.I_PXI + (1 - self.f_XI) * self.I_PXS - self.I_PBM
+                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
             ),
             ("R37", "Liq", "S_IC"): -(
                 self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CBM
@@ -2019,7 +2026,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R38", "Liq", "S_A"): 0,
             ("R38", "Liq", "S_I"): 0,
             ("R38", "Liq", "S_NH4"): -(
-                self.f_XI * self.I_NXI + (1 - self.f_XI) * self.I_NXS - self.I_NBM
+                self.f_XI * self.i_NXI + (1 - self.f_XI) * self.i_NXS - self.i_NBM
             ),
             ("R38", "Liq", "S_NH2OH"): 0,
             ("R38", "Liq", "S_N2O"): 0,
@@ -2028,7 +2035,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R38", "Liq", "S_N2"): 0,
             ("R38", "Liq", "S_NO3"): 0,
             ("R38", "Liq", "S_PO4"): -(
-                self.f_XI * self.I_PXI + (1 - self.f_XI) * self.I_PXS - self.I_PBM
+                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
             ),
             ("R38", "Liq", "S_IC"): -(
                 self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CBM
@@ -2073,7 +2080,7 @@ class ASM2dN2OReactionScaler(CustomScalerBase):
     are scaled using the inverse maximum scheme.
     """
 
-    # TODO: Revisit this scaling factor
+    # TODO: Revisit this scaling routine once we begin to apply the model
     DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
 
     def variable_scaling_routine(
@@ -2087,8 +2094,6 @@ class ASM2dN2OReactionScaler(CustomScalerBase):
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
-        # TODO: Revisit this scaling methodology
-        # Consider scale_constraint_by_default or scale_constraints_by_jacobian_norm
         if model.is_property_constructed("rate_expression"):
             for j in model.rate_expression.values():
                 self.scale_constraint_by_nominal_value(
@@ -2147,13 +2152,13 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
         self.eps = pyo.Param(
-            initialize=1e-6,
+            initialize=1e-9,
             units=pyo.units.kg / pyo.units.m**3,
             mutable=True,
             doc="epsilon",
         )
 
-        @self.Expression(self.flowsheet().time, doc="Monod equation for KL_X")
+        @self.Expression(doc="Monod equation for KL_X")
         def MonodX(b):
             return (
                 b.conc_mass_comp_ref["X_S"]
@@ -2164,7 +2169,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                 )
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monod equation for KP_PHA")
+        @self.Expression(doc="Monod equation for KP_PHA")
         def MonodPHA(b):
             return (
                 b.conc_mass_comp_ref["X_PHA"]
@@ -2176,7 +2181,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                 )
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monod equation for KI_PP")
+        @self.Expression(doc="Monod equation for KI_PP")
         def MonodIPP(b):
             return (
                 b.params.K_MAX
@@ -2189,25 +2194,25 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                 / (b.conc_mass_comp_ref["X_PAO"] + self.eps)
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monod equation for KP_PP")
+        @self.Expression(doc="Monod equation for KP_PP")
         def MonodPP(b):
             return (
                 b.conc_mass_comp_ref["X_PP"]
                 / (b.conc_mass_comp_ref["X_PAO"] + self.eps)
                 / (
                     b.params.KP_PP
-                    + b.conc_mass_comp_ref["X_PHA"]
+                    + b.conc_mass_comp_ref["X_PP"]
                     / (b.conc_mass_comp_ref["X_PAO"] + self.eps)
                 )
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monod equation for KH_PO4")
+        @self.Expression(doc="Monod equation for KH_PO4")
         def MonodPO4(b):
             return b.conc_mass_comp_ref["S_PO4"] / (
                 b.params.KH_PO4 + b.conc_mass_comp_ref["S_PO4"]
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monod equation for KH_NH4")
+        @self.Expression(doc="Monod equation for KH_NH4")
         def MonodNH4(b):
             return b.conc_mass_comp_ref["S_NH4"] / (
                 b.params.KH_NH4 + b.conc_mass_comp_ref["S_NH4"]
@@ -2219,20 +2224,17 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                 b.params.KP_P + b.conc_mass_comp_ref["S_PO4"]
             )
 
-        @self.Expression(self.flowsheet().time, doc="Monod equation for KP_NH4")
+        @self.Expression(doc="Monod equation for KP_NH4")
         def MonodSNH4_P(b):
             return b.conc_mass_comp_ref["S_NH4"] / (
                 b.params.KP_NH4 + b.conc_mass_comp_ref["S_NH4"]
             )
 
-        @self.Expression(self.flowsheet().time, doc="fSO2")
+        @self.Expression(doc="fSO2")
         def fSO2(b):
-            return (
-                b.conc_mass_comp_ref["S_O2"]
-                / (
-                    b.params.KA_AOB_ND_O2
-                    + (1 - 2 * (b.params.KAOB_ND_O2 / b.params.KAOB_I_O2) ** 0.5)
-                )
+            return b.conc_mass_comp_ref["S_O2"] / (
+                b.params.KAOB_ND_O2
+                + (1 - 2 * (b.params.KAOB_ND_O2 / b.params.KAOB_I_O2) ** 0.5)
                 * b.conc_mass_comp_ref["S_O2"]
                 + b.conc_mass_comp_ref["S_O2"] ** 2 / b.params.KAOB_I_O2
             )
@@ -2349,7 +2351,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * self.MonodNH4
@@ -2375,7 +2377,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2405,7 +2407,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2435,7 +2437,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2469,7 +2471,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2499,7 +2501,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2529,7 +2531,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2559,7 +2561,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2593,7 +2595,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             / (
                                 b.conc_mass_comp_ref["S_F"]
                                 + b.conc_mass_comp_ref["S_A"]
-                                + 1e-10 * pyo.units.kg / pyo.units.m**3
+                                + self.eps
                             )
                         )
                         * (
@@ -2927,14 +2929,15 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_O2"]
                             / (b.params.KAOB1_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
-                        * (b.params.S_FA / (b.params.KAOB_NH4 + b.params.S_FA))
+                        # S_FA requires "Free ammonia from PCM_speciation - asm2d_PSFe_GHG.c
+                        # * (b.params.S_FA / (b.params.KAOB_NH4 + b.params.S_FA))
                         * b.conc_mass_comp_ref["X_AOB"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R32":
                     # R32: NH2OH to NO coupled with O2 reduction (X_AOB growth)
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_AOB_AMO
+                        b.params.mu_AOB_HAO
                         * (
                             b.conc_mass_comp_ref["S_O2"]
                             / (b.params.KAOB2_O2 + b.conc_mass_comp_ref["S_O2"])
@@ -2945,11 +2948,11 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.conc_mass_comp_ref["S_NH4"]
-                            / (b.conc_mass_comp_ref["S_NH4"] + self.eps * 1e-6)
+                            / (b.conc_mass_comp_ref["S_NH4"] + self.eps * 1e-3)
                         )
                         * (
-                            b.conc_mass_comp_ref["S_N2"]
-                            / (b.params.KAOB_P + b.conc_mass_comp_ref["S_N2"])
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.KAOB_P + b.conc_mass_comp_ref["S_PO4"])
                         )
                         * b.conc_mass_comp_ref["X_AOB"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -2992,9 +2995,9 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_NH2OH"]
                             / (b.params.KAOB_NH2OH + b.conc_mass_comp_ref["S_NH2OH"])
                         )
-                        * (b.params.S_FNA / (b.params.KAOB_HNO2 + b.params.S_FNA))
-                        * self.fSO2
-                        * b.conc_mass_comp_ref["X_AOB"],
+                        # S_FNA requires "Free Nitrous Acid from PCM_speciation - asm2d_PSFe_GHG.c
+                        # * (b.params.S_FNA / (b.params.KAOB_HNO2 + b.params.S_FNA))
+                        * self.fSO2 * b.conc_mass_comp_ref["X_AOB"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R36":
@@ -3005,7 +3008,8 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_O2"]
                             / (b.params.KNOB_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
-                        * (b.params.S_FNA / (b.params.KNOB_NO2 + b.params.S_FNA))
+                        # S_FNA requires "Free Nitrous Acid from PCM_speciation - asm2d_PSFe_GHG.c
+                        # * (b.params.S_FNA / (b.params.KNOB_NO2 + b.params.S_FNA))
                         * (
                             b.conc_mass_comp_ref["S_PO4"]
                             / (b.params.KNOB_P + b.conc_mass_comp_ref["S_PO4"])
@@ -3021,14 +3025,10 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             * (
                                 b.conc_mass_comp_ref["S_O2"]
                                 / (b.params.KAOB1_O2 + b.conc_mass_comp_ref["S_O2"])
-                            )
-                            + b.params.hAOB_NO3_end
-                            * (
-                                b.params.KAOB1_O2
+                                + b.params.hAOB_NO3_end
+                                * b.params.KAOB1_O2
                                 / (b.params.KAOB1_O2 + b.conc_mass_comp_ref["S_O2"])
-                            )
-                            * (
-                                b.conc_mass_comp_ref["S_NO3"]
+                                * b.conc_mass_comp_ref["S_NO3"]
                                 / (b.params.KAOB_NO3 + b.conc_mass_comp_ref["S_NO3"])
                             )
                             * b.conc_mass_comp_ref["X_AOB"],
@@ -3047,14 +3047,10 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             * (
                                 b.conc_mass_comp_ref["S_O2"]
                                 / (b.params.KNOB_O2 + b.conc_mass_comp_ref["S_O2"])
-                            )
-                            + b.params.hNOB_NO3_end
-                            * (
-                                b.params.KNOB_O2
+                                + b.params.hNOB_NO3_end
+                                * b.params.KNOB_O2
                                 / (b.params.KNOB_O2 + b.conc_mass_comp_ref["S_O2"])
-                            )
-                            * (
-                                b.conc_mass_comp_ref["S_NO3"]
+                                * b.conc_mass_comp_ref["S_NO3"]
                                 / (b.params.KNOB_NO3 + b.conc_mass_comp_ref["S_NO3"])
                             )
                             * b.conc_mass_comp_ref["X_NOB"],
