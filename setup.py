@@ -27,7 +27,7 @@ long_description = (cwd / "README.md").read_text()
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.4.dev0",
+    version="1.5.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -69,7 +69,7 @@ setup(
         # primary requirements for unit and property models
         # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
         # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
-        "idaes-pse >=2.8.0,<2.9.0rc0",
+        "idaes-pse @ git+https://github.com/radhakrishnatg/idaes-pse.git@pt-improvements", #"idaes-pse >=2.8.0,<2.9.0rc0",
         "pyomo>=6.6.1",
         "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
