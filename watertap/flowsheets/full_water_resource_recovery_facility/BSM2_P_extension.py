@@ -1035,7 +1035,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
