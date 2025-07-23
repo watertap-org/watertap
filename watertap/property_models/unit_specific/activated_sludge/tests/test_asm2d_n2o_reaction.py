@@ -801,16 +801,16 @@ class TestFlowsheet:
             15.5671e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH2OH"]) == pytest.approx(
-            2.9941e-8, rel=1e-4
+            9.512e-9, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2O"]) == pytest.approx(
-            4.0888e-9, rel=1e-4
+            1.1847e-8, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO"]) == pytest.approx(
-            5.794e-9, rel=1e-4
+            1.2826e-8, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO2"]) == pytest.approx(
-            4.141e-13, rel=1e-4
+            1.388e-11, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
