@@ -9,27 +9,17 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-"""
-Tests for full Water Resource Recovery Facility with ASM2d and ADM1
-(WRRF; a.k.a., wastewater treatment plant) flowsheet example with ASM1 and ADM1.
-The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
-but comprises different specifications for default values than BSM2.
-"""
 
-# Some more information about this module
-__author__ = "Chenyu Wang"
 
 import pandas as pd
 import pyomo.environ as pyo
 import pytest
-import os
+
+from idaes.apps.grid_integration import PriceTakerModel
 
 from watertap.flowsheets.flex_desal import flowsheet as fs
 from watertap.flowsheets.flex_desal import utils
 from watertap.flowsheets.flex_desal.params import FlexDesalParams
-from watertap.flowsheets.flex_desal.price_taker_model import (
-    PriceTakerModel,
-)  # Use this until IDAES is updated
 from watertap.core.solvers import get_solver
 
 solver = get_solver()
@@ -39,8 +29,7 @@ solver = get_solver()
 class TestPriceTakerWorkflow:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        filepath = os.path.join("..", "sbce_pricesignal.csv")
-        price_data = pd.read_csv(filepath)
+        price_data = pd.read_csv("../sbce_pricesignal.csv")
         price_data["Energy Rate"] = (
             price_data["electric_energy_0_2022-07-05_2022-07-14_0"]
             + price_data["electric_energy_1_2022-07-05_2022-07-14_0"]
@@ -157,17 +146,29 @@ class TestPriceTakerWorkflow:
         assert isinstance(m.brine_pump_unit_commitment, pyo.Constraint)
 
     @pytest.mark.unit
+    def test_add_useful_expressions(self, system_frame):
+        m, price_data = system_frame
+
+        fs.add_useful_expressions(m)
+
+        assert isinstance(m.total_water_revenue, pyo.Expression)
+        assert isinstance(m.total_demand_response_revenue, pyo.Expression)
+        assert isinstance(m.total_emissions_cost, pyo.Expression)
+
+    @pytest.mark.unit
     def test_add_capacity_limits(self, system_frame):
         m, price_data = system_frame
 
         for skid in range(1, m.params.ro.num_ro_skids + 1):
             m.add_capacity_limits(
-                op_block_name=f"reverse_osmosis.ro_skid[{skid}]",  # Name of the operation model block
+                # Name of the operation model block
+                op_block_name=f"reverse_osmosis.ro_skid[{skid}]",
+                # Name of the commodity on the operation model that capacity constraints will be applied to
                 commodity="feed_flowrate",
-                # Name of the commodity on the operation model that capacity constraints will be applied to (flow rate, power, etc.)
-                capacity=m.params.ro.nominal_flowrate,  # Maximum capacity on the commodity
-                op_range_lb=1,
+                # Maximum capacity on the commodity
+                capacity=m.params.ro.nominal_flowrate,
                 # Ratio of the capacity at minimum stable operation to the maximum capacity. Must be between [0, 1]
+                op_range_lb=1,
             )
 
     @pytest.mark.unit
@@ -229,104 +230,23 @@ class TestPriceTakerWorkflow:
         solver = utils.get_gurobi_solver_model(m)
         solver.solve(m)
 
-    # @pytest.mark.component
-    # def test_scip_solve(self, system_frame):
-    #     # Timed out after 2s
-    #     m, price_data = system_frame
-    #
-    #     solver = pyo.SolverFactory("scip")
-    #     solver.solve(m)
+    @pytest.mark.component
+    # Took 6 hours to solve locally
+    def test_baron_solve(self, system_frame):
+        m, price_data = system_frame
 
-    # @pytest.mark.component
-    # # Took 6 hours to solve locally
-    # def test_baron_solve(self, system_frame):
-    #     m, price_data = system_frame
-    #
-    #     solver = pyo.SolverFactory("gams")
-    #     solver.solve(
-    #         m, solver="baron", add_options=[f"options optcr={0.03};"]
-    #     )
+        solver = pyo.SolverFactory("gams")
+        solver.solve(m, solver="baron", add_options=[f"options optcr={0.03};"])
 
-    # @pytest.mark.component
-    # # cplex unsuitable for model type (minlp)
-    # def test_cplex_solve(self, system_frame):
-    #     m, price_data = system_frame
-    #
-    #     solver = pyo.SolverFactory("gams")
-    #     solver.solve(
-    #         m, solver="cplex", add_options=[f"options optcr={0.03};"]
-    #     )
-
-    # @pytest.mark.component
-    # def test_results(self, system_frame):
-    #     m = system_frame
-    #
-    #     assert value(m.fs.Treated.properties[0].flow_vol) == pytest.approx(
-    #         0.24219, rel=1e-3
-    #     )
-    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_A"]) == pytest.approx(
-    #         2.7392e-06, abs=1e-6
-    #     )
-    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_F"]) == pytest.approx(
-    #         0.00026922, rel=1e-3
-    #     )
-    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_I"]) == pytest.approx(
-    #         0.057450006, rel=1e-3
-    #     )
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["S_N2"]
-    #     ) == pytest.approx(0.0516457, rel=1e-3)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["S_NH4"]
-    #     ) == pytest.approx(0.000209, rel=1e-3)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["S_NO3"]
-    #     ) == pytest.approx(0.00452157, rel=1e-3)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["S_O2"]
-    #     ) == pytest.approx(0.0014803, rel=1e-3)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-    #     ) == pytest.approx(0.755433, rel=1e-3)
-    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
-    #         0.3667916, rel=1e-3
-    #     )
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["S_Mg"]
-    #     ) == pytest.approx(0.0182828, rel=1e-3)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["S_IC"]
-    #     ) == pytest.approx(0.1497356, rel=1e-3)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["X_AUT"]
-    #     ) == pytest.approx(0.0004246397, rel=1e-3)
-    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["X_H"]) == pytest.approx(
-    #         0.01328946, rel=1e-3
-    #     )
-    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["X_I"]) == pytest.approx(
-    #         0.0120139, rel=1e-3
-    #     )
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["X_PAO"]
-    #     ) == pytest.approx(0.01305288, rel=1e-3)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["X_PHA"]
-    #     ) == pytest.approx(7.7306e-06, abs=1e-6)
-    #     assert value(
-    #         m.fs.Treated.properties[0].conc_mass_comp["X_PP"]
-    #     ) == pytest.approx(0.0043593, rel=1e-3)
-    #     assert value(m.fs.Treated.properties[0].conc_mass_comp["X_S"]) == pytest.approx(
-    #         0.00021958, rel=1e-3
-    #     )
-    #
-    #     # Check electricity consumption for each aerobic reactor
-    #     assert value(m.fs.R5.electricity_consumption[0]) == pytest.approx(
-    #         48.0849, rel=1e-3
-    #     )
-    #     assert value(m.fs.R6.electricity_consumption[0]) == pytest.approx(
-    #         48.0849, rel=1e-3
-    #     )
-    #     assert value(m.fs.R7.electricity_consumption[0]) == pytest.approx(
-    #         48.0849, rel=1e-3
-    #     )
-    #
+        assert pyo.value(m.fixed_demand_cost) == pytest.approx(5657.94712, rel=1e-3)
+        assert pyo.value(m.variable_demand_cost) == pytest.approx(1195.44895, rel=1e-3)
+        assert pyo.value(m.fixed_monthly_cost) == pytest.approx(247096.77419, rel=1e-3)
+        assert pyo.value(m.total_water_production) == pytest.approx(
+            105606.16438, rel=1e-3
+        )
+        assert pyo.value(m.total_energy_cost) == pytest.approx(62361.435709, rel=1e-3)
+        assert pyo.value(m.total_demand_cost) == pytest.approx(6853.39607, rel=1e-3)
+        assert pyo.value(m.total_customer_cost) == pytest.approx(1177.34194, rel=1e-3)
+        assert pyo.value(m.total_electricity_cost) == pytest.approx(
+            70392.17371, rel=1e-3
+        )
