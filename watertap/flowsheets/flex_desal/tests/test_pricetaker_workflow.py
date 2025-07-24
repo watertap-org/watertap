@@ -13,6 +13,7 @@ import os
 
 import pyomo.environ as pyo
 import pytest
+import pandas as pd
 
 from idaes.apps.grid_integration import PriceTakerModel
 
@@ -28,11 +29,12 @@ solver = get_solver()
 class TestPriceTakerWorkflow:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        price_data = os.path.join(
+        price_data_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "..",
             "sbce_pricesignal.csv",
         )
+        price_data = pd.read_csv(price_data_path)
         price_data["Energy Rate"] = (
             price_data["electric_energy_0_2022-07-05_2022-07-14_0"]
             + price_data["electric_energy_1_2022-07-05_2022-07-14_0"]
