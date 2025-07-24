@@ -94,9 +94,6 @@ setup(
             "requests",
             "cryptography",  # for encrypting OLI credentials
         ],
-        "pricetaker": [
-            "gurobipy",
-        ],
     },
     package_data={  # Optional
         "": [
