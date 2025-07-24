@@ -9,9 +9,8 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import os
 
-
-import pandas as pd
 import pyomo.environ as pyo
 import pytest
 
@@ -29,7 +28,11 @@ solver = get_solver()
 class TestPriceTakerWorkflow:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        price_data = pd.read_csv("../sbce_pricesignal.csv")
+        price_data = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..",
+            "sbce_pricesignal.csv",
+        )
         price_data["Energy Rate"] = (
             price_data["electric_energy_0_2022-07-05_2022-07-14_0"]
             + price_data["electric_energy_1_2022-07-05_2022-07-14_0"]
