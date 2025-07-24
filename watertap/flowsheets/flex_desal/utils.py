@@ -16,7 +16,7 @@ This module contains some utility functions
 from pyomo.environ import SolverFactory
 from pyomo.common.dependencies import attempt_import
 
-gurobipy, gurobipy_available = attempt_import("gurobipy", defer_import=False)
+gurobipy, gurobipy_available = attempt_import("gurobipy")
 if gurobipy_available:
     from gurobipy import nlfunc
 
@@ -27,40 +27,43 @@ def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
     This function is needed only when the RO recovery is a variable.
     """
     if not gurobipy_available:
-        raise ModuleNotFoundError("Module 'gurobipy' not available.")
+        pass
+    else:
+        solver = SolverFactory("gurobi_persistent")
+        solver.options["MIPGap"] = mip_gap
+        solver.options["TimeLimit"] = time_limit
+        solver.options["OutputFlag"] = int(tee)
 
-    solver = SolverFactory("gurobi_persistent")
-    solver.options["MIPGap"] = mip_gap
-    solver.options["TimeLimit"] = time_limit
-    solver.options["OutputFlag"] = int(tee)
+        if (
+            not m.period[1, 1]
+            .reverse_osmosis.ro_skid[1]
+            .calculate_energy_intensity.active
+        ):
+            # If the nonlinear constraint is not active, then return the solver
+            # object directly
+            solver.set_instance(m)
+            return solver
 
-    if not m.period[1, 1].reverse_osmosis.ro_skid[1].calculate_energy_intensity.active:
-        # If the nonlinear constraint is not active, then return the solver
-        # object directly
+        if m.params.surrogate_type == "quadratic_surrogate":
+            # Model is quadratic, so Pyomo's writer can handle it.
+            solver.set_instance(m)
+            return solver
+
+        # Nonlinear constraint is present.
+        # Step 1: Deactivate the nonlinear constraint
+        for p in m.period:
+            for skid in m.period[p].reverse_osmosis.set_ro_skids:
+                m.period[p].reverse_osmosis.ro_skid[
+                    skid
+                ].calculate_energy_intensity.deactivate()
+
+        # pylint: disable = protected-access
+        # Step 2: Build the gurobipy model
         solver.set_instance(m)
-        return solver
+        gm = solver._solver_model  # Gurobipy model
+        pm_to_gm = solver._pyomo_var_to_solver_var_map
 
-    if m.params.surrogate_type == "quadratic_surrogate":
-        # Model is quadratic, so Pyomo's writer can handle it.
-        solver.set_instance(m)
-        return solver
-
-    # Nonlinear constraint is present.
-    # Step 1: Deactivate the nonlinear constraint
-    for p in m.period:
-        for skid in m.period[p].reverse_osmosis.set_ro_skids:
-            m.period[p].reverse_osmosis.ro_skid[
-                skid
-            ].calculate_energy_intensity.deactivate()
-
-    # pylint: disable = protected-access
-    # Step 2: Build the gurobipy model
-    solver.set_instance(m)
-    gm = solver._solver_model  # Gurobipy model
-    pm_to_gm = solver._pyomo_var_to_solver_var_map
-
-    # Step 3: Add the nonlinear constraint
-    if gurobipy_available:
+        # Step 3: Add the nonlinear constraint
         coeffs = m.period[1, 1].reverse_osmosis.ro_skid[1].coeffs
         for p in m.period:
             for skid in m.period[p].reverse_osmosis.set_ro_skids:
