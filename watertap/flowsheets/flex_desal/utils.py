@@ -13,9 +13,12 @@
 """
 This module contains some utility functions
 """
-
-from gurobipy import nlfunc
 from pyomo.environ import SolverFactory
+from pyomo.common.dependencies import attempt_import
+
+gurobipy, gurobipy_available = attempt_import("gurobipy", defer_import=False)
+if gurobipy_available:
+    from gurobipy import nlfunc
 
 
 def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
@@ -23,6 +26,9 @@ def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
     Returns a Pyomo SolverFactory object that is compatible with Gurobi.
     This function is needed only when the RO recovery is a variable.
     """
+    if not gurobipy_available:
+        raise ModuleNotFoundError("Module 'gurobipy' not available.")
+
     solver = SolverFactory("gurobi_persistent")
     solver.options["MIPGap"] = mip_gap
     solver.options["TimeLimit"] = time_limit
