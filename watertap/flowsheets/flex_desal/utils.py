@@ -14,7 +14,6 @@
 This module contains some utility functions
 """
 from pyomo.environ import SolverFactory
-from pyomo.common.dependencies import attempt_import
 
 try:
     from gurobipy import nlfunc
