@@ -16,6 +16,7 @@ This module contains some utility functions
 from pyomo.environ import SolverFactory
 from pyomo.common.dependencies import attempt_import
 
+# pylint: disable = import-error
 gurobipy, gurobipy_available = attempt_import("gurobipy", defer_import=False)
 if gurobipy_available:
     from gurobipy import nlfunc
