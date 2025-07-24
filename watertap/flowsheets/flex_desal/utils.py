@@ -60,20 +60,21 @@ def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
     pm_to_gm = solver._pyomo_var_to_solver_var_map
 
     # Step 3: Add the nonlinear constraint
-    coeffs = m.period[1, 1].reverse_osmosis.ro_skid[1].coeffs
-    for p in m.period:
-        for skid in m.period[p].reverse_osmosis.set_ro_skids:
-            ro_skid = m.period[p].reverse_osmosis.ro_skid[skid]
-            recovery_var = pm_to_gm[ro_skid.recovery]
-            gm.addConstr(
-                (
-                    pm_to_gm[ro_skid.energy_intensity]
-                    == coeffs["a"] * nlfunc.exp(-coeffs["b"] * recovery_var)
-                    + coeffs["c"] * recovery_var * recovery_var
-                    + coeffs["d"]
-                ),
-                name=f"ro_energy_intensity_{p[0]}_{p[1]}_{skid}",
-            )
+    if gurobipy_available:
+        coeffs = m.period[1, 1].reverse_osmosis.ro_skid[1].coeffs
+        for p in m.period:
+            for skid in m.period[p].reverse_osmosis.set_ro_skids:
+                ro_skid = m.period[p].reverse_osmosis.ro_skid[skid]
+                recovery_var = pm_to_gm[ro_skid.recovery]
+                gm.addConstr(
+                    (
+                        pm_to_gm[ro_skid.energy_intensity]
+                        == coeffs["a"] * nlfunc.exp(-coeffs["b"] * recovery_var)
+                        + coeffs["c"] * recovery_var * recovery_var
+                        + coeffs["d"]
+                    ),
+                    name=f"ro_energy_intensity_{p[0]}_{p[1]}_{skid}",
+                )
 
     return solver
 
