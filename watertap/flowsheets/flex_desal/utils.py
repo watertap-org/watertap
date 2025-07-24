@@ -14,13 +14,11 @@
 This module contains some utility functions
 """
 from pyomo.environ import SolverFactory
+from pyomo.common.dependencies import attempt_import
 
-try:
+gurobipy, gurobipy_available = attempt_import("gurobipy", defer_import=False)
+if gurobipy_available:
     from gurobipy import nlfunc
-
-    gurobipy_available = True
-except:
-    gurobipy_available = False
 
 
 def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
