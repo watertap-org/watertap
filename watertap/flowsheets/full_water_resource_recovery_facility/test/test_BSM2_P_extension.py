@@ -300,6 +300,7 @@ class TestFullFlowsheetBioPTrue:
             2.3814879e21, rel=1e-3
         )
 
+
 @pytest.mark.requires_idaes_solver
 class TestScaledBioPFalse:
     @pytest.fixture(scope="class")
@@ -320,7 +321,6 @@ class TestScaledBioPFalse:
         assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
-
     @pytest.mark.solver
     @pytest.mark.component
     def test_condition_number(self, system_frame):
@@ -331,6 +331,7 @@ class TestScaledBioPFalse:
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             6.69275e15, rel=1e-3
         )
+
 
 @pytest.mark.requires_idaes_solver
 class TestScaledBioPTrue:
@@ -351,7 +352,6 @@ class TestScaledBioPTrue:
         warnings, next_steps = dt._collect_numerical_warnings()
         assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
-
 
     @pytest.mark.solver
     @pytest.mark.component

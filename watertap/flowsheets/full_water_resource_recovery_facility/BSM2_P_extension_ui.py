@@ -3872,7 +3872,6 @@ def build_flowsheet(build_options=None, **kwargs):
 
         set_operating_conditions(m, bio_P=bioP)
 
-
         initialize_system(m, bio_P=bioP)
 
         add_costing(m)
@@ -3902,9 +3901,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         set_operating_conditions(m, bio_P=False)
 
-
         initialize_system(m, bio_P=False)
-
 
         add_costing(m)
         m.fs.costing.initialize()
