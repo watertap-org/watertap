@@ -235,23 +235,23 @@ class TestPriceTakerWorkflow:
         solver = utils.get_gurobi_solver_model(m)
         solver.solve(m)
 
-    @pytest.mark.component
-    # Took 6 hours to solve locally
-    def test_baron_solve(self, system_frame):
-        m, price_data = system_frame
-
-        solver = pyo.SolverFactory("gams")
-        solver.solve(m, solver="baron", add_options=[f"options optcr={0.03};"])
-
-        assert pyo.value(m.fixed_demand_cost) == pytest.approx(5657.94712, rel=1e-3)
-        assert pyo.value(m.variable_demand_cost) == pytest.approx(1195.44895, rel=1e-3)
-        assert pyo.value(m.fixed_monthly_cost) == pytest.approx(247096.77419, rel=1e-3)
-        assert pyo.value(m.total_water_production) == pytest.approx(
-            105606.16438, rel=1e-3
-        )
-        assert pyo.value(m.total_energy_cost) == pytest.approx(62361.435709, rel=1e-3)
-        assert pyo.value(m.total_demand_cost) == pytest.approx(6853.39607, rel=1e-3)
-        assert pyo.value(m.total_customer_cost) == pytest.approx(1177.34194, rel=1e-3)
-        assert pyo.value(m.total_electricity_cost) == pytest.approx(
-            70392.17371, rel=1e-3
-        )
+    # @pytest.mark.component
+    # # Took 6 hours to solve locally
+    # def test_baron_solve(self, system_frame):
+    #     m, price_data = system_frame
+    #
+    #     solver = pyo.SolverFactory("gams")
+    #     solver.solve(m, solver="baron", add_options=[f"options optcr={0.03};"])
+    #
+    #     assert pyo.value(m.fixed_demand_cost) == pytest.approx(5657.94712, rel=1e-3)
+    #     assert pyo.value(m.variable_demand_cost) == pytest.approx(1195.44895, rel=1e-3)
+    #     assert pyo.value(m.fixed_monthly_cost) == pytest.approx(247096.77419, rel=1e-3)
+    #     assert pyo.value(m.total_water_production) == pytest.approx(
+    #         105606.16438, rel=1e-3
+    #     )
+    #     assert pyo.value(m.total_energy_cost) == pytest.approx(62361.435709, rel=1e-3)
+    #     assert pyo.value(m.total_demand_cost) == pytest.approx(6853.39607, rel=1e-3)
+    #     assert pyo.value(m.total_customer_cost) == pytest.approx(1177.34194, rel=1e-3)
+    #     assert pyo.value(m.total_electricity_cost) == pytest.approx(
+    #         70392.17371, rel=1e-3
+    #     )
