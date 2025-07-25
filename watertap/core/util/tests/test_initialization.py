@@ -203,9 +203,9 @@ class TestIntervalImproveInitial:
     def test_interval_initializer_failure_restores_bounds(self, m_infeas):
         m = m_infeas
         feasibility_tol = 1.0e-6
-  
+
         interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=False)
-  
+
         # Assert the restored bounds
         assert m.x.lb == -3.0
         assert m.x.ub == 3.0
@@ -217,15 +217,21 @@ class TestIntervalImproveInitial:
     @pytest.mark.unit
     def test_interval_initializer_raise_failure(self, m_infeas, caplog):
         caplog.set_level(idaeslog.INFO, logger="watertap.core.util.initialization")
-        
+
         m = m_infeas
         feasibility_tol = 1.0e-6
 
-        with pytest.raises(InfeasibleConstraintException, match=re.escape("Detected an infeasible constraint during FBBT: c[5]")):
+        with pytest.raises(
+            InfeasibleConstraintException,
+            match=re.escape("Detected an infeasible constraint during FBBT: c[5]"),
+        ):
             interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=True)
-            assert "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]" in caplog.text
+            assert (
+                "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]"
+                in caplog.text
+            )
             assert "ERROR" in caplog.text
-          
+
         # Assert the restored bounds
         assert m.x.lb == -3.0
         assert m.x.ub == 3.0
@@ -233,12 +239,15 @@ class TestIntervalImproveInitial:
         assert m.y.ub == None
         assert m.z.lb == None
         assert m.z.ub == None
-        
+
         interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=False)
-        
-        assert "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]" in caplog.text
+
+        assert (
+            "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]"
+            in caplog.text
+        )
         assert "WARNING" in caplog.text
-       
+
         # Assert the restored bounds
         assert m.x.lb == -3.0
         assert m.x.ub == 3.0

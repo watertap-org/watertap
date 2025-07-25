@@ -151,7 +151,7 @@ def interval_initializer(
         feasibility_tol : tolerance to use for FBBT (default: 1e-6)
         default_initial_value: set uninitialized variables to this value (default: 0.0)
         logger : logger to use (default: watertap.core.util.initialization)
-        fail_flag: boolean that raises exception if True or logs warning when an exception occurs 
+        fail_flag: boolean that raises exception if True or logs warning when an exception occurs
     Returns:
         None
 
@@ -192,10 +192,14 @@ def interval_initializer(
 
     except Exception as e:
         if fail_flag:
-            _log.error(f"Interval initializer failed for {blk} because of the following: {e}")
+            _log.error(
+                f"Interval initializer failed for {blk} because of the following: {e}"
+            )
             raise e
         else:
-            _log.warning(f"Interval initializer failed for {blk} because of the following: {e}")
+            _log.warning(
+                f"Interval initializer failed for {blk} because of the following: {e}"
+            )
     finally:
         # restore the bounds before leaving this function
         for v, bounds in bound_cache.items():
