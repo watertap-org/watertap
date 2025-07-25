@@ -141,7 +141,7 @@ def assert_no_degrees_of_freedom(blk):
 
 
 def interval_initializer(
-    blk, feasibility_tol=1e-6, default_initial_value=0.0, logger=_log
+    blk, feasibility_tol=1e-6, default_initial_value=0.0, logger=_log, fail_flag=False
 ):
     """
     Improve the initialization of ``blk`` utilizing interval arithmetic.
@@ -151,7 +151,7 @@ def interval_initializer(
         feasibility_tol : tolerance to use for FBBT (default: 1e-6)
         default_initial_value: set uninitialized variables to this value (default: 0.0)
         logger : logger to use (default: watertap.core.util.initialization)
-
+        fail_flag: boolean that raises exception if True or logs warning when an exception occurs 
     Returns:
         None
 
@@ -190,9 +190,12 @@ def interval_initializer(
                     )
                     v.set_value(v.ub, skip_validation=True)
 
-    except:
-        raise
-
+    except Exception as e:
+        if fail_flag:
+            _log.error(f"Interval initializer failed for {blk} because of the following: {e}")
+            raise e
+        else:
+            _log.warning(f"Interval initializer failed for {blk} because of the following: {e}")
     finally:
         # restore the bounds before leaving this function
         for v, bounds in bound_cache.items():

@@ -11,9 +11,9 @@
 #################################################################################
 
 import pytest
-
+from pyomo.common.errors import InfeasibleConstraintException
 from pyomo.environ import ConcreteModel, Var, Constraint, ConstraintList
-
+import re
 from watertap.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 from watertap.core.util.initialization import (
@@ -186,7 +186,7 @@ class TestIntervalImproveInitial:
         # This is the same model used in the pyomo fbbt test at
         # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
 
-        m = ConcreteModel()
+        m = ConcreteModel("m_infeas")
         m.x = Var(bounds=(-3, 3))
         m.y = Var(bounds=(0, None))
         m.z = Var()
@@ -203,11 +203,42 @@ class TestIntervalImproveInitial:
     def test_interval_initializer_failure_restores_bounds(self, m_infeas):
         m = m_infeas
         feasibility_tol = 1.0e-6
-        try:
-            interval_initializer(m, feasibility_tol=feasibility_tol)
-        except:
-            pass
+  
+        interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=False)
+  
+        # Assert the restored bounds
+        assert m.x.lb == -3.0
+        assert m.x.ub == 3.0
+        assert m.y.lb == 0.0
+        assert m.y.ub == None
+        assert m.z.lb == None
+        assert m.z.ub == None
 
+    @pytest.mark.unit
+    def test_interval_initializer_raise_failure(self, m_infeas, caplog):
+        caplog.set_level(idaeslog.INFO, logger="watertap.core.util.initialization")
+        
+        m = m_infeas
+        feasibility_tol = 1.0e-6
+
+        with pytest.raises(InfeasibleConstraintException, match=re.escape("Detected an infeasible constraint during FBBT: c[5]")):
+            interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=True)
+            assert "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]" in caplog.text
+            assert "ERROR" in caplog.text
+          
+        # Assert the restored bounds
+        assert m.x.lb == -3.0
+        assert m.x.ub == 3.0
+        assert m.y.lb == 0.0
+        assert m.y.ub == None
+        assert m.z.lb == None
+        assert m.z.ub == None
+        
+        interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=False)
+        
+        assert "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]" in caplog.text
+        assert "WARNING" in caplog.text
+       
         # Assert the restored bounds
         assert m.x.lb == -3.0
         assert m.x.ub == 3.0
