@@ -108,6 +108,8 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
+
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -716,7 +718,7 @@ def initialize_system(m, bio_P=False, solver=None):
     def function(unit):
         # TODO: Resolve why bio_P=True does not work with the BTInitializer
         if bio_P:
-            unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+            unit.initialize(outlvl=idaeslog.INFO)
         else:
             initializer.initialize(unit)
 
