@@ -14,7 +14,7 @@ This module contains utility functions for initialization of WaterTAP models.
 """
 
 
-__author__ = "Adam Atia"
+__author__ = "Adam Atia, Ben Knueven"
 
 from pyomo.environ import check_optimal_termination, ComponentMap, Var
 from pyomo.contrib.fbbt.fbbt import fbbt
@@ -151,7 +151,8 @@ def interval_initializer(
         feasibility_tol : tolerance to use for FBBT (default: 1e-6)
         default_initial_value: set uninitialized variables to this value (default: 0.0)
         logger : logger to use (default: watertap.core.util.initialization)
-        fail_flag: boolean that raises exception if True or logs warning when an exception occurs
+        fail_flag : Boolean argument to specify error or warning (Default: fail_flag=False produces logger warning.
+                        set fail_flag=True to raise an error and when interval initialization encounters exception.)
     Returns:
         None
 
