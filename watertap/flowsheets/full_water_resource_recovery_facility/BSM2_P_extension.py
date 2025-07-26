@@ -109,7 +109,6 @@ from watertap.costing.unit_models.clarifier import (
 )
 
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
