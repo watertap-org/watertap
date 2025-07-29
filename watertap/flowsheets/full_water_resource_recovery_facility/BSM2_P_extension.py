@@ -46,6 +46,7 @@ from watertap.core.solvers import get_solver
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.scaling import set_scaling_factor
+from idaes.core.util.scaling import constraint_scaling_transform
 import idaes.logger as idaeslog
 from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
@@ -191,7 +192,6 @@ def build(bio_P=False):
         inlet_list=["feed_water", "recycle"],
         momentum_mixing_type=MomentumMixingType.none,
     )
-    m.fs.MX1.outlet.pressure.fix()
 
     # First reactor (anaerobic) - standard CSTR
     m.fs.R1 = CSTR(
@@ -244,8 +244,6 @@ def build(bio_P=False):
         momentum_mixing_type=MomentumMixingType.none,
     )
 
-    m.fs.MX2.outlet.pressure.fix()
-
     # Sludge separator
     m.fs.SP2 = Separator(
         property_package=m.fs.props_ASM2D, outlet_list=["waste", "recycle"]
@@ -266,14 +264,12 @@ def build(bio_P=False):
         momentum_mixing_type=MomentumMixingType.none,
     )
 
-    m.fs.MX3.outlet.pressure.fix()
     # Mixing sludge from thickener and primary clarifier
     m.fs.MX4 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["thickener", "clarifier"],
         momentum_mixing_type=MomentumMixingType.none,
     )
-    m.fs.MX4.outlet.pressure.fix()
 
     # ======================================================================
     # Anaerobic digester section
@@ -319,7 +315,7 @@ def build(bio_P=False):
     m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
     m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
     # Mixers
-    m.fs.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX4)
+    m.fs.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4)
 
     # ======================================================================
     # Link units related to ASM section
@@ -493,6 +489,10 @@ def set_operating_conditions(m, bio_P=False):
     # Thickener unit
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
+
+    # Mixers - fix outlet pressures since MomentumMixingType.none and isobaric assumption
+    for mixer in m.fs.mixers:
+        mixer.outlet.pressure.fix()
 
 
 def scale_system(m, bio_P=False):
@@ -717,9 +717,9 @@ def initialize_system(m, bio_P=False, solver=None):
     def function(unit):
         # TODO: Resolve why bio_P=True does not work with the BTInitializer
         if bio_P:
-            unit.initialize(outlvl=idaeslog.INFO)
+            unit.initialize(outlvl=idaeslog.DEBUG)
         else:
-            initializer.initialize(unit)
+            initializer.initialize(unit, output_level=_log.debug)
 
     seq.run(m, function)
 

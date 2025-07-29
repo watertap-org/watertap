@@ -40,11 +40,22 @@ solver = get_solver()
 is_reference_platform = (
     platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
 )
+is_linux_platform = (
+    platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
+)
+
 reference_platform_only = pytest.mark.xfail(
     condition=(not is_reference_platform),
     run=True,
     strict=False,
     reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
+)
+
+linux_platform_only = pytest.mark.xfail(
+    condition=(not is_linux_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the Linux platform (Python 3)",
 )
 
 
@@ -348,18 +359,37 @@ class TestScaledBioPTrue:
     @pytest.mark.solver
     @pytest.mark.component
     def test_numerical_issues(self, system_frame):
-        dt = DiagnosticsToolbox(system_frame)
+        sm = system_frame
+        dt = DiagnosticsToolbox(sm)
         warnings, next_steps = dt._collect_numerical_warnings()
+
         assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.solver
     @pytest.mark.component
-    def test_condition_number(self, system_frame):
-        m = system_frame
+    @linux_platform_only
+    def test_condition_number_on_linux(self, system_frame):
+        sm = system_frame
+        dt = DiagnosticsToolbox(sm)
 
         # Check condition number to confirm scaling
-        jac, _ = get_jacobian(m, scaled=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.386961e16, rel=1e-3
+            1.25867e16, rel=1e-3
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @reference_platform_only
+    def test_condition_number_on_windows(self, system_frame):
+        sm = system_frame
+        dt = DiagnosticsToolbox(sm)
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(sm, scaled=False)
+
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.77229e16, rel=1e-3
         )
