@@ -543,6 +543,12 @@ def scale_system(m, bio_P=False):
         set_scaling_factor(
             m.fs.R5.control_volume.rate_reaction_generation[0, "Liq", "S_I"], 1e-3
         )
+        constraint_scaling_transform(
+            m.fs.R5.control_volume.rate_reaction_stoichiometry_constraint[
+                0, "Liq", "H2O"
+            ],
+            1e-6,
+        )
 
     clarifier_list = [m.fs.CL, m.fs.CL2]
     clarifier_scaler = ClarifierScaler()
