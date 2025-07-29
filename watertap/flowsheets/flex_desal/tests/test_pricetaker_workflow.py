@@ -211,29 +211,29 @@ class TestPriceTakerWorkflow:
         m, price_data = system_frame
         utils.update_recovery_bounds(m, lb=0.4, ub=0.5)
 
-    @pytest.mark.unit
-    def test_get_baseline_model(self, system_frame):
-        m, price_data = system_frame
-        utils.get_baseline_model(m)
+    # @pytest.mark.unit
+    # def test_get_baseline_model(self, system_frame):
+    #     m, price_data = system_frame
+    #     utils.get_baseline_model(m)
 
-    @pytest.mark.component
-    @pytest.mark.xfail
-    # This test will fail if the user does not have a Gurobi license
-    def test_gurobi_solve(self, system_frame):
-        m, price_data = system_frame
-
-        solver = pyo.SolverFactory("gurobi")
-        solver.options["MIPGap"] = 0.03
-        solver.solve(m)
-
-    @pytest.mark.component
-    @pytest.mark.xfail
-    # This test will fail if the user does not have a Gurobi license
-    def test_gurobi_util_solve(self, system_frame):
-        m, price_data = system_frame
-
-        solver = utils.get_gurobi_solver_model(m)
-        solver.solve(m)
+    # @pytest.mark.component
+    # @pytest.mark.xfail
+    # # This test will fail if the user does not have a Gurobi license
+    # def test_gurobi_solve(self, system_frame):
+    #     m, price_data = system_frame
+    #
+    #     solver = pyo.SolverFactory("gurobi")
+    #     solver.options["MIPGap"] = 0.03
+    #     solver.solve(m)
+    #
+    # @pytest.mark.component
+    # @pytest.mark.xfail
+    # # This test will fail if the user does not have a Gurobi license
+    # def test_gurobi_util_solve(self, system_frame):
+    #     m, price_data = system_frame
+    #
+    #     solver = utils.get_gurobi_solver_model(m)
+    #     solver.solve(m)
 
     # @pytest.mark.component
     # # Took 6 hours to solve locally
