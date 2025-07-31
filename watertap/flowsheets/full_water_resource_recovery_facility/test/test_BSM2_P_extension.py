@@ -40,6 +40,10 @@ solver = get_solver()
 is_reference_platform = (
     platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
 )
+is_linux_platform = (
+    platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
+)
+
 reference_platform_only = pytest.mark.xfail(
     condition=(not is_reference_platform),
     run=True,
@@ -47,12 +51,19 @@ reference_platform_only = pytest.mark.xfail(
     reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
 )
 
+linux_platform_only = pytest.mark.xfail(
+    condition=(not is_linux_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the Linux platform (Python 3)",
+)
+
 
 @pytest.mark.requires_idaes_solver
 class TestFullFlowsheetBioPFalse:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, res = main(bio_P=False)
+        m, res, sm = main(bio_P=False)
         return m
 
     @pytest.mark.component
@@ -65,8 +76,7 @@ class TestFullFlowsheetBioPFalse:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 4
-        assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
+        assert len(warnings) == 3
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
         assert (
             "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
@@ -179,7 +189,7 @@ class TestFullFlowsheetBioPFalse:
 class TestFullFlowsheetBioPTrue:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m, res = main(bio_P=True)
+        m, res, sm = main(bio_P=True)
         return m
 
     @pytest.mark.component
@@ -192,8 +202,7 @@ class TestFullFlowsheetBioPTrue:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 4
-        assert "WARNING: 6 Constraints with large residuals (>1.0E-05)" in warnings
+        assert len(warnings) == 3
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
         assert (
             "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
@@ -300,4 +309,87 @@ class TestFullFlowsheetBioPTrue:
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             2.3814879e21, rel=1e-3
+        )
+
+
+@pytest.mark.requires_idaes_solver
+class TestScaledBioPFalse:
+    @pytest.fixture(scope="class")
+    def system_frame(self):
+        m, res, sm = main(bio_P=False)
+        return sm
+
+    @pytest.mark.component
+    def test_structural_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    def test_numerical_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        warnings, next_steps = dt._collect_numerical_warnings()
+        assert len(warnings) == 1
+        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    def test_condition_number(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            6.69275e15, rel=1e-3
+        )
+
+
+@pytest.mark.requires_idaes_solver
+class TestScaledBioPTrue:
+    @pytest.fixture(scope="class")
+    def system_frame(self):
+        m, res, sm = main(bio_P=True)
+        return sm
+
+    @pytest.mark.component
+    def test_structural_issues(self, system_frame):
+        dt = DiagnosticsToolbox(system_frame)
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    def test_numerical_issues(self, system_frame):
+        sm = system_frame
+        dt = DiagnosticsToolbox(sm)
+        warnings, next_steps = dt._collect_numerical_warnings()
+
+        assert len(warnings) == 1
+        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @linux_platform_only
+    def test_condition_number_on_linux(self, system_frame):
+        sm = system_frame
+        dt = DiagnosticsToolbox(sm)
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(sm, scaled=False)
+
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.25867e16, rel=1e-3
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @reference_platform_only
+    def test_condition_number_on_windows(self, system_frame):
+        sm = system_frame
+        dt = DiagnosticsToolbox(sm)
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(sm, scaled=False)
+
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.77229e16, rel=1e-3
         )
