@@ -10,7 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-ASM2d-PSFe-GHG reaction package.
+ASM2d-N2O reaction package that includes extensions for phosphorus and N2O.
+Extensions for sulfur, iron, and additional physico-chemical models will be added in the future.
 
 Reference:
 [1] B. Solis, A. Guisasola, X. Flores-Alsina, U. Jeppsson, J.A. Baeza,

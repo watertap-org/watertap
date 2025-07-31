@@ -309,13 +309,6 @@ class ASM2dN2OParameterData(PhysicalParameterBlock):
             domain=pyo.NonNegativeReals,
             doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
         )
-        # self.BOD5_factor = pyo.Param(
-        #     ["raw", "effluent"],
-        #     initialize={"raw": 0.65, "effluent": 0.25},
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Conversion factor for BOD5",
-        # )
 
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
@@ -566,91 +559,7 @@ class ASM2dN2OStateBlockData(StateBlockData):
 
         self.TSS = pyo.Expression(rule=_TSS, doc="Total suspended solids")
 
-        # TODO: Double check these effluent metrics
-
-        # def _COD(self):
-        #     cod = (
-        #         self.conc_mass_comp["S_F"]
-        #         + self.conc_mass_comp["S_A"]
-        #         + self.conc_mass_comp["S_I"]
-        #         + self.conc_mass_comp["X_I"]
-        #         + self.conc_mass_comp["X_S"]
-        #         + self.conc_mass_comp["X_H"]
-        #         + self.conc_mass_comp["X_PAO"]
-        #         + self.conc_mass_comp["X_PHA"]
-        #         + self.conc_mass_comp["X_AUT"]
-        #     )
-        #     return cod
-        #
-        # self.COD = pyo.Expression(rule=_COD, doc="Chemical oxygen demand")
-        #
-        # def _TKN(self):
-        #     tkn = (
-        #         self.conc_mass_comp["S_NH4"]
-        #         + self.params.i_NSF * self.conc_mass_comp["S_F"]
-        #         + self.params.i_NSI * self.conc_mass_comp["S_I"]
-        #         + self.params.i_NXI * self.conc_mass_comp["X_I"]
-        #         + self.params.i_NXS * self.conc_mass_comp["X_S"]
-        #         + self.params.i_NBM
-        #         * (
-        #             self.conc_mass_comp["X_H"]
-        #             + self.conc_mass_comp["X_PAO"]
-        #             + self.conc_mass_comp["X_AUT"]
-        #         )
-        #     )
-        #     return tkn
-        #
-        # self.TKN = pyo.Expression(rule=_TKN, doc="Kjeldahl nitrogen")
-        #
-        # def _SNOX(self):
-        #     snox = self.conc_mass_comp["S_NO3"]
-        #
-        #     return snox
-        #
-        # self.SNOX = pyo.Expression(rule=_SNOX, doc="Nitrogen oxide")
-        #
-        # def _BOD5(self, i):
-        #     bod5 = (
-        #         self.conc_mass_comp["S_F"]
-        #         + self.conc_mass_comp["S_A"]
-        #         + (1 - self.params.f_SI) * self.conc_mass_comp["X_S"]
-        #         + (1 - self.params.f_XIH) * self.conc_mass_comp["X_H"]
-        #         + (1 - self.params.f_XIP)
-        #         * (self.conc_mass_comp["X_PAO"] + self.conc_mass_comp["X_PHA"])
-        #         + (1 - self.params.f_XIA) * self.conc_mass_comp["X_AUT"]
-        #     )
-        #
-        #     return self.params.BOD5_factor[i] * bod5
-        #
-        # self.BOD5 = pyo.Expression(
-        #     ["raw", "effluent"], rule=_BOD5, doc="Five-day biological oxygen demand"
-        # )
-        #
-        # def _SP_organic(self):
-        #     sp_organic = (
-        #         self.conc_mass_comp["X_PP"]
-        #         + self.params.i_PSF * self.conc_mass_comp["S_F"]
-        #         + self.params.i_PSI * self.conc_mass_comp["S_I"]
-        #         + self.params.i_PXI * self.conc_mass_comp["X_I"]
-        #         + self.params.i_PXS * self.conc_mass_comp["X_S"]
-        #         + self.params.i_PBM
-        #         * (
-        #             self.conc_mass_comp["X_H"]
-        #             + self.conc_mass_comp["X_PAO"]
-        #             + self.conc_mass_comp["X_AUT"]
-        #         )
-        #     )
-        #     return sp_organic
-        #
-        # self.SP_organic = pyo.Expression(rule=_SP_organic, doc="Organic phosphorus")
-        #
-        # def _SP_inorganic(self):
-        #     sp_inorganic = self.conc_mass_comp["S_PO4"]
-        #     return sp_inorganic
-        #
-        # self.SP_inorganic = pyo.Expression(
-        #     rule=_SP_inorganic, doc="Inorganic phosphorus"
-        # )
+        # TODO: Add addiitonal effluent metrics
 
     def get_material_flow_terms(self, p, j):
         if j == "H2O":
