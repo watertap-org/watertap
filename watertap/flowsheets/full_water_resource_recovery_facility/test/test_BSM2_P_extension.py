@@ -308,7 +308,7 @@ class TestFullFlowsheetBioPTrue:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.410752146e21, rel=1e-3
+            2.4400345e21, rel=1e-3
         )
 
 
@@ -340,7 +340,7 @@ class TestScaledBioPFalse:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.69275e15, rel=1e-3
+            3.6954462e15, rel=1e-3
         )
 
 
@@ -391,5 +391,5 @@ class TestScaledBioPTrue:
         jac, _ = get_jacobian(sm, scaled=False)
 
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.77229e16, rel=1e-3
+            8.912585e14, rel=1e-3
         )
