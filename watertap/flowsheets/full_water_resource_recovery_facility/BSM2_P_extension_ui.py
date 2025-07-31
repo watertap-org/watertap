@@ -3872,17 +3872,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         set_operating_conditions(m, bio_P=bioP)
 
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
-
         initialize_system(m, bio_P=bioP)
-
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
         add_costing(m)
         m.fs.costing.initialize()
@@ -3911,17 +3901,7 @@ def build_flowsheet(build_options=None, **kwargs):
 
         set_operating_conditions(m, bio_P=False)
 
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
-
         initialize_system(m, bio_P=False)
-
-        for mx in m.fs.mixers:
-            mx.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-        m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
 
         add_costing(m)
         m.fs.costing.initialize()
