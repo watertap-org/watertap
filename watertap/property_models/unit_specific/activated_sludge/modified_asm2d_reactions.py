@@ -712,6 +712,8 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
             ("R8", "Liq", "S_I"): 0,
+            # TODO: The value for S_NH4 should not be negative, but changing this breaks the BSM2-P tests
+            # This issue will be addressed in a subsequent PR
             ("R8", "Liq", "S_NH4"): -self.i_NSF,
             ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NO3"): 0,

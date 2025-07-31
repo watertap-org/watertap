@@ -310,7 +310,7 @@ class TestReactionBlock(object):
         assert_units_consistent(model)
 
 
-class TestASM1ReactionScaler(object):
+class TestASM2dReactionScaler(object):
     @pytest.mark.unit
     def test_variable_scaling_routine(self):
         model = ConcreteModel()
