@@ -13,6 +13,7 @@
 Air-water equilibrium property package
 """
 
+# pylint: disable=function-redefinition
 import itertools
 from enum import Enum, auto
 
@@ -2173,7 +2174,6 @@ class AirWaterEqStateBlockData(StateBlockData):
         else:
             add_object_reference(self, "henry_comp", self.params.henry_comp)
 
-    # pylint: disable=function-redefinition
     def _pressure_vap_sat(self):
 
         if (
@@ -2206,7 +2206,9 @@ class AirWaterEqStateBlockData(StateBlockData):
                     / (water_temp_degC_dimensionless + self.params.huang_coeff_D1)
                 )
 
-                def rule_pressure_vap_sat(b, h2o):
+                def rule_pressure_vap_sat(
+                    b, h2o
+                ):  # pylint: disable=function-redefinition
                     t = b.temperature["Liq"] - 273.15 * pyunits.degK
                     return (
                         b.pressure_vap_sat[h2o]
