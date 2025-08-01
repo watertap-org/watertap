@@ -1,0 +1,32 @@
+example_diff_analysis:
+  diff_param_loop:
+    Water Permeability:
+      diff_mode: percentile
+      diff_sample_type: UniformSample
+      param: fs.ro.A_comp[0.0,H2O]
+      nominal_lb: 4.0e-12
+      nominal_ub: 6.0e-12
+      relative_lb: 0.01
+      relative_ub: 0.05
+      num_samples: 2
+    Salt Permeability:
+      diff_mode: percentile
+      diff_sample_type: UniformSample
+      param: fs.ro.B_comp[0.0,NaCl]
+      nominal_lb: 1.75E-8
+      nominal_ub: 3.5E-8
+      relative_lb: 0.01
+      relative_ub: 0.05
+      num_samples: 2
+    sweep_reference_params:
+      Water Permeability:
+        type: UniformSample
+        param: fs.ro.A_comp[0.0,H2O]
+        lower_limit: 4.0e-12
+        upper_limit: 6.0e-12
+      Salt Permeability:
+        type: UniformSample
+        param: fs.ro.B_comp[0.0,NaCl]
+        lower_limit: 1.75E-8
+        upper_limit: 3.5E-8
+      num_samples: 3
