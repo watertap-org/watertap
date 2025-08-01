@@ -506,7 +506,6 @@ def scale_system(m, bio_P=False):
     set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
     set_scaling_factor(m.fs.AD.KH_h2, 1e2)
     set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e1)
-
     if bio_P:
         set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e1)
     else:
@@ -616,7 +615,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "S_F"): 0.00047,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.045,
-                (0, "S_NH4"): 0.0075,
+                (0, "S_NH4"): 0.01,
                 (0, "S_NO3"): 0.003,
                 (0, "S_O2"): 0.0019,
                 (0, "S_PO4"): 0.011,
