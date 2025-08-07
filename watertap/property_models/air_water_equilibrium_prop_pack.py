@@ -2206,9 +2206,7 @@ class AirWaterEqStateBlockData(StateBlockData):
                     / (water_temp_degC_dimensionless + self.params.huang_coeff_D1)
                 )
 
-                def rule_pressure_vap_sat(
-                    b, h2o
-                ):  # pylint: disable=function-redefinition
+                def rule_pressure_vap_sat(b, h2o):
                     t = b.temperature["Liq"] - 273.15 * pyunits.degK
                     return (
                         b.pressure_vap_sat[h2o]
