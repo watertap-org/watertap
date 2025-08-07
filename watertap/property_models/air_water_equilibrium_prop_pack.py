@@ -2175,7 +2175,7 @@ class AirWaterEqStateBlockData(StateBlockData):
             add_object_reference(self, "henry_comp", self.params.henry_comp)
 
     def _pressure_vap_sat(self):
-        # pylint: enable=function-redefinition
+        # pylint: disable=function-redefinition
 
         if (
             self.params.config.saturation_vapor_pressure_calculation
