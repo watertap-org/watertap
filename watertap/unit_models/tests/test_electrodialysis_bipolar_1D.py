@@ -19,6 +19,7 @@ from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
     value,
+    Var,
     units as pyunits,
     TransformationFactory,
 )
@@ -203,6 +204,8 @@ class Test_membrane_characteristics:
         iscale.set_scaling_factor(m.fs.unit.voltage_x, 1e-1)
         iscale.set_scaling_factor(m.fs.unit.flux_splitting, 1e4)
         iscale.set_scaling_factor(m.fs.unit.current_density_x, 1e-3)
+
+        # iscale.calculate_scaling_factors(m)
         return m
 
     @pytest.mark.unit
@@ -1220,21 +1223,21 @@ class Test_NMSU_bench_scale:
             ),
         }
         #
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Na_+")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "H_+")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "OH_-")
-        )
+        # m.fs.properties.set_default_scaling(
+        #     "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
+        # )
+        # m.fs.properties.set_default_scaling(
+        #     "flow_mol_phase_comp", 1e4, index=("Liq", "Na_+")
+        # )
+        # m.fs.properties.set_default_scaling(
+        #     "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
+        # )
+        # m.fs.properties.set_default_scaling(
+        #     "flow_mol_phase_comp", 1e4, index=("Liq", "H_+")
+        # )
+        # m.fs.properties.set_default_scaling(
+        #     "flow_mol_phase_comp", 1e4, index=("Liq", "OH_-")
+        # )
 
         m.fs.feed_diluate = Feed(property_package=m.fs.properties)
         m.fs.feed_acidic = Feed(property_package=m.fs.properties)
@@ -1276,6 +1279,58 @@ class Test_NMSU_bench_scale:
         m.fs.unit.current_applied.fix(current_in[ctr])
 
         iscale.calculate_scaling_factors(m.fs)
+
+        # for var in m.fs.component_data_objects(Var, descend_into=True):
+        #     if "conc_mol_phase_comp" in var.name:
+        #         iscale.set_scaling_factor(var, 1e-2)
+        # if "conc_mass_phase_comp" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-1)
+        # if "pressure_osm_phase" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-6)
+        # if "velocity_diluate" in var.name:
+        #     iscale.set_scaling_factor(var, 1e2)
+        # if "velocity_basic" in var.name:
+        #     iscale.set_scaling_factor(var, 1e2)
+        # if "velocity_acidic" in var.name:
+        #     iscale.set_scaling_factor(var, 1e2)
+        # if "salt_conc" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-3)
+        # if "elec_cond_phase" in var.name:
+        #     iscale.set_scaling_factor(var, 1e1)
+        # if "current_dens_lim_bpm" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-2)
+        # if "flow_mass_phase_comp" in var.name:
+        #     if "feed" in var.name:
+        #         iscale.set_scaling_factor(var, 1e8)
+        #     else:
+        #         iscale.set_scaling_factor(var, 1e1)
+        # if "conc_mol_phase_comp" in var.name:
+        #     iscale.set_scaling_factor(var, 1e-4)
+        # if "elec_cond_phase" in var.name:
+        #     iscale.set_scaling_factor(var, 1e1)
+
+        # iscale.set_scaling_factor(m.fs.unit.specific_power_electrical[0], 1e-1)
+        # iscale.set_scaling_factor(m.fs.feed_diluate.properties[0.0].flow_vol_phase["Liq"], 1e8)
+        # iscale.set_scaling_factor(m.fs.feed_acidic.properties[0.0].flow_vol_phase["Liq"], 1e8)
+        # iscale.set_scaling_factor(m.fs.feed_basic.properties[0.0].flow_vol_phase["Liq"], 1e8)
+
+        comp_list = ["H2O", "Na_+", "Cl_-", "H_+", "OH_-"]
+        # for c in comp_list:
+        #     iscale.set_scaling_factor(m.fs.unit.diluate.properties[0, 0].flow_mol_phase_comp["Liq", c], 1e9)
+        #     iscale.set_scaling_factor(m.fs.unit.basic.properties[0, 0].flow_mol_phase_comp["Liq", c], 1e9)
+        #     iscale.set_scaling_factor(m.fs.unit.acidic.properties[0, 0].flow_mol_phase_comp["Liq", c], 1e9)
+
+        # comp_list2 = ["H2O", "H_+", "OH_-"]
+        # for c in comp_list2:
+        #     iscale.set_scaling_factor(m.fs.unit.acidic.properties[0, 0].conc_mol_phase_comp["Liq", c], 1e-4)
+
+        badly_scaled_var_list = iscale.badly_scaled_var_generator(
+            m, large=1e2, small=1e-2
+        )
+        print("----------------   badly_scaled_var_list   ----------------")
+        for x in badly_scaled_var_list:
+            print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
         m.fs.unit.initialize()
 
         assert_units_consistent(m)

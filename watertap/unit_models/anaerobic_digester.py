@@ -702,7 +702,7 @@ see reaction package for documentation.}""",
                 + -19410
                 / pyunits.mole
                 * pyunits.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * (
                     (1 / self.config.vapor_property_package.temperature_ref)
                     - (1 / self.vapor_phase[t].temperature)
@@ -723,7 +723,7 @@ see reaction package for documentation.}""",
                 + -14240
                 / pyunits.mole
                 * pyunits.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * (
                     (1 / self.config.vapor_property_package.temperature_ref)
                     - (1 / self.vapor_phase[t].temperature)
@@ -744,7 +744,7 @@ see reaction package for documentation.}""",
                 + -4180
                 / pyunits.mole
                 * pyunits.joule
-                / (Constants.gas_constant)
+                / Constants.gas_constant
                 * (
                     (1 / self.config.vapor_property_package.temperature_ref)
                     - (1 / self.vapor_phase[t].temperature)
