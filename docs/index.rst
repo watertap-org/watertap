@@ -21,9 +21,9 @@ The WaterTAP development team is composed of researchers from:
 Cite this work
 --------------
 
-Use the reference text given below to cite the WaterTAP project:
+To cite this work, please use the "Cite this repository" feature available on the right side of the
+`WaterTAP GitHub repository <https://github.com/watertap-org/watertap>`_ page.
 
-   WaterTAP contributors. WaterTAP: An open-source water treatment model library. Version 0.6. Sponsored by California Energy Commission, National Alliance for Water Innovation, and USDOE. Available at https://github.com/watertap-org/watertap.
 
 Content
 -------

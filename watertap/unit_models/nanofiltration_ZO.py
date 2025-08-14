@@ -21,6 +21,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -46,6 +47,12 @@ from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
 _log = idaeslog.getLogger(__name__)
 
 
+@deprecated(
+    "The NanofiltrationZO model has been deprecated in favor of the Nanofiltration0D model. "
+    "The Nanofiltation0D model has most of the capabilities of the NanofiltrationZO model "
+    "with additional support for ensuring electroneutrality in outlets.",
+    version="1.3.0",
+)
 @declare_process_block_class("NanofiltrationZO")
 class NanofiltrationData(InitializationMixin, UnitModelBlockData):
     """

@@ -62,7 +62,7 @@ class TestCrystallizerBuild:
             assert isinstance(var, Var)
 
         # Test the crystallizer properties
-        # test configrations
+        # tests configrations
         assert len(m.fs.crystallizer.config) == 4
         assert not m.fs.crystallizer.config.dynamic
         assert not m.fs.crystallizer.config.has_holdup

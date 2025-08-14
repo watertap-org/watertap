@@ -283,7 +283,7 @@ class TestNanoFiltration_with_CP_5ions:
     def test_build(self, NF_frame):
         m = NF_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "retentate", "permeate"]
         port_vars_lst = ["flow_mol_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -296,12 +296,12 @@ class TestNanoFiltration_with_CP_5ions:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = []
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         assert isinstance(m.fs.unit.feed_side, ControlVolume0DBlock)
         cv_stateblock_lst = [
             "properties_in",
@@ -312,7 +312,7 @@ class TestNanoFiltration_with_CP_5ions:
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, MCASStateBlock)
-        # test objects added to control volume
+        # tests objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
@@ -324,7 +324,7 @@ class TestNanoFiltration_with_CP_5ions:
         assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 566
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
@@ -542,7 +542,7 @@ class TestNanoFiltration_without_CP_5ions:
     def test_build(self, NF_frame):
         m = NF_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "retentate", "permeate"]
         port_vars_lst = ["flow_mol_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -555,12 +555,12 @@ class TestNanoFiltration_without_CP_5ions:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = []
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         assert isinstance(m.fs.unit.feed_side, ControlVolume0DBlock)
         cv_stateblock_lst = [
             "properties_in",
@@ -571,7 +571,7 @@ class TestNanoFiltration_without_CP_5ions:
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, MCASStateBlock)
-        # test objects added to control volume
+        # tests objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
@@ -583,7 +583,7 @@ class TestNanoFiltration_without_CP_5ions:
         assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 532
         assert number_total_constraints(m) == 494
         assert number_unused_variables(m) == 11
@@ -777,7 +777,7 @@ class TestNanoFiltration_with_CP_2ions:
     def test_build(self, NF_frame):
         m = NF_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "retentate", "permeate"]
         port_vars_lst = ["flow_mol_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -790,12 +790,12 @@ class TestNanoFiltration_with_CP_2ions:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = []
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         assert isinstance(m.fs.unit.feed_side, ControlVolume0DBlock)
         cv_stateblock_lst = [
             "properties_in",
@@ -806,7 +806,7 @@ class TestNanoFiltration_with_CP_2ions:
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, MCASStateBlock)
-        # test objects added to control volume
+        # tests objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
@@ -818,7 +818,7 @@ class TestNanoFiltration_with_CP_2ions:
         assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 320
         assert number_total_constraints(m) == 286
         assert number_unused_variables(m) == 11
@@ -1008,7 +1008,7 @@ class TestNanoFiltration_without_CP_2ions:
     def test_build(self, NF_frame):
         m = NF_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "retentate", "permeate"]
         port_vars_lst = ["flow_mol_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -1021,12 +1021,12 @@ class TestNanoFiltration_without_CP_2ions:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = []
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         assert isinstance(m.fs.unit.feed_side, ControlVolume0DBlock)
         cv_stateblock_lst = [
             "properties_in",
@@ -1037,7 +1037,7 @@ class TestNanoFiltration_without_CP_2ions:
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, MCASStateBlock)
-        # test objects added to control volume
+        # tests objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
@@ -1049,7 +1049,7 @@ class TestNanoFiltration_without_CP_2ions:
         assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 304
         assert number_total_constraints(m) == 272
         assert number_unused_variables(m) == 11
@@ -1249,7 +1249,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
     def test_build(self, NF_frame):
         m = NF_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "retentate", "permeate"]
         port_vars_lst = ["flow_mol_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -1262,12 +1262,12 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = []
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         assert isinstance(m.fs.unit.feed_side, ControlVolume0DBlock)
         cv_stateblock_lst = [
             "properties_in",
@@ -1278,7 +1278,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         for sb_str in cv_stateblock_lst:
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, MCASStateBlock)
-        # test objects added to control volume
+        # tests objects added to control volume
         cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
         for obj_str, obj_type in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
@@ -1290,7 +1290,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         assert isinstance(m.fs.unit.pore_entrance, MCASStateBlock)
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 566
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11

@@ -13,20 +13,19 @@
 GUI configuration for the base BSM2 flowsheet.
 """
 
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import units as pyunits, TransformationFactory
 
-from watertap.ui.fsapi import FlowsheetInterface
-
-from watertap.core.util.initialization import assert_degrees_of_freedom
+from idaes_flowsheet_processor.api import FlowsheetInterface
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2 import (
     build,
     set_operating_conditions,
     initialize_system,
-    solve,
     add_costing,
+    scale_system,
+    solve,
     setup_optimization,
+    rescale_system,
 )
 
 
@@ -3058,25 +3057,27 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     m = build()
 
+    # Set up system
     set_operating_conditions(m)
-    assert_degrees_of_freedom(m, 0)
-    assert_units_consistent(m)
-
     initialize_system(m)
-
-    results = solve(m)
-    assert_optimal_termination(results)
-
     add_costing(m)
-    assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    # Handle scaling transformations
+    scale_system(m)
+    scaling = TransformationFactory("core.scale_model")
+    scaled_model = scaling.create_using(m, rename=False)
+    solve(scaled_model)
+    scaling.propagate_solution(scaled_model, m)
 
-    setup_optimization(m, reactor_volume_equalities=False)
-    results = solve(m)
-    assert_optimal_termination(results)
+    # Set up optimization with additional scaling
+    setup_optimization(m, reactor_volume_equalities=True)
+    rescale_system(m)
+    rescaling = TransformationFactory("core.scale_model")
+    rescaled_model = rescaling.create_using(m, rename=False)
+    solve(rescaled_model, tee=True)
+    rescaling.propagate_solution(rescaled_model, m)
+
     return m
 
 

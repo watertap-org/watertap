@@ -51,7 +51,7 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
-# Start test class
+# Start tests class
 class TestElectrodialysisVoltageConst:
     @pytest.fixture(scope="class")
     def electrodialysis_cell1(self):
@@ -72,7 +72,7 @@ class TestElectrodialysisVoltageConst:
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_cell1):
         m = electrodialysis_cell1
-        # test configurations
+        # tests configurations
         assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -87,7 +87,7 @@ class TestElectrodialysisVoltageConst:
         assert m.fs.unit.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
 
-        # test all essential params and vars are built
+        # tests all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
@@ -274,7 +274,7 @@ class TestElectrodialysisVoltageConst:
         blk = m.fs.unit
 
         # NOTE: This should probably move into the build of the model
-        #       and not be here after everything else (see next test)
+        #       and not be here after everything else (see next tests)
         m.fs.costing = WaterTAPCosting()
 
         m.fs.unit.costing = UnitModelCostingBlock(
@@ -327,7 +327,7 @@ class TestElectrodialysisCurrentConst:
     def test_build_model(self, electrodialysis_cell2):
         m = electrodialysis_cell2
 
-        # test configrations
+        # tests configrations
         assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -339,7 +339,7 @@ class TestElectrodialysisCurrentConst:
         assert m.fs.unit.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
 
-        # test all essential params and vars are built
+        # tests all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
@@ -541,7 +541,7 @@ class TestElectrodialysis_withNeutralSPecies:
     def test_build_model(self, electrodialysis_cell3):
         m = electrodialysis_cell3
 
-        # test configrations
+        # tests configrations
         assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -556,7 +556,7 @@ class TestElectrodialysis_withNeutralSPecies:
         assert m.fs.unit.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
 
-        # test all essential params and vars are built
+        # tests all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
@@ -771,7 +771,7 @@ class Test_ED_MembNonohm_On_ConstV:
     @pytest.mark.unit
     def test_build_model(self, EDcell):
         m = EDcell
-        # test configrations
+        # tests configrations
         assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -786,7 +786,7 @@ class Test_ED_MembNonohm_On_ConstV:
         assert m.fs.unit.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
 
-        # test all essential params and vars are built
+        # tests all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
@@ -996,7 +996,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
     @pytest.mark.unit
     def test_build_model(self, EDcell):
         m = EDcell
-        # test configrations
+        # tests configrations
         assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -1011,7 +1011,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
         assert m.fs.unit.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
 
-        # test all essential params and vars are built
+        # tests all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
@@ -1221,7 +1221,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
     @pytest.mark.unit
     def test_build_model(self, EDcell):
         m = EDcell
-        # test configrations
+        # tests configrations
         assert len(m.fs.unit.config) == 17
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -1236,7 +1236,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
         assert m.fs.unit.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
 
-        # test all essential params and vars are built
+        # tests all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)

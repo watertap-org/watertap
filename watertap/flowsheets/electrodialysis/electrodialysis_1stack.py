@@ -207,6 +207,8 @@ def set_operating_conditions(m):
     m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
+    m.fs.EDstack.membrane_areal_resistance_coef["cem"].fix(0)
+    m.fs.EDstack.membrane_areal_resistance_coef["aem"].fix(0)
     m.fs.EDstack.cell_width.fix(0.1)
     m.fs.EDstack.cell_length.fix(0.79)
     m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
@@ -220,6 +222,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
     m.fs.EDstack.spacer_porosity.fix(1)
+    m.fs.EDstack.spacer_conductivity_coefficient.fix(1)
 
     # check zero degrees of freedom
     check_dof(m)
@@ -266,7 +269,7 @@ def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
     # Choose and unfix variables to be optimized
     m.fs.EDstack.voltage_applied[0].unfix()
     m.fs.EDstack.cell_pair_num.unfix()
-    m.fs.EDstack.cell_pair_num.set_value(10)
+    m.fs.EDstack.cell_pair_num.set_value(30)
     # Give narrower bounds to optimizing variables if available
     m.fs.EDstack.voltage_applied[0].setlb(0.5)
     m.fs.EDstack.voltage_applied[0].setub(20)
@@ -280,8 +283,9 @@ def optimize_system(m, solver=None, checkpoint=None, fail_flag=True):
     print("---report model statistics---\n ", report_statistics(m.fs))
     if solver is None:
         solver = get_solver()
-    results = solver.solve(m, tee=True)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    solve(m, solver=solver, tee=True)
+    m.fs.EDstack.cell_pair_num.fix(round(value(m.fs.EDstack.cell_pair_num)))
+    solve(m, solver=solver, tee=True)
 
 
 def display_model_metrics(m):
@@ -319,6 +323,7 @@ def display_model_metrics(m):
         data=[
             value(m.fs.EDstack.recovery_mass_H2O[0]),
             value(m.fs.mem_area),
+            value(m.fs.EDstack.cell_pair_num),
             value(m.fs.EDstack.voltage_applied[0]),
             value(m.fs.costing.specific_energy_consumption),
             value(m.fs.costing.LCOW),
@@ -327,6 +332,7 @@ def display_model_metrics(m):
         index=[
             "Water recovery by mass",
             "Total membrane area (aem or cem), m2",
+            "Cell pair number",
             "Operation Voltage, V",
             "Specific energy consumption, kWh/m3",
             "Levelized cost of water, $/m3",

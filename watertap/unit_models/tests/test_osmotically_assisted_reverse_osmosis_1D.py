@@ -1262,10 +1262,10 @@ class TestOsmoticallyAssistedReverseOsmosis_water_recovery:
         m.fs.unit.feed_side.spacer_porosity.fix(0.97)
         m.fs.unit.feed_side.N_Re[0, 0].fix(400)
 
-        # test degrees of freedom
+        # tests degrees of freedom
         assert degrees_of_freedom(m) == 0
 
-        # test scaling
+        # tests scaling
         m.fs.properties.set_default_scaling(
             "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
         )
@@ -1275,7 +1275,7 @@ class TestOsmoticallyAssistedReverseOsmosis_water_recovery:
 
         calculate_scaling_factors(m)
 
-        # test initialization
+        # tests initialization
         initialization_tester(m)
 
         m.fs.unit.permeate_inlet.pressure[0].unfix()
@@ -1283,7 +1283,7 @@ class TestOsmoticallyAssistedReverseOsmosis_water_recovery:
         m.fs.unit.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
         m.fs.unit.permeate_outlet.pressure[0].fix(1e5)
 
-        # test solve
+        # tests solve
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution

@@ -1,24 +1,27 @@
-base_currency: USD_2020
+base_currency: USD_2023
 base_period: year
 defined_flows:
   electricity:
     value: 0.08
-    units: USD_2020/kWh
+    units: USD_2023/kWh
   waste_disposal:
     value: 1
-    units: USD_2020/m**3
+    units: USD_2023/m**3
   dye_disposal:
     value: 120
-    units: USD_2020/m**3
+    units: USD_2023/m**3
+  dye_recovery:
+    value: 0.12
+    units: USD_2023/m**3
   dewatered_dye_disposal:
     value: 110
-    units: USD_2020/m**3
+    units: USD_2023/m**3
   brine_recovery:
     value: 1
-    units: USD_2020/m**3
+    units: USD_2023/m**3
   recovered_water:
     value: 1.25
-    units: USD_2020/m**3
+    units: USD_2023/m**3
 global_parameters:
   plant_lifetime:
     value: 30

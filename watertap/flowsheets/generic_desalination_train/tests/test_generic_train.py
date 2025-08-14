@@ -15,7 +15,7 @@ solver = get_solver()
 
 @pytest.mark.unit
 def test_standard_train():
-    # This will test bilding all the units and
+    # This will tests bilding all the units and
     # unit operations as well as opitmization
     # TODO: Might want to separate tests based on unit, and refine but probably not
     # needed as this is a very simple model
@@ -45,10 +45,10 @@ def test_standard_train():
     result = gt.solve(m)
     assert_optimal_termination(result)
     assert degrees_of_freedom(m) == 0
-    # test overall result costs operation
+    # tests overall result costs operation
     assert value(m.fs.water_recovery) == pytest.approx(98.220, rel=1e-3)
 
-    # test costing compute
+    # tests costing compute
     assert value(m.fs.costing.LCOW) == pytest.approx(1.2686, rel=1e-3)
     unit_costs = {
         "Product distribution": 0,
@@ -74,19 +74,19 @@ def test_standard_train():
         m.fs.disposal.properties[0].flow_mass_phase_comp["Liq", "H2O"]
     ) == pytest.approx(0.014053402799809303, rel=1e-5)
 
-    # test desalter brine water content constraint
+    # tests desalter brine water content constraint
     assert value(m.fs.Desal_3.desalter.water_recovery) == pytest.approx(
         82.34735228114, rel=1e-3
     )
 
-    # test pretreatment removal constraints
+    # tests pretreatment removal constraints
     assert value(
         m.fs.Pretreatment.separator.product_properties[0].flow_mass_phase_comp[
             "Liq", "X"
         ]
     ) == pytest.approx(0.00015057215854267565, rel=1e-6)
 
-    # test valorizer removal constraints
+    # tests valorizer removal constraints
     assert value(
         m.fs.Valorizer.separator.product_properties[0].flow_mass_phase_comp["Liq", "X"]
     ) == pytest.approx(7.528607927133832e-05, rel=1e-6)

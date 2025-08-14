@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2025, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -10,12 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import re
 import pytest
-
+from pyomo.common.errors import InfeasibleConstraintException
 from pyomo.environ import ConcreteModel, Var, Constraint, ConstraintList
-
-from watertap.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
+from watertap.core.solvers import get_solver
 from watertap.core.util.initialization import (
     check_dof,
     assert_degrees_of_freedom,
@@ -114,15 +114,15 @@ class TestCheckSolve:
     def test_failure_checkpoint(self, m):
         results = solver.solve(m)
         # check_solve should pass since fail_flag=False and only warning will be produced
-        check_solve(results, checkpoint="test", logger=_log, fail_flag=False)
+        check_solve(results, checkpoint="tests", logger=_log, fail_flag=False)
         # expect the solve to fail and raise error
         with pytest.raises(
             InitializationError,
-            match="The solver at the test step failed to converge to an optimal solution."
+            match="The solver at the tests step failed to converge to an optimal solution."
             "This suggests that the user provided infeasible inputs or that the model "
             "is poorly scaled, poorly initialized, or degenerate.",
         ):
-            check_solve(results, checkpoint="test", logger=_log, fail_flag=True)
+            check_solve(results, checkpoint="tests", logger=_log, fail_flag=True)
 
     @pytest.mark.unit
     def test_success(self, m):
@@ -141,7 +141,7 @@ class TestIntervalImproveInitial:
     @pytest.fixture(scope="class")
     def m(self):
 
-        # This is the same model used in the pyomo fbbt test at
+        # This is the same model used in the pyomo fbbt tests at
         # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
 
         m = ConcreteModel()
@@ -171,6 +171,82 @@ class TestIntervalImproveInitial:
         assert m.x.value == pytest.approx(-1, abs=1.3 - 6)
         assert m.y.value == pytest.approx(0.0, abs=1.0e-6)
         assert m.z.value == pytest.approx(2.0, abs=1.0e-6)
+
+        # Assert the restored bounds
+        assert m.x.lb == -3.0
+        assert m.x.ub == 3.0
+        assert m.y.lb == 0.0
+        assert m.y.ub == None
+        assert m.z.lb == None
+        assert m.z.ub == None
+
+    @pytest.fixture(scope="class")
+    def m_infeas(self):
+
+        # This is the same model used in the pyomo fbbt tests at
+        # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
+
+        m = ConcreteModel("m_infeas")
+        m.x = Var(bounds=(-3, 3))
+        m.y = Var(bounds=(0, None))
+        m.z = Var()
+        m.c = ConstraintList()
+        m.c.add(m.x + m.y >= -1)
+        m.c.add(m.x + m.y <= -2)
+        m.c.add(m.y - m.x * m.z <= 2)
+        m.c.add(m.y - m.x * m.z >= -2)
+        m.c.add(m.x + m.z == 1)
+
+        return m
+
+    @pytest.mark.unit
+    def test_interval_initializer_failure_restores_bounds(self, m_infeas):
+        m = m_infeas
+        feasibility_tol = 1.0e-6
+
+        interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=False)
+
+        # Assert the restored bounds
+        assert m.x.lb == -3.0
+        assert m.x.ub == 3.0
+        assert m.y.lb == 0.0
+        assert m.y.ub == None
+        assert m.z.lb == None
+        assert m.z.ub == None
+
+    @pytest.mark.unit
+    def test_interval_initializer_raise_failure(self, m_infeas, caplog):
+        caplog.set_level(idaeslog.INFO, logger="watertap.core.util.initialization")
+
+        m = m_infeas
+        feasibility_tol = 1.0e-6
+
+        with pytest.raises(
+            InfeasibleConstraintException,
+            match=re.escape("Detected an infeasible constraint during FBBT: c[5]"),
+        ):
+            interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=True)
+            assert (
+                "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]"
+                in caplog.text
+            )
+            assert "ERROR" in caplog.text
+
+        # Assert the restored bounds
+        assert m.x.lb == -3.0
+        assert m.x.ub == 3.0
+        assert m.y.lb == 0.0
+        assert m.y.ub == None
+        assert m.z.lb == None
+        assert m.z.ub == None
+
+        interval_initializer(m, feasibility_tol=feasibility_tol, fail_flag=False)
+
+        assert (
+            "Interval initializer failed for m_infeas because of the following: Detected an infeasible constraint during FBBT: c[5]"
+            in caplog.text
+        )
+        assert "WARNING" in caplog.text
 
         # Assert the restored bounds
         assert m.x.lb == -3.0

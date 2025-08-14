@@ -15,6 +15,7 @@ Unit Models
    dewatering
    electrodialysis_0D
    electrodialysis_1D
+   electrodialysis_bipolar_1D
    electrolyzer
    electroNP_ZO
    energy_recovery_device
@@ -23,8 +24,10 @@ Unit Models
    generic_separator
    ion_exchange_0D
    membrane_distillation_0D
+   membrane_distillation_1D
    mvc
    nanofiltration_ZO
+   nanofiltration_0D
    nanofiltration_dspmde_0D
    osmotically_assisted_reverse_osmosis_0D
    osmotically_assisted_reverse_osmosis_1D
@@ -32,6 +35,7 @@ Unit Models
    pump
    reverse_osmosis_0D
    reverse_osmosis_1D
+   steam_ejector
    stoichiometric_reactor
    thickener
    translators/index

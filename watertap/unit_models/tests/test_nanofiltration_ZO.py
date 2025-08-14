@@ -138,7 +138,7 @@ class TestNanofiltration:
     def test_build(self, unit_frame):
         m = unit_frame
 
-        # test ports
+        # tests ports
         port_lst = ["inlet", "retentate", "permeate"]
         for port_str in port_lst:
             port = getattr(m.fs.unit, port_str)
@@ -147,7 +147,7 @@ class TestNanofiltration:
             )  # number of state variables for NaCl property package
             assert isinstance(port, Port)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 117
         assert number_total_constraints(m) == 86
         assert number_unused_variables(m) == 16

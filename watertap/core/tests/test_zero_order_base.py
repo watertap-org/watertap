@@ -210,7 +210,7 @@ class TestZOBase:
         with pytest.raises(
             KeyError,
             match="fs.unit - no value provided for recovery_vol"
-            " \(index: None\) in database.",
+            r" \(index: None\) in database.",
         ):
             model.fs.unit.set_param_from_data(
                 model.fs.unit.recovery_vol, {"recovery_vol": {}}
@@ -230,7 +230,7 @@ class TestZOBase:
         with pytest.raises(
             KeyError,
             match="fs.unit - no units provided for recovery_vol"
-            " \(index: None\) in database.",
+            r" \(index: None\) in database.",
         ):
             model.fs.unit.set_param_from_data(
                 model.fs.unit.recovery_vol, {"recovery_vol": {"value": 0.42}}
@@ -301,11 +301,11 @@ class TestZOBase:
         with pytest.raises(
             KeyError,
             match="fs.unit - database provided does not "
-            "contain an entry for test with "
+            "contain an entry for tests with "
             "index A for technology.",
         ):
             model.fs.unit.set_param_from_data(
-                model.fs.unit.test, {"test": {}}, index="A", use_default_removal=True
+                model.fs.unit.test, {"tests": {}}, index="A", use_default_removal=True
             )
 
     @pytest.mark.unit
@@ -389,7 +389,7 @@ class TestZOBase:
         )
 
         model.fs.unit.time_indexed_performance_var = Var(
-            model.fs.time, doc="test variable"
+            model.fs.time, doc="tests variable"
         )
 
         model.fs.unit._perf_var_dict["Test Variable 1"] = (
@@ -425,18 +425,18 @@ class TestZOBase:
         model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.port_properties = model.fs.params.build_state_block(
-            model.fs.time, doc="test"
+            model.fs.time, doc="tests"
         )
 
         model.fs.unit.add_port(
-            "test_port", model.fs.unit.port_properties, doc="test port"
+            "test_port", model.fs.unit.port_properties, doc="tests port"
         )
 
-        model.fs.unit._stream_table_dict["test port"] = model.fs.unit.test_port
+        model.fs.unit._stream_table_dict["tests port"] = model.fs.unit.test_port
         stable = model.fs.unit._get_stream_table_contents()
 
         expected = {
-            "test port": {
+            "tests port": {
                 "Mass Concentration A": pytest.approx(250.000, rel=1e-4),
                 "Mass Concentration B": pytest.approx(250.000, rel=1e-4),
                 "Mass Concentration C": pytest.approx(250.000, rel=1e-4),

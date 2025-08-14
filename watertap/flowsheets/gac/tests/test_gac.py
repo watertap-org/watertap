@@ -74,7 +74,7 @@ class TestGACFlowsheet:
     @pytest.mark.component
     def test_build_solve_options(self):
 
-        # test build and solve at initial conditions for all config options
+        # tests build and solve at initial conditions for all config options
         for flow_basis in [MaterialFlowBasis.molar, MaterialFlowBasis.mass]:
             for film_option in FilmTransferCoefficientType:
                 for surface_option in SurfaceDiffusionCoefficientType:

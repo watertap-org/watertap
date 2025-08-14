@@ -89,7 +89,7 @@ class UnitTestHarness(abc.ABC):
     @abc.abstractmethod
     def configure(self):
         """
-        Placeholder method to allow user to setup test harness.
+        Placeholder method to allow user to setup tests harness.
 
         The configure method must set the attributes:
         unit_solutions: ComponentMap of values for the specified variables

@@ -35,7 +35,7 @@ _log = idaeslog.getLogger(__name__)
 solver = get_solver()
 
 
-# Start test class
+# Start tests class
 # TODO: Consider using dummy metadata rather than importing property package
 class TestScaling:
     @pytest.fixture(scope="class")

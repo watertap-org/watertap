@@ -462,6 +462,10 @@ class TestStoichiometricReactor:
             m.fs.unit.flow_mass_reagent["CaO"] / (56.0774 * 1e-3)
         )
 
+        assert pytest.approx(flow_ca_in_reagent, rel=1e-5) == value(
+            m.fs.unit.flow_mol_reagent["CaO"]
+        )
+
         assert pytest.approx(expected_ca_mol_flow, rel=1e-5) == value(
             m.fs.unit.dissolution_reactor.properties_out[0].flow_mol_phase_comp[
                 "Liq", "Ca_2+"
@@ -617,7 +621,9 @@ class TestStoichiometricReactor:
                 "Liq", "Ca_2+"
             ]
         )
-
+        assert pytest.approx(1e-3 / (100.09 * 1e-3), rel=1e-5) == value(
+            m.fs.unit.flow_mol_precipitate["Calcite"]
+        )
         expected_mg_mol_flow = 0.1 - 1e-4 / (58.3197 * 1e-3)
 
         assert pytest.approx(expected_mg_mol_flow, rel=1e-5) == value(
@@ -701,7 +707,7 @@ class TestStoichiometricReactor:
     def test_costing_acid_addition(self, dissolution_reactor):
         # NOTE: testing costing for a dissultion reactor only - we are useing
         # soda ash adn lime addition, but costing is for HCl addition
-        # just a test
+        # just a tests
         m = dissolution_reactor
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)

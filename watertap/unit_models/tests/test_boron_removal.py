@@ -30,7 +30,7 @@ __author__ = "Austin Ladshaw"
 solver = get_solver()
 
 
-# Helper function for multiple test setup
+# Helper function for multiple tests setup
 def model_setup(
     m,
     chem_add=1.8e-5,
@@ -80,7 +80,7 @@ def scaling_setup(
 
 
 # -----------------------------------------------------------------------------
-# Start test class
+# Start tests class
 def min_boron_removal_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -125,14 +125,14 @@ def min_boron_removal_model():
         "HCO3_-": 1e-4,
     }
 
-    # For this test, we don't actually know how much
+    # For this tests, we don't actually know how much
     #   of the base to add. Instead, we have a target
     #   exit flow of boron (see below). We will initially
     #   guess that we want 5 mg/L of additive, but the
     #   actual solution is 10 mg/L.
     model_setup(m, chem_add=0.9e-5, state=state)
 
-    # Modified this test to fix the desired outlet flow
+    # Modified this tests to fix the desired outlet flow
     #   of Boron and unfix the dosage needed to get that outlet
     m.fs.unit.outlet.flow_mol_phase_comp[(0, "Liq", "B[OH]3")].fix(1.98677e-5)
     m.fs.unit.caustic_dose_rate.unfix()
@@ -300,7 +300,7 @@ class TestBoronRemoval_IonPropPack_with_ResBase(UnitTestHarness):
 
 
 # -----------------------------------------------------------------------------
-# Start test class with bad config
+# Start tests class with bad config
 class TestBoronRemoval_BadConfigs:
     @pytest.fixture(scope="class")
     def boron_removal_bad_configs(self):

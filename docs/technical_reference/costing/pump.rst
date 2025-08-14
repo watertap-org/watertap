@@ -1,10 +1,12 @@
+.. _pump_costing:
+
 Pump Costing Method
 ====================
 
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.pump`) when applying the `cost_pump` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.pump``) when applying the ``cost_pump`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -18,7 +20,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_pump` costing method in the ``watertap_costing_package``:
+The following variables are constructed on the unit block (e.g., ``m.fs.unit.costing``) when applying the ``cost_pump`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -32,7 +34,7 @@ The following variables are constructed on the unit block (e.g., m.fs.unit.costi
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-For the high pressure pump , capital cost is dependent upon the mechanical work, :math:`W_{mech}`, whereas the capital cost of
+For the high pressure pump, capital cost is dependent upon the mechanical work, :math:`W_{mech}`, whereas the capital cost of
 the low pressure pump is based on the volumetric flow rate :math:`Q_{in}`.
 
     .. math::
@@ -60,3 +62,16 @@ Code Documentation
 ------------------
 
 * :mod:`watertap.costing.unit_models.pump`
+
+References
+----------
+
+| T. V. Bartholomew, N. S. Siefert and M. S. Mauter (2018).
+| Cost Optimization of Osmotically Assisted Reverse Osmosis.
+| *Environ Sci Technol* 2018 Vol. 52 Issue 20 Pages 11813-11821.
+| DOI: 10.1021/acs.est.8b02771
+
+| A. Malek, M. N. A. Hawlader and J. C. Ho (1996).
+| Design and economics of RO seawater desalination.
+| *Desalination* 1996 Vol. 105 Issue 3 Pages 245-261.
+| DOI: 10.1016/0011-9164(96)00081-1

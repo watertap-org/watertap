@@ -41,7 +41,7 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
-# Start test class
+# Start tests class
 class TestCoagulationPropPack:
     @pytest.fixture(scope="class")
     def coag_obj(self):

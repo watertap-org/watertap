@@ -98,7 +98,7 @@ def test_build(
         property_package=m.fs.properties, has_leakage=has_leakage, has_mixing=has_mixing
     )
 
-    # test ports and state variables
+    # tests ports and state variables
     port_lst = [
         "feed_inlet",
         "feed_outlet",
@@ -117,7 +117,7 @@ def test_build(
             var = getattr(port, var_str)
             assert isinstance(var, Var)
 
-    # test unit variables
+    # tests unit variables
     assert hasattr(m.fs.unit, "efficiency_pressure_exchanger")
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
     if not has_leakage:
@@ -130,7 +130,7 @@ def test_build(
     else:
         assert isinstance(m.fs.unit.mixing_vol, Var)
 
-    # test unit constraints
+    # tests unit constraints
 
     unit_cons_lst = [
         "eq_pressure_transfer",
@@ -149,7 +149,7 @@ def test_build(
         con = getattr(m.fs.unit, c)
         assert isinstance(con, Constraint)
 
-    # test control volumes, only terms directly used by pressure exchanger
+    # tests control volumes, only terms directly used by pressure exchanger
 
     cv_list = ["feed_side", "brine_side"]
     cv_var_lst = ["deltaP"]
@@ -167,7 +167,7 @@ def test_build(
             cv_exp = getattr(cv, cv_exp_str)
             assert isinstance(cv_exp, Expression)
 
-    # test state blocks, only terms directly used by pressure exchanger
+    # tests state blocks, only terms directly used by pressure exchanger
     cv_stateblock_lst = ["properties_in", "properties_out"]
     stateblock_var_lst = ["pressure", "temperature"]
     stateblock_exp_lst = ["flow_vol"]
@@ -185,7 +185,7 @@ def test_build(
                 sb_exp = getattr(cv_sb[0], sb_exp_str)
                 assert isinstance(sb_exp, Expression)
 
-    # test statistics
+    # tests statistics
     assert number_variables(m.fs.unit) == 39 + extra_variables
     assert number_total_constraints(m.fs.unit) == 31 + extra_constraint
     assert number_unused_variables(m.fs.unit) == 0

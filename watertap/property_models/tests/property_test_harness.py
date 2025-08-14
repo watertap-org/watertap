@@ -71,7 +71,7 @@ class PropertyTestHarness:
 
     def configure(self):
         """
-        Placeholder method to allow user to setup test harness.
+        Placeholder method to allow user to setup tests harness.
 
         The configure function must set the attributes:
 
@@ -116,7 +116,7 @@ class PropertyTestHarness:
     @pytest.mark.unit
     def test_parameters(self, frame_stateblock):
         m = frame_stateblock
-        # test that the parameter variables are fixed
+        # tests that the parameter variables are fixed
         for v in m.fs.properties.component_data_objects(Var):
             if not v.is_fixed():
                 raise PropertyRuntimeError(
@@ -452,7 +452,7 @@ class PropertyRegressionTest:
 
     def configure(self):
         """
-        Placeholder method to allow user to setup the property regression test.
+        Placeholder method to allow user to setup the property regression tests.
 
         The configure function must set the attributes:
 
@@ -547,7 +547,7 @@ class PropertyCalculateStateTest:
 
     def configure(self):
         """
-        Placeholder method to allow user to setup the property regression test.
+        Placeholder method to allow user to setup the property regression tests.
 
         The configure function must set the attributes:
 

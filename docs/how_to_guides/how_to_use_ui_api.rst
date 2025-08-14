@@ -2,21 +2,21 @@
 
 Add a flowsheet to the UI
 ==========================
-.. py:currentmodule:: watertap.ui.fsapi
+.. py:currentmodule:: idaes_flowsheet_processor.api
 
 This API is intended for model developers who would like to connect their flowsheets to the UI.
 Developers can select which variables to "export" to the UI for each component of the model, 
 and provide extra metadata (display name, description) for them. For flowsheets, they should also 
 specify how to build and solve the flowsheets.
 
-For reference, see :class:`FlowsheetInterface` and :class:`FlowsheetExport` in the `watertap.ui.fsapi` module.
+For reference, see :class:`FlowsheetInterface` and :class:`FlowsheetExport` in the `idaes_flowsheet_processor.api` module.
 
 ----
 
 In some Python module, define the function ``export_to_ui``, which will look
 similar to this::
 
-    from watertap.ui.fsapi import FlowsheetInterface, FlowsheetCategory
+    from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
     def export_to_ui():
         return FlowsheetInterface(
             name="NF-DSPM-DE",
@@ -195,3 +195,24 @@ entrypoint must be defined in setup.py with the path to the export file. For exa
 
 
 For a complete overview of all arguments, see :class:`FlowsheetInterface`.
+
+Testing flowsheet interfaces
+-------------------------------
+
+.. note::
+    The following requires the WaterTAP testing dependencies to be installed. This is done by default in a developer environment, or can be installed manually by running ``pip install "watertap[testing]"``.
+
+To verify that the flowsheet interfaces developed and distributed with WaterTAP function correctly, it is possible to use pytest to run a series of standardized tests against each interface. The ``idaes-flowsheets`` pytest plugin that enables this functionality is installed together with the rest of the WaterTAP testing dependencies. However, it must be activated by providing additional command-line flags when invoking pytest.
+
+.. code-block:: shell
+
+   # run tests for all flowsheet interfaces registered under the `watertap.flowsheets` entry point group
+   pytest --idaes-flowsheets --entry-point-group watertap.flowsheets
+
+   # run tests for one or more importable Python modules (useful when developing a new flowsheet interface as it also supports modules not yet registered as an entry point)
+   pytest --idaes-flowsheets --modules watertap.flowsheets.gac.gac_ui watertap.flowsheets.mvc.mvc_single_stage_ui
+
+.. note::
+   By default, the ``idaes-flowsheets`` pytest plugin will collect and run its tests *in addition* to the normally discovered pytest tests (e.g. test functions defined in ``test_*.py`` files throughout the current working directory). To disable normal (Python) pytest collection and only run ``idaes-flowsheets`` tests, use the ``-p no:python`` flag::
+
+        pytest --idaes-flowsheets --modules watertap.flowsheets.gac.gac_ui watertap.flowsheets.mvc.mvc_single_stage_ui -p no:python
