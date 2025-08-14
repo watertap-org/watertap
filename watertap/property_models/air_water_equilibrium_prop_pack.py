@@ -13,7 +13,6 @@
 Air-water equilibrium property package
 """
 
-# pylint: disable=function-redefinition
 
 import itertools
 from enum import Enum, auto
@@ -2207,7 +2206,7 @@ class AirWaterEqStateBlockData(StateBlockData):
                     / (water_temp_degC_dimensionless + self.params.huang_coeff_D1)
                 )
 
-                def rule_pressure_vap_sat(b, h2o):
+                def rule_pressure_vap_sat(b, h2o):  # pylint: disable=function-redefined
                     t = b.temperature["Liq"] - 273.15 * pyunits.degK
                     return (
                         b.pressure_vap_sat[h2o]
@@ -2247,7 +2246,7 @@ class AirWaterEqStateBlockData(StateBlockData):
                     )
                 )
 
-                def rule_pressure_vap_sat(b, h2o):
+                def rule_pressure_vap_sat(b, h2o):  # pylint: disable=function-redefined
                     return b.pressure_vap_sat[h2o] == pyunits.convert(
                         b.params.arden_buck_coeff_a
                         * exp(self.arden_buck_exponential_term),
@@ -2259,7 +2258,7 @@ class AirWaterEqStateBlockData(StateBlockData):
                 == SaturationVaporPressureCalculation.Antoine
             ):
 
-                def rule_pressure_vap_sat(b, h2o):
+                def rule_pressure_vap_sat(b, h2o):  # pylint: disable=function-redefined
                     T = pyunits.convert(
                         (self.temperature["Liq"] - 273.15 * pyunits.degK)
                         * pyunits.degK**-1,
