@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2025, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -13,6 +13,7 @@
 Air-water equilibrium property package
 """
 
+# pylint: disable=function-redefinition
 
 import itertools
 from enum import Enum, auto
@@ -2175,7 +2176,6 @@ class AirWaterEqStateBlockData(StateBlockData):
             add_object_reference(self, "henry_comp", self.params.henry_comp)
 
     def _pressure_vap_sat(self):
-        # pylint: disable=function-redefinition
 
         if (
             self.params.config.saturation_vapor_pressure_calculation
