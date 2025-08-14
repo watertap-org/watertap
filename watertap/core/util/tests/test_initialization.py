@@ -114,15 +114,15 @@ class TestCheckSolve:
     def test_failure_checkpoint(self, m):
         results = solver.solve(m)
         # check_solve should pass since fail_flag=False and only warning will be produced
-        check_solve(results, checkpoint="test", logger=_log, fail_flag=False)
+        check_solve(results, checkpoint="tests", logger=_log, fail_flag=False)
         # expect the solve to fail and raise error
         with pytest.raises(
             InitializationError,
-            match="The solver at the test step failed to converge to an optimal solution."
+            match="The solver at the tests step failed to converge to an optimal solution."
             "This suggests that the user provided infeasible inputs or that the model "
             "is poorly scaled, poorly initialized, or degenerate.",
         ):
-            check_solve(results, checkpoint="test", logger=_log, fail_flag=True)
+            check_solve(results, checkpoint="tests", logger=_log, fail_flag=True)
 
     @pytest.mark.unit
     def test_success(self, m):
@@ -141,7 +141,7 @@ class TestIntervalImproveInitial:
     @pytest.fixture(scope="class")
     def m(self):
 
-        # This is the same model used in the pyomo fbbt test at
+        # This is the same model used in the pyomo fbbt tests at
         # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
 
         m = ConcreteModel()
@@ -183,7 +183,7 @@ class TestIntervalImproveInitial:
     @pytest.fixture(scope="class")
     def m_infeas(self):
 
-        # This is the same model used in the pyomo fbbt test at
+        # This is the same model used in the pyomo fbbt tests at
         # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
 
         m = ConcreteModel("m_infeas")

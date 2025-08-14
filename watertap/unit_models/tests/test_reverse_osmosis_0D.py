@@ -109,7 +109,7 @@ def test_default_config_and_build():
     assert m.fs.unit.config.friction_factor == FrictionFactor.default_by_module_type
     assert m.fs.unit.config.module_type == ModuleType.flat_sheet
     assert not m.fs.unit.config.has_full_reporting
-    # test ports
+    # tests ports
     port_lst = ["inlet", "retentate", "permeate"]
     for port_str in port_lst:
         port = getattr(m.fs.unit, port_str)
@@ -117,7 +117,7 @@ def test_default_config_and_build():
         # number of state variables for NaCl property package
         assert len(port.vars) == 3
 
-    # test feed-side control volume and associated stateblocks
+    # tests feed-side control volume and associated stateblocks
     assert isinstance(m.fs.unit.feed_side, MembraneChannel0DBlock)
     assert isinstance(m.fs.unit.permeate_side, StateBlock)
     assert isinstance(m.fs.unit.mixed_permeate, StateBlock)
@@ -125,7 +125,7 @@ def test_default_config_and_build():
         str(m.fs.unit.permeate_side.index_set())
         == "fs._time*fs.unit.feed_side.length_domain"
     )
-    # test statistics
+    # tests statistics
     assert number_variables(m) == 135
     assert number_total_constraints(m) == 110
     assert number_unused_variables(m) == 2
@@ -998,7 +998,7 @@ class TestReverseOsmosis0D_friction_factor_spiral_wound(UnitTestHarness):
 @pytest.mark.requires_idaes_solver
 @pytest.mark.unit
 def test_RO_dynamic_instantiation():
-    # TODO: add test to check exception for simplest RO0D with dynamics
+    # TODO: add tests to check exception for simplest RO0D with dynamics
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(

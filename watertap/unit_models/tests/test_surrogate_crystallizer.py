@@ -42,7 +42,7 @@ from watertap.core.solvers import get_solver
 __author__ = "Oluwamayowa Amusat, Adam Atia"
 
 
-# TODO: can consider adding NN model surrogate function and test
+# TODO: can consider adding NN model surrogate function and tests
 def add_crystallizer_rbf_model(
     blk,
     surrogate_inputs_with_bounds,

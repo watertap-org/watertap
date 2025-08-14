@@ -62,7 +62,7 @@ import re
 @pytest.fixture(scope="session")
 def local_dbs_file() -> Path:
     test_dir = Path(__file__).parent / "tests"
-    dbs_file_path = test_dir / "test.dbs"
+    dbs_file_path = test_dir / "tests.dbs"
     return dbs_file_path
 
 

@@ -80,27 +80,27 @@ def test_register_costing_parameter_block():
         costing_method=my_costing_method1,
     )
 
-    # test that the parameters are created
+    # tests that the parameters are created
     assert isinstance(m.fs.costing.my_parameter_block, pyo.Block)
 
-    # test that the parameters are created
+    # tests that the parameters are created
     assert m.fs.costing.my_parameter_block.v.value == 2
 
-    # test that the parameters are fixed
+    # tests that the parameters are fixed
     for v in m.fs.costing.my_parameter_block.component_data_objects(pyo.Var):
         assert v.fixed
 
     m.fs.costing.my_parameter_block.v.value = 42
 
     m.fs.unit2 = idc.UnitModelBlock()
-    # test that setting the same parameter block does nothing
+    # tests that setting the same parameter block does nothing
     m.fs.unit2.costing = idc.UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
         costing_method=my_costing_method2,
     )
     assert m.fs.costing.my_parameter_block.v.value == 42
 
-    # test that resetting the same parameter block raises an error
+    # tests that resetting the same parameter block raises an error
     m.fs.unit3 = idc.UnitModelBlock()
     with pytest.raises(
         RuntimeError,
@@ -114,7 +114,7 @@ def test_register_costing_parameter_block():
 
     m.fs.costing.parameter_block = pyo.Block()
 
-    # test that resetting a parameter block added elsewhere raises an error
+    # tests that resetting a parameter block added elsewhere raises an error
     with pytest.raises(
         RuntimeError,
         match="Use the register_costing_parameter_block decorator for specifying"

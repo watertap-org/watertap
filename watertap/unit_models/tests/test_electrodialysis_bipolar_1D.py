@@ -51,7 +51,7 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
-# Start test class
+# Start tests class
 
 
 class Test_membrane_characteristics:

@@ -74,7 +74,7 @@ def test_upload_dbs_file(
 
 @pytest.mark.unit
 def test_dbs_file_cleanup(oliapi_instance: OLIApi, local_dbs_file: Path):
-    # This test checks both the upload_dbs_file method and dbs_file_cleanup method
+    # This tests checks both the upload_dbs_file method and dbs_file_cleanup method
     # The following line will return 3 DBS file IDs. Note, the same file is uploaded three times, but each time a new ID is assigned.
     ids = [oliapi_instance.upload_dbs_file(str(local_dbs_file)) for i in range(3)]
     oliapi_instance.dbs_file_cleanup(ids)

@@ -707,7 +707,7 @@ class TestStoichiometricReactor:
     def test_costing_acid_addition(self, dissolution_reactor):
         # NOTE: testing costing for a dissultion reactor only - we are useing
         # soda ash adn lime addition, but costing is for HCl addition
-        # just a test
+        # just a tests
         m = dissolution_reactor
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)

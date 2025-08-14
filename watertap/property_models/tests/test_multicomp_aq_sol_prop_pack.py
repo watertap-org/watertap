@@ -408,11 +408,11 @@ def model3():
 def test_build(model3):
     m = model3
 
-    # test scaling factor
+    # tests scaling factor
     assert hasattr(m.fs.stream[0], "scaling_factor")
     assert isinstance(m.fs.stream[0].scaling_factor, Suffix)
 
-    # test state variables
+    # tests state variables
     state_vars_list = ["flow_mol_phase_comp", "temperature", "pressure"]
     state_vars_dict = m.fs.stream[0].define_state_vars()
     assert len(state_vars_dict) == len(state_vars_list)
@@ -471,7 +471,7 @@ def test_build(model3):
         "pressure_sat",
     ]
 
-    # test on demand constraints
+    # tests on demand constraints
     for v in var_list:
         assert hasattr(m.fs.stream[0], "_" + v)  # check method
         assert hasattr(m.fs.stream[0], "eq_" + v)  # check constraint

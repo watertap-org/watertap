@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Flowsheet example full Water Resource Recovery Facility
+Flowsheet example of full Water Resource Recovery Facility
 (WRRF; a.k.a., wastewater treatment plant) with ASM2d and ADM1 with P extension.
 
 The flowsheet follows the same formulation as benchmark simulation model no.2 (BSM2)
@@ -21,6 +21,10 @@ C.Rosen, J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 2 (BSM
 
 [2] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
 J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
+
+[3] X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
+Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
 
 # Some more information about this module
@@ -114,7 +118,7 @@ from watertap.costing.unit_models.clarifier import (
 _log = idaeslog.getLogger(__name__)
 
 
-def main(bio_P=False):
+def main(bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m, bio_P=bio_P)
 
@@ -146,6 +150,11 @@ def main(bio_P=False):
     pyo.assert_optimal_termination(scaled_results)
 
     scaling.propagate_solution(scaled_model, m)
+
+    if has_effluent_constraints:
+        # Re-solve with effluent violation constraints
+        setup_optimization(m, reactor_volume_equalities=reactor_volume_equalities)
+        results = solve(m)
 
     display_costing(m)
     display_performance_metrics(m)
@@ -784,6 +793,98 @@ def add_costing(m):
             set_scaling_factor(block.costing.capital_cost, 1e-5)
 
 
+def setup_optimization(m, reactor_volume_equalities=False):
+
+    for i in ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]:
+        reactor = getattr(m.fs, i)
+        reactor.volume.unfix()
+        reactor.volume.setlb(1)
+        # reactor.volume.setub(2000)
+    if reactor_volume_equalities:
+        add_reactor_volume_equalities(m)
+
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].setub(1e-2)
+
+    # Unfix fraction of outflow from reactor 7 that goes to recycle
+    m.fs.SP1.split_fraction[:, "underflow"].unfix()
+    # m.fs.SP1.split_fraction[:, "underflow"].setlb(0.45)
+    m.fs.SP2.split_fraction[:, "recycle"].unfix()
+
+    add_effluent_violations(m)
+
+
+def add_reactor_volume_equalities(m):
+    # TODO: These constraints were applied for initial optimization of AS reactor volumes; otherwise, volumes drive towards lower bound. Revisit
+    @m.fs.Constraint(m.fs.time)
+    def Vol_1(self, t):
+        return m.fs.R1.volume[0] == m.fs.R2.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_2(self, t):
+        return m.fs.R3.volume[0] == m.fs.R4.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_3(self, t):
+        return m.fs.R5.volume[0] == m.fs.R6.volume[0]
+
+    @m.fs.Constraint(m.fs.time)
+    def Vol_4(self, t):
+        return m.fs.R7.volume[0] >= m.fs.R6.volume[0] * 0.5
+
+
+def add_effluent_violations(m):
+
+    m.fs.TSS_max = pyo.Var(initialize=0.03, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.TSS_max.fix()
+
+    m.fs.eq_tss_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].TSS <= m.fs.TSS_max
+    )
+
+    m.fs.COD_max = pyo.Var(initialize=0.1, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.COD_max.fix()
+
+    m.fs.eq_cod_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].COD <= m.fs.COD_max
+    )
+
+    m.fs.total_N_max = pyo.Var(initialize=0.018, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.total_N_max.fix()
+
+    m.fs.eq_total_N_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].TKN + m.fs.Treated.properties[0].SNOX
+        <= m.fs.total_N_max
+    )
+
+    m.fs.BOD5_max = pyo.Var(initialize=0.01, units=pyo.units.kg / pyo.units.m**3)
+    m.fs.BOD5_max.fix()
+
+    m.fs.eq_BOD5_max = pyo.Constraint(
+        expr=m.fs.Treated.properties[0].BOD5["effluent"] <= m.fs.BOD5_max
+    )
+
+    # Effluent phosphorus constraint is too stringent
+    # This constraint was violated 100% of the operating time in the Flores-Alsina simulation
+    # m.fs.total_P_max = pyo.Var(initialize=0.002, units=pyo.units.kg / pyo.units.m**3)
+    # m.fs.total_P_max.fix()
+    #
+    # m.fs.eq_total_P_max = pyo.Constraint(
+    #     expr=m.fs.Treated.properties[0].SP_organic + m.fs.Treated.properties[0].SP_inorganic <= m.fs.total_P_max
+    # )
+
+    set_scaling_factor(m.fs.eq_tss_max, 1e2)
+    set_scaling_factor(m.fs.eq_cod_max, 1e0)
+    set_scaling_factor(m.fs.eq_total_N_max, 1e1)
+    set_scaling_factor(m.fs.eq_BOD5_max, 1e3)
+
+
 def display_costing(m):
     print("Levelized cost of water: %.2f $/m3" % pyo.value(m.fs.costing.LCOW))
 
@@ -947,16 +1048,6 @@ def display_performance_metrics(m):
         pyo.value(m.fs.FeedWater.properties[0].SNOX),
         pyo.units.get_units(m.fs.FeedWater.properties[0].SNOX),
     )
-    print(
-        "Organic phosphorus concentration",
-        pyo.value(m.fs.FeedWater.properties[0].SP_organic),
-        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_organic),
-    )
-    print(
-        "Inorganic phosphorus concentration",
-        pyo.value(m.fs.FeedWater.properties[0].SP_inorganic),
-        pyo.units.get_units(m.fs.FeedWater.properties[0].SP_inorganic),
-    )
 
     print("---- Effluent Metrics----")
     print(
@@ -997,7 +1088,9 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results, scaled_model = main(bio_P=True)
+    m, results, scaled_model = main(
+        bio_P=False, has_effluent_constraints=False, reactor_volume_equalities=False
+    )
 
     stream_table = create_stream_table_dataframe(
         {

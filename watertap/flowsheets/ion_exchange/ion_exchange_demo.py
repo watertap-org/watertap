@@ -38,7 +38,7 @@ solver = get_solver()
 
 def main():
     # The IX model currently only supports one "target" ion (i.e., the component in the water source that can be removed by IX)
-    # All other ions are inert. This demo does not contain inert ions, but an example can be found in the IX test file:
+    # All other ions are inert. This demo does not contain inert ions, but an example can be found in the IX tests file:
     # watertap/watertap/unit_models/tests/test_ion_exchange_0D.py
     target_ion = "Ca_2+"
     ions = [target_ion]

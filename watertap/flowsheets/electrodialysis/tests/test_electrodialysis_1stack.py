@@ -99,7 +99,7 @@ class TestElectrodialysisVoltageConst:
             assert arc.destination is port_tpl[1]
 
         # Test the primary EDstack properties
-        # test configrations
+        # tests configrations
         assert len(m.fs.EDstack.config) == 21
         assert not m.fs.EDstack.config.dynamic
         assert not m.fs.EDstack.config.has_holdup

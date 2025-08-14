@@ -60,14 +60,14 @@ class TestMVC:
     def test_build_model(self, mvc_single_stage):
         m = mvc_single_stage
 
-        # test model set up
+        # tests model set up
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
         assert isinstance(m.fs.properties_feed, props_seawater.SeawaterParameterBlock)
         assert isinstance(m.fs.properties_vapor, props_water.WaterParameterBlock)
         assert isinstance(m.fs.costing, Block)
 
-        # test unit models
+        # tests unit models
         assert isinstance(m.fs.feed, Feed)
         assert isinstance(m.fs.distillate, Product)
         assert isinstance(m.fs.brine, Product)

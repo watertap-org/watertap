@@ -391,7 +391,7 @@ class TestADScaler:
         # Scaling factors for the combination of constraint and variables sfx_rxn
         assert len(sfx_rxn) == 89
 
-    # TODO: Remove test once iscale is deprecated
+    # TODO: Remove tests once iscale is deprecated
     @pytest.mark.integration
     def test_example_case_iscale(self):
         m = ConcreteModel()

@@ -94,7 +94,7 @@ class TestIXDemoCa:
             assert arc.source is port_tpl[0]
             assert arc.destination is port_tpl[1]
 
-        # test configrations
+        # tests configrations
         assert len(m.fs.ion_exchange.config) == 11
         assert not m.fs.ion_exchange.config.dynamic
         assert not m.fs.ion_exchange.config.has_holdup
@@ -444,7 +444,7 @@ class TestIXDemoSO4:
             assert arc.source is port_tpl[0]
             assert arc.destination is port_tpl[1]
 
-        # test configrations
+        # tests configrations
         assert len(m.fs.ion_exchange.config) == 11
         assert not m.fs.ion_exchange.config.dynamic
         assert not m.fs.ion_exchange.config.has_holdup

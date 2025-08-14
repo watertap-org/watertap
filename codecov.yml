@@ -15,5 +15,5 @@ codecov:
   notify:
     wait_for_ci: false
     # after_n_builds should match the number of CI jobs configured to upload reports to Codecov
-    # as of #1365, there are 2 such jobs, one each for the mpi4py-test.yml and checks.yml workflows
+    # as of #1365, there are 2 such jobs, one each for the mpi4py-tests.yml and checks.yml workflows
     after_n_builds: 2

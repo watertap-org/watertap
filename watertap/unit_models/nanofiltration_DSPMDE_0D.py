@@ -63,7 +63,7 @@ _log = idaeslog.getLogger(__name__)
 # TODO:
 # - Further refinement of initialization routine to make more robust
 # - Further refinement of scaling to make more robust
-# - Add more tests to test robustness
+# - Add more tests to tests robustness
 # - Add constraints for computing pressure drop in spiral wound membrane
 
 

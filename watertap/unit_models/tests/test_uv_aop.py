@@ -120,7 +120,7 @@ class TestUV:
     def test_build(self, UV_frame):
         m = UV_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "outlet"]
         port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -133,7 +133,7 @@ class TestUV:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = [
             "uv_dose",
             "inactivation_rate",
@@ -142,7 +142,7 @@ class TestUV:
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         cv_name = "control_volume"
         cv_stateblock_lst = ["properties_in", "properties_out"]
         stateblock_objs_lst = [
@@ -165,12 +165,12 @@ class TestUV:
             for obj_str in stateblock_objs_lst:
                 assert hasattr(blk[0], obj_str)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 38
         assert number_total_constraints(m) == 25
         assert number_unused_variables(m) == 0
 
-        # test unit consistency
+        # tests unit consistency
         assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
@@ -332,7 +332,7 @@ class TestUV_standard:
     def test_build(self, UV_frame):
         m = UV_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "outlet"]
         port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -345,7 +345,7 @@ class TestUV_standard:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = [
             "uv_dose",
             "inactivation_rate",
@@ -354,7 +354,7 @@ class TestUV_standard:
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         cv_name = "control_volume"
         cv_stateblock_lst = ["properties_in", "properties_out"]
         stateblock_objs_lst = [
@@ -377,12 +377,12 @@ class TestUV_standard:
             for obj_str in stateblock_objs_lst:
                 assert hasattr(blk[0], obj_str)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 38
         assert number_total_constraints(m) == 25
         assert number_unused_variables(m) == 0
 
-        # test unit consistency
+        # tests unit consistency
         assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
@@ -485,7 +485,7 @@ class TestUV_standard:
         m.fs.unit.report()
 
 
-# TODO: add test for single target species, and improve error message when list not provided.
+# TODO: add tests for single target species, and improve error message when list not provided.
 class TestUV_with_multiple_comps:
     @pytest.fixture(scope="class")
     def UV_frame(self):
@@ -567,7 +567,7 @@ class TestUV_with_multiple_comps:
     def test_build(self, UV_frame):
         m = UV_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "outlet"]
         port_vars_lst = ["flow_mol_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -580,7 +580,7 @@ class TestUV_with_multiple_comps:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = [
             "uv_dose",
             "inactivation_rate",
@@ -589,7 +589,7 @@ class TestUV_with_multiple_comps:
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         cv_name = "control_volume"
         cv_stateblock_lst = ["properties_in", "properties_out"]
         stateblock_objs_lst = [
@@ -612,12 +612,12 @@ class TestUV_with_multiple_comps:
             for obj_str in stateblock_objs_lst:
                 assert hasattr(blk[0], obj_str)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 70
         assert number_total_constraints(m) == 42
         assert number_unused_variables(m) == 14
 
-        # test unit consistency
+        # tests unit consistency
         assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
@@ -807,7 +807,7 @@ class TestUV_detailed:
     def test_build(self, UV_frame):
         m = UV_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "outlet"]
         port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -820,7 +820,7 @@ class TestUV_detailed:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = [
             "uv_dose",
             "inactivation_rate",
@@ -829,7 +829,7 @@ class TestUV_detailed:
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         cv_name = "control_volume"
         cv_stateblock_lst = ["properties_in", "properties_out"]
         stateblock_objs_lst = [
@@ -852,12 +852,12 @@ class TestUV_detailed:
             for obj_str in stateblock_objs_lst:
                 assert hasattr(blk[0], obj_str)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 45
         assert number_total_constraints(m) == 26
         assert number_unused_variables(m) == 0
 
-        # test unit consistency
+        # tests unit consistency
         assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
@@ -1028,7 +1028,7 @@ class TestUVAOP:
     def test_build(self, UV_frame):
         m = UV_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "outlet"]
         port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -1041,7 +1041,7 @@ class TestUVAOP:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = [
             "uv_dose",
             "inactivation_rate",
@@ -1050,7 +1050,7 @@ class TestUVAOP:
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         cv_name = "control_volume"
         cv_stateblock_lst = ["properties_in", "properties_out"]
         stateblock_objs_lst = [
@@ -1073,12 +1073,12 @@ class TestUVAOP:
             for obj_str in stateblock_objs_lst:
                 assert hasattr(blk[0], obj_str)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 40
         assert number_total_constraints(m) == 26
         assert number_unused_variables(m) == 0
 
-        # test unit consistency
+        # tests unit consistency
         assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
@@ -1269,7 +1269,7 @@ class TestUV_with_MCAS_mass_basis:
     def test_build(self, UV_frame):
         m = UV_frame
 
-        # test ports and variables
+        # tests ports and variables
         port_lst = ["inlet", "outlet"]
         port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
         for port_str in port_lst:
@@ -1282,7 +1282,7 @@ class TestUV_with_MCAS_mass_basis:
                 var = getattr(port, var_str)
                 assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
+        # tests unit objects (including parameters, variables, and constraints)
         unit_objs_lst = [
             "uv_dose",
             "inactivation_rate",
@@ -1291,7 +1291,7 @@ class TestUV_with_MCAS_mass_basis:
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
 
-        # test state block objects
+        # tests state block objects
         cv_name = "control_volume"
         cv_stateblock_lst = ["properties_in", "properties_out"]
         stateblock_objs_lst = [
@@ -1314,12 +1314,12 @@ class TestUV_with_MCAS_mass_basis:
             for obj_str in stateblock_objs_lst:
                 assert hasattr(blk[0], obj_str)
 
-        # test statistics
+        # tests statistics
         assert number_variables(m) == 67
         assert number_total_constraints(m) == 39
         assert number_unused_variables(m) == 14
 
-        # test unit consistency
+        # tests unit consistency
         assert_units_consistent(m.fs.unit)
         assert degrees_of_freedom(m) == 0
 

@@ -20,7 +20,7 @@ from watertap.flowsheets.lsrro.multi_sweep import run_case
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
-# NOTE: we used to test up to 5 stages, but those are
+# NOTE: we used to tests up to 5 stages, but those are
 #       excluded by the rule below, so no point in running
 _test_cases = list(range(1, 3))
 
@@ -42,7 +42,7 @@ def test_against_multisweep(number_of_stages, tmp_path):
     assert len(baseline) == len(test)
 
     for k, base in baseline.items():
-        # Don't test those cases which have too many stages
+        # Don't tests those cases which have too many stages
         for s in range(1, number_of_stages + 1):
             if math.isclose(base[f"Membrane Area-Stage {s}"], 1.0, abs_tol=1e-4):
                 print(

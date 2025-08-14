@@ -50,7 +50,7 @@ class TestDyewithROFlowsheetwithPretreatment:
         set_operating_conditions(m)
         initialize_system(m)
 
-        # test feed
+        # tests feed
         assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
@@ -59,17 +59,17 @@ class TestDyewithROFlowsheetwithPretreatment:
 
         assert pytest.approx(0.2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "dye"])
 
-        # test wwtp
+        # tests wwtp
         assert pytest.approx(0.14, rel=1e-5) == value(
             m.fs.pretreatment.wwtp.energy_electric_flow_vol_inlet
         )
 
-        # test pump block
+        # tests pump block
         assert pytest.approx(7, rel=1e-5) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
-        # test nanofiltration
+        # tests nanofiltration
         assert pytest.approx(359.7653, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
@@ -152,7 +152,7 @@ class TestDyewithROFlowsheetDefault:
         set_operating_conditions(m)
         initialize_system(m)
 
-        # test feed
+        # tests feed
         assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
@@ -161,12 +161,12 @@ class TestDyewithROFlowsheetDefault:
 
         assert pytest.approx(0.2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "dye"])
 
-        # test pump block
+        # tests pump block
         assert pytest.approx(7, rel=1e-5) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
-        # test nanofiltration
+        # tests nanofiltration
         assert pytest.approx(359.8925, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
@@ -252,7 +252,7 @@ class TestDyewith0DROFlowsheet:
         set_operating_conditions(m)
         initialize_system(m)
 
-        # test feed
+        # tests feed
         assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
@@ -261,12 +261,12 @@ class TestDyewith0DROFlowsheet:
 
         assert pytest.approx(0.2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "dye"])
 
-        # test pump block
+        # tests pump block
         assert pytest.approx(7, rel=1e-5) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
-        # test nanofiltration
+        # tests nanofiltration
         assert pytest.approx(359.8925, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
@@ -352,7 +352,7 @@ class TestDyewithROFlowsheetwithDewatering:
         set_operating_conditions(m)
         initialize_system(m)
 
-        # test feed
+        # tests feed
         assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
@@ -361,17 +361,17 @@ class TestDyewithROFlowsheetwithDewatering:
 
         assert pytest.approx(0.2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "dye"])
 
-        # test dewaterer block
+        # tests dewaterer block
         assert pytest.approx(0.99, rel=1e-5) == value(
             m.fs.dewaterer.split_fraction[0, "precipitant", "dye"]
         )
 
-        # test pump block
+        # tests pump block
         assert pytest.approx(7, rel=1e-5) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
-        # test nanofiltration
+        # tests nanofiltration
         assert pytest.approx(359.8925, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
@@ -455,7 +455,7 @@ class TestDyewithROFlowsheetwithGAC:
         assert_units_consistent(m)
         initialize_system(m)
 
-        # test feed
+        # tests feed
         assert pytest.approx(77.607, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "H2O"]
         )
@@ -464,12 +464,12 @@ class TestDyewithROFlowsheetwithGAC:
 
         assert pytest.approx(0.2, rel=1e-5) == value(m.fs.feed.conc_mass_comp[0, "dye"])
 
-        # test pump block
+        # tests pump block
         assert pytest.approx(7, rel=1e-5) == value(
             m.fs.dye_separation.P1.applied_pressure[0]
         )
 
-        # test nanofiltration
+        # tests nanofiltration
         assert pytest.approx(359.8925, rel=1e-5) == value(
             m.fs.dye_separation.nanofiltration.area
         )
