@@ -102,9 +102,17 @@ Process Rate Equations
    "Hydrolysis of entrapped organic nitrogen", ":math:`ρ_7 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}(X_{ND}/X_{S})`"
 
 
-Scaling
--------
-Scaling for the ASM1 property package has yet to be implemented.
+Effluent Metrics
+----------------
+.. csv-table::
+  :header: "Description", "Variable", "Regulatory Limit", "Equation"
+
+  "Total suspended solids", ":math:`TSS`", ":math:`0.03 kg/m^{3}`", ":math:`TSS = 0.75(X_{S} + X_{I} + X_{BH} + X_{BA} + X_{P})`"
+  "Five-day biological oxygen demand (raw wastewater)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{raw}`", ":math:`BOD5_{raw} = 0.65(S_{S} + X_{S} + 0.92(X_{BH} + X_{BA}))`"
+  "Five-day biological oxygen demand (effluent)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{effluent}`", ":math:`BOD5_{effluent} = 0.25(S_{S} + X_{S} + 0.92(X_{BH} + X_{BA}))`"
+  "Chemical oxygen demand", ":math:`COD`", ":math:`0.1 kg/m^{3}`", ":math:`COD = S_{S} + S_{I} + X_{S} + X_{I} + X_{BH} + X_{BA} + X_{P}`"
+  "Total Kjeldahl nitrogen", ":math:`TKN`", ":math:`None`", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + 0.08(X_{BH} + X_{BA}) + 0.06(X_{P} + X_{I})`"
+  "Total nitrogen", ":math:`N_{total}`", ":math:`0.018 kg/m^{3}`", ":math:`N_{total} = TKN + S_{NO}`"
 
 Class Documentation
 -------------------

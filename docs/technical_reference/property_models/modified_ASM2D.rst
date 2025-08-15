@@ -208,9 +208,24 @@ Equations marked "(with decay)" indicate that the decay of heterotrophs and auto
    ":red:`Precipitation of phosphorus with ferric hydroxide`", ":math:`ρ_{20} = k_{PRE}S_{PO4}X_{MeOH}`"
    ":red:`Redissolution`", ":math:`ρ_{21} = k_{RED}X_{MeP}(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})`"
 
-Scaling
--------
-A thorough scaling routine for the ASM2D property package has yet to be implemented.
+Effluent Metrics
+----------------
+.. csv-table::
+  :header: "Description", "Variable", "Regulatory Limit", "Equation"
+
+  "Volatile suspended solids", ":math:`VSS`", ":math:`None`", ":math:`VSS = 0.64X_{I} + 0.64X_{S} + 0.76(X_{H} + X_{PAO} + X_{AUT}) + 0.51X_{PHA}`"
+  "Inorganic suspended solids", ":math:`ISS`", ":math:`None`", ":math:`ISS = 0.11(X_{H} + X_{PAO} + 3.23X_{PP}`"
+  "Total suspended solids", ":math:`TSS`", ":math:`0.03 kg/m^{3}`", ":math:`TSS = VSS + ISS`"
+  "Five-day biological oxygen demand (raw wastewater)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{raw}`", ":math:`BOD5_{raw} = 0.65(S_{F} + S_{A} + X_{S} + 0.9X_{H} + 0.9(X_{PAO} + X_{PHA}) + 0.9X_{AUT})`"
+  "Five-day biological oxygen demand (effluent)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{effluent}`", ":math:`BOD5_{effluent} = 0.25(S_{F} + S_{A} + X_{S} + 0.9X_{H} + 0.9(X_{PAO} + X_{PHA}) + 0.9X_{AUT})`"
+  "Chemical oxygen demand", ":math:`COD`", ":math:`0.1 kg/m^{3}`", ":math:`COD = S_{F} + S_{A} + S_{I} + X_{I} + X_{S} + X_{H} + X_{PAO} + X_{PHA} + X_{AUT}`"
+  "Total Kjeldahl nitrogen", ":math:`TKN`", ":math:`None`", ":math:`TKN = S_{NH4} + 0.034S_{F} + 0.06S_{I} + 0.06X_{I} + 0.034X_{S} + 0.086(X_{H} + X_{PAO} + X_{AUT})`"
+  "Nitrogen oxide", ":math:`SNOX`", ":math:`None`", ":math:`SNOX = S_{NO3}`"
+  "Total nitrogen", ":math:`N_{total}`", ":math:`0.018 kg/m^{3}`", ":math:`N_{total} = TKN + SNOX`"
+  "Organic phosphorus", ":math:`SP_{organic}`", ":math:`None`", ":math:`SP_{organic} = X_{PP} + 0.0056S_{F} + 0.0065S_{I} + 0.0065X_{I} + 0.0056X_{S} + 0.22(X_{H} + X_{PAO} + X_{AUT})`"
+  "Inorganic phosphorus", ":math:`SP_{inorganic}`", ":math:`None`", ":math:`SP_{inorganic} = S_{PO4}`"
+  "Total phosphorus", ":math:`P_{total}`", ":math:`0.002 kg/m^{3}`", ":math:`P_{total} = SP_{organic} + SP{inorganic}`"
+
 
 Class Documentation
 -------------------
