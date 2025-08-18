@@ -1,5 +1,11 @@
+.. _dewatering:
+
 Dewatering Unit
 ===============
+
+.. code-block:: python
+
+   from watertap.unit_models.dewatering import DewateringUnit
 
 .. index::
    pair: watertap.unit_models.dewatering;dewatering
@@ -40,7 +46,7 @@ Sets
    "Particulate Components", ":math:`j`", "['X_I', 'X_S', 'X_P', 'X_BH', 'X_BA', 'X_ND']"
    "Non-particulate Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'S_ALK']"
 
-NOTE: These components are defined in the `ASM1 Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_ documentation.
+NOTE: These components are defined in the :ref:`ASM1 Property Package <ASM1>` documentation.
 
 Parameters
 ----------

@@ -1,5 +1,11 @@
+.. _stoichiometric_reactor:
+
 Stoichiometric reactor
 ======================
+
+.. code-block:: python
+
+   from watertap.unit_models.stoichiometric_reactor import StoichiometricReactor
 
 .. index::
    pair: watertap.unit_models.stoichiometric_reactor;stoichiometric_reactor
@@ -50,8 +56,9 @@ Model Structure and Usage
 -------------------------
 The stoichiometric reactor uses control volumes to perform the dissolution reaction and 
 precipitation reaction, while an IDAES separator is used to separate precipitated solids 
-from the feed stream. The model should be used with MCAS property package 
-`Multi-Component Aqueous Solution (MCAS) Property Package <https://watertap.readthedocs.io/en/stable/technical_reference/property_models/mc_aq_sol.html>`_. The user needs to specify how supplied reagent and precipitant dissolve or precipitate 
+from the feed stream. The model should be used with MCAS property package
+:ref:`Multi-Component Aqueous Solution (MCAS) Property Package <mcas_tech_ref>`.
+The user needs to specify how supplied reagent and precipitant dissolve or precipitate
 out of the feed stream using ions present in the feed. 
 
 Example dictionary for dissolving Soda ash and Lime into their ions  

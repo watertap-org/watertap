@@ -15,6 +15,7 @@ Unit Models
    dewatering
    electrodialysis_0D
    electrodialysis_1D
+   electrodialysis_bipolar_1D
    electrolyzer
    electroNP_ZO
    energy_recovery_device
@@ -26,6 +27,7 @@ Unit Models
    membrane_distillation_1D
    mvc
    nanofiltration_ZO
+   nanofiltration_0D
    nanofiltration_dspmde_0D
    osmotically_assisted_reverse_osmosis_0D
    osmotically_assisted_reverse_osmosis_1D

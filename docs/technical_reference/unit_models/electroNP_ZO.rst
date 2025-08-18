@@ -1,5 +1,12 @@
+.. _electroNP:
+
 ElectroNP (ZO)
-====================
+==============
+
+.. code-block:: python
+
+   from watertap.unit_models.electroNP_ZO import ElectroNPZO
+
 This electrochemical nutrient removal (ElectroNP) unit model
    * is a zero-order model that enables the user to specify performance in terms of solute rejection
    * supports a single liquid phase only

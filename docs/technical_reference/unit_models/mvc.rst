@@ -1,5 +1,12 @@
+.. _MVC:
+
 Mechanical Vapor Compression (MVC)
 ==================================
+
+.. code-block:: python
+
+   from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
+
 Modeling a mechanical vapor compression (MVC) system is performed through flowsheet connectivity of individual model
 block components. The model is simulated under the following criteria:
 
