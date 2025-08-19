@@ -99,6 +99,7 @@ where the ``spacer_porosity`` attribute will be randomly selected from a uniform
 With the generating functions defined and suitably initialized, we can call the ``parameter_sweep`` function as before, where we exercise five new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs, and (5) the ability to pass a keyword arg into the build_sweep_params function. The function passed in to `optimize_function` should return a Pyomo results object (i.e., the return value from calling the `solve` method).
 
 .. testcode::
+    :hide:
 
     # Define the local results directory, num_samples, and seed (if desired)
     debugging_data_dir = 'local_results'
@@ -111,9 +112,11 @@ With the generating functions defined and suitably initialized, we can call the 
         build_sweep_params_kwargs=dict(num_samples=num_samples))
 
 .. testoutput::
+    :hide:
+    :options: +ELLIPSIS
 
     ...
-
+    
 Note that ``num_samples`` must be provided for any of the random sample classes.  For the very small problem size and simple model used here, parallel hardware is almost certainly not necessary.  However, for larger total numbers of samples or more computationally demanding models, a significant speedup may be attained on a multi-core workstation or high performance computing (HPC) cluster.  To distribute the workload between more than one worker, simply call the scipt using the ``mpirun`` command from the command line
 
 .. code:: bash

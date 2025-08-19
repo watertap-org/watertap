@@ -139,10 +139,13 @@ Passing in a model, sweep params, and outputs directly to the parameter_sweep fu
 future versions. The preferred way is to pass in generating functions as shown below:
 
 .. testcode::
+    :hide:
 
     parameter_sweep(build_model, build_sweep_params, build_outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
 
 .. testoutput::
+    :hide:
+    :options: +ELLIPSIS
 
     ...
 

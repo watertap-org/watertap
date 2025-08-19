@@ -173,6 +173,7 @@ With the flowsheet defined and suitably initialized, along with the definitions 
 .. note:: This documentation currently uses the older API for calling the differential parameter sweep. This API will be deprecated in the near future. The documentation will be changed to reflect this accordingly. We recommend running the differential parameter sweep in serial or with MPI only.
 
 .. testcode::
+    :hide:
 
     # Define the local results directory, num_samples, and seed (if desired)
     num_samples = 5
@@ -198,6 +199,8 @@ With the flowsheet defined and suitably initialized, along with the definitions 
         )
 
 .. testoutput::
+    :hide:
+    :options: +ELLIPSIS
 
     ...
 
