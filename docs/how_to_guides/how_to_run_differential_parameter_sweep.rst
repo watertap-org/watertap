@@ -199,7 +199,7 @@ With the flowsheet defined and suitably initialized, along with the definitions 
 
 .. testoutput::
 
-    ...
+    Something
 
 .. testcleanup::
 

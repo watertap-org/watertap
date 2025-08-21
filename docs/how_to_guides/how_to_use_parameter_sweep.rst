@@ -144,7 +144,7 @@ future versions. The preferred way is to pass in generating functions as shown b
 
 .. testoutput::
 
-    ...
+    Something
 
 .. testcleanup::
 
