@@ -67,10 +67,208 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 from watertap.costing.unit_models.anaerobic_digester import cost_anaerobic_digester
 
-__author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu"
+__author__ = "Alejandro Garciadiego, Andrew Lee, Xinhong Liu, Marcus Holly"
+
+
+class ADScaler(CustomScalerBase):
+    """
+    Default modular scaler for anaerobic digester.
+
+    This Scaler relies on the associated property and reaction packages,
+    either through user provided options (submodel_scalers argument) or by default
+    Scalers assigned to the packages.
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "volume": 1e-2,
+        "hydraulic_retention_time": 1e-6,
+        "electricity_consumption": 1e-1,
+        "rate_reaction_generation": 1e3,
+        "rate_reaction_extent": 1e3,
+        "reaction_rate": 1e8,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_phase.properties_in,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.propagate_state_scaling(
+            target_state=model.liquid_phase.properties_out,
+            source_state=model.liquid_phase.properties_in,
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_phase.properties_out,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_phase.reactions,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.vapor_phase,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # Scaling control volume variables
+        self.scale_variable_by_default(
+            model.liquid_phase.volume[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(
+            model.hydraulic_retention_time[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(
+            model.electricity_consumption[0], overwrite=overwrite
+        )
+        for c in model.config.liquid_property_package.component_list:
+            self.scale_variable_by_default(
+                model.liquid_phase.rate_reaction_generation[0, "Liq", c],
+                overwrite=overwrite,
+            )
+        for rxn in model.config.reaction_package.rate_reaction_idx:
+            self.scale_variable_by_default(
+                model.liquid_phase.rate_reaction_extent[0, rxn], overwrite=overwrite
+            )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Submodel Scalers are called for the property and reaction blocks. All other constraints
+        are scaled using the inverse maximum scheme.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_phase.properties_in,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_phase.properties_out,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_phase.reactions,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # Scale unit level constraints
+        self.scale_constraint_by_nominal_value(
+            model.CO2_Henrys_law[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.Ch4_Henrys_law[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.H2_Henrys_law[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.outlet_P[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        for i in model.config.liquid_property_package.component_list:
+            self.scale_constraint_by_nominal_value(
+                model.unit_material_balance[0, i],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        self.scale_constraint_by_nominal_value(
+            model.Sh2_conc[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.Sch4_conc[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.Sco2_conc[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.flow_vol_vap[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.ad_total_volume[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.AD_retention_time[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
+        for rxn in model.config.reaction_package.rate_reaction_idx:
+            self.scale_constraint_by_nominal_value(
+                model.ad_performance_eqn[0, rxn],
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        self.scale_constraint_by_nominal_value(
+            model.unit_temperature_equality[0],
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_nominal_value(
+            model.unit_electricity_consumption[0],
+            scheme=ConstraintScalingScheme.inverseMaximum,
+            overwrite=overwrite,
+        )
 
 
 @declare_process_block_class("AD")
@@ -78,6 +276,8 @@ class ADData(UnitModelBlockData):
     """
     AD Unit Model Class
     """
+
+    default_scaler = ADScaler
 
     CONFIG = UnitModelBlockData.CONFIG()
 
@@ -366,7 +566,7 @@ see reaction package for documentation.}""",
         )
 
         # ---------------------------------------------------------------------
-        # Check flow basis is compatable
+        # Check flow basis is compatible
         # TODO : Could add code to convert flow bases, but not now
         t_init = self.flowsheet().time.first()
         if (
@@ -694,8 +894,9 @@ see reaction package for documentation.}""",
 
         def AD_retention_time_rule(self, t):
             return (
-                self.hydraulic_retention_time[t]
-                == self.volume_AD[t] / self.liquid_phase.properties_in[t].flow_vol
+                self.volume_AD[t]
+                == self.hydraulic_retention_time[t]
+                * self.liquid_phase.properties_in[t].flow_vol
             )
 
         self.AD_retention_time = Constraint(
@@ -792,22 +993,6 @@ see reaction package for documentation.}""",
         # Set references to balance terms at unit level
         self.heat_duty = Reference(self.liquid_phase.heat[:])
 
-        iscale.set_scaling_factor(self.KH_co2, 1e2)
-        iscale.set_scaling_factor(self.KH_ch4, 1e2)
-        iscale.set_scaling_factor(self.KH_h2, 1e2)
-        iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
-        iscale.set_scaling_factor(self.volume_AD, 1e-2)
-        iscale.set_scaling_factor(self.volume_vapor, 1e-2)
-        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
-        iscale.set_scaling_factor(self.liquid_phase.mass_transfer_term, 1e2)
-        iscale.set_scaling_factor(self.liquid_phase.heat, 1e0)
-        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e4)
-        iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e0)
-        iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
-        iscale.set_scaling_factor(self.electricity_consumption, 1e0)
-        for i, c in self.ad_performance_eqn.items():
-            iscale.constraint_scaling_transform(c, 1e2)
-
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
@@ -835,6 +1020,21 @@ see reaction package for documentation.}""",
             self.vapor_phase.component_list
             & self.liquid_phase.properties_out.component_list
         )
+
+        iscale.set_scaling_factor(self.KH_co2, 1e2)
+        iscale.set_scaling_factor(self.KH_ch4, 1e2)
+        iscale.set_scaling_factor(self.KH_h2, 1e2)
+        iscale.set_scaling_factor(self.hydraulic_retention_time, 1e-6)
+        iscale.set_scaling_factor(self.volume_AD, 1e-2)
+        iscale.set_scaling_factor(self.volume_vapor, 1e-2)
+        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
+        iscale.set_scaling_factor(self.liquid_phase.mass_transfer_term, 1e2)
+        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e4)
+        iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e0)
+        iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
+        iscale.set_scaling_factor(self.electricity_consumption, 1e0)
+        for i, c in self.ad_performance_eqn.items():
+            iscale.constraint_scaling_transform(c, 1e2)
 
         # TODO: improve this later; for now, this resolved some scaling issues for modified adm1 test file
         if "S_IP" in self.config.liquid_property_package.component_list:
