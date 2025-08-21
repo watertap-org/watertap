@@ -38,7 +38,7 @@ author = "NAWI"
 # The full version, including alpha/beta/rc tags
 release = "1.5.dev0"
 # The short X.Y version
-version =  importlib.metadata.version('watertap')
+version = importlib.metadata.version("watertap")
 # -- General configuration ---------------------------------------------------
 
 
