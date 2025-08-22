@@ -1,3 +1,15 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
+
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -30,73 +42,86 @@ relative_tolerance = 1e-3
 
 
 def build_cation_exchange():
-    """
-    Adapted from 0.74 MGD exmample from EPA-WBS Cation Exchange model
-    """
+
+    # example is taken from WBS cation exchange model
+    # https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models
+    # using all defaults except flow rate
+    # Q = 1 MGD
+    # Cin = 200 mg/L as CaCO3
+    # EBCT = 2.5 min
+    # loading rate = 9.02 gpm / ft2
+    # resin capacity = 27 kilograins / ft3
+    #   1 kilograin / ft3 = 0.0458 eq/L
+    #   strong acid polystyrenic macroporous
+
     ion_props = dict(
-        solute_list=["Ca_2+", "Mg_2+", "Inert"],
+        solute_list=["Ca_2+", "Inert", "Mg_2+"],
         material_flow_basis=MaterialFlowBasis.mass,
-        diffusivity_data={
-            ("Liq", "Ca_2+"): 7.92e-10,
-            ("Liq", "Mg_2+"): 7.06e-10,
-            ("Liq", "Inert"): 7.06e-10,
+        # },
+        mw_data={
+            "H2O": 0.018,
+            "Ca_2+": 0.04,
+            "Mg_2+": 0.024,
+            "Inert": 0.10,
         },
-        mw_data={"H2O": 0.018, "Ca_2+": 0.04, "Mg_2+": 0.024, "Inert": 0.10},
-        stokes_radius_data={"Ca_2+": 3.09e-10, "Mg_2+": 3.47e-10, "Inert": 1e-10},
-        charge={"Ca_2+": 2, "Mg_2+": 2, "Inert": 0},
+        charge={"Ca_2+": 2, "Inert": 0, "Mg_2+": 2},
     )
-    feed_mass_frac = {
-        "Ca_2+": 13.5e-6,
-        "Mg_2+": 39.94e-6,
-        "Inert": 100e-6,
+
+    conc_in = {
+        "Ca_2+": 0.04,
+        "Mg_2+": 0.0243,
+        "Inert": 0.3,
     }
-    q = 0.74 * pyunits.Mgallons / pyunits.day
-    rho = 1000 * pyunits.kg / pyunits.m**3
+
+    var_args = dict()
+    for k, v in conc_in.items():
+        var_args[("conc_mass_phase_comp", ("Liq", k))] = v * pyunits.g / pyunits.liter
+    var_args[("flow_vol_phase", ("Liq"))] = 1 * pyunits.Mgallons / pyunits.day
+    var_args[("temperature", (None))] = 298
+    var_args[("pressure", (None))] = 101325
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(**ion_props)
-
     ix_config = {
         "property_package": m.fs.properties,
     }
-    m.fs.unit = ix = IonExchangeDemin(**ix_config)
+    m.fs.unit = IonExchangeDemin(**ix_config)
     pf = m.fs.unit.process_flow
-    prop_in = pf.properties_in[0]
-    prop_in.pressure.fix()
-    prop_in.temperature.fix()
 
-    flow_mass_water = pyunits.convert((q * rho), to_units=pyunits.kg / pyunits.s)
-    prop_in.flow_mass_phase_comp["Liq", "H2O"].fix(flow_mass_water)
-    for ion, x in feed_mass_frac.items():
-        mass_comp_flow = x * pyunits.kg / pyunits.kg * flow_mass_water
-        prop_in.flow_mass_phase_comp["Liq", ion].fix(mass_comp_flow)
+    pf.properties_in.calculate_state(var_args=var_args, hold_state=True)
+    pf.properties_in[0].total_hardness
 
-    loading_rate = 9.08755 * pyunits.gallon / pyunits.minute / pyunits.ft**2
-    loading_rate = value(pyunits.convert(loading_rate, to_units=pyunits.m / pyunits.s))
+    loading_rate = 9.02 * pyunits.gallon / pyunits.minute / pyunits.ft**2
 
-    ix.loading_rate.fix(loading_rate)
-    # ix.ebct.fix(150)
-    ix.bed_depth.fix(0.92569949427)
-    ix.bed_diameter.fix(1.82894037)
-    ix.resin_capacity_ax.fix(1.2366)
-    ix.resin_capacity_cx.fix(1.2366)
-    ix.resin_diam.fix()
-    ix.resin_density.fix()
-    ix.bed_porosity.fix()
-    ix.number_columns_redundant.fix(1)
+    m.fs.unit.loading_rate.fix(loading_rate)
+    m.fs.unit.ebct.fix(150)
+    m.fs.unit.resin_capacity_ax.fix(1.2366)
+    m.fs.unit.resin_capacity_cx.fix(1.2366)
+    m.fs.unit.resin_diam.fix()
+    m.fs.unit.resin_density.fix()
+    m.fs.unit.bed_porosity.fix()
+    m.fs.unit.number_columns.fix(2)
 
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e6, index=("Liq", "Ca_2+")
+        "flow_mass_phase_comp", 1e3, index=("Liq", "Ca_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e6, index=("Liq", "Mg_2+")
+        "flow_mass_phase_comp", 1e3, index=("Liq", "Mg_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e6, index=("Liq", "Inert")
+        "flow_mass_phase_comp", 1e3, index=("Liq", "Inert")
     )
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 0.1, index=("Liq", "H2O")
+    )
+    iscale.set_scaling_factor(
+        pf.properties_out[0.0].flow_mass_phase_comp["Liq", "Ca_2+"],
+        1e6,
+    )
+    iscale.set_scaling_factor(
+        pf.properties_out[0.0].flow_mass_phase_comp["Liq", "Mg_2+"],
+        1e6,
     )
 
     iscale.calculate_scaling_factors(m)
@@ -111,28 +136,82 @@ class TestIXDeminCation(UnitTestHarness):
         self.default_zero = zero
         self.default_relative_tolerance = relative_tolerance
 
-        self.unit_solutions[m.fs.unit.resin_capacity_op] = 1.2366
-        self.unit_solutions[m.fs.unit.bv] = 308.97
+        self.unit_solutions[m.fs.unit.bed_volume] = 3.28594
+        self.unit_solutions[m.fs.unit.bed_volume_total] = 6.5718
+        self.unit_solutions[m.fs.unit.bed_depth] = 0.9188
+        self.unit_solutions[m.fs.unit.column_height] = 2.3451
+        self.unit_solutions[m.fs.unit.bed_diameter] = 2.1339
+        self.unit_solutions[m.fs.unit.col_height_to_diam_ratio] = 1.0990
+        self.unit_solutions[m.fs.unit.number_columns] = 2
+        self.unit_solutions[m.fs.unit.number_columns_redundant] = 1
+        self.unit_solutions[m.fs.unit.breakthrough_time] = 46549
+        self.unit_solutions[m.fs.unit.bv] = 310.33
         self.unit_solutions[m.fs.unit.ebct] = 150
+        self.unit_solutions[m.fs.unit.loading_rate] = 0.006125456
+        self.unit_solutions[m.fs.unit.N_Re] = 4.287819
+        self.unit_solutions[m.fs.unit.N_Pe_particle] = 0.10056423
+        self.unit_solutions[m.fs.unit.N_Pe_bed] = 132
+        self.unit_solutions[m.fs.unit.resin_capacity_op] = 1.2366
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_in[0.0].total_hardness
+        ] = 201.42
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "H2O"]
         ] = 0
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Ca_2+"]
-        ] = -0.000437644
-        self.unit_solutions[
-            m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Mg_2+"]
-        ] = -0.001294779
+        ] = -0.001735
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Inert"]
         ] = 0
-        self.unit_solutions[m.fs.unit.column_height] = 2.3551
-        self.unit_solutions[m.fs.unit.number_columns] = 2.000
-        self.unit_solutions[m.fs.unit.breakthrough_time] = 46345.6
-        self.unit_solutions[m.fs.unit.resin_capacity_op] = 1.2366
         self.unit_solutions[
-            m.fs.unit.process_flow.properties_in[0.0].total_hardness
-        ] = 200.30
+            m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "Mg_2+"]
+        ] = -0.001054
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ],
+                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
+                    "Liq", "Ca_2+"
+                ],
+            },
+            "Check 2": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Mg_2+"
+                ],
+                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "Mg_2+"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
+                    "Liq", "Mg_2+"
+                ],
+            },
+            "Check 3": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ],
+                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ],
+            },
+        }
 
         return m
 
@@ -142,12 +221,12 @@ class TestIXDeminCation(UnitTestHarness):
         ix = m.fs.unit
 
         m.fs.costing = WaterTAPCosting()
-        ix.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        ix.costing.regen_dose.set_value(240)
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.unit.costing.regen_dose.set_value(240)
         m.fs.costing.cost_process()
-        m.fs.costing.add_LCOW(ix.process_flow.properties_out[0].flow_vol_phase["Liq"])
+        m.fs.costing.add_LCOW(m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"])
         m.fs.costing.add_specific_energy_consumption(
-            ix.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
+            m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
         )
 
         sys_cost_results = {
