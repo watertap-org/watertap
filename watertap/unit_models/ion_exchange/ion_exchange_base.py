@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2025, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -14,7 +14,7 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Constraint, 
+    Constraint,
     Set,
     Var,
     Param,
@@ -41,7 +41,7 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import StrEnum
 from idaes.core.util.exceptions import InitializationError, ConfigurationError
-
+from idaes.core.util.math import smooth_max
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -114,7 +114,6 @@ class IsothermType(StrEnum):
     freundlich = "freundlich"
 
 
-
 class IonExchangeBaseScaler(CustomScalerBase):
     """
     Default modular scaler for ion exchange unit models.
@@ -137,7 +136,6 @@ class IonExchangeBaseScaler(CustomScalerBase):
         # "ebct": 1e-2,
         # "loading_rate": 1e3,
         # "bv": 1e-4,
-
     }
 
     def variable_scaling_routine(
@@ -798,6 +796,10 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         def cycle_time(b):
             return b.breakthrough_time + b.waste_time
 
+        @self.Expression(doc="Fraction of cycle time for regen + backwash + rinse")
+        def frac_waste_time(b):
+            return b.waste_time / b.cycle_time
+
         if self.config.regenerant == RegenerantChem.single_use:
             self.regeneration_time.set_value(0)
             self.service_to_regen_flow_ratio.set_value(0)
@@ -805,33 +807,68 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         if self.config.regenerant != RegenerantChem.single_use:
 
             # If resin is not single use, add regeneration
+            # defaults are for NaCl
+            # NaCl regen concentration between 8% - 14% wt. with 10% wt. being typical (AWWA, ASCE 1998)
+
+            self.regen_soln_conc = Param(
+                initialize=107,
+                units=pyunits.kg / pyunits.m**3,  # kg regenerant / m3 solution
+                mutable=True,
+                doc="Concentration of regeneration solution",
+            )
+
+            # For NaCl solutions, density for 8-14% wt is ~1050-1100
+            # see: https://www.handymath.com/cgi-bin/nacltble.cgi?submit=Entry
+            self.regen_soln_dens = Param(
+                initialize=1080,
+                units=pyunits.kg / pyunits.m**3,  # kg solution / m3 solution
+                mutable=True,
+                doc="Density of regeneration solution",
+            )
+
+            self.regen_dose = Param(
+                initialize=300,
+                units=pyunits.kg / pyunits.m**3,  # kg regenerant / m3 resin
+                mutable=True,
+                doc="Regenerant dose required for regeneration per volume of resin",
+            )
+
+            self.regen_recycle = Param(
+                initialize=1,
+                units=pyunits.dimensionless,
+                mutable=True,
+                doc="Number of cycles the regenerant can be reused before disposal",
+            )
+
+            @self.Expression(doc="Regen flow rate")
+            def regen_flow_rate(b):
+                return pyunits.convert(
+                    (prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio)
+                    / b.regen_recycle,
+                    to_units=pyunits.m**3 / pyunits.s,
+                )
 
             @self.Expression(doc="Regen pump power")
             def regen_pump_power(b):
                 return pyunits.convert(
-                    (
-                        b.pressure_drop
-                        * (
-                            prop_in.flow_vol_phase["Liq"]
-                            / b.service_to_regen_flow_ratio
-                        )
-                    )
+                    (b.pressure_drop * b.regen_flow_rate * b.regen_recycle)
                     / b.pump_efficiency,
                     to_units=pyunits.kilowatts,
                 ) * (b.regeneration_time / b.cycle_time)
 
             @self.Expression(doc="Regen tank volume")
             def regen_tank_vol(b):
-                return (
-                    prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio
-                ) * b.regeneration_time
+                return pyunits.convert(
+                    b.regen_flow_rate * b.regeneration_time, to_units=pyunits.m**3
+                )
 
         @self.Expression(doc="Backwashing flow rate")
-        def bw_flow(b):
-            return (
+        def backwash_flow_rate(b):
+            return pyunits.convert(
                 pyunits.convert(b.backwashing_rate, to_units=pyunits.m / pyunits.s)
                 * b.bed_area
-                * b.number_columns
+                * b.number_columns,
+                to_units=pyunits.m**3 / pyunits.s,
             )
 
         @self.Expression(doc="Bed expansion fraction from backwashing")
@@ -843,20 +880,23 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             )  # for 20C
 
         @self.Expression(doc="Rinse flow rate")
-        def rinse_flow(b):
-            return b.loading_rate * b.bed_area * b.number_columns
+        def rinse_flow_rate(b):
+            return pyunits.convert(
+                b.loading_rate * b.bed_area * b.number_columns,
+                to_units=pyunits.m**3 / pyunits.s,
+            )
 
         @self.Expression(doc="Backwash pump power")
-        def bw_pump_power(b):
+        def backwash_pump_power(b):
             return pyunits.convert(
-                (b.pressure_drop * b.bw_flow) / b.pump_efficiency,
+                (b.pressure_drop * b.backwash_flow_rate) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             ) * (b.backwash_time / b.cycle_time)
 
         @self.Expression(doc="Rinse pump power")
         def rinse_pump_power(b):
             return pyunits.convert(
-                (b.pressure_drop * b.rinse_flow) / b.pump_efficiency,
+                (b.pressure_drop * b.rinse_flow_rate) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             ) * (b.rinse_time / b.cycle_time)
 
@@ -931,7 +971,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Loading rate")
         def eq_loading_rate(b):
-            return b.loading_rate * b.bed_area == prop_in.flow_vol_phase["Liq"]
+            return b.loading_rate * b.bed_area == b.flow_per_column
 
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
@@ -952,19 +992,19 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         def eq_column_height(b):
             return b.column_height == b.bed_depth + b.free_board
 
-        # @self.Constraint(doc="Column height to diameter ratio")
-        # def eq_col_height_to_diam_ratio(b):
-        #     return b.col_height_to_diam_ratio * b.bed_diameter == b.column_height
+        @self.Constraint(doc="Column height to diameter ratio")
+        def eq_col_height_to_diam_ratio(b):
+            return b.col_height_to_diam_ratio * b.bed_diameter == b.column_height
 
-        # @self.Constraint(doc="Number of redundant columns")
-        # def eq_number_columns_redundant(b):
-        #     return (
-        #         b.number_columns_redundant >= b.number_columns / b.redundant_column_freq
-        #     )
+        @self.Constraint(doc="Number of redundant columns")
+        def eq_number_columns_redundant(b):
+            return b.number_columns_redundant == smooth_max(
+                b.number_columns / b.redundant_column_freq, 1, eps=1e-4
+            )
 
     def add_ss_approximation(self, ix_model_type=None):
 
-        prop_in = self.process_flow.properties_in[0] 
+        prop_in = self.process_flow.properties_in[0]
         self.num_traps = 5  # TODO: make CONFIG option
         self.trap_disc = range(self.num_traps + 1)
         self.trap_index = self.trap_disc[1:]
@@ -1021,7 +1061,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.trap_index,
-            doc="Breakthru time calc for trapezoids",
+            doc="Breakthrough time calc for trapezoids",
         )
         def eq_tb_traps(b, k):
             if ix_model_type == "clark":
@@ -1060,8 +1100,6 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
                 "Liq", j
             ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
 
-
-
     def initialize_build(
         self,
         state_args=None,
@@ -1090,13 +1128,6 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # flags = self.process_flow.properties_in.initialize(
-        #     outlvl=outlvl,
-        #     optarg=optarg,
-        #     solver=solver,
-        #     state_args=state_args,
-        #     hold_state=True,
-        # )
         flags = self.process_flow.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -1125,18 +1156,18 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         state_args_out = deepcopy(state_args)
 
-        # for p, j in self.process_flow.properties_out.phase_component_set:
-        #     if j in self.target_component_set:
-        #         state_args_out["flow_mol_phase_comp"][(p, j)] = (
-        #             state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
-        #         )
+        for p, j in self.process_flow.properties_out.phase_component_set:
+            if j in self.target_component_set:
+                state_args_out["flow_mol_phase_comp"][(p, j)] = (
+                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
+                )
 
-        # self.process_flow.properties_out.initialize(
-        #     outlvl=outlvl,
-        #     optarg=optarg,
-        #     solver=solver,
-        #     state_args=state_args_out,
-        # )
+        self.process_flow.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_out,
+        )
         # init_log.info("Initialization Step 1b Complete.")
 
         state_args_regen = deepcopy(state_args)
