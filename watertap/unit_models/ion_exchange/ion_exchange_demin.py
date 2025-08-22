@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2025, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -11,24 +11,32 @@
 #################################################################################
 
 from copy import deepcopy
+from enum import Enum, auto
+
 
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    Set,
     Param,
+    Expression,
     value,
+    check_optimal_termination,
     units as pyunits,
 )
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class
-
+import idaes.logger as idaeslog
+from idaes.core import declare_process_block_class, MaterialFlowBasis
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import InitializationError, ConfigurationError
 
 from watertap.unit_models.ion_exchange.ion_exchange_base import (
     IonExchangeBaseData,
     IonExchangeType,
 )
+from watertap.core.solvers import get_solver
+from watertap.core.util.initialization import interval_initializer
 
 __author__ = "Kurban Sitterley"
 
@@ -43,9 +51,12 @@ class IonExchangeDeminData(IonExchangeBaseData):
     # self.bv = BV_regen
     # self.breakthrough_time = regen_days
     # self.bed_volume_total = resin_volume_total
+    # self.loading_rate = comm_load_rate
 
     def build(self):
         super().build()
+
+        self.ion_exchange_type = IonExchangeType.demineralize
 
         prop_in = self.process_flow.properties_in[0]
         regen = self.regeneration_stream[0]
@@ -58,37 +69,61 @@ class IonExchangeDeminData(IonExchangeBaseData):
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
             regen.get_material_flow_terms("Liq", j).fix(0)
 
+        self.process_flow.mass_transfer_term[:, "Liq", "H2O"].fix(0)
+
         # Set EPA-WBS bounds for EBCT
         self.ebct.setlb(60)
         self.ebct.setub(480)
 
-        self.flow_equiv_cation = sum(
-            value(prop_in.flow_equiv_phase_comp["Liq", c])
-            for c in self.config.property_package.cation_set
-        )
-        self.flow_equiv_anion = sum(
-            value(prop_in.flow_equiv_phase_comp["Liq", c])
-            for c in self.config.property_package.anion_set
-        )
-        self.flow_equiv_total = self.flow_equiv_cation + self.flow_equiv_anion
+        @self.Expression(doc="Equivalent flow rate for cations in feed")
+        def flow_equiv_cation(b):
+            return sum(
+                pyunits.convert(
+                    prop_in.flow_equiv_phase_comp["Liq", c]
+                    * pyunits.s
+                    * pyunits.mol**-1,
+                    to_units=pyunits.dimensionless,
+                )
+                for c in self.config.property_package.cation_set
+            )
 
-        self.ion_exchange_type = IonExchangeType.demineralize
+        @self.Expression(doc="Equivalent flow rate for anions in feed")
+        def flow_equiv_anion(b):
+            return sum(
+                pyunits.convert(
+                    prop_in.flow_equiv_phase_comp["Liq", c]
+                    * pyunits.s
+                    * pyunits.mol**-1,
+                    to_units=pyunits.dimensionless,
+                )
+                for c in self.config.property_package.anion_set
+            )
 
-        assert (
-            self.flow_equiv_cation + self.flow_equiv_anion
-        ) / self.flow_equiv_total == 1
-        self.charge_ratio_cx = (
-            self.flow_equiv_cation / self.flow_equiv_total * pyunits.dimensionless
-        )
-        self.charge_ratio_ax = (
-            self.flow_equiv_anion / self.flow_equiv_total * pyunits.dimensionless
-        )
+        @self.Expression(doc="Equivalent flow rate for total in feed")
+        def flow_equiv_total(b):
+            return pyunits.convert(
+                b.flow_equiv_cation + b.flow_equiv_anion,
+                to_units=pyunits.dimensionless,
+            )
 
-        self.process_flow.mass_transfer_term[:, "Liq", "H2O"].fix(0)
+        @self.Expression(doc="Charge ratio for cation exchange")
+        def charge_ratio_cx(b):
+            return b.flow_equiv_cation / b.flow_equiv_total
+
+        @self.Expression(doc="Charge ratio for anion exchange")
+        def charge_ratio_ax(b):
+            return b.flow_equiv_anion / b.flow_equiv_total
+
+        @self.Expression(doc="Waste to influent flow ratio")
+        def frac_waste_to_inlet_flow(b):
+            return pyunits.convert(
+                regen.flow_vol_phase["Liq"] / prop_in.flow_vol_phase["Liq"],
+                to_units=pyunits.dimensionless,
+            )
 
         self.removal_efficiency = Param(
             solutes,
-            initialize=0.9999,
+            initialize=0.99,
             mutable=True,
             units=pyunits.dimensionless,
             doc="Removal efficiency",
@@ -160,9 +195,112 @@ class IonExchangeDeminData(IonExchangeBaseData):
 
         @self.Constraint(doc="Total bed volume required based on volumetric flow")
         def eq_bed_volume_required(b):
-            return b.bed_volume_total == pyunits.convert(
-                prop_in.flow_vol_phase["Liq"] * b.ebct, to_units=pyunits.m**3
+            return b.bed_volume == pyunits.convert(
+                b.flow_per_column * b.ebct, to_units=pyunits.m**3
             )
+
+        @self.Constraint(doc="Regeneration stream flow rate")
+        def eq_regen_flow_rate(b):
+            return regen.flow_vol_phase["Liq"] == pyunits.convert(
+                b.rinse_flow_rate * (b.rinse_time / b.cycle_time)
+                + b.backwash_flow_rate * (b.backwash_time / b.cycle_time)
+                + b.regen_flow_rate * (b.regeneration_time / b.cycle_time),
+                to_units=pyunits.m**3 / pyunits.s,
+            )
+
+    def initialize_build(
+        self,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
+        """
+        General wrapper for initialization routines
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+
+        Returns: None
+        """
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        opt = get_solver(solver, optarg)
+
+        flags = self.process_flow.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+            hold_state=True,
+        )
+        init_log.info("Initialization Step 1a Complete.")
+
+        # ---------------------------------------------------------------------
+        # Initialize other state blocks
+        # Set state_args from inlet state
+        if state_args is None:
+            self.state_args = state_args = {}
+            state_dict = self.process_flow.properties_in[
+                self.flowsheet().config.time.first()
+            ].define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        state_args_regen = dict()
+        state_dict_regen = self.regeneration_stream[
+            self.flowsheet().config.time.first()
+        ].define_port_members()
+
+        for k in state_dict_regen.keys():
+            if state_dict_regen[k].is_indexed():
+                state_args_regen[k] = {}
+                for m in state_dict_regen[k].keys():
+                    state_args_regen[k][m] = state_dict_regen[k][m].value
+            else:
+                state_args_regen[k] = state_dict_regen[k].value
+
+        self.regeneration_stream.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_regen,
+        )
+
+        init_log.info("Initialization Step 1c Complete.")
+        interval_initializer(self)
+
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                res = opt.solve(self, tee=slc.tee)
+
+        init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+
+        # Release Inlet state
+        self.process_flow.properties_in.release_state(flags, outlvl=outlvl)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize.")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
