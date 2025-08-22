@@ -157,6 +157,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="Conversion factor for BOD5",
         )
+
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
@@ -447,7 +448,7 @@ class ASM1StateBlockData(StateBlockData):
 
         def _BOD5(self, i):
             bod5 = (
-                self.conc_mass_comp["X_S"]
+                self.conc_mass_comp["S_S"]
                 + self.conc_mass_comp["X_S"]
                 + (1 - self.params.f_p)
                 * (self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
@@ -465,7 +466,6 @@ class ASM1StateBlockData(StateBlockData):
             cod = (
                 self.conc_mass_comp["S_S"]
                 + self.conc_mass_comp["S_I"]
-                + self.conc_mass_comp["X_S"]
                 + self.conc_mass_comp["X_S"]
                 + self.conc_mass_comp["X_I"]
                 + self.conc_mass_comp["X_BH"]

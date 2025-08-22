@@ -712,7 +712,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
             ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_NH4"): -self.i_NSF,
+            ("R8", "Liq", "S_NH4"): self.i_NSF,
             ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NO3"): 0,
             ("R8", "Liq", "S_PO4"): -(-self.i_PSF),

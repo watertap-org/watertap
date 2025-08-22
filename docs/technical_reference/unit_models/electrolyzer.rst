@@ -2,6 +2,11 @@
 
 Electrolyzer
 ============
+
+.. code-block:: python
+
+   from watertap.unit_models.electrolyzer import Electrolyzer
+
 This is a simplified model used to approximate electrolyzer performance. With the current build, the model is simulated under the following assumptions:
    * simulation of this unit model is only supported with the :mod:`Multi-Component Aqueous Solution (MCAS) <watertap.property_models.multicomp_aq_sol_prop_pack>` property package
    * supports steady-state only
