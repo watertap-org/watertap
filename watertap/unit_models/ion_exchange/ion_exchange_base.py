@@ -15,7 +15,6 @@ from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
-    Set,
     Var,
     Param,
     Suffix,
@@ -378,7 +377,8 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         ConfigValue(
             default=False,
             domain=bool,
-            description="Designates whether to add the variables and constraints necessary to estimate steady-state effluent concentration with trapezoid method.",
+            description="Designates whether to add the variables and constraints necessary "
+            "to estimate steady-state effluent concentration with trapezoid method.",
         ),
     )
 
@@ -391,12 +391,12 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         if target_component != "":
             if self.config.property_package.charge_comp[target_component].value > 0:
                 self.ion_exchange_type = IonExchangeType.cation
-            elif self.config.property_package.charge_comp[target_component].value < 0:
+            if self.config.property_package.charge_comp[target_component].value < 0:
                 self.ion_exchange_type = IonExchangeType.anion
-            else:
-                assert target_component in ["TDS", "Alkalinity"]
-                self.ion_exchange_type = IonExchangeType.demineralize
-                # raise ConfigurationError("Target ion must have non-zero charge.")
+            # else:
+            #     assert target_component in ["TDS", "Alkalinity"]
+            #     self.ion_exchange_type = IonExchangeType.demineralize
+            # raise ConfigurationError("Target ion must have non-zero charge.")
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -439,10 +439,6 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         regen = self.regeneration_stream[0]
 
         self.add_outlet_port(name="regen", block=self.regeneration_stream)
-
-        # for j in inerts:
-        #     self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
-        #     regen.get_material_flow_terms("Liq", j).fix(0)
 
         # ==========PARAMETERS==========
 
@@ -536,23 +532,9 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             doc="Pump efficiency",
         )
 
-        self.regeneration_time = Param(
-            initialize=1800,
-            mutable=True,
-            units=pyunits.s,
-            doc="Regeneration time",
-        )
-
-        self.service_to_regen_flow_ratio = Param(
-            initialize=3,
-            mutable=True,
-            units=pyunits.dimensionless,
-            doc="Ratio of service flow rate to regeneration flow rate",
-        )
-
         # Bed expansion is calculated as a fraction of the bed_depth
-        # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (backwashing_rate, m/hr)
-        # bed_expansion_frac = bed_expansion_A + bed_expansion_B * backwashing_rate + bed_expansion_C * backwashing_rate**2
+        # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (backwash_loading_rate, m/hr)
+        # bed_expansion_frac = bed_expansion_A + bed_expansion_B * backwash_loading_rate + bed_expansion_C * backwash_loading_rate**2
         # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
         # Data extracted from MWH Chap 16, Figure 16-15 and fit with Excel
 
@@ -576,23 +558,77 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             units=pyunits.hr**2 / pyunits.m**2,
             doc="Bed expansion fraction equation C parameter",
         )
+
         # Rinse, Regen, Backwashing params
 
-        self.rinse_bed_volumes = Param(
-            initialize=5,
+        self.regen_dose = Param(
+            initialize=300,
+            units=pyunits.kg / pyunits.m**3,  # kg regenerant / m3 resin
             mutable=True,
+            doc="Regenerant dose required for regeneration per volume of resin",
+        )
+
+        self.regen_soln_conc = Param(
+            initialize=107,
+            units=pyunits.kg / pyunits.m**3,  # kg regenerant / m3 solution
+            mutable=True,
+            doc="Concentration of regeneration solution",
+        )
+
+        # For NaCl, saturation concentration is 372 kg/m3
+        self.regen_soln_conc_sat = Param(
+            initialize=372,  # default is for NaCl
+            units=pyunits.kg / pyunits.m**3,  # kg regenerant / m3 solution
+            mutable=True,
+            doc="Concentration of regeneration solution at saturation",
+        )
+
+        # For NaCl solutions, density for 8-14% wt is ~1050-1100
+        # see: https://www.handymath.com/cgi-bin/nacltble.cgi?submit=Entry
+        self.regen_soln_dens = Param(
+            initialize=1080,
+            units=pyunits.kg / pyunits.m**3,  # kg solution / m3 solution
+            mutable=True,
+            doc="Density of regeneration solution",
+        )
+
+        self.regen_recycle = Param(
+            initialize=1,
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="Number of cycles the regenerant can be reused before disposal",
+        )
+
+        self.regen_rate = Param(
+            initialize=2.4,  # EPA-WBS: 0.25-0.4 gpm/ft3 resin; 2.0-3.2 (m3/hr)/m3 resin
+            mutable=True,
+            units=pyunits.hr**-1,
+            doc="Regeneration flow rate per resin volume",
+        )
+
+        self.num_regen_columns = Param(
+            initialize=1,  # next integer above waste_time / breakthrough_time
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="Number of columns regenerated at a time",
+        )
+
+        self.rinse_bed_volumes = Param(
+            initialize=10,  # EPA-WBS: 10-15 bed volumes at service loading rate (AWWA ASCE 1998)
+            mutable=True,
+            units=pyunits.dimensionless,
             doc="Number of bed volumes for rinse step",
         )
 
-        self.backwashing_rate = Param(
-            initialize=5,
+        self.backwash_loading_rate = Param(
+            initialize=14.7,  # EPA-WBS: 6 gpm/ft2; varies depending on specific resin and manufacturer
             mutable=True,
             units=pyunits.m / pyunits.hour,
-            doc="Backwash loading rate [m/hr]",
+            doc="Backwash loading rate",
         )
 
         self.backwash_time = Param(
-            initialize=600,
+            initialize=600,  # EPA-WBS: 5-15 minutes (Montgomery, James M. Water Treatment Principles and Design. New York: John Wiley and Sons, 1985. p.221).
             mutable=True,
             units=pyunits.s,
             doc="Backwash time",
@@ -671,7 +707,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             doc="Column diameter",
         )
 
-        self.col_height_to_diam_ratio = Var(
+        self.bed_depth_to_diam_ratio = Var(
             initialize=1,
             bounds=(0, 100),
             # domain=NonNegativeReals,
@@ -708,7 +744,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             # domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Bed volumes of feed at breakthru concentration",
+            doc="Bed volumes of feed at breakthrough concentration",
         )
 
         self.ebct = Var(
@@ -723,7 +759,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         self.loading_rate = Var(
             initialize=0.0086,
-            bounds=(0, 0.01),  # MWH, Perry's, EPA-WBS
+            bounds=(0, 0.01),  # MWH, Perry's, EPA-WBS: 5-15 gpm/ft2
             # domain=NonNegativeReals,
             units=pyunits.m / pyunits.s,
             doc="Superficial velocity through bed",
@@ -734,7 +770,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             bounds=(1, None),
             # domain=NonNegativeReals,
             units=pyunits.hr**-1,
-            doc="Service flow rate [BV/hr]",
+            doc="Service flow rate",  # BV/hr
         )
 
         # ====== Dimensionless variables ====== #
@@ -763,7 +799,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         # ==========EXPRESSIONS==========
 
-        @self.Expression(doc="Flow per column")
+        @self.Expression(doc="Volumetric flow rate per active column")
         def flow_per_column(b):
             return prop_in.flow_vol_phase["Liq"] / b.number_columns
 
@@ -788,6 +824,12 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         def rinse_time(b):
             return b.ebct * b.rinse_bed_volumes
 
+        @self.Expression(doc="Regen time")
+        def regeneration_time(b):
+            return pyunits.convert(
+                b.regen_dose / b.regen_soln_conc / b.regen_rate, to_units=pyunits.s
+            )
+
         @self.Expression(doc="Waste time")
         def waste_time(b):
             return b.regeneration_time + b.backwash_time + b.rinse_time
@@ -800,74 +842,10 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         def frac_waste_time(b):
             return b.waste_time / b.cycle_time
 
-        if self.config.regenerant == RegenerantChem.single_use:
-            self.regeneration_time.set_value(0)
-            self.service_to_regen_flow_ratio.set_value(0)
-
-        if self.config.regenerant != RegenerantChem.single_use:
-
-            # If resin is not single use, add regeneration
-            # defaults are for NaCl
-            # NaCl regen concentration between 8% - 14% wt. with 10% wt. being typical (AWWA, ASCE 1998)
-
-            self.regen_soln_conc = Param(
-                initialize=107,
-                units=pyunits.kg / pyunits.m**3,  # kg regenerant / m3 solution
-                mutable=True,
-                doc="Concentration of regeneration solution",
-            )
-
-            # For NaCl solutions, density for 8-14% wt is ~1050-1100
-            # see: https://www.handymath.com/cgi-bin/nacltble.cgi?submit=Entry
-            self.regen_soln_dens = Param(
-                initialize=1080,
-                units=pyunits.kg / pyunits.m**3,  # kg solution / m3 solution
-                mutable=True,
-                doc="Density of regeneration solution",
-            )
-
-            self.regen_dose = Param(
-                initialize=300,
-                units=pyunits.kg / pyunits.m**3,  # kg regenerant / m3 resin
-                mutable=True,
-                doc="Regenerant dose required for regeneration per volume of resin",
-            )
-
-            self.regen_recycle = Param(
-                initialize=1,
-                units=pyunits.dimensionless,
-                mutable=True,
-                doc="Number of cycles the regenerant can be reused before disposal",
-            )
-
-            @self.Expression(doc="Regen flow rate")
-            def regen_flow_rate(b):
-                return pyunits.convert(
-                    (prop_in.flow_vol_phase["Liq"] / b.service_to_regen_flow_ratio)
-                    / b.regen_recycle,
-                    to_units=pyunits.m**3 / pyunits.s,
-                )
-
-            @self.Expression(doc="Regen pump power")
-            def regen_pump_power(b):
-                return pyunits.convert(
-                    (b.pressure_drop * b.regen_flow_rate * b.regen_recycle)
-                    / b.pump_efficiency,
-                    to_units=pyunits.kilowatts,
-                ) * (b.regeneration_time / b.cycle_time)
-
-            @self.Expression(doc="Regen tank volume")
-            def regen_tank_vol(b):
-                return pyunits.convert(
-                    b.regen_flow_rate * b.regeneration_time, to_units=pyunits.m**3
-                )
-
         @self.Expression(doc="Backwashing flow rate")
         def backwash_flow_rate(b):
             return pyunits.convert(
-                pyunits.convert(b.backwashing_rate, to_units=pyunits.m / pyunits.s)
-                * b.bed_area
-                * b.number_columns,
+                b.backwash_loading_rate * b.bed_area * b.number_columns,
                 to_units=pyunits.m**3 / pyunits.s,
             )
 
@@ -875,8 +853,8 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         def bed_expansion_frac(b):
             return (
                 b.bed_expansion_frac_A
-                + b.bed_expansion_frac_B * b.backwashing_rate
-                + b.bed_expansion_frac_C * b.backwashing_rate**2
+                + b.bed_expansion_frac_B * b.backwash_loading_rate
+                + b.bed_expansion_frac_C * b.backwash_loading_rate**2
             )  # for 20C
 
         @self.Expression(doc="Rinse flow rate")
@@ -885,6 +863,16 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
                 b.loading_rate * b.bed_area * b.number_columns,
                 to_units=pyunits.m**3 / pyunits.s,
             )
+
+        @self.Expression(doc="Regen flow rate")
+        def regen_flow_rate(b):
+            if b.config.regenerant == RegenerantChem.single_use:
+                return 0 * pyunits.m**3 / pyunits.s
+            else:
+                return pyunits.convert(
+                    b.bed_volume * b.number_columns * b.regen_rate,
+                    to_units=pyunits.m**3 / pyunits.s,
+                )
 
         @self.Expression(doc="Backwash pump power")
         def backwash_pump_power(b):
@@ -899,6 +887,32 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
                 (b.pressure_drop * b.rinse_flow_rate) / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             ) * (b.rinse_time / b.cycle_time)
+
+        @self.Expression(doc="Regen pump power")
+        def regen_pump_power(b):
+            return pyunits.convert(
+                (b.pressure_drop * b.regen_flow_rate * b.regen_recycle)
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            ) * (b.regeneration_time / b.cycle_time)
+
+        @self.Expression(doc="Regen tank volume")
+        def regen_tank_vol(b):
+            # large enough to hold saturated regen solution for one regeneration cycle
+            return pyunits.convert(
+                b.num_regen_columns
+                * ((b.bed_volume * b.regen_dose) / b.regen_soln_conc_sat),
+                to_units=pyunits.m**3,
+            )
+
+        @self.Expression(doc="Total residuals volume: backwash + regen + rinse")
+        def total_residuals_vol(b):
+            return pyunits.convert(
+                b.backwash_flow_rate * b.backwash_time
+                + b.regen_flow_rate * b.regeneration_time
+                + b.rinse_flow_rate * b.rinse_time,
+                to_units=pyunits.m**3,
+            )
 
         @self.Constraint(
             doc="Isothermal assumption for regen stream",
@@ -993,8 +1007,8 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             return b.column_height == b.bed_depth + b.free_board
 
         @self.Constraint(doc="Column height to diameter ratio")
-        def eq_col_height_to_diam_ratio(b):
-            return b.col_height_to_diam_ratio * b.bed_diameter == b.column_height
+        def eq_bed_depth_to_diam_ratio(b):
+            return b.bed_depth_to_diam_ratio * b.bed_diameter == b.bed_depth
 
         @self.Constraint(doc="Number of redundant columns")
         def eq_number_columns_redundant(b):
@@ -1272,7 +1286,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         var_dict["Number Columns"] = self.number_columns
         var_dict["Bed Volume Total"] = self.bed_volume_total
         var_dict["Bed Depth"] = self.bed_depth
-        var_dict["Col. Height to Diam. Ratio"] = self.col_height_to_diam_ratio
+        var_dict["Col. Height to Diam. Ratio"] = self.bed_depth_to_diam_ratio
         var_dict["Bed Porosity"] = self.bed_porosity
         var_dict["Service Flow Rate [BV/hr]"] = self.service_flow_rate
         var_dict["Bed Velocity"] = self.loading_rate
