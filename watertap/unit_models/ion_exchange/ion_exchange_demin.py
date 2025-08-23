@@ -10,26 +10,19 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from copy import deepcopy
-from enum import Enum, auto
-
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Set,
     Param,
-    Expression,
-    value,
     check_optimal_termination,
     units as pyunits,
 )
 
 # Import IDAES cores
 import idaes.logger as idaeslog
-from idaes.core import declare_process_block_class, MaterialFlowBasis
+from idaes.core import declare_process_block_class
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import InitializationError, ConfigurationError
+from idaes.core.util.exceptions import InitializationError
 
 from watertap.unit_models.ion_exchange.ion_exchange_base import (
     IonExchangeBaseData,
@@ -52,6 +45,7 @@ class IonExchangeDeminData(IonExchangeBaseData):
     # self.breakthrough_time = regen_days
     # self.bed_volume_total = resin_volume_total
     # self.loading_rate = comm_load_rate
+    # self.bed_volume_total = resin_volume_total
 
     def build(self):
         super().build()
