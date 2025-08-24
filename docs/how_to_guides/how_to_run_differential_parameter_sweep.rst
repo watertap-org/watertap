@@ -197,10 +197,6 @@ With the flowsheet defined and suitably initialized, along with the definitions 
             seed=seed,
         )
 
-.. testoutput::
-
-    ...
-
 .. testcleanup::
 
     import os
