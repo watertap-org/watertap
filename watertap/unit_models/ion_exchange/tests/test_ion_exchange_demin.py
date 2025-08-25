@@ -253,6 +253,13 @@ def build_mixed_bed():
     m.fs.unit.number_columns.fix(5)
     m.fs.unit.regen_dose.set_value(450)
 
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "DOC"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "Ca_2+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "Mg_2+")
+    )
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "Cl_-")
     )
@@ -265,19 +272,19 @@ def build_mixed_bed():
 
     iscale.set_scaling_factor(
         pf.properties_out[0.0].flow_mass_phase_comp["Liq", "Cl_-"],
-        1e6,
+        1e5,
     )
     iscale.set_scaling_factor(
         pf.properties_out[0.0].flow_mass_phase_comp["Liq", "SO4_2-"],
-        1e6,
+        1e5,
     )
     iscale.set_scaling_factor(
         pf.properties_out[0.0].flow_mass_phase_comp["Liq", "Ca_2+"],
-        1e6,
+        1e5,
     )
     iscale.set_scaling_factor(
         pf.properties_out[0.0].flow_mass_phase_comp["Liq", "Mg_2+"],
-        1e6,
+        1e5,
     )
 
     iscale.calculate_scaling_factors(m)
@@ -331,10 +338,10 @@ class TestIXDeminCation(UnitTestHarness):
                 + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
                     "Liq", "Ca_2+"
                 ],
-                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ]
-                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                + m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "Ca_2+"
                 ]
                 + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
@@ -348,10 +355,10 @@ class TestIXDeminCation(UnitTestHarness):
                 + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
                     "Liq", "Mg_2+"
                 ],
-                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ]
-                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                + m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "Mg_2+"
                 ]
                 + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
@@ -362,7 +369,7 @@ class TestIXDeminCation(UnitTestHarness):
                 "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ],
-                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ],
             },
@@ -373,6 +380,7 @@ class TestIXDeminCation(UnitTestHarness):
     @pytest.mark.component
     def test_costing(self):
         m = build_cation_exchange()
+        m.fs.unit.initialize()
 
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -386,6 +394,11 @@ class TestIXDeminCation(UnitTestHarness):
             m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
         )
 
+        check_dof(m, fail_flag=True)
+        initialization_tester(m)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
         sys_cost_results = {
             "aggregate_capital_cost": 588302.62,
             "aggregate_fixed_operating_cost": 2693.98,
@@ -397,11 +410,6 @@ class TestIXDeminCation(UnitTestHarness):
             "LCOW": 0.306194,
             "SEC": 0.009958,
         }
-
-        check_dof(m, fail_flag=True)
-        initialization_tester(m)
-        results = solver.solve(m)
-        assert_optimal_termination(results)
 
         for v, r in sys_cost_results.items():
             mv = m.fs.costing.find_component(v)
@@ -472,10 +480,10 @@ class TestIXDeminAnion(UnitTestHarness):
                 + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
                     "Liq", "Cl_-"
                 ],
-                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ]
-                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                + m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "Cl_-"
                 ]
                 + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
@@ -489,10 +497,10 @@ class TestIXDeminAnion(UnitTestHarness):
                 + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
                     "Liq", "SO4_2-"
                 ],
-                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ]
-                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                + m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "SO4_2-"
                 ]
                 + m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp[
@@ -503,7 +511,7 @@ class TestIXDeminAnion(UnitTestHarness):
                 "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ],
-                "out": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
                 ],
             },
@@ -514,6 +522,7 @@ class TestIXDeminAnion(UnitTestHarness):
     @pytest.mark.component
     def test_costing(self):
         m = build_anion_exchange()
+        m.fs.unit.initialize()
 
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -524,6 +533,11 @@ class TestIXDeminAnion(UnitTestHarness):
         m.fs.costing.add_specific_energy_consumption(
             m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
         )
+
+        check_dof(m, fail_flag=True)
+        initialization_tester(m)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
 
         sys_cost_results = {
             "aggregate_flow_electricity": 17.69,
@@ -539,11 +553,6 @@ class TestIXDeminAnion(UnitTestHarness):
             "LCOW": 0.088098,
             "SEC": 0.011221,
         }
-
-        check_dof(m, fail_flag=True)
-        initialization_tester(m)
-        results = solver.solve(m)
-        assert_optimal_termination(results)
 
         for v, r in sys_cost_results.items():
             mv = m.fs.costing.find_component(v)
@@ -685,6 +694,20 @@ class TestIXDeminMixed(UnitTestHarness):
             "Check 5": {
                 "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "DOC"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
+                    "Liq", "DOC"
+                ],
+            },
+            "Check 6": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mass_phase_comp[
+                    "Liq", "H2O"
                 ],
                 "out": m.fs.unit.process_flow.properties_out[0.0].flow_mass_phase_comp[
                     "Liq", "H2O"
@@ -697,6 +720,7 @@ class TestIXDeminMixed(UnitTestHarness):
     @pytest.mark.component
     def test_costing(self):
         m = build_mixed_bed()
+        m.fs.unit.initialize()
 
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -707,6 +731,10 @@ class TestIXDeminMixed(UnitTestHarness):
         m.fs.costing.add_specific_energy_consumption(
             m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
         )
+
+        check_dof(m, fail_flag=True)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
 
         sys_cost_results = {
             "aggregate_flow_electricity": 3.1654,
@@ -720,11 +748,6 @@ class TestIXDeminMixed(UnitTestHarness):
             "LCOW": 0.327194,
             "SEC": 0.008028,
         }
-
-        check_dof(m, fail_flag=True)
-        initialization_tester(m)
-        results = solver.solve(m)
-        assert_optimal_termination(results)
 
         for v, r in sys_cost_results.items():
             mv = m.fs.costing.find_component(v)
