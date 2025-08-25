@@ -416,6 +416,20 @@ if __name__ == "__main__":
         1 - m.fs.Treated.properties[0].COD / m.fs.feed.properties[0].COD
     )
 
+    print("=" * 10, "METAB", "=" * 10)
+    blk = m.fs.feed.properties[0]
+    blk.TSS.display()
+    blk.BOD5.display()
+    blk.COD.display()
+    blk.TKN.display()
+
+    print("=" * 10, "Final", "=" * 10)
+    blk = m.fs.Treated.properties[0]
+    blk.TSS.display()
+    blk.BOD5.display()
+    blk.COD.display()
+    blk.TKN.display()
+
     # # m.fs.feed.alkalinity.fix(47.7*pyo.units.mol/pyo.units.m**3)
 
     # scales = [1e3, 1e2,1e1,1e0]
@@ -530,3 +544,17 @@ if __name__ == "__main__":
 
     print(f"COD removal w/o METAB: {COD_removal_no_metab}")
     print(f"COD removal w/METAB: {COD_removal_w_metab}")
+
+    print("=" * 10, "conventional Final", "=" * 10)
+    blk = m.fs.Treated.properties[0]
+    blk.TSS.display()
+    blk.BOD5.display()
+    blk.COD.display()
+    blk.TKN.display()
+
+    print("=" * 10, "brewery", "=" * 10)
+    blk = m.fs.feed.properties[0]
+    blk.TSS.display()
+    blk.BOD5.display()
+    blk.COD.display()
+    blk.TKN.display()
