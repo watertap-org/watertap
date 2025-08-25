@@ -252,13 +252,13 @@ def cost_ion_exchange(blk):
     )
 
     if ix_type == "cation":
-        blk.resin_cost = ion_exchange_params.cation_exchange_resin_cost
+        resin_cost = ion_exchange_params.cation_exchange_resin_cost
 
     elif ix_type == "anion":
-        blk.resin_cost = ion_exchange_params.anion_exchange_resin_cost
+        resin_cost = ion_exchange_params.anion_exchange_resin_cost
 
     elif ix_type == "demineralize":
-        blk.resin_cost = (
+        resin_cost = (
             ion_exchange_params.cation_exchange_resin_cost
             * blk.unit_model.charge_ratio_cx
             + ion_exchange_params.anion_exchange_resin_cost
@@ -278,7 +278,7 @@ def cost_ion_exchange(blk):
     blk.capital_cost_resin_constraint = pyo.Constraint(
         expr=blk.capital_cost_resin
         == pyo.units.convert(
-            blk.resin_cost * bed_vol_ft3, to_units=blk.costing_package.base_currency
+            resin_cost * bed_vol_ft3, to_units=blk.costing_package.base_currency
         )
     )
     if blk.unit_model.config.regenerant == "single_use":
@@ -403,7 +403,7 @@ def cost_ion_exchange(blk):
         blk.single_use_resin_replacement_cost_constraint = pyo.Constraint(
             expr=blk.single_use_resin_replacement_cost
             == pyo.units.convert(
-                blk.flow_vol_resin * blk.resin_cost,
+                blk.flow_vol_resin * resin_cost,
                 to_units=blk.costing_package.base_currency
                 / blk.costing_package.base_period,
             )
@@ -423,7 +423,7 @@ def cost_ion_exchange(blk):
                         bed_vol_ft3
                         * tot_num_col
                         * ion_exchange_params.annual_resin_replacement_factor
-                        * blk.resin_cost
+                        * resin_cost
                     )
                 ),
                 to_units=blk.costing_package.base_currency
