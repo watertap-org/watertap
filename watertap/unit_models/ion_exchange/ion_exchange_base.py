@@ -35,6 +35,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
@@ -375,7 +376,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "add_steady_state_approximation",
         ConfigValue(
-            default=False,
+            default=True,
             domain=bool,
             description="Designates whether to add the variables and constraints necessary "
             "to estimate steady-state effluent concentration with trapezoid method.",
@@ -646,7 +647,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.resin_diam = Var(
             initialize=7e-4,
             bounds=(5e-4, 1.5e-3),  # Perry's
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.m,
             doc="Resin bead diameter",
         )
@@ -654,7 +655,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.resin_density = Var(
             initialize=700,
             bounds=(500, 950),  # Perry's
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.kg / pyunits.m**3,
             doc="Resin bulk density",
         )
@@ -662,7 +663,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_volume = Var(
             initialize=2,
             bounds=(0, None),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.m**3,
             doc="Bed volume per column",
         )
@@ -670,7 +671,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_volume_total = Var(
             initialize=2,
             bounds=(0, None),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.m**3,
             doc="Total bed volume",
         )
@@ -678,7 +679,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_depth = Var(
             initialize=1,
             bounds=(0.75, 2),  # EPA-WBS guidance
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.m,
             doc="Bed depth",
         )
@@ -686,7 +687,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_porosity = Var(
             initialize=0.4,
             bounds=(0.3, 0.8),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Bed porosity",
         )
@@ -694,7 +695,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.column_height = Var(
             initialize=2,
             bounds=(0, 4.26),  # EPA-WBS guidance
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.m,
             doc="Column height",
         )
@@ -702,7 +703,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_diameter = Var(
             initialize=1,
             bounds=(0.75, 4.26),  # EPA-WBS guidance
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.m,
             doc="Column diameter",
         )
@@ -710,7 +711,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bed_depth_to_diam_ratio = Var(
             initialize=1,
             bounds=(0, 100),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
@@ -718,7 +719,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.number_columns = Var(
             initialize=2,
             bounds=(1, None),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Number of operational columns for ion exchange process",
         )
@@ -726,7 +727,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.number_columns_redundant = Var(
             initialize=1,
             bounds=(0, None),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Number of redundant columns for ion exchange process",
         )
@@ -734,7 +735,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.breakthrough_time = Var(
             initialize=1e5,  # DOW, ~7 weeks max breakthru time
             bounds=(0, None),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.s,
             doc="Breakthrough time",
         )
@@ -742,7 +743,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.bv = Var(  # BV
             initialize=1e5,
             bounds=(0, None),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Bed volumes of feed at breakthrough concentration",
         )
@@ -750,7 +751,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.ebct = Var(
             initialize=520,
             bounds=(90, None),
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.s,
             doc="Empty bed contact time",
         )
@@ -760,15 +761,15 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         self.loading_rate = Var(
             initialize=0.0086,
             bounds=(0, 0.01),  # MWH, Perry's, EPA-WBS: 5-15 gpm/ft2
-            # domain=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.m / pyunits.s,
             doc="Superficial velocity through bed",
         )
 
         self.service_flow_rate = Var(
             initialize=10,
-            bounds=(1, None),
-            # domain=NonNegativeReals,
+            bounds=(0, None),
+            domain=NonNegativeReals,
             units=pyunits.hr**-1,
             doc="Service flow rate",  # BV/hr
         )
@@ -777,7 +778,8 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         self.N_Re = Var(
             initialize=4.3,
-            bounds=(0.001, 60),  # Perry's - bounds relevant to N_Sh regression
+            # bounds=(0.001, 60),  # Perry's - bounds relevant to N_Sh regression
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Reynolds number",
@@ -785,14 +787,16 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         self.N_Pe_particle = Var(
             initialize=0.1,
-            # domain=NonNegativeReals,
+            bounds=(0, None),
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Peclet particle number",
         )
 
         self.N_Pe_bed = Var(
             initialize=1000,  # Inamuddin/Luqman - N_Pe_bed > ~100 considered to be plug flow
-            # domain=NonNegativeReals,
+            bounds=(0, None),
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Peclet bed number",
         )
@@ -974,7 +978,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             return b.N_Pe_bed == b.N_Pe_particle * (b.bed_depth / b.resin_diam)
 
         @self.Constraint(doc="Particle Peclet number")
-        def eq_Pe_p(b):  # Eq. 3.313, Inglezakis + Poulopoulos, for downflow
+        def eq_Pe_particle(b):  # Eq. 3.313, Inglezakis + Poulopoulos, for downflow
             return b.N_Pe_particle == b.Pe_p_A * b.N_Re**b.Pe_p_exp
 
         # =========== RESIN & COLUMN ===========
@@ -1015,104 +1019,6 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             return b.number_columns_redundant == smooth_max(
                 b.number_columns / b.redundant_column_freq, 1, eps=1e-4
             )
-
-    def add_ss_approximation(self, ix_model_type=None):
-
-        prop_in = self.process_flow.properties_in[0]
-        self.num_traps = 5  # TODO: make CONFIG option
-        self.trap_disc = range(self.num_traps + 1)
-        self.trap_index = self.trap_disc[1:]
-
-        self.c_trap_min = Param(  # TODO: make CONFIG option
-            initialize=0.01,
-            mutable=True,
-            doc="Minimum relative breakthrough concentration for estimating area under curve",
-        )
-
-        self.c_traps = Var(
-            self.trap_disc,
-            initialize=0.5,
-            bounds=(0, 1),
-            units=pyunits.dimensionless,
-            doc="Normalized breakthrough concentrations for estimating area under breakthrough curve",
-        )
-        self.tb_traps = Var(
-            self.trap_disc,
-            initialize=1e6,
-            bounds=(0, None),
-            units=pyunits.second,
-            doc="Breakthrough times for estimating area under breakthrough curve",
-        )
-
-        self.traps = Var(
-            self.trap_index,
-            initialize=0.01,
-            bounds=(0, 1),
-            units=pyunits.dimensionless,
-            doc="Trapezoid areas for estimating area under breakthrough curve",
-        )
-
-        self.c_traps[0].fix(0)
-        self.tb_traps[0].fix(0)
-
-        self.c_norm_avg = Var(
-            self.target_component_set,
-            initialize=0.25,
-            bounds=(0, 2),
-            units=pyunits.dimensionless,
-            doc="Sum of trapezoid areas",
-        )
-
-        @self.Constraint(
-            self.target_component_set,
-            self.trap_index,
-            doc="Evenly spaced c_norm for trapezoids",
-        )
-        def eq_c_traps(b, j, k):
-            return b.c_traps[k] == b.c_trap_min + (b.trap_disc[k] - 1) * (
-                (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
-            )
-
-        @self.Constraint(
-            self.trap_index,
-            doc="Breakthrough time calc for trapezoids",
-        )
-        def eq_tb_traps(b, k):
-            if ix_model_type == "clark":
-                bv_traps = (b.tb_traps[k] * b.loading_rate) / b.bed_depth
-                left_side = (
-                    (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
-                    / (b.bv_50 * b.loading_rate)
-                ) * (b.bv_50 - bv_traps)
-
-                right_side = log(
-                    ((1 / b.c_traps[k]) ** (b.freundlich_n - 1) - 1)
-                    / (2 ** (b.freundlich_n - 1) - 1)
-                )
-                return left_side - right_side == 0
-            else:
-                return Constraint.Skip
-
-        @self.Constraint(self.trap_index, doc="Area of trapezoids")
-        def eq_traps(b, k):
-            return b.traps[k] == (b.tb_traps[k] - b.tb_traps[k - 1]) / b.tb_traps[
-                self.num_traps
-            ] * ((b.c_traps[k] + b.c_traps[k - 1]) / 2)
-
-        @self.Constraint(
-            self.target_component_set, doc="Average relative effluent concentration"
-        )
-        def eq_c_norm_avg(b, j):
-            return b.c_norm_avg[j] == sum(b.traps[k] for k in b.trap_index)
-
-        @self.Constraint(
-            self.target_component_set,
-            doc="CV mass transfer term",
-        )
-        def eq_mass_transfer_term(b, j):
-            return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
-                "Liq", j
-            ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
 
     def initialize_build(
         self,
@@ -1233,10 +1139,10 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.number_columns, 1)
 
         if iscale.get_scaling_factor(self.resin_diam) is None:
-            iscale.set_scaling_factor(self.resin_diam, 1e4)
+            iscale.set_scaling_factor(self.resin_diam, 1e3)
 
         if iscale.get_scaling_factor(self.resin_density) is None:
-            iscale.set_scaling_factor(self.resin_density, 1e-3)
+            iscale.set_scaling_factor(self.resin_density, 1e-2)
 
         if iscale.get_scaling_factor(self.bed_volume_total) is None:
             iscale.set_scaling_factor(self.bed_volume_total, 0.1)
@@ -1301,3 +1207,163 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
     @property
     def default_costing_method(self):
         return cost_ion_exchange
+
+
+def add_ss_approximation(blk, ix_model_type=None):
+
+    prop_in = blk.process_flow.properties_in[0]
+    blk.num_traps = 5  # TODO: make CONFIG option
+    blk.trap_disc = range(blk.num_traps + 1)
+    blk.trap_index = blk.trap_disc[1:]
+
+    blk.c_trap_min = Param(  # TODO: make CONFIG option
+        initialize=0.01,
+        default=0.01,
+        mutable=True,
+        units=pyunits.dimensionless,
+        doc="Minimum relative breakthrough concentration for estimating area under curve",
+    )
+
+    blk.c_traps = Var(
+        blk.trap_disc,
+        initialize=0.5,
+        bounds=(0, 1),
+        units=pyunits.dimensionless,
+        doc="Normalized breakthrough concentrations for estimating area under breakthrough curve",
+    )
+    blk.tb_traps = Var(
+        blk.trap_disc,
+        initialize=1e6,
+        bounds=(0, None),
+        units=pyunits.second,
+        doc="Breakthrough times for estimating area under breakthrough curve",
+    )
+
+    blk.traps = Var(
+        blk.trap_index,
+        initialize=0.01,
+        bounds=(0, 1),
+        units=pyunits.dimensionless,
+        doc="Trapezoid areas for estimating area under breakthrough curve",
+    )
+
+    blk.c_traps[0].fix(0)
+    blk.tb_traps[0].fix(0)
+
+    blk.c_norm_avg = Var(
+        blk.target_component_set,
+        initialize=0.25,
+        bounds=(0, 2),
+        units=pyunits.dimensionless,
+        doc="Sum of trapezoid areas",
+    )
+
+    if ix_model_type == "cphsdm":
+
+        blk.min_tb_traps = Var(
+            blk.trap_index,
+            initialize=1e8,
+            bounds=(0, None),
+            units=pyunits.s,
+            doc="Minimum operational time of the bed by discrete element",
+        )
+
+        blk.throughput_traps = Var(
+            blk.trap_index,
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.dimensionless,
+            doc="Specific throughput of the bed by discrete element",
+        )
+
+        @blk.Constraint(
+            blk.trap_index,
+            doc="Minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element",
+        )
+        def eq_tb_traps_min(b, k):
+            return (
+                b.min_tb_traps[k]
+                == b.min_t_contact * (b.solute_dist_param + 1) * b.throughput_traps[k]
+            )
+
+        if blk.config.cphsdm_calaculation_method == "surrogate":
+
+            blk.throughput_surrogate_traps = SurrogateBlock(
+                blk.trap_index, concrete=True
+            )
+            for tr in blk.trap_index:
+                blk.throughput_surrogate_traps[tr].build_model(
+                    blk.throughput_surrogate,
+                    input_vars=[
+                        blk.freundlich_ninv,
+                        blk.N_Bi,
+                        blk.c_traps[tr],
+                    ],
+                    output_vars=[blk.throughput_traps[tr]],
+                )
+
+        elif blk.config.cphsdm_calaculation_method == "input":
+
+            @blk.Constraint(
+                blk.trap_index,
+                doc="Throughput constraint based on empirical 5-parameter regression by discretized element",
+            )
+            def eq_throughput_traps(b, k):
+                return b.throughput_traps[k] == b.b0 + b.b1 * (
+                    b.c_traps[k] ** b.b2
+                ) + b.b3 / (1.01 - b.c_traps[k] ** b.b4)
+
+    @blk.Constraint(
+        blk.target_component_set,
+        blk.trap_index,
+        doc="Evenly spaced c_norm for trapezoids",
+    )
+    def eq_c_traps(b, j, k):
+        return b.c_traps[k] == b.c_trap_min + (b.trap_disc[k] - 1) * (
+            (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
+        )
+
+    @blk.Constraint(
+        blk.trap_index,
+        doc="Breakthrough time calc for trapezoids",
+    )
+    def eq_tb_traps(b, k):
+        if ix_model_type == "clark":
+            bv_traps = (b.tb_traps[k] * b.loading_rate) / b.bed_depth
+            left_side = (
+                (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
+                / (b.bv_50 * b.loading_rate)
+            ) * (b.bv_50 - bv_traps)
+
+            right_side = log(
+                ((1 / b.c_traps[k]) ** (b.freundlich_n - 1) - 1)
+                / (2 ** (b.freundlich_n - 1) - 1)
+            )
+            return left_side - right_side == 0
+        elif ix_model_type == "cphsdm":
+            return b.tb_traps[k] == b.min_tb_traps[k] + (
+                b.t_contact - b.min_t_contact
+            ) * (b.solute_dist_param + 1)
+        else:
+            return Constraint.Skip
+
+    @blk.Constraint(blk.trap_index, doc="Area of trapezoids")
+    def eq_traps(b, k):
+        return b.traps[k] == (b.tb_traps[k] - b.tb_traps[k - 1]) / b.tb_traps[
+            b.num_traps
+        ] * ((b.c_traps[k] + b.c_traps[k - 1]) / 2)
+
+    @blk.Constraint(
+        blk.target_component_set, doc="Average relative effluent concentration"
+    )
+    def eq_c_norm_avg(b, j):
+        return b.c_norm_avg[j] == sum(b.traps[k] for k in b.trap_index)
+
+    @blk.Constraint(
+        blk.target_component_set,
+        doc="CV mass transfer term",
+    )
+    def eq_mass_transfer_term(b, j):
+        return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
+            "Liq", j
+        ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
