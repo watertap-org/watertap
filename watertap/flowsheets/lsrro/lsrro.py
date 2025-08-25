@@ -116,8 +116,9 @@ def run_lsrro_case(
         display_design(m)
         display_state(m)
     else:
-        print("Simulation failed. The current configuration is infeasible. Please adjust the decision variables.")
- 
+        print(
+            "Simulation failed. The current configuration is infeasible. Please adjust the decision variables."
+        )
 
     optimize_set_up(
         m,
@@ -140,8 +141,10 @@ def run_lsrro_case(
         display_state(m)
         display_RO_reports(m)
     else:
-        print("Optimization failed. The current configuration is infeasible. Please adjust the decision variables.")
- 
+        print(
+            "Optimization failed. The current configuration is infeasible. Please adjust the decision variables."
+        )
+
     return m, res
 
 
@@ -418,8 +421,7 @@ def build(
     )
 
     m.fs.costing.pumping_energy_aggregate_lcow = Expression(
-        expr=
-        m.fs.costing.TIC
+        expr=m.fs.costing.TIC
         * (
             m.fs.costing.primary_pump_capex_lcow
             + (
@@ -1235,8 +1237,7 @@ def display_system(m):
         f"{value(m.fs.costing.capital_recovery_factor*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.Stages) / m.fs.costing.annual_water_production)}"
     )
     print(
-        f"Indirect Capital Cost ($/m3): "
-        f"{value(m.fs.costing.indirect_capex_lcow)}"
+        f"Indirect Capital Cost ($/m3): " f"{value(m.fs.costing.indirect_capex_lcow)}"
     )
     electricity_cost = value(
         m.fs.costing.aggregate_flow_costs["electricity"]
