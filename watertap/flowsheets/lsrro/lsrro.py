@@ -95,6 +95,7 @@ def run_lsrro_case(
     B_max=None,
     number_of_RO_finite_elements=10,
     set_default_bounds_on_module_dimensions=True,
+    skip_initialization=False,
 ):
     m = build(
         number_of_stages,
@@ -106,12 +107,17 @@ def run_lsrro_case(
     )
     set_operating_conditions(m, Cin, Qin)
 
-    initialize(m)
-    solve(m)
+    if not skip_initialization:
+        initialize(m)
+    res0 = solve(m)
     print("\n***---Simulation results---***")
-    display_system(m)
-    display_design(m)
-    display_state(m)
+    if check_optimal_termination(res0):
+        display_system(m)
+        display_design(m)
+        display_state(m)
+    else:
+        print("Simulation failed. The current configuration is infeasible. Please adjust the decision variables.")
+ 
 
     optimize_set_up(
         m,
@@ -133,7 +139,9 @@ def run_lsrro_case(
         display_design(m)
         display_state(m)
         display_RO_reports(m)
-
+    else:
+        print("Optimization failed. The current configuration is infeasible. Please adjust the decision variables.")
+ 
     return m, res
 
 
@@ -410,8 +418,8 @@ def build(
     )
 
     m.fs.costing.pumping_energy_aggregate_lcow = Expression(
-        expr=m.fs.costing.total_investment_factor
-        * m.fs.costing.TIC
+        expr=
+        m.fs.costing.TIC
         * (
             m.fs.costing.primary_pump_capex_lcow
             + (
@@ -424,7 +432,7 @@ def build(
         * (
             1
             + m.fs.costing.maintenance_labor_chemical_factor
-            / m.fs.costing.total_investment_factor
+            / m.fs.costing.TIC
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.electricity_lcow
@@ -453,13 +461,12 @@ def build(
     )
 
     m.fs.costing.membrane_aggregate_lcow = Expression(
-        expr=m.fs.costing.total_investment_factor
-        * m.fs.costing.TIC
+        expr=m.fs.costing.TIC
         * m.fs.costing.membrane_capex_lcow
         * (
             1
             + m.fs.costing.maintenance_labor_chemical_factor
-            / m.fs.costing.total_investment_factor
+            / m.fs.costing.TIC
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.membrane_replacement_lcow
@@ -855,7 +862,7 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
 
 def optimize_set_up(
     m,
-    set_default_bounds_on_module_dimensions,
+    set_default_bounds_on_module_dimensions=True,
     water_recovery=None,
     Cbrine=None,
     A_case=ACase.fixed,
@@ -1229,7 +1236,7 @@ def display_system(m):
     )
     print(
         f"Indirect Capital Cost ($/m3): "
-        f"{value(m.fs.costing.capital_recovery_factor*(m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.indirect_capex_lcow)}"
     )
     electricity_cost = value(
         m.fs.costing.aggregate_flow_costs["electricity"]
