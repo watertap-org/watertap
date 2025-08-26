@@ -13,7 +13,7 @@ environment*.yml @lbianchi-lbl
 
 /docs/ @MarcusHolly @adam-a-a
 
-/tutorials/ @adam-a-a @zacharybinger @avdudchenko @MarcusHolly @TimBartholomew
+/tutorials/ @adam-a-a @avdudchenko @MarcusHolly @kurbansitterley
 
 /watertap/core/ @bknueven @adam-a-a
 
@@ -88,5 +88,5 @@ environment*.yml @lbianchi-lbl
 LICENSE.md @ksbeattie
 COPYRIGHT.md @ksbeattie
 
-CITATION.cff @TimBartholomew
+CITATION.cff @adam-a-a @ksbeattie
 
