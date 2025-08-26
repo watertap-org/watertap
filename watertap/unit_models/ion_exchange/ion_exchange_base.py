@@ -1280,7 +1280,7 @@ def add_ss_approximation(blk, ix_model_type=None):
             blk.trap_index,
             doc="Minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element",
         )
-        def eq_tb_traps_min(b, k):
+        def eq_min_tb_traps(b, k):
             return (
                 b.min_tb_traps[k]
                 == b.min_t_contact * (b.solute_dist_param + 1) * b.throughput_traps[k]

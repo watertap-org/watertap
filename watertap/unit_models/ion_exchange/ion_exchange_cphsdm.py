@@ -590,17 +590,6 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                 == regen.flow_mass_phase_comp["Liq", j] * b.breakthrough_time
             )
 
-        # mass transfer of target_species
-        # TODO: check for mass based (not mole) get_material_flow_terms, but ok under mcas_prop_pack
-        # @self.Constraint(
-        #     self.target_component_set,
-        #     doc="mass transfer for adsorbed solutes in 'target_species' within 'gac_removed' (out of the bed)",
-        # )
-        # def eq_mass_transfer_cv(b, j):
-        #     return (1 - b.c_norm_avg) * prop_in.get_material_flow_terms("Liq", j) == (
-        #         -b.process_flow.mass_transfer_term[0, "Liq", j]
-        #     )
-
         @self.Constraint(doc="Regeneration stream flow rate")
         def eq_regen_flow_rate(b):
             return regen.flow_vol_phase["Liq"] == pyunits.convert(
@@ -701,19 +690,49 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         # ---------------------------------------------------------------------
         # Initialize regeneration_stream
+        from copy import deepcopy
+
+        state_args_regen = deepcopy(state_args)
 
         # All inert species initialized to 0
         for j in inerts:
-            if self.flow_basis == MaterialFlowBasis.molar:
-                state_args["flow_mol_phase_comp"][("Liq", j)] = 0
-            else:
-                state_args["flow_mass_phase_comp"][("Liq", j)] = 0
+            if j == self.config.target_component:
+                if self.flow_basis == MaterialFlowBasis.molar:
+                    state_args_regen["flow_mol_phase_comp"][("Liq", j)] = (
+                        self.process_flow.mass_transfer_term[0, "Liq", j].value * -1
+                    )
+                else:
+                    state_args_regen["flow_mass_phase_comp"][("Liq", j)] = (
+                        self.process_flow.mass_transfer_term[0, "Liq", j].value * -1
+                    )
+            elif j != "H2O":
+                if self.flow_basis == MaterialFlowBasis.molar:
+                    state_args_regen["flow_mol_phase_comp"][("Liq", j)] = 0
+                else:
+                    state_args_regen["flow_mass_phase_comp"][("Liq", j)] = 0
+            elif j == "H2O":
+                if self.flow_basis == MaterialFlowBasis.molar:
+                    state_args_regen["flow_mol_phase_comp"][("Liq", j)] = (
+                        state_args["flow_mol_phase_comp"][("Liq", j)] * 0.1
+                    )
+                else:
+                    state_args_regen["flow_mass_phase_comp"][("Liq", j)] = (
+                        state_args["flow_mass_phase_comp"][("Liq", j)] * 0.1
+                    )
 
+        regen_flow_rate = pyunits.convert(
+            self.rinse_flow_rate * (self.rinse_time / self.cycle_time)
+            + self.backwash_flow_rate * (self.backwash_time / self.cycle_time)
+            + self.regen_flow_rate * (self.regeneration_time / self.cycle_time),
+            to_units=pyunits.m**3 / pyunits.s,
+        )
+
+        self.regeneration_stream[0].flow_vol_phase["Liq"] = regen_flow_rate
         self.regeneration_stream.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
+            state_args=state_args_regen,
         )
 
         init_log.info_high("Initialization Step 2 Complete.")
@@ -738,29 +757,60 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         super().calculate_scaling_factors()
 
         target_component = self.config.target_component
-        for j in self.target_component_set:
+        if self.flow_basis == MaterialFlowBasis.molar:
             sf_solute = iscale.get_scaling_factor(
-                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j],
+                self.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", target_component
+                ],
                 default=1e4,
                 warning=True,
             )
-
-        for j in self.config.property_package.solvent_set:
+            iscale.set_scaling_factor(
+                self.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", target_component
+                ],
+                10 * sf_solute,
+            )
             sf_solvent = iscale.get_scaling_factor(
-                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j],
+                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"],
                 default=1e-3,
                 warning=True,
+            )
+            iscale.set_scaling_factor(
+                self.regeneration_stream[0].flow_mol_phase_comp["Liq", "H2O"],
+                sf_solvent * 100,
+            )
+        if self.flow_basis == MaterialFlowBasis.mass:
+            sf_solute = iscale.get_scaling_factor(
+                self.process_flow.properties_in[0].flow_mass_phase_comp[
+                    "Liq", target_component
+                ],
+                default=1e5,
+                warning=True,
+            )
+            iscale.set_scaling_factor(
+                self.process_flow.properties_out[0].flow_mass_phase_comp[
+                    "Liq", target_component
+                ],
+                10 * sf_solute,
+            )
+            sf_solvent = iscale.get_scaling_factor(
+                self.process_flow.properties_in[0].flow_mass_phase_comp["Liq", "H2O"],
+                default=1e-2,
+                warning=True,
+            )
+            iscale.set_scaling_factor(
+                self.regeneration_stream[0].flow_mass_phase_comp["Liq", "H2O"],
+                sf_solvent * 100,
             )
 
         # sf_volume based on magnitude of 0.018 water mw and 1000 dens
         sf_volume = sf_solvent * (100 / 0.01)
         sf_conc = sf_solute / sf_volume
 
-        for j in self.target_component_set:
-            iscale.set_scaling_factor(
-                self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
-                10 * sf_solute,
-            )
+        if iscale.get_scaling_factor(self.c_eq[target_component]) is None:
+            iscale.set_scaling_factor(self.c_eq[target_component], sf_conc * 1e-2)
+
         if iscale.get_scaling_factor(self.freundlich_k) is None:
             iscale.set_scaling_factor(self.freundlich_k, 1)
 
@@ -772,9 +822,6 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         if iscale.get_scaling_factor(self.c_norm[target_component]) is None:
             iscale.set_scaling_factor(self.c_norm[target_component], 10)
-
-        if iscale.get_scaling_factor(self.c_eq[target_component]) is None:
-            iscale.set_scaling_factor(self.c_eq[target_component], sf_conc * 1e-2)
 
         if iscale.get_scaling_factor(self.N_Bi) is None:
             iscale.set_scaling_factor(self.N_Bi, 1)
@@ -829,6 +876,9 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         if iscale.get_scaling_factor(self.spdfr) is None:
             iscale.set_scaling_factor(self.spdfr, 1)
+
+        if iscale.get_scaling_factor(self.mass_adsorbed) is None:
+            iscale.set_scaling_factor(self.mass_adsorbed, 1)
 
         if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.input:
 
