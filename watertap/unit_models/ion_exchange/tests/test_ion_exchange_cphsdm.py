@@ -254,6 +254,218 @@ class TestIXCPHSDMHand(UnitTestHarness):
                 assert pytest.approx(r, rel=1e-3) == value(mv)
 
 
+def build_ix_hand_surrogate():
+    """
+    Duplicate test from GAC model build_hand
+    to ensure results are identical
+    """
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["DCE"],
+        mw_data={"H2O": 0.018, "DCE": 0.09896},
+        charge={"DCE": 1},
+        ignore_neutral_charge=True,
+    )
+    ix_config = {
+        "property_package": m.fs.properties,
+        "target_component": "DCE",
+        "cphsdm_calculation_method": "surrogate",
+    }
+    m.fs.unit = IonExchangeCPHSDM(**ix_config)
+
+    pf = m.fs.unit.process_flow
+    pf.properties_in[0].pressure.fix(101325)
+    pf.properties_in[0].temperature.fix(273.15 + 25)
+    pf.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(55555.55426666667)
+    pf.properties_in[0].flow_mol_phase_comp["Liq", "DCE"].fix(0.0002344381568310428)
+
+    # adjust variable bounds to use GAC inputs
+    m.fs.unit.bed_depth.setub(6)
+    m.fs.unit.bed_diameter.setub(10)
+    m.fs.unit.column_height.setub(100)
+    m.fs.unit.resin_density.setlb(0)
+    m.fs.unit.loading_rate.setub(None)
+
+    m.fs.unit.freundlich_k.fix(37.9e-6 * (1e6**0.8316))
+    m.fs.unit.freundlich_ninv.fix(0.8316)
+    m.fs.unit.resin_density_app.fix(722)
+    m.fs.unit.resin_diam.fix(0.00106)
+    m.fs.unit.ebct.fix(300)
+    m.fs.unit.bed_porosity.fix(0.449)
+    m.fs.unit.bed_depth.fix(6)
+    m.fs.unit.c_norm.fix(0.5)
+    m.fs.unit.film_mass_transfer_coeff.fix(3.29e-5)
+    m.fs.unit.surf_diff_coeff.fix(1.77e-13)
+    m.fs.unit.number_columns.fix(1)
+
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-4, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e4, index=("Liq", "DCE")
+    )
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestIXCPHSDMSurrogateHand(UnitTestHarness):
+    def configure(self):
+        m = build_ix_hand_surrogate()
+
+        self.default_zero = zero
+        self.default_relative_tolerance = relative_tolerance
+        self.unit_solutions[m.fs.unit.resin_density] = 397.82
+        self.unit_solutions[m.fs.unit.bed_porosity] = 0.449
+        self.unit_solutions[m.fs.unit.column_height] = 14.1722
+        self.unit_solutions[m.fs.unit.bed_diameter] = 7.9788
+        self.unit_solutions[m.fs.unit.bed_depth_to_diam_ratio] = 0.75198
+        self.unit_solutions[m.fs.unit.number_columns] = 1
+        self.unit_solutions[m.fs.unit.number_columns_redundant] = 1
+        self.unit_solutions[m.fs.unit.breakthrough_time] = 2530674
+        self.unit_solutions[m.fs.unit.bv] = 8435
+        self.unit_solutions[m.fs.unit.loading_rate] = 0.02
+        self.unit_solutions[m.fs.unit.c_eq["DCE"]] = 0.0005178
+        self.unit_solutions[m.fs.unit.solute_dist_param] = 19775
+        self.unit_solutions[m.fs.unit.N_Bi] = 6.113
+        self.unit_solutions[m.fs.unit.min_N_St] = 47.76
+        self.unit_solutions[m.fs.unit.min_ebct] = 1396
+        self.unit_solutions[m.fs.unit.throughput] = 0.989252
+        self.unit_solutions[m.fs.unit.min_t_contact] = 626.96
+        self.unit_solutions[m.fs.unit.min_breakthrough_time] = 12266003
+        self.unit_solutions[m.fs.unit.tb_traps[1]] = 722271
+        self.unit_solutions[m.fs.unit.tb_traps[2]] = 1452770
+        self.unit_solutions[m.fs.unit.tb_traps[3]] = 1856540
+        self.unit_solutions[m.fs.unit.tb_traps[4]] = 2202334
+        self.unit_solutions[m.fs.unit.tb_traps[5]] = 2530674
+        self.unit_solutions[m.fs.unit.traps[1]] = 0.0014270
+        self.unit_solutions[m.fs.unit.traps[2]] = 0.0205669
+        self.unit_solutions[m.fs.unit.traps[3]] = 0.0309129
+        self.unit_solutions[m.fs.unit.traps[4]] = 0.0432127
+        self.unit_solutions[m.fs.unit.traps[5]] = 0.0569253
+        self.unit_solutions[m.fs.unit.c_norm_avg["DCE"]] = 0.1530447
+        self.unit_solutions[m.fs.unit.min_tb_traps[1]] = 10457601
+        self.unit_solutions[m.fs.unit.min_tb_traps[2]] = 11188099
+        self.unit_solutions[m.fs.unit.min_tb_traps[3]] = 11591869
+        self.unit_solutions[m.fs.unit.min_tb_traps[4]] = 11937663
+        self.unit_solutions[m.fs.unit.min_tb_traps[5]] = 12266003
+        self.unit_solutions[m.fs.unit.throughput_traps[1]] = 0.84340
+        self.unit_solutions[m.fs.unit.throughput_traps[2]] = 0.90232
+        self.unit_solutions[m.fs.unit.throughput_traps[3]] = 0.93488
+        self.unit_solutions[m.fs.unit.throughput_traps[4]] = 0.96277
+        self.unit_solutions[m.fs.unit.throughput_traps[5]] = 0.98925
+        self.unit_solutions[m.fs.unit.mass_adsorbed] = 49.726
+
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mol_phase_comp["Liq", "H2O"]
+        ] = 86.74
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mol_phase_comp["Liq", "DCE"]
+        ] = 0.0001985
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "H2O"]
+        ] = 1.5613
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "DCE"]
+        ] = 1.964e-05
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_vol_phase["Liq"]
+        ] = 0.0015614
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_out[0.0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mol_phase_comp["Liq", "DCE"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mol_phase_comp["Liq", "DCE"],
+            },
+        }
+
+        return m
+
+    @pytest.mark.component
+    def test_costing(self):
+        m = build_ix_hand_surrogate()
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(
+            m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"]
+        )
+        m.fs.costing.add_specific_energy_consumption(
+            m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
+        )
+
+        sys_cost_results = {
+            "aggregate_flow_electricity": 896.2,
+            "aggregate_flow_NaCl": 2237704.39,
+            "aggregate_flow_costs": {"electricity": 549927.47, "NaCl": 203724.18},
+            "total_capital_cost": 9216178.73,
+            "total_operating_cost": 1118742.14,
+            "total_fixed_operating_cost": 440455.64,
+            "total_variable_operating_cost": 678286.49,
+            "total_annualized_cost": 2040360.01,
+            "LCOW": 0.071839,
+            "SEC": 0.248945,
+        }
+
+        check_dof(m, fail_flag=True)
+        initialization_tester(m)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
+        for v, r in sys_cost_results.items():
+            mv = m.fs.costing.find_component(v)
+            if mv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(mv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(mv)
+
+        ix_cost_results = {
+            "capital_cost": 9216178.73,
+            "fixed_operating_cost": 163970.28,
+            "capital_cost_vessel": 427335.95,
+            "capital_cost_resin": 1639702.86,
+            "capital_cost_regen_tank": 184447.54,
+            "capital_cost_backwash_tank": 289564.18,
+            "flow_mass_regen_soln": 2237704.39,
+            "total_pumping_power": 896.2,
+            "regeneration_tank_vol": 63912.59,
+            "backwash_tank_vol": 824877.23,
+            "direct_capital_cost": 4608089.36,
+        }
+
+        for v, r in ix_cost_results.items():
+            mv = m.fs.unit.costing.find_component(v)
+            if mv.is_indexed():
+                for i, s in r.items():
+                    assert pytest.approx(s, rel=1e-3) == value(mv[i])
+            else:
+                assert pytest.approx(r, rel=1e-3) == value(mv)
+
+
 def build_ix_crittenden():
     # trial problem from Crittenden, 2012 for removal of TCE
     m = ConcreteModel()

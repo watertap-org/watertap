@@ -47,10 +47,9 @@ from watertap.unit_models.gac import (
 __author__ = "Kurban Sitterley"
 
 __location__ = os.path.dirname(os.path.abspath(__file__))
-surr_dir = f"{os.path.dirname(__location__)}/data/surrogate_defaults/gac"
+surr_dir = f"{os.path.dirname(os.path.dirname(__location__))}/data/surrogate_defaults/ion_exchange"
 min_N_St_surr_path = f"{surr_dir}/min_N_St_surrogate.json"
 throughput_surr_path = f"{surr_dir}/throughput_surrogate.json"
-
 
 # ---------------------------------------------------------------------
 class CPHSDMCalculationMethod(StrEnum):
@@ -67,7 +66,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
     CONFIG = IonExchangeBaseData.CONFIG()
 
     CONFIG.declare(
-        "cphsdm_calaculation_method",
+        "cphsdm_calculation_method",
         ConfigValue(
             default=CPHSDMCalculationMethod.input,
             domain=In(CPHSDMCalculationMethod),
@@ -294,7 +293,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             doc="Tortuosity of the path that the adsorbate must take as compared to the radius",
         )
 
-        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.input:
+        if self.config.cphsdm_calculation_method == CPHSDMCalculationMethod.input:
             # Constants in CPHSDM empirical equations
 
             self.a0 = Var(
@@ -361,7 +360,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                     b.c_norm[target_component] ** b.b2
                 ) + b.b3 / (1.01 - (b.c_norm[target_component] ** b.b4))
 
-        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.surrogate:
+        if self.config.cphsdm_calculation_method == CPHSDMCalculationMethod.surrogate:
 
             # Establish surrogates
             self.min_N_St_surrogate = PysmoSurrogate.load_from_file(min_N_St_surr_path)
@@ -638,6 +637,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         comps = self.config.property_package.component_list
         inerts = comps - self.target_component_set
+        target_component = self.config.target_component
 
         if state_args is None:
             state_args = {}
@@ -653,19 +653,19 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.surrogate:
+        if self.config.cphsdm_calculation_method == CPHSDMCalculationMethod.surrogate:
 
             init_log.info_high("Initializing values from surrogates.")
 
-            calculate_variable_from_constraint(self.N_Bi, self.eq_number_bi)
-            for e, c in self.eq_ele_conc_ratio_replace.items():
-                calculate_variable_from_constraint(self.ele_conc_ratio_replace[e], c)
+            calculate_variable_from_constraint(self.N_Bi, self.eq_Bi)
+            for (_, trap), c in self.eq_c_traps.items():
+                calculate_variable_from_constraint(self.c_traps[trap], c)
 
             init_data = pd.DataFrame(
                 {
-                    "freund_ninv": [self.freund_ninv.value],
+                    "freundlich_ninv": [self.freundlich_ninv.value],
                     "N_Bi": [self.N_Bi.value],
-                    "conc_ratio_replace": [self.conc_ratio_replace.value],
+                    "c_norm": [self.c_norm[target_component].value],
                 }
             )
             init_out = self.min_N_St_surrogate.evaluate_surrogate(init_data)
@@ -673,10 +673,10 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
             init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
             self.throughput.value = init_out["throughput"].values[0]
-            for ele in self.ele_index:
-                init_data["conc_ratio_replace"] = self.ele_conc_ratio_replace[ele].value
+            for trap in self.trap_index:
+                init_data["c_norm"] = self.c_traps[trap].value
                 init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
-                self.ele_throughput[ele].value = init_out["throughput"].values[0]
+                self.throughput_traps[trap].value = init_out["throughput"].values[0]
 
         # Initialize control volume
         flags = self.process_flow.initialize(
@@ -856,18 +856,6 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         if iscale.get_scaling_factor(self.throughput) is None:
             iscale.set_scaling_factor(self.throughput, 1)
 
-        if iscale.get_scaling_factor(self.bed_volume) is None:
-            iscale.set_scaling_factor(self.bed_volume, 1)
-
-        if iscale.get_scaling_factor(self.bed_diameter) is None:
-            iscale.set_scaling_factor(self.bed_diameter, 1)
-
-        if iscale.get_scaling_factor(self.bed_depth_to_diam_ratio) is None:
-            iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 1)
-
-        if iscale.get_scaling_factor(self.number_columns_redundant) is None:
-            iscale.set_scaling_factor(self.number_columns_redundant, 1)
-
         if iscale.get_scaling_factor(self.resin_porosity) is None:
             iscale.set_scaling_factor(self.resin_porosity, 1)
 
@@ -880,7 +868,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
             iscale.set_scaling_factor(self.mass_adsorbed, 1)
 
-        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.input:
+        if self.config.cphsdm_calculation_method == CPHSDMCalculationMethod.input:
 
             iscale.set_scaling_factor(self.a0, 1)
             iscale.set_scaling_factor(self.a1, 1)
