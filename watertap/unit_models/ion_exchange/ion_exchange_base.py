@@ -1144,6 +1144,15 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.resin_density) is None:
             iscale.set_scaling_factor(self.resin_density, 1e-2)
 
+        if iscale.get_scaling_factor(self.bed_volume) is None:
+            iscale.set_scaling_factor(self.bed_volume, 1)
+
+        if iscale.get_scaling_factor(self.bed_diameter) is None:
+            iscale.set_scaling_factor(self.bed_diameter, 1)
+
+        if iscale.get_scaling_factor(self.number_columns_redundant) is None:
+            iscale.set_scaling_factor(self.number_columns_redundant, 1)
+
         if iscale.get_scaling_factor(self.bed_volume_total) is None:
             iscale.set_scaling_factor(self.bed_volume_total, 0.1)
 
@@ -1170,6 +1179,9 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.bv) is None:
             iscale.set_scaling_factor(self.bv, 1e-4)
+
+        if iscale.get_scaling_factor(self.bed_depth_to_diam_ratio) is None:
+            iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 1)
 
     def _get_stream_table_contents(self, time_point=0):
 
@@ -1286,7 +1298,7 @@ def add_ss_approximation(blk, ix_model_type=None):
                 == b.min_t_contact * (b.solute_dist_param + 1) * b.throughput_traps[k]
             )
 
-        if blk.config.cphsdm_calaculation_method == "surrogate":
+        if blk.config.cphsdm_calculation_method == "surrogate":
 
             blk.throughput_surrogate_traps = SurrogateBlock(
                 blk.trap_index, concrete=True
@@ -1302,7 +1314,7 @@ def add_ss_approximation(blk, ix_model_type=None):
                     output_vars=[blk.throughput_traps[tr]],
                 )
 
-        elif blk.config.cphsdm_calaculation_method == "input":
+        elif blk.config.cphsdm_calculation_method == "input":
 
             @blk.Constraint(
                 blk.trap_index,
