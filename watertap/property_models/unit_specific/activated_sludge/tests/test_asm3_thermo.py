@@ -10,21 +10,19 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for ADM1 thermo property package.
-Authors: Adam Atia, Alejandro Garciadiego, Xinhong Liu
+Tests for ASM3 thermo property package.
+Authors: Chenyu Wang
 """
 
 import pytest
-
-from pyomo.environ import ConcreteModel, Param, Suffix, value, Var
+from pyomo.environ import ConcreteModel, Expression, Param, units, value, Var, Suffix
 from pyomo.util.check_units import assert_units_consistent
-
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
-    ADM1ParameterBlock,
-    ADM1StateBlock,
-    ADM1PropertiesScaler,
+from watertap.property_models.unit_specific.activated_sludge.asm3_properties import (
+    ASM3ParameterBlock,
+    ASM3StateBlock,
+    ASM3PropertiesScaler,
 )
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
@@ -43,50 +41,38 @@ class TestParamBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ADM1ParameterBlock()
+        model.params = ASM3ParameterBlock()
 
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.params.state_block_class is ADM1StateBlock
+        assert model.params.state_block_class is ASM3StateBlock
 
         assert len(model.params.phase_list) == 1
         for i in model.params.phase_list:
             assert i == "Liq"
 
-        assert len(model.params.component_list) == 27
+        assert len(model.params.component_list) == 14
         for i in model.params.component_list:
             assert i in [
                 "H2O",
-                "S_su",
-                "S_aa",
-                "S_fa",
-                "S_va",
-                "S_bu",
-                "S_pro",
-                "S_ac",
-                "S_h2",
-                "S_ch4",
-                "S_IC",
-                "S_IN",
+                "S_O",
                 "S_I",
-                "X_c",
-                "X_ch",
-                "X_pr",
-                "X_li",
-                "X_su",
-                "X_aa",
-                "X_fa",
-                "X_c4",
-                "X_pro",
-                "X_ac",
-                "X_h2",
+                "S_S",
+                "X_S",
+                "S_NH4",
+                "S_N2",
+                "S_NOX",
+                "S_ALK",
                 "X_I",
-                "S_cat",
-                "S_an",
+                "X_S",
+                "X_H",
+                "X_STO",
+                "X_A",
+                "X_TSS",
             ]
-
+        #
         assert isinstance(model.params.cp_mass, Param)
         assert value(model.params.cp_mass) == 4182
 
@@ -99,12 +85,37 @@ class TestParamBlock(object):
         assert isinstance(model.params.temperature_ref, Param)
         assert value(model.params.temperature_ref) == 298.15
 
+        assert len(model.params.particulate_component_set) == 6
+        assert len(model.params.non_particulate_component_set) == 8
+        for i in model.params.particulate_component_set:
+            assert i in [
+                "X_I",
+                "X_S",
+                "X_H",
+                "X_STO",
+                "X_A",
+                "X_TSS",
+            ]
+
+        for i in model.params.non_particulate_component_set:
+            assert i in [
+                "H2O",
+                "S_O",
+                "S_I",
+                "S_S",
+                "X_S",
+                "S_NH4",
+                "S_N2",
+                "S_NOX",
+                "S_ALK",
+            ]
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = ADM1ParameterBlock()
+        model.params = ASM3ParameterBlock()
 
         model.props = model.params.build_state_block([1])
 
@@ -112,7 +123,7 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.props[1].default_scaler is ADM1PropertiesScaler
+        assert model.props[1].default_scaler is ASM3PropertiesScaler
 
         assert isinstance(model.props[1].flow_vol, Var)
         assert value(model.props[1].flow_vol) == 1
@@ -123,69 +134,100 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].temperature, Var)
         assert value(model.props[1].temperature) == 298.15
 
-        assert isinstance(model.props[1].anions, Var)
-        assert value(model.props[1].anions) == 0.02
-
-        assert isinstance(model.props[1].cations, Var)
-        assert value(model.props[1].cations) == 0.04
+        assert isinstance(model.props[1].alkalinity, Var)
+        assert value(model.props[1].alkalinity) == 1
 
         assert isinstance(model.props[1].conc_mass_comp, Var)
-
-        assert len(model.props[1].conc_mass_comp) == 24
-        Comp_dict = {
-            "S_su": 0.012,
-            "S_aa": 0.0053,
-            "S_fa": 0.099,
-            "S_va": 0.012,
-            "S_bu": 0.013,
-            "S_pro": 0.016,
-            "S_ac": 0.20,
-            "S_h2": 2.3e-7,
-            "S_ch4": 0.055,
-            "S_IC": 0.15 * 12,
-            "S_IN": 0.13 * 14,
-            "S_I": 0.33,
-            "X_c": 0.31,
-            "X_ch": 0.028,
-            "X_pr": 0.10,
-            "X_li": 0.029,
-            "X_su": 0.42,
-            "X_aa": 1.18,
-            "X_fa": 0.24,
-            "X_c4": 0.43,
-            "X_pro": 0.14,
-            "X_ac": 0.76,
-            "X_h2": 0.32,
-            "X_I": 25.6,
-        }
+        # H2O should not appear in conc_mass_comp
+        assert len(model.props[1].conc_mass_comp) == 12
         for i in model.props[1].conc_mass_comp:
             assert i in [
-                "S_su",
-                "S_aa",
-                "S_fa",
-                "S_va",
-                "S_bu",
-                "S_pro",
-                "S_ac",
-                "S_h2",
-                "S_ch4",
-                "S_IC",
-                "S_IN",
+                "S_O",
                 "S_I",
-                "X_c",
-                "X_ch",
-                "X_pr",
-                "X_li",
-                "X_su",
-                "X_aa",
-                "X_fa",
-                "X_c4",
-                "X_pro",
-                "X_ac",
-                "X_h2",
+                "S_S",
+                "X_S",
+                "S_NH4",
+                "S_N2",
+                "S_NOX",
+                "S_ALK",
                 "X_I",
+                "X_S",
+                "X_H",
+                "X_STO",
+                "X_A",
+                "X_TSS",
             ]
-            assert value(model.props[1].conc_mass_comp[i]) == Comp_dict[i]
+            assert value(model.props[1].conc_mass_comp[i]) == 0.1
+
+        assert isinstance(model.props[1].params.f_SI, Var)
+        assert value(model.props[1].params.f_SI) == 0
+        assert isinstance(model.props[1].params.f_XI, Var)
+        assert value(model.props[1].params.f_XI) == 0.2
+        assert isinstance(model.props[1].params.i_NSI, Var)
+        assert value(model.props[1].params.i_NSI) == 0.01
+        assert isinstance(model.props[1].params.i_NSS, Var)
+        assert value(model.props[1].params.i_NSS) == 0.03
+        assert isinstance(model.props[1].params.i_NXI, Var)
+        assert value(model.props[1].params.i_NXI) == 0.02
+        assert isinstance(model.props[1].params.i_NXS, Var)
+        assert value(model.props[1].params.i_NXS) == 0.04
+        assert isinstance(model.props[1].params.i_NBM, Var)
+        assert value(model.props[1].params.i_NBM) == 0.07
+        assert isinstance(model.props[1].params.i_SSXI, Var)
+        assert value(model.props[1].params.i_SSXI) == 0.75
+        assert isinstance(model.props[1].params.i_SSXS, Var)
+        assert value(model.props[1].params.i_SSXS) == 0.75
+        assert isinstance(model.props[1].params.i_SSBM, Var)
+        assert value(model.props[1].params.i_SSBM) == 0.90
+        assert isinstance(model.props[1].params.i_SSSTO, Var)
+        assert value(model.props[1].params.i_SSSTO) == 0.60
+
+        assert isinstance(model.props[1].material_flow_expression, Expression)
+        for j in model.params.component_list:
+            if j == "H2O":
+                assert str(model.props[1].material_flow_expression[j].expr) == str(
+                    model.props[1].flow_vol * model.props[1].params.dens_mass
+                )
+            elif j == "S_ALK":
+                assert str(model.props[1].material_flow_expression[j].expr) == str(
+                    model.props[1].flow_vol
+                    * model.props[1].alkalinity
+                    * (61 * units.kg / units.kmol)
+                )
+            else:
+                assert str(model.props[1].material_flow_expression[j].expr) == str(
+                    model.props[1].flow_vol * model.props[1].conc_mass_comp[j]
+                )
+
+        assert isinstance(model.props[1].enthalpy_flow_expression, Expression)
+        assert str(model.props[1].enthalpy_flow_expression.expr) == str(
+            model.props[1].flow_vol
+            * model.props[1].params.dens_mass
+            * model.props[1].params.cp_mass
+            * (model.props[1].temperature - model.props[1].params.temperature_ref)
+        )
+
+        assert isinstance(model.props[1].material_density_expression, Expression)
+        for j in model.params.component_list:
+            if j == "H2O":
+                assert model.props[1].material_density_expression[j].expr is (
+                    model.props[1].params.dens_mass
+                )
+            elif j == "S_ALK":
+                assert str(model.props[1].material_density_expression[j].expr) == str(
+                    model.props[1].alkalinity * (12 * units.kg / units.kmol)
+                )
+            else:
+                assert str(model.props[1].material_density_expression[j].expr) == str(
+                    model.props[1].conc_mass_comp[j]
+                )
+
+        assert isinstance(model.props[1].energy_density_expression, Expression)
+        assert str(model.props[1].energy_density_expression.expr) == str(
+            model.props[1].params.dens_mass
+            * model.props[1].params.cp_mass
+            * (model.props[1].temperature - model.props[1].params.temperature_ref)
+        )
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
@@ -239,42 +281,39 @@ class TestStateBlock(object):
     def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
 
-        assert len(sv) == 6
+        assert len(sv) == 5
         for i in sv:
             assert i in [
                 "flow_vol",
-                "pressure",
-                "temperature",
+                "alkalinity",
                 "conc_mass_comp",
-                "anions",
-                "cations",
+                "temperature",
+                "pressure",
             ]
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.props[1].define_port_members()
 
-        assert len(sv) == 6
+        assert len(sv) == 5
         for i in sv:
             assert i in [
                 "flow_vol",
-                "pressure",
-                "temperature",
+                "alkalinity",
                 "conc_mass_comp",
-                "anions",
-                "cations",
+                "temperature",
+                "pressure",
             ]
 
     @pytest.mark.unit
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
 
-        assert len(sv) == 6
+        assert len(sv) == 5
         for i in sv:
             assert i in [
                 "Volumetric Flowrate",
-                "Molar anions",
-                "Molar cations",
+                "Molar Alkalinity",
                 "Mass Concentration",
                 "Temperature",
                 "Pressure",
@@ -302,53 +341,61 @@ class TestStateBlock(object):
     def check_units(self, model):
         assert_units_consistent(model)
 
+    @pytest.mark.unit
+    def test_expressions(self, model):
+        assert value(model.props[1].TSS) == 0.1
+        assert value(model.props[1].COD) == pytest.approx(0.5, rel=1e-3)
+        assert value(model.props[1].TKN) == pytest.approx(0.124, rel=1e-3)
+        assert value(model.props[1].Total_N) == pytest.approx(0.224, rel=1e-3)
 
-class TestADM1PropertiesScaler:
+
+class TestASM3PropertiesScaler:
     @pytest.mark.unit
     def test_variable_scaling_routine(self):
         model = ConcreteModel()
-        model.params = ADM1ParameterBlock()
+        model.params = ASM3ParameterBlock()
 
         model.props = model.params.build_state_block([1], defined_state=False)
 
         scaler = model.props[1].default_scaler()
-        assert isinstance(scaler, ADM1PropertiesScaler)
+        assert isinstance(scaler, ASM3PropertiesScaler)
 
         scaler.variable_scaling_routine(model.props[1])
 
         sfx = model.props[1].scaling_factor
-        # Scaling factors for FTPx
-        assert len(sfx) == 27
-        assert sfx[model.props[1].flow_vol] == pytest.approx(1e3, rel=1e-8)
+        assert len(sfx) == 3
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
 
     @pytest.mark.unit
     def test_constraint_scaling_routine(self):
         model = ConcreteModel()
-        model.params = ADM1ParameterBlock()
+        model.params = ASM3ParameterBlock()
 
         model.props = model.params.build_state_block([1], defined_state=False)
 
         scaler = model.props[1].default_scaler()
-        assert isinstance(scaler, ADM1PropertiesScaler)
+        assert isinstance(scaler, ASM3PropertiesScaler)
 
         scaler.constraint_scaling_routine(model.props[1])
 
     @pytest.mark.unit
     def test_scale_model(self):
         model = ConcreteModel()
-        model.params = ADM1ParameterBlock()
+        model.params = ASM3ParameterBlock()
 
         model.props = model.params.build_state_block([1], defined_state=False)
 
         scaler = model.props[1].default_scaler()
-        assert isinstance(scaler, ADM1PropertiesScaler)
+        assert isinstance(scaler, ASM3PropertiesScaler)
 
         scaler.scale_model(model.props[1])
 
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        # Scaling factors for FTPx
-        assert len(sfx) == 27
+        assert len(sfx) == 3
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
