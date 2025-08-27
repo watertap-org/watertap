@@ -51,7 +51,7 @@ surr_dir = f"{os.path.dirname(os.path.dirname(__location__))}/data/surrogate_def
 min_N_St_surr_path = f"{surr_dir}/min_N_St_surrogate.json"
 throughput_surr_path = f"{surr_dir}/throughput_surrogate.json"
 
-# ---------------------------------------------------------------------
+
 class CPHSDMCalculationMethod(StrEnum):
     input = "input"  # calculate CPHSDM model by inputting empirical parameters
     surrogate = "surrogate"  # calculate CPHSDM model using pre-trained surrogate
@@ -499,14 +499,6 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         def Bi_overall(b):  # Cheng SI; Eq. S3.4
             return 1 / ((1 / b.Bi_pore) + (1 / b.Bi_surf))
 
-        @self.Expression(doc="Film mass transfer coefficient- alternative calc.")
-        def kf(b):  # Cheng SI; Eq. S3.3
-            return (
-                prop_in.diffus_phase_comp["Liq", target_component]
-                * b.shape_correction_factor
-                * b.Sh
-            ) / b.resin_diam
-
         @self.Constraint(
             self.target_component_set,
             doc="Freundlich isotherm",
@@ -589,24 +581,36 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                 == regen.flow_mass_phase_comp["Liq", j] * b.breakthrough_time
             )
 
-        @self.Constraint(doc="Regeneration stream flow rate")
-        def eq_regen_flow_rate(b):
-            return regen.flow_vol_phase["Liq"] == pyunits.convert(
-                b.rinse_flow_rate * (b.rinse_time / b.cycle_time)
-                + b.backwash_flow_rate * (b.backwash_time / b.cycle_time)
-                + b.regen_flow_rate * (b.regeneration_time / b.cycle_time),
-                to_units=pyunits.m**3 / pyunits.s,
-            )
-
-        @self.Constraint(self.target_component_set, doc="Regeneration stream mass flow")
-        def eq_mass_transfer_regen(b, j):
-            return (
-                regen.get_material_flow_terms("Liq", j)
-                == -b.process_flow.mass_transfer_term[0, "Liq", j]
-            )
-
         if self.config.add_steady_state_approximation:
             add_ss_approximation(self, ix_model_type="cphsdm")
+        else:
+
+            @self.Constraint(
+                self.target_component_set,
+                doc="CV mass transfer term",
+            )
+            def eq_mass_transfer_term(b, j):
+                return (1 - b.c_norm[j]) * prop_in.get_material_flow_terms(
+                    "Liq", j
+                ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
+
+            @self.Constraint(
+                self.target_component_set, doc="Regeneration stream mass flow"
+            )
+            def eq_mass_transfer_regen(b, j):
+                return (
+                    regen.get_material_flow_terms("Liq", j)
+                    == -b.process_flow.mass_transfer_term[0, "Liq", j]
+                )
+
+            @self.Constraint(doc="Regeneration stream flow rate")
+            def eq_regen_flow_rate(b):
+                return regen.flow_vol_phase["Liq"] == pyunits.convert(
+                    b.rinse_flow_rate * (b.rinse_time / b.cycle_time)
+                    + b.backwash_flow_rate * (b.backwash_time / b.cycle_time)
+                    + b.regen_flow_rate * (b.regeneration_time / b.cycle_time),
+                    to_units=pyunits.m**3 / pyunits.s,
+                )
 
     def initialize_build(
         self,
@@ -776,10 +780,11 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                 default=1e-3,
                 warning=True,
             )
-            iscale.set_scaling_factor(
-                self.regeneration_stream[0].flow_mol_phase_comp["Liq", "H2O"],
-                sf_solvent * 100,
-            )
+            if self.config.add_steady_state_approximation:
+                iscale.set_scaling_factor(
+                    self.regeneration_stream[0].flow_mol_phase_comp["Liq", "H2O"],
+                    sf_solvent * 100,
+                )
         if self.flow_basis == MaterialFlowBasis.mass:
             sf_solute = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mass_phase_comp[
@@ -799,10 +804,11 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                 default=1e-2,
                 warning=True,
             )
-            iscale.set_scaling_factor(
-                self.regeneration_stream[0].flow_mass_phase_comp["Liq", "H2O"],
-                sf_solvent * 100,
-            )
+            if self.config.add_steady_state_approximation:
+                iscale.set_scaling_factor(
+                    self.regeneration_stream[0].flow_mass_phase_comp["Liq", "H2O"],
+                    sf_solvent * 100,
+                )
 
         # sf_volume based on magnitude of 0.018 water mw and 1000 dens
         sf_volume = sf_solvent * (100 / 0.01)
@@ -879,22 +885,9 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             iscale.set_scaling_factor(self.b4, 1)
 
         if self.config.add_steady_state_approximation:
-            for trap in self.trap_disc:
-                if iscale.get_scaling_factor(self.c_traps[trap]) is None:
-                    iscale.set_scaling_factor(self.c_traps[trap], 10)
-
-                if iscale.get_scaling_factor(self.tb_traps[trap]) is None:
-                    iscale.set_scaling_factor(self.tb_traps[trap], 1e-6)
-
             for trap in self.trap_index:
                 if iscale.get_scaling_factor(self.throughput_traps[trap]) is None:
                     iscale.set_scaling_factor(self.throughput_traps[trap], 1)
 
                 if iscale.get_scaling_factor(self.min_tb_traps[trap]) is None:
                     iscale.set_scaling_factor(self.min_tb_traps[trap], 1e-6)
-
-                if iscale.get_scaling_factor(self.traps[trap]) is None:
-                    iscale.set_scaling_factor(self.traps[trap], 1e2)
-
-            if iscale.get_scaling_factor(self.c_norm_avg) is None:
-                iscale.set_scaling_factor(self.c_norm_avg, 10)
