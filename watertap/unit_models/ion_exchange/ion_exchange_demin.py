@@ -51,6 +51,7 @@ class IonExchangeDeminData(IonExchangeBaseData):
         super().build()
 
         self.ion_exchange_type = IonExchangeType.demineralize
+        self.config.add_steady_state_approximation = False
 
         prop_in = self.process_flow.properties_in[0]
         regen = self.regeneration_stream[0]
@@ -59,6 +60,7 @@ class IonExchangeDeminData(IonExchangeBaseData):
             self.config.property_package.anion_set
             | self.config.property_package.cation_set
         )
+
         for j in self.config.property_package.neutral_set:
             self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
             regen.get_material_flow_terms("Liq", j).fix(0)
