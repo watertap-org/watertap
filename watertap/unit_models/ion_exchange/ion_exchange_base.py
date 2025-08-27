@@ -918,18 +918,6 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
                 to_units=pyunits.m**3,
             )
 
-        @self.Constraint(
-            doc="Isothermal assumption for regen stream",
-        )
-        def eq_isothermal_regen_stream(b):
-            return prop_in.temperature == regen.temperature
-
-        @self.Constraint(
-            doc="Isobaric assumption for regen stream",
-        )
-        def eq_isobaric_regen_stream(b):
-            return prop_in.pressure == regen.pressure
-
         @self.Expression(doc="Bed expansion from backwashing")
         def bed_expansion_h(b):
             return b.bed_expansion_frac * b.bed_depth
@@ -966,6 +954,18 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             return b.number_columns + b.number_columns_redundant
 
         # ==========CONSTRAINTS==========
+
+        @self.Constraint(
+            doc="Isothermal assumption for regen stream",
+        )
+        def eq_isothermal_regen_stream(b):
+            return prop_in.temperature == regen.temperature
+
+        @self.Constraint(
+            doc="Isobaric assumption for regen stream",
+        )
+        def eq_isobaric_regen_stream(b):
+            return prop_in.pressure == regen.pressure
 
         @self.Constraint(doc="Reynolds number")
         def eq_Re(b):  # Eq. 3.358, Inglezakis + Poulopoulos
@@ -1154,7 +1154,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.number_columns_redundant, 1)
 
         if iscale.get_scaling_factor(self.bed_volume_total) is None:
-            iscale.set_scaling_factor(self.bed_volume_total, 0.1)
+            iscale.set_scaling_factor(self.bed_volume_total, 1)
 
         if iscale.get_scaling_factor(self.bed_depth) is None:
             iscale.set_scaling_factor(self.bed_depth, 1)
@@ -1182,6 +1182,21 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.bed_depth_to_diam_ratio) is None:
             iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 1)
+
+        if self.config.add_steady_state_approximation:
+            for trap in self.trap_disc:
+                if iscale.get_scaling_factor(self.c_traps[trap]) is None:
+                    iscale.set_scaling_factor(self.c_traps[trap], 10)
+
+                if iscale.get_scaling_factor(self.tb_traps[trap]) is None:
+                    iscale.set_scaling_factor(self.tb_traps[trap], 1e-6)
+
+            for trap in self.trap_index:
+                if iscale.get_scaling_factor(self.traps[trap]) is None:
+                    iscale.set_scaling_factor(self.traps[trap], 1e2)
+
+            if iscale.get_scaling_factor(self.c_norm_avg) is None:
+                iscale.set_scaling_factor(self.c_norm_avg, 10)
 
     def _get_stream_table_contents(self, time_point=0):
 
@@ -1379,3 +1394,19 @@ def add_ss_approximation(blk, ix_model_type=None):
         return (1 - b.c_norm_avg[j]) * prop_in.get_material_flow_terms(
             "Liq", j
         ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
+
+    @blk.Constraint(blk.target_component_set, doc="Regeneration stream mass flow")
+    def eq_mass_transfer_regen(b, j):
+        return (
+            b.regeneration_stream[0].get_material_flow_terms("Liq", j)
+            == -b.process_flow.mass_transfer_term[0, "Liq", j]
+        )
+
+    @blk.Constraint(doc="Regeneration stream flow rate")
+    def eq_regen_flow_rate(b):
+        return b.regeneration_stream[0].flow_vol_phase["Liq"] == pyunits.convert(
+            b.rinse_flow_rate * (b.rinse_time / b.cycle_time)
+            + b.backwash_flow_rate * (b.backwash_time / b.cycle_time)
+            + b.regen_flow_rate * (b.regeneration_time / b.cycle_time),
+            to_units=pyunits.m**3 / pyunits.s,
+        )
