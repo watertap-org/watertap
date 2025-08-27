@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with ADM1 reactions.
+Thermophysical property package to be used in conjunction with ASM3 reactions.
 """
 
 # Import Pyomo libraries
@@ -20,32 +20,31 @@ import pyomo.environ as pyo
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
-    PhysicalParameterBlock,
     StateBlockData,
     StateBlock,
     MaterialBalanceType,
     EnergyBalanceType,
-    VaporPhase,
+    LiquidPhase,
     Component,
     Solute,
+    Solvent,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
+from idaes.core.scaling import CustomScalerBase
 import idaes.logger as idaeslog
+from idaes.core.base.property_base import PhysicalParameterBlock
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego, Xinhong Liu"
-
+__author__ = "Chenyu Wang"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ADM1_vaporParameterBlock")
-class ADM1_vaporParameterData(PhysicalParameterBlock):
+@declare_process_block_class("ASM3ParameterBlock")
+class ASM3ParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -56,29 +55,63 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = ADM1_vaporStateBlock
+        self._state_block_class = ASM3StateBlock
 
         # Add Phase objects
-        self.Vap = VaporPhase()
+        self.Liq = LiquidPhase()
 
         # Add Component objects
-        self.H2O = Component()
+        self.H2O = Solvent()
 
-        # All soluble components on kg COD/m^3 basis
-        self.S_h2 = Solute(doc="Hydrogen gas")
-        self.S_ch4 = Solute(doc="Methane gas")
-        self.S_co2 = Solute(doc="Carbon dioxide")
+        # Soluble Components
+        self.S_O = Solute(doc="Dissolved Oxygen, S_O")
+        self.S_I = Solute(doc="Inert soluble organic material, S_I")
+        self.S_S = Solute(doc="Readily biodegradable substrates, S_S")
+        self.S_NH4 = Solute(
+            doc="Ammonium plus ammonia nitrogen (NH4+ + NH3 nitrogen), S_NH4"
+        )
+        self.S_N2 = Solute(doc="Dinitrogen (N2), S_N2")
+        self.S_NOX = Solute(
+            doc="Nitrate plus nitrite nitrogen (NO3- + NO2- nitrogen), S_NOX"
+        )
+        self.S_ALK = Component(doc="Alkalinity (HCO3-), S_ALK")
+
+        # Particulate Components
+        self.X_I = Solute(doc="Inert particulate organic matter, X_I")
+        self.X_S = Solute(doc="Slowly biodegradable substrates, X_S")
+        self.X_H = Solute(doc="Heterotrophic organisms, X_H")
+        self.X_STO = Solute(
+            doc="A cell internal storage product of heterotrophic organisms, X_STO"
+        )
+        self.X_A = Solute(doc="Nitrifying organisms, X_A")
+        self.X_TSS = Solute(doc="Total suspended solids, X_TSS")
+
+        # Create sets for use across ASM models and associated unit models (e.g., thickener, dewaterer)
+        self.non_particulate_component_set = pyo.Set(
+            initialize=[
+                "S_O",
+                "S_I",
+                "S_S",
+                "S_NH4",
+                "S_N2",
+                "S_NOX",
+                "S_ALK",
+                "H2O",
+            ]
+        )
+        self.particulate_component_set = pyo.Set(
+            initialize=["X_I", "X_S", "X_H", "X_STO", "X_A", "X_TSS"]
+        )
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
-            initialize=1.996,
+            initialize=4182,
             doc="Specific heat capacity of water",
             units=pyo.units.J / pyo.units.kg / pyo.units.K,
         )
         # Density of water
         self.dens_mass = pyo.Param(
-            # initialize=0.927613356,
-            initialize=0.01,
+            initialize=997,
             doc="Density of water",
             units=pyo.units.kg / pyo.units.m**3,
         )
@@ -99,6 +132,78 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
             units=pyo.units.K,
         )
 
+        # Typical stoichiometric and composition parametersfor ASM3
+        self.f_SI = pyo.Var(
+            initialize=0,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of S_I in hydrolysis (g-COD-S_I / g-COD-X_S)",
+        )
+        self.f_XI = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.dimensionless,
+            domain=pyo.NonNegativeReals,
+            doc="Production of X_I in endog. respiration (g-COD-X_I / g-COD-X_BM)",
+        )
+        self.i_NSI = pyo.Var(
+            initialize=0.01,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="N content of S_I (g-N / g-COD-S_I)",
+        )
+        self.i_NSS = pyo.Var(
+            initialize=0.03,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="N content of S_S (g-N / g-COD-S_S)",
+        )
+        self.i_NXI = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="N content of X_I (g-N / g-COD-X_I)",
+        )
+        self.i_NXS = pyo.Var(
+            initialize=0.04,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="N content of X_S (g-N / g-COD-X_S)",
+        )
+        self.i_NBM = pyo.Var(
+            initialize=0.07,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="N content of biomass, X_H, X_A (g-N / g-COD-X_H or X_A)",
+        )
+        self.i_SSXI = pyo.Var(
+            initialize=0.75,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for X_I (g-TSS / g-COD-X_I)",
+        )
+        self.i_SSXS = pyo.Var(
+            initialize=0.75,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for X_S (g-TSS / g-COD-X_S)",
+        )
+        self.i_SSBM = pyo.Var(
+            initialize=0.90,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for for biomass,X_H, X_A (g-TSS / g-COD-X_H or X_A)",
+        )
+        self.i_SSSTO = pyo.Var(
+            initialize=0.60,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="TSS to COD ratio for X_STO based on PHB (g-TSS / g-X_STO)",
+        )
+
+        # Fix Vars that are treated as Params
+        for v in self.component_objects(pyo.Var):
+            v.fix()
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
@@ -107,7 +212,16 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
-                "pressure_sat": {"method": None},
+            }
+        )
+        obj.define_custom_properties(
+            {
+                "alkalinity": {"method": None},
+                "TSS": {"method": "_TSS"},
+                # "BOD5": {"method": "_BOD5"},
+                "TKN": {"method": "_TKN"},
+                "Total_N": {"method": "_Total_N"},
+                "COD": {"method": "_COD"},
             }
         )
         obj.add_default_units(
@@ -121,11 +235,45 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
         )
 
 
-class _ADM1_vaporStateBlock(StateBlock):
+class ASM3PropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Activated Sludge Model No.1 property package.
+
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Pressure": (pyo.units.Pa, 1e-6),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e1,
+        "temperature": 1e-1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+
+    # There are currently no constraints in this model
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        pass
+
+
+class _ASM3StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_scaler = ASM3PropertiesScaler
 
     def initialize(
         self,
@@ -146,7 +294,9 @@ class _ADM1_vaporStateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-            flow_mol_comp : value at which to initialize component flows (default=None)
+            flow_vol : value at which to initialize total volumetric flow (default=None)
+            alkalinity: value of alkalinity expressed as molar concentration
+            conc_mass_comp : value at which to initialize component concentrations (default=None)
             pressure : value at which to initialize pressure (default=None)
             temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine
@@ -167,8 +317,7 @@ class _ADM1_vaporStateBlock(StateBlock):
                          a dict of returned containing flags for
                          which states were fixed during initialization.
                          False - state variables are unfixed after
-                         initialization by calling the
-                         release_state method
+                         initialization by calling the release_state method.
 
         Returns:
             If hold_states is True, returns a dict containing flags for
@@ -200,14 +349,14 @@ class _ADM1_vaporStateBlock(StateBlock):
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to release state variables fixed during initialization.
+        Method to relase state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
-            outlvl : sets output level of logging
+            outlvl : sets output level of of logging
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
@@ -218,56 +367,12 @@ class _ADM1_vaporStateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-class ADM1VaporPropertiesScaler(CustomScalerBase):
+@declare_process_block_class("ASM3StateBlock", block_class=_ASM3StateBlock)
+class ASM3StateBlockData(StateBlockData):
     """
-    Scaler for the Anaerobic Digestion Model No.1 vapor property package.
-    Flow and temperature are scaled by the default value (if no user input provided), and
-    pressure is scaled assuming an order of magnitude of 1e5 Pa.
-    """
-
-    UNIT_SCALING_FACTORS = {
-        # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyo.units.Pa, 1e-6),
-    }
-
-    DEFAULT_SCALING_FACTORS = {
-        "flow_vol": 1e2,
-        "temperature": 1e-1,
-        "conc_mass_comp": 1e2,
-        "pressure_sat": 1e-3,
-    }
-
-    def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
-        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
-        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
-        for c in model.params.component_list:
-            self.scale_variable_by_default(model.pressure_sat[c], overwrite=overwrite)
-        for c in model.params.solute_set:
-            self.scale_variable_by_default(model.conc_mass_comp[c], overwrite=overwrite)
-
-    # There are currently no constraints in this model
-    def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        for c in model.component_data_objects(pyo.Constraint, descend_into=True):
-            self.scale_constraint_by_nominal_value(
-                c,
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
-
-
-@declare_process_block_class("ADM1_vaporStateBlock", block_class=_ADM1_vaporStateBlock)
-class ADM1_vaporStateBlockData(StateBlockData):
-    """
-    StateBlock for calculating thermophysical properties associated with the ADM1
+    StateBlock for calculating thermophysical properties associated with the ASM3
     reaction system.
     """
-
-    default_scaler = ADM1VaporPropertiesScaler
 
     def build(self):
         """
@@ -277,7 +382,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
 
         # Create state variables
         self.flow_vol = pyo.Var(
-            initialize=1,
+            initialize=1.0,
             domain=pyo.NonNegativeReals,
             doc="Total volumetric flowrate",
             units=pyo.units.m**3 / pyo.units.s,
@@ -296,75 +401,31 @@ class ADM1_vaporStateBlockData(StateBlockData):
             doc="Temperature",
             units=pyo.units.K,
         )
-
-        Comp_dict = {"S_ch4": 1.6256, "S_co2": 0.01415 * 12, "S_h2": 1e-5}
-
         self.conc_mass_comp = pyo.Var(
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
-            initialize=Comp_dict,
+            initialize=0.1,
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )
-
-        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639, "H2O": 5570}
-
-        self.pressure_sat = pyo.Var(
-            self.params.component_list,
+        self.alkalinity = pyo.Var(
             domain=pyo.NonNegativeReals,
-            initialize=init,
-            doc="Component pressure",
-            units=pyo.units.Pa,
+            initialize=1,
+            doc="Alkalinity in molar concentration",
+            units=pyo.units.kmol / pyo.units.m**3,
         )
 
-        def pressure_sat_rule(b, j):
-            if j == "S_h2":
-                return b.pressure_sat[j] == pyo.units.convert(
-                    b.conc_mass_comp[j]
-                    * (1000 * pyo.units.g / pyo.units.kg)
-                    * Constants.gas_constant
-                    * b.temperature
-                    / (16 * pyo.units.g / pyo.units.mole),
-                    to_units=pyo.units.Pa,
-                )
-            elif j == "S_ch4":
-                return b.pressure_sat[j] == pyo.units.convert(
-                    b.conc_mass_comp[j]
-                    * (1000 * pyo.units.g / pyo.units.kg)
-                    * Constants.gas_constant
-                    * b.temperature
-                    / (64 * pyo.units.g / pyo.units.mole),
-                    to_units=pyo.units.Pa,
-                )
-            elif j == "H2O":
-                return pyo.log(b.pressure_sat[j] / pyo.units.Pa) == (
-                    pyo.log(0.0313)
-                    + 5290
-                    * pyo.units.K
-                    * ((1 / b.params.temperature_ref) - (1 / b.temperature))
-                    + pyo.log(1e5)
-                )
-            elif j == "S_co2":
-                return b.pressure_sat[j] == pyo.units.convert(
-                    b.conc_mass_comp[j]
-                    * (1000 * pyo.units.g / pyo.units.kg)
-                    * Constants.gas_constant
-                    * b.temperature
-                    / (12 * pyo.units.g / pyo.units.mole),
-                    to_units=pyo.units.Pa,
-                )
-            else:
-                raise Exception("Vapor component not implemented.")
-
-        self._pressure_sat = pyo.Constraint(
-            self.params.component_list,
-            rule=pressure_sat_rule,
-            doc="Saturation pressure for components",
-        )
-
+        # Material and energy flow and density expressions
         def material_flow_expression(self, j):
             if j == "H2O":
                 return self.flow_vol * self.params.dens_mass
+            elif j == "S_ALK":
+                # Convert moles of alkalinity to mass assuming all is HCO3-
+                return (
+                    self.flow_vol
+                    * self.alkalinity
+                    * (61 * pyo.units.kg / pyo.units.kmol)
+                )
             else:
                 return self.flow_vol * self.conc_mass_comp[j]
 
@@ -389,6 +450,9 @@ class ADM1_vaporStateBlockData(StateBlockData):
         def material_density_expression(self, j):
             if j == "H2O":
                 return self.params.dens_mass
+            elif j == "S_ALK":
+                # Convert moles of alkalinity to mass of C assuming all is HCO3-
+                return self.alkalinity * (12 * pyo.units.kg / pyo.units.kmol)
             else:
                 return self.conc_mass_comp[j]
 
@@ -407,6 +471,56 @@ class ADM1_vaporStateBlockData(StateBlockData):
 
         self.energy_density_expression = pyo.Expression(
             rule=energy_density_expression, doc="Energy density term"
+        )
+
+        def _TSS(self):
+            tss = self.conc_mass_comp["X_TSS"]
+            return tss
+
+        self.TSS = pyo.Expression(
+            rule=_TSS,
+            doc="Total suspended solids (TSS)",
+        )
+
+        def _COD(self):
+            cod = (
+                self.conc_mass_comp["S_S"]
+                + self.conc_mass_comp["S_I"]
+                + self.conc_mass_comp["X_S"]
+                + self.conc_mass_comp["X_I"]
+                + self.conc_mass_comp["X_STO"]
+            )
+            return cod
+
+        self.COD = pyo.Expression(
+            rule=_COD,
+            doc="Chemical Oxygen Demand",
+        )
+
+        def _TKN(self):
+            tkn = (
+                self.conc_mass_comp["S_NH4"]
+                + self.params.i_NSS * self.conc_mass_comp["S_S"]
+                + self.params.i_NSI * self.conc_mass_comp["S_I"]
+                + self.params.i_NXI * self.conc_mass_comp["X_I"]
+                + self.params.i_NXS * self.conc_mass_comp["X_S"]
+                + self.params.i_NBM
+                * (self.conc_mass_comp["X_H"] + self.conc_mass_comp["X_A"])
+            )
+            return tkn
+
+        self.TKN = pyo.Expression(
+            rule=_TKN,
+            doc="Total Kjeldahl Nitrogen",
+        )
+
+        def _Total_N(self):
+            totaln = self.TKN + self.conc_mass_comp["S_NOX"]
+            return totaln
+
+        self.Total_N = pyo.Expression(
+            rule=_Total_N,
+            doc="Total Nitrogen",
         )
 
     def get_material_flow_terms(self, p, j):
@@ -430,6 +544,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
     def define_state_vars(self):
         return {
             "flow_vol": self.flow_vol,
+            "alkalinity": self.alkalinity,
             "conc_mass_comp": self.conc_mass_comp,
             "temperature": self.temperature,
             "pressure": self.pressure,
@@ -438,6 +553,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
     def define_display_vars(self):
         return {
             "Volumetric Flowrate": self.flow_vol,
+            "Molar Alkalinity": self.alkalinity,
             "Mass Concentration": self.conc_mass_comp,
             "Temperature": self.temperature,
             "Pressure": self.pressure,
@@ -450,14 +566,6 @@ class ADM1_vaporStateBlockData(StateBlockData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        iscale.set_scaling_factor(self.flow_vol, 1e5)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-3)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e3)
-        iscale.set_scaling_factor(self.pressure_sat, 1e-3)
-        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-2)
-
         # No constraints in this model as yet, just need to set scaling factors
         # for expressions
         sf_F = iscale.get_scaling_factor(self.flow_vol, default=1e2, warning=True)
@@ -467,6 +575,10 @@ class ADM1_vaporStateBlockData(StateBlockData):
         for j in self.component_list:
             if j == "H2O":
                 sf_C = pyo.value(1 / self.params.dens_mass)
+            elif j == "S_ALK":
+                sf_C = 1e-1 * iscale.get_scaling_factor(
+                    self.alkalinity, default=1, warning=True
+                )
             else:
                 sf_C = iscale.get_scaling_factor(
                     self.conc_mass_comp[j], default=1e2, warning=True
@@ -481,13 +593,3 @@ class ADM1_vaporStateBlockData(StateBlockData):
             self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
         )
         iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
-
-        for t, v in self._pressure_sat.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.pressure_sat,
-                    default=1,
-                    warning=True,
-                ),
-            )
