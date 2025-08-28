@@ -268,8 +268,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Unit model data, activated sludge process
+    fs.reactor_volume1 = 1000
+    fs.reactor_volume2 = 1333
     exports.add(
-        obj=1000,
+        obj=fs.reactor_volume1,
         name="First anoxic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -280,7 +282,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=1000,
+        obj=fs.reactor_volume1,
         name="Second anoxic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -291,7 +293,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=1333,
+        obj=fs.reactor_volume2,
         name="First aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -302,7 +304,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=1333,
+        obj=fs.reactor_volume2,
         name="Second aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -313,7 +315,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=1333,
+        obj=fs.reactor_volume2,
         name="Third aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
