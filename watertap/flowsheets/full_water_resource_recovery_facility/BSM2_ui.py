@@ -268,8 +268,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Unit model data, activated sludge process
-    fs.reactor_volume1 = 1000
-    fs.reactor_volume2 = 1333
+    fs.reactor_volume1 = 1000 * pyunits.m**3
+    fs.reactor_volume2 = 1333 * pyunits.m**3
     exports.add(
         obj=fs.reactor_volume1,
         name="First anoxic reactor volume",
