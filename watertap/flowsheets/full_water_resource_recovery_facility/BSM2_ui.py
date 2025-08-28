@@ -3020,6 +3020,12 @@ def build_flowsheet(build_options=None, **kwargs):
     solve(scaled_model)
     scaling.propagate_solution(scaled_model, m)
 
+    m.fs.R1.volume[0].set_value(1000 * pyunits.m**3)
+    m.fs.R2.volume[0].set_value(1000 * pyunits.m**3)
+    m.fs.R3.volume[0].set_value(1333 * pyunits.m**3)
+    m.fs.R4.volume[0].set_value(1333 * pyunits.m**3)
+    m.fs.R5.volume[0].set_value(1333 * pyunits.m**3)
+
     return m
 
 
