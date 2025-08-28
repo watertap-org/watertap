@@ -36,7 +36,7 @@ copyright = "2020-2025, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "1.5.dev0"
+release = importlib.metadata.version("watertap")
 # The short X.Y version
 version = importlib.metadata.version("watertap")
 # -- General configuration ---------------------------------------------------
