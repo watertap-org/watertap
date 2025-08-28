@@ -3070,14 +3070,6 @@ def build_flowsheet(build_options=None, **kwargs):
     solve(scaled_model)
     scaling.propagate_solution(scaled_model, m)
 
-    # Set up optimization with additional scaling
-    setup_optimization(m, reactor_volume_equalities=True)
-    rescale_system(m)
-    rescaling = TransformationFactory("core.scale_model")
-    rescaled_model = rescaling.create_using(m, rename=False)
-    solve(rescaled_model, tee=True)
-    rescaling.propagate_solution(rescaled_model, m)
-
     return m
 
 
@@ -3085,6 +3077,12 @@ def solve_flowsheet(flowsheet=None):
     """
     Solves the initial flowsheet.
     """
-    fs = flowsheet
-    results = solve(fs)
+    m = flowsheet
+    # Set up optimization with additional scaling
+    setup_optimization(m, reactor_volume_equalities=True)
+    rescale_system(m)
+    rescaling = TransformationFactory("core.scale_model")
+    rescaled_model = rescaling.create_using(m, rename=False)
+    solve(rescaled_model, tee=True)
+    results = rescaling.propagate_solution(rescaled_model, m)
     return results
