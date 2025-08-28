@@ -162,7 +162,7 @@ class IonExchangeThomasData(IonExchangeBaseData):
         @self.Constraint(doc="Empty bed contact time")
         def eq_ebct(b):
             return b.ebct * b.loading_rate == b.bed_depth
-        
+
         @self.Constraint(
             self.target_component_set, doc="Mass transfer for regeneration stream"
         )

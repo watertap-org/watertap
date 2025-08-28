@@ -244,7 +244,7 @@ def build_results_dict(
         "target_component",
         # "conc_units",
         "ebct_min",
-        "ebct", 
+        "ebct",
         "flow_in",
         "charge",
         "c0",
@@ -313,15 +313,13 @@ def build_results_dict(
     for theta in blk.thetas:
         blk.results_dict[f"{theta}_theta"] = []
 
-    
-
     # for k in blk.theta_initial_guess.keys():
     #     blk.results_dict[f"{k}_ig_theta"] = []
 
     for k in blk.calc_from_constr_dict.keys():
         blk.results_dict[f"{k}_cfc"] = []
-    
-    if isinstance(blk.set_bounds_dict, dict): 
+
+    if isinstance(blk.set_bounds_dict, dict):
         for k in blk.set_bounds_dict.keys():
             blk.results_dict[f"{k}_lb"] = []
             blk.results_dict[f"{k}_ub"] = []
@@ -349,7 +347,7 @@ def results_dict_append(blk, ix_blk=None, components=[Var, Expression]):
             blk.results_dict[deet].append(getattr(blk, deet))
 
     # for c in components:
-        # if c is Var:
+    # if c is Var:
     for v in ix_blk.component_objects(components):
         if v.is_indexed():
             # idx = [*v._index_set]
@@ -370,8 +368,8 @@ def results_dict_append(blk, ix_blk=None, components=[Var, Expression]):
 
     for k, v in blk.calc_from_constr_dict.items():
         blk.results_dict[f"{k}_cfc"].append(v)
-    
-    if isinstance(blk.set_bounds_dict, dict): 
+
+    if isinstance(blk.set_bounds_dict, dict):
         for k, v in blk.set_bounds_dict.items():
             blk.results_dict[f"{k}_lb"].append(v[0])
             blk.results_dict[f"{k}_ub"].append(v[1])
@@ -386,7 +384,8 @@ def results_dict_append(blk, ix_blk=None, components=[Var, Expression]):
     # blk.results_dict["flag"].append(blk.flag)
     # blk.results_dict["data_filter"].append(blk.data_filter)
 
-def make_results_df(blk): 
+
+def make_results_df(blk):
 
     blk.results_dict_save = deepcopy(blk.results_dict)
 
@@ -404,13 +403,14 @@ def make_results_df(blk):
                 blk.results_dict_save[k] = list(None for _ in range(col_length))
         blk.df_results = pd.DataFrame.from_dict(blk.results_dict_save)
 
+
 def save_results(blk, overwrite=True, results_filename=None):
 
     if blk.save_directory is None:
         raise ValueError("Must provide save directory to save results.")
     if not hasattr(blk, "df_results"):
         blk.make_results_df()
-        
+
     if results_filename is None:
         blk.results_filename = (
             f"{blk.save_directory}/results/curve{blk.curve_id}_results.csv"
@@ -447,6 +447,7 @@ def save_figs(blk, overwrite=True, extension=None):
                 fig_file = x + f"_{append}.png"
                 append += 1
             fig.savefig(fig_file, bbox_inches="tight")
+
 
 def make_output_df(blk):
 
@@ -487,12 +488,12 @@ def make_output_df(blk):
 
     scalar_datas = [
         "c0_max_thresh",
-        "c0_min_thresh", 
-        "mean_absolute_error", 
+        "c0_min_thresh",
+        "mean_absolute_error",
         "sum_squared_error",
-        "expr_sf", 
-        "obj"]
-
+        "expr_sf",
+        "obj",
+    ]
 
     if hasattr(blk, "theta_dict"):
         tmp_dict = dict()
@@ -539,6 +540,7 @@ def make_output_df(blk):
             blk.df_output[f"{k}_theta"] = v
         blk.df_output["obj"] = blk.obj
 
+
 def save_output(blk, overwrite=True):
 
     if not hasattr(blk, "df_output"):
@@ -546,8 +548,6 @@ def save_output(blk, overwrite=True):
 
     output_file_base = f"{blk.save_directory}/output/curve{blk.curve_id}_output.csv"
     theta_file_base = f"{blk.save_directory}/theta/curve{blk.curve_id}_theta.csv"
-
-
 
     blk.df_theta.to_csv(theta_file_base, index=False)
 
@@ -561,11 +561,9 @@ def save_output(blk, overwrite=True):
             append += 1
         blk.df_output.to_csv(output_file_base, index=False)
 
-        
 
 def plot_initial_guess(blk):
 
-    
     # textstr = "\n".join([stat_str] + theta_str)
 
     fig, ax = plt.subplots(figsize=blk.figsize)
@@ -669,7 +667,9 @@ def plot_initial_guess(blk):
         )
     if blk.ix_model is IonExchangeCPHSDM:
         boxprops = dict(boxstyle="round", facecolor="wheat", alpha=0.25)
-        theta_str = [f"{theta_title_dict[k]}: {v:.2e}" for k, v in blk.initial_guess_dict.items()]
+        theta_str = [
+            f"{theta_title_dict[k]}: {v:.2e}" for k, v in blk.initial_guess_dict.items()
+        ]
         theta_str = "\n".join(["Initial Guess:"] + theta_str)
         ax.text(
             0.04,
@@ -875,7 +875,11 @@ def plot_curve(blk):
 
     if blk.just_plot_curve:
         point_labels = blk.filtered_data.reset_index().index.to_list()
-        for i, bv, cnorm in zip(point_labels, blk.filtered_data.bv.to_list(), blk.filtered_data.c_norm.to_list()):
+        for i, bv, cnorm in zip(
+            point_labels,
+            blk.filtered_data.bv.to_list(),
+            blk.filtered_data.c_norm.to_list(),
+        ):
             # ax.annotate(f"{cnorm:.3f}\n{i}")
             ax.text(bv, cnorm, i)
 

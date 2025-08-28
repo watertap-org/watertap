@@ -191,16 +191,16 @@ class TestIXLangmuir(UnitTestHarness):
         assert_optimal_termination(results)
 
         sys_cost_results = {
-'aggregate_capital_cost': 4359307.7327,
- 'aggregate_fixed_operating_cost': 40992.5908,
- 'aggregate_variable_operating_cost': 0.0,
- 'aggregate_flow_electricity': 39.4984,
- 'aggregate_flow_NaCl': 25376620.7345,
- 'aggregate_flow_costs': {'electricity': 24237.0691, 'NaCl': 2310328.0725},
- 'total_capital_cost': 4359307.7327,
- 'total_operating_cost': 2272880.4503,
- 'LCOW': 0.190768028473,
- 'SEC': 0.021945800323
+            "aggregate_capital_cost": 4359307.7327,
+            "aggregate_fixed_operating_cost": 40992.5908,
+            "aggregate_variable_operating_cost": 0.0,
+            "aggregate_flow_electricity": 39.4984,
+            "aggregate_flow_NaCl": 25376620.7345,
+            "aggregate_flow_costs": {"electricity": 24237.0691, "NaCl": 2310328.0725},
+            "total_capital_cost": 4359307.7327,
+            "total_operating_cost": 2272880.4503,
+            "LCOW": 0.190768028473,
+            "SEC": 0.021945800323,
         }
 
         for v, r in sys_cost_results.items():

@@ -122,7 +122,7 @@ class IXParmest:
         water_mol_flow_sf=None,
         tee=False,
         scale_var_dict=dict(),
-        scale_constr_dict=dict()
+        scale_constr_dict=dict(),
     ):
 
         if input_data is None and data_file is None:
@@ -335,7 +335,6 @@ class IXParmest:
     #     ix = m.fs.ix
     #     ix.eq_min_number_st_cps.deactivate()
     #     ix.eq_throughput.deactivate()
-
 
     #     m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
     #     m.fs.min_st_surrogate.build_model(
@@ -800,7 +799,7 @@ class IXParmest:
             ix.loading_rate.fix(0.003)
             ix.resin_porosity.fix(0.4)
             ix.resin_diam.fix(500e-6)
-# 				
+            #
             ix.b0.set_value(0.86989825)
             ix.b1.set_value(0.15652075)
             ix.b2.set_value(0.53451525)
@@ -810,8 +809,8 @@ class IXParmest:
             ix.a1.set_value(21.31)
             ix.add_ss_approximation()
             self.deactivate_ss_approximation(m=m)
-# 6.07E+00	2.13E+01
-            # ix.process_flow.mass_transfer_term[(0.0, "Liq", self.target_component)].fix(1e-15)
+        # 6.07E+00	2.13E+01
+        # ix.process_flow.mass_transfer_term[(0.0, "Liq", self.target_component)].fix(1e-15)
         for k, v in self.fix_vars_dict.items():
             print(f"\nfixing {k} to {v} for design...")
             ixv = getattr(ix, k)
@@ -1182,7 +1181,7 @@ class IXParmest:
         results_dict_append(self, **kwargs)
 
     def make_output_df(self):
-        make_output_df(self) 
+        make_output_df(self)
 
     def save_output(self):
         save_output(self)
