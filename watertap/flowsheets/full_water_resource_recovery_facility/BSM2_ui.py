@@ -269,7 +269,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, activated sludge process
     exports.add(
-        obj=fs.R1.volume[0],
+        obj=1000,
         name="First anoxic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -280,7 +280,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.R2.volume[0],
+        obj=1000,
         name="Second anoxic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -291,7 +291,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.R3.volume[0],
+        obj=1333,
         name="First aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -302,7 +302,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.R4.volume[0],
+        obj=1333,
         name="Second aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -313,7 +313,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.R5.volume[0],
+        obj=1333,
         name="Third aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -3070,6 +3070,14 @@ def build_flowsheet(build_options=None, **kwargs):
     solve(scaled_model)
     scaling.propagate_solution(scaled_model, m)
 
+    # Set up optimization with additional scaling
+    setup_optimization(m, reactor_volume_equalities=True)
+    rescale_system(m)
+    rescaling = TransformationFactory("core.scale_model")
+    rescaled_model = rescaling.create_using(m, rename=False)
+    solve(rescaled_model, tee=True)
+    rescaling.propagate_solution(rescaled_model, m)
+
     return m
 
 
@@ -3077,12 +3085,6 @@ def solve_flowsheet(flowsheet=None):
     """
     Solves the initial flowsheet.
     """
-    m = flowsheet
-    # Set up optimization with additional scaling
-    setup_optimization(m, reactor_volume_equalities=True)
-    rescale_system(m)
-    rescaling = TransformationFactory("core.scale_model")
-    rescaled_model = rescaling.create_using(m, rename=False)
-    solve(rescaled_model, tee=True)
-    results = rescaling.propagate_solution(rescaled_model, m)
+    fs = flowsheet
+    results = solve(fs)
     return results
