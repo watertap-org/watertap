@@ -3027,8 +3027,8 @@ def solve_flowsheet(flowsheet=None):
     """
     Solves the initial flowsheet.
     """
-    m = build_flowsheet()
-
+    fs = flowsheet
+    m = fs.parent_block()
     # Set up optimization with additional scaling
     setup_optimization(m, reactor_volume_equalities=True)
     rescale_system(m)
@@ -3037,6 +3037,5 @@ def solve_flowsheet(flowsheet=None):
     solve(rescaled_model, tee=True)
     rescaling.propagate_solution(rescaled_model, m)
 
-    fs = flowsheet
     results = solve(fs)
     return results
