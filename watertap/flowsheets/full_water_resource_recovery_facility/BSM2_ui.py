@@ -3078,11 +3078,11 @@ def build_flowsheet(build_options=None, **kwargs):
     solve(rescaled_model, tee=True)
     rescaling.propagate_solution(rescaled_model, m)
 
-    m.fs.R1.volume[0].fix(1000 * pyunits.m**3)
-    m.fs.R2.volume[0].fix(1000 * pyunits.m**3)
-    m.fs.R3.volume[0].fix(1333 * pyunits.m**3)
-    m.fs.R4.volume[0].fix(1333 * pyunits.m**3)
-    m.fs.R5.volume[0].fix(1333 * pyunits.m**3)
+    m.fs.R1.volume[0].set_value(1000)
+    m.fs.R2.volume[0].set_value(1000)
+    m.fs.R3.volume[0].set_value(1333)
+    m.fs.R4.volume[0].set_value(1333)
+    m.fs.R5.volume[0].set_value(1333)
 
     return m
 
