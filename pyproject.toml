@@ -18,3 +18,7 @@ enable = [
     "unnecessary-pass",
     "unused-import",
 ]
+
+
+[tool.typos.default.extend-words]
+    word = "astroid"
