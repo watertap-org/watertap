@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2025, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -9,6 +9,9 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import os
+import pandas as pd
+from enum import Enum, auto
 
 from pyomo.environ import (
     Var,
@@ -21,7 +24,7 @@ from pyomo.environ import (
     check_optimal_termination,
 )
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
-from enum import Enum, auto
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import (
     declare_process_block_class,
@@ -32,14 +35,16 @@ from idaes.core import (
     MaterialFlowBasis,
     useDefault,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
+from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
 
+from watertap.core.solvers import get_solver
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.gac import cost_gac
@@ -47,9 +52,18 @@ from watertap.costing.unit_models.gac import cost_gac
 __author__ = "Hunter Barber"
 
 _log = idaeslog.getLogger(__name__)
+__location__ = os.path.dirname(os.path.abspath(__file__))
+surr_dir = f"{os.path.dirname(__location__)}/data/surrogate_defaults/gac"
+min_N_St_surr_path = f"{surr_dir}/min_N_St_surrogate.json"
+throughput_surr_path = f"{surr_dir}/throughput_surrogate.json"
 
 
 # ---------------------------------------------------------------------
+class CPHSDMCalculationMethod(Enum):
+    input = auto()  # calculate CPHSDM model by inputting empirical parameters
+    surrogate = auto()  # calculate CPHSDM model using pre-trained surrogate
+
+
 class FilmTransferCoefficientType(Enum):
     fixed = auto()  # liquid phase film transfer coefficient is a user specified value
     calculated = (
@@ -179,6 +193,19 @@ class GACData(InitializationMixin, UnitModelBlockData):
         **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
         **MomentumBalanceType.momentumTotal** - single momentum balance for material,
         **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}""",
+        ),
+    )
+    CONFIG.declare(
+        "cphsdm_calaculation_method",
+        ConfigValue(
+            default=CPHSDMCalculationMethod.input,
+            domain=In(CPHSDMCalculationMethod),
+            description="CPHSDM calculation method",
+            doc="""Select the method of calculations for the empirical CPHSDM expressions
+        **default** - CPHSDMCalculationMethod.input.
+        **Valid values:** {
+        **CPHSDMCalculationMethod.input** - calculate CPHSDM model by inputting empirical parameterse,
+        **CPHSDMCalculationMethod.surrogate** - calculate CPHSDM model using pre-trained surrogate}""",
         ),
     )
     CONFIG.declare(
@@ -484,59 +511,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
 
         # ---------------------------------------------------------------------
-        # constants in empirical equations
-
-        self.a0 = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Stanton equation parameter 0",
-        )
-        self.a1 = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Stanton equation parameter 1",
-        )
-        self.b0 = Var(
-            initialize=0.1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="throughput equation parameter 0",
-        )
-        self.b1 = Var(
-            initialize=0.1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="throughput equation parameter 1",
-        )
-        self.b2 = Var(
-            initialize=0.1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="throughput equation parameter 2",
-        )
-        self.b3 = Var(
-            initialize=0.1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="throughput equation parameter 3",
-        )
-        self.b4 = Var(
-            initialize=0.1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="throughput equation parameter 4",
-        )
-
-        # ---------------------------------------------------------------------
         # conditions to achieve a constant pattern solution
 
         self.min_N_St = Var(
@@ -558,7 +532,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="specific throughput from empirical equation",
+            doc="specific throughput from empirical equation or surrogate",
         )
         self.min_residence_time = Var(
             initialize=1000,
@@ -621,11 +595,11 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
 
         # create index for discretized elements with element [0] containing 0s for conc ratio and operational time
-        ele_disc = range(self.elements_ss_approx.value + 1)
-        ele_index = ele_disc[1:]
+        self.ele_disc = range(self.elements_ss_approx.value + 1)
+        self.ele_index = self.ele_disc[1:]
 
         self.ele_throughput = Var(
-            ele_index,
+            self.ele_index,
             initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
@@ -633,7 +607,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="specific throughput from empirical equation by discrete element",
         )
         self.ele_min_operational_time = Var(
-            ele_index,
+            self.ele_index,
             initialize=1e8,
             bounds=(0, None),
             domain=NonNegativeReals,
@@ -641,7 +615,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element",
         )
         self.ele_conc_ratio_replace = Var(
-            ele_disc,
+            self.ele_disc,
             initialize=0.05,
             bounds=(0, 1),
             domain=NonNegativeReals,
@@ -649,7 +623,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="effluent to inlet concentration ratio at operational time by discrete element",
         )
         self.ele_operational_time = Var(
-            ele_disc,
+            self.ele_disc,
             initialize=1e5,
             bounds=(0, None),
             domain=NonNegativeReals,
@@ -657,7 +631,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="operational time of the bed from fresh by discrete element",
         )
         self.ele_conc_ratio_term = Var(
-            ele_index,
+            self.ele_index,
             initialize=0.05,
             bounds=(0, 1),
             domain=NonNegativeReals,
@@ -686,6 +660,122 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="gac usage/replacement/regeneration rate",
         )
 
+        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.input:
+            # ---------------------------------------------------------------------
+            # constants in empirical equations
+
+            self.a0 = Var(
+                initialize=1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Stanton equation parameter 0",
+            )
+            self.a1 = Var(
+                initialize=1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Stanton equation parameter 1",
+            )
+            self.b0 = Var(
+                initialize=0.1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="throughput equation parameter 0",
+            )
+            self.b1 = Var(
+                initialize=0.1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="throughput equation parameter 1",
+            )
+            self.b2 = Var(
+                initialize=0.1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="throughput equation parameter 2",
+            )
+            self.b3 = Var(
+                initialize=0.1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="throughput equation parameter 3",
+            )
+            self.b4 = Var(
+                initialize=0.1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="throughput equation parameter 4",
+            )
+
+            # ---------------------------------------------------------------------
+            # gac CPHSDM intermediate equations
+
+            @self.Constraint(
+                doc="minimum Stanton number to achieve constant pattern solution"
+            )
+            def eq_min_number_st_cps(b):
+                return b.min_N_St == b.a0 * b.N_Bi + b.a1
+
+            @self.Constraint(doc="throughput based on empirical 5-parameter regression")
+            def eq_throughput(b):
+                return b.throughput == b.b0 + b.b1 * (
+                    b.conc_ratio_replace**b.b2
+                ) + b.b3 / (1.01 - (b.conc_ratio_replace**b.b4))
+
+            @self.Constraint(
+                self.ele_index,
+                doc="throughput based on empirical 5-parameter regression by discretized element",
+            )
+            def eq_ele_throughput(b, ele):
+                return b.ele_throughput[ele] == b.b0 + b.b1 * (
+                    b.ele_conc_ratio_replace[ele] ** b.b2
+                ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
+
+        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.surrogate:
+
+            # establish surrogates
+            self.min_N_St_surrogate = PysmoSurrogate.load_from_file(min_N_St_surr_path)
+            self.min_N_St_surrogate_blk = SurrogateBlock(concrete=True)
+            self.min_N_St_surrogate_blk.build_model(
+                self.min_N_St_surrogate,
+                input_vars=[self.freund_ninv, self.N_Bi],
+                output_vars=[self.min_N_St],
+            )
+
+            self.throughput_surrogate = PysmoSurrogate.load_from_file(
+                throughput_surr_path
+            )
+            self.throughput_surrogate_blk = SurrogateBlock(concrete=True)
+            self.throughput_surrogate_blk.build_model(
+                self.throughput_surrogate,
+                input_vars=[
+                    self.freund_ninv,
+                    self.N_Bi,
+                    self.conc_ratio_replace,
+                ],
+                output_vars=[self.throughput],
+            )
+
+            self.ele_throughput_surrogate = SurrogateBlock(
+                self.ele_index, concrete=True
+            )
+            for ele in self.ele_index:
+                self.ele_throughput_surrogate[ele].build_model(
+                    self.throughput_surrogate,
+                    input_vars=[
+                        self.freund_ninv,
+                        self.N_Bi,
+                        self.ele_conc_ratio_replace[ele],
+                    ],
+                    output_vars=[self.ele_throughput[ele]],
+                )
         # ---------------------------------------------------------------------
         # property equations and other dimensionless variables
 
@@ -762,15 +852,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         def eq_mass_gac_bed(b):
             return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
 
-        # ---------------------------------------------------------------------
-        # gac CPHSDM intermediate equations
-
-        @self.Constraint(
-            doc="minimum Stanton number to achieve constant pattern solution"
-        )
-        def eq_min_number_st_cps(b):
-            return b.min_N_St == b.a0 * b.N_Bi + b.a1
-
         @self.Constraint(
             doc="minimum empty bed contact time to achieve constant pattern solution"
         )
@@ -778,12 +859,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             return b.min_ebct * (1 - b.bed_voidage) * b.kf == b.min_N_St * (
                 b.particle_dia / 2
             )
-
-        @self.Constraint(doc="throughput based on empirical 5-parameter regression")
-        def eq_throughput(b):
-            return b.throughput == b.b0 + b.b1 * (
-                b.conc_ratio_replace**b.b2
-            ) + b.b3 / (1.01 - (b.conc_ratio_replace**b.b4))
 
         @self.Constraint(
             doc="minimum fluid residence time in the bed to achieve a constant pattern solution"
@@ -825,16 +900,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         self.ele_operational_time[0].fix(0)
 
         @self.Constraint(
-            ele_index,
-            doc="throughput based on empirical 5-parameter regression by discretized element",
-        )
-        def eq_ele_throughput(b, ele):
-            return b.ele_throughput[ele] == b.b0 + b.b1 * (
-                b.ele_conc_ratio_replace[ele] ** b.b2
-            ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
-
-        @self.Constraint(
-            ele_index,
+            self.ele_index,
             doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element",
         )
         def eq_ele_min_operational_time(b, ele):
@@ -844,19 +910,19 @@ class GACData(InitializationMixin, UnitModelBlockData):
             )
 
         @self.Constraint(
-            ele_index,
+            self.ele_index,
             doc="creating evenly spaced discretized elements",
         )
         def eq_ele_conc_ratio_replace(b, ele):
             return b.ele_conc_ratio_replace[ele] == b.conc_ratio_start_breakthrough + (
-                ele_disc[ele] - 1
+                self.ele_disc[ele] - 1
             ) * (
                 (b.conc_ratio_replace - b.conc_ratio_start_breakthrough)
                 / (b.elements_ss_approx - 1)
             )
 
         @self.Constraint(
-            ele_index,
+            self.ele_index,
             doc="operational time of the bed by discretized element",
         )
         def eq_ele_operational_time(b, ele):
@@ -865,7 +931,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             ) * (b.dg + 1)
 
         @self.Constraint(
-            ele_index,
+            self.ele_index,
             doc="finite element discretization of concentration ratios over time",
         )
         def eq_ele_conc_ratio_term(b, ele):
@@ -881,7 +947,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
         def eq_conc_ratio_avg(b):
             return b.conc_ratio_avg == sum(
-                b.ele_conc_ratio_term[ele] for ele in ele_index
+                b.ele_conc_ratio_term[ele] for ele in b.ele_index
             )
 
         @self.Constraint(
@@ -1104,6 +1170,31 @@ class GACData(InitializationMixin, UnitModelBlockData):
                         state_args[k][m] = state_dict[k][m].value
                 else:
                     state_args[k] = state_dict[k].value
+
+        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.surrogate:
+
+            init_log.info_high("Initializing values from surrogates.")
+
+            calculate_variable_from_constraint(self.N_Bi, self.eq_number_bi)
+            for e, c in self.eq_ele_conc_ratio_replace.items():
+                calculate_variable_from_constraint(self.ele_conc_ratio_replace[e], c)
+
+            init_data = pd.DataFrame(
+                {
+                    "freund_ninv": [self.freund_ninv.value],
+                    "N_Bi": [self.N_Bi.value],
+                    "conc_ratio_replace": [self.conc_ratio_replace.value],
+                }
+            )
+            init_out = self.min_N_St_surrogate.evaluate_surrogate(init_data)
+            self.min_N_St.value = init_out["min_N_St"].values[0]
+
+            init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
+            self.throughput.value = init_out["throughput"].values[0]
+            for ele in self.ele_index:
+                init_data["conc_ratio_replace"] = self.ele_conc_ratio_replace[ele].value
+                init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
+                self.ele_throughput[ele].value = init_out["throughput"].values[0]
 
         # initialize control volume
         flags = self.process_flow.initialize(
@@ -1356,13 +1447,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.particle_dia) is None:
             iscale.set_scaling_factor(self.particle_dia, 1e3)
 
-        iscale.set_scaling_factor(self.a0, 1)
-        iscale.set_scaling_factor(self.a1, 1)
-        iscale.set_scaling_factor(self.b0, 1)
-        iscale.set_scaling_factor(self.b1, 1)
-        iscale.set_scaling_factor(self.b2, 1)
-        iscale.set_scaling_factor(self.b3, 10)
-        iscale.set_scaling_factor(self.b4, 1)
+        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.input:
+            iscale.set_scaling_factor(self.a0, 1)
+            iscale.set_scaling_factor(self.a1, 1)
+            iscale.set_scaling_factor(self.b0, 1)
+            iscale.set_scaling_factor(self.b1, 1)
+            iscale.set_scaling_factor(self.b2, 1)
+            iscale.set_scaling_factor(self.b3, 10)
+            iscale.set_scaling_factor(self.b4, 1)
 
         if iscale.get_scaling_factor(self.min_N_St) is None:
             iscale.set_scaling_factor(self.min_N_St, 1e-1)
