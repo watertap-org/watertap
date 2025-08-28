@@ -3036,6 +3036,6 @@ def solve_flowsheet(flowsheet=None):
     rescaled_model = rescaling.create_using(m, rename=False)
     solve(rescaled_model, tee=True)
     rescaling.propagate_solution(rescaled_model, m)
-
+    fs = m.fs
     results = solve(fs)
     return results
