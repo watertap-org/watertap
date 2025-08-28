@@ -3027,7 +3027,7 @@ def solve_flowsheet(flowsheet=None):
     """
     Solves the initial flowsheet.
     """
-    m = flowsheet.parent_block()
+    m = build_flowsheet()
 
     # Set up optimization with additional scaling
     setup_optimization(m, reactor_volume_equalities=True)
