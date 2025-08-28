@@ -3027,12 +3027,16 @@ def solve_flowsheet(flowsheet=None):
     """
     Solves the initial flowsheet.
     """
-    fs = flowsheet
+    m = flowsheet.parent_block()
+
     # Set up optimization with additional scaling
-    setup_optimization(fs, reactor_volume_equalities=True)
-    rescale_system(fs)
+    setup_optimization(m, reactor_volume_equalities=True)
+    rescale_system(m)
     rescaling = TransformationFactory("core.scale_model")
-    rescaled_model = rescaling.create_using(fs, rename=False)
+    rescaled_model = rescaling.create_using(m, rename=False)
     solve(rescaled_model, tee=True)
-    results = rescaling.propagate_solution(rescaled_model, fs)
+    rescaling.propagate_solution(rescaled_model, m)
+
+    fs = flowsheet
+    results = solve(fs)
     return results
