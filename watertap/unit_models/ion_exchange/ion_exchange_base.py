@@ -1027,27 +1027,11 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         solver=None,
         optarg=None,
     ):
-        """
-        General wrapper for initialization routines
-
-        Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = {}).
-            outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating which solver to use during
-                     initialization (default = None)
-
-        Returns: None
-        """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
 
-        # ---------------------------------------------------------------------
         flags = self.process_flow.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -1057,7 +1041,6 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
         )
         init_log.info("Initialization Step 1a Complete.")
 
-        # ---------------------------------------------------------------------
         # Initialize other state blocks
         # Set state_args from inlet state
         if state_args is None:
@@ -1082,14 +1065,6 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
                     state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
                 )
 
-        self.process_flow.properties_out.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_out,
-        )
-        # init_log.info("Initialization Step 1b Complete.")
-
         state_args_regen = deepcopy(state_args)
 
         self.regeneration_stream.initialize(
@@ -1099,7 +1074,7 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_regen,
         )
 
-        init_log.info("Initialization Step 1c Complete.")
+        init_log.info("Initialization Step 1b Complete.")
         # interval_initializer(self)
 
         # Solve unit

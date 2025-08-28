@@ -69,14 +69,14 @@ from .ion_exchange_cphsdm import IonExchangeCPHSDM
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
-min_st_surrogate = PysmoSurrogate.load_from_file(
-    # surr_dir + "/min_st_pysmo_surr_linear.json",
-    "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_cphsdm/surrogates/min_st_pysmo_surr_linear.json"
-    # "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_2/trained_surrogate_models/min_st_pysmo_surr_spline.json"
-)
-throughput_surrogate = PysmoSurrogate.load_from_file(
-    "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_cphsdm/surrogates/throughput_pysmo_surr_linear.json"
-)
+# min_st_surrogate = PysmoSurrogate.load_from_file(
+#     # surr_dir + "/min_st_pysmo_surr_linear.json",
+#     "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_cphsdm/surrogates/min_st_pysmo_surr_linear.json"
+#     # "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_2/trained_surrogate_models/min_st_pysmo_surr_spline.json"
+# )
+# throughput_surrogate = PysmoSurrogate.load_from_file(
+#     "/Users/ksitterl/Documents/Python/nawi-analysis/NAWI-analysis/analysis_waterTAP/analysisWaterTAP/analysis_scripts/pfas_ix_cphsdm/surrogates/throughput_pysmo_surr_linear.json"
+# )
 mw_water = 0.018 * pyunits.kg / pyunits.mol
 
 
@@ -328,30 +328,30 @@ class IXParmest:
         #     self.save_output(overwrite=overwrite)
         #     self.save_results(overwrite=overwrite)
 
-    def activate_surrogate(self, m=None):
+    # def activate_surrogate(self, m=None):
 
-        if m is None:
-            m = self.m
-        ix = m.fs.ix
-        ix.eq_min_number_st_cps.deactivate()
-        ix.eq_throughput.deactivate()
+    #     if m is None:
+    #         m = self.m
+    #     ix = m.fs.ix
+    #     ix.eq_min_number_st_cps.deactivate()
+    #     ix.eq_throughput.deactivate()
 
 
-        m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
-        m.fs.min_st_surrogate.build_model(
-            min_st_surrogate,
-            input_vars=[ix.freundlich_ninv, ix.N_Bi],
-            # input_vars=[ix.freundlich_ninv, ix.Bi],
-            output_vars=[ix.min_N_St],
-        )
-        m.fs.throughput_surrogate = SurrogateBlock(concrete=True)
-        m.fs.throughput_surrogate.build_model(
-            throughput_surrogate,
-            input_vars=[ix.freundlich_ninv, ix.N_Bi, ix.c_norm],
-            # input_vars=[ix.freundlich_ninv, ix.Bi, ix.c_norm],
-            output_vars=[ix.throughput],
-        )
-        # ix.N_Bi.setlb(0)
+    #     m.fs.min_st_surrogate = SurrogateBlock(concrete=True)
+    #     m.fs.min_st_surrogate.build_model(
+    #         min_st_surrogate,
+    #         input_vars=[ix.freundlich_ninv, ix.N_Bi],
+    #         # input_vars=[ix.freundlich_ninv, ix.Bi],
+    #         output_vars=[ix.min_N_St],
+    #     )
+    #     m.fs.throughput_surrogate = SurrogateBlock(concrete=True)
+    #     m.fs.throughput_surrogate.build_model(
+    #         throughput_surrogate,
+    #         input_vars=[ix.freundlich_ninv, ix.N_Bi, ix.c_norm],
+    #         # input_vars=[ix.freundlich_ninv, ix.Bi, ix.c_norm],
+    #         output_vars=[ix.throughput],
+    #     )
+    #     # ix.N_Bi.setlb(0)
 
     def rebuild(self):
         self.m0 = self.build_init()
