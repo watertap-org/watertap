@@ -76,6 +76,7 @@ setup(
         # for parameter_sweep
         "parameter-sweep >=0.1.0",
         "numpy",
+        "pint<0.25",
     ],
     extras_require={
         "testing": [
