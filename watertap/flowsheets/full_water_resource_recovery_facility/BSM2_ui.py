@@ -270,10 +270,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, activated sludge process
     # Need to fix reactor volumes since the optimization solve changes them from the original input
     fs.reactor1_volume = 1000 * pyunits.m**3
-    fs.reactor2_volume = 1000 * pyunits.m**3
-    fs.reactor3_volume = 1333 * pyunits.m**3
+    fs.reactor2_volume = 999 * pyunits.m**3
+    fs.reactor3_volume = 1332 * pyunits.m**3
     fs.reactor4_volume = 1333 * pyunits.m**3
-    fs.reactor5_volume = 1333 * pyunits.m**3
+    fs.reactor5_volume = 1334 * pyunits.m**3
     exports.add(
         obj=fs.reactor1_volume,
         name="First anoxic reactor volume",
