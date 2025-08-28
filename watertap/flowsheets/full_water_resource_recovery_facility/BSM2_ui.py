@@ -268,10 +268,14 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Unit model data, activated sludge process
-    fs.reactor_volume1 = 1000 * pyunits.m**3
-    fs.reactor_volume2 = 1333 * pyunits.m**3
+    # Need to fix reactor volumes since the optimization solve changes them from the original input
+    fs.reactor1_volume = 1000 * pyunits.m**3
+    fs.reactor2_volume = 1000 * pyunits.m**3
+    fs.reactor3_volume = 1333 * pyunits.m**3
+    fs.reactor4_volume = 1333 * pyunits.m**3
+    fs.reactor5_volume = 1333 * pyunits.m**3
     exports.add(
-        obj=fs.reactor_volume1,
+        obj=fs.reactor1_volume,
         name="First anoxic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -282,7 +286,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.reactor_volume1,
+        obj=fs.reactor2_volume,
         name="Second anoxic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -293,7 +297,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.reactor_volume2,
+        obj=fs.reactor3_volume,
         name="First aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -304,7 +308,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.reactor_volume2,
+        obj=fs.reactor4_volume,
         name="Second aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
@@ -315,7 +319,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.reactor_volume2,
+        obj=fs.reactor5_volume,
         name="Third aerobic reactor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
