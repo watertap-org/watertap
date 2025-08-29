@@ -128,7 +128,7 @@ def gen_surrogate_model(
         # Train surrogate (calls PySMO through IDAES Python wrapper)
         poly_train = trainer.train_surrogate()
 
-        trainer._get_metrics()
+        # trainer._get_metrics()
 
         poly_surr = PysmoSurrogate(
             poly_train, input_labels, output_labels, input_bounds
