@@ -434,7 +434,7 @@ def build(
         * (
             1
             + m.fs.costing.maintenance_labor_chemical_factor
-            / m.fs.costing.TIC
+            # / m.fs.costing.TIC
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.electricity_lcow
@@ -468,7 +468,7 @@ def build(
         * (
             1
             + m.fs.costing.maintenance_labor_chemical_factor
-            / m.fs.costing.TIC
+            # / m.fs.costing.TIC
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.membrane_replacement_lcow
