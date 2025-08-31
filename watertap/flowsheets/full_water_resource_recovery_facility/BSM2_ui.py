@@ -25,7 +25,6 @@ from watertap.flowsheets.full_water_resource_recovery_facility.BSM2 import (
     scale_system,
     solve,
     setup_optimization,
-    rescale_system,
 )
 
 
@@ -3072,11 +3071,6 @@ def build_flowsheet(build_options=None, **kwargs):
 
     # Set up optimization with additional scaling
     setup_optimization(m, reactor_volume_equalities=True)
-    rescale_system(m)
-    rescaling = TransformationFactory("core.scale_model")
-    rescaled_model = rescaling.create_using(m, rename=False)
-    solve(rescaled_model, tee=True)
-    rescaling.propagate_solution(rescaled_model, m)
 
     return m
 
