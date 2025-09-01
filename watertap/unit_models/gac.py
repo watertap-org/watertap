@@ -739,43 +739,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
 
         if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.surrogate:
+            self.add_surrogates()
 
-            # establish surrogates
-            self.min_N_St_surrogate = PysmoSurrogate.load_from_file(min_N_St_surr_path)
-            self.min_N_St_surrogate_blk = SurrogateBlock(concrete=True)
-            self.min_N_St_surrogate_blk.build_model(
-                self.min_N_St_surrogate,
-                input_vars=[self.freund_ninv, self.N_Bi],
-                output_vars=[self.min_N_St],
-            )
-
-            self.throughput_surrogate = PysmoSurrogate.load_from_file(
-                throughput_surr_path
-            )
-            self.throughput_surrogate_blk = SurrogateBlock(concrete=True)
-            self.throughput_surrogate_blk.build_model(
-                self.throughput_surrogate,
-                input_vars=[
-                    self.freund_ninv,
-                    self.N_Bi,
-                    self.conc_ratio_replace,
-                ],
-                output_vars=[self.throughput],
-            )
-
-            self.ele_throughput_surrogate = SurrogateBlock(
-                self.ele_index, concrete=True
-            )
-            for ele in self.ele_index:
-                self.ele_throughput_surrogate[ele].build_model(
-                    self.throughput_surrogate,
-                    input_vars=[
-                        self.freund_ninv,
-                        self.N_Bi,
-                        self.ele_conc_ratio_replace[ele],
-                    ],
-                    output_vars=[self.ele_throughput[ele]],
-                )
         # ---------------------------------------------------------------------
         # property equations and other dimensionless variables
 
@@ -1243,6 +1208,39 @@ class GACData(InitializationMixin, UnitModelBlockData):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     # ---------------------------------------------------------------------
+    def add_surrogates(self):
+
+        self.min_N_St_surrogate = PysmoSurrogate.load_from_file(min_N_St_surr_path)
+        self.min_N_St_surrogate_blk = SurrogateBlock(concrete=True)
+        self.min_N_St_surrogate_blk.build_model(
+            self.min_N_St_surrogate,
+            input_vars=[self.freund_ninv, self.N_Bi],
+            output_vars=[self.min_N_St],
+        )
+
+        self.throughput_surrogate = PysmoSurrogate.load_from_file(throughput_surr_path)
+        self.throughput_surrogate_blk = SurrogateBlock(concrete=True)
+        self.throughput_surrogate_blk.build_model(
+            self.throughput_surrogate,
+            input_vars=[
+                self.freund_ninv,
+                self.N_Bi,
+                self.conc_ratio_replace,
+            ],
+            output_vars=[self.throughput],
+        )
+
+        self.ele_throughput_surrogate = SurrogateBlock(self.ele_index, concrete=True)
+        for ele in self.ele_index:
+            self.ele_throughput_surrogate[ele].build_model(
+                self.throughput_surrogate,
+                input_vars=[
+                    self.freund_ninv,
+                    self.N_Bi,
+                    self.ele_conc_ratio_replace[ele],
+                ],
+                output_vars=[self.ele_throughput[ele]],
+            )
 
     def _get_performance_contents(self, time_point=0):
 
