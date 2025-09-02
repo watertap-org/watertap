@@ -68,7 +68,7 @@ class FilmTransferCoefficientType(Enum):
     fixed = auto()  # liquid phase film transfer coefficient is a user specified value
     calculated = (
         auto()
-    )  # calculate liquid phase film transfer coefficient from the Gnielinshi correlation
+    )  # calculate liquid phase film transfer coefficient from the Gnielinski correlation
 
 
 class SurfaceDiffusionCoefficientType(Enum):
@@ -247,6 +247,17 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if the property package solute set only contains one item (two component, one solute and one solvent/water),
         the model will accept the single solute as the target species, for multi-solute systems a string of
         the component id must be provided.}""",
+        ),
+    )
+    CONFIG.declare(
+        "add_trapezoidal_effluent_approximation",
+        ConfigValue(
+            default=True,
+            domain=bool,
+            description="Flag to indicate if the variables and constraints should be added to estimate the steady-state effluent concentration via the trapezoidal method",
+            doc="""Flag to indicate if the variables and constraints should be added to estimate the 
+            steady-state effluent concentration via the trapezoidal method
+            **default** - True""",
         ),
     )
     CONFIG.declare(
@@ -574,77 +585,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="bed volumes treated at operational time",
         )
 
-        # ---------------------------------------------------------------------
-        # steady state approximation
-
-        self.elements_ss_approx = Param(
-            mutable=True,
-            default=5,
-            initialize=self.config.finite_elements_ss_approximation,
-            domain=PositiveIntegers,
-            units=pyunits.dimensionless,
-            doc="number of discretized operational time elements used for steady state approximation",
-        )
-        self.conc_ratio_start_breakthrough = Param(
-            mutable=True,
-            default=0.01,
-            initialize=0.01,
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="the concentration ratio at which the breakthrough curve is to start, typically between 0.01 amd 0.05",
-        )
-
-        # create index for discretized elements with element [0] containing 0s for conc ratio and operational time
-        self.ele_disc = range(self.elements_ss_approx.value + 1)
-        self.ele_index = self.ele_disc[1:]
-
-        self.ele_throughput = Var(
-            self.ele_index,
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="specific throughput from empirical equation by discrete element",
-        )
-        self.ele_min_operational_time = Var(
-            self.ele_index,
-            initialize=1e8,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element",
-        )
-        self.ele_conc_ratio_replace = Var(
-            self.ele_disc,
-            initialize=0.05,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="effluent to inlet concentration ratio at operational time by discrete element",
-        )
-        self.ele_operational_time = Var(
-            self.ele_disc,
-            initialize=1e5,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-            doc="operational time of the bed from fresh by discrete element",
-        )
-        self.ele_conc_ratio_term = Var(
-            self.ele_index,
-            initialize=0.05,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="trapezoid rule of elements for numerical integration of average concentration ratio",
-        )
-        self.conc_ratio_avg = Var(
-            initialize=0.1,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule",
-        )
         self.mass_adsorbed = Var(
             initialize=10,
             bounds=(0, None),
@@ -729,53 +669,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     b.conc_ratio_replace**b.b2
                 ) + b.b3 / (1.01 - (b.conc_ratio_replace**b.b4))
 
-            @self.Constraint(
-                self.ele_index,
-                doc="throughput based on empirical 5-parameter regression by discretized element",
-            )
-            def eq_ele_throughput(b, ele):
-                return b.ele_throughput[ele] == b.b0 + b.b1 * (
-                    b.ele_conc_ratio_replace[ele] ** b.b2
-                ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
-
         if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.surrogate:
+            self.add_surrogates()
 
-            # establish surrogates
-            self.min_N_St_surrogate = PysmoSurrogate.load_from_file(min_N_St_surr_path)
-            self.min_N_St_surrogate_blk = SurrogateBlock(concrete=True)
-            self.min_N_St_surrogate_blk.build_model(
-                self.min_N_St_surrogate,
-                input_vars=[self.freund_ninv, self.N_Bi],
-                output_vars=[self.min_N_St],
-            )
-
-            self.throughput_surrogate = PysmoSurrogate.load_from_file(
-                throughput_surr_path
-            )
-            self.throughput_surrogate_blk = SurrogateBlock(concrete=True)
-            self.throughput_surrogate_blk.build_model(
-                self.throughput_surrogate,
-                input_vars=[
-                    self.freund_ninv,
-                    self.N_Bi,
-                    self.conc_ratio_replace,
-                ],
-                output_vars=[self.throughput],
-            )
-
-            self.ele_throughput_surrogate = SurrogateBlock(
-                self.ele_index, concrete=True
-            )
-            for ele in self.ele_index:
-                self.ele_throughput_surrogate[ele].build_model(
-                    self.throughput_surrogate,
-                    input_vars=[
-                        self.freund_ninv,
-                        self.N_Bi,
-                        self.ele_conc_ratio_replace[ele],
-                    ],
-                    output_vars=[self.ele_throughput[ele]],
-                )
         # ---------------------------------------------------------------------
         # property equations and other dimensionless variables
 
@@ -893,63 +789,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 == b.operational_time * b.bed_voidage
             )
 
-        # ---------------------------------------------------------------------
-        # steady state approximation
-
-        self.ele_conc_ratio_replace[0].fix(0)
-        self.ele_operational_time[0].fix(0)
-
-        @self.Constraint(
-            self.ele_index,
-            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element",
-        )
-        def eq_ele_min_operational_time(b, ele):
-            return (
-                b.ele_min_operational_time[ele]
-                == b.min_residence_time * (b.dg + 1) * b.ele_throughput[ele]
-            )
-
-        @self.Constraint(
-            self.ele_index,
-            doc="creating evenly spaced discretized elements",
-        )
-        def eq_ele_conc_ratio_replace(b, ele):
-            return b.ele_conc_ratio_replace[ele] == b.conc_ratio_start_breakthrough + (
-                self.ele_disc[ele] - 1
-            ) * (
-                (b.conc_ratio_replace - b.conc_ratio_start_breakthrough)
-                / (b.elements_ss_approx - 1)
-            )
-
-        @self.Constraint(
-            self.ele_index,
-            doc="operational time of the bed by discretized element",
-        )
-        def eq_ele_operational_time(b, ele):
-            return b.ele_operational_time[ele] == b.ele_min_operational_time[ele] + (
-                b.residence_time - b.min_residence_time
-            ) * (b.dg + 1)
-
-        @self.Constraint(
-            self.ele_index,
-            doc="finite element discretization of concentration ratios over time",
-        )
-        def eq_ele_conc_ratio_term(b, ele):
-            return b.ele_conc_ratio_term[ele] == (
-                (b.ele_operational_time[ele] - b.ele_operational_time[ele - 1])
-                / b.ele_operational_time[self.elements_ss_approx.value]
-            ) * (
-                (b.ele_conc_ratio_replace[ele] + b.ele_conc_ratio_replace[ele - 1]) / 2
-            )
-
-        @self.Constraint(
-            doc="summation of finite elements for average concentration during operating time"
-        )
-        def eq_conc_ratio_avg(b):
-            return b.conc_ratio_avg == sum(
-                b.ele_conc_ratio_term[ele] for ele in b.ele_index
-            )
-
         @self.Constraint(
             self.target_species,
             doc="mass adsorbed in the operational time",
@@ -985,20 +824,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         )
         def eq_isobaric_gac_removed(b, t):
             return b.process_flow.properties_in[t].pressure == b.gac_removed[t].pressure
-
-        # mass transfer of target_species
-        # TODO: check for mass based (not mole) get_material_flow_terms, but ok under mcas_prop_pack
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.target_species,
-            doc="mass transfer for adsorbed solutes in 'target_species' within 'gac_removed' (out of the bed)",
-        )
-        def eq_mass_transfer_cv(b, t, j):
-            return (1 - b.conc_ratio_avg) * b.process_flow.properties_in[
-                t
-            ].get_material_flow_terms("Liq", j) == (
-                -b.process_flow.mass_transfer_term[t, "Liq", j]
-            )
 
         # mass balance for port not in control volume
         @self.Constraint(
@@ -1125,6 +950,22 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     * b.process_flow.properties_in[t].conc_mass_phase_comp["Liq", j]
                 )
 
+        if self.config.add_trapezoidal_effluent_approximation:
+            self.add_trapezoidal_effluent_approximation()
+        else:
+            # mass transfer of target_species
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.target_species,
+                doc="mass transfer for adsorbed solutes in 'target_species' within 'gac_removed' (out of the bed)",
+            )
+            def eq_mass_transfer_cv(b, t, j):
+                return (1 - b.conc_ratio_replace) * b.process_flow.properties_in[
+                    t
+                ].get_material_flow_terms("Liq", j) == (
+                    -b.process_flow.mass_transfer_term[t, "Liq", j]
+                )
+
     # ---------------------------------------------------------------------
     # initialize method
     def initialize_build(
@@ -1176,8 +1017,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             init_log.info_high("Initializing values from surrogates.")
 
             calculate_variable_from_constraint(self.N_Bi, self.eq_number_bi)
-            for e, c in self.eq_ele_conc_ratio_replace.items():
-                calculate_variable_from_constraint(self.ele_conc_ratio_replace[e], c)
 
             init_data = pd.DataFrame(
                 {
@@ -1191,10 +1030,18 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
             init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
             self.throughput.value = init_out["throughput"].values[0]
-            for ele in self.ele_index:
-                init_data["conc_ratio_replace"] = self.ele_conc_ratio_replace[ele].value
-                init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
-                self.ele_throughput[ele].value = init_out["throughput"].values[0]
+
+            if self.config.add_trapezoidal_effluent_approximation:
+                for e, c in self.eq_ele_conc_ratio_replace.items():
+                    calculate_variable_from_constraint(
+                        self.ele_conc_ratio_replace[e], c
+                    )
+                for ele in self.ele_index:
+                    init_data["conc_ratio_replace"] = self.ele_conc_ratio_replace[
+                        ele
+                    ].value
+                    init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
+                    self.ele_throughput[ele].value = init_out["throughput"].values[0]
 
         # initialize control volume
         flags = self.process_flow.initialize(
@@ -1242,7 +1089,200 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
+    def add_trapezoidal_effluent_approximation(self):
+
+        # ---------------------------------------------------------------------
+        # steady state approximation
+
+        self.elements_ss_approx = Param(
+            mutable=True,
+            default=5,
+            initialize=self.config.finite_elements_ss_approximation,
+            domain=PositiveIntegers,
+            units=pyunits.dimensionless,
+            doc="number of discretized operational time elements used for steady state approximation",
+        )
+        self.conc_ratio_start_breakthrough = Param(
+            mutable=True,
+            default=0.01,
+            initialize=0.01,
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="the concentration ratio at which the breakthrough curve is to start, typically between 0.01 amd 0.05",
+        )
+
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+        # create index for discretized elements with element [0] containing 0s for conc ratio and operational time
+        self.ele_disc = range(self.elements_ss_approx.value + 1)
+        self.ele_index = self.ele_disc[1:]
+
+        self.ele_throughput = Var(
+            self.ele_index,
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="specific throughput from empirical equation by discrete element",
+        )
+        self.ele_min_operational_time = Var(
+            self.ele_index,
+            initialize=1e8,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element",
+        )
+        self.ele_conc_ratio_replace = Var(
+            self.ele_disc,
+            initialize=0.05,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="effluent to inlet concentration ratio at operational time by discrete element",
+        )
+        self.ele_operational_time = Var(
+            self.ele_disc,
+            initialize=1e5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="operational time of the bed from fresh by discrete element",
+        )
+        self.ele_conc_ratio_term = Var(
+            self.ele_index,
+            initialize=0.05,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="trapezoid rule of elements for numerical integration of average concentration ratio",
+        )
+        self.conc_ratio_avg = Var(
+            initialize=0.1,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule",
+        )
+
+        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.surrogate:
+
+            self.ele_throughput_surrogate = SurrogateBlock(
+                self.ele_index, concrete=True
+            )
+            for ele in self.ele_index:
+                self.ele_throughput_surrogate[ele].build_model(
+                    self.throughput_surrogate,
+                    input_vars=[
+                        self.freund_ninv,
+                        self.N_Bi,
+                        self.ele_conc_ratio_replace[ele],
+                    ],
+                    output_vars=[self.ele_throughput[ele]],
+                )
+        if self.config.cphsdm_calaculation_method == CPHSDMCalculationMethod.input:
+
+            @self.Constraint(
+                self.ele_index,
+                doc="throughput based on empirical 5-parameter regression by discretized element",
+            )
+            def eq_ele_throughput(b, ele):
+                return b.ele_throughput[ele] == b.b0 + b.b1 * (
+                    b.ele_conc_ratio_replace[ele] ** b.b2
+                ) + b.b3 / (1.01 - b.ele_conc_ratio_replace[ele] ** b.b4)
+
+        # ---------------------------------------------------------------------
+        # steady state approximation
+
+        self.ele_conc_ratio_replace[0].fix(0)
+        self.ele_operational_time[0].fix(0)
+
+        @self.Constraint(
+            self.ele_index,
+            doc="minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element",
+        )
+        def eq_ele_min_operational_time(b, ele):
+            return (
+                b.ele_min_operational_time[ele]
+                == b.min_residence_time * (b.dg + 1) * b.ele_throughput[ele]
+            )
+
+        @self.Constraint(
+            self.ele_index,
+            doc="creating evenly spaced discretized elements",
+        )
+        def eq_ele_conc_ratio_replace(b, ele):
+            return b.ele_conc_ratio_replace[ele] == b.conc_ratio_start_breakthrough + (
+                self.ele_disc[ele] - 1
+            ) * (
+                (b.conc_ratio_replace - b.conc_ratio_start_breakthrough)
+                / (b.elements_ss_approx - 1)
+            )
+
+        @self.Constraint(
+            self.ele_index,
+            doc="operational time of the bed by discretized element",
+        )
+        def eq_ele_operational_time(b, ele):
+            return b.ele_operational_time[ele] == b.ele_min_operational_time[ele] + (
+                b.residence_time - b.min_residence_time
+            ) * (b.dg + 1)
+
+        @self.Constraint(
+            self.ele_index,
+            doc="finite element discretization of concentration ratios over time",
+        )
+        def eq_ele_conc_ratio_term(b, ele):
+            return b.ele_conc_ratio_term[ele] == (
+                (b.ele_operational_time[ele] - b.ele_operational_time[ele - 1])
+                / b.ele_operational_time[self.elements_ss_approx.value]
+            ) * (
+                (b.ele_conc_ratio_replace[ele] + b.ele_conc_ratio_replace[ele - 1]) / 2
+            )
+
+        @self.Constraint(
+            doc="summation of finite elements for average concentration during operating time"
+        )
+        def eq_conc_ratio_avg(b):
+            return b.conc_ratio_avg == sum(
+                b.ele_conc_ratio_term[ele] for ele in b.ele_index
+            )
+
+        # mass transfer of target_species
+        # TODO: check for mass based (not mole) get_material_flow_terms, but ok under mcas_prop_pack
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.target_species,
+            doc="mass transfer for adsorbed solutes in 'target_species' within 'gac_removed' (out of the bed)",
+        )
+        def eq_mass_transfer_cv(b, t, j):
+            return (1 - b.conc_ratio_avg) * b.process_flow.properties_in[
+                t
+            ].get_material_flow_terms("Liq", j) == (
+                -b.process_flow.mass_transfer_term[t, "Liq", j]
+            )
+
     # ---------------------------------------------------------------------
+    def add_surrogates(self):
+
+        self.min_N_St_surrogate = PysmoSurrogate.load_from_file(min_N_St_surr_path)
+        self.min_N_St_surrogate_blk = SurrogateBlock(concrete=True)
+        self.min_N_St_surrogate_blk.build_model(
+            self.min_N_St_surrogate,
+            input_vars=[self.freund_ninv, self.N_Bi],
+            output_vars=[self.min_N_St],
+        )
+
+        self.throughput_surrogate = PysmoSurrogate.load_from_file(throughput_surr_path)
+        self.throughput_surrogate_blk = SurrogateBlock(concrete=True)
+        self.throughput_surrogate_blk.build_model(
+            self.throughput_surrogate,
+            input_vars=[
+                self.freund_ninv,
+                self.N_Bi,
+                self.conc_ratio_replace,
+            ],
+            output_vars=[self.throughput],
+        )
 
     def _get_performance_contents(self, time_point=0):
 
@@ -1262,11 +1302,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
         var_dict["fluid residence time in the bed"] = self.residence_time
         var_dict["mass of fresh gac in the bed"] = self.bed_mass_gac
         var_dict["concentration ratio at operational time"] = self.conc_ratio_replace
-        var_dict["time for the start of breakthrough"] = self.ele_operational_time[1]
-        var_dict["operational time of the bed from fresh"] = self.operational_time
         var_dict["bed volumes treated"] = self.bed_volumes_treated
-        var_dict["steady state average concentration ratio"] = self.conc_ratio_avg
         var_dict["gac usage/replacement/regeneration rate"] = self.gac_usage_rate
+
+        if self.config.add_trapezoidal_effluent_approximation:
+            var_dict["time for the start of breakthrough"] = self.ele_operational_time[
+                1
+            ]
+            var_dict["operational time of the bed from fresh"] = self.operational_time
+            var_dict["steady state average concentration ratio"] = self.conc_ratio_avg
 
         # loop through desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
@@ -1480,27 +1524,31 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
             iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
 
-        for ele in range(1, self.elements_ss_approx.value + 1):
+        if self.config.add_trapezoidal_effluent_approximation:
+            for ele in range(1, self.elements_ss_approx.value + 1):
 
-            if iscale.get_scaling_factor(self.ele_throughput[ele]) is None:
-                iscale.set_scaling_factor(self.ele_throughput[ele], 1)
+                if iscale.get_scaling_factor(self.ele_throughput[ele]) is None:
+                    iscale.set_scaling_factor(self.ele_throughput[ele], 1)
 
-            if iscale.get_scaling_factor(self.ele_min_operational_time[ele]) is None:
-                iscale.set_scaling_factor(self.ele_min_operational_time[ele], 1e-6)
+                if (
+                    iscale.get_scaling_factor(self.ele_min_operational_time[ele])
+                    is None
+                ):
+                    iscale.set_scaling_factor(self.ele_min_operational_time[ele], 1e-6)
 
-            if iscale.get_scaling_factor(self.ele_conc_ratio_term[ele]) is None:
-                iscale.set_scaling_factor(self.ele_conc_ratio_term[ele], 1e2)
+                if iscale.get_scaling_factor(self.ele_conc_ratio_term[ele]) is None:
+                    iscale.set_scaling_factor(self.ele_conc_ratio_term[ele], 1e2)
 
-        for ele in range(self.elements_ss_approx.value + 1):
+            for ele in range(self.elements_ss_approx.value + 1):
 
-            if iscale.get_scaling_factor(self.ele_conc_ratio_replace[ele]) is None:
-                iscale.set_scaling_factor(self.ele_conc_ratio_replace[ele], 1e1)
+                if iscale.get_scaling_factor(self.ele_conc_ratio_replace[ele]) is None:
+                    iscale.set_scaling_factor(self.ele_conc_ratio_replace[ele], 1e1)
 
-            if iscale.get_scaling_factor(self.ele_operational_time[ele]) is None:
-                iscale.set_scaling_factor(self.ele_operational_time[ele], 1e-6)
+                if iscale.get_scaling_factor(self.ele_operational_time[ele]) is None:
+                    iscale.set_scaling_factor(self.ele_operational_time[ele], 1e-6)
 
-        if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
-            iscale.set_scaling_factor(self.conc_ratio_avg, 1e1)
+            if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
+                iscale.set_scaling_factor(self.conc_ratio_avg, 1e1)
 
         if hasattr(self, "N_Re"):
             if iscale.get_scaling_factor(self.N_Re) is None:

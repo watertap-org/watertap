@@ -226,6 +226,101 @@ class TestGACHandSurrogate(UnitTestHarness):
         return m
 
 
+def build_hand_surrogate_no_ss():
+    # trial problem from Hand, 1984 for removal of trace DCE
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["DCE"],
+        mw_data={"H2O": 0.018, "DCE": 0.09896},
+        ignore_neutral_charge=True,
+    )
+    m.fs.unit = GAC(
+        property_package=m.fs.properties,
+        film_transfer_coefficient_type="fixed",
+        surface_diffusion_coefficient_type="fixed",
+        cphsdm_calaculation_method="surrogate",
+        add_trapezoidal_effluent_approximation=False,
+    )
+
+    # feed specifications
+    unit_feed = m.fs.unit.process_flow.properties_in[0]
+    unit_feed.pressure.fix(101325)
+    unit_feed.temperature.fix(273.15 + 25)
+    unit_feed.flow_mol_phase_comp["Liq", "H2O"].fix(55555.55426666667)
+    unit_feed.flow_mol_phase_comp["Liq", "DCE"].fix(0.0002344381568310428)
+
+    # adsorption isotherm
+    m.fs.unit.freund_k.fix(37.9e-6 * (1e6**0.8316))
+    m.fs.unit.freund_ninv.fix(0.8316)
+    # gac particle specifications
+    m.fs.unit.particle_dens_app.fix(722)
+    m.fs.unit.particle_dia.fix(0.00106)
+    # adsorber bed specifications
+    m.fs.unit.ebct.fix(300)  # seconds
+    m.fs.unit.bed_voidage.fix(0.449)
+    m.fs.unit.bed_length.fix(6)  # assumed
+    # design spec
+    m.fs.unit.conc_ratio_replace.fix(0.50)
+    # parameters
+    m.fs.unit.kf.fix(3.29e-5)
+    m.fs.unit.ds.fix(1.77e-13)
+
+    # scaling
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-4, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e4, index=("Liq", "DCE")
+    )
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestGACHandSurrogateNoSS(UnitTestHarness):
+    def configure(self):
+        m = build_hand_surrogate_no_ss()
+
+        # arguments for UnitTestHarness
+        self.default_zero = zero
+        self.default_relative_tolerance = relative_tolerance
+
+        # Approx data pulled from graph in Hand, 1984 at ~30 days
+        # 30 days adjusted to actual solution to account for web plot data extraction error within reason
+        # values calculated by hand and match those reported in Hand, 1984
+        self.unit_solutions[m.fs.unit.equil_conc] = 0.0005178
+        self.unit_solutions[m.fs.unit.dg] = 19775.77
+        self.unit_solutions[m.fs.unit.N_Bi] = 6.113
+        self.unit_solutions[m.fs.unit.min_N_St] = 47.760
+        self.unit_solutions[m.fs.unit.throughput] = 0.9892
+        self.unit_solutions[m.fs.unit.min_residence_time] = 626.96
+        self.unit_solutions[m.fs.unit.residence_time] = 134.7
+        self.unit_solutions[m.fs.unit.min_operational_time] = 12266003
+        self.unit_solutions[m.fs.unit.operational_time] = 2530674
+        self.unit_solutions[m.fs.unit.bed_volumes_treated] = 8435
+
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_out[0].flow_mol_phase_comp[
+                    "Liq", "DCE"
+                ],
+            },
+        }
+
+        return m
+
+
 # -----------------------------------------------------------------------------
 def build_crittenden():
     # trial problem from Crittenden, 2012 for removal of TCE
