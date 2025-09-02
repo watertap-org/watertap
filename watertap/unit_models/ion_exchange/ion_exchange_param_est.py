@@ -88,7 +88,9 @@ class IXParamEst:
         self._vars_validated = False
 
     def build_model(self):
-        self.model = self.build_function(initial_guess=self.initial_guess, **self.build_kwargs)
+        self.model = self.build_function(
+            initial_guess=self.initial_guess, **self.build_kwargs
+        )
         if not self._vars_validated:
             self._validate_labels()
             self._vars_validated = True
@@ -179,7 +181,7 @@ class IXParamEst:
             self.run_parmest()
 
         self.test_theta_results = defaultdict(list)
-        self.build_kwargs["theta_dict"] = {} 
+        self.build_kwargs["theta_dict"] = {}
 
         for x, y in zip(
             self.filtered_data["filtered_x"].dropna().values,
@@ -216,9 +218,7 @@ class IXParamEst:
         self.test_theta_results = pd.DataFrame.from_dict(self.test_theta_results)
         self.test_theta_results["flag"] = "test_theta"
 
-
     def test_theta_full(self, min_x=0.02, max_x=0.98, num_points=11):
-
         """
         Test theta across the full range of concentration ratios.
         """
@@ -259,7 +259,9 @@ class IXParamEst:
             # save the x value that resulted in successful solve
             self.test_theta_full_results["filtered_x"].append(x)
 
-        self.test_theta_full_results = pd.DataFrame.from_dict(self.test_theta_full_results)
+        self.test_theta_full_results = pd.DataFrame.from_dict(
+            self.test_theta_full_results
+        )
         self.test_theta_full_results["flag"] = "test_theta_full"
 
     def make_results(self):
@@ -274,7 +276,11 @@ class IXParamEst:
             self.compute_fit_statistics()
 
         self.results = pd.concat(
-            [self.test_initial_guess_results, self.test_theta_results, self.test_theta_full_results],
+            [
+                self.test_initial_guess_results,
+                self.test_theta_results,
+                self.test_theta_full_results,
+            ],
             ignore_index=True,
         )
 
