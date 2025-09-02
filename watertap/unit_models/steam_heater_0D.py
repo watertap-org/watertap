@@ -22,6 +22,7 @@ from watertap.costing.unit_models.heat_exchanger import (
 )
 from enum import Enum, auto
 from pyomo.common.config import ConfigValue
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 _log = idaeslog.getLogger(__name__)
@@ -108,8 +109,8 @@ class SteamHeater0DData(HeatExchangerData):
             self.hot_side_inlet.fix()
             self.cold_side_inlet.fix()
             self.hot_side_outlet.unfix()
-            self.cold_side_outlet.unfix()
-            self.area.fix()
+            # self.cold_side_outlet.unfix()
+            # self.area.fix()
 
             self.outlet_liquid_mass_balance.deactivate()
             self.outlet_pressure_sat.deactivate()
@@ -139,33 +140,58 @@ class SteamHeater0DData(HeatExchangerData):
             self.config.mode == Mode.CONDENSER
             and not self.config.estimate_cooling_water
         ):
+
+            self.hot_side_inlet.fix()
+            self.cold_side_inlet.fix()
+            # self.hot_side_outlet.unfix()
+            # self.cold_side_outlet.unfix()
+            # self.cold_side_outlet.temperature.fix()
             # condenser mode without cooling water estimation
+            self.outlet_liquid_mass_balance.deactivate()
+            self.outlet_pressure_sat.deactivate()
             super().initialize_build(*args, **kwargs)
             opt = get_solver(solver, optarg)
+            # self.cold_side_outlet.temperature.unfix()
+
+            self.outlet_liquid_mass_balance.activate()
+            self.outlet_pressure_sat.activate()
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(self, tee=slc.tee)
             init_log.info("Initialization Complete {}".format(idaeslog.condition(res)))
 
         elif self.config.mode == Mode.CONDENSER and self.config.estimate_cooling_water:
+            print(f"DOF 1: {degrees_of_freedom(self)}")
 
             # condenser mode with cooling water estimation
             cold_side_outlet_temperature = self.cold_side_outlet.temperature[0].value
             self.hot_side_inlet.fix()
             self.cold_side_inlet.fix()
-            self.cold_side_outlet.unfix()
+            # self.hot_side_outlet.unfix()
+            self.cold_side_outlet.temperature.unfix()
+            # condenser mode without cooling water estimation
+            self.outlet_liquid_mass_balance.deactivate()
+            self.outlet_pressure_sat.deactivate()
+            print(f"DOF 2: {degrees_of_freedom(self)}")
 
             super().initialize_build(*args, **kwargs)
-            self.area.unfix()
-            self.cold_side_outlet.temperature[0].fix(cold_side_outlet_temperature)
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"]
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix()
+            # self.area.unfix()
+            # self.cold_side_outlet.temperature[0].fix(273.15+35)
+            """
+            for j in self.cold_side.config.property_package.solute_set:
+                self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j]
+                self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j].fix()
+                """
 
-            for j in self.cold_side.config.property_package.component_list:
-                self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", j].unfix()
+            # for j in self.cold_side.config.property_package.component_list:
+            self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+            self.cold_side.properties_in[0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ].set_value(20)
 
             self.outlet_liquid_mass_balance.activate()
             self.outlet_pressure_sat.activate()
+            print(f"DOF 3: {degrees_of_freedom(self)}")
 
             opt = get_solver(solver, optarg)
 
@@ -177,18 +203,22 @@ class SteamHeater0DData(HeatExchangerData):
                 )
             )
 
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
-            self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
+            # for j in self.cold_side.config.property_package.solute_set:
+            #   self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", j].unfix()
+            #  self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", j].fix()
+            print(f"DOF 3: {degrees_of_freedom(self)}")
 
-            opt = get_solver(solver, optarg)
+    """
+                opt = get_solver(solver, optarg)
 
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete (w/ cooling water estimation): {}".format(
-                    idaeslog.condition(res)
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = opt.solve(self, tee=slc.tee)
+                init_log.info(
+                    "Initialization Complete (w/ cooling water estimation): {}".format(
+                        idaeslog.condition(res)
+                    )
                 )
-            )
+    """
 
     @property
     def default_costing_method(self):

@@ -93,7 +93,7 @@ def build_crystallizer_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("steam", blk.steam_cost)
+    # costing.register_flow_type("steam", blk.steam_cost)
     costing.register_flow_type("NaCl", blk.NaCl_recovery_value)
 
 
@@ -120,27 +120,6 @@ def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
 
 
 def _cost_crystallizer_flows(blk):
-    blk.costing_package.cost_flow(
-        pyo.units.convert(
-            (
-                blk.unit_model.magma_circulation_flow_vol
-                * blk.unit_model.dens_mass_slurry
-                * Constants.acceleration_gravity
-                * blk.costing_package.crystallizer.pump_head_height
-                / blk.costing_package.crystallizer.efficiency_pump
-            ),
-            to_units=pyo.units.kW,
-        ),
-        "electricity",
-    )
-
-    blk.costing_package.cost_flow(
-        pyo.units.convert(
-            (blk.unit_model.work_mechanical[0] / _compute_steam_properties(blk)),
-            to_units=pyo.units.m**3 / pyo.units.s,
-        ),
-        "steam",
-    )
 
     blk.costing_package.cost_flow(
         blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", "NaCl"],
