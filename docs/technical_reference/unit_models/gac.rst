@@ -30,12 +30,28 @@ fresh GAC downstream. The CPHSDM is valid under the assumption that the shape of
 bed and a constant pattern solution (CPS) may be determined. The CPS is calculated through a multistep procedure utilizing common
 dimensionless groups applied in polynomial fits to determine performance. Therefore, coefficients used in the polynomial must be
 derived from experimental data of the intended system to produce valid results. Coefficients for common compounds treated by GAC may be
-found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have within 10% error and therefore may be applied to bed lengths
-shorter than the minimum length determined by the CPHSDM within the error threshold (in addition to being applicable to bed lengths greater than the minimum length determined by the CPHSDM).
+found in both Hand, 1984 and Crittenden, 2012, replicated in :ref:`Table 1 <min_St_params>` and :ref:`Table 2 <throughout_params>` below.
+The model is estimated to have within 10% error and therefore may be applied to bed lengths shorter than the minimum
+length determined by the CPHSDM within the error threshold (in addition to being applicable to bed lengths greater than the minimum
+length determined by the CPHSDM). As an alternative to the polynomial fits for these dimensionless groups, the WaterTAP GAC model 
+includes surrogate models that can be used to predict performance without the need for the polynomial coefficients.
 
-The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the model
+Model Structure
+------------------
+The GAC model consists of one ControlVolume0DBlock (``process_flow``) for the process flow of the water treatment train.
+The process flow includes two StateBlocks (``inlet`` and ``outlet``) which are used for mass and momentum balances.
+It also includes one StateBlock (``adsorbed``) for the solute that is adsorbed into the GAC particles.
+The material removed in the ``adsorbed`` state block is simulated as liquid phase solute but should be interpreted as solute that has adsorbed
+into the solid phase GAC particles. The steady state mass removal and replacement rate of the GAC itself is provided as a unit model
+variable and excluded from flowsheet material balances. Therefore, GAC is never included as a component in property package specifications.
+
+Effluent Concentration
+----------------------
+The model includes two approaches for determining the effluent concentration of the model as passed via the
+``add_trapezoidal_effluent_approximation`` configuration argument. If ``add_trapezoidal_effluent_approximation`` is set to ``True`` (the default setting),
+the batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the model
 for flowsheet purposes. A visualization of the transformation is provided in Figure 1. For a traditional breakthrough
-curve the CPHSDM method calculates the single point, single ``conc_ratio_replace`` and ``operational_time``, highlighted on the
+curve, the CPHSDM method calculates a single value for ``conc_ratio_replace`` and ``operational_time``, highlighted on the
 breakthrough curve. This operational time is the amount of elapsed time after startup that the bed is refreshed with new
 GAC adsorbent. Steady state concentration can be analogous to all of the effluent in this operational time being stored
 as holdup, therefore the average concentration ratio is significantly less than concentration ratio at the time of
@@ -53,20 +69,13 @@ due to simplicity of solving the model equations.
     ``conc_ratio_avg``. Expected values of ``conc_ratio_avg`` are often less than 0.25 depending on the
     ``conc_ratio_replace`` setpoint.
 
-
-Model Structure
-------------------
-The GAC model consists of 1 ControlVolume0DBlock (``process_flow``) for the process flow of the water treatment train.
-The process flow includes 2 StateBlocks (``inlet`` and ``outlet``) which are used for mass and momentum balances.
-It also includes 1 StateBlock (``adsorbed``) for the solute that is adsorbed into the GAC particles.
-The material removed in the ``adsorbed`` state block is simulated as liquid phase solute but should be interpreted as solute that has adsorbed
-into the solid phase GAC particles. The steady state mass removal and replacement rate of the GAC itself is provided as a unit model
-variable and excluded from flowsheet material balances. Therefore, GAC is never included as a component in property package specifications.
-
+If ``add_trapezoidal_effluent_approximation`` is set to ``False``, the model sets the effluent concentration to that calculated via ``conc_ratio_replace``.
+This configuration may not be suitable for a flowsheet applications, but the lower model complexity can be beneficial for certain use cases,
+such as preliminary design or parameter estimation.
 
 CPHSDM Calculations
 -------------------
-The GAC model relies on calculation of a minimum Stanton number and throughput to determine the CPS.
+The GAC model relies on calculation of a minimum Stanton number and throughput parameter to determine the CPS.
 The original presentation of the CPHSDM in Hand, 1984 includes a polynomial fit of these two parameters, with
 regressed coefficients presented in :ref:`Table 1 <min_St_params>` and :ref:`Table 2 <throughout_params>`, adopted from Hand, 1984.
 The WaterTAP GAC model includes two options for calculating the minimum Stanton number and throughput parameter, passed via the 
@@ -134,13 +143,20 @@ Sets
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "time", ":math:`t`", "[0]"
-   "phases", ":math:`p`", "['Liq']"
-   "components", ":math:`j`", "['H2O', target_species, background solutes]*"
-   "species adsorbed", ":math:`\text{target_species}`", "[target_species]"
-   "inert species", ":math:`\text{inert_species}`", "['H2O', target_species, background solutes] - [target_species]"
-   "number of discretized operational time elements used for steady state approximation", ":math:`\text{ele_disc}`", "[0:elements_ss_approx]"
-   "number of discretized trapezoidal area terms for steady state approximation", ":math:`\text{ele_index}`", "[1:elements_ss_approx]"
+   "Time", ":math:`t`", "[0]"
+   "Phases", ":math:`p`", "['Liq']"
+   "Components", ":math:`j`", "['H2O', target_species, background solutes]*"
+   "Species adsorbed", ":math:`\text{target_species}`", "[target_species]"
+   "Inert species", ":math:`\text{inert_species}`", "['H2O', target_species, background solutes] - [target_species]"
+
+
+If ``add_trapezoidal_effluent_approximation`` is set to ``True``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Indices"
+
+   "Number of discretized operational time elements used for steady state approximation", ":math:`\text{ele_disc}`", "[0:elements_ss_approx]"
+   "Number of discretized trapezoidal area terms for steady state approximation", ":math:`\text{ele_index}`", "[1:elements_ss_approx]"
 
 | \* target_species is provided in the ``target_species`` argument of the unit model and corresponds to the single solute which is adsorbed.
 | \* ``inert_species`` are the difference in ``component_list - target_species``.
@@ -159,74 +175,79 @@ variables in the model.
 
    "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None", ":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
    "Freundlich isotherm 1/n parameter", ":math:`\frac{1}{n}`", "freund_ninv", "None", ":math:`\text{dimensionless}`"
-   "surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"
-   "liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
-   "equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
-   "solute distribution parameter", ":math:`D_g`", "dg", "None", ":math:`\text{dimensionless}`"
+   "Surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"
+   "Liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
+   "Equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
+   "Solute distribution parameter", ":math:`D_g`", "dg", "None", ":math:`\text{dimensionless}`"
    "Biot number", ":math:`Bi`", "N_Bi", "None", ":math:`\text{dimensionless}`"
-   "superficial velocity", ":math:`u_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
-   "interstitial velocity", ":math:`u_i`", "velocity_int", "None", ":math:`\text{m/s}`"
-   "bed void fraction", ":math:`\epsilon`", "bed_voidage", "None", ":math:`\text{dimensionless}`"
-   "bed length", ":math:`L`", "bed_length", "None", ":math:`\text{m}`"
-   "bed diameter", ":math:`D`", "bed_diameter", "None", ":math:`\text{m}`"
-   "bed area", ":math:`A`", "bed_area", "None", ":math:`\text{m}^2`"
-   "bed volume", ":math:`V`", "bed_volume", "None", ":math:`\text{m}^3`"
-   "empty bed contact time", ":math:`EBCT`", "ebct", "None", ":math:`\text{s}`"
-   "fluid residence time in the bed", ":math:`\tau`", "residence_time", "None", ":math:`\text{s}`"
-   "mass of fresh gac in the bed", ":math:`M_{GAC}`", "bed_mass_gac", "None", ":math:`\text{kg}`"
-   "gac apparent density", ":math:`\rho_a`", "particle_dens_app", "None", ":math:`\text{kg/}\text{m}^3`"
-   "gac bulk density", ":math:`\rho_b`", "particle_dens_bulk", "None", ":math:`\text{kg/}\text{m}^3`"
-   "gac particle diameter", ":math:`d_p`", "particle_dia", "None", ":math:`\text{m}`"
-   "minimum Stanton number to achieve a constant pattern solution", ":math:`St_{min}`", "min_N_St", "None", ":math:`\text{dimensionless}`"
-   "minimum empty bed contact time to achieve a constant pattern solution", ":math:`EBCT_{min}`", "min_ebct", "None", ":math:`\text{s}`"
-   "specific throughput from empirical equation", ":math:`T`", "throughput", "None", ":math:`\text{dimensionless}`"
-   "minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}`", "min_residence_time", "None", ":math:`\text{s}`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}`", "min_operational_time", "None", ":math:`\text{s}`"
-   "effluent to inlet concentration ratio at operational time", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L,/,t=t_{op}}`", "conc_ratio_replace", "None", ":math:`\text{dimensionless}`"
-   "operational time of the bed from fresh", ":math:`t_{op}`", "operational_time", "None", ":math:`\text{s}`"
-   "bed volumes treated at operational time", ":math:`BVT`", "bed_volumes_treated", "None", ":math:`\text{dimensionless}`"
-   "specific throughput from empirical equation by discrete element", ":math:`T_{ele}`", "ele_throughput", "None", ":math:`x`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element", ":math:`t_{min, ele}`", "ele_min_operational_time", "ele_index", ":math:`\text{s}`"
-   "effluent to inlet concentration ratio at operational time by discrete element", ":math:`\left(\frac{C}{C_{0}}\right)_{ele}\bigg{|}_{z=L,/,t=t_{op_ e}}`", "ele_conc_ratio_replace", "ele_index", ":math:`\text{dimensionless}`"
-   "operational time of the bed from fresh by discrete element", ":math:`t_{op, ele}`", "ele_operational_time", "ele_disc", ":math:`\text{s}`"
-   "trapezoid rule of elements for numerical integration of average concentration ratio", ":math:`term_{ele}`", "ele_conc_ratio_avg", "ele_disc", ":math:`\text{dimensionless}`"
-   "steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
-   "total mass of adsorbed species at operational time", ":math:`M`", "mass_adsorbed", "None", ":math:`\text{kg}`"
-   "gac usage/replacement/regeneration rate", ":math:`\dot{m}_{GAC}`", "gac_usage_rate", "None", ":math:`\text{m/s}`"
-
+   "Superficial velocity", ":math:`u_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
+   "Interstitial velocity", ":math:`u_i`", "velocity_int", "None", ":math:`\text{m/s}`"
+   "Bed void fraction", ":math:`\epsilon`", "bed_voidage", "None", ":math:`\text{dimensionless}`"
+   "Bed length", ":math:`L`", "bed_length", "None", ":math:`\text{m}`"
+   "Bed diameter", ":math:`D`", "bed_diameter", "None", ":math:`\text{m}`"
+   "Bed area", ":math:`A`", "bed_area", "None", ":math:`\text{m}^2`"
+   "Bed volume", ":math:`V`", "bed_volume", "None", ":math:`\text{m}^3`"
+   "Empty bed contact time", ":math:`EBCT`", "ebct", "None", ":math:`\text{s}`"
+   "Fluid residence time in the bed", ":math:`\tau`", "residence_time", "None", ":math:`\text{s}`"
+   "Mass of fresh GAC in the bed", ":math:`M_{GAC}`", "bed_mass_gac", "None", ":math:`\text{kg}`"
+   "GAC apparent density", ":math:`\rho_a`", "particle_dens_app", "None", ":math:`\text{kg/}\text{m}^3`"
+   "GAC bulk density", ":math:`\rho_b`", "particle_dens_bulk", "None", ":math:`\text{kg/}\text{m}^3`"
+   "GAC particle diameter", ":math:`d_p`", "particle_dia", "None", ":math:`\text{m}`"
+   "Minimum Stanton number to achieve a constant pattern solution", ":math:`St_{min}`", "min_N_St", "None", ":math:`\text{dimensionless}`"
+   "Minimum empty bed contact time to achieve a constant pattern solution", ":math:`EBCT_{min}`", "min_ebct", "None", ":math:`\text{s}`"
+   "Specific throughput", ":math:`T`", "throughput", "None", ":math:`\text{dimensionless}`"
+   "Minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}`", "min_residence_time", "None", ":math:`\text{s}`"
+   "Minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}`", "min_operational_time", "None", ":math:`\text{s}`"
+   "Effluent to inlet concentration ratio at operational time", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L,/,t=t_{op}}`", "conc_ratio_replace", "None", ":math:`\text{dimensionless}`"
+   "Operational time of the bed from fresh", ":math:`t_{op}`", "operational_time", "None", ":math:`\text{s}`"
+   "Bed volumes treated at operational time", ":math:`BVT`", "bed_volumes_treated", "None", ":math:`\text{dimensionless}`"
 
 The following variables are only built when specific configuration options are selected.
 
-if ``cphsdm_calculation_method`` is set to ``input``:
+If ``add_trapezoidal_effluent_approximation`` is set to ``True``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Specific throughput from empirical equation by discrete element", ":math:`T_{ele}`", "ele_throughput", "None", ":math:`x`"
+   "Minimum operational time of the bed from fresh to achieve a constant pattern solution by discrete element", ":math:`t_{min, ele}`", "ele_min_operational_time", "ele_index", ":math:`\text{s}`"
+   "Effluent to inlet concentration ratio at operational time by discrete element", ":math:`\left(\frac{C}{C_{0}}\right)_{ele}\bigg{|}_{z=L,/,t=t_{op_ e}}`", "ele_conc_ratio_replace", "ele_index", ":math:`\text{dimensionless}`"
+   "Operational time of the bed from fresh by discrete element", ":math:`t_{op, ele}`", "ele_operational_time", "ele_disc", ":math:`\text{s}`"
+   "Trapezoid rule of elements for numerical integration of average concentration ratio", ":math:`term_{ele}`", "ele_conc_ratio_avg", "ele_disc", ":math:`\text{dimensionless}`"
+   "Steady state approximation of average effluent to inlet concentration ratio in operational time by trapezoid rule", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
+   "Total mass of adsorbed species at operational time", ":math:`M`", "mass_adsorbed", "None", ":math:`\text{kg}`"
+   "GAC usage/replacement/regeneration rate", ":math:`\dot{m}_{GAC}`", "gac_usage_rate", "None", ":math:`\text{m/s}`"
+
+If ``cphsdm_calculation_method`` is set to ``input``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Stanton equation parameter 0", ":math:`a_0`", "a0", "None", ":math:`\text{dimensionless}`"
    "Stanton equation parameter 1", ":math:`a_1`", "a1", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 0", ":math:`b_0`", "b0", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 1", ":math:`b_1`", "b1", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 2", ":math:`b_2`", "b2", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 3", ":math:`b_3`", "b3", "None", ":math:`\text{dimensionless}`"
-   "throughput equation parameter 4", ":math:`b_4`", "b4", "None", ":math:`\text{dimensionless}`"
-   
-if ``film_transfer_coefficient_type`` is set to ``calculated``:
+   "Throughput equation parameter 0", ":math:`b_0`", "b0", "None", ":math:`\text{dimensionless}`"
+   "Throughput equation parameter 1", ":math:`b_1`", "b1", "None", ":math:`\text{dimensionless}`"
+   "Throughput equation parameter 2", ":math:`b_2`", "b2", "None", ":math:`\text{dimensionless}`"
+   "Throughput equation parameter 3", ":math:`b_3`", "b3", "None", ":math:`\text{dimensionless}`"
+   "Throughput equation parameter 4", ":math:`b_4`", "b4", "None", ":math:`\text{dimensionless}`"
+
+If ``film_transfer_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Reynolds number", ":math:`Re`", "N_Re", "None", ":math:`\text{dimensionless}`"
    "Schmidt number", ":math:`Sc`", "N_Sc", "None", ":math:`\text{dimensionless}`"
-   "shape correction factor", ":math:`SCF`", "shape_correction_factor", "None", ":math:`\text{dimensionless}`"
+   "Shape correction factor", ":math:`SCF`", "shape_correction_factor", "None", ":math:`\text{dimensionless}`"
 
-if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
+If ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "gac particle porosity", ":math:`\epsilon_p`", "particle_porosity", "None", ":math:`\text{dimensionless}`"
-   "tortuosity of the path that the adsorbate must take as compared to the radius", ":math:`\tau_p`", "tort", "None", ":math:`\text{dimensionless}`"
-   "surface-to-pore diffusion flux ratio", ":math:`S\!P\!D\!F\!R`", "spdfr", "None", ":math:`\text{dimensionless}`"
+   "GAC particle porosity", ":math:`\epsilon_p`", "particle_porosity", "None", ":math:`\text{dimensionless}`"
+   "Tortuosity of the path that the adsorbate must take as compared to the radius", ":math:`\tau_p`", "tort", "None", ":math:`\text{dimensionless}`"
+   "Surface-to-pore diffusion flux ratio", ":math:`S\!P\!D\!F\!R`", "spdfr", "None", ":math:`\text{dimensionless}`"
 
 .. _GAC_equations:
 
@@ -236,53 +257,59 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "equilibrium concentration", ":math:`q_e = kC_0^{1/n}`"
-   "solute distribution parameter", ":math:`D_g=\frac{\rho_aq_e\left( 1-\epsilon \right)}{\epsilon C_0}`"
+   "Equilibrium concentration", ":math:`q_e = kC_0^{1/n}`"
+   "Solute distribution parameter", ":math:`D_g=\frac{\rho_aq_e\left( 1-\epsilon \right)}{\epsilon C_0}`"
    "Biot number", ":math:`Bi=\frac{k_fd_p\left( 1-\epsilon \right)}{2D_sD_g\epsilon}`"
-   "bed void fraction based on gac particle densities", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
-   "relating velocities based on bed voidage", ":math:`u_i=\frac{u_s}{\epsilon}`"
-   "bed length based on velocity and ebct", ":math:`L=(EBCT)u_s`"
-   "bed diameter and area relation", ":math:`A=\pi\left(\frac{D}{2}\right)^2`"
-   "bed area based on velocity and volumetric flow", ":math:`A=\frac{Q}{u_s}`"
-   "bed volume based on cylindrical dimensions", ":math:`V=AL`"
-   "fluid residence time in the bed", ":math:`\tau=(EBCT)\epsilon`"
-   "total mass of gac in the bed", ":math:`M_{GAC}=V\rho_b`"
-   "minimum empty bed contact time to achieve constant pattern solution", ":math:`EBCT_{min}=\frac{St_{min}d_p}{2k_f\left( 1-\epsilon \right)}`"
-   "minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}=EBCT_{min}\epsilon`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}=\tau_{min}\left( D_g+1 \right)T`"
-   "elapsed operational time between a fresh bed and the theoretical bed replacement", ":math:`t_{op}=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
-   "bed volumes treated", ":math:`BVT=\frac{t_{op}\epsilon}{\tau}`"
-   "minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element", ":math:`t_{min, ele}=\tau_{min}\left( D_g+1 \right)T`"
-   "creating evenly spaced discretized elements", ":math:`\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}=0.01+(ele-1)*\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op}}-0.01\right)}{num\text{_}ele}`"
-   "finite element discretization of concentration ratios over time", ":math:`term_{ele}=\left(\frac{t_{op, ele}-t_{op, (ele-1)}}{t_{op}}\right)\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}+{C_{0}}\bigg{|}_{t=t_{op, (ele-1)}}\right)}{2}`"
-   "summation of finite elements for average concentration during operating time", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}=\sum_{ele\text{_}index}term_{ele}`"
-   "mass adsorbed in the operational time", ":math:`M=\frac{\dot{m}_{j}}{t_{op}}`"
-   "steady state rate of new gac mass required", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
+   "Bed void fraction based on GAC particle densities", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
+   "Relating velocities based on bed voidage", ":math:`u_i=\frac{u_s}{\epsilon}`"
+   "Bed length based on velocity and EBCT", ":math:`L=(EBCT)u_s`"
+   "Bed diameter and area relation", ":math:`A=\pi\left(\frac{D}{2}\right)^2`"
+   "Bed area based on velocity and volumetric flow", ":math:`A=\frac{Q}{u_s}`"
+   "Bed volume based on cylindrical dimensions", ":math:`V=AL`"
+   "Fluid residence time in the bed", ":math:`\tau=(EBCT)\epsilon`"
+   "Total mass of GAC in the bed", ":math:`M_{GAC}=V\rho_b`"
+   "Minimum empty bed contact time to achieve constant pattern solution", ":math:`EBCT_{min}=\frac{St_{min}d_p}{2k_f\left( 1-\epsilon \right)}`"
+   "Minimum fluid residence time in the bed to achieve a constant pattern solution", ":math:`\tau_{min}=EBCT_{min}\epsilon`"
+   "Minimum operational time of the bed from fresh to achieve a constant pattern solution", ":math:`t_{min}=\tau_{min}\left( D_g+1 \right)T`"
+   "Elapsed operational time between a fresh bed and the theoretical bed replacement", ":math:`t_{op}=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
+   "Bed volumes treated", ":math:`BVT=\frac{t_{op}\epsilon}{\tau}`"
 
-
-if ``cphsdm_calculation_method`` is set to ``input``:
+If ``add_trapezoidal_effluent_approximation`` is set to ``True``:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "minimum Stanton number to achieve constant pattern solution", ":math:`St_{min}=a_0Bi+a_1`"
-   "throughput based on empirical 5-parameter regression", ":math:`T=b_0+b_1\left( \frac{C}{C_0} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0} \right)^{b_4}}`"
-   "throughput based on empirical 5-parameter regression by discretized element", ":math:`T_{ele}=b_0+b_1\left(\frac{C}{C_{0}}\right)_{ele}^{b_2}+\frac{b_3}{1.01-\left(\frac{C}{C_{0}}\right)_{ele}^{b_4}}`"
+   "Minimum operational time of the bed from fresh to achieve a constant pattern solution by discretized element", ":math:`t_{min, ele}=\tau_{min}\left( D_g+1 \right)T`"
+   "Creating evenly spaced discretized elements", ":math:`\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}=0.01+(ele-1)*\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op}}-0.01\right)}{num\text{_}ele}`"
+   "Finite element discretization of concentration ratios over time", ":math:`term_{ele}=\left(\frac{t_{op, ele}-t_{op, (ele-1)}}{t_{op}}\right)\frac{\left(\frac{C}{C_{0}}\bigg{|}_{t=t_{op, ele}}+{C_{0}}\bigg{|}_{t=t_{op, (ele-1)}}\right)}{2}`"
+   "Summation of finite elements for average concentration during operating time", ":math:`\left(\frac{C}{C_{0}}\right)_{avg}=\sum_{ele\text{_}index}term_{ele}`"
+   "Mass adsorbed in the operational time", ":math:`M=\frac{\dot{m}_{j}}{t_{op}}`"
+   "Steady state rate of new GAC mass required", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
 
 
-if ``film_transfer_coefficient_type`` is set to ``calculated``:
+If ``cphsdm_calculation_method`` is set to ``input``:
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Minimum Stanton number to achieve constant pattern solution", ":math:`St_{min}=a_0Bi+a_1`"
+   "Throughput based on empirical 5-parameter regression", ":math:`T=b_0+b_1\left( \frac{C}{C_0} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0} \right)^{b_4}}`"
+   "Throughput based on empirical 5-parameter regression by discretized element", ":math:`T_{ele}=b_0+b_1\left(\frac{C}{C_{0}}\right)_{ele}^{b_2}+\frac{b_3}{1.01-\left(\frac{C}{C_{0}}\right)_{ele}^{b_4}}`"
+
+
+If ``film_transfer_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Equation"
 
    "Reynolds number calculation*", ":math:`Re=\frac{\rho_ld_pu_i}{\mu_l}`"
    "Schmidt number calculation*", ":math:`Sc=\frac{\mu_l}{\rho_sD_l}`"
-   "liquid phase film transfer rate from the Gnielinshi correlation*", ":math:`k_f=(SCF)\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
+   "Liquid phase film transfer rate from the Gnielinski correlation*", ":math:`k_f=(SCF)\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
 
 \*Subscript :math:`l` denotes bulk liquid phase properties, here those are supplied by the property package.
 
 
-if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
+If ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -489,11 +516,14 @@ Code Documentation
 
 References
 -----------
-Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems.
-Journal of Environmental Engineering, 110(2), 440-456.
+| Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). 
+| Simplified models for design of fixed-bed adsorption systems.
+| *Journal of Environmental Engineering*, 110(2), 440-456.
+|
+| Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). 
+| MWHs Water Treatment. Principles and Design.
+| John Wiley & Sons.
 
-Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design.
-John Wiley & Sons.
-
-Crittenden, J. C., Berrigan, J. K., Hand, D. W., & Lykins, B. (1987). Design of Rapid Fixed‐Bed Adsorption Tests for
-Nonconstant Diffusivities. Journal of Environmental Engineering, 113(2), 243–259.
+| Crittenden, J. C., Berrigan, J. K., Hand, D. W., & Lykins, B. (1987). 
+| Design of Rapid Fixed‐Bed Adsorption Tests for Nonconstant Diffusivities. 
+| *Journal of Environmental Engineering*, 113(2), 243–259.
