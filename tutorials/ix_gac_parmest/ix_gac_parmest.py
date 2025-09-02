@@ -8,9 +8,11 @@ from collections import defaultdict
 import pyomo.contrib.parmest.parmest as parmest
 from pyomo.contrib.parmest.experiment import Experiment
 from pyomo.environ import (
+    Var,
     ComponentUID,
     ConcreteModel,
     Suffix,
+    Reals,
     value,
     assert_optimal_termination,
     units as pyunits,
@@ -66,8 +68,13 @@ __all__ = [
     "BreakthroughExperiment",
     "AdsorptionParamEst",
     "build_ix_ocwd_pilot",
+    "build_gac_ocwd_pilot",
     "filter_data",
-    "plot_curve",
+    "plot_curve1",
+    "plot_curve2",
+    "pfas_properties",
+    "gac_properties",
+    "resin_properties",
 ]
 
 
@@ -430,6 +437,205 @@ def build_ix_ocwd_pilot(
     return m
 
 
+def build_gac_ocwd_pilot(
+    species="PFBS",
+    media="calgon_f600",
+    theta_dict=dict(),
+    **kwargs,
+):
+
+    def apply_scaling(m):
+
+        pfas_mol_flow = pyunits.convert(
+            (pfas_data["c0"] * pyunits.ng / pyunits.L)
+            / (pfas_data["mw"] * pyunits.kg / pyunits.mol)
+            * flow_rate,
+            to_units=pyunits.mol / pyunits.s,
+        )
+        rho = 1000 * pyunits.kg / pyunits.m**3
+        h2o_mol_flow = pyunits.convert(
+            (flow_rate * rho) / (0.018 * pyunits.kg / pyunits.mol),
+            to_units=pyunits.mol / pyunits.s,
+        )
+        print(
+            "H2O Mol Flow:",
+            value(pyunits.convert(h2o_mol_flow, to_units=pyunits.mol / pyunits.s)),
+        )
+        print(
+            "PFAS Mol Flow:",
+            value(pyunits.convert(pfas_mol_flow, to_units=pyunits.mol / pyunits.s)),
+        )
+        iscale.set_scaling_factor(m.fs.unit.bed_area, 1 / value(bed_area))
+        iscale.set_scaling_factor(m.fs.unit.bed_diameter, 1 / value(bed_diameter))
+        iscale.set_scaling_factor(m.fs.unit.bed_volume, 1 / value(bed_volume))
+        iscale.set_scaling_factor(m.fs.unit.bed_length, 1 / value(bed_depth))
+        iscale.set_scaling_factor(m.fs.unit.ebct, 1 / value(ebct))
+        iscale.set_scaling_factor(m.fs.unit.velocity_sup, 1 / value(loading_rate))
+        iscale.set_scaling_factor(m.fs.unit.equil_conc, 1e5)
+        iscale.set_scaling_factor(
+            m.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"],
+            1 / value(flow_rate),
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"],
+            1 / value(h2o_mol_flow),
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", species],
+            1 / value(pfas_mol_flow),
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.process_flow.properties_in[0].flow_mass_phase_comp["Liq", "H2O"],
+            1 / value(flow_rate * rho),
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.process_flow.properties_in[0].flow_mass_phase_comp[
+                "Liq", species
+            ],
+            1 / value(pfas_mol_flow / pfas_data["mw"]),
+        )
+        iscale.set_scaling_factor(
+            m.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp[
+                "Liq", species
+            ],
+            1 / value(pfas_data["c0"] * 1e-9),
+        )
+        iscale.constraint_scaling_transform(
+            m.fs.unit.eq_equilibrium_concentration[0.0, species], 1e2
+        )
+        iscale.constraint_scaling_transform(m.fs.unit.eq_mass_adsorbed[species], 1e5)
+        iscale.constraint_scaling_transform(m.fs.unit.eq_number_bi, 1e10)
+        iscale.constraint_scaling_transform(m.fs.unit.eq_bed_area[0.0], 1e5)
+        iscale.constraint_scaling_transform(m.fs.unit.eq_dg[0.0, species], 1e5)
+        iscale.constraint_scaling_transform(m.fs.unit.eq_number_bi, 1e10)
+        iscale.constraint_scaling_transform(
+            m.fs.unit.eq_minimum_operational_time_cps, 1e-6
+        )
+        iscale.constraint_scaling_transform(m.fs.unit.eq_operational_time, 1e-6)
+        iscale.constraint_scaling_transform(m.fs.unit.eq_bed_volumes_treated, 1e-6)
+        iscale.constraint_scaling_transform(m.fs.unit.eq_residence_time, 0.1)
+        iscale.constraint_scaling_transform(m.fs.unit.eq_min_residence_time_cps, 0.1)
+
+    bed_diameter = pyunits.convert(3.04 * pyunits.inch, to_units=pyunits.m)
+    bed_depth = pyunits.convert(52 * pyunits.inch, to_units=pyunits.m)
+    bed_volume = pyunits.convert(377.93 * pyunits.inch**3, to_units=pyunits.m**3)
+    bed_area = pyunits.convert(7.27 * pyunits.inch**2, to_units=pyunits.m**2)
+    flow_rate = pyunits.convert(
+        0.1625 * pyunits.gallon / pyunits.minute, to_units=pyunits.m**3 / pyunits.s
+    )
+    loading_rate = pyunits.convert(
+        3.25 * pyunits.gallon / pyunits.minute / pyunits.ft**2,
+        to_units=pyunits.m**3 / pyunits.s / pyunits.m**2,
+    )
+    ebct = pyunits.convert(10.07 * pyunits.minute, to_units=pyunits.s)
+
+    pfas_data = pfas_properties[species]
+    media_data = gac_properties[media]
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = MCASParameterBlock(
+        solute_list=[species],
+        mw_data={"H2O": 0.018, species: pfas_data.get("mw", 0.250)},
+        ignore_neutral_charge=True,
+        diffus_calculation="HaydukLaudie",
+        molar_volume_data={
+            ("Liq", species): pfas_data.get("molar_volume", 0.000250),
+        },
+    )
+    m.fs.unit = GAC(
+        property_package=m.fs.properties,
+        film_transfer_coefficient_type="calculated",
+        surface_diffusion_coefficient_type="fixed",
+        cphsdm_calaculation_method="surrogate",
+        add_trapezoidal_effluent_approximation=False,
+    )
+    # scaling
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e3, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e12, index=("Liq", species)
+    )
+    unit_feed = m.fs.unit.process_flow.properties_in[0]
+    unit_feed.flow_vol_phase
+    unit_feed.conc_mass_phase_comp
+    iscale.calculate_scaling_factors(m)
+
+    # feed specifications
+    unit_feed.pressure.fix(101325)
+    unit_feed.temperature.fix(273.15 + 25)
+    unit_feed = m.fs.unit.process_flow.properties_in.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): 2e-8,
+            ("conc_mass_phase_comp", ("Liq", species)): 4e-9,
+        },
+        hold_state=True,
+    )
+
+    m.fs.unit.freund_k.fix(3.7)
+    m.fs.unit.freund_ninv.fix(0.8316)
+    m.fs.unit.ds.fix(2e-13)
+    m.fs.unit.particle_dens_app.fix(722)
+    m.fs.unit.particle_dia.fix(0.00106)
+    m.fs.unit.ebct.fix(300)  # seconds
+    m.fs.unit.bed_voidage.fix(0.449)
+    m.fs.unit.bed_length.fix(6)  # assumed
+    m.fs.unit.shape_correction_factor.fix()
+
+    m.fs.unit.conc_ratio_replace.fix(0.50)
+    for v in m.fs.unit.component_objects(Var):
+        v.domain = Reals
+        v.setlb(None)
+    print(f"dof = {degrees_of_freedom(m)}")
+
+    assert degrees_of_freedom(m) == 0
+
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    m.fs.properties.mw_comp[species] = pfas_data["mw"]
+    m.fs.properties.molar_volume_phase_comp["Liq", species] = pfas_data["molar_volume"]
+
+    # recalculate desired inlet flow and effluent target, based on conditions and new mw
+    m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].unfix()
+    m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", species].unfix()
+    m.fs.unit.process_flow.properties_in.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_rate,
+            ("conc_mass_phase_comp", ("Liq", species)): pfas_data["c0"] * 1e-9,
+        },
+        hold_state=True,
+    )
+
+    m.fs.unit.particle_dens_app.fix(media_data["density"])
+    m.fs.unit.particle_dia.fix(media_data["diameter"])
+    m.fs.unit.ebct.fix(ebct)
+    m.fs.unit.bed_length.fix(bed_depth)
+    m.fs.unit.velocity_sup.set_value(bed_depth / ebct)
+
+    apply_scaling(m)
+
+    for v, ig in theta_dict.items():
+        vv = m.find_component(v)
+        vv.fix(ig)
+
+    # m.fs.unit.ds.setlb(1e-16)
+    # m.fs.unit.ds.setub(1e-13)
+
+    m.fs.unit.freund_ninv.setlb(0.01)
+    m.fs.unit.freund_ninv.setub(0.99)
+
+    m.fs.unit.freund_k.setlb(1e-8)
+    m.fs.unit.freund_k.setub(100)
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    return m
+
+
 def filter_data(
     data,
     c0=None,
@@ -462,10 +668,10 @@ def filter_data(
 
     for i, cb in enumerate(data.cb):
 
-        if cb == last_cb:
-            d["excl_cbs"].append(cb)
-            d["excl_bvs"].append(data.bv.iloc[i])
-            continue
+        # if cb == last_cb:
+        #     d["excl_cbs"].append(cb)
+        #     d["excl_bvs"].append(data.bv.iloc[i])
+        #     continue
 
         if i != len(data.cb) - 1:
             if (
@@ -511,7 +717,7 @@ def filter_data(
     return filtered_data
 
 
-def plot_curve(
+def plot_curve1(
     data,
     data2=None,
     x="filtered_x",
@@ -531,9 +737,56 @@ def plot_curve(
     ax.plot(
         data["all_bvs"],
         data["all_cnorms"],
+        marker=None,
+        # label="All extracted data",
+        color="grey",
+        alpha=0.25,
+    )
+    ax.scatter(
+        data["keep_bvs"],
+        data["keep_cnorms"],
         marker=".",
-        label="All extracted data",
+        label="Filtered Data",
+        color="blue",
+    )
+    ax.scatter(
+        data["excl_bvs"],
+        data["excl_cnorms"],
+        marker="x",
+        label="Excluded Data",
         color="k",
+    )
+    ax.set_xlabel("Bed Volumes")
+    ax.set_ylabel("C/C0")
+    ax.set(**set_dict)
+    ax.legend()
+    ax.grid(zorder=0)
+    return fig, ax
+
+
+def plot_curve2(
+    data,
+    data2=None,
+    x="filtered_x",
+    y="filtered_y",
+    yleg=None,
+    set_dict=dict(),
+    fig=None,
+    ax=None,
+):
+    if yleg is None:
+        yleg = y
+    if data2 is None:
+        data2 = data.copy()
+
+    if (fig, ax) == (None, None):
+        fig, ax = plt.subplots()
+    ax.plot(
+        data["all_bvs"],
+        data["all_cnorms"],
+        marker=None,
+        label="All extracted data",
+        color="grey",
         alpha=0.25,
     )
     ax.scatter(
@@ -548,7 +801,7 @@ def plot_curve(
         data["excl_cnorms"],
         marker="x",
         label="Excluded data",
-        color="red",
+        color="k",
     )
     ax.scatter(
         data2[x],
@@ -557,17 +810,9 @@ def plot_curve(
         label=yleg,
         color="green",
     )
-    ax.plot(
-        data2[x],
-        data2[y],
-        marker=None,
-        # label=yleg,
-        color="green",
-        alpha=0.25,
-    )
     ax.set_xlabel("Bed Volumes")
     ax.set_ylabel("C/C0")
     ax.set(**set_dict)
-    ax.legend()
+    # ax.legend()
     ax.grid(zorder=0)
     return fig, ax
