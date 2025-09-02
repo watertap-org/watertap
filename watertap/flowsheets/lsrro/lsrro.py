@@ -858,7 +858,8 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
     if raise_on_failure:
         raise RuntimeError(msg)
     else:
-        print(msg)
+        if tee:
+            print(msg)
         return results
 
 
