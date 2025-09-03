@@ -8,7 +8,7 @@ def set_up_sensitivity(m):
     optimize_kwargs = {}
     opt_function = solve  
     outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["Steam Cost"] = m.fs.costing.heat_exchanger.steam_cost
+    outputs["Steam Cost"] = m.fs.costing.steam_cost
     return outputs, optimize_kwargs, opt_function
 
 def run_steam_cost_sweep(nx=200, output_filename="steam_cost_sweep.csv"):
@@ -23,7 +23,7 @@ def run_steam_cost_sweep(nx=200, output_filename="steam_cost_sweep.csv"):
     sweep_params = {}
    
     sweep_params["steam_cost"] = LinearSample(
-        m.fs.costing.heat_exchanger.steam_cost, 0.00, 0.008, nx
+        m.fs.costing.steam_cost, 0.00, 0.008, nx
     )
     
     global_results = parameter_sweep(

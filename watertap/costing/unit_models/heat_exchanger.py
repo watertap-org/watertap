@@ -28,11 +28,11 @@ def build_heat_exchanger_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    blk.steam_cost = pyo.Var(
-        initialize=0.00,
-        units=pyo.units.USD_2018 / (pyo.units.kg),
-        doc="steam cost per kg",
-    )
+    # blk.steam_cost = pyo.Var(
+    #     initialize=0.00,
+    #     units=pyo.units.USD_2018 / (pyo.units.kg),
+    #     doc="steam cost per kg",
+    # )
 
     if not hasattr(blk.parent_block(), "steam"):
         blk.parent_block().register_flow_type("steam", blk.steam_cost)
