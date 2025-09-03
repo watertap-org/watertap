@@ -12,6 +12,8 @@ from pyomo.environ import (
     ComponentUID,
     ConcreteModel,
     Suffix,
+    Param,
+    Expression,
     Reals,
     value,
     assert_optimal_termination,
@@ -75,6 +77,8 @@ __all__ = [
     "pfas_properties",
     "gac_properties",
     "resin_properties",
+    "build_ix_ocwd_full", 
+    "build_gac_ocwd_full",
 ]
 
 
@@ -816,3 +820,303 @@ def plot_curve2(
     # ax.legend()
     ax.grid(zorder=0)
     return fig, ax
+
+
+
+def build_ix_ocwd_full(
+    species="PFOS",
+    resin="calgon_calres_2301",
+    flow_rate=1,
+    theta_dict=dict(),
+    c0=15.8,
+    cb=10,
+    c_norm=None,
+    **kwargs
+):
+    """
+    Build for OCWD Pilot System
+    """
+    # PILOT SYSTEM INFO
+
+    if c_norm is None:
+        if cb >= c0:
+            c_norm = 0.95
+        else:
+            c_norm = cb / c0
+
+    flow_rate = flow_rate * pyunits.Mgallons / pyunits.day
+    c0 = c0 * pyunits.ng / pyunits.L
+    resin_data = resin_properties[resin]
+    pfas_data = pfas_properties[species]
+
+    bed_depth = (2.8 * 2) * pyunits.ft
+    ebct = 6 * pyunits.minute  # lead - lag configuration; 3 min per vessel
+
+    pfas_data = pfas_properties[species]
+    resin_data = resin_properties[resin]
+
+    ion_props = {
+        "solute_list": [species],
+        "mw_data": {
+            "H2O": 0.018,
+            species: pfas_data.get("mw", 0.350),
+        },
+        "molar_volume_data": {
+            ("Liq", species): pfas_data.get("molar_volume", 0.0004),
+        },
+        "diffus_calculation": "HaydukLaudie",
+        "charge": {species: -1},
+    }
+
+    m = ConcreteModel()
+    m.flow_rate = flow_rate
+    m.pfas_data = pfas_data
+    m.resin_data = resin_data
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(**ion_props)
+    ix_config = {
+        "property_package": m.fs.properties,
+        "target_component": species,
+        "add_steady_state_approximation": False,
+        "regenerant": "single_use",
+        "hazardous_waste": True
+    }
+    m.fs.unit = ix = IonExchangeClark(**ix_config)
+
+    pfas_mol_flow = (
+        (pfas_data.get("c0", 1) * pyunits.ng / pyunits.L)
+        / (pfas_data.get("mw", 0.250) * pyunits.kg / pyunits.mol)
+        * flow_rate
+    )
+    h2o_mol_flow = 55.5 * pyunits.mol / pyunits.L * flow_rate
+    ix.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(h2o_mol_flow)
+    ix.process_flow.properties_in[0].flow_mol_phase_comp["Liq", species].fix(
+        pfas_mol_flow
+    )
+    ix.process_flow.properties_in[0].pressure.fix(101325)
+    ix.process_flow.properties_in[0].temperature.fix(298)
+
+    ix.bed_depth.setub(None)
+    ix.column_height.setub(None)
+
+    ix.resin_density.fix(resin_data["density"])
+    ix.resin_diam.fix(resin_data["diameter"])
+    ix.number_columns.fix(1)
+    ix.c_norm.fix(c_norm)
+    ix.bed_depth.fix(bed_depth)
+    ix.ebct.fix(ebct)
+
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1 / value(h2o_mol_flow), index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1 / value(pfas_mol_flow), index=("Liq", species)
+    )
+
+    m.fs.unit.freundlich_n.setlb(1.05)
+    m.fs.unit.freundlich_n.setub(100)
+    m.fs.unit.bv.setlb(None)
+
+    c_pilot_dict = dict(PFBS=14.8, PFOA=15.8)
+
+    m.fs.unit.lr_pilot = Param(
+        initialize=0.005930757,
+        doc="Loading rate from pilot",
+        units=pyunits.m / pyunits.s,
+    )
+    m.fs.unit.c0_pilot = Param(
+        initialize=c_pilot_dict[species],
+        doc="Initial concentration from pilot",
+        units=pyunits.ng / pyunits.L,
+    )
+    m.fs.unit.c0 = Param(
+        initialize=c0, doc="Initial concentration", units=pyunits.ng / pyunits.L
+    )
+    m.fs.unit.bv50_pilot = Var(
+        initialize=theta_dict["fs.unit.bv_50"], doc="BV50 from pilot", units=pyunits.dimensionless
+    )
+
+    m.fs.unit.bv50_calc = Expression(
+        expr=pyunits.convert(
+            m.fs.unit.bv50_pilot
+            * (m.fs.unit.loading_rate / m.fs.unit.lr_pilot)
+            * (m.fs.unit.c0 / m.fs.unit.c0_pilot) ** (1 / m.fs.unit.freundlich_n - 1),
+            to_units=pyunits.dimensionless,
+        )
+    )
+
+    # lr = 0.005930757
+    # lr_2 = pyunits.convert(bed_depth)
+    # bv50_2 = bv50 * (lr / lr_2) * (c0_2 / c0) ** (1 / n - 1)
+
+    m.fs.unit.freundlich_n.fix(theta_dict["fs.unit.freundlich_n"])
+    m.fs.unit.mass_transfer_coeff.fix(theta_dict["fs.unit.mass_transfer_coeff"])
+    m.fs.unit.bv_50.fix(theta_dict["fs.unit.bv_50"])
+
+    iscale.calculate_scaling_factors(m)
+
+    m.fs.unit.initialize()
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    m.fs.unit.bv_50.fix(value(m.fs.unit.bv50_calc))
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+    )
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"])
+    m.fs.costing.add_specific_energy_consumption(m.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"], name="SEC")
+    m.fs.costing.ion_exchange.anion_exchange_resin_cost.set_value(346)  # EPA-WBS
+    
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    results = solver.solve(m)
+    return m
+
+
+
+def build_gac_ocwd_full(species="PFOA", media="calgon_virgin", flow_rate=1, c0=1, cb=10, c_norm=None):
+
+    if c_norm is None:
+        if cb >= c0:
+            c_norm = 0.95
+        else:
+            c_norm = cb / c0
+    flow_rate = flow_rate * pyunits.Mgallons / pyunits.day
+    c0 = c0 * pyunits.ng / pyunits.L
+    media_data = gac_properties[media]
+    pfas_data = pfas_properties[species]
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=[species],
+        mw_data={"H2O": 0.018, species: pfas_data["mw"]},
+        ignore_neutral_charge=True,
+        diffus_calculation="HaydukLaudie",
+        molar_volume_data={
+            ("Liq", species): pfas_data["molar_volume"],
+        },
+    )
+
+    rho = 1000 * pyunits.kg / pyunits.m**3
+    h2o_mol_flow = pyunits.convert(
+        (flow_rate * rho) / (0.018 * pyunits.kg / pyunits.mol),
+        to_units=pyunits.mol / pyunits.s,
+    )
+    pfas_mol_flow = pyunits.convert(
+        (15.8 * pyunits.ng / pyunits.L)
+        / (0.41407 * pyunits.kg / pyunits.mol)
+        * flow_rate,
+        to_units=pyunits.mol / pyunits.s,
+    )
+    print(1 / h2o_mol_flow())
+    print(1 / pfas_mol_flow())
+    
+    m.fs.unit = GAC(
+        property_package=m.fs.properties,
+        film_transfer_coefficient_type="calculated",
+        surface_diffusion_coefficient_type="fixed",
+        cphsdm_calaculation_method="surrogate",
+        add_trapezoidal_effluent_approximation=False,
+
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-2, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e5, index=("Liq", species)
+    )
+    # m.fs.properties.set_default_scaling(
+    #     "flow_mol_phase_comp", 1 / h2o_mol_flow(), index=("Liq", "H2O")
+    # )
+    # m.fs.properties.set_default_scaling(
+    #     "flow_mol_phase_comp", 1 / pfas_mol_flow()*1e-3, index=("Liq", species)
+    # )
+    unit_feed = m.fs.unit.process_flow.properties_in[0]
+    unit_feed.flow_vol_phase
+    unit_feed.conc_mass_phase_comp
+
+    iscale.calculate_scaling_factors(m)
+
+    # feed specifications
+
+    unit_feed.pressure.fix(101325)
+    unit_feed.temperature.fix(273.15 + 25)
+    m.fs.unit.process_flow.properties_in.calculate_state(
+        var_args={
+            ("flow_vol_phase", "Liq"): flow_rate,
+            ("conc_mass_phase_comp", ("Liq", species)): c0,
+        },
+        hold_state=True
+    )
+
+    m.fs.unit.freund_ninv.setub(1)
+    m.fs.unit.freund_k.fix(29.069478)
+    m.fs.unit.freund_ninv.fix(0.920102)
+    m.fs.unit.ds.fix(2e-13)
+    m.fs.unit.particle_dens_app.fix(media_data["density"])
+    m.fs.unit.particle_dia.fix(media_data["diameter"])
+    m.fs.unit.ebct.fix(600)  # seconds
+    m.fs.unit.bed_voidage.fix(0.449)
+    m.fs.unit.bed_length.fix(7 *pyunits.ft)
+    m.fs.unit.conc_ratio_replace.fix(c_norm)
+    m.fs.unit.shape_correction_factor.fix()
+    m.fs.unit.kf.set_value(2.3e-5)
+
+    m.fs.unit.breakthrough_time_days = Expression(expr=pyunits.convert(m.fs.unit.operational_time, to_units=pyunits.days))
+
+    iscale.constraint_scaling_transform(m.fs.unit.eq_mass_adsorbed[species], 1e5)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_number_bi, 1e10)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_bed_area[0.0], 1e5)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_dg[0.0, species], 1e5)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_number_bi, 1e10)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_minimum_operational_time_cps, 1e-6)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_operational_time, 1e-6)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_bed_volumes_treated, 1e-6)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_residence_time, 0.1)
+    iscale.constraint_scaling_transform(m.fs.unit.eq_min_residence_time_cps, 0.1)
+
+    iscale.set_scaling_factor(m.fs.unit.mass_adsorbed, 1e3)
+    iscale.set_scaling_factor(m.fs.unit.gac_usage_rate, 1e3)
+    iscale.set_scaling_factor(m.fs.unit.equil_conc, 1e5)
+
+    for v in m.fs.unit.component_objects(Var):
+        v.domain = Reals
+        v.setlb(None)
+    
+    print(f"dof = {degrees_of_freedom(m)}")
+    # cond = jacobian_cond(m)
+    try:
+        m.fs.unit.initialize()
+    except:
+        pass
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    print(f"\n\ntermination = {results.solver.termination_condition}")
+
+    m.fs.costing = WaterTAPCosting()
+
+    m.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        # costing_method_arguments={"contactor_type": "gravity"},
+    )
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"])
+    m.fs.costing.add_specific_energy_consumption(m.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"], name="SEC")
+    m.fs.costing.gac_pressure.num_contactors_op.fix(1)
+    m.fs.costing.gac_pressure.regen_frac.fix(0)
+    m.fs.unit.costing.adsorbent_unit_cost_constraint.deactivate()
+    m.fs.unit.costing.adsorbent_unit_cost.fix(7)
+    results = solver.solve(m)
+
+    assert_optimal_termination(results)
+    print(f"\n\ntermination = {results.solver.termination_condition}")
+    return m
