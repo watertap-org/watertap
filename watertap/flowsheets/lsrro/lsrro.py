@@ -59,6 +59,7 @@ from watertap.costing import (
 )
 import watertap.property_models.NaCl_prop_pack as props
 
+_log = idaeslogger.getLogger(__name__)
 
 class ACase(StrEnum):
     fixed = "fixed"
@@ -95,7 +96,7 @@ def run_lsrro_case(
     B_max=None,
     number_of_RO_finite_elements=10,
     set_default_bounds_on_module_dimensions=True,
-    skip_initialization=False,
+    quick_start=False,
 ):
     m = build(
         number_of_stages,
@@ -107,7 +108,7 @@ def run_lsrro_case(
     )
     set_operating_conditions(m, Cin, Qin)
 
-    if not skip_initialization:
+    if not quick_start:
         initialize(m)
     res0 = solve(m)
     print("\n***---Simulation results---***")
@@ -1038,10 +1039,18 @@ def optimize_set_up(
                 stage.A_comp.setlb(2.78e-12)
                 stage.A_comp.setub(4.2e-11)
             elif A_case == ACase.fixed:
-                if not isinstance(A_value, (int, float)):
+                if A_value is None:
+                    #TODO default A value a Param
+                    default_A_value = 4.2e-12
+                    stage.A_comp.fix(default_A_value)
+                    _log.warning(
+                        f"The water permeability coefficient for low-salt-rejection (LSR) membranes (A_value) was not provided. Fixing the water permeability coefficient value (A_comp) to {default_A_value} m/s-Pa for each LSR stage."
+                    )
+                elif not isinstance(A_value, (int, float)):
                     raise TypeError("A_value must be a numeric value")
-                stage.A_comp.unfix()
-                stage.A_comp.fix(A_value)
+                else:
+                    stage.A_comp.unfix()
+                    stage.A_comp.fix(A_value)
             else:
                 raise TypeError(
                     f'A_case must be set to "fix", "single_optimum", "optimize" or None.'
