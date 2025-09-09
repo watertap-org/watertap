@@ -61,6 +61,7 @@ import watertap.property_models.NaCl_prop_pack as props
 
 _log = idaeslogger.getLogger(__name__)
 
+
 class ACase(StrEnum):
     fixed = "fixed"
     optimize = "optimize"
@@ -1040,7 +1041,7 @@ def optimize_set_up(
                 stage.A_comp.setub(4.2e-11)
             elif A_case == ACase.fixed:
                 if A_value is None:
-                    #TODO default A value a Param
+                    # TODO default A value a Param
                     default_A_value = 4.2e-12
                     stage.A_comp.fix(default_A_value)
                     _log.warning(
