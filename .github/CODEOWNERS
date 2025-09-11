@@ -1,15 +1,15 @@
-* @lbianchi-lbl
+* @ksbeattie @sufikaur
 
-.binder/ @lbianchi-lbl
-.github/ @lbianchi-lbl
-setup.py @lbianchi-lbl
-pyproject.toml @lbianchi-lbl
-pytest*.ini @lbianchi-lbl
-docs/conf.py @lbianchi-lbl
-conftest.py @lbianchi-lbl
-requirements*.txt @lbianchi-lbl
-environment*.yml @lbianchi-lbl
-.git* @lbianchi-lbl
+.binder/ @ksbeattie
+.github/ @sufikaur
+setup.py @sufikaur
+pyproject.toml @sufikaur
+pytest*.ini @sufikaur
+docs/conf.py @sufikaur
+conftest.py @sufikaur
+requirements*.txt @sufikaur
+environment*.yml @sufikaur
+.git* @sufikaur
 
 /docs/ @MarcusHolly @adam-a-a
 
