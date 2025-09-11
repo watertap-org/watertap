@@ -216,7 +216,7 @@ def collect_results(case=None, results=None, mass=True):
         results = result
     else:
         results = pd.concat([results, result], axis=0)
-    print(results)
+    # print(results)
     return results
 
 
@@ -224,7 +224,6 @@ def run_model(df):
     for idx in df.index:
         # Changine input variables
         inf_fr = df.loc[idx, "inf_fr"]
-        # print("88888"*10)
         # print(df.columns)
         # print(df)
         temp = df.loc[idx, "temp"]

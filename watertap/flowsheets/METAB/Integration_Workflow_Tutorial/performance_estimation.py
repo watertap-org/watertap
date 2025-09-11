@@ -11,6 +11,9 @@
 #################################################################################
 import json
 import pandas as pd
+import PyPDF2
+from pdf2image import convert_from_path
+from IPython.display import display
 
 
 def get_data(
@@ -69,3 +72,32 @@ def performance_estimiation(
             metrics_sum = pd.concat([metrics_sum, df])
 
     return metrics_sum
+
+
+def display_performace(method="poly", path="./results/"):
+    metrics = performance_estimiation(method=method, path=path)
+    if method == "poly":
+        display_metrics = pd.DataFrame()
+        display_metrics["Predicted Variables"] = metrics["Comp"]
+        display_metrics["R^2"] = metrics["R2"]
+        display_metrics["Adjusted R^2"] = metrics["Adjusted R2"]
+        display_metrics["MAE"] = metrics["MAE"]
+        display_metrics["MSE"] = metrics["MSE"]
+        display_metrics.index = range(1, len(display_metrics) + 1)
+    return display_metrics
+
+
+def display_plot(method="poly", path="./results/"):
+
+    file_path = path + method + "_parity.pdf"
+
+    # Convert PDF pages to images
+    pages = convert_from_path(file_path)
+
+    # Get the first page as an image
+    first_page_image = pages[0]
+
+    # Display in Jupyter Notebook
+    display(first_page_image)
+
+    # NEED poppler for Windows

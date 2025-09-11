@@ -91,11 +91,11 @@ def outputs_selections(output_data):
     ]
 
     # output_data = output_data[(output_data >= 0).all(axis=1)]
-    print(output_data)
+    # print(output_data)
     output_data.columns = output_data.columns.str.replace(" ", "")
     output_data = output_data[outputs_list]
 
-    print(output_data)
+    # print(output_data)
 
     return output_data
 
