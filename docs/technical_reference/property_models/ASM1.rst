@@ -55,9 +55,12 @@ Stoichiometric Parameters
 
    "Yield of cell COD formed per g N consumed, Y_A", ":math:`Y_A`", "Y_A", 0.24, ":math:`\text{dimensionless}`"
    "Yield of cell COD formed per g COD oxidized, Y_H", ":math:`Y_H`", "Y_H", 0.67, ":math:`\text{dimensionless}`"
-   "Fraction of biomass yielding particulate products, f_p", ":math:`f_P`", "f_p", 0.08, ":math:`\text{dimensionless}`"
+   "Fraction of biomass yielding particulate products, f_p", ":math:`f_p`", "f_p", 0.08, ":math:`\text{dimensionless}`"
    "Mass fraction of N per COD in biomass, i_xb", ":math:`i_{XB}`", "i_xb", 0.08, ":math:`\text{dimensionless}`"
    "Mass fraction of N per COD in particulates, i_xp", ":math:`i_{XP}`", "i_xp", 0.06, ":math:`\text{dimensionless}`"
+   "Conversion factor applied for TSS calculation", ":math:`CODtoSS`", "CODtoSS", 0.75, ":math:`\text{dimensionless}`"
+   "Conversion factor for BOD5 for raw wastewater", ":math:`BOD5_{factor, raw}`", "BOD5_factor_raw", 0.65, ":math:`\text{dimensionless}`"
+   "Conversion factor for BOD5 for effluent", ":math:`BOD5_{factor, effluent}`", "BOD5_factor_effluent", 0.25, ":math:`\text{dimensionless}`"
 
 Kinetic Parameters
 ------------------
@@ -102,9 +105,17 @@ Process Rate Equations
    "Hydrolysis of entrapped organic nitrogen", ":math:`ρ_7 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}(X_{ND}/X_{S})`"
 
 
-Scaling
--------
-Scaling for the ASM1 property package has yet to be implemented.
+Effluent Metrics
+----------------
+.. csv-table::
+  :header: "Description", "Variable", "Default Regulatory Limit", "Equation"
+
+  "Total suspended solids", ":math:`TSS`", ":math:`0.03 kg/m^{3}`", ":math:`TSS = CODtoSS(X_{S} + X_{I} + X_{BH} + X_{BA} + X_{P})`"
+  "Five-day biological oxygen demand (raw wastewater)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{raw}`", ":math:`BOD5_{raw} = BOD5_{factor, raw}(S_{S} + X_{S} + (1 - f_{p})(X_{BH} + X_{BA}))`"
+  "Five-day biological oxygen demand (effluent)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{effluent}`", ":math:`BOD5_{effluent} = BOD5_{factor, effluent}(S_{S} + X_{S} + (1 - f_{p})(X_{BH} + X_{BA}))`"
+  "Chemical oxygen demand", ":math:`COD`", ":math:`0.1 kg/m^{3}`", ":math:`COD = S_{S} + S_{I} + X_{S} + X_{I} + X_{BH} + X_{BA} + X_{P}`"
+  "Total Kjeldahl nitrogen", ":math:`TKN`", ":math:`None`", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + i_{XB}(X_{BH} + X_{BA}) + i_{XP}(X_{P} + X_{I})`"
+  "Total nitrogen", ":math:`N_{total}`", ":math:`0.018 kg/m^{3}`", ":math:`N_{total} = TKN + S_{NO}`"
 
 Class Documentation
 -------------------
