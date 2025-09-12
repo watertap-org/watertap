@@ -9,9 +9,12 @@ from sweep_steam import run_steam_cost_sweep as run_steam_hr_sweep
 from sweep_steam_no_heat_recovery import run_steam_cost_sweep as run_steam_nhr_sweep
 from matplotlib.ticker import MaxNLocator
 
+
 def main():
     n_points = 500
-    run_electricity_sweep(nx=n_points, output_filename="electricity_price_sweep_elec.csv")
+    run_electricity_sweep(
+        nx=n_points, output_filename="electricity_price_sweep_elec.csv"
+    )
     df_elec = pd.read_csv("electricity_price_sweep_elec.csv")
     LCOW_elec = df_elec["LCOW"].values
 
@@ -56,7 +59,13 @@ def main():
     y_max = steam_vals_scaled[-1] + y_step / 2
 
     fig, ax = plt.subplots(figsize=(8, 6))
-    im = ax.imshow(min_LCOW, origin="lower", extent=[x_min, x_max, y_min, y_max], aspect="auto", cmap="viridis")
+    im = ax.imshow(
+        min_LCOW,
+        origin="lower",
+        extent=[x_min, x_max, y_min, y_max],
+        aspect="auto",
+        cmap="viridis",
+    )
     plt.colorbar(im, label="Minimum LCOW ($/m³)")
     ax.set_xlabel("Electricity Cost (cents/kWh)")
     ax.set_ylabel("Steam Cost ($/metric ton)")
@@ -65,62 +74,80 @@ def main():
     label_to_int = {"FC+MVC": 0, "FC+TVC": 1, "FC": 2}
     int_grid = np.vectorize(label_to_int.get)(cheapest_sheet)
     X, Y = np.meshgrid(elec_vals_scaled, steam_vals_scaled)
-    ax.contour(X, Y, int_grid, levels=[0.5, 1.5], colors=['white', 'red'], linewidths=2)
+    ax.contour(X, Y, int_grid, levels=[0.5, 1.5], colors=["white", "red"], linewidths=2)
 
     for sheet, int_val in label_to_int.items():
         mask = int_grid == int_val
         labeled_array, num_features = label(mask)
         for region in range(1, num_features + 1):
-            region_mask = (labeled_array == region)
+            region_mask = labeled_array == region
             com = center_of_mass(region_mask)
             center_x = np.interp(com[1], np.arange(ny_val), elec_vals_scaled)
             center_y = np.interp(com[0], np.arange(nx_val), steam_vals_scaled)
-            ax.text(center_x, center_y, sheet, ha="center", va="center", color="black", fontsize=12, bbox=dict(facecolor="white", alpha=0.5))
+            ax.text(
+                center_x,
+                center_y,
+                sheet,
+                ha="center",
+                va="center",
+                color="black",
+                fontsize=12,
+                bbox=dict(facecolor="white", alpha=0.5),
+            )
 
     legend_elements = [
-        Line2D([0], [0], color='white', lw=2, label='FC+MVC ↔ FC+TVC'),
-        Line2D([0], [0], color='red', lw=2, label='FC+TVC ↔ FC')
+        Line2D([0], [0], color="white", lw=2, label="FC+MVC ↔ FC+TVC"),
+        Line2D([0], [0], color="red", lw=2, label="FC+TVC ↔ FC"),
     ]
-    ax.legend(handles=legend_elements, loc='upper left')
+    ax.legend(handles=legend_elements, loc="upper left")
     ax.set_xticks(elec_vals_scaled)
     ax.set_yticks(steam_vals_scaled)
     ax.xaxis.set_major_locator(MaxNLocator(10))
     ax.yaxis.set_major_locator(MaxNLocator(10))
     plt.tight_layout()
-        
+
     plt.savefig("steam-electricity-heat-map.png", dpi=200)
 
     # --- Build & save LCOW vs Steam (FC vs TVC) from the steam CSVs ---
-    
-    plt.figure(figsize=(7,4))
-    plt.plot(steam_vals_scaled, LCOW_steam_nhr, label="FC (no HR)", lw=2, color="#d62728")
-    plt.plot(steam_vals_scaled, LCOW_steam_hr,  label="FC+TVC",     lw=2, color="#1f77b4")
+
+    plt.figure(figsize=(7, 4))
+    plt.plot(
+        steam_vals_scaled, LCOW_steam_nhr, label="FC (no HR)", lw=2, color="#d62728"
+    )
+    plt.plot(steam_vals_scaled, LCOW_steam_hr, label="FC+TVC", lw=2, color="#1f77b4")
     plt.xlabel("Steam Cost ($/metric ton)")
     plt.ylabel("LCOW ($/m³)")
     plt.title("LCOW vs Steam Cost")
-    plt.legend(); plt.tight_layout()
+    plt.legend()
+    plt.tight_layout()
     plt.savefig("steam_cost_vs_lcow.png", dpi=200)
 
     # --- Build & save Least-Cost Technology Map (categorical) ---
-   
+
     cmap = ListedColormap(["#2ca02c", "#1f77b4", "#d62728"])  # MVC, TVC, FC
-    fig2, ax2 = plt.subplots(figsize=(8,6))
-    int_grid = np.vectorize({"FC+MVC":0, "FC+TVC":1, "FC":2}.get)(cheapest_sheet)
-    ax2.imshow(int_grid, origin="lower",
-               extent=[x_min, x_max, y_min, y_max],
-               aspect="auto", cmap=cmap)
+    fig2, ax2 = plt.subplots(figsize=(8, 6))
+    int_grid = np.vectorize({"FC+MVC": 0, "FC+TVC": 1, "FC": 2}.get)(cheapest_sheet)
+    ax2.imshow(
+        int_grid,
+        origin="lower",
+        extent=[x_min, x_max, y_min, y_max],
+        aspect="auto",
+        cmap=cmap,
+    )
     ax2.set_xlabel("Electricity Cost (cents/kWh)")
     ax2.set_ylabel("Steam Cost ($/metric ton)")
     ax2.set_title("Least-Cost Flowsheet by Energy Prices")
-    
-    legend_elems = [Line2D([0],[0], color=c, lw=6, label=lab)
-                    for lab,c in zip(["FC+MVC","FC+TVC","FC"], cmap.colors)]
+
+    legend_elems = [
+        Line2D([0], [0], color=c, lw=6, label=lab)
+        for lab, c in zip(["FC+MVC", "FC+TVC", "FC"], cmap.colors)
+    ]
     ax2.legend(handles=legend_elems, loc="upper left")
     plt.tight_layout()
     plt.savefig("least-cost-map.png", dpi=200)
 
-
     plt.show()
+
 
 if __name__ == "__main__":
     main()
