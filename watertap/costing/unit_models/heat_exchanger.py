@@ -14,6 +14,17 @@ import pyomo.environ as pyo
 from ..util import register_costing_parameter_block, make_capital_cost_var
 
 
+def build_steam_cost_param_block(blk):
+
+    blk.cost = pyo.Var(
+        initialize=0.00,
+        units=pyo.units.USD_2018 / (pyo.units.kg),
+        doc="Steam cost per kg",
+    )
+
+    blk.parent_block().register_flow_type("steam", blk.cost)
+
+
 def build_heat_exchanger_cost_param_block(blk):
 
     blk.unit_cost = pyo.Var(
@@ -28,19 +39,11 @@ def build_heat_exchanger_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    # blk.steam_cost = pyo.Var(
-    #     initialize=0.00,
-    #     units=pyo.units.USD_2018 / (pyo.units.kg),
-    #     doc="steam cost per kg",
-    # )
 
-    if not hasattr(blk.parent_block(), "steam"):
-        blk.parent_block().register_flow_type("steam", blk.steam_cost)
-
-
-# blk.parent_block().register_flow_type("steam", blk.steam_cost)
-
-
+@register_costing_parameter_block(
+    build_rule=build_steam_cost_param_block,
+    parameter_block_name="steam",
+)
 @register_costing_parameter_block(
     build_rule=build_heat_exchanger_cost_param_block,
     parameter_block_name="heat_exchanger",

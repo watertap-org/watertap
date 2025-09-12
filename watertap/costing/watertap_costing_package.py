@@ -506,12 +506,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             units=self.base_currency / pyo.units.kWh,
         )
         self.defined_flows["electricity"] = self.electricity_cost
-        self.steam_cost = pyo.Var(
-            initialize=0.00,
-            units=pyo.units.USD_2018 / (pyo.units.kg),
-            doc="steam cost per kg",
-        )
-        self.defined_flows["steam"] = self.steam_cost
 
         self.electrical_carbon_intensity = pyo.Var(
             initialize=0.475,
