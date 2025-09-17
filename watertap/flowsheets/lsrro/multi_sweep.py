@@ -20,7 +20,7 @@ from watertap.flowsheets.lsrro import lsrro
 
 
 def _lsrro_presweep(
-    number_of_stages=2, A_value=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True
+    number_of_stages=2, A_value=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True, quick_start=False
 ):
     m = lsrro.build(
         number_of_stages=number_of_stages,
@@ -29,7 +29,8 @@ def _lsrro_presweep(
         has_calculated_ro_pressure_drop=True,
     )
     lsrro.set_operating_conditions(m)
-    lsrro.initialize(m)
+    if not quick_start:
+        lsrro.initialize(m)
     lsrro.solve(m)
     m.fs.feed.flow_mass_phase_comp.unfix()
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
