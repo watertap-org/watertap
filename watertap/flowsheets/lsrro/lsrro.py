@@ -436,7 +436,6 @@ def build(
         * (
             1
             + m.fs.costing.maintenance_labor_chemical_factor
-            # / m.fs.costing.TIC
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.electricity_lcow
@@ -470,7 +469,6 @@ def build(
         * (
             1
             + m.fs.costing.maintenance_labor_chemical_factor
-            # / m.fs.costing.TIC
             / m.fs.costing.capital_recovery_factor
         )
         + m.fs.costing.membrane_replacement_lcow
@@ -877,6 +875,7 @@ def optimize_set_up(
     permeate_quality_limit=None,
     AB_gamma_factor=None,
     B_max=None,
+    assert_dof=False,
 ):
     """
     Get the LSRRO flowsheet ready to optimize
@@ -893,6 +892,7 @@ def optimize_set_up(
 
     A_value: if A_case='fixed', then provide a value to fix A with
 
+    assert_dof: if True, will raise an error if the degrees of freedom are an unexpected value
     Returns
     -------
     model (Pyomo ConcreteModel) : The LSRRO flowsheet.
@@ -1125,13 +1125,13 @@ def optimize_set_up(
             raise TypeError("permeate_quality_limit must be None, integer, or float")
     # ---checking model---
     assert_units_consistent(m)
-
-    assert_degrees_of_freedom(
-        m,
-        4 * m.fs.NumberOfStages
-        - (1 if (water_recovery is not None) else 0)
-        - (1 if value(m.fs.NumberOfStages) == 1 else 0),
-    )
+    if assert_dof==True:
+        assert_degrees_of_freedom(
+            m,
+            4 * m.fs.NumberOfStages
+            - (1 if (water_recovery is not None) else 0)
+            - (1 if value(m.fs.NumberOfStages) == 1 else 0),
+        )
 
     return m
 
