@@ -1,0 +1,426 @@
+a520e:
+  base_type: Strong
+  density: 690
+  diameter: 0.00065
+  functional_group: Quaternary Ammonium
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - ellis_2022
+  - kassar_2023
+  title: Purolite A520E
+  type: Strong Base Type I Macroporous Polystyrene-Divinylbenzene
+a532e:
+  base_type: Strong
+  density: 680
+  diameter: 0.000675
+  functional_group: Complex Amino
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - riegel_2023
+  title: Purolite A532E
+  type: Strong Base Macroporous Styrene-Divinylbenzene
+a592e:
+  base_type: Strong
+  density: 680
+  diameter: 0.000675
+  functional_group: Complex Amino
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - wang_2022
+  title: Purolite A592E
+  type: Strong Base Type I Macroporous Polystyrene-Divinylbenzene
+a600:
+  base_type: Strong
+  density: 720
+  diameter: 0.00057
+  functional_group: Quaternary Ammonium
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - mccleaf_2017
+  - franke_2021
+  title: Purolite A600
+  type: Strong Base Type I Gel Polystyrene-Divinylbenzene
+a694:
+  base_type: Strong
+  density: 720
+  diameter: 0.000675
+  functional_group: Complex Amino
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - franke_2021
+  - wang_2022
+  - croll_2023
+  title: Purofine PFA694
+  type: Strong Base Type I Gel Polystyrene-Divinylbenzene
+a694e:
+  base_type: Strong
+  density: 720
+  diameter: 0.000675
+  functional_group: Complex Amino
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - ellis_2022
+  - wang_2022
+  title: Purofine PFA694E
+  type: Strong Base Type I Gel Polystyrene-Divinylbenzene
+a860:
+  base_type: Strong
+  density: 710
+  diameter: 0.00065
+  functional_group: Quaternary Ammonium
+  ground_bool: false
+  pore_composition: Polyacrylic
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - wang_2022
+  - kassar_2023
+  title: Purolite A860
+  type: Strong Base Type I Macroporous Polyacrylic-Divinylbenzene
+aer1:
+  base_type: Unknown
+  density: 700
+  diameter: 0.00081
+  functional_group: Complex Amino
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - schaefer_2019
+  title: Unknown Resin
+  type: Gel Polystyrene-Divinylbenzene
+aer1_2020:
+  base_type: Unknown
+  density: 700
+  diameter: 0.00068
+  functional_group: Complex Amino
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - schaefer_2020
+  title: Unknown Resin
+  type: Gel Polystyrene-Divinylbenzene Crosslinked
+aer1_ground:
+  base_type: Unknown
+  density: 700
+  diameter: 0.00026
+  functional_group: Complex Amino
+  ground_bool: true
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - schaefer_2019
+  title: Unknown Ground Resin
+  type: Gel Polystyrene-Divinylbenzene
+aer1_ground_2020:
+  base_type: Unknown
+  density: 700
+  diameter: 0.00019
+  functional_group: Complex Amino
+  ground_bool: true
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - schaefer_2020
+  title: Unknown Ground Resin
+  type: Gel Polystyrene-Divinylbenzene Crosslinked
+aer2:
+  base_type: Unknown
+  density: 700
+  diameter: 0.00073
+  functional_group: Quaternary Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - schaefer_2019
+  title: Unknown Resin
+  type: Macroporous Polystyrene-Divinylbenzene
+aer2_2020:
+  base_type: Unknown
+  density: 700
+  diameter: 0.00081
+  functional_group: Quaternary Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - schaefer_2020
+  title: Unknown Resin
+  type: Gel Styrene-Divinylbenzene
+aer2_ground:
+  base_type: Unknown
+  density: 700
+  diameter: 0.0002
+  functional_group: Quaternary Amine
+  ground_bool: true
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - schaefer_2019
+  title: Unknown Ground Resin
+  type: Macroporous Polystyrene-Divinylbenzene
+aer2_ground_2020:
+  base_type: Unknown
+  density: 700
+  diameter: 0.00023
+  functional_group: Quaternary Amine
+  ground_bool: true
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - schaefer_2020
+  title: Unknown Ground Resin
+  type: Gel Styrene-Divinylbenzene
+aix1_ground:
+  base_type: Strong
+  density: 720
+  diameter: 0.000196
+  functional_group: Complex Amino
+  ground_bool: true
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - hayman_2023
+  title: Unknown Ground Resin
+  type: Strong Base Type I Gel Polystyrene-Divinylbenzene
+amberlite_psr2:
+  base_type: Strong
+  density: 690
+  diameter: 0.0007
+  functional_group: N-Tributyl Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - ellis_2022
+  title: DuPont AmberLite PSR+
+  type: Strong Base Type I Gel Polystyrene-Divinylbenzene
+calgon_calres_2301:
+  base_type: Unknown
+  density: 670
+  diameter: 0.00053
+  functional_group: N-Tributyl Amine
+  ground_bool: false
+  pore_composition: Unknown
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - ellis_2022
+  - liu_2021
+  title: Calgon CalRes 2301
+  type: Macroporous
+calgon_calres_2304:
+  base_type: Strong
+  density: 690
+  diameter: 0.000675
+  functional_group: N-Tributyl Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - liu_2021
+  title: Calgon CalRes 2304
+  type: Strong Base Gel Styrene-Divinylbenzene
+d5705:
+  base_type: Weak
+  density: 700
+  diameter: 0.000675
+  functional_group: Tertiary Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - riegel_2023
+  title: Purolite D5705
+  type: Weak Base Macroporous Styrene-Divinylbenzene
+d5706:
+  base_type: Weak
+  density: 700
+  diameter: 0.000675
+  functional_group: Tertiary Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - riegel_2023
+  title: Purolite D5706
+  type: Weak Base Macroporous Styrene-Divinylbenzene
+evoqua_psr2+:
+  base_type: Strong
+  density: 690
+  diameter: 0.0007
+  functional_group: N-Tributyl Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - liu_2021
+  - ocwd
+  title: Evoqua PSR+
+  type: Strong Base Gel Styrene-Divinylbenzene
+dowex_psr2+:
+  base_type: Strong
+  density: 690
+  diameter: 0.0007
+  functional_group: N-Tributyl Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - liu_2021
+  title: DuPont AmberLite PSR+
+  type: Strong Base Gel Styrene-Divinylbenzene
+ect_sorbix_a3f:
+  base_type: Unknown
+  density: 700
+  diameter: 0.000675
+  functional_group: Unknown
+  ground_bool: false
+  pore_composition: Unknown
+  pore_structure: Unknown
+  porosity: 0.4784
+  references:
+  - woodard_2017
+  title: ECT2 Sorbix A3F
+  type: Unknown
+ect2_sorbix_lc4:
+  base_type: Unknown
+  density: 700
+  diameter: 0.000675
+  functional_group: Unknown
+  ground_bool: false
+  pore_composition: Unknown
+  pore_structure: Unknown
+  porosity: 0.4784
+  references:
+  - woodard_2017
+  - ocwd
+  title: ECT2 Sorbix LC4
+  type: Unknown
+ira410:
+  base_type: Strong
+  density: 680
+  diameter: 0.000675
+  functional_group: Dimethyl Ethanol Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - wang_2022
+  title: DuPont AmberLite IRA410
+  type: Strong Base Type II Gel Polystyrene-Divinylbenzene
+ira67:
+  base_type: Weak
+  density: 650
+  diameter: 0.000625
+  functional_group: Tertiary Amine
+  ground_bool: false
+  pore_composition: Polyacrylic
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - wang_2022
+  - kassar_2023
+  title: DuPont AmberLite IRA67
+  type: Weak Base Gel Polyacrylic
+ira900:
+  base_type: Strong
+  density: 700
+  diameter: 0.00072
+  functional_group: Trimethyl Ammonium
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - wang_2022
+  title: DuPont AmberLite IRA900
+  type: Strong Base Type I Macroporous Polystyrene-Divinylbenzene
+ira96:
+  base_type: Weak
+  density: 670
+  diameter: 0.00065
+  functional_group: Tertiary Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - kassar_2023
+  title: DuPont AmberLite IRA96
+  type: Weak Base Macroporous Styrene-Divinylbenzene
+ix1_ground:
+  base_type: Strong
+  density: 720
+  diameter: 9.6e-05
+  functional_group: Complex Amino
+  ground_bool: true
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - zeng_2020
+  title: Unknown Ground Resin
+  type: Strong Base Type I Gel Polystyrene-Divinylbenzene
+ix2_ground:
+  base_type: Strong
+  density: 690
+  diameter: 9.6e-05
+  functional_group: N-Tributyl Amine
+  ground_bool: true
+  pore_composition: Polystyrene
+  pore_structure: Gel
+  porosity: 0.4784
+  references:
+  - zeng_2020
+  title: Unknown Ground Resin
+  type: Strong Base Type I Gel Polystyrene-Divinylbenzene
+mp62:
+  base_type: Weak
+  density: 620
+  diameter: 0.00047
+  functional_group: Tertiary Amine
+  ground_bool: false
+  pore_composition: Polystyrene
+  pore_structure: Macroporous
+  porosity: 0.4784
+  references:
+  - riegel_2023
+  title: Lewatit MP62
+  type: Weak Base Macroporous Styrenic
