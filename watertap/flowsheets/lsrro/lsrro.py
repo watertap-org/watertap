@@ -1125,7 +1125,7 @@ def optimize_set_up(
             raise TypeError("permeate_quality_limit must be None, integer, or float")
     # ---checking model---
     assert_units_consistent(m)
-    if assert_dof==True:
+    if assert_dof == True:
         assert_degrees_of_freedom(
             m,
             4 * m.fs.NumberOfStages
