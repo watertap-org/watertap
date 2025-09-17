@@ -20,7 +20,11 @@ from watertap.flowsheets.lsrro import lsrro
 
 
 def _lsrro_presweep(
-    number_of_stages=2, A_value=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True, quick_start=False
+    number_of_stages=2,
+    A_value=5 / 3.6e11,
+    permeate_quality_limit=1000e-6,
+    has_CP=True,
+    quick_start=False,
 ):
     m = lsrro.build(
         number_of_stages=number_of_stages,
