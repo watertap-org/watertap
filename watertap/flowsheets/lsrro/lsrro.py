@@ -1427,7 +1427,7 @@ def plot_lcow_breakdown(data_dict, scenario_labels=None):
     # Final touches
     ax.set_xticks(x)
     ax.set_xticklabels(scenario_labels)
-    ax.set_ylabel("Cost (normalized)")
+    ax.set_ylabel("LCOW ($/m³)")
     ax.set_title("Breakdown of Levelized Cost of Water (LCOW)")
     ax.legend(loc="upper right", bbox_to_anchor=(1.15, 1))
     plt.tight_layout()
@@ -1793,7 +1793,7 @@ def feed_concentration_recovery_profile(
     )
     results = pd.read_csv(output_filename)
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 12), dpi=300)
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4), dpi=150)
 
     X, Y = np.meshgrid(
         np.unique(results["# Feed Concentration"].to_numpy()),
