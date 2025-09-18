@@ -1261,30 +1261,30 @@ def display_system(m):
 
     print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
     print(
-        f"Primary Pump Capital Cost ($/m3):"
-        f"{value(m.fs.costing.capital_recovery_factor*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.Stages)/ m.fs.costing.annual_water_production)}"
+        f"Primary Pump Capital Cost ($/m3): "
+        f"{value(m.fs.costing.capital_recovery_factor * sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.Stages) / m.fs.costing.annual_water_production):.2f}"
     )
     print(
         f"Booster Pump Capital Cost ($/m3): "
-        f"{value(m.fs.costing.capital_recovery_factor*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_Stages) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.capital_recovery_factor * sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_Stages) / m.fs.costing.annual_water_production):.2f}"
     )
     print(
-        f"ERD Capital Cost ($/m3):"
-        f"{value(m.fs.costing.capital_recovery_factor*sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values()) / m.fs.costing.annual_water_production)}"
+        f"ERD Capital Cost ($/m3): "
+        f"{value(m.fs.costing.capital_recovery_factor * sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values()) / m.fs.costing.annual_water_production):.2f}"
     )
     print(
         f"Membrane Capital Cost ($/m3): "
-        f"{value(m.fs.costing.capital_recovery_factor*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.Stages) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.capital_recovery_factor * sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.Stages) / m.fs.costing.annual_water_production):.2f}"
     )
     print(
-        f"Indirect Capital Cost ($/m3): " f"{value(m.fs.costing.indirect_capex_lcow)}"
+        f"Indirect Capital Cost ($/m3): {value(m.fs.costing.indirect_capex_lcow):.2f}"
     )
     electricity_cost = value(
         m.fs.costing.aggregate_flow_costs["electricity"]
         * m.fs.costing.utilization_factor
         / m.fs.costing.annual_water_production
     )
-    print(f"Electricity cost ($/m3): {electricity_cost}")
+    print(f"Electricity cost ($/m3): {electricity_cost:.2f}")
 
     print("\n")
 
