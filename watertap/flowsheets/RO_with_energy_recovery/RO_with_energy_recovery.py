@@ -61,7 +61,6 @@ def erd_type_not_found(erd_type):
 def main(erd_type=ERDtype.pressure_exchanger):
     # set up solver
     solver = get_solver()
-
     # build, set, and initialize
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
@@ -297,14 +296,8 @@ def set_operating_conditions(
         pass
     else:
         erd_type_not_found(m.fs.erd_type)
-
-    m.fs.RO.initialize(optarg=solver.options)
-
-    # unfix guessed area, and fix water recovery
     m.fs.RO.area.unfix()
-
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
-
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
         raise RuntimeError(
@@ -352,7 +345,6 @@ def calculate_operating_pressure(
         101325
     )  # valid when osmotic pressure is independent of hydraulic pressure
     t.brine[0].temperature.fix(value(feed_state_block.temperature))
-
     # calculate osmotic pressure
     # since properties are created on demand, we must touch the property to create it
     t.brine[0].pressure_osm_phase
@@ -372,14 +364,28 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def initialize_system(m, solver=None):
+def initialize_system(m, solver=None, relaxed_initialization=False):
     if solver is None:
         solver = get_solver()
     optarg = solver.options
 
     # ---initialize RO---
-    m.fs.RO.initialize(optarg=optarg)
+    if relaxed_initialization:
+        m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
+        target_recovery = m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].value
+        m.fs.RO.area_objective = Objective(
+            expr=(m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"] - target_recovery)
+            ** 2
+        )
 
+        expected_DOFs = 1
+        m.fs.RO.initialize(
+            optarg=optarg, initialization_degrees_of_freedom=expected_DOFs
+        )
+        m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(target_recovery)
+        m.fs.RO.area_objective.deactivate()
+    else:
+        m.fs.RO.initialize(optarg=optarg)
     # ---initialize feed block---
     m.fs.feed.initialize(optarg=optarg)
 
