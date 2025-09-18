@@ -40,7 +40,7 @@ from idaes.models.unit_models import Feed, Product, Mixer
 from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
-
+from idaes.core.util.model_statistics import fixed_variables_in_activated_equalities_set
 from watertap.unit_models.reverse_osmosis_1D import (
     ReverseOsmosis1D,
     ConcentrationPolarizationType,
@@ -58,6 +58,12 @@ from watertap.costing import (
     register_costing_parameter_block,
 )
 import watertap.property_models.NaCl_prop_pack as props
+from parameter_sweep import LinearSample, parameter_sweep
+from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 _log = idaeslogger.getLogger(__name__)
 
@@ -606,8 +612,29 @@ def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
             "electricity",
         )
 
+def _update_fixed_var_sets(m):
+    if not hasattr(m.fs, "current_fixed_variable_set"):
+        m.fs.current_fixed_variable_set = fixed_variables_in_activated_equalities_set(m)
+    else:
+        if hasattr(m.fs, "previous_fixed_variable_set"):
+            del m.fs.previous_fixed_variable_set
+        m.fs.previous_fixed_variable_set = m.fs.current_fixed_variable_set
+        del m.fs.current_fixed_variable_set
+        m.fs.current_fixed_variable_set = fixed_variables_in_activated_equalities_set(m)
+        
+def get_operating_conditions(m):
+    return m.fs.current_fixed_variable_set
+
+def display_operating_conditions(m):
+    specs = get_operating_conditions(m)
+    for i in specs:
+        if hasattr(i, "doc"):
+            print(i.name,"\n",i.doc,"\n", value(i),"\n\n")  
+        else:
+            print(i.name,"\n", value(i),"\n\n")
 
 def set_operating_conditions(m, Cin=None, Qin=None):
+    _update_fixed_var_sets(m)
     # ---specifications---
     if Qin is None:
         Qin = 1e-3
@@ -697,10 +724,9 @@ def set_operating_conditions(m, Cin=None, Qin=None):
     assert_units_consistent(m)
     assert_no_degrees_of_freedom(m)
 
-    print(
-        "Feed Concentration = %.1f ppt"
-        % (value(m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"]) * 1000)
-    )
+    # track fixed variable sets before and after specifying operating conditions
+    _update_fixed_var_sets(m)
+
 
 
 def _lsrro_mixer_guess_initializer(
@@ -1263,6 +1289,473 @@ def display_system(m):
 def display_RO_reports(m):
     for stage in m.fs.ROUnits.values():
         stage.report()
+
+def get_lcow_breakdown(m, new_case=None, existing_case_list=None,results=None):
+    if not isinstance(new_case, str):
+        raise ValueError("case must be a string")
+    if results is None:
+        lcow_breakdown =  {"Membrane CAPEX": [value(m.fs.costing.LCOW_aggregate_direct_capex["ReverseOsmosis1D"])],
+            "Pump CAPEX": [value(m.fs.costing.LCOW_aggregate_direct_capex["Pump"])],
+            "ERD CAPEX": [value(m.fs.costing.LCOW_aggregate_direct_capex["EnergyRecoveryDevice"])],
+            "Indirect CAPEX": [value(sum(i for i in m.fs.costing.LCOW_aggregate_indirect_capex.values()))],
+            "Membrane OPEX": [value(m.fs.costing.LCOW_aggregate_fixed_opex["ReverseOsmosis1D"])],
+            "Electricity": [value(m.fs.costing.LCOW_aggregate_variable_opex["electricity"])],
+            "Other OPEX": [value(sum(i for i in m.fs.costing.LCOW_aggregate_fixed_opex.values())-m.fs.costing.LCOW_aggregate_fixed_opex["ReverseOsmosis1D"])],}
+        
+        check = 0
+        for i in lcow_breakdown.values():
+            check += i[0]
+        if check < 0.99*value(m.fs.costing.LCOW) or check > 1.01*value(m.fs.costing.LCOW):
+            raise ValueError("LCOW breakdown does not sum to total LCOW")
+        
+        if existing_case_list is None:
+            caselist= [new_case]
+        else:
+            raise ValueError("existing_case_list must be None if results is None")
+        
+        return lcow_breakdown, caselist
+    
+    else:
+        if not hasattr(m.fs.costing,"LCOW_total_indirect_capex"):
+            m.fs.costing.LCOW_total_indirect_capex = Expression(expr=sum(i for i in m.fs.costing.LCOW_aggregate_indirect_capex.values()))
+        if not hasattr(m.fs.costing,"LCOW_total_fixed_opex"):
+            m.fs.costing.LCOW_total_fixed_opex = Expression(expr=sum(i for i in m.fs.costing.LCOW_aggregate_fixed_opex.values())-m.fs.costing.LCOW_aggregate_fixed_opex["ReverseOsmosis1D"])
+        
+        lcow_breakdown_dict =  {"Membrane CAPEX": m.fs.costing.LCOW_aggregate_direct_capex["ReverseOsmosis1D"],
+        "Pump CAPEX": m.fs.costing.LCOW_aggregate_direct_capex["Pump"],
+        "ERD CAPEX": m.fs.costing.LCOW_aggregate_direct_capex["EnergyRecoveryDevice"],
+        "Indirect CAPEX": m.fs.costing.LCOW_total_indirect_capex,
+        "Membrane OPEX": m.fs.costing.LCOW_aggregate_fixed_opex["ReverseOsmosis1D"],
+        "Electricity": m.fs.costing.LCOW_aggregate_variable_opex["electricity"],
+        "Other OPEX": m.fs.costing.LCOW_total_fixed_opex}
+        
+        for k,v in lcow_breakdown_dict.items():
+            results[k].append(value(v))
+        
+        check = 0
+        for i in lcow_breakdown_dict.values():
+            check += value(i)
+        if check < 0.99*value(m.fs.costing.LCOW) or check > 1.01*value(m.fs.costing.LCOW):
+            raise ValueError(f"LCOW breakdown does not sum to total LCOW. LCOW={value(m.fs.costing.LCOW)} vs summed LCOW = {check}")
+
+        
+        existing_case_list.append(new_case)
+        return results, existing_case_list
+
+def plot_lcow_breakdown(data_dict, scenario_labels=None):
+    """
+    Plots a stacked bar chart from a dictionary of LCOW components.
+    
+    Parameters:
+    - data_dict: dict where keys are cost categories and values are lists of values per scenario.
+    """
+
+    categories = list(data_dict.keys())
+    num_scenarios = len(next(iter(data_dict.values())))
+    if scenario_labels is None:
+        scenario_labels = [f"Scenario {i+1}" for i in range(num_scenarios)]
+    
+    # Prepare data
+    values = np.array([data_dict[cat] for cat in categories])  # shape: (num_categories, num_scenarios)
+    
+    # Plot setup
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bar_width = 0.6
+    x = np.arange(num_scenarios)
+    bottoms = np.zeros(num_scenarios)
+
+    # Plot each category
+    for i, cat in enumerate(categories):
+        bar = ax.bar(x, values[i], bar_width, bottom=bottoms, label=cat)
+        
+        # Add value labels
+        for j in range(num_scenarios):
+            ax.text(x[j], bottoms[j] + values[i][j]/2, f'{values[i][j]:.2f}',
+                    ha='center', va='center', fontsize=12, color='white')
+        
+        bottoms += values[i]
+
+    # Final touches
+    ax.set_xticks(x)
+    ax.set_xticklabels(scenario_labels)
+    ax.set_ylabel('Cost (normalized)')
+    ax.set_title('Breakdown of Levelized Cost of Water (LCOW)')
+    ax.legend(loc='upper right', bbox_to_anchor=(1.15, 1))
+    plt.tight_layout()
+    plt.show()
+
+def feed_concentration_recovery_profile(m,number_of_stages, points_per_sweep=5, quick_start=True):
+    """
+    Generate a cost-optimal feed concentration vs recovery profile for a given number of stages.
+    Args:
+        m (ConcreteModel, optional): Existing Pyomo model. If None, a new model is created.
+        points_per_sweep (int): Number of points to sample in the sweep.
+        number_of_stages (int): Number of RO stages in the system.
+        quick_start (bool): If True, skip rigorous initialization for faster results.
+    Returns:
+        results (pd.DataFrame): DataFrame containing the sweep results.
+        output_filename (str): Path to the CSV file where results are saved.
+        fig, ax: Matplotlib figure and axis objects for the contour plot.
+    """
+
+    output_filename = f"param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv"
+    sweep_params = {}
+    outputs = {}
+    nx = points_per_sweep
+    if m is None:
+        m = _lsrro_presweep(number_of_stages=number_of_stages, quick_start=quick_start)
+    else:
+        if (m.fs.NumberOfStages == number_of_stages) or (m.fs.NumberOfStages is None):
+            pass
+        else:
+            raise ValueError("Model already exists with a different number of stages. Please pass None as the model argument to create a new model, or pass None as the number_of_stages argument.")
+    m.fs.feed.flow_mass_phase_comp.unfix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
+    # Sweep parameters ------------------------------------------------------------------------
+
+    sweep_params["Feed Concentration"] = LinearSample(m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], 70, 150, nx)
+
+    sweep_params["Volumetric Recovery Rate"] = LinearSample(m.fs.water_recovery, 0.2, 0.5, nx)
+
+    # Outputs  -------------------------------------------------------------------------------
+    outputs["LCOW"] = m.fs.costing.LCOW
+    outputs["LCOW wrt Feed Flow"] = m.fs.costing.LCOW_feed
+    outputs["SEC"] = m.fs.costing.specific_energy_consumption
+    outputs["SEC wrt Feed"] = m.fs.costing.specific_energy_consumption_feed
+    outputs["Number of Stages"] = m.fs.NumberOfStages
+    outputs["Final Brine Concentration"] = m.fs.disposal.properties[
+        0
+    ].conc_mass_phase_comp["Liq", "NaCl"]
+    outputs["Final Permeate Concentration (ppm)"] = (
+        m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"] * 1e6
+    )
+    outputs["Annual Feed Flow"] = m.fs.annual_feed
+    outputs["Annual Water Production"] = m.fs.costing.annual_water_production
+
+
+    outputs["Pump Work In (kW)"] = m.fs.total_pump_work
+    outputs["Pump Work Recovered (kW)"] = m.fs.recovered_pump_work
+    outputs["Net Pump Work In (kW)"] = m.fs.net_pump_work
+    outputs["Energy Recovery (%)"] = (
+        -m.fs.recovered_pump_work / m.fs.total_pump_work * 100
+    )
+
+    outputs["Mass Water Recovery Rate (%)"] = m.fs.mass_water_recovery * 100
+    outputs["System Salt Rejection (%)"] = m.fs.system_salt_rejection * 100
+
+    outputs["Total Membrane Area"] = m.fs.total_membrane_area
+    
+    
+    outputs["Total Capex LCOW"] = (
+        m.fs.costing.total_capital_cost
+        * m.fs.costing.capital_recovery_factor
+        / m.fs.costing.annual_water_production
+    )
+    outputs["Total Opex LCOW"] = (
+        m.fs.costing.total_operating_cost / m.fs.costing.annual_water_production
+    )
+
+    outputs["Primary Pump Capex LCOW"] = m.fs.costing.primary_pump_capex_lcow
+    outputs["Booster Pump Capex LCOW"] = m.fs.costing.booster_pump_capex_lcow
+
+    outputs["ERD Capex LCOW"] = m.fs.costing.erd_capex_lcow
+    outputs["Membrane Capex LCOW"] = m.fs.costing.membrane_capex_lcow
+    outputs["Indirect Capex LCOW"] = m.fs.costing.indirect_capex_lcow
+    outputs["Electricity LCOW"] = m.fs.costing.electricity_lcow
+    outputs["Membrane Replacement LCOW"] = m.fs.costing.membrane_replacement_lcow
+    outputs["Chem-labor-maintenance LCOW"] = (
+        m.fs.costing.chemical_labor_maintenance_lcow
+    )
+
+    outputs["Pumping Energy Agg LCOW"] = m.fs.costing.pumping_energy_aggregate_lcow
+    outputs["Membrane Agg LCOW"] = m.fs.costing.membrane_aggregate_lcow
+
+    outputs.update(
+        {
+            f"Feed Pressure (psi)-Stage {idx}": pyunits.convert(
+                pump.control_volume.properties_out[0].pressure, to_units=pyunits.psi
+            )
+            for idx, pump in m.fs.PrimaryPumps.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Pump Feed Flowrate-Stage {idx} (gpm)": pyunits.convert(
+                pump.control_volume.properties_out[0].flow_vol_phase['Liq'], to_units=pyunits.gal/pyunits.min
+            )
+            for idx, pump in m.fs.PrimaryPumps.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Permeate flowrate-Stage {idx} (gpm)": pyunits.convert(
+                stage.mixed_permeate[0].flow_vol_phase["Liq"], to_units=pyunits.gal/pyunits.min
+            )
+                    for idx, stage in m.fs.ROUnits.items()
+               
+        }
+    )
+
+    outputs.update(
+        {
+            f"Membrane Area-Stage {idx}": stage.area
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Total Membrane Length-Stage {idx}": stage.length
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Effective Membrane Width-Stage {idx}": stage.width
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Observed Rejection (%)-Stage {idx}": stage.rejection_phase_comp[
+                0, "Liq", "NaCl"
+            ]
+            * 100
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Observed Salt Passage (%)-Stage {idx}": (
+                1 - stage.rejection_phase_comp[0, "Liq", "NaCl"]
+            )
+            * 100
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Mass Salt Passage (%)-Stage {idx}": (
+                stage.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
+                / stage.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "NaCl"]
+            )
+            * 100
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Volumetric Module Recovery Rate (%)-Stage {idx}": stage.recovery_vol_phase[
+                0, "Liq"
+            ]
+            * 100
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Mass Water Module Recovery Rate (%)-Stage {idx}": stage.recovery_mass_phase_comp[
+                0, "Liq", "H2O"
+            ]
+            * 100
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Volumetric Stage Recovery Rate (%)-Stage {idx}": m.fs.stage_recovery_vol[
+                idx
+            ]
+            * 100
+            for idx in m.fs.Stages
+        }
+    )
+
+    outputs.update(
+        {
+            f"Mass Water Stage Recovery Rate (%)-Stage {idx}": m.fs.stage_recovery_mass_H2O[
+                idx
+            ]
+            * 100
+            for idx in m.fs.Stages
+        }
+    )
+
+    outputs.update(
+        {
+            f"A-Value (LMH/bar)-Stage {idx}": stage.A_comp[0, "H2O"] * 3.6e11
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"B-Value (LMH)-Stage {idx}": stage.B_comp[0, "NaCl"] * 3.6e6
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Average Water Flux (LMH)-Stage {idx}": stage.flux_mass_phase_comp_avg[
+                0, "Liq", "H2O"
+            ]
+            * 3.6e3
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Average NaCl Flux (GMH)-Stage {idx}": stage.flux_mass_phase_comp_avg[
+                0, "Liq", "NaCl"
+            ]
+            * 3.6e6
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Pressure Drop (bar)-Stage {idx}": -pyunits.convert(
+                stage.deltaP[0], to_units=pyunits.bar
+            )
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+    outputs.update(
+        {
+            f"Inlet Reynolds Number-Stage {idx}": stage.feed_side.N_Re[0, 0]
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+    outputs.update(
+        {
+            f"Outlet Reynolds Number-Stage {idx}": stage.feed_side.N_Re[0, 1]
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+    outputs.update(
+        {
+            f"Inlet Crossflow Velocity-Stage {idx}": stage.feed_side.velocity[0, 0]
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+    outputs.update(
+        {
+            f"Outlet Crossflow Velocity-Stage {idx}": stage.feed_side.velocity[0, 1]
+            for idx, stage in m.fs.ROUnits.items()
+        }
+    )
+
+    outputs.update(
+        {
+            f"Primary Pump SEC-Stage {idx}": pyunits.convert(
+                pump.work_mechanical[0], to_units=pyunits.kW
+            )
+            / pyunits.convert(
+                m.fs.product.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+            for idx, pump in m.fs.PrimaryPumps.items()
+        }
+    )
+
+    m.fs.zero_expression = Expression(expr=0.0)
+
+    outputs["Booster Pump SEC-Stage 1"] = m.fs.zero_expression
+    outputs.update(
+        {
+            f"Booster Pump SEC-Stage {idx}": pyunits.convert(
+                pump.work_mechanical[0], to_units=pyunits.kW
+            )
+            / pyunits.convert(
+                m.fs.product.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+            for idx, pump in m.fs.BoosterPumps.items()
+        }
+    )
+    outputs.update(
+        {
+            f"ERD SEC-Stage 1": pyunits.convert(
+                m.fs.EnergyRecoveryDevices[1].work_mechanical[0], to_units=pyunits.kW
+            )
+            / pyunits.convert(
+                m.fs.product.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        }
+    )
+    outputs.update(
+        {
+            f"ERD SEC-Stage {idx}": m.fs.zero_expression
+            for idx in m.fs.IntermediateStages
+        }
+    )
+    if m.fs.FirstStage != m.fs.LastStage:
+        outputs.update(
+            {
+                f"ERD SEC-Stage {m.fs.LastStage}": pyunits.convert(
+                    m.fs.EnergyRecoveryDevices[m.fs.LastStage].work_mechanical[0],
+                    to_units=pyunits.kW,
+                )
+                / pyunits.convert(
+                    m.fs.product.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / pyunits.hr,
+                )
+            }
+        )
+
+    outputs.update(
+        {
+            f"Net SEC-Stage {idx}": outputs[f"Primary Pump SEC-Stage {idx}"]
+            + outputs[f"Booster Pump SEC-Stage {idx}"]
+            + outputs[f"ERD SEC-Stage {idx}"]
+            for idx in m.fs.Stages
+        }
+    )
+
+    sweep_sensitivity_results = parameter_sweep(
+            m,
+            sweep_params,
+            outputs,
+            csv_results_file_name=output_filename,
+            optimize_function=solve,
+            interpolate_nan_outputs=True,
+        )
+    results= pd.read_csv(output_filename)
+
+    fig, ax = plt.subplots(1,1, figsize=(8, 12), dpi=300)
+
+    X, Y = np.meshgrid(np.unique(results["# Feed Concentration"].to_numpy()), np.unique(results["Volumetric Recovery Rate"].to_numpy()))
+
+    Z = results["LCOW"].to_numpy().reshape(X.shape)
+
+    cbar = ax.contourf(X,Y,Z,cmap="jet")
+
+    ax.set_xlabel("Feed Concentration (kg/m3)")
+    ax.set_ylabel("Volumetric Recovery Rate (--)")
+
+    cbar = fig.colorbar(cbar, ax=ax)
+    cbar.set_label("LCOW ($/m3)")
+    ax.set_title(f"{number_of_stages}-Stage System");
+    contours = ax.contour(X,Y,Z, colors="k")
+
+    ax.clabel(contours)
+
+
+    return results, output_filename, fig, ax
 
 
 if __name__ == "__main__":
