@@ -13,7 +13,7 @@ environment*.yml @sufikaur
 
 /docs/ @MarcusHolly @adam-a-a
 
-/tutorials/ @adam-a-a @zacharybinger @avdudchenko @MarcusHolly @TimBartholomew
+/tutorials/ @adam-a-a @avdudchenko @MarcusHolly @kurbansitterley
 
 /watertap/core/ @bknueven @adam-a-a
 
@@ -88,5 +88,5 @@ environment*.yml @sufikaur
 LICENSE.md @ksbeattie
 COPYRIGHT.md @ksbeattie
 
-CITATION.cff @TimBartholomew
+CITATION.cff @adam-a-a @ksbeattie
 
