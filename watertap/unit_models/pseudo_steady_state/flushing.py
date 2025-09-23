@@ -36,8 +36,8 @@ class FlushingSurrogateData(UnitModelBlockData):
     """
     This is a surrogate unit model for flushing.
     1. A surrogate model can be created as a function of experimental data passed to configuration variable 'dataset_filename'
-    2. If not data is passed the default values for number_of_tanks_in_series will be used to create a profile for the given flow_rate and accumulation volume.
-    3. If a surrogate file is passed to the configuration variable "surrogate_model_file" it is used.
+    2. If no experimental data is provided, the default values for number_of_tanks_in_series will be used to create a profile for the given flow_rate and accumulation volume.
+    3. If a surrogate file is passed to the configuration variable "surrogate_model_file", the previously created surrogate file will be used.
     4. If no surrogate file is provided, a surrogate model is created during initialization using the experimental data provided in "dataset_filename" or default values number_of_tanks_in_series.
     """
 
@@ -145,7 +145,7 @@ class FlushingSurrogateData(UnitModelBlockData):
         self.accumulation_volume = Param(
             initialize=0.0, 
             units=pyunits.m**3,
-            doc="Accumulation volume through which is being flushing"
+            doc="Accumulation volume is being flushed"
             )
         
         self.flushing_flow_rate = Param(
@@ -164,15 +164,14 @@ class FlushingSurrogateData(UnitModelBlockData):
         self.pre_flushing_concentration = Var(
             initialize=0.0, 
             units=pyunits.kg/pyunits.m**3,
-            doc = "Concentration of the accumulation volume prior to flushing"
+            doc = "Concentration of the accumulation volume prior to flushing at the end of the concentration cycle"
             )
         
         self.post_flushing_concentration = Var(
             initialize=0.0, 
             units=pyunits.kg/pyunits.m**3,
-            doc = "Concentration of the accumulation volume after flushing"
+            doc = "Concentration of the accumulation volume after flushing at the start of the concentration cycle"
             )
-
 
         # Variables - Not sure if these are needed or if their created with the surrogate model
         self.flushing_efficiency = Var(
