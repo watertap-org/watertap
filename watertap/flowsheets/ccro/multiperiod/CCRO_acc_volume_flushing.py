@@ -131,11 +131,11 @@ class CCRO_dead_volume_flushing:
         self.n_time_points = n_time_points
 
         # Raw feed conditions (low concentration feed)
-        self.raw_feed_conc = raw_feed_conc * pyunits.g/pyunits.L
+        self.raw_feed_conc = pyunits.convert(raw_feed_conc * pyunits.g/pyunits.L , to_units= pyunits.kg/pyunits.m**3)
         self.raw_feed_flowrate = raw_feed_flowrate * pyunits.L/pyunits.min
 
         # Recycle conditions
-        self.recycle_conc_start = recycle_conc_start * pyunits.g/pyunits.L
+        self.recycle_conc_start = pyunits.convert( recycle_conc_start * pyunits.g/pyunits.L, to_units= pyunits.kg/pyunits.m**3)
         self.recycle_flowrate = recycle_flowrate * pyunits.L/pyunits.min
 
         # Flushing conditions
@@ -435,7 +435,7 @@ class CCRO_dead_volume_flushing:
             solver.solve(m.fs.raw_feed)
 
             # Concentration of the flushing water is the raw feed concentration
-            m.fs.flushing.raw_feed_concentration.fix(m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"])
+            m.fs.flushing.raw_feed_concentration.fix(self.raw_feed_conc)
             m.fs.flushing.flushing_time.fix(20)
 
             # Surrogate parameters
@@ -467,6 +467,9 @@ class CCRO_dead_volume_flushing:
                 expr=m.fs.dead_volume.dead_volume.mass_phase_comp[0, "Liq", "NaCl"]
                 ==m.fs.flushing.post_flushing_concentration * m.fs.dead_volume.volume[0,'Liq']
             )
+
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(1e-15)
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(1e-15)
 
             calculate_scaling_factors(m)
 
@@ -513,12 +516,12 @@ class CCRO_dead_volume_flushing:
 
             propagate_state(m.fs.P2_to_M1)
 
-            # m.fs.product.properties[0].flow_vol_phase["Liq"]
+            m.fs.product.properties[0].flow_vol_phase["Liq"]
             m.fs.product.initialize()
         
         if m.fs.configuration == "flushing":
             
-            # propagate_state(m.fs.raw_feed_to_dead_volume)
+            propagate_state(m.fs.raw_feed_to_dead_volume)
             m.fs.dead_volume.initialize()
 
             m.fs.flushing.initialize()
@@ -591,6 +594,28 @@ class CCRO_dead_volume_flushing:
                   blks[-1].fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"])
         )
 
+        mp.overall_recovery = Var(
+            initialize=0.5,
+            # bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Overall water recovery over all time periods",
+        )
+
+        # Overall water recovery
+        mp.overall_water_recovery_constraint = Constraint(
+            expr = mp.overall_recovery == (
+                 sum(
+                    blks[t].fs.product.properties[0].flow_vol_phase["Liq"]
+                    for t in range(self.n_time_points)
+                )/
+                sum(
+                    blks[t].fs.raw_feed.properties[0].flow_vol_phase["Liq"]
+                    for t in range(self.n_time_points)
+                )
+            )
+        )
+
 
     def copy_state_prop_time_period_links(self, m_old, m_new):
         self.copy_state(m_old, m_new)
@@ -649,8 +674,6 @@ class CCRO_dead_volume_flushing:
 
             m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
             m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
-
-            m.fs.product.properties[0].flow_vol_phase["Liq"].fix(1e-15)
 
     
     def solve(self, model=None, solver=None, tee=False, raise_on_failure=True):
@@ -728,7 +751,7 @@ def print_results_table(ccro_model):
 if __name__ == "__main__":
 
     initial_conditions = {
-        "n_time_points": 3,
+        "n_time_points": 22,
         "raw_feed_conc": 5.8,
         "raw_feed_flowrate": 1.8, # L/min
         "recycle_flowrate": 49.911, # L/min
@@ -760,3 +783,4 @@ if __name__ == "__main__":
     print("Pre-flushing conc:",ccro.mp.get_active_process_blocks()[-1].fs.flushing.pre_flushing_concentration.value)
     print("Post-flushing conc:",ccro.mp.get_active_process_blocks()[-1].fs.flushing.post_flushing_concentration.value)
 
+    print("Overall recovery:",ccro.mp.overall_recovery.value)
