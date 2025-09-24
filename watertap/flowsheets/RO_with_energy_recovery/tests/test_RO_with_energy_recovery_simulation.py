@@ -17,7 +17,6 @@ from pyomo.environ import (
     Constraint,
     value,
     Expression,
-    Objective,
 )
 from pyomo.network import Port
 from idaes.core import FlowsheetBlock
