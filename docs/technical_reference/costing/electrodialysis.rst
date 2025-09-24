@@ -4,7 +4,7 @@ Electrodialysis Costing Method
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.electrodialysis`) when applying the `cost_electrodialysis` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.electrodialysis``) when applying the ``cost_electrodialysis`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -20,7 +20,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are constructed on the unit block (e.g., m.fs.unit.costing) when applying the `cost_electrodialysis` costing method in the ``watertap_costing_package``:
+The following variables are constructed on the unit block (e.g., ``m.fs.unit.costing``) when applying the ``cost_electrodialysis`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -40,6 +40,10 @@ If the system has a rectifier (``has_rectifier=True``):
     .. math::
 
         C_{rectifier} = b_{rectifier} + (a_{rectifier} * P / \eta_{AC-DC})
+
+And the capital cost is:
+    
+    .. math::
 
         C_{cap,tot} = (C_{mem} * 2 * n_{pair} * w * l) + (C_{elec} * 2 * w * l) + C_{rectifier}
 

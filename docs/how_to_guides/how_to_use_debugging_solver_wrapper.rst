@@ -21,13 +21,18 @@ In a python module containing the model and script to solve that model, the user
 
 .. testcode::
 
-    from watertap.core.util.model_debug_mode import activate
+    from watertap_solvers.model_debug_mode import activate
     activate()
 
 
 .. warning::
  
     If you ran your python file in an interactive window, this debugging mode may not work as expected. We recommend running your python file in a terminal.
+
+.. testcleanup::
+
+   from watertap_solvers.model_debug_mode import deactivate
+   deactivate()
 
 Example behavior without debugging mode
 ---------------------------------------

@@ -17,8 +17,13 @@ WaterTAP is developed as part of the [National Alliance for Water Innovation](ht
 
 To quickly install and start using WaterTAP, head over to the [Getting Started](https://watertap.readthedocs.io/en/stable/getting_started.html) section of the documentation.
 
-If you wish to use the **WaterTAP UI**, you can [download and install](https://watertap-org.github.io) it from this page: https://watertap-org.github.io.
+### Graphical UI
+The WaterTAP UI lets you configure and run flowsheets in a graphical user interface.
+This UI has been renamed the **Flowsheet Processor**, with variants containing flowsheets for the WaterTAP, IDAES, and PrOMMiS projects.
+* One-click native installer for Windows and MacOS: [Download](https://prommis.github.io/idaes-flowsheet-processor-ui/docs/Download/watertap)
+* Source code installation (UNIX/Linux): [Github](https://github.com/prommis/idaes-flowsheet-processor-ui)
 
+### Tutorials
 To run the WaterTAP tutorials online (no installation required), refer to [this guide](https://watertap.readthedocs.io/en/stable/how_to_guides/notebooks.html#online-using-binder-org).
 
 ## Documentation
@@ -32,9 +37,7 @@ refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en
 
 ## Cite this work
 
-To cite this work, use the "Cite this repository" feature available on the right side of this repository page or use the reference text given below.
-
-> WaterTAP contributors. WaterTAP: An open-source water treatment model library. Version 0.6. Sponsored by California Energy Commission, National Alliance for Water Innovation, and USDOE. Available at https://github.com/watertap-org/watertap.
+To cite this work, please use the "Cite this repository" feature available on the right side of this repository page.
 
 ## Funding Acknowledgements
 
