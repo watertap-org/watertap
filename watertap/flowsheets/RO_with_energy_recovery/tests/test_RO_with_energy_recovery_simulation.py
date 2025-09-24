@@ -232,7 +232,7 @@ class TestROwithPX:
 
         set_operating_conditions(m)
         initialize_system(m, solver=solver, relaxed_initialization=True)
-        m.fs.RO.area_objective.deactivate()
+        assert degrees_of_freedom(m) == 0
         # check results across pressure exchanger, proxy for both upstream and downstream of RO
         # high pressure inlet
         assert value(

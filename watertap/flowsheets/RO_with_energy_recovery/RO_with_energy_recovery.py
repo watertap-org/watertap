@@ -371,6 +371,7 @@ def initialize_system(m, solver=None, relaxed_initialization=False):
 
     # ---initialize RO---
     if relaxed_initialization:
+        print("Initializing RO with relaxed recovery specification")
         m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
         target_recovery = m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].value
         m.fs.RO.area_objective = Objective(
@@ -379,11 +380,18 @@ def initialize_system(m, solver=None, relaxed_initialization=False):
         )
 
         expected_DOFs = 1
+        print(
+            f"Unfixed membrane area, and added objective to achieve target recovery of {target_recovery}"
+        )
         m.fs.RO.initialize(
             optarg=optarg, initialization_degrees_of_freedom=expected_DOFs
         )
         m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(target_recovery)
         m.fs.RO.area_objective.deactivate()
+
+        print(
+            f"Deactivated target recovery objective, RO model initialized to recovery of {m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].value}"
+        )
     else:
         m.fs.RO.initialize(optarg=optarg)
     # ---initialize feed block---
