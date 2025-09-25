@@ -137,7 +137,7 @@ class FlushingSurrogateData(UnitModelBlockData):
 
         # Parameters
         self.number_tanks_in_series = Param(
-            initialize=1, 
+            initialize=5, 
             units=pyunits.dimensionless,
             doc = "Number of tanks in series to represent the a plug flow reactor with mixing"
             )
