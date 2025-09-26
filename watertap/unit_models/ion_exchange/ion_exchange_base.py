@@ -18,6 +18,7 @@ from pyomo.environ import (
     Var,
     Param,
     Suffix,
+    Set,
     log,
     NonNegativeReals,
     check_optimal_termination,
@@ -394,11 +395,8 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
                 self.ion_exchange_type = IonExchangeType.cation
             if self.config.property_package.charge_comp[target_component].value < 0:
                 self.ion_exchange_type = IonExchangeType.anion
-            # else:
-            #     assert target_component in ["TDS", "Alkalinity"]
-            #     self.ion_exchange_type = IonExchangeType.demineralize
-            # raise ConfigurationError("Target ion must have non-zero charge.")
 
+        self.target_component_set = Set(initialize=[target_component])
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         self.process_flow = ControlVolume0DBlock(
@@ -1159,19 +1157,20 @@ class IonExchangeBaseData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 1)
 
         if self.config.add_steady_state_approximation:
-            for trap in self.trap_disc:
-                if iscale.get_scaling_factor(self.c_traps[trap]) is None:
-                    iscale.set_scaling_factor(self.c_traps[trap], 10)
+            for j in self.reactive_component_set:
+                for trap in self.trap_disc:
+                    if iscale.get_scaling_factor(self.c_traps[j, trap]) is None:
+                        iscale.set_scaling_factor(self.c_traps[j, trap], 10)
 
-                if iscale.get_scaling_factor(self.tb_traps[trap]) is None:
-                    iscale.set_scaling_factor(self.tb_traps[trap], 1e-6)
+                    if iscale.get_scaling_factor(self.tb_traps[j, trap]) is None:
+                        iscale.set_scaling_factor(self.tb_traps[j, trap], 1e-6)
 
-            for trap in self.trap_index:
-                if iscale.get_scaling_factor(self.traps[trap]) is None:
-                    iscale.set_scaling_factor(self.traps[trap], 1e2)
+                for trap in self.trap_index:
+                    if iscale.get_scaling_factor(self.traps[j, trap]) is None:
+                        iscale.set_scaling_factor(self.traps[j, trap], 1e2)
 
-            if iscale.get_scaling_factor(self.c_norm_avg) is None:
-                iscale.set_scaling_factor(self.c_norm_avg, 10)
+                if iscale.get_scaling_factor(self.c_norm_avg[j]) is None:
+                    iscale.set_scaling_factor(self.c_norm_avg[j], 10)
 
     def _get_stream_table_contents(self, time_point=0):
 
@@ -1227,13 +1226,16 @@ def add_ss_approximation(blk, ix_model_type=None):
     )
 
     blk.c_traps = Var(
+        blk.reactive_component_set,
         blk.trap_disc,
         initialize=0.5,
         bounds=(0, 1),
         units=pyunits.dimensionless,
         doc="Normalized breakthrough concentrations for estimating area under breakthrough curve",
     )
+
     blk.tb_traps = Var(
+        blk.reactive_component_set,
         blk.trap_disc,
         initialize=1e6,
         bounds=(0, None),
@@ -1242,6 +1244,7 @@ def add_ss_approximation(blk, ix_model_type=None):
     )
 
     blk.traps = Var(
+        blk.reactive_component_set,
         blk.trap_index,
         initialize=0.01,
         bounds=(0, 1),
@@ -1249,11 +1252,12 @@ def add_ss_approximation(blk, ix_model_type=None):
         doc="Trapezoid areas for estimating area under breakthrough curve",
     )
 
-    blk.c_traps[0].fix(0)
-    blk.tb_traps[0].fix(0)
+    for c in blk.reactive_component_set:
+        blk.c_traps[(c, 0)].fix(0)
+        blk.tb_traps[(c, 0)].fix(0)
 
     blk.c_norm_avg = Var(
-        blk.target_component_set,
+        blk.reactive_component_set,
         initialize=0.25,
         bounds=(0, 2),
         units=pyunits.dimensionless,
@@ -1293,73 +1297,78 @@ def add_ss_approximation(blk, ix_model_type=None):
             blk.throughput_surrogate_traps = SurrogateBlock(
                 blk.trap_index, concrete=True
             )
-            for tr in blk.trap_index:
-                blk.throughput_surrogate_traps[tr].build_model(
-                    blk.throughput_surrogate,
-                    input_vars=[
-                        blk.freundlich_ninv,
-                        blk.N_Bi,
-                        blk.c_traps[tr],
-                    ],
-                    output_vars=[blk.throughput_traps[tr]],
-                )
+            for j in blk.reactive_component_set:
+                for tr in blk.trap_index:
+                    blk.throughput_surrogate_traps[tr].build_model(
+                        blk.throughput_surrogate,
+                        input_vars=[
+                            blk.freundlich_ninv,
+                            blk.N_Bi,
+                            blk.c_traps[j, tr],
+                        ],
+                        output_vars=[blk.throughput_traps[tr]],
+                    )
 
         elif blk.config.cphsdm_calculation_method == "input":
 
             @blk.Constraint(
+                blk.reactive_component_set,
                 blk.trap_index,
                 doc="Throughput constraint based on empirical 5-parameter regression by discretized element",
             )
-            def eq_throughput_traps(b, k):
+            def eq_throughput_traps(b, j, k):
                 return b.throughput_traps[k] == b.b0 + b.b1 * (
-                    b.c_traps[k] ** b.b2
-                ) + b.b3 / (1.01 - b.c_traps[k] ** b.b4)
+                    b.c_traps[j, k] ** b.b2
+                ) + b.b3 / (1.01 - b.c_traps[j, k] ** b.b4)
 
     @blk.Constraint(
-        blk.target_component_set,
+        blk.reactive_component_set,
         blk.trap_index,
         doc="Evenly spaced c_norm for trapezoids",
     )
     def eq_c_traps(b, j, k):
-        return b.c_traps[k] == b.c_trap_min + (b.trap_disc[k] - 1) * (
+        return b.c_traps[j, k] == b.c_trap_min + (b.trap_disc[k] - 1) * (
             (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
         )
 
     @blk.Constraint(
+        blk.reactive_component_set,
         blk.trap_index,
         doc="Breakthrough time calc for trapezoids",
     )
-    def eq_tb_traps(b, k):
+    def eq_tb_traps(b, j, k):
         if ix_model_type == "clark":
-            bv_traps = (b.tb_traps[k] * b.loading_rate) / b.bed_depth
+            bv_traps = (b.tb_traps[j, k] * b.loading_rate) / b.bed_depth
             left_side = (
-                (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
-                / (b.bv_50 * b.loading_rate)
+                (b.mass_transfer_coeff[j] * b.bed_depth * (b.freundlich_n[j] - 1))
+                / (b.bv_50[j] * b.loading_rate)
             ) * (b.bv_50 - bv_traps)
 
             right_side = log(
-                ((1 / b.c_traps[k]) ** (b.freundlich_n - 1) - 1)
-                / (2 ** (b.freundlich_n - 1) - 1)
+                ((1 / b.c_traps[k]) ** (b.freundlich_n[j] - 1) - 1)
+                / (2 ** (b.freundlich_n[j] - 1) - 1)
             )
             return left_side - right_side == 0
         elif ix_model_type == "cphsdm":
-            return b.tb_traps[k] == b.min_tb_traps[k] + (
+            return b.tb_traps[j, k] == b.min_tb_traps[k] + (
                 b.t_contact - b.min_t_contact
             ) * (b.solute_dist_param + 1)
         else:
             return Constraint.Skip
 
-    @blk.Constraint(blk.trap_index, doc="Area of trapezoids")
-    def eq_traps(b, k):
-        return b.traps[k] == (b.tb_traps[k] - b.tb_traps[k - 1]) / b.tb_traps[
-            b.num_traps
-        ] * ((b.c_traps[k] + b.c_traps[k - 1]) / 2)
+    @blk.Constraint(
+        blk.reactive_component_set, blk.trap_index, doc="Area of trapezoids"
+    )
+    def eq_traps(b, j, k):
+        return b.traps[j, k] == (b.tb_traps[j, k] - b.tb_traps[j, k - 1]) / b.tb_traps[
+            j, b.num_traps
+        ] * ((b.c_traps[j, k] + b.c_traps[j, k - 1]) / 2)
 
     @blk.Constraint(
-        blk.target_component_set, doc="Average relative effluent concentration"
+        blk.reactive_component_set, doc="Average relative effluent concentration"
     )
     def eq_c_norm_avg(b, j):
-        return b.c_norm_avg[j] == sum(b.traps[k] for k in b.trap_index)
+        return b.c_norm_avg[j] == sum(b.traps[j, k] for k in b.trap_index)
 
     @blk.Constraint(
         blk.target_component_set,
