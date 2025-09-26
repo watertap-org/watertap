@@ -113,7 +113,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         comps = self.config.property_package.component_list
         target_component = self.config.target_component
 
-        self.target_component_set = Set(initialize=[target_component])
+        self.reactive_component_set = Set(initialize=[target_component])
         inerts = comps - self.target_component_set
 
         if len(self.target_component_set) > 1:
@@ -662,8 +662,9 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
             init_log.info_high("Initializing values from surrogates.")
 
             calculate_variable_from_constraint(self.N_Bi, self.eq_Bi)
-            for (_, trap), c in self.eq_c_traps.items():
-                calculate_variable_from_constraint(self.c_traps[trap], c)
+            for j in self.target_component_set:
+                for (_, trap), c in self.eq_c_traps.items():
+                    calculate_variable_from_constraint(self.c_traps[j, trap], c)
 
             init_data = pd.DataFrame(
                 {
@@ -677,10 +678,11 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
             init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
             self.throughput.value = init_out["throughput"].values[0]
-            for trap in self.trap_index:
-                init_data["c_norm"] = self.c_traps[trap].value
-                init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
-                self.throughput_traps[trap].value = init_out["throughput"].values[0]
+            for j in self.target_component_set:
+                for trap in self.trap_index:
+                    init_data["c_norm"] = self.c_traps[j, trap].value
+                    init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
+                    self.throughput_traps[trap].value = init_out["throughput"].values[0]
 
         # Initialize control volume
         flags = self.process_flow.initialize(
