@@ -12,12 +12,14 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Param,
     Set,
     Var,
     log,
     check_optimal_termination,
     units as pyunits,
 )
+from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
@@ -41,6 +43,25 @@ class IonExchangeClarkData(IonExchangeBaseData):
     Ion exchange Clark model
     """
 
+    CONFIG = IonExchangeBaseData.CONFIG()
+
+    CONFIG.declare(
+        "reactive_components",
+        ConfigValue(
+            default=list(),
+            domain=list,
+            description="Designates other reactive species",
+        ),
+    )
+    CONFIG.declare(
+        "number_traps",
+        ConfigValue(
+            default=5,
+            domain=int,
+            description="Number of trapezoids to use for steady-state effluent concentration estimation",
+        ),
+    )
+
     def build(self):
         super().build()
 
@@ -48,9 +69,16 @@ class IonExchangeClarkData(IonExchangeBaseData):
         regen = self.regeneration_stream[0]
         comps = self.config.property_package.component_list
         target_component = self.config.target_component
+        reactive_components = self.config.reactive_components
 
-        self.target_component_set = Set(initialize=[target_component])
-        inerts = comps - self.target_component_set
+        if not target_component in reactive_components:
+            # Raise warning?
+            reactive_components.append(target_component)
+
+        self.reactive_component_set = Set(initialize=reactive_components)
+
+        inerts = comps - self.reactive_component_set
+        self.inert_set = Set(initialize=inerts)
 
         if len(self.target_component_set) > 1:
             raise ConfigurationError(
@@ -71,30 +99,34 @@ class IonExchangeClarkData(IonExchangeBaseData):
         self.flow_basis = self.process_flow.properties_in[
             self.flowsheet().config.time.first()
         ].get_material_flow_basis()
+        self.eps = Param(initialize=1e-4, mutable=True)
 
         self.c_norm = Var(
-            self.target_component_set,
+            self.reactive_component_set,
             initialize=0.5,
             bounds=(0, 1),
             units=pyunits.dimensionless,
-            doc="Dimensionless (relative) concentration [Ct/C0] of target ion",
+            doc="Normalized (relative) effluent concentration of reactive components",
         )
 
         self.freundlich_n = Var(
+            self.reactive_component_set,
             initialize=1.5,
             bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Freundlich isotherm exponent",
         )
 
-        self.mass_transfer_coeff = Var(  # k_T
+        self.mass_transfer_coeff = Var(
+            self.reactive_component_set,  # k_T
             initialize=0.001,
             units=pyunits.s**-1,
             bounds=(0, None),
             doc="Mass transfer coefficient for Clark model (kT)",
         )
 
-        self.bv_50 = Var(  # BV_50
+        self.bv_50 = Var(
+            self.reactive_component_set,  # BV_50
             initialize=2e5,
             bounds=(0, None),
             units=pyunits.dimensionless,
@@ -106,17 +138,17 @@ class IonExchangeClarkData(IonExchangeBaseData):
             return b.breakthrough_time * b.loading_rate == b.bv * b.bed_depth
 
         @self.Constraint(
-            self.target_component_set, doc="Clark equation with fundamental constants"
+            self.reactive_component_set, doc="Clark equation with fundamental constants"
         )  # Croll et al (2023), Eq.9
         def eq_clark(b, j):
             left_side = (
-                (b.mass_transfer_coeff * b.bed_depth * (b.freundlich_n - 1))
-                / (b.bv_50 * b.loading_rate)
-            ) * (b.bv_50 - b.bv)
+                (b.mass_transfer_coeff[j] * b.bed_depth * (b.freundlich_n[j] - 1))
+                / (b.bv_50[j] * b.loading_rate)
+            ) * (b.bv_50[j] - b.bv)
 
             right_side = log(
-                ((1 / b.c_norm[j]) ** (b.freundlich_n - 1) - 1)
-                / (2 ** (b.freundlich_n - 1) - 1)
+                ((1 / b.c_norm[j]) ** (b.freundlich_n[j] - 1) - 1)
+                / (2 ** (b.freundlich_n[j] - 1) - 1)
             )
             return left_side - right_side == 0
 
@@ -133,7 +165,7 @@ class IonExchangeClarkData(IonExchangeBaseData):
             # assume effluent concentration is equal to concentration at breakthrough
 
             @self.Constraint(
-                self.target_component_set,
+                self.reactive_component_set,
                 doc="CV mass transfer term",
             )
             def eq_mass_transfer_term(b, j):
@@ -142,7 +174,7 @@ class IonExchangeClarkData(IonExchangeBaseData):
                 ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
 
             @self.Constraint(
-                self.target_component_set,
+                self.reactive_component_set,
                 doc="Target component mass transfer for regeneration stream",
             )
             def eq_mass_transfer_regen(b, j):
@@ -227,10 +259,9 @@ class IonExchangeClarkData(IonExchangeBaseData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        target_component = self.config.target_component
 
-        if iscale.get_scaling_factor(self.c_norm[target_component]) is None:
-            iscale.set_scaling_factor(self.c_norm[target_component], 10)
+        if iscale.get_scaling_factor(self.c_norm) is None:
+            iscale.set_scaling_factor(self.c_norm, 10)
 
         if iscale.get_scaling_factor(self.freundlich_n) is None:
             iscale.set_scaling_factor(self.freundlich_n, 0.1)
