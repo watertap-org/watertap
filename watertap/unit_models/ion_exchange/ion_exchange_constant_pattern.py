@@ -13,6 +13,7 @@
 from copy import deepcopy
 
 # Import Pyomo libraries
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import (
     Set,
     Var,
@@ -42,6 +43,16 @@ class IonExchangeCPData(IonExchangeBaseData):
     Ion exchange constant-pattern model.
     """
 
+    CONFIG = IonExchangeBaseData.CONFIG()
+    CONFIG.declare(
+        "target_ion",
+        ConfigValue(
+            default="Ca_2+",
+            domain=str,
+            description="Designates targeted species for removal",
+        ),
+    )
+
     def build(self):
         super().build()
 
@@ -50,7 +61,6 @@ class IonExchangeCPData(IonExchangeBaseData):
         comps = self.config.property_package.component_list
         target_component = self.config.target_component
 
-        self.target_component_set = Set(initialize=[target_component])
         inerts = comps - self.target_component_set
 
         if len(self.target_component_set) > 1:
