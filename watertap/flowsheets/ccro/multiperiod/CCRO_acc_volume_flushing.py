@@ -674,16 +674,15 @@ class CCRO_dead_volume_flushing:
         # def ro_membrane_length_constraint(mp, t):
         #     return (blks[t].fs.RO.length == blks[0].fs.RO.length)
 
-        # Concentration at the start of cycle should be the same as end of flushing (Initial condition and after flushing)
+        # Density at the start of cycle should be the same as end of flushing (Initial condition and after flushing)
         @mp.Constraint()
-        def cycle_end_concentration_constraint(mp):
+        def cycle_end_density_constraint(mp):
             return (
                 blks[0]
-                .fs.dead_volume.dead_volume.properties_out[0]
-                .conc_mass_phase_comp["Liq", "NaCl"]
+                .fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"]
                 == blks[-1]
                 .fs.dead_volume.dead_volume.properties_out[0]
-                .conc_mass_phase_comp["Liq", "NaCl"]
+                .dens_mass_phase["Liq"]
             )
 
         # Mass fraction at the start of cycle should be the same as end of flushing (Initial condition and after flushing)
@@ -691,12 +690,12 @@ class CCRO_dead_volume_flushing:
         def cycle_end_mass_frac_constraint(mp):
             return (
                 blks[0]
-                .fs.dead_volume.dead_volume.properties_out[0]
-                .mass_frac_phase_comp["Liq", "NaCl"]
+                .fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]
                 == blks[-1]
                 .fs.dead_volume.dead_volume.properties_out[0]
                 .mass_frac_phase_comp["Liq", "NaCl"]
             )
+        
 
         # Permeate and feed
         mp.overall_recovery = Var(
@@ -829,8 +828,8 @@ class CCRO_dead_volume_flushing:
         # Fixed for accumulation time for initialization
         for t, m in enumerate(self.mp.get_active_process_blocks()):
             m.fs.dead_volume.accumulation_time.unfix()
-            m.fs.dead_volume.accumulation_time.setlb(1)
-            m.fs.dead_volume.accumulation_time.setub(400)
+            # m.fs.dead_volume.accumulation_time.setlb(1)
+            # m.fs.dead_volume.accumulation_time.setub(400)
 
             set_scaling_factor(m.fs.dead_volume.accumulation_time, 1e-2)
 
@@ -1075,6 +1074,6 @@ if __name__ == "__main__":
 
     # assert False
     # Fix overall recovery and solve
-    ccro.fix_overall_water_recovery(0.6)
+    ccro.fix_overall_water_recovery(0.7)
     ccro.solve(tee=False)
     print_results_table(ccro)
