@@ -69,7 +69,9 @@ from watertap.costing import (
 atmospheric_pressure = 101325 * pyunits.Pa
 solver = get_solver()
 
-surrogate_filename = "/Users/mhardika/Documents/watertap/watertap/Mukta-work/CCRO/flushing_surrogate_n_5.json"
+# Get filepath for surrogate model
+filepath = os.path.dirname(os.path.abspath(__file__))
+surrogate_filename = os.path.join(filepath, "flushing_surrogate_n_5.json")
 
 
 def get_variable_pairs(t1, t2):
