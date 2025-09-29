@@ -1327,8 +1327,10 @@ def add_ss_approximation(blk, ix_model_type=None):
         doc="Evenly spaced c_norm for trapezoids",
     )
     def eq_c_traps(b, j, k):
-        return b.c_traps[j, k] == b.c_trap_min + (b.trap_disc[k] - 1) * (
-            (b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)
+        return b.c_traps[j, k] == smooth_max(
+            1e-5,
+            b.c_trap_min
+            + (b.trap_disc[k] - 1) * ((b.c_norm[j] - b.c_trap_min) / (b.num_traps - 1)),
         )
 
     @blk.Constraint(
@@ -1342,10 +1344,10 @@ def add_ss_approximation(blk, ix_model_type=None):
             left_side = (
                 (b.mass_transfer_coeff[j] * b.bed_depth * (b.freundlich_n[j] - 1))
                 / (b.bv_50[j] * b.loading_rate)
-            ) * (b.bv_50 - bv_traps)
+            ) * (b.bv_50[j] - bv_traps)
 
             right_side = log(
-                ((1 / b.c_traps[k]) ** (b.freundlich_n[j] - 1) - 1)
+                ((1 / b.c_traps[j, k]) ** (b.freundlich_n[j] - 1) - 1)
                 / (2 ** (b.freundlich_n[j] - 1) - 1)
             )
             return left_side - right_side == 0
@@ -1371,7 +1373,7 @@ def add_ss_approximation(blk, ix_model_type=None):
         return b.c_norm_avg[j] == sum(b.traps[j, k] for k in b.trap_index)
 
     @blk.Constraint(
-        blk.target_component_set,
+        blk.reactive_component_set,
         doc="CV mass transfer term",
     )
     def eq_mass_transfer_term(b, j):
@@ -1379,7 +1381,7 @@ def add_ss_approximation(blk, ix_model_type=None):
             "Liq", j
         ) == -b.process_flow.mass_transfer_term[0, "Liq", j]
 
-    @blk.Constraint(blk.target_component_set, doc="Regeneration stream mass flow")
+    @blk.Constraint(blk.reactive_component_set, doc="Regeneration stream mass flow")
     def eq_mass_transfer_regen(b, j):
         return (
             b.regeneration_stream[0].get_material_flow_terms("Liq", j)
