@@ -90,18 +90,18 @@ class FlushingSurrogateData(UnitModelBlockData):
         ),
     )
 
-
     def generate_rtd_profile(self):
         # Generate the RTD profile for the flushing process
 
-        mean_residence_time = self.accumulation_volume / self.flushing_flow_rate  # Mean residence time in s
+        mean_residence_time = (
+            self.accumulation_volume / self.flushing_flow_rate
+        )  # Mean residence time in s
         time = np.linspace(0, 3 * mean_residence_time, 1000)
         scale = mean_residence_time / self.number_tanks_in_series
         F_t = gamma.cdf(time, a=self.number_tanks_in_series, scale=scale)
         data = pd.DataFrame({"time": time, "F_t": F_t})
 
         self.rtd_profile = data
-
 
     def create_surrogate_model(self):
 
@@ -117,78 +117,72 @@ class FlushingSurrogateData(UnitModelBlockData):
             self.generate_rtd_profile()
 
             # Create a surrogate using the default rtd profile
-            # TODO: Surrogate creation and fit check - Update the 
-
-
+            # TODO: Surrogate creation and fit check - Update the
 
     def load_surrogate(self):
         self.surrogate_blk = SurrogateBlock(concrete=True)
         self.surrogate = PysmoSurrogate.load_from_file(self.config.surrogate_model_file)
         self.surrogate_blk.build_model(
-            self.surrogate, 
-            input_vars=self.flushing_time, 
-            output_vars=self.flushing_efficiency
-            )
-        
+            self.surrogate,
+            input_vars=self.flushing_time,
+            output_vars=self.flushing_efficiency,
+        )
 
     def build(self):
-        
+
         super().build()
 
         # Parameters
         self.number_tanks_in_series = Param(
-            initialize=5, 
+            initialize=5,
             units=pyunits.dimensionless,
-            doc = "Number of tanks in series to represent the a plug flow reactor with mixing"
-            )
+            doc="Number of tanks in series to represent the a plug flow reactor with mixing",
+        )
 
         self.accumulation_volume = Param(
-            initialize=0.0, 
+            initialize=0.0,
             units=pyunits.m**3,
-            doc="Accumulation volume is being flushed"
-            )
-        
+            doc="Accumulation volume is being flushed",
+        )
+
         self.flushing_flow_rate = Param(
-            initialize=0.0, 
-            units=pyunits.m**3/pyunits.s,
-            doc = "Flow rate of the flushing water"
-            )
+            initialize=0.0,
+            units=pyunits.m**3 / pyunits.s,
+            doc="Flow rate of the flushing water",
+        )
 
         # Variables
         self.raw_feed_concentration = Var(
-            initialize=0.0, 
-            units=pyunits.kg/pyunits.m**3,
-            doc = "Concentration of the raw feed used for flushing"
-            )
-        
+            initialize=0.0,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Concentration of the raw feed used for flushing",
+        )
+
         self.pre_flushing_concentration = Var(
-            initialize=0.0, 
-            units=pyunits.kg/pyunits.m**3,
-            doc = "Concentration of the accumulation volume prior to flushing at the end of the concentration cycle"
-            )
-        
+            initialize=0.0,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Concentration of the accumulation volume prior to flushing at the end of the concentration cycle",
+        )
+
         self.post_flushing_concentration = Var(
-            initialize=0.0, 
-            units=pyunits.kg/pyunits.m**3,
-            doc = "Concentration of the accumulation volume after flushing at the start of the concentration cycle"
-            )
+            initialize=0.0,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Concentration of the accumulation volume after flushing at the start of the concentration cycle",
+        )
 
         # Variables - Not sure if these are needed or if their created with the surrogate model
         self.flushing_efficiency = Var(
-            initialize=0.1, 
+            initialize=0.1,
             units=pyunits.dimensionless,
-            bounds = (0,1),
-            doc="Flushing efficiency of the system"
-            )
-           
+            bounds=(0, 1),
+            doc="Flushing efficiency of the system",
+        )
+
         self.flushing_time = Var(
-            initialize=20.0, 
-            units=pyunits.s,
-            doc = "Duration of flushing"
-            )
+            initialize=20.0, units=pyunits.s, doc="Duration of flushing"
+        )
 
-
-        # If a surrogate model is passed, it is used to calculate the concentration 
+        # If a surrogate model is passed, it is used to calculate the concentration
         if self.config.surrogate_model_file is not None:
             try:
                 self.load_surrogate()
@@ -198,19 +192,19 @@ class FlushingSurrogateData(UnitModelBlockData):
         else:
             self.create_surrogate_model()
 
-
         # Constraint to calculate the concentration of the accumulation volume at the end of flushing
         self.flushing_concentration_constraint = Constraint(
-                expr= self.post_flushing_concentration
-                      == (1-self.flushing_efficiency) * self.pre_flushing_concentration + self.flushing_efficiency*self.raw_feed_concentration
-                      )
+            expr=self.post_flushing_concentration
+            == (1 - self.flushing_efficiency) * self.pre_flushing_concentration
+            + self.flushing_efficiency * self.raw_feed_concentration
+        )
 
     def initialize_build(
-           self,
-            outlvl=idaeslog.NOTSET,
-            solver=None,
-            optarg=None,
-            ):
+        self,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
         """
         General wrapper for initialization routines
 
@@ -226,9 +220,13 @@ class FlushingSurrogateData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Initialize surrogate
+        pre_con_fixed = self.pre_flushing_concentration.fixed
+        post_con_fixed = self.post_flushing_concentration.fixed
+        self.pre_flushing_concentration.fix()
+        self.post_flushing_concentration.unfix()
         self.init_data = pd.DataFrame(
             {
-                "time" : [value(self.flushing_time)],
+                "time": [value(self.flushing_time)],
             }
         )
 
@@ -241,6 +239,10 @@ class FlushingSurrogateData(UnitModelBlockData):
         opt = get_solver(solver, optarg)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+        if pre_con_fixed == False:
+            self.pre_flushing_concentration.unfix()
+        if post_con_fixed == False:
+            self.post_flushing_concentration.unfix()
 
         init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
 
@@ -251,8 +253,3 @@ class FlushingSurrogateData(UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         pass
-
-
-        
-
-
