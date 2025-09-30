@@ -102,7 +102,7 @@ class CCRO_dead_volume_flushing:
 
     def __init__(
         self,
-        n_time_points=5,
+        n_time_points=10,
         rho=1000,
         raw_feed_conc=None,
         raw_feed_flowrate=None,
@@ -273,13 +273,13 @@ class CCRO_dead_volume_flushing:
 
             TransformationFactory("network.expand_arcs").apply_to(m)
 
-            m.fs.single_pass_water_recovery = Var(
-                initialize=self.single_pass_water_recovery,
-                bounds=(0, 0.99),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Water recovery after single pass through RO or accumulation time",
-            )
+            # m.fs.single_pass_water_recovery = Var(
+            #     initialize=self.single_pass_water_recovery,
+            #     bounds=(0, 0.99),
+            #     domain=NonNegativeReals,
+            #     units=pyunits.dimensionless,
+            #     doc="Water recovery after single pass through RO or accumulation time",
+            # )
 
             m.fs.raw_feed.properties[0].flow_vol_phase
             m.fs.raw_feed.properties[0].conc_mass_phase_comp
@@ -443,11 +443,10 @@ class CCRO_dead_volume_flushing:
             #         )
 
             # Single pass water recovery constraint
-            m.fs.single_pass_water_recovery_constraint = Constraint(
-                expr=m.fs.RO.permeate.flow_mass_phase_comp[0, "Liq", "H2O"] / self.rho
-                == m.fs.single_pass_water_recovery
-                * m.fs.M1.mixed_state[0].flow_vol_phase["Liq"]
-            )
+            # m.fs.single_pass_water_recovery_constraint = Constraint(
+            #     expr=m.fs.RO.flow_vol_re
+            #     == m.fs.single_pass_water_recovery
+            # )
 
             # Dead Volume operating conditions
             # Fixed volume
@@ -553,6 +552,12 @@ class CCRO_dead_volume_flushing:
                     * m.dead_volume.volume[0, "Liq"]
                 )
 
+            iscale.constraint_scaling_transform(
+                m.fs.post_flushing_conc_constraint, 1e-1
+            )
+            iscale.constraint_scaling_transform(m.fs.pre_flushing_conc_constraint, 1e-1)
+            iscale.set_scaling_factor(m.fs.flushing.pre_flushing_concentration, 1e-1)
+            iscale.set_scaling_factor(m.fs.flushing.post_flushing_concentration, 1e-1)
             m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].unfix()
             m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].unfix()
 
@@ -682,6 +687,17 @@ class CCRO_dead_volume_flushing:
                 == blks[t].fs.dead_volume.delta_state.volume[0, "Liq"]
             )
 
+        # RO membrane length should be the same across all time periods - except flushing
+        @mp.Constraint(list(range(1, self.n_time_points - 1)))
+        def equal_recycle_rate(mp, t):
+            return (
+                blks[t].fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]
+                == blks[0].fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]
+            )
+
+        for t in mp.ro_membrane_area_constraint:
+            iscale.constraint_scaling_transform(mp.equal_recycle_rate[t], 1e2)
+        mp.equal_recycle_rate.deactivate()
         for t in mp.ro_membrane_area_constraint:
             iscale.constraint_scaling_transform(
                 mp.equal_delta_dead_volume_constraint[t], 1e2
@@ -697,13 +713,13 @@ class CCRO_dead_volume_flushing:
         )
         iscale.set_scaling_factor(mp.dead_volume_to_area_ratio, 1e2)
         mp.dead_volume_to_area_multiplier = Var(
-            initialize=5,
+            initialize=2,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Global dead volume over all time periods",
         )
-        iscale.set_scaling_factor(mp.dead_volume_to_area_ratio, 1)
-        mp.dead_volume_to_area_multiplier.fix(5)
+        iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
+        mp.dead_volume_to_area_multiplier.fix(1)
         mp.dead_volume_to_area_ratio.fix(
             value(
                 1 * pyunits.m * (3.14 * 0.1016**2) * pyunits.m**2 / (7.2 * pyunits.m**2)
@@ -717,6 +733,10 @@ class CCRO_dead_volume_flushing:
             * mp.dead_volume_to_area_ratio
             * mp.dead_volume_to_area_multiplier
         )
+        calculate_variable_from_constraint(
+            blks[0].fs.dead_volume.volume[0, "Liq"], mp.global_dead_volume_constraint
+        )
+        blks[0].fs.dead_volume.volume.display()
         mp.global_dead_volume_constraint.deactivate()
         iscale.constraint_scaling_transform(mp.global_dead_volume_constraint, 1e2)
 
@@ -771,6 +791,34 @@ class CCRO_dead_volume_flushing:
             units=pyunits.m**3 / pyunits.s,
             doc="Average permeate production over all time periods",
         )
+        mp.total_cycle_time = Var(
+            initialize=1,
+            domain=NonNegativeReals,
+            units=pyunits.s,
+            doc="Total cycle time including flushing",
+        )
+        mp.total_cycle_time_constraint = Constraint(
+            expr=mp.total_cycle_time
+            == sum(
+                blks[t].fs.dead_volume.accumulation_time[0]
+                for t in range(self.n_time_points - 1)
+            )
+            + blks[-1].fs.flushing.flushing_time
+        )
+        iscale.set_scaling_factor(mp.total_cycle_time, 1e-3)
+        iscale.constraint_scaling_transform(mp.total_cycle_time_constraint, 1e-3)
+        mp.final_concentration = Var(
+            initialize=0.5,
+            domain=NonNegativeReals,
+            units=pyunits.g / pyunits.L,
+            doc="Final concentration of the product stream",
+        )
+        mp.final_concentration_constraint = Constraint(
+            expr=mp.final_concentration
+            == blks[-1].fs.flushing.pre_flushing_concentration
+        )
+        iscale.set_scaling_factor(mp.final_concentration, 1e-1)
+        iscale.constraint_scaling_transform(mp.final_concentration_constraint, 1e-1)
 
         # Total permeate
         @mp.Constraint()
@@ -805,8 +853,7 @@ class CCRO_dead_volume_flushing:
                     * blks[t].fs.dead_volume.accumulation_time[0]
                     for t in range(self.n_time_points - 1)
                 )
-                + blks[-1].fs.raw_feed.properties[0].flow_vol_phase["Liq"]
-                * blks[-1].fs.flushing.flushing_time
+                + blks[0].fs.dead_volume.volume[0, "Liq"]
             )
 
         # Overall water recovery
@@ -882,23 +929,37 @@ class CCRO_dead_volume_flushing:
         self.mp.equal_delta_dead_volume_constraint.activate()
         self.mp.ro_membrane_area_constraint.activate()
         self.mp.ro_membrane_length_constraint.activate()
+        self.mp.total_cycle_time.setub(1 * pyunits.hours)
+        self.mp.equal_recycle_rate.activate()
         for t, m in enumerate(self.mp.get_active_process_blocks()):
             if m.fs.find_component("RO") is not None:
                 m.fs.RO.length.unfix()
+
+                m.fs.RO.width.unfix()
+                m.fs.RO.length.setlb(0.1)
+
+                m.fs.RO.width.setlb(0.1)
+
+                m.fs.RO.mixed_permeate[0].conc_mass_phase_comp.display()
+                m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"].setub(0.5)
+                m.fs.RO.area.setlb(1)
                 m.fs.RO.area.unfix()
+                m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(
+                    0.001 * pyunits.kg / pyunits.m**2 / pyunits.hr
+                )
 
                 m.fs.RO.feed_side.velocity[0, 0].setub(0.3)
                 m.fs.RO.feed_side.velocity[0, 0].setlb(0.1)
             m.fs.dead_volume.volume.unfix()
             m.fs.dead_volume.delta_state.volume[0, "Liq"].unfix()
             if t != len(self.mp.get_active_process_blocks()) - 1:
-                print("unfixihng P2 outlet flowrate at t =", t)
+                print("unfixing P2 outlet flowrate at t =", t)
                 m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
                 m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-                    1000 * pyunits.L / pyunits.min
+                    100 * pyunits.L / pyunits.min
                 )
-                m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-                    1 * pyunits.L / pyunits.min
+                m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
+                    0.1 * pyunits.L / pyunits.min
                 )
         # m.fs.dead_volume.volume.fix()
         self.mp.cost_objective = Objective(expr=self.m0.fs.costing.LCOW)
@@ -1024,6 +1085,7 @@ class CCRO_dead_volume_flushing:
             # debug(model, solver=solver, automate_rescale=False, resolve=False)
             # check_jac(model)
             assert False
+        return results
 
 
 def print_results_table(mp):
@@ -1060,7 +1122,7 @@ def print_results_table(mp):
                 )
             )
             ro_pressure = blks.fs.M1.mixed_state[0].pressure.value
-            sp_recovery = blks.fs.single_pass_water_recovery.value
+            sp_recovery = blks.fs.RO.recovery_vol_phase[0.0, "Liq"].value
 
         except AttributeError:
             mixer_out = value(
@@ -1143,11 +1205,17 @@ def print_results_table(mp):
     print("membrane_area:", mp.get_active_process_blocks()[0].fs.RO.area.value)
     print("membrane_length:", mp.get_active_process_blocks()[0].fs.RO.length.value)
 
+    print("membrane_width:", mp.get_active_process_blocks()[0].fs.RO.width.value)
+    print(
+        "RO inlet velocity",
+        mp.get_active_process_blocks()[0].fs.RO.feed_side.velocity[0, 0].value,
+    )
 
-def build_standard_analysis():
+
+def build_standard_analysis(n_points=11, feed_tds=5, **kwargs):
     initial_conditions = {
-        "n_time_points": 3,
-        "raw_feed_conc": 5,  # g/L
+        "n_time_points": n_points,
+        "raw_feed_conc": feed_tds,  # g/L
         "raw_feed_flowrate": 1.8,  # L/min
         "recycle_flowrate": 49.1,  # L/min
         "recycle_conc_start": 11.7,  # g/L
@@ -1156,11 +1224,11 @@ def build_standard_analysis():
         "A_comp": 5.963600814843386e-12,
         "B_comp": 3.0790017613480806e-08,
         "channel_height": 0.0008636000000000001,
-        "spacer_porosity": 0.85,
+        "spacer_porosity": 0.9,
         "single_pass_water_recovery": 0.063,
         "membrane_area": 7.9,
         "membrane_length": 1,
-        "dead_volume": 0.00450178311111111,
+        "dead_volume": 0.03556408657777777,
         "accumulation_time": 60,
         "include_costing": True,
     }
@@ -1179,6 +1247,8 @@ def build_standard_analysis():
     ccro.mp.blocks[0].process.fs.costing.display()
     ccro.mp.blocks[0].process.fs.RO.costing.display()
     print_results_table(ccro.mp)
+    ccro.mp.overall_recovery.unfix()
+    print("built standard analysis")
     return ccro.mp
 
 
@@ -1203,14 +1273,22 @@ def solve_model(model, **kwargs):
 
         print("\n--------- INFEASIBLE CONSTRAINTS ---------\n")
         print_infeasible_constraints(model)
-    print_results_table(ccro)
-
+    print("getting table")
+    try:
+        print_results_table(model)
+    except Exception as e:
+        print("Error occurred while printing results table:", e)
+    print(results)
     return results
 
 
 if __name__ == "__main__":
     ccro = build_standard_analysis()
-    ccro.overall_recovery.fix(0.75)
-    solve_model(ccro, tee=True)
+    for r in range(10, 85, 5):
+        print("Overall recovery:", r / 100)
+        # ccro.blocks[2].process.fs.flushing.pre_flushing_concentration.fix(r)
+        ccro.final_concentration.fix(r)
+        # ccro.overall_recovery.fix(r / 100)
+        solve_model(ccro, tee=True)
     # solve_model(ccro, tee=True)
     # assert False

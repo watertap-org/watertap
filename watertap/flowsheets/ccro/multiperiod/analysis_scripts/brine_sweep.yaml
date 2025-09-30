@@ -1,0 +1,24 @@
+ccro_sweep_brackish:
+  build_defaults:
+    n_points: 11
+    feed_tds: 5
+  sweep_param_loop:
+    final_concentration:
+      type: LinearSample
+      param: final_concentration
+      lower_limit: 10
+      upper_limit: 80
+      num_samples: 13
+      
+# ccro_sweep_sw:
+#   build_defaults:
+#     n_points: 6
+#     feed_tds: 35
+#   sweep_param_loop:
+#     salinity_map:   
+#       final_concentration:
+#         type: LinearSample
+#         param: fs.final_concentration
+#         lower_limit: 50
+#         upper_limit: 80
+#         num_samples: 7
