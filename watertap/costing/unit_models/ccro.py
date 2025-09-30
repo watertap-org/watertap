@@ -121,16 +121,16 @@ def cost_ccro(blk, feed_pump=None, mp=None):
     )
 
     blk.capital_cost_side_conduit = pyo.Var(
-        initialize=1e5,
+        initialize=0,
         domain=pyo.NonNegativeReals,
         units=blk.costing_package.base_currency,
         doc="Capital cost of side conduit pressure vessel",
     )
-
+    blk.capital_cost_side_conduit.fix(0)
     blk.max_feed_pump_work = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
-        units=pyo.units.kilowatt,
+        units=pyo.units.watt,
         doc="Maximum recirculation pump work",
     )
 
@@ -147,11 +147,31 @@ def cost_ccro(blk, feed_pump=None, mp=None):
             # for optimization, set as inequality constraint,
             # provide manual scaling factors,
             # define maximum pump work for each pump and set as the smooth_min factor
-            max_rpw = smooth_max(0, recirc_pumps[t].work_mechanical[0])
-            max_fpw = smooth_max(0, feed_pumps[t].work_mechanical[0])
+            max_rpw = smooth_max(
+                0,
+                pyo.units.convert(
+                    recirc_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+                ),
+            )
+            max_fpw = smooth_max(
+                0,
+                pyo.units.convert(
+                    feed_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+                ),
+            )
         else:
-            max_rpw = smooth_max(max_rpw, recirc_pumps[t].work_mechanical[0])
-            max_fpw = smooth_max(max_fpw, feed_pumps[t].work_mechanical[0])
+            max_rpw = smooth_max(
+                max_rpw,
+                pyo.units.convert(
+                    recirc_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+                ),
+            )
+            max_fpw = smooth_max(
+                max_fpw,
+                pyo.units.convert(
+                    feed_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+                ),
+            )
 
     blk.max_recirculation_pump_work_constraint = pyo.Constraint(
         expr=blk.max_recirculation_pump_work == max_rpw
