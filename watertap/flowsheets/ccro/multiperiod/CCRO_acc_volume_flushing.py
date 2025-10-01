@@ -949,14 +949,14 @@ class CCRO_dead_volume_flushing:
                 )
 
                 m.fs.RO.feed_side.velocity[0, 0].setub(0.3)
-                m.fs.RO.feed_side.velocity[0, 0].setlb(0.1)
+                m.fs.RO.feed_side.velocity[0, 0].setlb(0.05)
             m.fs.dead_volume.volume.unfix()
             m.fs.dead_volume.delta_state.volume[0, "Liq"].unfix()
             if t != len(self.mp.get_active_process_blocks()) - 1:
                 print("unfixing P2 outlet flowrate at t =", t)
                 m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
                 m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-                    100 * pyunits.L / pyunits.min
+                    20 * pyunits.L / pyunits.min
                 )
                 m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
                     0.1 * pyunits.L / pyunits.min

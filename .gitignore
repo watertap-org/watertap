@@ -155,3 +155,26 @@ auto-save-list
 
 # Example outputs
 output/
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Area.csv
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Area.jpg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Area.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Bulk metrics.png
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Bulk metrics.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/feed tds.csv
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/feed tds.jpg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/feed tds.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/lcow.csv
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/lcow.jpg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/lcow.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/operation.png
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/operation.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/operation.svg.2025_09_30_21_56_54.2.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/pressure.csv
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/pressure.jpg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/pressure.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Recycle.csv
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Recycle.jpg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Recycle.svg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/retentate tds.csv
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/retentate tds.jpg
+watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/retentate tds.svg
