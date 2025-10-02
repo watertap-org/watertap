@@ -232,6 +232,8 @@ class TestROwithPX:
         set_operating_conditions(m)
         initialize_system(m, solver=solver, relaxed_initialization=True)
         assert degrees_of_freedom(m) == 0
+        # test that the area_objective has been removed
+        assert getattr(m.fs.RO, "area_objective", None) is None
         # check results across pressure exchanger, proxy for both upstream and downstream of RO
         # high pressure inlet
         assert value(
