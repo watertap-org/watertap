@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import logging
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -42,6 +43,9 @@ from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
+
+
+_logger = logging.getLogger(__name__)
 
 
 class ERDtype(StrEnum):
@@ -371,7 +375,7 @@ def initialize_system(m, solver=None, relaxed_initialization=False):
 
     # ---initialize RO---
     if relaxed_initialization:
-        print("Initializing RO with relaxed recovery specification")
+        _logger.info("Initializing RO with relaxed recovery specification")
         m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
         target_recovery = m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].value
         m.fs.RO.area_objective = Objective(
@@ -380,7 +384,7 @@ def initialize_system(m, solver=None, relaxed_initialization=False):
         )
 
         expected_DOFs = 1
-        print(
+        _logger.info(
             f"Unfixed membrane area, and added objective to achieve target recovery of {target_recovery}"
         )
         m.fs.RO.initialize(
@@ -389,7 +393,7 @@ def initialize_system(m, solver=None, relaxed_initialization=False):
         m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(target_recovery)
         m.fs.RO.del_component(m.fs.RO.area_objective)
 
-        print(
+        _logger.info(
             f"Deactivated target recovery objective, RO model initialized to recovery of {m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].value}"
         )
     else:
