@@ -387,7 +387,7 @@ def initialize_system(m, solver=None, relaxed_initialization=False):
             optarg=optarg, initialization_degrees_of_freedom=expected_DOFs
         )
         m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(target_recovery)
-        m.fs.RO.area_objective.deactivate()
+        m.fs.RO.del_component(m.fs.RO.area_objective)
 
         print(
             f"Deactivated target recovery objective, RO model initialized to recovery of {m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].value}"
