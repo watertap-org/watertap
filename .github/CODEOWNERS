@@ -13,7 +13,7 @@ environment*.yml @sufikaur
 
 /docs/ @MarcusHolly @adam-a-a
 
-/tutorials/ @adam-a-a @zacharybinger @avdudchenko @MarcusHolly @TimBartholomew
+/tutorials/ @adam-a-a @avdudchenko @MarcusHolly @kurbansitterley
 
 /watertap/core/ @bknueven @adam-a-a
 
@@ -31,13 +31,13 @@ environment*.yml @sufikaur
 /watertap/flowsheets/gac/ @adam-a-a @MarcusHolly @kurbansitterley
 /watertap/flowsheets/generic_desalination_train/ @avdudchenko
 /watertap/flowsheets/ion_exchange/ @kurbansitterley
-/watertap/flowsheets/lsrro/ @adam-a-a @TimBartholomew @bknueven
+/watertap/flowsheets/lsrro/ @adam-a-a @bknueven
 /watertap/flowsheets/MD/ @ElmiraShamlou @adam-a-a
-/watertap/flowsheets/mvc/ @carson-tucker @ElmiraShamlou @adam-a-a @TimBartholomew
+/watertap/flowsheets/mvc/ @carson-tucker @ElmiraShamlou @adam-a-a
 /watertap/flowsheets/nf_dspmde/ @avdudchenko @adam-a-a
-/watertap/flowsheets/oaro/ @luohezhiming @adam-a-a @zacharybinger
-/watertap/flowsheets/RO_with_energy_recovery/ @adam-a-a @TimBartholomew @MarcusHolly @luohezhiming
-/watertap/flowsheets/seawater_RO_desalination/ @adam-a-a @TimBartholomew @MarcusHolly @luohezhiming
+/watertap/flowsheets/oaro/ @luohezhiming @adam-a-a
+/watertap/flowsheets/RO_with_energy_recovery/ @adam-a-a @MarcusHolly @luohezhiming
+/watertap/flowsheets/seawater_RO_desalination/ @adam-a-a @MarcusHolly @luohezhiming
 
 /watertap/property_models/ @adam-a-a
 /watertap/property_models/unit_specific/activated_sludge/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
@@ -73,14 +73,14 @@ environment*.yml @sufikaur
 /watertap/unit_models/osmotically_assisted_reverse_osmosis_0D.py @luohezhiming @adam-a-a
 /watertap/unit_models/osmotically_assisted_reverse_osmosis_1D.py @luohezhiming @adam-a-a
 /watertap/unit_models/osmotically_assisted_reverse_osmosis_base.py @luohezhiming @adam-a-a
-/watertap/unit_models/pressure_changer.py @adam-a-a @TimBartholomew
+/watertap/unit_models/pressure_changer.py @adam-a-a
 /watertap/unit_models/pressure_exchanger.py @luohezhiming @adam-a-a
-/watertap/unit_models/reverse_osmosis_0D.py @adam-a-a @TimBartholomew @bknueven
-/watertap/unit_models/reverse_osmosis_1D.py @adam-a-a @TimBartholomew @bknueven
-/watertap/unit_models/reverse_osmosis_base.py @adam-a-a @TimBartholomew @bknueven
+/watertap/unit_models/reverse_osmosis_0D.py @adam-a-a @bknueven
+/watertap/unit_models/reverse_osmosis_1D.py @adam-a-a @bknueven
+/watertap/unit_models/reverse_osmosis_base.py @adam-a-a @bknueven
 /watertap/unit_models/steam_ejector.py @ElmiraShamlou
 /watertap/unit_models/steam_heater_0D.py @ElmiraShamlou
-/watertap/unit_models/stoichiometric_reactor.py @avdudchenko @TimBartholomew
+/watertap/unit_models/stoichiometric_reactor.py @avdudchenko
 /watertap/unit_models/surrogate_crystallizer.py @OOAmusat @adam-a-a
 /watertap/unit_models/thickener.py @adam-a-a @agarciadiego
 /watertap/unit_models/uv_aop.py @luohezhiming @adam-a-a
@@ -88,5 +88,5 @@ environment*.yml @sufikaur
 LICENSE.md @ksbeattie
 COPYRIGHT.md @ksbeattie
 
-CITATION.cff @TimBartholomew
+CITATION.cff @sufikaur
 
