@@ -77,7 +77,7 @@ setup(
         "parameter-sweep >=0.1.0",
         "numpy",
         "pint<0.25",
-        "git+https://github.com/avdudchenko/psPlotKit@V0.2alpha",
+        "psPlotKit @ git+https://github.com/avdudchenko/psPlotKit@V0.2alpha",
     ],
     extras_require={
         "testing": [
