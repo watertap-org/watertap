@@ -130,14 +130,14 @@ def feasibility_test_function(m, **kwargs):
     recovery = m.fs.water_recovery.value
     water = m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].value
     salt = salt
-    mass_fract = salt / (water * (1 - recovery))
+    mass_fraction = salt / (water * (1 - recovery) + salt)
     print(
         "Testing recovery of ",
         recovery,
         " with feed NaCl of ",
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].value,
     )
-    if mass_fract > 0.2648:
+    if mass_fraction > 0.2648:
         print(
             "Would you like some LSRRO with your salt?",
             "Recovery too high for feed NaCl {} and  recovery is {}".format(
