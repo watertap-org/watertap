@@ -1,6 +1,5 @@
 from psPlotKit.data_manager.ps_data_manager import PsDataManager
 from psPlotKit.data_plotter.ps_break_down_plotter import BreakDownPlotter
-import numpy as np
 
 if __name__ == "__main__":
 
