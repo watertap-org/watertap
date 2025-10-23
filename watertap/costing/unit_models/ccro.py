@@ -181,6 +181,14 @@ def cost_ccro(blk, feed_pump=None, mp=None):
         expr=blk.max_feed_pump_work == max_fpw
     )
 
+    # blk.max_recirculation_pump_work_constraint = pyo.Constraint(
+    #     expr=blk.max_recirculation_pump_work == recirc_pump_work
+    # )
+
+    # blk.max_feed_pump_work_constraint = pyo.Constraint(
+    #     expr=blk.max_feed_pump_work == feed_pump_work
+    # )
+
     capital_cost_expr = 0
 
     blk.capital_cost_membrane_constraint = pyo.Constraint(
