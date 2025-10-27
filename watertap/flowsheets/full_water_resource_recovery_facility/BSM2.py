@@ -44,6 +44,7 @@ from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
 )
+from idaes.core.util.exceptions import InitializationError
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
@@ -1044,7 +1045,10 @@ def initialize_system(m):
     initializer = BlockTriangularizationInitializer()
 
     def function(unit):
-        initializer.initialize(unit, output_level=_log.debug)
+        try:
+            initializer.initialize(unit, output_level=_log.debug)
+        except InitializationError:
+            pass
 
     seq.run(m, function)
 
