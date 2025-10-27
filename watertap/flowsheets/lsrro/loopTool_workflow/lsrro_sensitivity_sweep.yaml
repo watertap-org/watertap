@@ -1,51 +1,51 @@
-# tornado_sweep:
-#   build_defaults:
-#     add_sensitivity: true
-#   init_defaults: 
-#     quick_start: true
-#     A_value: 1.38e-11
-#     permeate_quality_limit: 1000.0e-6 
-#   build_loop:
-#     sim_cases:
-#       case_a:
-#         target_tds: 65
-#         target_recovery: 0.7
-#         number_of_stages: 5
-#       case_b: 
-#         target_tds: 125
-#         target_recovery: 0.5
-#         number_of_stages: 6
-#     sweep_param_loop:
-#       pump_pressure_multiplier:
-#         type: LinearSample
-#         param: fs.sense_manager.pump_pressure_multiplier
-#         lower_limit: 0.8
-#         upper_limit: 1.2
-#         num_samples: 3
-#       a_value_multiplier:
-#         type: LinearSample
-#         param: fs.sense_manager.a_value_multiplier
-#         lower_limit: 0.8
-#         upper_limit: 1.2
-#         num_samples: 3
-#       lsrro_membrane_cost_multiplier:
-#         type: LinearSample
-#         param: fs.sense_manager.lsrro_membrane_cost_multiplier
-#         lower_limit: 0.8
-#         upper_limit: 1.2
-#         num_samples: 3
-#       pump_cost_multiplier:
-#         type: LinearSample
-#         param: fs.sense_manager.pump_cost_multiplier
-#         lower_limit: 0.8
-#         upper_limit: 1.2
-#         num_samples: 3
-#       pump_efficiency_multiplier:
-#         type: LinearSample
-#         param: fs.sense_manager.pump_efficiency_multiplier
-#         lower_limit: 0.8
-#         upper_limit: 1.2
-#         num_samples: 3
+tornado_sweep:
+  build_defaults:
+    add_sensitivity: true
+  init_defaults: 
+    quick_start: true
+    A_value: 1.38e-11
+    permeate_quality_limit: 1000.0e-6 
+  build_loop:
+    sim_cases:
+      case_a:
+        target_tds: 65
+        target_recovery: 0.7
+        number_of_stages: 5
+      case_b: 
+        target_tds: 125
+        target_recovery: 0.5
+        number_of_stages: 6
+    sweep_param_loop:
+      pump_pressure_multiplier:
+        type: LinearSample
+        param: fs.sense_manager.pump_pressure_multiplier
+        lower_limit: 0.8
+        upper_limit: 1.2
+        num_samples: 3
+      a_value_multiplier:
+        type: LinearSample
+        param: fs.sense_manager.a_value_multiplier
+        lower_limit: 0.8
+        upper_limit: 1.2
+        num_samples: 3
+      lsrro_membrane_cost_multiplier:
+        type: LinearSample
+        param: fs.sense_manager.lsrro_membrane_cost_multiplier
+        lower_limit: 0.8
+        upper_limit: 1.2
+        num_samples: 3
+      pump_cost_multiplier:
+        type: LinearSample
+        param: fs.sense_manager.pump_cost_multiplier
+        lower_limit: 0.8
+        upper_limit: 1.2
+        num_samples: 3
+      pump_efficiency_multiplier:
+        type: LinearSample
+        param: fs.sense_manager.pump_efficiency_multiplier
+        lower_limit: 0.8
+        upper_limit: 1.2
+        num_samples: 3
 
 svoi_sweep:
   build_defaults:
