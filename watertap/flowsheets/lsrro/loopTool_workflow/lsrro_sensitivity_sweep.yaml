@@ -1,0 +1,140 @@
+# tornado_sweep:
+#   build_defaults:
+#     add_sensitivity: true
+#   init_defaults: 
+#     quick_start: true
+#     A_value: 1.38e-11
+#     permeate_quality_limit: 1000.0e-6 
+#   build_loop:
+#     sim_cases:
+#       case_a:
+#         target_tds: 65
+#         target_recovery: 0.7
+#         number_of_stages: 5
+#       case_b: 
+#         target_tds: 125
+#         target_recovery: 0.5
+#         number_of_stages: 6
+#     sweep_param_loop:
+#       pump_pressure_multiplier:
+#         type: LinearSample
+#         param: fs.sense_manager.pump_pressure_multiplier
+#         lower_limit: 0.8
+#         upper_limit: 1.2
+#         num_samples: 3
+#       a_value_multiplier:
+#         type: LinearSample
+#         param: fs.sense_manager.a_value_multiplier
+#         lower_limit: 0.8
+#         upper_limit: 1.2
+#         num_samples: 3
+#       lsrro_membrane_cost_multiplier:
+#         type: LinearSample
+#         param: fs.sense_manager.lsrro_membrane_cost_multiplier
+#         lower_limit: 0.8
+#         upper_limit: 1.2
+#         num_samples: 3
+#       pump_cost_multiplier:
+#         type: LinearSample
+#         param: fs.sense_manager.pump_cost_multiplier
+#         lower_limit: 0.8
+#         upper_limit: 1.2
+#         num_samples: 3
+#       pump_efficiency_multiplier:
+#         type: LinearSample
+#         param: fs.sense_manager.pump_efficiency_multiplier
+#         lower_limit: 0.8
+#         upper_limit: 1.2
+#         num_samples: 3
+
+svoi_sweep:
+  build_defaults:
+    add_sensitivity: true
+  init_defaults: 
+    quick_start: true
+    A_value: 1.38e-11
+    permeate_quality_limit: 1000.0e-6 
+  build_loop:
+    sim_cases:
+      case_a:
+        target_tds: 65
+        target_recovery: 0.7
+        number_of_stages: 5
+      case_b: 
+        target_tds: 125
+        target_recovery: 0.5
+        number_of_stages: 6
+    diff_param_loop:
+      pump_pressure:
+        diff_mode: percentile
+        diff_sample_type: UniformSample
+        param: fs.sense_manager.pump_pressure
+        relative_lb: 0.01
+        relative_ub: 0.01
+        nominal_lb: 7500000.0
+        nominal_ub: 12500000.0
+        num_samples: 1
+      a_value:
+        diff_mode: percentile
+        diff_sample_type: UniformSample
+        param: fs.sense_manager.a_value
+        relative_lb: 0.01
+        relative_ub: 0.01
+        nominal_lb: 4.2e-12
+        nominal_ub: 4.2e-11
+        num_samples: 1
+      lsrro_membrane_cost:
+        diff_mode: percentile
+        diff_sample_type: UniformSample
+        param: fs.sense_manager.lsrro_membrane_cost
+        relative_lb: -0.01
+        relative_ub: -0.01
+        nominal_lb: 30
+        nominal_ub: 50
+        num_samples: 1
+      pump_cost:
+        diff_mode: percentile
+        diff_sample_type: UniformSample
+        param: fs.sense_manager.pump_cost
+        relative_lb: -0.01
+        relative_ub: -0.01
+        nominal_lb: 1.0
+        nominal_ub: 1.908
+        num_samples: 1
+      pump_efficiency:
+        diff_mode: percentile
+        diff_sample_type: UniformSample
+        param: fs.sense_manager.pump_efficiency
+        relative_lb: 0.01
+        relative_ub: 0.01
+        nominal_lb: 0.75
+        nominal_ub: 0.9
+        num_samples: 1
+      sweep_reference_params:
+        pump_pressure:
+          type: UniformSample
+          param: fs.sense_manager.pump_pressure
+          lower_limit: 7500000.0
+          upper_limit: 12500000.0
+        a_value:
+          type: UniformSample
+          param: fs.sense_manager.a_value
+          lower_limit: 4.2e-12
+          upper_limit: 4.2e-11
+        lsrro_membrane_cost:
+          type: UniformSample
+          param: fs.sense_manager.lsrro_membrane_cost
+          lower_limit: 30
+          upper_limit: 50
+        pump_cost:
+          type: UniformSample
+          param: fs.sense_manager.pump_cost
+          lower_limit: 1.0
+          upper_limit: 1.908
+        pump_efficiency:
+          type: UniformSample
+          param: fs.sense_manager.pump_efficiency
+          lower_limit: 0.75
+          upper_limit: 0.9
+        num_samples: 10
+

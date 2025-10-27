@@ -3,6 +3,7 @@ from watertap.flowsheets.lsrro import lsrro
 import multiprocessing
 
 from watertap.core.solvers import get_solver
+from watertap.tools.sensitivity_manager import SensitivityManager
 
 ##############################################################
 # For loop tool/parameter sweeep interface we need in general, 3 functions:
@@ -24,6 +25,9 @@ from watertap.core.solvers import get_solver
 def build_function(
     number_of_stages=2,
     has_CP=True,
+    add_sensitivity=False,
+    target_tds=125,
+    target_recovery=0.5,
 ):
     """Build LSRRO model with optinal arguments, this should only build the model and configure it
     for initialization
@@ -42,6 +46,12 @@ def build_function(
         has_calculated_ro_pressure_drop=True,
     )
     lsrro.set_operating_conditions(m)
+
+    # For use in case configuration analysis, we can store target tds and recovery on model
+    m.target_tds = target_tds
+    m.target_recovery = target_recovery
+    if add_sensitivity:
+        add_sensitivity_analysis(m)
     return m
 
 
@@ -78,6 +88,26 @@ def initialize_model(
         A_value=A_value,
         permeate_quality_limit=permeate_quality_limit,
     )
+
+    # if we have sense manager on model, activate all sense constraints.
+    if m.fs.find_component("sense_manager"):
+        # aggregate these pressure constraints that are built during optimize_set_up call, which should
+        # really be done during "build call" so we can let sense-manager manage them for
+        # our sensitivity analysis
+        existing_pressure_constraints = []
+        for pump in m.fs.LSRRO_Stages:
+            existing_pressure_constraints.append(
+                m.fs.PrimaryPumps[pump].max_lsrro_pressure_con
+            )
+            existing_pressure_constraints.append(
+                m.fs.BoosterPumps[pump].max_ro_pressure_con
+            )
+        # add these to our sense manager
+        m.fs.sense_manager.sensitivities["pump_pressure"].existing_constraints = (
+            existing_pressure_constraints
+        )
+        m.fs.sense_manager.activate_sensitivities()
+
     if quick_start:
         m.fs.water_recovery.fix(0.45)
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(35)
@@ -94,6 +124,87 @@ def initialize_model(
                 feed_tds, recovery
             )
         )
+    if m.target_tds != 35 or m.target_recovery != 0.45:
+        m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(m.target_tds)
+        m.fs.water_recovery.fix(m.target_recovery)
+        lsrro.solve(m, tee=True)
+        print(
+            "solved to target tds and recovery of {} g/L and {} %".format(
+                m.target_tds, m.target_recovery
+            )
+        )
+
+
+def add_sensitivity_analysis(m):
+    """Setup sensitivity manager process block and
+    register sensitivity variables for LSRRO model"""
+    m.fs.sense_manager = SensitivityManager()
+
+    # aggregate all pressures and efficiencies to register for sensitivity analysis
+    pump_pressure = []
+    pump_eff = []
+    pump_eff.append(m.fs.PrimaryPumps[1].efficiency_pump[0.0])
+
+    for pump in m.fs.LSRRO_Stages:
+        pump_pressure.append(m.fs.PrimaryPumps[pump].outlet.pressure[0])
+        pump_eff.append(m.fs.PrimaryPumps[pump].efficiency_pump[0.0])
+
+    for pump in m.fs.LSRRO_Stages:
+        pump_pressure.append(m.fs.BoosterPumps[pump].outlet.pressure[0])
+        pump_eff.append(m.fs.BoosterPumps[pump].efficiency_pump[0.0])
+
+    m.fs.sense_manager.register_sensitivity(
+        sensitivity_name="pump_pressure",
+        model_variables=pump_pressure,
+        sensitivity_type="upper_bound",
+        remove_bounds=True,
+    )
+
+    # aggreagete all LSRRO A values
+    a_values = []
+    for ro in m.fs.LSRRO_Stages:
+        a_values.append(m.fs.ROUnits[ro].A_comp[0, "H2O"])
+
+    # register each one
+    m.fs.sense_manager.register_sensitivity(
+        sensitivity_name="a_value",
+        model_variables=a_values,
+        sensitivity_type="equality",
+        remove_bounds=True,
+    )
+    m.fs.sense_manager.register_sensitivity(
+        sensitivity_name="lsrro_membrane_cost",
+        model_variables=m.fs.costing.reverse_osmosis.high_pressure_membrane_cost,
+        sensitivity_type="equality",
+        remove_bounds=True,
+    )
+    m.fs.sense_manager.register_sensitivity(
+        sensitivity_name="pump_cost",
+        model_variables=m.fs.costing.high_pressure_pump.cost,
+        sensitivity_type="equality",
+        remove_bounds=True,
+    )
+    m.fs.sense_manager.register_sensitivity(
+        sensitivity_name="pump_efficiency",
+        model_variables=pump_eff,
+        sensitivity_type="equality",
+        remove_bounds=True,
+    )
+
+    # fix and scale them
+    m.fs.sense_manager.fix_and_scale()
+
+    # generate templates for our use
+    m.fs.sense_manager.generate_multiplier_yaml_template(
+        "lsrro_sensitivity_template.yaml",
+        multiplier_lb=0.8,
+        multiplier_ub=1.2,
+    )
+    m.fs.sense_manager.generate_absolute_svoi_template(
+        "svoi_sweep_template_absolute.yaml",
+    )
+    # display current sensitivity values
+    m.fs.sense_manager.display_sensitivities()
 
 
 def solve_model(m, **kwargs):
@@ -152,27 +263,28 @@ def feasibility_test_function(m, **kwargs):
 
 
 def test_main_functions():
-    for i in range(9):
-        m = build_function(number_of_stages=i + 1)
-        initialize_model(
-            m,
-            quick_start=True,
-            A_value=1.38e-11,
-            permeate_quality_limit=1000.0e-6,
-        )
-        m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(35)
-        m.fs.water_recovery.fix(0.45)
-        feasible = feasibility_test_function(
-            m,
-        )
-        if feasible:
-            m = solve_model(m)
-            print(f"Model with {i+2} stages solved successfully.")
-        else:
-            print(f"Model with {i+2} stages is not feasible.")
+    # for i in range(5):
+    i = 5
+    m = build_function(number_of_stages=i + 1, add_sensitivity=True)
+    initialize_model(
+        m,
+        quick_start=True,
+        A_value=1.38e-11,
+        permeate_quality_limit=1000.0e-6,
+    )
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(35)
+    m.fs.water_recovery.fix(0.45)
+    feasible = feasibility_test_function(
+        m,
+    )
+    if feasible:
+        m = solve_model(m)
+        print(f"Model with {i+1} stages solved successfully.")
+    else:
+        print(f"Model with {i+1} stages is not feasible.")
 
 
-def main():
+def stage_sweep_analysis():
     """Main function to run loop tool analysis on LSRRO model, this will use
     the lssrro_stage_sweep.yaml file to define the parameter sweep and run loop tool in parallel mode,
     where each stage will be run on its own thread, allowing to solve all stages in
@@ -195,10 +307,35 @@ def main():
     )
 
 
+def sensitivity_sweep_analysis():
+    """Main function to run loop tool analysis on LSRRO model, this will use
+    the lsrro_sensitivity_sweep.yaml file to define the parameter sweep and run loop tool in parallel mode,
+    where each stage will be run on its own thread, allowing to solve all stages in
+    parallel and speed up the analysis.
+    """
+    cpu_count = multiprocessing.cpu_count() - 2
+    if cpu_count > 10:
+        cpu_count = 10
+    print(f"Working in {get_working_dir()}")
+    loopTool(
+        get_working_dir() + "/lsrro_sensitivity_sweep.yaml",
+        build_function=build_function,
+        initialize_function=initialize_model,
+        optimize_function=solve_model,
+        save_name="lsrro_sensitivity_sweep",
+        probe_function=feasibility_test_function,
+        saving_dir=get_working_dir(),
+        number_of_subprocesses=1,
+        num_loop_workers=cpu_count,
+    )
+
+
 if __name__ == "__main__":
     if False:
         ### Use this to verify all our configured functions work properly
         test_main_functions()
-    else:
+    elif False:
         ### Use this to run the full analysis with loop tool
-        main()
+        stage_sweep_analysis()
+    elif True:
+        sensitivity_sweep_analysis()
