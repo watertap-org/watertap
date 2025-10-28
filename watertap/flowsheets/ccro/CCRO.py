@@ -139,7 +139,7 @@ def build_system(time_blk=None, configuration=None):
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
-            finite_elements=10,
+            finite_elements=4,
             module_type="spiral_wound",
             has_full_reporting=True,
         )
@@ -487,7 +487,7 @@ def create_multiperiod(n_time_points=10, include_costing=True, op_dict=None):
     calculate_scaling_factors(mp)
 
     if include_costing:
-        add_costing(m=m0)
+        add_costing(m=m0, mp=mp)
         m0.fs.costing.initialize()
 
     return mp
