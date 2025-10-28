@@ -15,6 +15,7 @@ from pyomo.network import Arc
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
+from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.scaling import calculate_scaling_factors
@@ -488,6 +489,8 @@ def create_multiperiod(n_time_points=10, include_costing=True, op_dict=None):
 
     if include_costing:
         add_costing(m=m0, mp=mp)
+        add_object_reference(mp, "costing", m0.fs.costing)
+        add_object_reference(mp, "RO_costing", m0.fs.RO.costing)
         m0.fs.costing.initialize()
 
     return mp
