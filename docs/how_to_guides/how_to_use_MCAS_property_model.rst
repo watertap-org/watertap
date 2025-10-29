@@ -14,15 +14,18 @@ users to model the chemical and physical properties of simple systems without th
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
 .. testcode::
-
     # Import ConcreteModel from Pyomo
     from pyomo.environ import ConcreteModel, assert_optimal_termination
+
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
+
     # Import solver from IDAES core
     from watertap.core.solvers import get_solver
+
     # Import MCAS property model
     import watertap.property_models.multicomp_aq_sol_prop_pack as props
+
     # Import utility tool for calculating scaling factors
     import idaes.core.util.scaling as iscale
 
@@ -31,15 +34,15 @@ users to model the chemical and physical properties of simple systems without th
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Create an instance of the MCAS property model.
-    m.fs.properties = props.MCASParameterBlock(solute_list=["Na_+", "Cl_-"],
-                                               mw_data={"Na_+": 23e-3, 
-                                                        "Cl_-": 35e-3},
-                                               charge={"Na_+": 1, 
-                                                       "Cl_-": -1})
+    m.fs.properties = props.MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23e-3, "Cl_-": 35e-3},
+        charge={"Na_+": 1, "Cl_-": -1},
+    )
 
     # Build the state block and specify a time (0 = steady state).
     m.fs.state_block = m.fs.properties.build_state_block([0])
-    
+
     # Specify the state variables of the stream (i.e., component molar flowrates, pressure, and temperature).
     m.fs.state_block[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(0.483)
     m.fs.state_block[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.483)
@@ -51,10 +54,12 @@ users to model the chemical and physical properties of simple systems without th
     m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "Na_+"))
     m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "Cl_-"))
-    
+
     iscale.calculate_scaling_factors(m)
 
-    # "Touch" build-on-demand variables so that they are created. If these are not touched before running the solver, the output would only display their initial values, not their actual values.
+    # "Touch" build-on-demand variables so that they are created. 
+    # If these are not touched before running the solver, the output will
+    # only display their initial values, not their actual values.
     m.fs.state_block[0].flow_mass_phase_comp
     m.fs.state_block[0].conc_mass_phase_comp
     m.fs.state_block[0].flow_vol_phase
@@ -63,7 +68,7 @@ users to model the chemical and physical properties of simple systems without th
     m.fs.state_block[0].total_hardness
     m.fs.state_block[0].ionic_strength_molal
     m.fs.state_block[0].pressure_osm_phase
-    
+
     # Create the solver object.
     solver = get_solver()
 
