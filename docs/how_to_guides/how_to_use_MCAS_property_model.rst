@@ -14,6 +14,7 @@ users to model the chemical and physical properties of simple systems without th
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
 .. testcode::
+    
     # Import ConcreteModel from Pyomo
     from pyomo.environ import ConcreteModel, assert_optimal_termination
 

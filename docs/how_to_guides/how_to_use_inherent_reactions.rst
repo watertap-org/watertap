@@ -251,6 +251,7 @@ Recall, we had named our configuration dictionaries as ``thermo_config`` and
 code below.
 
 .. testcode::
+    
     # Import specific pyomo objects
     from pyomo.environ import ConcreteModel
 
