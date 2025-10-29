@@ -108,22 +108,22 @@ The user can apply these options to a sweep parameter sample by invoking *set_va
 
 .. code::
 
-def build_sweep_params(model, **kwargs):
-    sweep_params = dict()
-    # Set lower bound for feed salinity value
-    sweep_params["Feed Mass NaCl-LB"] = LinearSample(
-        model.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"], 0.3, 0.7, 4
-    )
-    sweep_params["Feed Mass NaCl-LB"].set_variable_update_mode(SetMode.SET_LB)
-    # Sweep across fixed and unfixed water recovery cases, when fixing the area, set it to 50
-    sweep_params["Membrane area-fixed-state"] = PredeterminedFixedSample(
-        model.fs.RO.area, [True, False]
-    )
-    sweep_params["Membrane area-fixed-state"].set_variable_update_mode(
-        SetMode.SET_FIXED_STATE, default_fixed_value=0.5
-    )
+    def build_sweep_params(model, **kwargs):
+        sweep_params = dict()
+        # Set lower bound for feed salinity value
+        sweep_params["Feed Mass NaCl-LB"] = LinearSample(
+            model.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"], 0.3, 0.7, 4
+        )
+        sweep_params["Feed Mass NaCl-LB"].set_variable_update_mode(SetMode.SET_LB)
+        # Sweep across fixed and unfixed water recovery cases, when fixing the area, set it to 50
+        sweep_params["Membrane area-fixed-state"] = PredeterminedFixedSample(
+            model.fs.RO.area, [True, False]
+        )
+        sweep_params["Membrane area-fixed-state"].set_variable_update_mode(
+            SetMode.SET_FIXED_STATE, default_fixed_value=0.5
+        )
 
-    return sweep_params
+        return sweep_params
 
 
 The above example would create a sweep with 8 samples in total, where lower bound for water recovery is changed from 0.3 to 0.7
