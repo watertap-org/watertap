@@ -58,8 +58,8 @@ def cost_ccro(blk, feed_pump=None, mp=None):
     bs = mp.get_active_process_blocks()
     feed_pumps = [b.fs.P1 for b in bs]
     recirc_pumps = [b.fs.P2 for b in bs]
-    feed_pump_work = feed_pumps[0].work_mechanical[0]
-    recirc_pump_work = recirc_pumps[-1].work_mechanical[0]
+    feed_pump_work = mp.feed_pump.work_mechanical[0]
+    recirc_pump_work = mp.recirc_pump.work_mechanical[0]
     acc_time = bs[0].fs.dead_volume.accumulation_time[0]
     total_time = acc_time * len(bs)
 
@@ -141,53 +141,53 @@ def cost_ccro(blk, feed_pump=None, mp=None):
         doc="Maximum recirculation pump work",
     )
 
-    for t in mp.TIME:
-        if t == 0:
-            # change eps=1e-8
-            # for optimization, set as inequality constraint,
-            # provide manual scaling factors,
-            # define maximum pump work for each pump and set as the smooth_min factor
-            max_rpw = smooth_max(
-                0,
-                pyo.units.convert(
-                    recirc_pumps[t].work_mechanical[0], to_units=pyo.units.watt
-                ),
-            )
-            max_fpw = smooth_max(
-                0,
-                pyo.units.convert(
-                    feed_pumps[t].work_mechanical[0], to_units=pyo.units.watt
-                ),
-            )
-        else:
-            max_rpw = smooth_max(
-                max_rpw,
-                pyo.units.convert(
-                    recirc_pumps[t].work_mechanical[0], to_units=pyo.units.watt
-                ),
-            )
-            max_fpw = smooth_max(
-                max_fpw,
-                pyo.units.convert(
-                    feed_pumps[t].work_mechanical[0], to_units=pyo.units.watt
-                ),
-            )
-
-    blk.max_recirculation_pump_work_constraint = pyo.Constraint(
-        expr=blk.max_recirculation_pump_work == max_rpw
-    )
-
-    blk.max_feed_pump_work_constraint = pyo.Constraint(
-        expr=blk.max_feed_pump_work == max_fpw
-    )
+    # for t in mp.TIME:
+    #     if t == 0:
+    #         # change eps=1e-8
+    #         # for optimization, set as inequality constraint,
+    #         # provide manual scaling factors,
+    #         # define maximum pump work for each pump and set as the smooth_min factor
+    #         max_rpw = smooth_max(
+    #             0,
+    #             pyo.units.convert(
+    #                 recirc_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+    #             ),
+    #         )
+    #         max_fpw = smooth_max(
+    #             0,
+    #             pyo.units.convert(
+    #                 feed_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+    #             ),
+    #         )
+    #     else:
+    #         max_rpw = smooth_max(
+    #             max_rpw,
+    #             pyo.units.convert(
+    #                 recirc_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+    #             ),
+    #         )
+    #         max_fpw = smooth_max(
+    #             max_fpw,
+    #             pyo.units.convert(
+    #                 feed_pumps[t].work_mechanical[0], to_units=pyo.units.watt
+    #             ),
+    #         )
 
     # blk.max_recirculation_pump_work_constraint = pyo.Constraint(
-    #     expr=blk.max_recirculation_pump_work == recirc_pump_work
+    #     expr=blk.max_recirculation_pump_work == max_rpw
     # )
 
     # blk.max_feed_pump_work_constraint = pyo.Constraint(
-    #     expr=blk.max_feed_pump_work == feed_pump_work
+    #     expr=blk.max_feed_pump_work == max_fpw
     # )
+
+    blk.max_recirculation_pump_work_constraint = pyo.Constraint(
+        expr=blk.max_recirculation_pump_work == recirc_pump_work
+    )
+
+    blk.max_feed_pump_work_constraint = pyo.Constraint(
+        expr=blk.max_feed_pump_work == feed_pump_work
+    )
 
     capital_cost_expr = 0
 
@@ -205,7 +205,7 @@ def cost_ccro(blk, feed_pump=None, mp=None):
         expr=blk.capital_cost_feed_pump
         == pyo.units.convert(
             blk.costing_package.ccro.pump_cost
-            * pyo.units.convert(blk.max_feed_pump_work, to_units=pyo.units.watt),
+            * pyo.units.convert(feed_pump_work, to_units=pyo.units.watt),
             to_units=blk.costing_package.base_currency,
         )
     )
@@ -217,7 +217,7 @@ def cost_ccro(blk, feed_pump=None, mp=None):
         == pyo.units.convert(
             blk.costing_package.ccro.pump_cost
             * pyo.units.convert(
-                blk.max_recirculation_pump_work, to_units=pyo.units.watt
+                recirc_pump_work, to_units=pyo.units.watt
             ),
             to_units=blk.costing_package.base_currency,
         )
