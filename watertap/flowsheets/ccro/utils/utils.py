@@ -145,10 +145,14 @@ def solve(model=None, solver=None, tee=False, raise_on_failure=True):
     return results
 
 
-def unfix_dof(m=None, unfix_dead_volume_state=True, op_dict=None, **kwargs):
+def unfix_dof(m, unfix_dead_volume_state=True, op_dict=None, **kwargs):
     """
     Unfix linking variables in MP model
     """
+
+    if unfix_dead_volume_state:
+        m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
+        m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
 
     if m.fs.configuration == "filtration":
 
@@ -159,20 +163,21 @@ def unfix_dof(m=None, unfix_dead_volume_state=True, op_dict=None, **kwargs):
             op_dict["recycle_flowrate"]
         )
 
-        if unfix_dead_volume_state:
-            m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
-            m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
+        # if unfix_dead_volume_state:
+        #     m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
+        #     m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
 
     elif m.fs.configuration == "flushing":
 
         m.fs.flushing.flushing_time.unfix()
-        m.fs.flushing.flushing_efficiency.fix(0.9)
-        if unfix_dead_volume_state:
-            m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
-            m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
+        m.fs.flushing.flushing_efficiency.fix(op_dict["flushing_efficiency"])
         m.fs.dead_volume.dead_volume.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
         m.fs.flushing.pre_flushing_concentration.unfix()
         m.fs.flushing.post_flushing_concentration.unfix()
+
+        # if unfix_dead_volume_state:
+        #     m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
+        #     m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
 
 
 def copy_state_prop_time_period_links(m_old, m_new):
@@ -200,7 +205,7 @@ def copy_state(old_model, new_model):
     model_state.set_model_state(new_model)
 
 
-def fix_dof_and_initialize(m=None, op_dict=None, **kwargs):
+def fix_dof_and_initialize(m, op_dict=None, **kwargs):
     """
     Fix DOF for MP model and initialize steady-state models.
     """
