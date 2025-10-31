@@ -83,7 +83,7 @@ Flowsheet Specifications
    :header: "Description", "Value", "Units"
 
    "**Feed Water**"
-   "Water mass flow","40", ":math:`\text{kg/s}`"
+   "Water mass flow","40", ":math:`\text{kg s}^{-1}`"
    "TDS mass fraction", "0.1", ":math:`\text{dimensionless}`"
    "Temperature", "298.15", ":math:`\text{K}`"
    "Pressure", "101325", ":math:`\text{Pa}`"
@@ -96,17 +96,17 @@ Flowsheet Specifications
    "Total flow split fraction to distillate HEX", "0.5", ":math:`\text{dimensionless}`"
 
    "**Distillate HEX**"
-   "Overall heat transfer coefficient", "2000", ":math:`W/\left(m^2K\right)`"
+   "Overall heat transfer coefficient", "2000", ":math:`\text{W m}^{-2} \text{ K}^{-1}`"
    "Cold-side pressure change", "7000", ":math:`\text{Pa}`"
    "Hot-side pressure change", "7000", ":math:`\text{Pa}`"
 
    "**Brine HEX**"
-   "Overall heat transfer coefficient", "2000", ":math:`W/\left(m^2K\right)`"
+   "Overall heat transfer coefficient", "2000", ":math:`\text{W m}^{-2} \text{ K}^{-1}`"
    "Cold-side pressure change", "7000", ":math:`\text{Pa}`"
    "Hot-side pressure change", "7000", ":math:`\text{Pa}`"
 
    "**Evaporator**"
-   "Overall heat transfer coefficient", "3000", ":math:`W/\left(m^2K\right)`"
+   "Overall heat transfer coefficient", "3000", ":math:`\text{W m}^{-2} \text{ K}^{-1}`"
 
    "**Compressor**"
    "Compressor efficiency", "0.8", ":math:`\text{dimensionless}`"
@@ -120,4 +120,4 @@ Flowsheet Specifications
    "Pressure change", "40000", ":math:`\text{Pa}`"
 
    "**Translator Block**"
-   "Outlet TDS mass flow", "1e-5", ":math:`\text{kg/s}`"
+   "Outlet TDS mass flow", "1e-5", ":math:`\text{kg s}^{-1}`"

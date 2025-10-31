@@ -35,7 +35,7 @@ Capital cost depends on the unit's inlet flow rate, :math:`Q_{in}`, as shown in 
 
     .. math::
 
-        C_{cap,tot} = HRT * Q_{in} * C_V
+        C_{cap,tot} = HRT \times Q_{in} \times C_V
 
  
 Operating Cost Calculations
@@ -49,8 +49,11 @@ Operating/maintenance costs consist of magnesium chloride usage cost and phospho
 
     .. math::
 
-        C_{op,MgCl2} = Q_{MgCl2} * C_{MgCl2}
-        C_{op,RP} = Q_{byproduct, S_{PO4}} * C_{RP}
+        C_{op,MgCl2} = Q_{MgCl2} \times C_{MgCl2}
+
+    .. math::
+
+        C_{op,RP} = Q_{byproduct, S_{PO4}} \times C_{RP}
 
  
 Code Documentation
