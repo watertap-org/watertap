@@ -330,6 +330,7 @@ def set_operating_conditions(m, op_dict=None, **kwargs):
         # m.fs.flushing.flushing_efficiency.fix(0.5)
 
         # Surrogate parameters
+        m.fs.flushing.mean_residence_time.fix(op_dict["dead_volume"]/op_dict["flushing_flowrate"])
         # m.fs.flushing.number_tanks_in_series.set_value(3)
         # m.fs.flushing.accumulator_volume.set_value(dead_volume)
         # m.fs.flushing.flushing_flow_rate.set_value(flushing_flowrate)
@@ -479,6 +480,7 @@ def config_op_dict(op_dict):
     op_dict2["flushing_flowrate"] = (
         op_dict["raw_feed_flowrate"] + op_dict["recycle_flowrate"]
     )
+    op_dict["dead_volume"] = op_dict["dead_volume"] * pyunits.m**3
     op_dict["accumulation_time"] = op_dict["accumulation_time"] * pyunits.second
 
     op_dict2["raw_feed_flow_mass_water"] = (

@@ -73,7 +73,7 @@ solver = get_solver()
 
 # Get filepath for surrogate model
 filepath = os.path.dirname(os.path.abspath(__file__))
-surrogate_filename = os.path.join(filepath, "data/flushing_surrogate_n_5.json")
+surrogate_filename = os.path.join(filepath, "data/flushing_surrogate_multiple_tau_n_2.json")
 
 op_dict_default = dict(
     n_time_points=11,
