@@ -36,6 +36,8 @@ __all__ = [
     "config_op_dict",
     "print_results_table",
     "fix_overall_water_recovery",
+    "set_operating_conditions",
+    "initialize_system",
 ]
 
 
