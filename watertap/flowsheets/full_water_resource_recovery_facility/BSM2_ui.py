@@ -3071,13 +3071,19 @@ def build_flowsheet(build_options=None, **kwargs):
     scaling.propagate_solution(scaled_model, m)
 
     # Set up optimization with additional scaling
-    setup_optimization(m, reactor_volume_equalities=True)
+    setup_optimization(m, reactor_volume_equalities=False)
 
-    rescale_system(m)
-    rescaling = TransformationFactory("core.scale_model")
-    rescaled_model = rescaling.create_using(m, rename=False)
-    solve(rescaled_model, tee=True)
-    rescaling.propagate_solution(rescaled_model, m)
+    # rescale_system(m)
+    # rescaling = TransformationFactory("core.scale_model")
+    # rescaled_model = rescaling.create_using(m, rename=False)
+    # solve(rescaled_model, tee=True)
+    # rescaling.propagate_solution(rescaled_model, m)
+    #
+    # m.fs.R1.volume[0].set_value(1000 * pyunits.m**3)
+    # m.fs.R2.volume[0].set_value(1000 * pyunits.m**3)
+    # m.fs.R3.volume[0].set_value(1333 * pyunits.m**3)
+    # m.fs.R4.volume[0].set_value(1333 * pyunits.m**3)
+    # m.fs.R5.volume[0].set_value(1333 * pyunits.m**3)
 
     return m
 
