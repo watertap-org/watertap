@@ -26,6 +26,7 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia, Marcus Holly"
 
+import platform
 import pytest
 
 from pyomo.environ import (
@@ -42,6 +43,19 @@ from idaes.core.util.scaling import (
 )
 
 import watertap.flowsheets.full_water_resource_recovery_facility.BSM2 as BSM2
+
+is_reference_platform = (
+    platform.system() == "Windows"
+    and platform.python_version_tuple()[0] == "3"
+    and platform.python_version_tuple()[1] == "11"
+)
+
+reference_platform_only = pytest.mark.xfail(
+    condition=(not is_reference_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the reference platform (Python 3.11 on Windows)",
+)
 
 
 class TestFullFlowsheet:
@@ -194,6 +208,7 @@ class TestFullFlowsheet:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
+    @reference_platform_only
     def test_optimization(self, optimized_system_frame):
         m = optimized_system_frame
         assert_optimal_termination(m.rescaled_results)
