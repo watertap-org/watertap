@@ -218,54 +218,54 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Effluent constraints
-    # exports.add(
-    #     obj=fs.TSS_max,
-    #     name="Maximum total suspended solids concentration",
-    #     ui_units=pyunits.kg / pyunits.m**3,
-    #     display_units="kg/m3",
-    #     rounding=2,
-    #     description="Maximum TSS concentration",
-    #     is_input=True,
-    #     input_category="Effluent constraints",
-    #     is_output=True,
-    #     output_category="Effluent constraints",
-    # )
-    # exports.add(
-    #     obj=fs.COD_max,
-    #     name="Maximum chemical oxygen demand",
-    #     ui_units=pyunits.kg / pyunits.m**3,
-    #     display_units="kg/m3",
-    #     rounding=2,
-    #     description="Maximum COD",
-    #     is_input=True,
-    #     input_category="Effluent constraints",
-    #     is_output=True,
-    #     output_category="Effluent constraints",
-    # )
-    # exports.add(
-    #     obj=fs.totalN_max,
-    #     name="Maximum total nitrogen concentration",
-    #     ui_units=pyunits.kg / pyunits.m**3,
-    #     display_units="kg/m3",
-    #     rounding=2,
-    #     description="Maximum total nitrogen concentration",
-    #     is_input=True,
-    #     input_category="Effluent constraints",
-    #     is_output=True,
-    #     output_category="Effluent constraints",
-    # )
-    # exports.add(
-    #     obj=fs.BOD5_max,
-    #     name="Maximum 5-day biological oxygen demand",
-    #     ui_units=pyunits.kg / pyunits.m**3,
-    #     display_units="kg/m3",
-    #     rounding=2,
-    #     description="Maximum BOD5",
-    #     is_input=True,
-    #     input_category="Effluent constraints",
-    #     is_output=True,
-    #     output_category="Effluent constraints",
-    # )
+    exports.add(
+        obj=fs.TSS_max,
+        name="Maximum total suspended solids concentration",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="Maximum TSS concentration",
+        is_input=True,
+        input_category="Effluent constraints",
+        is_output=True,
+        output_category="Effluent constraints",
+    )
+    exports.add(
+        obj=fs.COD_max,
+        name="Maximum chemical oxygen demand",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="Maximum COD",
+        is_input=True,
+        input_category="Effluent constraints",
+        is_output=True,
+        output_category="Effluent constraints",
+    )
+    exports.add(
+        obj=fs.totalN_max,
+        name="Maximum total nitrogen concentration",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="Maximum total nitrogen concentration",
+        is_input=True,
+        input_category="Effluent constraints",
+        is_output=True,
+        output_category="Effluent constraints",
+    )
+    exports.add(
+        obj=fs.BOD5_max,
+        name="Maximum 5-day biological oxygen demand",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="Maximum BOD5",
+        is_input=True,
+        input_category="Effluent constraints",
+        is_output=True,
+        output_category="Effluent constraints",
+    )
 
     # Unit model data, activated sludge process
     exports.add(
@@ -3071,19 +3071,13 @@ def build_flowsheet(build_options=None, **kwargs):
     scaling.propagate_solution(scaled_model, m)
 
     # Set up optimization with additional scaling
-    # setup_optimization(m, reactor_volume_equalities=False)
-    #
-    # rescale_system(m)
-    # rescaling = TransformationFactory("core.scale_model")
-    # rescaled_model = rescaling.create_using(m, rename=False)
-    # solve(rescaled_model, tee=True)
-    # rescaling.propagate_solution(rescaled_model, m)
+    setup_optimization(m, reactor_volume_equalities=False)
 
-    # m.fs.R1.volume[0].set_value(1000 * pyunits.m**3)
-    # m.fs.R2.volume[0].set_value(1000 * pyunits.m**3)
-    # m.fs.R3.volume[0].set_value(1333 * pyunits.m**3)
-    # m.fs.R4.volume[0].set_value(1333 * pyunits.m**3)
-    # m.fs.R5.volume[0].set_value(1333 * pyunits.m**3)
+    rescale_system(m)
+    rescaling = TransformationFactory("core.scale_model")
+    rescaled_model = rescaling.create_using(m, rename=False)
+    solve(rescaled_model, tee=True)
+    rescaling.propagate_solution(rescaled_model, m)
 
     return m
 
