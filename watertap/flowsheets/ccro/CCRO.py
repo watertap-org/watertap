@@ -73,7 +73,9 @@ solver = get_solver()
 
 # Get filepath for surrogate model
 filepath = os.path.dirname(os.path.abspath(__file__))
-surrogate_filename = os.path.join(filepath, "data/flushing_surrogate_multiple_tau_n_2.json")
+surrogate_filename = os.path.join(
+    filepath, "data/flushing_surrogate_multiple_tau_n_2.json"
+)
 
 op_dict_default = dict(
     n_time_points=11,
@@ -574,14 +576,19 @@ def create_multiperiod(n_time_points=10, include_costing=True, op_dict=None):
     if include_costing:
         # there is probably a more elegant way to do this
         mp.costing = WaterTAPCosting()
-
+        for t, m in enumerate(mp.get_active_process_blocks(), 1):
+            if t == 1:
+                register_costed_unit(mp, m.fs.P1, register_electricity_flow_only=True)
+                register_costed_unit(mp, m.fs.RO)
+            elif t == n_time_points - 1:
+                register_costed_unit(mp, m.fs.P2)
+                register_costed_unit(mp, m.fs.P1)
+            # Last time period is flushing
+            elif t == n_time_points:
+                register_costed_unit(mp, m.fs.P2, register_electricity_flow_only=True)
+                register_costed_unit(mp, m.fs.P1, register_electricity_flow_only=True)
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
         if t == 1:
-            if include_costing:
-                register_costed_unit(mp, m.fs.P1)
-                register_costed_unit(mp, m.fs.RO)
-                register_costed_unit(mp, m.fs.M1)
-
             add_object_reference(
                 mp,
                 "feed_pump",
@@ -592,9 +599,6 @@ def create_multiperiod(n_time_points=10, include_costing=True, op_dict=None):
             old_m = m
 
         elif t == n_time_points - 1:
-            if include_costing:
-                register_costed_unit(mp, m.fs.P2)
-
             add_object_reference(
                 mp,
                 "recirc_pump",
@@ -639,12 +643,24 @@ def create_multiperiod(n_time_points=10, include_costing=True, op_dict=None):
     return mp
 
 
-def register_costed_unit(mp, unit, costing_method_arguments={}):
-
-    unit.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=mp.costing,
-        costing_method_arguments=costing_method_arguments,
-    )
+def register_costed_unit(
+    mp, unit, costing_method_arguments={}, register_electricity_flow_only=False
+):
+    if register_electricity_flow_only:
+        lb = unit.work_mechanical[0.0].lb
+        # set lower bound to 0 to avoid negative defined flow warning when lb is not >= 0
+        unit.work_mechanical.setlb(0)
+        mp.costing.cost_flow(
+            pyunits.convert(unit.work_mechanical[0.0], to_units=pyunits.kW),
+            "electricity",
+        )
+        # set lower bound back to its original value that was assigned to lb
+        unit.work_mechanical.setlb(lb)
+    else:
+        unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=mp.costing,
+            costing_method_arguments=costing_method_arguments,
+        )
 
 
 def add_costing(m=None, mp=None):
