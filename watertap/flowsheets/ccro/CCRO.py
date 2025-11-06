@@ -589,33 +589,21 @@ def create_multiperiod(n_time_points=10, include_costing=True, op_dict=None):
                 register_costed_unit(mp, m.fs.P1, register_electricity_flow_only=True)
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
         if t == 1:
-            add_object_reference(
-                mp,
-                "feed_pump",
-                m.fs.P1,
-            )
             fix_dof_and_initialize(m, op_dict=op_dict)
             unfix_dof(m, unfix_dead_volume_state=False, op_dict=op_dict)
             old_m = m
-
-        elif t == n_time_points - 1:
-            add_object_reference(
-                mp,
-                "recirc_pump",
-                m.fs.P2,
-            )
         # Last time period is flushing
         if t == n_time_points:
             copy_time_period_links(old_m, m)
             fix_dof_and_initialize(m, op_dict=op_dict)
             unfix_dof(m, unfix_dead_volume_state=False, op_dict=op_dict)
-
         else:
             copy_state_prop_time_period_links(old_m, m)
 
         print(f"Period {t} DOF:", degrees_of_freedom(m))
         assert degrees_of_freedom(m) == 0
-        results = solve(model=m, tee=False)
+
+        results = solve(model=m, tee=True)
         assert_optimal_termination(results)
         unfix_dof(m, unfix_dead_volume_state=True, op_dict=op_dict)
         old_m = m
@@ -742,39 +730,39 @@ def setup_optimization(
 
 
 if __name__ == "__main__":
-    # op_dict = dict(
-    #     rho=1000,
-    #     raw_feed_conc=5,  # g/L
-    #     raw_feed_flowrate=1.8,  # L/min
-    #     recycle_flowrate=49.1,  # L/min
-    #     recycle_conc_start=11.7,
-    #     temperature=298,  # K
-    #     p1_pressure_start=306,  # psi
-    #     p2_pressure_start=306,
-    #     p1_eff=0.8,
-    #     p2_eff=0.8,
-    #     A_comp=5.96e-12,
-    #     B_comp=3.08e-08,
-    #     membrane_area=7.9,  # m2
-    #     membrane_length=1,  # m
-    #     channel_height=0.0008636,
-    #     spacer_porosity=0.9,
-    #     dead_volume=0.035564,
-    #     accumulation_time=60,
-    #     single_pass_water_recovery=0.063,
-    #     include_costing=True,
-    #     flushing_efficiency=0.9,
-    # )
-    # op_dict = config_op_dict(op_dict)
-    # mp = create_multiperiod(n_time_points=11, include_costing=True, op_dict=op_dict)
-    # results = solve(mp)
-    # setup_optimization(
-    #     mp,
-    #     overall_water_recovery=0.8,
-    #     max_cycle_time_hr=1,
-    #     recycle_flow_bounds=(0.1, 100),
-    # )
+    op_dict = dict(
+        rho=1000,
+        raw_feed_conc=5,  # g/L
+        raw_feed_flowrate=1.8,  # L/min
+        recycle_flowrate=49.1,  # L/min
+        recycle_conc_start=11.7,
+        temperature=298,  # K
+        p1_pressure_start=306,  # psi
+        p2_pressure_start=306,
+        p1_eff=0.8,
+        p2_eff=0.8,
+        A_comp=5.96e-12,
+        B_comp=3.08e-08,
+        membrane_area=7.9,  # m2
+        membrane_length=1,  # m
+        channel_height=0.0008636,
+        spacer_porosity=0.9,
+        dead_volume=0.035564,
+        accumulation_time=60,
+        single_pass_water_recovery=0.063,
+        include_costing=True,
+        flushing_efficiency=0.9,
+    )
+    op_dict = config_op_dict(op_dict)
+    mp = create_multiperiod(n_time_points=11, include_costing=True, op_dict=op_dict)
+    results = solve(mp, tee=True)
+    setup_optimization(
+        mp,
+        overall_water_recovery=0.8,
+        max_cycle_time_hr=1,
+        recycle_flow_bounds=(0.1, 100),
+    )
 
-    # results = solve(mp)
-    # print_results_table(mp)
-    m = build_system(configuration="flushing")
+    results = solve(mp)
+    print_results_table(mp)
+    # m = build_system(configuration="flushing")
