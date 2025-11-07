@@ -50,11 +50,15 @@ def get_solver(
         solver_options["bound_relax_factor"] = 0.0
     if "honor_original_bounds" not in solver_options:
         solver_options["honor_original_bounds"] = "no"
+    if "linear_solver" not in solver_options:
+        solver_options["linear_solver"] = "ma27"
+    if "max_iter" not in solver_options:
+        solver_options["max_iter"] = 3000
 
     if "scale_model" not in writer_config:
         writer_config["scale_model"] = True
     if "linear_presolve" not in writer_config:
-        writer_config["linear_presolve"] = True
+        writer_config["linear_presolve"] = False
 
     return idaes_get_solver(
         solver=solver, solver_options=solver_options, writer_config=writer_config
