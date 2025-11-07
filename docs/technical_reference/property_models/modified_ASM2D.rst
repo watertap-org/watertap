@@ -82,8 +82,8 @@ State variables
    "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[j]", ":math:`\text{kg/}\text{m}^3`"
    ":red:`Molar alkalinity`", ":math:`A`", "alkalinity", "None", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
 
-Stoichiometric Coefficients
----------------------------
+Stoichiometric Parameters
+-------------------------
 :red:`Red` text indicates the stoichiometric coefficient has been removed in the Modified ASM2d model, :lime:`lime` text indicates the stoichiometric coefficient has been added, and :blue:`blue` text indicates the coefficient has had its value changed from its base ASM2d implementation.
 
 .. csv-table::
@@ -123,6 +123,8 @@ Stoichiometric Coefficients
    "Mass COD per mass VSS of XPHA", ":math:`CODtoVSS_{XPHA}`", "CODtoVSS_XPHA", 1.9608, ":math:`\text{dimensionless}`"
    "Mass ISS per mass of P", ":math:`ISS_{P}`", "ISS_P", 3.23, ":math:`\text{dimensionless}`"
    "ISS fractional content of biomass", ":math:`f_{ISS, BM}`", "f_ISS_BM", 3.23, ":math:`\text{dimensionless}`"
+   "Conversion factor for BOD5 for raw wastewater", ":math:`BOD5_{factor, raw}`", "BOD5_factor_raw", 0.65, ":math:`\text{dimensionless}`"
+   "Conversion factor for BOD5 for effluent", ":math:`BOD5_{factor, effluent}`", "BOD5_factor_effluent", 0.25, ":math:`\text{dimensionless}`"
 
 Kinetic Parameters
 ------------------
@@ -221,8 +223,8 @@ Effluent Metrics
   "Volatile suspended solids", ":math:`VSS`", ":math:`None`", ":math:`VSS = X_{I}/CODtoVSS_{XI} + X_{S}/CODtoVSS_{XS} + (X_{H} + X_{PAO} + X_{AUT})/CODtoVSS_{XBM} + X_{PHA}/CODtoVSS_{XPHA}`"
   "Inorganic suspended solids", ":math:`ISS`", ":math:`None`", ":math:`ISS = f_{ISS, BM}(X_{H} + X_{PAO}/CODtoVSS_{XBM} + ISS_{P}X_{PP}`"
   "Total suspended solids", ":math:`TSS`", ":math:`0.03 kg/m^{3}`", ":math:`TSS = VSS + ISS`"
-  "Five-day biological oxygen demand (raw wastewater)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{raw}`", ":math:`BOD5_{raw} = BOD5_{factor, raw}(S_{F} + S_{A} + (1 - f_{SI})X_{S} + (1 - f_{XI})X_{H} + (1 - f_{XI})(X_{PAO} + X_{PHA}) + (1 - f_{XI})X_{AUT})`"
-  "Five-day biological oxygen demand (effluent)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{effluent}`", ":math:`BOD5_{effluent} = BOD5_{factor, effluent}(S_{F} + S_{A} + (1 - f_{SI})X_{S} + (1 - f_{XI})X_{H} + (1 - f_{XI})(X_{PAO} + X_{PHA}) + (1 - f_{XI})X_{AUT})`"
+  "Five-day biological oxygen demand (raw wastewater)", ":math:`BOD5_{raw}`", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{raw} = BOD5_{factor, raw}(S_{F} + S_{A} + (1 - f_{SI})X_{S} + (1 - f_{XI})X_{H} + (1 - f_{XI})(X_{PAO} + X_{PHA}) + (1 - f_{XI})X_{AUT})`"
+  "Five-day biological oxygen demand (effluent)", ":math:`BOD5_{effluent}`", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{effluent} = BOD5_{factor, effluent}(S_{F} + S_{A} + (1 - f_{SI})X_{S} + (1 - f_{XI})X_{H} + (1 - f_{XI})(X_{PAO} + X_{PHA}) + (1 - f_{XI})X_{AUT})`"
   "Chemical oxygen demand", ":math:`COD`", ":math:`0.1 kg/m^{3}`", ":math:`COD = S_{F} + S_{A} + S_{I} + X_{I} + X_{S} + X_{H} + X_{PAO} + X_{PHA} + X_{AUT}`"
   "Total Kjeldahl nitrogen", ":math:`TKN`", ":math:`None`", ":math:`TKN = S_{NH4} + i_{NSF}S_{F} + i_{NSI}S_{I} + i_{NXI}X_{I} + i_{NXS}X_{S} + i_{NBM}(X_{H} + X_{PAO} + X_{AUT})`"
   "Nitrogen oxide", ":math:`SNOX`", ":math:`None`", ":math:`SNOX = S_{NO3}`"

@@ -111,8 +111,8 @@ Effluent Metrics
   :header: "Description", "Variable", "Default Regulatory Limit", "Equation"
 
   "Total suspended solids", ":math:`TSS`", ":math:`0.03 kg/m^{3}`", ":math:`TSS = CODtoSS(X_{S} + X_{I} + X_{BH} + X_{BA} + X_{P})`"
-  "Five-day biological oxygen demand (raw wastewater)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{raw}`", ":math:`BOD5_{raw} = BOD5_{factor, raw}(S_{S} + X_{S} + (1 - f_{p})(X_{BH} + X_{BA}))`"
-  "Five-day biological oxygen demand (effluent)", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{effluent}`", ":math:`BOD5_{effluent} = BOD5_{factor, effluent}(S_{S} + X_{S} + (1 - f_{p})(X_{BH} + X_{BA}))`"
+  "Five-day biological oxygen demand (raw wastewater)", ":math:`BOD5_{raw}`", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{raw} = BOD5_{factor, raw}(S_{S} + X_{S} + (1 - f_{p})(X_{BH} + X_{BA}))`"
+  "Five-day biological oxygen demand (effluent)", ":math:`BOD5_{effluent}`", ":math:`0.01 kg/m^{3}`", ":math:`BOD5_{effluent} = BOD5_{factor, effluent}(S_{S} + X_{S} + (1 - f_{p})(X_{BH} + X_{BA}))`"
   "Chemical oxygen demand", ":math:`COD`", ":math:`0.1 kg/m^{3}`", ":math:`COD = S_{S} + S_{I} + X_{S} + X_{I} + X_{BH} + X_{BA} + X_{P}`"
   "Total Kjeldahl nitrogen", ":math:`TKN`", ":math:`None`", ":math:`TKN = S_{NH} + S_{ND} + X_{ND} + i_{XB}(X_{BH} + X_{BA}) + i_{XP}(X_{P} + X_{I})`"
   "Total nitrogen", ":math:`N_{total}`", ":math:`0.018 kg/m^{3}`", ":math:`N_{total} = TKN + S_{NO}`"
