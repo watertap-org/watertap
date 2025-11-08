@@ -59,6 +59,8 @@ def get_solver(
         writer_config["scale_model"] = True
     if "linear_presolve" not in writer_config:
         writer_config["linear_presolve"] = False
+    if "skip_trivial_constraints" not in writer_config:
+        writer_config["skip_trivial_constraints"] = False
 
     return idaes_get_solver(
         solver=solver, solver_options=solver_options, writer_config=writer_config
