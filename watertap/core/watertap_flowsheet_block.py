@@ -82,10 +82,6 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
         """Developer should implement a routine to unfix variables for unit to perform optimization"""
         pass
 
-    def setup_optimization(self, **kwargs):
-        """Developer should implement a routine to unfix unit operation for specific operation"""
-        pass
-
     def scale_before_initialization(self, **kwargs):
         """Developer should implement scaling function to scale unit using
         default values before initialization routine is ran"""
