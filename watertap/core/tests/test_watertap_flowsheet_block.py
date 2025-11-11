@@ -11,6 +11,7 @@
 #################################################################################
 
 __author__ = "Alexander V. Dudchenko"
+
 from idaes.models.unit_models import Feed, Product
 
 from pyomo.environ import (
@@ -69,30 +70,41 @@ class FlowsheetFeedData(WaterTapFlowsheetBlockData):
 
     def set_fixed_operation(self):
         self.feed.ph.fix(8.5)
+
+        # fix feed flow and concentration based on config arguments
         self.feed.properties[0].flow_vol_phase["Liq"].fix(self.config.feed_flow_rate)
         self.feed.properties[0].conc_mass_phase_comp["Liq", self.solute_type].fix(
             self.config.solute_concentration
         )
         self.feed.properties[0].temperature.fix(298.15)
         self.feed.properties[0].pressure.fix(101325)
+
+        # make sure mass flows are not fixed
         self.feed.properties[0].flow_mass_phase_comp["Liq", self.solute_type].unfix()
         self.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
         assert degrees_of_freedom(self) == 0
+
+        # solve the block so we can get mass flows of solute and water
         solver = get_solver()
         results = solver.solve(self.feed, tee=False)
-
+        # ensure we terminate okay.
         assert_optimal_termination(results)
 
     def initialize_unit(self, **kwargs):
         """custom initialize routine for the feed unit as we
         are fixing feed concentration and flowrate rather than mass flowrates which will
-        throw error if we just call self.feed.initialize()"""
+        throw an error if we just call self.feed.initialize() since feed mass flow and tds flow as unfixed
+
+        This is probably redundant if the model was already "fixed" as result will not change, but
+        do't want to assume that user has not change flow/concentration since calling set_fixed_operation (or fix_and_scale)
+        """
         solver = get_solver()
         result = solver.solve(self.feed, tee=False)
 
         assert_optimal_termination(result)
 
     def scale_before_initialization(self):
+        """apply standard scaling factors to feed unit model"""
         self.config.default_property_package.set_default_scaling(
             "flow_mass_phase_comp",
             1 / self.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].value,
@@ -154,12 +166,17 @@ def feed_flowsheet_fixture():
 
     m.fs.feed.fix_and_scale()
     m.fs.feed.initialize()
+    m.fs.product.initialize()
     return m
 
 
 def test_feed_flowsheet_initialization(feed_flowsheet_fixture):
     m = feed_flowsheet_fixture
+
+    # should be zero DOF after initialization
     assert degrees_of_freedom(m) == 0
+
+    # this is simpel model, so product should have same mass flow as input
     assert (
         pytest.approx(
             m.fs.product.flow_mass_phase_comp[0, "Liq", "H2O"].value, rel=1e-5
