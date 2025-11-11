@@ -117,7 +117,6 @@ def build_report_table(
             ((k, v) for k, v in sub_data.items()),
             ("Value", "Units", "Fixed", "Bounds"),
             get_values,
-            # sort_rows=False,
         )
         ostream.write(f"\n")
 

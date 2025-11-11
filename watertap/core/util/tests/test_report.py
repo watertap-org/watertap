@@ -1,12 +1,7 @@
 from watertap.core.util import report
 
 from pyomo.environ import ConcreteModel, Var, units as pyunits
-import pytest
-
 from io import StringIO
-
-
-import pyomo.common.unittest as unittest
 
 
 def test_report_table():

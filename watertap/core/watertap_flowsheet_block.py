@@ -5,11 +5,11 @@ from idaes.core import (
 )
 from pyomo.common.config import ConfigValue
 
-from watertap.core.utils.connections import (
+from watertap.core.util.connections import (
     PortContainer,
     ConnectionContainer,
 )
-from watertap.core.utils.report import (
+from watertap.core.util.report import (
     build_report_table,
 )
 
@@ -104,6 +104,11 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
         else:
             raise TypeError("Outlet connection must be a ConnectionContainer")
 
+    def get_unit_name(self):
+        """returns the name of the unit block, developer can overwrite this
+        to provide more descriptive name"""
+        return self.name
+
     def get_model_state_dict(self):
         """Developer should define model_vars dict that includes
                 a list of varaibles that should be displayed
@@ -123,7 +128,8 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
                         0
                     ].temperature
                     model_state["Physical state"]["Pressure"] = self.feed.properties[0].pressure
-                    return self.name, model_state
+
+                    return model_state
 
                 Output should look like:
 
@@ -153,7 +159,7 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
 
     def _get_stream_table_contents(self, time_point=0):
         """override default as developer should manually define model state"""
-        if self.get_model_state_dict()[0] is None:
+        if self.get_model_state_dict() is None:
             return super()._get_stream_table_contents(time_point)
         else:
             return None
@@ -161,7 +167,8 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
     def report(
         self, time_point=0, dof=False, ostream=None, prefix="", use_default_units=False
     ):
-        unit_name, defined_variables = self.get_model_state_dict()
+        defined_variables = self.get_model_state_dict()
+        unit_name = self.get_unit_name()
 
         if unit_name is not None:
             build_report_table(
