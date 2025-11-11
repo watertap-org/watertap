@@ -24,7 +24,7 @@ Components
   :header: "Description", "Symbol", "Variable"
 
   "Monosaccharides", ":math:`S_{su}`", "S_su"
-  "Amino acids, ":math:`S_{aa}`", "S_aa"
+  "Amino acids", ":math:`S_{aa}`", "S_aa"
   "Long chain fatty acids", ":math:`S_{fa}`", "S_fa"
   "Total valerate", ":math:`S_{va}`", "S_va"
   "Total butyrate", ":math:`S_{bu}`", "S_bu"
