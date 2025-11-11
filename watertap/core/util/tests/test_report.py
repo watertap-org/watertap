@@ -22,7 +22,6 @@ from io import StringIO
 def test_report_table():
     """Test that the report table can be built without error."""
     # Create a dummy model with a variable
-    from pyomo.environ import ConcreteModel, Var, units as pyunits
 
     m = ConcreteModel()
     m.x = Var(["t1", "t2", "t3"], initialize=1.0, units=pyunits.m)

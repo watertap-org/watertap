@@ -62,7 +62,6 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
 
     def initialize_unit(self, **kwargs):
         """Developer should implement an initialize routine for their flowsheet model"""
-        pass
 
     def initialize(self, **kwargs):
         """routine to initialize a unit and propagate its connections"""
@@ -76,20 +75,16 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
 
     def set_fixed_operation(self, **kwargs):
         """Developer should implement a routine to fix unit operation for initialization and 0DOF solving"""
-        pass
 
     def set_optimization_operation(self, **kwargs):
         """Developer should implement a routine to unfix variables for unit to perform optimization"""
-        pass
 
     def scale_before_initialization(self, **kwargs):
         """Developer should implement scaling function to scale unit using
         default values before initialization routine is ran"""
-        pass
 
     def scale_post_initialization(self, **kwargs):
         """Developer should implement scaling function to scale unit after initialization routine is ran"""
-        pass
 
     def register_port(self, name, port=None, var_list=None):
         """Registers a port for the flowsheet unit, including variables that should
