@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+__author__ = "Alexander V. Dudchenko"
 
 from idaes.core.util.initialization import propagate_state
 from pyomo.network import Arc
