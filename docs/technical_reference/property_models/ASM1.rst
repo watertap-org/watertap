@@ -74,7 +74,7 @@ Kinetic Parameters
    "Oxygen half-saturation coefficient for autotrophic biomass", ":math:`K_{O,A}`", "K_OA", 0.0004, ":math:`\text{kg -COD/}\text{m}^{3}`"
    "Nitrate half-saturation coefficient for denitrifying heterotrophic biomass", ":math:`K_{NO}`", "K_NO", 0.0005, ":math:`\text{kg NO}_{3}\text{-N/}\text{m}^{3}`"
    "Decay coefficient for heterotrophic biomass", ":math:`b_H`", "b_H", 0.3, ":math:`\text{d}^{-1}`"
-   "Decay coefficient for autotrophic biomass, ":math:`b_A`", "b_A", 0.05, ":math:`\text{d}^{-1}`"
+   "Decay coefficient for autotrophic biomass", ":math:`b_A`", "b_A", 0.05, ":math:`\text{d}^{-1}`"
    "Correction factor for mu_H under anoxic conditions", ":math:`η_g`", "eta_g", 0.8, ":math:`\text{dimensionless}`"
    "Correction factor for hydrolysis under anoxic conditions", ":math:`η_h`", "eta_h", 0.8, ":math:`\text{dimensionless}`"
    "Maximum specific hydrolysis rate", ":math:`k_h`", "k_h", 3.0, ":math:`\text{d}^{-1}`"
@@ -102,7 +102,7 @@ Process Rate Equations
    "Decay of autotrophs", ":math:`ρ_5 = b_{H}X_{B,H}`"
    "Ammonification of soluble organic nitrogen", ":math:`ρ_6 = k_{a}S_{ND}X_{B,H}`"
    "Hydrolysis of entrapped organics", ":math:`ρ_7 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}`"
-   "Hydrolysis of entrapped organic nitrogen", ":math:`ρ_7 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}(X_{ND}/X_{S})`"
+   "Hydrolysis of entrapped organic nitrogen", ":math:`ρ_8 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}(X_{ND}/X_{S})`"
 
 
 Effluent Metrics
