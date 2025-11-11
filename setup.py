@@ -69,13 +69,14 @@ setup(
         # primary requirements for unit and property models
         # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
         # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
-        "idaes-pse >=2.8.0,<2.9.0rc0",
+        "idaes-pse >=2.9.0,<2.10.0rc0",
         "pyomo>=6.6.1",
         "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep >=0.1.0",
         "numpy",
+        "pint<0.25",
     ],
     extras_require={
         "testing": [
