@@ -1802,8 +1802,7 @@ class SeawaterStateBlockData(StateBlockData):
 
 class SeawaterPropertySet(PropertySetBase):
     """
-    This object defines all the standard properties supported by IDAES, and also allows for
-    definition of new properties as required for seawater properties.
+    This object defines properties within the seawater property model.
     """
 
     flow_mass = PropertyMetadata(
@@ -1915,6 +1914,6 @@ class SeawaterPropertySet(PropertySetBase):
     )
     boiling_point_elevation = PropertyMetadata(
         name="boiling_point_elevation",
-        doc="Boiling point elevation",
+        doc="Boiling point elevation temperature",
         units=pyunits.K,
     )
