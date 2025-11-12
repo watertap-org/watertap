@@ -6,7 +6,7 @@ NaCl Property Package
 This package implements property relationships for an NaCl solution as provided in `Bartholomew and Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_.
 
 This NaCl property package:
-   * supports only H2O (solvent) and TDS (solute) components 
+   * supports only H2O (solvent) and NaCl (solute) components
    * supports only liquid phase
    * is formulated on a mass basis
    * is intended for isothermal applications at 25C
