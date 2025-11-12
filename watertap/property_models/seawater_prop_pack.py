@@ -12,10 +12,6 @@
 """
 Initial property package for seawater system
 """
-
-# Import Python libraries
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
@@ -43,6 +39,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
+from idaes.core.base.property_set import PropertyMetadata, PropertySetBase
 from idaes.core.base.components import Solute, Solvent
 from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.constants import Constants
@@ -51,7 +48,7 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
-from watertap.core.solvers import get_solver
+import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -62,6 +59,9 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
+
+# Import WaterTAP libraries
+from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
 
 # Set up logger
@@ -739,6 +739,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
+        obj.define_property_set(SeawaterPropertySet)
         obj.add_properties(
             {
                 "flow_mass_phase_comp": {"method": None},
@@ -759,12 +760,14 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-            }
-        )
+        #     }
+        # )
 
-        obj.define_custom_properties(
-            {
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
+        # obj.define_custom_properties(
+        #     {
+                "dens_mass_solvent": {"method": "_dens_mass_solvent",
+                                    #   "doc": "Mass density of pure water"
+                                      },
                 "osm_coeff": {"method": "_osm_coeff"},
                 "enth_flow": {"method": "_enth_flow"},
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
@@ -1789,3 +1792,122 @@ class SeawaterStateBlockData(StateBlockData):
 
         # transforming constraints
         transform_property_constraints(self)
+
+class SeawaterPropertySet(PropertySetBase):
+    """
+    This object defines all the standard properties supported by IDAES, and also allows for
+    definition of new properties as required for seawater properties.
+    """
+
+    flow_mass = PropertyMetadata(
+        name="flow_mass",
+        doc="Mass flow rate",
+        units=pyunits.kg / pyunits.s,
+    )
+    temperature = PropertyMetadata(
+        name="temperature",
+        doc="Temperature",
+        units=pyunits.K,
+    )
+    pressure = PropertyMetadata(
+        name="pressure",
+        doc="Pressure",
+        units=pyunits.Pa,
+    )
+    mass_frac = PropertyMetadata(
+        name="mass_frac",
+        doc="Mass fraction",
+        units=pyunits.dimensionless,
+    )
+    dens_mass = PropertyMetadata(
+        name="dens_mass",
+        doc="Mass density of solution",
+        units=pyunits.kg * pyunits.m**-3,
+    )
+
+    flow_vol = PropertyMetadata(
+        name="flow_vol",
+        doc="Total volumetric flow rate",
+        units=pyunits.m**3 / pyunits.s,
+    )
+    conc_mass = PropertyMetadata(
+        name="conc_mass",
+        doc="Mass concentration",
+        units=pyunits.kg * pyunits.m**-3,
+    )
+    flow_mol_phase_comp = PropertyMetadata(
+        name="flow_mol",
+        doc="Molar flowrate",
+        units=pyunits.mol / pyunits.s,
+    )
+    mole_frac = PropertyMetadata(
+        name="mole_frac",
+        doc="Mole fraction",
+        units=pyunits.dimensionless,
+    )
+    molality= PropertyMetadata(
+        name="molality",
+        doc="Molality",
+        units=pyunits.mole / pyunits.kg,
+    )
+    visc_d= PropertyMetadata(
+        name="visc_d_phase",
+        doc="Dynamic viscosity",
+        units=pyunits.Pa * pyunits.s,
+    )
+    pressure_osm= PropertyMetadata(
+        name="pressure_osm",
+        doc="Osmotic pressure",
+        units=pyunits.Pa,
+    )
+    enth_mass= PropertyMetadata(
+        name="enth_mass",
+        doc="Specific enthalpy",
+        units=pyunits.J * pyunits.kg**-1,
+    )
+    pressure_sat = PropertyMetadata(
+        name="pressure_sat",
+        doc="Vapor pressure",
+        units=pyunits.Pa,
+    )
+    cp_mass = PropertyMetadata(
+        name="cp_mass",
+        doc="Specific heat capacity",
+        units=pyunits.J / (pyunits.kg * pyunits.K),
+    )
+    therm_cond = PropertyMetadata(
+        name="therm_cond",
+        doc="Thermal conductivity",
+        units=pyunits.W / (pyunits.m * pyunits.K),
+    )
+    diffus = PropertyMetadata(
+        name="diffus",
+        doc="Diffusivity",
+        units=pyunits.m**2 / pyunits.s,
+    )
+
+    dens_mass_solvent = PropertyMetadata(
+        name="dens_mass_solvent",
+        doc="Mass density of pure water",
+        units=pyunits.kg * pyunits.m**-3,
+    )
+    osm_coeff = PropertyMetadata(
+        name="osm_coeff",
+        doc="Osmotic coefficient",
+        units=pyunits.dimensionless,
+    )
+    enth_flow = PropertyMetadata(
+        name="enth_flow",
+        doc="Enthalpy flow",
+        units=pyunits.J/pyunits.s,
+    )
+    dh_vap_mass = PropertyMetadata(
+        name="dh_vap_mass",
+        doc="Latent heat of vaporization",
+        units=pyunits.J * pyunits.kg**-1,
+    )
+    boiling_point_elevation = PropertyMetadata(
+        name="boiling_point_elevation",
+        doc="Boiling point elevation",
+        units=pyunits.K,
+    )
