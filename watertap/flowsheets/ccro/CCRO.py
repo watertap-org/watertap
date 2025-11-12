@@ -71,11 +71,11 @@ __all__ = [
 
 solver = get_solver()
 
-# Get filepath for surrogate model
-filepath = os.path.dirname(os.path.abspath(__file__))
-surrogate_filename = os.path.join(
-    filepath, "data/flushing_surrogate_multiple_tau_n_2.json"
-)
+# # Get filepath for surrogate model
+# filepath = os.path.dirname(os.path.abspath(__file__))
+# surrogate_filename = os.path.join(
+#     filepath, "data/flushing_surrogate_multiple_tau_n_2.json"
+# )
 
 op_dict_default = dict(
     n_time_points=11,
@@ -221,7 +221,7 @@ def build_system(time_blk=None, configuration=None):
             source=m.fs.dead_volume.outlet, destination=m.fs.P2.inlet
         )
 
-        m.fs.flushing = FlushingSurrogate(surrogate_model_file=surrogate_filename)
+        m.fs.flushing = FlushingSurrogate()#surrogate_model_file=surrogate_filename)
 
         TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -742,39 +742,39 @@ def setup_optimization(
 
 
 if __name__ == "__main__":
-    # op_dict = dict(
-    #     rho=1000,
-    #     raw_feed_conc=5,  # g/L
-    #     raw_feed_flowrate=1.8,  # L/min
-    #     recycle_flowrate=49.1,  # L/min
-    #     recycle_conc_start=11.7,
-    #     temperature=298,  # K
-    #     p1_pressure_start=306,  # psi
-    #     p2_pressure_start=306,
-    #     p1_eff=0.8,
-    #     p2_eff=0.8,
-    #     A_comp=5.96e-12,
-    #     B_comp=3.08e-08,
-    #     membrane_area=7.9,  # m2
-    #     membrane_length=1,  # m
-    #     channel_height=0.0008636,
-    #     spacer_porosity=0.9,
-    #     dead_volume=0.035564,
-    #     accumulation_time=60,
-    #     single_pass_water_recovery=0.063,
-    #     include_costing=True,
-    #     flushing_efficiency=0.9,
-    # )
-    # op_dict = config_op_dict(op_dict)
-    # mp = create_multiperiod(n_time_points=11, include_costing=True, op_dict=op_dict)
-    # results = solve(mp)
-    # setup_optimization(
-    #     mp,
-    #     overall_water_recovery=0.8,
-    #     max_cycle_time_hr=1,
-    #     recycle_flow_bounds=(0.1, 100),
-    # )
+    op_dict = dict(
+        rho=1000,
+        raw_feed_conc=5,  # g/L
+        raw_feed_flowrate=1.8,  # L/min
+        recycle_flowrate=49.1,  # L/min
+        recycle_conc_start=11.7,
+        temperature=298,  # K
+        p1_pressure_start=306,  # psi
+        p2_pressure_start=306,
+        p1_eff=0.8,
+        p2_eff=0.8,
+        A_comp=5.96e-12,
+        B_comp=3.08e-08,
+        membrane_area=7.9,  # m2
+        membrane_length=1,  # m
+        channel_height=0.0008636,
+        spacer_porosity=0.9,
+        dead_volume=0.035564,
+        accumulation_time=60,
+        single_pass_water_recovery=0.063,
+        include_costing=True,
+        flushing_efficiency=0.9,
+    )
+    op_dict = config_op_dict(op_dict)
+    mp = create_multiperiod(n_time_points=11, include_costing=True, op_dict=op_dict)
+    results = solve(mp)
+    setup_optimization(
+        mp,
+        overall_water_recovery=0.8,
+        max_cycle_time_hr=1,
+        recycle_flow_bounds=(0.1, 100),
+    )
 
-    # results = solve(mp)
-    # print_results_table(mp)
-    m = build_system(configuration="flushing")
+    results = solve(mp)
+    print_results_table(mp)
+    # m = build_system(configuration="flushing")
