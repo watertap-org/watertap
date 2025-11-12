@@ -21,6 +21,7 @@ def get_property_metadata(prop_pkg):
     except:
         raise TypeError("get_property_metadata expected a PhysicalParameterBlock.")
     metadata = prop_pkg.get_metadata()
+    pd.set_option('display.max_rows', None)
     df = pd.DataFrame(
         {
             "Description": [v._doc for v in metadata.properties],
