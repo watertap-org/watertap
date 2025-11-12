@@ -807,7 +807,7 @@ class _SeawaterStateBlock(StateBlock):
         # Constraint on water concentration at outlet - unfix in these cases
         for b in self.values():
             if b.config.defined_state is False:
-                b.conc_mol_comp["H2O"].unfix()
+                b.flow_mass_phase_comp["Liq", "H2O"].unfix()
 
     def initialize(
         self,
