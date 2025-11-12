@@ -58,6 +58,11 @@ def build_test_model():
         var_dict={"pH": m.fs.product.ph},
         unit_block_reference=m.fs.product,
     )
+    m.fs.feed.ph.fix(8.5)
+    m.fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1000)
+    m.fs.feed.flow_mass_phase_comp[0, "Liq", "TDS"].fix(10)
+    m.fs.feed.properties[0].temperature.fix(298.15)
+    m.fs.feed.properties[0].pressure.fix(101325)
     return m
 
 
@@ -117,9 +122,7 @@ def test_network_propagation(build_test_model):
     m.fs.outlet_port_container.connect_to(m.fs.inlet_port_container)
     TransformationFactory("network.expand_arcs").apply_to(m)
     # Set pH on feed unit
-    m.fs.feed.ph.fix(8.5)
-    m.fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1000)
-    m.fs.feed.flow_mass_phase_comp[0, "Liq", "TDS"].fix(10)
+
     # Propagate values through the network
     m.fs.outlet_port_container.connection.propagate()
 
@@ -137,7 +140,8 @@ def test_network_propagation(build_test_model):
         == 10
     )
     m.fs.inlet_port_container.fix()
-    assert degrees_of_freedom(m) == -3
+    m.fs.product.properties[0].display()
+    assert degrees_of_freedom(m) == -5
     assert degrees_of_freedom(m.fs.product) == 0
 
 
@@ -146,13 +150,9 @@ def test_network_propagation_with_normal_port_destination(build_test_model):
     # Connect the two PortContainers
     m.fs.outlet_port_container.connect_to(m.fs.product.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
-    # Set pH on feed unit
-    m.fs.feed.ph.fix(8.5)
-    m.fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1000)
-    m.fs.feed.flow_mass_phase_comp[0, "Liq", "TDS"].fix(10)
-    # Propagate values through the network
-    m.fs.outlet_port_container.connection.propagate()
 
+    m.fs.outlet_port_container.connection.propagate()
+    assert degrees_of_freedom(m) == 0
     assert pytest.approx(m.fs.product.ph.value, rel=1e-5) == 7
     assert (
         pytest.approx(
