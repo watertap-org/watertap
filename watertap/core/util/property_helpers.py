@@ -12,10 +12,11 @@
 
 import pandas as pd
 
+
 def print_property_metadata(prop_pkg, return_df=False):
     """
     Print all supported properties from a WaterTAP/IDAES property package.
-    
+
     Args:
         prop_pkg: The property model ParameterBlock (e.g., m.fs.properties)
         return_df: If True, returns a Pandas DataFrame instead of printing.
@@ -29,11 +30,9 @@ def print_property_metadata(prop_pkg, return_df=False):
         docs.append(v._doc)
 
     if return_df:
-        return pd.DataFrame({
-            "Property Description": docs,
-            "Model Attribute": vars,
-            "Units": units
-        })
+        return pd.DataFrame(
+            {"Property Description": docs, "Model Attribute": vars, "Units": units}
+        )
 
     # Pretty-print
     name_col = "Model Attribute"

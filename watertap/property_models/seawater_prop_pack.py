@@ -64,6 +64,7 @@ import idaes.core.util.scaling as iscale
 from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
 from watertap.core.util.property_helpers import print_property_metadata
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -776,7 +777,9 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "osm_coeff": {"method": "_osm_coeff"},
                 "enth_flow": {"method": "_enth_flow"},
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
-                "boiling_point_elevation_phase": {"method": "_boiling_point_elevation_phase"},
+                "boiling_point_elevation_phase": {
+                    "method": "_boiling_point_elevation_phase"
+                },
             }
         )
 
@@ -1796,6 +1799,7 @@ class SeawaterStateBlockData(StateBlockData):
         # transforming constraints
         transform_property_constraints(self)
 
+
 class SeawaterPropertySet(PropertySetBase):
     """
     This object defines all the standard properties supported by IDAES, and also allows for
@@ -1848,22 +1852,22 @@ class SeawaterPropertySet(PropertySetBase):
         doc="Mole fraction",
         units=pyunits.dimensionless,
     )
-    molality= PropertyMetadata(
+    molality = PropertyMetadata(
         name="molality",
         doc="Molality",
         units=pyunits.mole / pyunits.kg,
     )
-    visc_d= PropertyMetadata(
+    visc_d = PropertyMetadata(
         name="visc_d_phase",
         doc="Dynamic viscosity",
         units=pyunits.Pa * pyunits.s,
     )
-    pressure_osm= PropertyMetadata(
+    pressure_osm = PropertyMetadata(
         name="pressure_osm",
         doc="Osmotic pressure",
         units=pyunits.Pa,
     )
-    enth_mass= PropertyMetadata(
+    enth_mass = PropertyMetadata(
         name="enth_mass",
         doc="Specific enthalpy",
         units=pyunits.J * pyunits.kg**-1,
@@ -1902,7 +1906,7 @@ class SeawaterPropertySet(PropertySetBase):
     enth_flow = PropertyMetadata(
         name="enth_flow",
         doc="Enthalpy flow",
-        units=pyunits.J/pyunits.s,
+        units=pyunits.J / pyunits.s,
     )
     dh_vap_mass = PropertyMetadata(
         name="dh_vap_mass",

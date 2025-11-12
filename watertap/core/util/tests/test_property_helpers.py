@@ -14,12 +14,14 @@ import pytest
 import pandas as pd
 from watertap.core.util.property_helpers import print_property_metadata
 
+
 # Dummy classes to mimic WaterTAP metadata structure
 class DummyProp:
     def __init__(self, name, units, doc):
         self._name = name
         self._units = units
         self._doc = doc
+
 
 class DummyMetadata:
     def __init__(self):
@@ -28,9 +30,11 @@ class DummyMetadata:
             DummyProp("temperature", "K", "Stream temperature"),
         ]
 
+
 class DummyPropPkg:
     def get_metadata(self):
         return DummyMetadata()
+
 
 def test_print_property_metadata_dataframe():
     pkg = DummyPropPkg()
@@ -47,6 +51,7 @@ def test_print_property_metadata_dataframe():
     assert "flow_mass" in df["Model Attribute"].values
     assert "temperature" in df["Model Attribute"].values
     assert "kg/s" in df["Units"].values
+
 
 def test_print_property_metadata_pretty_print(capsys):
     pkg = DummyPropPkg()
