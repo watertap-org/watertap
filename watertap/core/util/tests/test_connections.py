@@ -32,6 +32,8 @@ from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 
 import pytest
 
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 
 @pytest.fixture
 def build_test_model():
@@ -134,6 +136,9 @@ def test_network_propagation(build_test_model):
         )
         == 10
     )
+    m.fs.inlet_port_container.fix()
+    assert degrees_of_freedom(m) == -3
+    assert degrees_of_freedom(m.fs.product) == 0
 
 
 def test_network_propagation_with_normal_port_destination(build_test_model):
