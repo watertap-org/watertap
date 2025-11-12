@@ -63,7 +63,7 @@ import idaes.core.util.scaling as iscale
 # Import WaterTAP libraries
 from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
-
+from watertap.core.util.property_helpers import print_property_metadata
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -735,6 +735,18 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dh_vap_mass", 1e-6)
         self.set_default_scaling("diffus_phase_comp", 1e9)
         self.set_default_scaling("boiling_point_elevation_phase", 1e0, index="Liq")
+
+    def list_properties(self, return_df=False):
+        """
+        Print seawater property package metadata.
+        """
+        print_property_metadata(self)
+
+    def list_properties_in_dataframe(self):
+        """
+        Return seawater property package metadata as a pandas DataFrame.
+        """
+        return print_property_metadata(self, return_df=True)
 
     @classmethod
     def define_metadata(cls, obj):

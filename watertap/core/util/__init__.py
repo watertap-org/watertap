@@ -15,3 +15,4 @@ from .initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
+from .property_helpers import print_property_metadata
