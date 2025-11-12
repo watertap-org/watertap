@@ -24,43 +24,49 @@ from idaes.core.util.units_of_measurement import report_quantity
 def build_report_table(
     unit_name, data_dict, ostream=None, prefix="", use_default_units=False
 ):
-    """Builds a report table for the unit model
-    Developer should define a data dict as follows:
-        data_dict = {
-            "Composition": {},
-            "Physical state": {},
-        }
-        for phase, ion in self.feed.properties[0].conc_mass_phase_comp:
-            data_dict["Composition"][ion] = self.feed.properties[
-                0
-            ].conc_mass_phase_comp[phase, ion]
-        data_dict["Physical state"]["pH"] = self.feed.pH
-        data_dict["Physical state"]["Temperature"] = self.feed.properties[
-            0
-        ].temperature
-        data_dict["Physical state"]["Pressure"] = self.feed.properties[0].pressure
+    """Builds a report table for the unit model using supplied unit name and data dict
+    that contains variables to display
 
-    ------------------------------------------------------------------------------------
-        fs.feed state
-
-        Composition:
-        Key    : Value     : Units                 : Fixed : Bounds
-         Ca_2+ :   0.25800 : kilogram / meter ** 3 :  True : (0, 2000.0)
-          Cl_- :   0.87000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-           H2O :    996.64 : kilogram / meter ** 3 : False : (0, 2000.0)
-        HCO3_- :   0.38500 : kilogram / meter ** 3 :  True : (0, 2000.0)
-           K_+ : 0.0090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-         Mg_2+ :  0.090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-          Na_+ :   0.73900 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        SO4_2- :    1.0110 : kilogram / meter ** 3 :  True : (0, 2000.0)
-
-        Physical state:
-        Key         : Value      : Units         : Fixed : Bounds
-           Pressure : 1.0000e+05 :        pascal :  True : (100000.0, None)
-        Temperature :     293.15 :        kelvin :  True : (273.15, 373.15)
-                 pH :     7.0700 : dimensionless :  True : (None, None)
-
-    ------------------------------------------------------------------------------------
+    # Example implementation:
+    #
+    # model_state = {
+    #     "Composition": {},
+    #     "Physical state": {},
+    # }
+    # for phase, ion in self.feed.properties[0].conc_mass_phase_comp:
+    #     model_state["Composition"][ion] = self.feed.properties[
+    #         0
+    #     ].conc_mass_phase_comp[phase, ion]
+    # model_state["Physical state"]["pH"] = self.feed.pH
+    # model_state["Physical state"]["Temperature"] = self.feed.properties[
+    #     0
+    # ].temperature
+    # model_state["Physical state"]["Pressure"] = self.feed.properties[0].pressure
+    #
+    #
+    #Output should look like:
+    #
+    # ------------------------------------------------------------------------------------
+    #     fs.feed state
+    #
+    #     Composition:
+    #     Key    : Value     : Units                 : Fixed : Bounds
+    #      Ca_2+ :   0.25800 : kilogram / meter ** 3 :  True : (0, 2000.0)
+    #       Cl_- :   0.87000 : kilogram / meter ** 3 :  True : (0, 2000.0)
+    #        H2O :    996.64 : kilogram / meter ** 3 : False : (0, 2000.0)
+    #     HCO3_- :   0.38500 : kilogram / meter ** 3 :  True : (0, 2000.0)
+    #        K_+ : 0.0090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
+    #      Mg_2+ :  0.090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
+    #       Na_+ :   0.73900 : kilogram / meter ** 3 :  True : (0, 2000.0)
+    #     SO4_2- :    1.0110 : kilogram / meter ** 3 :  True : (0, 2000.0)
+    #
+    #     Physical state:
+    #     Key         : Value      : Units         : Fixed : Bounds
+    #        Pressure : 1.0000e+05 :        pascal :  True : (100000.0, None)
+    #     Temperature :     293.15 :        kelvin :  True : (273.15, 373.15)
+    #              pH :     7.0700 : dimensionless :  True : (None, None)
+    #
+    # ------------------------------------------------------------------------------------
 
     Args:
         unit_name: Name of the unit

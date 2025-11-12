@@ -115,50 +115,51 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
         return self.name
 
     def get_model_state_dict(self):
-        """Developer should define model_vars dict that includes
-                a list of varaibles that should be displayed
-                example:
+        """
+        Developer should over write this function so it generates a dict of model
+        variables to display.
 
-                def get_model_state_dict(self):
-                    model_state = {
-                        "Composition": {},
-                        "Physical state": {},
-                    }
-                    for phase, ion in self.feed.properties[0].conc_mass_phase_comp:
-                        model_state["Composition"][ion] = self.feed.properties[
-                            0
-                        ].conc_mass_phase_comp[phase, ion]
-                    model_state["Physical state"]["pH"] = self.feed.pH
-                    model_state["Physical state"]["Temperature"] = self.feed.properties[
-                        0
-                    ].temperature
-                    model_state["Physical state"]["Pressure"] = self.feed.properties[0].pressure
-
-                    return model_state
-
-                Output should look like:
-
-        ------------------------------------------------------------------------------------
-            fs.feed state
-
-            Composition:
-            Key    : Value     : Units                 : Fixed : Bounds
-             Ca_2+ :   0.25800 : kilogram / meter ** 3 :  True : (0, 2000.0)
-              Cl_- :   0.87000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-               H2O :    996.64 : kilogram / meter ** 3 : False : (0, 2000.0)
-            HCO3_- :   0.38500 : kilogram / meter ** 3 :  True : (0, 2000.0)
-               K_+ : 0.0090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-             Mg_2+ :  0.090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-              Na_+ :   0.73900 : kilogram / meter ** 3 :  True : (0, 2000.0)
-            SO4_2- :    1.0110 : kilogram / meter ** 3 :  True : (0, 2000.0)
-
-            Physical state:
-            Key         : Value      : Units         : Fixed : Bounds
-               Pressure : 1.0000e+05 :        pascal :  True : (100000.0, None)
-            Temperature :     293.15 :        kelvin :  True : (273.15, 373.15)
-                     pH :     7.0700 : dimensionless :  True : (None, None)
-
-        ------------------------------------------------------------------------------------
+        # Example implementation:
+        # def get_model_state_dict(self):
+        #     model_state = {
+        #         "Composition": {},
+        #         "Physical state": {},
+        #     }
+        #     for phase, ion in self.feed.properties[0].conc_mass_phase_comp:
+        #         model_state["Composition"][ion] = self.feed.properties[
+        #             0
+        #         ].conc_mass_phase_comp[phase, ion]
+        #     model_state["Physical state"]["pH"] = self.feed.pH
+        #     model_state["Physical state"]["Temperature"] = self.feed.properties[
+        #         0
+        #     ].temperature
+        #     model_state["Physical state"]["Pressure"] = self.feed.properties[0].pressure
+        #
+        #     return model_state
+        #
+        #Output should look like:
+        #
+        # ------------------------------------------------------------------------------------
+        #     fs.feed state
+        #
+        #     Composition:
+        #     Key    : Value     : Units                 : Fixed : Bounds
+        #      Ca_2+ :   0.25800 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #       Cl_- :   0.87000 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #        H2O :    996.64 : kilogram / meter ** 3 : False : (0, 2000.0)
+        #     HCO3_- :   0.38500 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #        K_+ : 0.0090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #      Mg_2+ :  0.090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #       Na_+ :   0.73900 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #     SO4_2- :    1.0110 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #
+        #     Physical state:
+        #     Key         : Value      : Units         : Fixed : Bounds
+        #        Pressure : 1.0000e+05 :        pascal :  True : (100000.0, None)
+        #     Temperature :     293.15 :        kelvin :  True : (273.15, 373.15)
+        #              pH :     7.0700 : dimensionless :  True : (None, None)
+        #
+        # ------------------------------------------------------------------------------------
         """
         return None, None
 
