@@ -71,11 +71,11 @@ __all__ = [
 
 solver = get_solver()
 
-# Get filepath for surrogate model
-filepath = os.path.dirname(os.path.abspath(__file__))
-surrogate_filename = os.path.join(
-    filepath, "data/flushing_surrogate_multiple_tau_n_2.json"
-)
+# # Get filepath for surrogate model
+# filepath = os.path.dirname(os.path.abspath(__file__))
+# surrogate_filename = os.path.join(
+#     filepath, "data/flushing_surrogate_multiple_tau_n_2.json"
+# )
 
 op_dict_default = dict(
     n_time_points=11,
@@ -221,7 +221,7 @@ def build_system(time_blk=None, configuration=None):
             source=m.fs.dead_volume.outlet, destination=m.fs.P2.inlet
         )
 
-        m.fs.flushing = FlushingSurrogate(surrogate_model_file=surrogate_filename)
+        m.fs.flushing = FlushingSurrogate()  # surrogate_model_file=surrogate_filename)
 
         TransformationFactory("network.expand_arcs").apply_to(m)
 
