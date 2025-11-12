@@ -144,15 +144,8 @@ class WaterTapFlowsheetBlockData(FlowsheetBlockData):
         #
         #     Composition:
         #     Key    : Value     : Units                 : Fixed : Bounds
-        #      Ca_2+ :   0.25800 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        #       Cl_- :   0.87000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        #        H2O :    996.64 : kilogram / meter ** 3 : False : (0, 2000.0)
-        #     HCO3_- :   0.38500 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        #        K_+ : 0.0090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        #      Mg_2+ :  0.090000 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        #       Na_+ :   0.73900 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        #     SO4_2- :    1.0110 : kilogram / meter ** 3 :  True : (0, 2000.0)
-        #
+        #       IONA :   0.25800 : kilogram / meter ** 3 :  True : (0, 2000.0)
+        #       IONB :   0.87000 : kilogram / meter ** 3 :  True : (0, 2000.0)
         #     Physical state:
         #     Key         : Value      : Units         : Fixed : Bounds
         #        Pressure : 1.0000e+05 :        pascal :  True : (100000.0, None)
