@@ -12,6 +12,9 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
+import re
+import pandas as pd
+from pandas.testing import assert_frame_equal
 import watertap.property_models.seawater_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
@@ -343,36 +346,49 @@ def test_list_properties(capsys):
     m.fs.props = props.SeawaterParameterBlock()
 
     # clear any existing captured output, call list_properties, then capture its output
-    capsys.readouterr()
-    m.fs.props.list_properties()
-    captured = capsys.readouterr().out
-    expected_output = """
-Property Description                 Model Attribute                Units          
------------------------------------------------------------------------------------
-Boiling point elevation temperature  boiling_point_elevation_phase  K              
-Mass concentration                   conc_mass_phase_comp           kg*m**(-3)     
-Specific heat capacity               cp_mass_phase                  J/(kg*K)       
-Mass density of solution             dens_mass_phase                kg*m**(-3)     
-Mass density of pure water           dens_mass_solvent              kg*m**(-3)     
-Latent heat of vaporization          dh_vap_mass                    J*kg**(-1)     
-Diffusivity                          diffus_phase_comp              m**2/s         
-Enthalpy flow                        enth_flow                      J/s            
-Specific enthalpy                    enth_mass_phase                J*kg**(-1)     
-Mass flow rate                       flow_mass_phase_comp           kg/s           
-Molar flowrate                       flow_mol_phase_comp            mol/s          
-Total volumetric flow rate           flow_vol                       m**3/s         
-Volumetric flow rate of phase        flow_vol_phase                 m**3/s         
-Mass fraction                        mass_frac_phase_comp           dimensionless  
-Molality                             molality_phase_comp            mol/kg         
-Mole fraction                        mole_frac_phase_comp           dimensionless  
-Osmotic coefficient                  osm_coeff                      dimensionless  
-Pressure                             pressure                       Pa             
-Osmotic pressure                     pressure_osm_phase             Pa             
-Vapor pressure                       pressure_sat                   Pa             
-Temperature                          temperature                    K              
-Thermal conductivity                 therm_cond_phase               W/(m*K)        
-Dynamic viscosity                    visc_d_phase                   Pa*s          
-"""
+    # capsys.readouterr()
+    df = m.fs.props.list_properties()
+    # captured = capsys.readouterr().out
 
-    # Strip trailing spaces/newlines for comparison
-    assert captured.strip() == expected_output.strip()
+    # # Build DataFrame from captured table by splitting on two or more spaces
+    # lines = [ln for ln in captured.splitlines() if ln.strip() != ""]
+    # print(lines)
+    # # find header line
+    # header_idx = 0
+    # header_cols = re.split(r"\s{2,}", lines[header_idx+1].strip())
+    # data_lines = lines[header_idx + 2 :]  # skip header and separator line
+    # rows = [re.split(r"\s{2,}", ln.strip()) for ln in data_lines]
+
+    # df = pd.DataFrame(rows, columns=header_cols)
+
+    # Expected dataframe rows (as parsed into columns)
+    expected_cols = ["Description", "Name", "Units"]
+    expected_rows = [
+        ["Boiling point elevation temperature", "boiling_point_elevation_phase", "K"],
+        ["Mass concentration", "conc_mass_phase_comp", "kg*m**(-3)"],
+        ["Specific heat capacity", "cp_mass_phase", "J/(kg*K)"],
+        ["Mass density of solution", "dens_mass_phase", "kg*m**(-3)"],
+        ["Mass density of pure water", "dens_mass_solvent", "kg*m**(-3)"],
+        ["Latent heat of vaporization", "dh_vap_mass", "J*kg**(-1)"],
+        ["Diffusivity", "diffus_phase_comp", "m**2/s"],
+        ["Enthalpy flow", "enth_flow", "J/s"],
+        ["Specific enthalpy", "enth_mass_phase", "J*kg**(-1)"],
+        ["Mass flow rate", "flow_mass_phase_comp", "kg/s"],
+        ["Molar flowrate", "flow_mol_phase_comp", "mol/s"],
+        ["Total volumetric flow rate", "flow_vol", "m**3/s"],
+        ["Volumetric flow rate of phase", "flow_vol_phase", "m**3/s"],
+        ["Mass fraction", "mass_frac_phase_comp", "dimensionless"],
+        ["Molality", "molality_phase_comp", "mol/kg"],
+        ["Mole fraction", "mole_frac_phase_comp", "dimensionless"],
+        ["Osmotic coefficient", "osm_coeff", "dimensionless"],
+        ["Pressure", "pressure", "Pa"],
+        ["Osmotic pressure", "pressure_osm_phase", "Pa"],
+        ["Vapor pressure", "pressure_sat", "Pa"],
+        ["Temperature", "temperature", "K"],
+        ["Thermal conductivity", "therm_cond_phase", "W/(m*K)"],
+        ["Dynamic viscosity", "visc_d_phase", "Pa*s"],
+    ]
+    expected_df = pd.DataFrame(expected_rows, columns=expected_cols)
+
+    # Compare dataframes
+    assert_frame_equal(df.reset_index(drop=True), expected_df.reset_index(drop=True))

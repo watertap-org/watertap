@@ -12,7 +12,10 @@
 
 import pytest
 import pandas as pd
-from watertap.core.util.property_helpers import print_property_metadata
+from idaes.core.base.property_base import (
+    PhysicalParameterBlock as DummyPhysicalParameterBlock,
+)
+from watertap.core.util.property_helpers import get_property_metadata
 
 
 # Dummy classes to mimic WaterTAP metadata structure
@@ -31,34 +34,27 @@ class DummyMetadata:
         ]
 
 
-class DummyPropPkg:
+class DummyPropPkg(DummyPhysicalParameterBlock):
+    def __init__(self):
+        self.component = ["dummy_component"]
+
     def get_metadata(self):
         return DummyMetadata()
 
 
 @pytest.mark.unit
-def test_print_property_metadata_dataframe():
+def test_get_property_metadata():
     pkg = DummyPropPkg()
-    df = print_property_metadata(pkg, return_df=True)
+    df = get_property_metadata(pkg)
 
     # Check type
     assert isinstance(df, pd.DataFrame)
 
     # Check columns
-    expected_cols = ["Property Description", "Model Attribute", "Units"]
+    expected_cols = ["Description", "Name", "Units"]
     assert list(df.columns) == expected_cols
 
     # Check content
-    assert "flow_mass" in df["Model Attribute"].values
-    assert "temperature" in df["Model Attribute"].values
+    assert "flow_mass" in df["Name"].values
+    assert "temperature" in df["Name"].values
     assert "kg/s" in df["Units"].values
-
-
-def test_print_property_metadata_pretty_print(capsys):
-    pkg = DummyPropPkg()
-    print_property_metadata(pkg, return_df=False)
-
-    # Capture printed output
-    captured = capsys.readouterr()
-    assert "Property Description" in captured.out
-    assert "flow_mass" in captured.out
