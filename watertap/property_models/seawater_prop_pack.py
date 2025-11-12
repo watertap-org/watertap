@@ -1805,8 +1805,8 @@ class SeawaterPropertySet(PropertySetBase):
     This object defines properties within the seawater property model.
     """
 
-    flow_mass = PropertyMetadata(
-        name="flow_mass",
+    flow_mass_phase_comp = PropertyMetadata(
+        name="flow_mass_phase_comp",
         doc="Mass flow rate",
         units=pyunits.kg / pyunits.s,
     )
@@ -1820,13 +1820,13 @@ class SeawaterPropertySet(PropertySetBase):
         doc="Pressure",
         units=pyunits.Pa,
     )
-    mass_frac = PropertyMetadata(
+    mass_frac_phase_comp = PropertyMetadata(
         name="mass_frac",
         doc="Mass fraction",
         units=pyunits.dimensionless,
     )
-    dens_mass = PropertyMetadata(
-        name="dens_mass",
+    dens_mass_phase = PropertyMetadata(
+        name="dens_mass_phase",
         doc="Mass density of solution",
         units=pyunits.kg * pyunits.m**-3,
     )
@@ -1836,8 +1836,13 @@ class SeawaterPropertySet(PropertySetBase):
         doc="Total volumetric flow rate",
         units=pyunits.m**3 / pyunits.s,
     )
-    conc_mass = PropertyMetadata(
-        name="conc_mass",
+    flow_vol_phase = PropertyMetadata(
+        name="flow_vol_phase",
+        doc="Volumetric flow rate of phase",
+        units=pyunits.m**3 / pyunits.s,
+    )
+    conc_mass_phase_comp = PropertyMetadata(
+        name="conc_mass_phase_como",
         doc="Mass concentration",
         units=pyunits.kg * pyunits.m**-3,
     )
@@ -1846,28 +1851,28 @@ class SeawaterPropertySet(PropertySetBase):
         doc="Molar flowrate",
         units=pyunits.mol / pyunits.s,
     )
-    mole_frac = PropertyMetadata(
-        name="mole_frac",
+    mole_frac_phase_comp = PropertyMetadata(
+        name="mole_frac_phase_comp",
         doc="Mole fraction",
         units=pyunits.dimensionless,
     )
-    molality = PropertyMetadata(
-        name="molality",
+    molality_phase_comp = PropertyMetadata(
+        name="molality_phase_comp",
         doc="Molality",
         units=pyunits.mole / pyunits.kg,
     )
-    visc_d = PropertyMetadata(
+    visc_d_phase = PropertyMetadata(
         name="visc_d_phase",
         doc="Dynamic viscosity",
         units=pyunits.Pa * pyunits.s,
     )
-    pressure_osm = PropertyMetadata(
-        name="pressure_osm",
+    pressure_osm_phase = PropertyMetadata(
+        name="pressure_osm_phase",
         doc="Osmotic pressure",
         units=pyunits.Pa,
     )
-    enth_mass = PropertyMetadata(
-        name="enth_mass",
+    enth_mass_phase = PropertyMetadata(
+        name="enth_mass_phase",
         doc="Specific enthalpy",
         units=pyunits.J * pyunits.kg**-1,
     )
@@ -1876,18 +1881,18 @@ class SeawaterPropertySet(PropertySetBase):
         doc="Vapor pressure",
         units=pyunits.Pa,
     )
-    cp_mass = PropertyMetadata(
+    cp_mass_phase = PropertyMetadata(
         name="cp_mass",
         doc="Specific heat capacity",
         units=pyunits.J / (pyunits.kg * pyunits.K),
     )
-    therm_cond = PropertyMetadata(
-        name="therm_cond",
+    therm_cond_phase = PropertyMetadata(
+        name="therm_cond_phase",
         doc="Thermal conductivity",
         units=pyunits.W / (pyunits.m * pyunits.K),
     )
-    diffus = PropertyMetadata(
-        name="diffus",
+    diffus_phase_comp = PropertyMetadata(
+        name="diffus_phase_comp",
         doc="Diffusivity",
         units=pyunits.m**2 / pyunits.s,
     )
@@ -1912,8 +1917,8 @@ class SeawaterPropertySet(PropertySetBase):
         doc="Latent heat of vaporization",
         units=pyunits.J * pyunits.kg**-1,
     )
-    boiling_point_elevation = PropertyMetadata(
-        name="boiling_point_elevation",
+    boiling_point_elevation_phase = PropertyMetadata(
+        name="boiling_point_elevation_phase",
         doc="Boiling point elevation temperature",
         units=pyunits.K,
     )

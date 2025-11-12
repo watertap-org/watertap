@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
+from pyomo.environ import ConcreteModel
+from idaes.core import FlowsheetBlock
 import watertap.property_models.seawater_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
@@ -332,3 +334,45 @@ class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1239.69,
             ("enth_mass_phase", "Liq"): 3.8562e5,
         }
+
+
+@pytest.mark.unit
+def test_list_properties(capsys):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.props = props.SeawaterParameterBlock()
+
+    # clear any existing captured output, call list_properties, then capture its output
+    capsys.readouterr()
+    m.fs.props.list_properties()
+    captured = capsys.readouterr().out
+    expected_output = """
+Property Description                 Model Attribute                Units          
+-----------------------------------------------------------------------------------
+Boiling point elevation temperature  boiling_point_elevation_phase  K              
+Mass concentration                   conc_mass_phase_comp           kg*m**(-3)     
+Specific heat capacity               cp_mass_phase                  J/(kg*K)       
+Mass density of solution             dens_mass_phase                kg*m**(-3)     
+Mass density of pure water           dens_mass_solvent              kg*m**(-3)     
+Latent heat of vaporization          dh_vap_mass                    J*kg**(-1)     
+Diffusivity                          diffus_phase_comp              m**2/s         
+Enthalpy flow                        enth_flow                      J/s            
+Specific enthalpy                    enth_mass_phase                J*kg**(-1)     
+Mass flow rate                       flow_mass_phase_comp           kg/s           
+Molar flowrate                       flow_mol_phase_comp            mol/s          
+Total volumetric flow rate           flow_vol                       m**3/s         
+Volumetric flow rate of phase        flow_vol_phase                 m**3/s         
+Mass fraction                        mass_frac_phase_comp           dimensionless  
+Molality                             molality_phase_comp            mol/kg         
+Mole fraction                        mole_frac_phase_comp           dimensionless  
+Osmotic coefficient                  osm_coeff                      dimensionless  
+Pressure                             pressure                       Pa             
+Osmotic pressure                     pressure_osm_phase             Pa             
+Vapor pressure                       pressure_sat                   Pa             
+Temperature                          temperature                    K              
+Thermal conductivity                 therm_cond_phase               W/(m*K)        
+Dynamic viscosity                    visc_d_phase                   Pa*s          
+"""
+
+    # Strip trailing spaces/newlines for comparison
+    assert captured.strip() == expected_output.strip()

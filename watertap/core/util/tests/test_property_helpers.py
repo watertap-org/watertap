@@ -36,6 +36,7 @@ class DummyPropPkg:
         return DummyMetadata()
 
 
+@pytest.mark.unit
 def test_print_property_metadata_dataframe():
     pkg = DummyPropPkg()
     df = print_property_metadata(pkg, return_df=True)
