@@ -332,7 +332,9 @@ def set_operating_conditions(m, op_dict=None, **kwargs):
         # m.fs.flushing.flushing_efficiency.fix(0.5)
 
         # Surrogate parameters
-        m.fs.flushing.mean_residence_time.fix(op_dict["dead_volume"]/op_dict["flushing_flowrate"])
+        m.fs.flushing.mean_residence_time.fix(pyunits.convert(op_dict["dead_volume"]/op_dict["flushing_flowrate"], to_units=pyunits.s))
+
+        # m.fs.flushing.mean_residence_time_constr = Constraint(expr=pyunits.convert(m.fs.dead_volume.delta_state.volume[0, "Liq"] / op_dict["flushing_flowrate"], to_units=pyunits.s) == m.fs.flushing.mean_residence_time)
         # m.fs.flushing.number_tanks_in_series.set_value(3)
         # m.fs.flushing.accumulator_volume.set_value(dead_volume)
         # m.fs.flushing.flushing_flow_rate.set_value(flushing_flowrate)
@@ -496,7 +498,7 @@ def config_op_dict(op_dict):
     return op_dict2
 
 
-def print_results_table(mp, w=20):
+def print_results_table(mp, w=15):
     """
     Print multiperiod CCRO results in a tabular format in the terminal.
     w = column width
@@ -512,25 +514,36 @@ def print_results_table(mp, w=20):
 
     # Header
     print(
-        f"{'Period':<{w}s}{'Acc Time':<{w}s}{'Raw Feed':<{w}s}{'Permeate':<{w}s}{'SP Recovery':<{w}s}{'Mixer 1':<{w}s}{'Mixer 1':<{w}s}{'Mixer 1':<{w}s}{'Dead Vol':<{w}s}{'Dead Vol':<{w}s}{'Dead Vol':<{w}s}{'Dead Vol':<{w}s}"
+        f"{'Period':<{w}s}{'Acc Time':<{w}s}{'Raw Feed':<{w}s}{'Permeate':<{w}s}{'SP Recovery':<{w}s}{'Mixer 1':<{w}s}{'Mixer 1':<{w}s}{'Mixer 1':<{w}s}{'Dead Vol':<{w}s}{'Dead Vol':<{w}s}{'Delta State':<{w}s}{'Dead Vol':<{w}s}"
     )
     print(
-        f"{'':<{w}s}{'(s)':<{w}s}{'Flow (L/min)':<{w}s}{'Flow (L/min)':<{w}s}{'(%)':<{w}s}{'Flow Out (L/min)':<{w}s}{'Pressure Out (Pa)':<{w}s}{'Pressure Out (psi)':<{w}s}{'Flow In (L/min)':<{w}s}{'Conc In (kg/m³)':<{w}s}{'Flow Out (L/min)':<{w}s}{'Conc Out (kg/m³)':<{w}s}"
+        f"{'':<{w}s}{'(s)':<{w}s}{'Flow (L/min)':<{w}s}{'Flow (L/min)':<{w}s}{'(%)':<{w}s}{'Flow Out (L/min)':<{w}s}{'Pressure Out (Pa)':<{w}s}{'Pressure Out (psi)':<{w}s}{'Flow In (L/min)':<{w}s}{'Conc In (kg/m³)':<{w}s}{'Conc (kg/m³)':<{w}s}{'Conc Out (kg/m³)':<{w}s}"
     )
     print(f"{'-' * (n * w)}")
 
     # Data rows
-    for t, blks in enumerate(mp.get_active_process_blocks()):
-        accumulation_time = blks.fs.dead_volume.accumulation_time[0].value
-        raw_feed = blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"].value
+    for t, blks in enumerate(mp.get_active_process_blocks(), 1):
+        # if t == len(blks):
+        if blks.fs.configuration == "flushing":
+            # blks.fs.raw_feed.properties[0].conc_mass_phase_comp.display()
+            accumulation_time = blks.fs.flushing.flushing_time.value
+        else:
+            accumulation_time = blks.fs.dead_volume.accumulation_time[0].value
+        raw_feed = pyunits.convert(blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"], to_units=pyunits.L / pyunits.min)()
         if blks.fs.find_component("product") is not None:
-            permeate = blks.fs.product.properties[0].flow_vol_phase["Liq"].value
+            permeate = pyunits.convert(blks.fs.product.properties[0].flow_vol_phase["Liq"], to_units=pyunits.L / pyunits.min)()
         else:
             permeate = 0
-        try:
+        if blks.fs.configuration == "filtration":
+            # mixer_out = value(
+            #     pyunits.convert(
+            #         blks.fs.M1.mixed_state[0].flow_vol_phase["Liq"],
+            #         to_units=pyunits.L / pyunits.min,
+            #     )
+            # )
             mixer_out = value(
                 pyunits.convert(
-                    blks.fs.M1.mixed_state[0].flow_vol_phase["Liq"],
+                    blks.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"],
                     to_units=pyunits.L / pyunits.min,
                 )
             )
@@ -542,7 +555,7 @@ def print_results_table(mp, w=20):
             )
             sp_recovery = blks.fs.RO.recovery_vol_phase[0.0, "Liq"].value
 
-        except AttributeError:
+        if blks.fs.configuration == "flushing":
             mixer_out = value(
                 pyunits.convert(
                     blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
@@ -553,19 +566,20 @@ def print_results_table(mp, w=20):
             ro_pressure = 0
 
         dead_vol_in = (
-            blks.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase["Liq"].value
+            pyunits.convert(blks.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase["Liq"], to_units=pyunits.L / pyunits.min)()
         )
         dead_vol_in_conc = (
             blks.fs.dead_volume.dead_volume.properties_in[0]
             .conc_mass_phase_comp["Liq", "NaCl"]
             .value
         )
-        dead_vol_out = value(
-            pyunits.convert(
-                blks.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase["Liq"],
-                to_units=pyunits.L / pyunits.min,
-            )
-        )
+        # dead_vol_out = value(
+        #     pyunits.convert(
+        #         blks.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase["Liq"],
+        #         to_units=pyunits.L / pyunits.min,
+        #     )
+        # )
+        delta_state_conc = blks.fs.dead_volume.delta_state.conc_mass_phase_comp["Liq", "NaCl"]()
         dead_vol_out_conc = (
             blks.fs.dead_volume.dead_volume.properties_out[0]
             .conc_mass_phase_comp["Liq", "NaCl"]
@@ -573,11 +587,12 @@ def print_results_table(mp, w=20):
         )
 
         print(
-            f"{t:<{w}d}{accumulation_time:<{w}.2f}{raw_feed:<{w}.6f}{permeate:<{w}.6f}{sp_recovery:<{w}.6f}{mixer_out:<{w}.6f}{ro_pressure:<{w}.2f}{ro_pressure_psi:<{w}.2f}{dead_vol_in:<{w}.6f}{dead_vol_in_conc:<{w}.6f}{dead_vol_out:<{w}.6f}{dead_vol_out_conc:<{w}.6f}"
+            f"{t:<{w}d}{accumulation_time:<{w}.2f}{raw_feed:<{w}.6f}{permeate:<{w}.6f}{sp_recovery:<{w}.6f}{mixer_out:<{w}.6f}{ro_pressure:<{w}.2f}{ro_pressure_psi:<{w}.2f}{dead_vol_in:<{w}.6f}{dead_vol_in_conc:<{w}.6f}{delta_state_conc:<{w}.6f}{dead_vol_out_conc:<{w}.6f}"
         )
 
     print(f"{'=' * (n * w)}")
     w = w * 2
+    print(f"Total cycle time = {mp.total_cycle_time.value} s")
     print(
         f"{'Flushing time:':<{w}s}",
         mp.get_active_process_blocks()[-1].fs.flushing.flushing_time.value,

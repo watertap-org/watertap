@@ -238,6 +238,16 @@ class DeadVolume0DData(InitializationMixin, UnitModelBlockData):
             units=units_meta("mass") / units_meta("volume"),
             doc="Prior density in dead volume",
         )
+        # self.delta_state.conc_mass_phase_comp = Expression(self.config.property_package.phase_list,self.config.property_package.component_list,)
+        @self.delta_state.Expression(
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+        )
+        def conc_mass_phase_comp(b, p, j):
+            return (
+                self.delta_state.mass_frac_phase_comp[0, p, j]
+                * self.delta_state.dens_mass_phase[0, p]
+            )
 
         @self.dead_volume.Constraint(
             self.flowsheet().config.time,
@@ -388,7 +398,7 @@ class DeadVolume0DData(InitializationMixin, UnitModelBlockData):
             )
         for p in self.config.property_package.phase_list:
             for c in self.config.property_package.component_list:
-                sf = 1
+                sf = 10
                 iscale.set_scaling_factor(self.dead_volume.mass_frac_phase_comp, sf)
 
                 iscale.set_scaling_factor(self.delta_state.mass_frac_phase_comp, sf)
@@ -403,6 +413,9 @@ class DeadVolume0DData(InitializationMixin, UnitModelBlockData):
                 sf = iscale.get_scaling_factor(
                     self.dead_volume.properties_in[0].flow_mass_phase_comp[p, c]
                 )
+                sf = 10
+                # print(sf)
+                # assert False
                 iscale.set_scaling_factor(self.dead_volume.mass_phase_comp[0, p, c], sf)
                 iscale.set_scaling_factor(self.delta_state.mass_phase_comp[0, p, c], sf)
                 iscale.constraint_scaling_transform(
