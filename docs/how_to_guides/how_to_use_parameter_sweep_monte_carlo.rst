@@ -1,5 +1,5 @@
-Monte Carlo testing with the Parameter Sweep
-============================================
+How to do Monte Carlo testing with the parameter sweep
+=======================================================
 
 Overview
 --------
@@ -80,10 +80,17 @@ Once the model has been setup, we specify the variables to randomly sample using
 
     def build_sweep_params(model, num_samples=1):
         sweep_params = dict()
-        sweep_params['Spacer_porosity'] = UniformSample(model.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples)
-        sweep_params['A_comp'] = NormalSample(model.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples)
-        sweep_params['B_comp'] = NormalSample(model.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples)
+        sweep_params["Spacer_porosity"] = UniformSample(
+            model.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples
+        )
+        sweep_params["A_comp"] = NormalSample(
+            model.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples
+        )
+        sweep_params["B_comp"] = NormalSample(
+            model.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples
+        )
         return sweep_params
+
 
 where the ``spacer_porosity`` attribute will be randomly selected from a uniform distribution of values in the range :math:`[0.95, 0.99]` and model values ``A_comp`` and ``B_comp`` will be drawn from normal distributions centered at :math:`4.0\times10^{-12}` and :math:`3.5\times10^{-8}` with standard deviations of :math:`12-14\%`, respectively.  For this example, we'll extract flowsheet outputs associated with cost, the levelized cost of water (LCOW) and energy consumption (EC), defined via another dictionary
 
@@ -101,14 +108,23 @@ With the generating functions defined and suitably initialized, we can call the 
 .. testcode::
 
     # Define the local results directory, num_samples, and seed (if desired)
-    debugging_data_dir = 'local_results'
+    debugging_data_dir = "local_results"
     num_samples = 25
     seed = None
 
     # Run the parameter sweep
-    global_results = parameter_sweep(build_model, build_sweep_params, build_outputs, csv_results_file_name='monte_carlo_results.csv',
-        optimize_function=RO_flowsheet.optimize, debugging_data_dir=debugging_data_dir, num_samples=num_samples, seed=seed,
-        build_sweep_params_kwargs=dict(num_samples=num_samples))
+    global_results = parameter_sweep(
+        build_model,
+        build_sweep_params,
+        build_outputs,
+        csv_results_file_name="monte_carlo_results.csv",
+        optimize_function=RO_flowsheet.optimize,
+        debugging_data_dir=debugging_data_dir,
+        num_samples=num_samples,
+        seed=seed,
+        build_sweep_params_kwargs=dict(num_samples=num_samples),
+    )
+
 
 Note that ``num_samples`` must be provided for any of the random sample classes.  For the very small problem size and simple model used here, parallel hardware is almost certainly not necessary.  However, for larger total numbers of samples or more computationally demanding models, a significant speedup may be attained on a multi-core workstation or high performance computing (HPC) cluster.  To distribute the workload between more than one worker, simply call the scipt using the ``mpirun`` command from the command line
 
