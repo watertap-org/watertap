@@ -954,7 +954,7 @@ Actual L2 Norm           || 2.740E+17 | Solved 4   || 6.491E+13 | Solved 4
 ============================================================================
 """
 
-    assert assert_solve_tolerance(stream.getvalue(), expected, tolerance = 3)
+    assert assert_solve_tolerance(stream.getvalue(), expected, tolerance=3)
 
 
 @pytest.mark.requires_idaes_solver
@@ -990,7 +990,8 @@ Actual L2 Norm           || 4.339E+09 | Solved 3   || 6.491E+13 | Solved 4
 ============================================================================
 """
 
-    assert assert_solve_tolerance(stream.getvalue(), expected, tolerance = 3)
+    assert assert_solve_tolerance(stream.getvalue(), expected, tolerance=3)
+
 
 def assert_solve_tolerance(output, expected, tolerance=0):
     output_lines = output.strip().splitlines()
@@ -1000,14 +1001,14 @@ def assert_solve_tolerance(output, expected, tolerance=0):
 
     for output_line, expected_line in zip(output_lines, expected_lines):
         # find the groups that match 'Solved <number>'
-        output_solved = re.search(r'Solved (\d+)', output_line)
-        expected_solved = re.search(r'Solved (\d+)', expected_line)
+        output_solved = re.search(r"Solved (\d+)", output_line)
+        expected_solved = re.search(r"Solved (\d+)", expected_line)
 
         if output_solved and expected_solved:
             # get the number after 'Solved'
             output_num = int(output_solved.group(1))
             expected_num = int(expected_solved.group(1))
-            
+
             # assert that the numbers after 'Solved' are within the tolerance
             assert abs(output_num - expected_num) <= tolerance, (
                 f"Solved number mismatch: output {output_num} "
@@ -1015,6 +1016,6 @@ def assert_solve_tolerance(output, expected, tolerance=0):
             )
 
         # checks if the non-numeric parts of the statemnt and the actual values are equal
-        assert re.sub(r'Solved \d+', 'Solved X', output_line) == re.sub(r'Solved \d+', 'Solved X', expected_line), (
-            f"Line mismatch: '{output_line}' vs '{expected_line}'"
-        )
+        assert re.sub(r"Solved \d+", "Solved X", output_line) == re.sub(
+            r"Solved \d+", "Solved X", expected_line
+        ), f"Line mismatch: '{output_line}' vs '{expected_line}'"
