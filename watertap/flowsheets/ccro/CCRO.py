@@ -122,6 +122,10 @@ def build_system(time_blk=None, configuration=None):
     m.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase
     m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
 
+    m.fs.dead_volume.dead_volume.properties_in[0].conc_mass_phase_comp
+    m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
+    m.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase
+
     if m.fs.configuration == "filtration":
 
         # Feed pump
@@ -203,10 +207,7 @@ def build_system(time_blk=None, configuration=None):
         m.fs.M1.inlet_2_state[0].conc_mass_phase_comp
         m.fs.M1.mixed_state[0].flow_vol_phase
         m.fs.M1.mixed_state[0].conc_mass_phase_comp
-        m.fs.dead_volume.dead_volume.properties_in[0].conc_mass_phase_comp
-        m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
-        m.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase
-
+        
     elif m.fs.configuration == "flushing":
 
         m.fs.P1 = Pump(property_package=m.fs.properties)
@@ -726,33 +727,20 @@ def setup_optimization(
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
                 recycle_flow_bounds[1] * pyunits.L / pyunits.min
             )
-        # else:
-        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].unfix()
-        #     m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
-        #         recycle_flow_bounds[0] * pyunits.L / pyunits.min
-        #     )
-        #     m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-        #         recycle_flow_bounds[1] * pyunits.L / pyunits.min
-        #     )
-        # if t != mp.n_time_points:
-        # print("unfixing P2 outlet flowrate at t =", t)
-        # if m.fs.configuration == "flushing":
-        # #     m.fs.flushing.flushing_efficiency.unfix()
-        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].unfix()
-        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setlb(
-        #         recycle_flow_bounds[0] * pyunits.L / pyunits.min
-        #     )
-        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setub(
-        #         recycle_flow_bounds[1] * pyunits.L / pyunits.min
-        #     )
-
-            # m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
-            # m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
-            #     recycle_flow_bounds[0] * pyunits.L / pyunits.min
-            # )
-            # m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-            #     recycle_flow_bounds[1] * pyunits.L / pyunits.min
-            # )
+        else:
+            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].unfix()
+            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setlb(
+                recycle_flow_bounds[0] * pyunits.L / pyunits.min
+            )
+            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setub(
+                recycle_flow_bounds[1] * pyunits.L / pyunits.min
+            )
+            m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
+                recycle_flow_bounds[0] * pyunits.L / pyunits.min
+            )
+            m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
+                recycle_flow_bounds[1] * pyunits.L / pyunits.min
+            )
 
     if mp.include_costing:
         mp.cost_objective = Objective(expr=mp.costing.LCOW)
@@ -784,10 +772,13 @@ if __name__ == "__main__":
         include_costing=True,
         flushing_efficiency=0.9,
     )
+
     op_dict = config_op_dict(op_dict)
-    mp = create_multiperiod(n_time_points=11, include_costing=True, op_dict=op_dict)
-    results = solve(mp, tee=True)
-    print_results_table(mp)
+    mp = create_multiperiod(n_time_points=21, include_costing=True, op_dict=op_dict)
+    results = solve(mp, tee=False)
+    print_results_table(mp, w=16)
+
+
     setup_optimization(
         mp,
         overall_water_recovery=0.8,
@@ -796,5 +787,5 @@ if __name__ == "__main__":
     )
 
     results = solve(mp)
-    print_results_table(mp)
+    print_results_table(mp, w=16)
     # m = build_system(configuration="flushing")
