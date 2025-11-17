@@ -1,7 +1,7 @@
 What is WaterTAP
 ------------------
 
-WaterTAP is a Python-based, open-source library of water treatment models than can be used to assess water treatment trains through simulation, optimization, and other advanced methods.
+The Water treatment Technoeconomic Assessment Platform (WaterTAP) is a Python-based, open-source library of water treatment models than can be used to assess water treatment trains through simulation, optimization, and other advanced methods.
 WaterTAP development is funded by the `National Alliance for Water Innovation (NAWI) <https://www.nawihub.org/>`_, the U.S. Department of Energy’s Energy-Water Desalination Hub.
 
 Motivation

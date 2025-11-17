@@ -58,59 +58,65 @@ Example: Python file with recommended structure
 
 .. testcode::
 
-   # Import concrete model from Pyomo
-   from pyomo.environ import ConcreteModel
-   # Import flowsheet block from IDAES core
-   from idaes.core import FlowsheetBlock
-   # Import NaCl property model
-   import watertap.property_models.NaCl_prop_pack as props
-   # Import utility tool for calculating scaling factors
-   from idaes.core.util.scaling import calculate_scaling_factors
-   # Import RO model
-   from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-   # import the solver
-   from watertap.core.solvers import get_solver
+    # Import concrete model from Pyomo
+    from pyomo.environ import ConcreteModel
+    # Import flowsheet block from IDAES core
+    from idaes.core import FlowsheetBlock
+    # Import NaCl property model
+    import watertap.property_models.NaCl_prop_pack as props
+    # Import utility tool for calculating scaling factors
+    from idaes.core.util.scaling import calculate_scaling_factors
+    # Import RO model
+    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+    # import the solver
+    from watertap.core.solvers import get_solver
 
 
-   # Put all the model constructors, initialization, and solver in a separate function
-   def main():
-       # Create a concrete model, flowsheet, and NaCl property parameter block.
-       m = ConcreteModel()
-       m.fs = FlowsheetBlock(dynamic=False)
-       m.fs.properties = props.NaClParameterBlock()
-       # Add an RO unit to the flowsheet.
-       m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
+    # Put all the model constructors, initialization, and solver in a separate function
+    def main():
+        # Create a concrete model, flowsheet, and NaCl property parameter block.
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = props.NaClParameterBlock()
+        # Add an RO unit to the flowsheet.
+        m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
-       # Specify system variables.
-       m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.035)  # mass flow rate of NaCl
-       m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.965)  # mass flow rate of water
-       m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure
-       m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature
-       m.fs.unit.area.fix(50)  # membrane area
-       m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability
-       m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability
-       m.fs.unit.permeate.pressure[0].fix(101325)  # permeate pressure
+        # Specify system variables.
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            0.035
+        )  # mass flow rate of NaCl
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            0.965
+        )  # mass flow rate of water
+        m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure
+        m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature
+        m.fs.unit.area.fix(50)  # membrane area
+        m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability
+        m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability
+        m.fs.unit.permeate.pressure[0].fix(101325)  # permeate pressure
 
-       # Set scaling factors for component mass flowrates.
-       m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-       m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        # Set scaling factors for component mass flowrates.
+        m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+        )
 
-       # Calculate scaling factors.
-       calculate_scaling_factors(m)
+        # Calculate scaling factors.
+        calculate_scaling_factors(m)
 
-       # Get default watertap solver
-       solver = get_solver()
+        # Get default watertap solver
+        solver = get_solver()
 
-       # Initialize the model passing default solver options
-       m.fs.unit.initialize(optarg=solver.options)
+        # Initialize the model passing default solver options
+        m.fs.unit.initialize(optarg=solver.options)
 
-       # Solve the model (using the tee=True option to display solver info)
-       solver.solve(m, tee=True)
+        # Solve the model (using the tee=True option to display solver info)
+        solver.solve(m, tee=True)
 
 
-   # Call that function in the "__main__" for the script
-   if __name__ == "__main__":
-       main()
+    # Call that function in the "__main__" for the script
+    if __name__ == "__main__":
+        main()
 
 Example: the same code without recommended structure (may cause errors on Windows)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -130,38 +136,39 @@ Example: the same code without recommended structure (may cause errors on Window
    # import the solver
    from watertap.core.solvers import get_solver
 
-   # Create a concrete model, flowsheet, and NaCl property parameter block.
-   m = ConcreteModel()
-   m.fs = FlowsheetBlock(dynamic=False)
-   m.fs.properties = props.NaClParameterBlock()
-   # Add an RO unit to the flowsheet.
-   m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
+    # Create a concrete model, flowsheet, and NaCl property parameter block.
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = props.NaClParameterBlock()
+    # Add an RO unit to the flowsheet.
+    m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
-   # Specify system variables.
-   m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.035)  # mass flow rate of NaCl
-   m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.965)  # mass flow rate of water
-   m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure
-   m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature
-   m.fs.unit.area.fix(50)  # membrane area
-   m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability
-   m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability
-   m.fs.unit.permeate.pressure[0].fix(101325)  # permeate pressure
+    # Specify system variables.
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        0.035
+    )  # mass flow rate of NaCl
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        0.965
+    )  # mass flow rate of water
+    m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure
+    m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature
+    m.fs.unit.area.fix(50)  # membrane area
+    m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability
+    m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability
+    m.fs.unit.permeate.pressure[0].fix(101325)  # permeate pressure
 
-   # Set scaling factors for component mass flowrates.
-   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    # Set scaling factors for component mass flowrates.
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "NaCl"))
 
-   # Calculate scaling factors.
-   calculate_scaling_factors(m)
+    # Calculate scaling factors.
+    calculate_scaling_factors(m)
 
-   # Get default watertap solver
-   solver = get_solver()
+    # Get default watertap solver
+    solver = get_solver()
 
-   # Initialize the model passing default solver options
-   m.fs.unit.initialize(optarg=solver.options)
+    # Initialize the model passing default solver options
+    m.fs.unit.initialize(optarg=solver.options)
 
-   # Solve the model (using the tee=True option to display solver info)
-   solver.solve(m, tee=True)
-
-If code other than imports and constant/function/class definitions is run in the global scope (i.e. not defined inside a function), it is likely to cause errors when run on Windows.
-See `issue #387 <https://github.com/watertap-org/watertap/issues/387>`_ for more details.
+    # Solve the model (using the tee=True option to display solver info)
+    solver.solve(m, tee=True)

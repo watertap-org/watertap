@@ -55,8 +55,8 @@ Properties
    "Boiling point elevation", ":math:`BPE`", "boiling_point_elevation_phase", "[p]", ":math:`\text{K}`"
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
-   "Molality", ":math:`Cm`", "molality_phase_comp", "['TDS']", ":math:`\text{mole/kg}`"
-   "Osmotic pressure", ":math:`\pi`", "pressure_osm_phase", "None", ":math:`\text{Pa}`"
+   "Molality", ":math:`Cm`", "molality_phase_comp", "[p,'TDS']", ":math:`\text{mole/kg}`"
+   "Osmotic pressure", ":math:`\pi`", "pressure_osm_phase", "[p]", ":math:`\text{Pa}`"
 
 **The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
 
