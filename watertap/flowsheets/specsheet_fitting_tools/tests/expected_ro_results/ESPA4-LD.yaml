@@ -1,17 +1,17 @@
 A:
-  value: 5.3576465683693945e-12
+  value: 2.7238224837903487e-11
   units: m**2*s/kg
 B:
-  value: 2.4780824989918203e-08
+  value: 7.789552207642498e-08
   units: m/s
 A (LMH/bar):
-  value: 1.928752764612981
+  value: 9.80576094164525
   units: LMH/bar
 B (LMH):
-  value: 0.0892109699637055
+  value: 0.2804238794751298
   units: LMH
 Area:
-  value: 7.9
+  value: 37.2
   units: m**2
 Length:
   value: 1.0
@@ -20,11 +20,11 @@ Porosity:
   value: 0.9
   units: dimensionless
 Channel_height:
-  value: 0.001
+  value: 0.00086
   units: m
 Rejection_NaCl:
-  value: 0.997
+  value: 0.9920000000000001
   units: dimensionless
 Recovery:
-  value: 0.08
+  value: 0.15
   units: dimensionless

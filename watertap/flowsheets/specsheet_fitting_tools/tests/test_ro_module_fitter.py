@@ -17,6 +17,8 @@ from watertap.flowsheets.specsheet_fitting_tools.ro_module_fitter import (
     fit_bw30_4040_to_spec_sheet,
     fit_sw30_4040_to_spec_sheet,
     fit_ro_module_to_spec_sheet,
+    fit_nitto_ESPA2_LD,
+    fit_nitto_ESPA4_LD,
 )
 import os
 
@@ -48,6 +50,16 @@ def validate_result(ro_module, result):
         f"{_test_file_path}/{ro_module}.yaml", remove_file=True
     )
     validate_dict(load_result, expected_data)
+
+
+def test_fit_ESPA2_LD_to_spec_sheet():
+    result = fit_nitto_ESPA2_LD(save_location=_test_file_path)
+    validate_result("ESPA2-LD", result)
+
+
+def test_fit_ESPA4_LD_to_spec_sheet():
+    result = fit_nitto_ESPA4_LD(save_location=_test_file_path)
+    validate_result("ESPA4-LD", result)
 
 
 def test_fit_bw30_4040_to_spec_sheet():

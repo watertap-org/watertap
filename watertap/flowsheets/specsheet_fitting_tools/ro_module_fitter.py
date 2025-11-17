@@ -41,6 +41,42 @@ from idaes.models.unit_models import Feed
 import os
 
 
+def fit_nitto_ESPA2_LD(save_location=None):
+    # https://membranes.com/wp-content/uploads/Documents/Element-Specification-Sheets/RO/ESPA/ESPA2-LD.pdf
+    return fit_ro_module_to_spec_sheet(
+        membrane_name="ESPA2-LD",
+        water_production_rate=37.9 * pyunits.m**3 / pyunits.day,
+        nacl_rejection=99.6 * pyunits.percent,  # percent
+        feed_conc=1500 * pyunits.mg / pyunits.liter,
+        recovery=0.15,
+        module_length=1 * pyunits.m,
+        pressure=150 * pyunits.psi,
+        membrane_area=37.2 * pyunits.m**2,
+        channel_height=0.86 * pyunits.mm,
+        spacer_porosity=0.9,
+        temperature=25,  # degrees C
+        save_location=save_location,
+    )
+
+
+def fit_nitto_ESPA4_LD(save_location=None):
+    # https://membranes.com/wp-content/uploads/Documents/Element-Specification-Sheets/RO/ESPA/ESPA4-LD.pdf
+    return fit_ro_module_to_spec_sheet(
+        membrane_name="ESPA4-LD",
+        water_production_rate=45.4 * pyunits.m**3 / pyunits.day,
+        nacl_rejection=99.2 * pyunits.percent,  # percent
+        feed_conc=500 * pyunits.mg / pyunits.liter,
+        recovery=0.15,
+        module_length=1 * pyunits.m,
+        pressure=100 * pyunits.psi,
+        membrane_area=37.2 * pyunits.m**2,
+        channel_height=0.86 * pyunits.mm,
+        spacer_porosity=0.9,
+        temperature=25,  # degrees C
+        save_location=save_location,
+    )
+
+
 def fit_bw30_4040_to_spec_sheet(save_location=None):
     # https://www.dupont.com/content/dam/water/amer/us/en/water/public/documents/en/RO-FilmTec-BW30-PRO-4040-and-BW30-PRO-2540-PDS-45-D03970-en.pdf
     return fit_ro_module_to_spec_sheet(
@@ -53,7 +89,7 @@ def fit_bw30_4040_to_spec_sheet(save_location=None):
         pressure=225 * pyunits.psi,
         membrane_area=7.9 * pyunits.m**2,
         channel_height=1 * pyunits.mm,
-        spacer_porosity=0.95,
+        spacer_porosity=0.9,
         temperature=25,  # degrees C
         save_location=save_location,
     )
@@ -71,7 +107,7 @@ def fit_sw30_4040_to_spec_sheet(save_location=None):
         pressure=55 * pyunits.bar,
         membrane_area=7.9 * pyunits.m**2,
         channel_height=1 * pyunits.mm,
-        spacer_porosity=0.95,
+        spacer_porosity=0.9,
         temperature=25,  # degrees C
         save_location=save_location,
     )
@@ -172,7 +208,7 @@ def fit_ro_module_to_spec_sheet(
     iscale.set_scaling_factor(m.fs.RO.area, value(1 / m.fs.RO.area))
     m.fs.RO.feed_side.channel_height.fix(channel_height)
     m.fs.RO.feed_side.spacer_porosity.fix(spacer_porosity)
-    # initial guess for intialization
+    # initial guess for initialization
     m.fs.RO.A_comp.fix(4.2e-12)
     m.fs.RO.B_comp.fix(3.5e-8)
     m.fs.RO.permeate.pressure[0].fix(101325)  # 1 atm
@@ -271,5 +307,8 @@ def fit_ro_module_to_spec_sheet(
 
 
 if __name__ == "__main__":
-    # fit_bw30_4040_to_spec_sheet()
     fit_sw30_4040_to_spec_sheet()
+    fit_bw30_4040_to_spec_sheet()
+    fit_nitto_ESPA2_LD()
+    fit_nitto_ESPA4_LD()
+    fit_ro_module_to_spec_sheet()
