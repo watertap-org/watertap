@@ -727,20 +727,20 @@ def setup_optimization(
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
                 recycle_flow_bounds[1] * pyunits.L / pyunits.min
             )
-        else:
-            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].unfix()
-            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setlb(
-                recycle_flow_bounds[0] * pyunits.L / pyunits.min
-            )
-            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setub(
-                recycle_flow_bounds[1] * pyunits.L / pyunits.min
-            )
-            m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
-                recycle_flow_bounds[0] * pyunits.L / pyunits.min
-            )
-            m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-                recycle_flow_bounds[1] * pyunits.L / pyunits.min
-            )
+        # else:
+        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].unfix()
+        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setlb(
+        #         recycle_flow_bounds[0] * pyunits.L / pyunits.min
+        #     )
+        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setub(
+        #         recycle_flow_bounds[1] * pyunits.L / pyunits.min
+        #     )
+        #     m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
+        #         recycle_flow_bounds[0] * pyunits.L / pyunits.min
+        #     )
+        #     m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
+        #         recycle_flow_bounds[1] * pyunits.L / pyunits.min
+        #     )
 
     if mp.include_costing:
         mp.cost_objective = Objective(expr=mp.costing.LCOW)
