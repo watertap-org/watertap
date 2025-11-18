@@ -282,8 +282,8 @@ def cost_ion_exchange(blk):
     blk.capital_cost_resin_constraint = pyo.Constraint(
         expr=blk.capital_cost_resin
         == pyo.units.convert(
-            resin_cost * bed_vol_ft3,
-            to_units=blk.costing_package.base_currency,  # pylint: disable=possibly-used-before-assignment
+            resin_cost * bed_vol_ft3,  # pylint: disable=possibly-used-before-assignment
+            to_units=blk.costing_package.base_currency,
         )
     )
     if blk.unit_model.config.regenerant == "single_use":

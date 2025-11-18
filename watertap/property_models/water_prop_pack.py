@@ -1061,11 +1061,11 @@ class WaterStateBlockData(StateBlockData):
                 )
             return (
                 b.therm_cond_phase[p]
-                == 10**log10_kw
+                == 10**log10_kw  # pylint: disable=possibly-used-before-assignment
                 * 1e-3
                 * pyunits.W
                 / pyunits.m
-                / pyunits.K  # pylint: disable=possibly-used-before-assignment
+                / pyunits.K
             )
 
         self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)

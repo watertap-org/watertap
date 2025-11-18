@@ -208,7 +208,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
             elif j == "polymer":
                 chemical_dosage = blk.polymer_dose[t]
             return blk.chemical_flow_mass[t, j] == pyunits.convert(
-                chemical_dosage
+                chemical_dosage  # pylint: disable=possibly-used-before-assignment
                 * blk.properties[t].flow_vol,  # don't fully understand this test
                 to_units=pyunits.kg / pyunits.s,
             )

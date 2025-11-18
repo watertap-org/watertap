@@ -215,9 +215,8 @@ class CredentialManager:
             with open(self.config_file, "rb") as f:
                 encrypted_credentials = f.read()
 
-            cipher = Fernet(
-                self.encryption_key
-            )  # pylint: disable=possibly-used-before-assignment
+            # pylint: disable=possibly-used-before-assignment
+            cipher = Fernet(self.encryption_key)
             decrypted_credentials = cipher.decrypt(encrypted_credentials).decode()
             credentials = json.loads(decrypted_credentials)
             return credentials
