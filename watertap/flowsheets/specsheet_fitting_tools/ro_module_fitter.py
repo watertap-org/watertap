@@ -189,10 +189,10 @@ def fit_ro_module_to_spec_sheet(
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # specify feed conditions
-    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(water_production_rate / recovery)
-    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(feed_conc)
-    m.fs.feed.properties[0].temperature.fix(temperature + 273.15)
-    m.fs.feed.properties[0].pressure.fix(pressure)
+    m.fs.RO.feed_side.properties[0,0].flow_vol_phase["Liq"].fix(water_production_rate / recovery)
+    m.fs.RO.feed_side.properties[0,0].conc_mass_phase_comp["Liq", "NaCl"].fix(feed_conc)
+    m.fs.RO.feed_side.properties[0,0].temperature.fix(temperature + 273.15)
+    m.fs.RO.feed_side.properties[0,0].pressure.fix(pressure)
 
     print("Degrees of freedom before initialization: ", degrees_of_freedom(m.fs.feed))
     assert degrees_of_freedom(m.fs.feed) == 0
