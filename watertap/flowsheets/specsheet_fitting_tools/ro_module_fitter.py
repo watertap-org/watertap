@@ -197,7 +197,7 @@ def fit_ro_module_to_spec_sheet(
     print("Degrees of freedom before initialization: ", degrees_of_freedom(m.fs.feed))
     assert degrees_of_freedom(m.fs.feed) == 0
     # Solve the feed to get mass flows and concentrations through out
-    result = solver.solve(m.fs.feed)
+    result = solver.solve(m.fs.RO.feed_side.properties[0,0])
     assert_optimal_termination(result)
     propagate_state(m.fs.feed_to_ro)
 
