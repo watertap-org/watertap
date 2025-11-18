@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-__author__ = "Alexander Dudchenko"
+__author__ = "Alexander V. Dudchenko"
 
 from pyomo.environ import (
     ConcreteModel,
@@ -19,11 +19,7 @@ from pyomo.environ import (
     TransformationFactory,
     assert_optimal_termination,
 )
-
-from pyomo.network import Arc
-
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import propagate_state
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 
@@ -37,7 +33,6 @@ from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.property_models import NaCl_T_dep_prop_pack as props
 from watertap.core.solvers import get_solver
 import yaml
-from idaes.models.unit_models import Feed
 import os
 
 
@@ -170,7 +165,6 @@ def fit_ro_module_to_spec_sheet(
 
     m.fs.properties = props.NaClParameterBlock()
     # seem feed and ro model
-    m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.RO = RO1D(
         property_package=m.fs.properties,
         has_pressure_change=True,
@@ -184,23 +178,33 @@ def fit_ro_module_to_spec_sheet(
         has_full_reporting=True,
     )
 
-    m.fs.feed_to_ro = Arc(source=m.fs.feed.outlet, destination=m.fs.RO.inlet)
+    # m.fs.feed_to_ro = Arc(source=m.fs.feed.outlet, destination=m.fs.RO.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # specify feed conditions
-    m.fs.RO.feed_side.properties[0,0].flow_vol_phase["Liq"].fix(water_production_rate / recovery)
-    m.fs.RO.feed_side.properties[0,0].conc_mass_phase_comp["Liq", "NaCl"].fix(feed_conc)
-    m.fs.RO.feed_side.properties[0,0].temperature.fix(temperature + 273.15)
-    m.fs.RO.feed_side.properties[0,0].pressure.fix(pressure)
+    m.fs.RO.feed_side.properties[0, 0].flow_vol_phase["Liq"].fix(
+        water_production_rate / recovery
+    )
+    m.fs.RO.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"].fix(
+        feed_conc
+    )
+    m.fs.RO.feed_side.properties[0, 0].temperature.fix(temperature + 273.15)
+    m.fs.RO.feed_side.properties[0, 0].pressure.fix(pressure)
 
-    print("Degrees of freedom before initialization: ", degrees_of_freedom(m.fs.feed))
-    assert degrees_of_freedom(m.fs.feed) == 0
+    print(
+        "Degrees of freedom before initialization: ",
+        degrees_of_freedom(m.fs.RO.feed_side.properties[0, 0]),
+    )
+    assert degrees_of_freedom(m.fs.RO.feed_side.properties[0, 0]) == 0
     # Solve the feed to get mass flows and concentrations through out
-    result = solver.solve(m.fs.RO.feed_side.properties[0,0])
+    result = solver.solve(m.fs.RO.feed_side.properties[0, 0])
     assert_optimal_termination(result)
-    propagate_state(m.fs.feed_to_ro)
 
+    # RO expects flow mass phase comp to be fixed for intialization
+    m.fs.RO.feed_side.properties[0, 0].flow_vol_phase["Liq"].unfix()
+    m.fs.RO.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"].unfix()
+    m.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp.fix()
     # configure RO
     m.fs.RO.length.fix(module_length)
     iscale.set_scaling_factor(m.fs.RO.length, value(1 / m.fs.RO.length))
@@ -216,19 +220,23 @@ def fit_ro_module_to_spec_sheet(
     # scale mass flow units
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp",
-        value(1 / m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]),
+        value(
+            1 / m.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "H2O"]
+        ),
         index=("Liq", "H2O"),
     )
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp",
-        value(1 / m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]),
+        value(
+            1 / m.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "NaCl"]
+        ),
         index=("Liq", "NaCl"),
     )
     iscale.calculate_scaling_factors(m)
     # initialization guess
     m.fs.RO.initialize()
 
-    print("Degrees of freedom before RO box solve: ", degrees_of_freedom(m.fs.feed))
+    print("Degrees of freedom before RO box solve: ", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
@@ -238,7 +246,7 @@ def fit_ro_module_to_spec_sheet(
     m.fs.RO.rejection_phase_comp[0, "Liq", "NaCl"].fix(nacl_rejection)
     m.fs.RO.recovery_vol_phase[0.0, "Liq"].fix(recovery)
 
-    print("Degrees of freedom before A/B solve: ", degrees_of_freedom(m.fs.feed))
+    print("Degrees of freedom before A/B solve: ", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
