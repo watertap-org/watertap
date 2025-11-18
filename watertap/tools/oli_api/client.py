@@ -481,7 +481,7 @@ def _get_result_link(req_json):
                     result_link = req_json["data"]["resultsLink"]
             if "resultsLink" in req_json["data"]:
                 result_link = req_json["data"]["resultsLink"]
-    if not result_link:
+    if not result_link: # pylint: disable=used-before-assignment
         raise RuntimeError(f"Failed to get 'resultsLink'. Response: {req_json.json()}")
     return result_link
 

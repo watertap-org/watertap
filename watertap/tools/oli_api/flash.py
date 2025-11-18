@@ -697,11 +697,11 @@ class Flash:
             ]
             missing_args = _check_args(args)
             not_floats = _check_floats(args)
-        if missing_args:
+        if missing_args:     # pylint: disable=possibly-used-before-assignment
             raise RuntimeError(
                 f"Missing argument(s) for {flash_method}: {missing_args}"
             )
-        if not_floats:
+        if not_floats:  # pylint: disable=possibly-used-before-assignment
             raise RuntimeError(
                 f"Invalid values for argument(s): {not_floats}. Expected value"
             )

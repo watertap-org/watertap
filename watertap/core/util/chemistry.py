@@ -124,7 +124,8 @@ def get_charge_group(charge: int) -> str:
         group = "Cations"
     elif charge < 0:
         group = "Anions"
-    return group
+    # is type constrained to an int and all integer possibilities covered above so disable pylint warning
+    return group # pylint: disable=possibly-used-before-assignment
 
 
 def get_periodic_table() -> pd.DataFrame:

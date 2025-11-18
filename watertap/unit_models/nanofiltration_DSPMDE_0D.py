@@ -79,7 +79,7 @@ class ConcentrationPolarizationType(Enum):
     none = auto()
     calculated = auto()
 
-
+# pylint: disable=possibly-used-before-assignment
 @declare_process_block_class("NanofiltrationDSPMDE0D")
 class NanofiltrationData(InitializationMixin, UnitModelBlockData):
     """
@@ -684,7 +684,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             prop_perm = b.permeate_side[t, x]
             prop_feed_inter = b.feed_side.properties_interface[t, x]
             return b.flux_vol_water[t, x] == (
-                prop_feed.pressure
+                prop_feed.pressure 
                 - prop_perm.pressure
                 - (
                     prop_feed_inter.pressure_osm_phase["Liq"]

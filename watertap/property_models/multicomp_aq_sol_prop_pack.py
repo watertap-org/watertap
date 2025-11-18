@@ -2643,8 +2643,12 @@ class MCASStateBlockData(StateBlockData):
         self.conc_mol_phase_comp
 
         if solve:
+            """this could also be defined 'state_var["Liq", adjust_by_ion].fix(ion_adjusted)' 
+            on line 2606 but isn't necessary because the same check on 2675 does define it and 
+            adjust_by_ion will either be none or defined since it is a parameter to the method
+           """ 
             if adjust_by_ion is not None:
-                ion_before_adjust = state_var["Liq", adjust_by_ion].value
+                ion_before_adjust = state_var["Liq", adjust_by_ion].value 
             solve = get_solver()
             solve.solve(self)
             results = solve.solve(self)
@@ -2693,7 +2697,7 @@ class MCASStateBlockData(StateBlockData):
                             )
                     msg = (
                         f"{adjust_by_ion} adjusted: {state_var}['Liq',{adjust_by_ion}] was adjusted from "
-                        f"{ion_before_adjust} and fixed "
+                        f"{ion_before_adjust} and fixed "  # pylint: disable=used-before-assignment
                         f"to {ion_adjusted}."
                     )
                 else:
