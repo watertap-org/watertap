@@ -1,4 +1,4 @@
-uv_aop#################################################################################
+uv_aop  #################################################################################
 # WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
@@ -863,13 +863,17 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.uv_intensity) is None:
             sf = iscale.get_scaling_factor(self.uv_intensity, default=0.1, warning=True)
         # only this sf is facing the pylint warning. seeing the above comment, I am inlclined to ignore it
-        iscale.set_scaling_factor(self.uv_intensity, sf) # pylint: disable=used-before-assignment
+        iscale.set_scaling_factor(
+            self.uv_intensity, sf
+        )  # pylint: disable=used-before-assignment
 
         if iscale.get_scaling_factor(self.exposure_time) is None:
             sf = iscale.get_scaling_factor(
                 self.exposure_time, default=1e-2, warning=True
             )
-            iscale.set_scaling_factor(self.exposure_time, sf) # why is this one set inside the if but none of the rest?
+            iscale.set_scaling_factor(
+                self.exposure_time, sf
+            )  # why is this one set inside the if but none of the rest?
 
         if iscale.get_scaling_factor(self.uv_dose) is None:
             sf = iscale.get_scaling_factor(self.uv_dose, default=1e-3, warning=True)

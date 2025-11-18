@@ -234,7 +234,9 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         elif hasattr(self.config.property_package, "solute_set"):
             solute_set = self.config.property_package.solute_set
 
-        solvent_solute_set = self.config.property_package.solvent_set | solute_set # pylint: disable=possibly-used-before-assignment
+        solvent_solute_set = (
+            self.config.property_package.solvent_set | solute_set
+        )  # pylint: disable=possibly-used-before-assignment
 
         # Add unit parameters
         self.flux_vol_solvent = Var(

@@ -101,7 +101,11 @@ def cost_gac_gravity(blk):
 def _build_gac_cost_param_block(blk, contactor_type):
 
     adsorbent_unit_cost_coeff_data = {0: 4.58342, 1: -1.25311e-5}
-    contactor_cost_coeff_data, other_cost_param_data, energy_consumption_coeff_data = {}, {}, {} #OTHER OPTION
+    contactor_cost_coeff_data, other_cost_param_data, energy_consumption_coeff_data = (
+        {},
+        {},
+        {},
+    )  # OTHER OPTION
     if contactor_type == ContactorType.pressure:
         contactor_cost_coeff_data = {0: 10010.9, 1: 2204.95, 2: -15.9378, 3: 0.110592}
         other_cost_param_data = {0: 16660.7, 1: 0.552207}
@@ -145,7 +149,7 @@ def _build_gac_cost_param_block(blk, contactor_type):
 
     # USD_2020 embedded in equation
     blk.contactor_cost_coeff = pyo.Var(
-        contactor_cost_coeff_data, # pylint: disable=possibly-used-before-assignment
+        contactor_cost_coeff_data,  # pylint: disable=possibly-used-before-assignment
         initialize=contactor_cost_coeff_data,
         units=pyo.units.dimensionless,
         doc="contactor polynomial cost coefficients",

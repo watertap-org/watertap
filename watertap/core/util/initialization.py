@@ -105,8 +105,8 @@ def check_dof(blk, fail_flag=False, logger=_log, expected_dof=0):
                 f"Expected {expected_dof}. Fix {degrees_of_freedom(blk) - expected_dof} variable(s)"
             )
         if fail_flag:
-            logger.error(msg) # pylint: disable=used-before-assignment
-            raise InitializationError(msg) 
+            logger.error(msg)  # pylint: disable=used-before-assignment
+            raise InitializationError(msg)
         else:
             logger.warning(msg)
 
