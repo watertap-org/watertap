@@ -48,7 +48,7 @@ def fit_nitto_ESPA2_LD(save_location=None):
         pressure=150 * pyunits.psi,
         membrane_area=37.2 * pyunits.m**2,
         channel_height=0.86 * pyunits.mm,
-        spacer_porosity=0.9,
+        spacer_porosity=0.85,
         temperature=25,  # degrees C
         save_location=save_location,
     )
@@ -66,7 +66,7 @@ def fit_nitto_ESPA4_LD(save_location=None):
         pressure=100 * pyunits.psi,
         membrane_area=37.2 * pyunits.m**2,
         channel_height=0.86 * pyunits.mm,
-        spacer_porosity=0.9,
+        spacer_porosity=0.85,
         temperature=25,  # degrees C
         save_location=save_location,
     )
@@ -84,7 +84,7 @@ def fit_bw30_4040_to_spec_sheet(save_location=None):
         pressure=225 * pyunits.psi,
         membrane_area=7.9 * pyunits.m**2,
         channel_height=1 * pyunits.mm,
-        spacer_porosity=0.9,
+        spacer_porosity=0.85,
         temperature=25,  # degrees C
         save_location=save_location,
     )
@@ -102,7 +102,7 @@ def fit_sw30_4040_to_spec_sheet(save_location=None):
         pressure=55 * pyunits.bar,
         membrane_area=7.9 * pyunits.m**2,
         channel_height=1 * pyunits.mm,
-        spacer_porosity=0.9,
+        spacer_porosity=0.85,
         temperature=25,  # degrees C
         save_location=save_location,
     )
@@ -118,7 +118,7 @@ def fit_ro_module_to_spec_sheet(
     pressure=150 * pyunits.psi,
     membrane_area=40 * pyunits.m**2,
     channel_height=1e-3 * pyunits.m,
-    spacer_porosity=0.95,
+    spacer_porosity=0.85,
     temperature=25,  # degrees C
     save_location=None,
     save_to_yaml=True,

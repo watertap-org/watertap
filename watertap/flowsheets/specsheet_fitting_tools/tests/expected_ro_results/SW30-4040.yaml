@@ -1,14 +1,14 @@
 A:
-  value: 5.3576465683693945e-12
+  value: 5.113908764712423e-12
   units: m**2*s/kg
 B:
-  value: 2.4780824989918203e-08
+  value: 2.554496834650047e-08
   units: m/s
 A (LMH/bar):
-  value: 1.928752764612981
+  value: 1.8410071552964713
   units: LMH/bar
 B (LMH):
-  value: 0.0892109699637055
+  value: 0.09196188604740167
   units: LMH
 Area:
   value: 7.9
@@ -17,7 +17,7 @@ Length:
   value: 1.0
   units: m
 Porosity:
-  value: 0.9
+  value: 0.85
   units: dimensionless
 Channel_height:
   value: 0.001
