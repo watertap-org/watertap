@@ -46,9 +46,11 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock, MaterialFlowBasis
 from watertap.costing import WaterTAPCosting
 import math
-
+import idaes.logger as idaeslog
+_log = idaeslog.getLogger(__name__)
 
 def main():
     # build, set operating conditions, initialize for simulation
@@ -93,12 +95,12 @@ def build():
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Properties
-    # m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    m.fs.properties_feed = MCASParameterBlock(solute_list=["TDS"],
-                                              mw_data={"TDS": 58.44e-3},
-                                              diffusivity_data ={('Liq',"TDS"): 1.61e-9},
-                                              material_flow_basis=MaterialFlowBasis.mass
-                                              )
+    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
+    # m.fs.properties_feed = MCASParameterBlock(solute_list=["TDS"],
+    #                                           mw_data={"TDS": 31.4038218e-3},
+    #                                           diffusivity_data ={('Liq',"TDS"): 1.61e-9},
+    #                                           material_flow_basis=MaterialFlowBasis.mass
+    #                                           )
     m.fs.properties_vapor = props_w.WaterParameterBlock()
 
     # Unit models
@@ -526,8 +528,139 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s07)
     m.fs.Q_ext[0].fix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix()
+    
     # fixes and unfixes those values
-    m.fs.evaporator.initialize(delta_temperature_in=60, solver="ipopt-watertap")
+    # m.fs.evaporator.initialize(delta_temperature_in=60, 
+    #                            solver="ipopt-watertap""ipopt-watertap",
+    #                            outlvl=idaeslog.DEBUG)
+    
+    delta_temperature_in=60
+    
+    outlvl=idaeslog.DEBUG
+    
+    init_log = idaeslog.getInitLogger(m.fs.evaporator.name, outlvl, tag="unit")
+    solve_log = idaeslog.getSolveLogger(m.fs.evaporator.name, outlvl, tag="unit")
+    
+    # Set solver options
+    solver="ipopt-watertap"
+    opt = get_solver()
+    optarg = None
+    if hasattr(m.fs.evaporator, "connection_to_condenser"):
+        m.fs.evaporator.connection_to_condenser.deactivate()
+
+    # ---------------------------------------------------------------------
+    # Initialize feed side
+    flags_feed = m.fs.evaporator.properties_feed.initialize(
+        solver=solver, optarg=optarg, hold_state=True
+    )
+    init_log.info_high("Initialization Step 1 Complete.")
+    # # ---------------------------------------------------------------------
+    # # Initialize brine
+    # Set state_args from inlet state
+    state_args=None
+    if state_args is None:
+        state_args = {}
+        state_dict = m.fs.evaporator.properties_feed[
+            m.fs.evaporator.flowsheet().config.time.first()
+        ].define_port_members()
+
+        for k in state_dict.keys():
+            if state_dict[k].is_indexed():
+                state_args[k] = {}
+                for mm in state_dict[k].keys():
+                    state_args[k][mm] = state_dict[k][mm].value
+            else:
+                state_args[k] = state_dict[k].value
+    print(m)
+    m.fs.evaporator.properties_brine.initialize(
+        outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args
+    )
+
+    state_args_vapor = {}
+    state_args_vapor["pressure"] = 0.5 * state_args["pressure"]
+    state_args_vapor["temperature"] = state_args["temperature"]
+    state_args_vapor["flow_mass_phase_comp"] = {
+        ("Liq", "H2O"): m.fs.evaporator.properties_vapor[0]
+        .flow_mass_phase_comp["Liq", "H2O"]
+        .lb,
+        ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")],
+    }
+
+    m.fs.evaporator.properties_vapor.initialize(
+        outlvl=outlvl,
+        optarg=optarg,
+        solver=solver,
+        state_args=state_args_vapor,
+    )
+
+    init_log.info_high("Initialization Step 2 Complete.")
+
+    # incorporate guessed temperature differences
+    has_guessed_delta_temperature_in = False
+    if delta_temperature_in is not None:
+        if m.fs.evaporator.delta_temperature_in.is_fixed():
+            raise RuntimeError(
+                "A guess was provided for the delta_temperature_in variable in the "
+                "initialization, but it is already fixed. Either do not "
+                "provide a guess for or unfix delta_temperature_in"
+            )
+        m.fs.evaporator.delta_temperature_in.fix(delta_temperature_in)
+        has_guessed_delta_temperature_in = True
+
+    has_guessed_delta_temperature_out = False
+    delta_temperature_out = None
+    if delta_temperature_out is not None:
+        if m.fs.evaporator.delta_temperature_out.is_fixed():
+            raise RuntimeError(
+                "A guess was provided for the delta_temperature_out variable in the "
+                "initialization, but it is already fixed. Either do not "
+                "provide a guess for or unfix delta_temperature_out"
+            )
+        m.fs.evaporator.delta_temperature_out.fix(delta_temperature_out)
+        has_guessed_delta_temperature_out = True
+
+    # Solve unit
+    m.fs.evaporator.pprint()
+    m.fs.evaporator.display()
+    # m.fs.evaporator.report()
+    return m
+    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        res = opt.solve(m.fs.evaporator, tee=slc.tee)
+    init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+
+    # ---------------------------------------------------------------------
+    # Release feed and condenser inlet states and release delta_temperature
+    m.fs.evaporator.properties_feed.release_state(flags_feed, outlvl=outlvl)
+    if has_guessed_delta_temperature_in:
+        m.fs.evaporator.delta_temperature_in.unfix()
+    if has_guessed_delta_temperature_out:
+        m.fs.evaporator.delta_temperature_out.unfix()
+    if hasattr(m.fs.evaporator, "connection_to_condenser"):
+        m.fs.evaporator.connection_to_condenser.activate()
+
+    init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+    if not check_optimal_termination(res):
+        return m
+        # raise RuntimeError(f"Unit model {m.fs.evaporator.name} failed to initialize")
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     m.fs.Q_ext[0].unfix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].unfix()
 
