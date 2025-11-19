@@ -35,7 +35,7 @@ __all__ = [
     "fix_dof_and_initialize",
     "config_op_dict",
     "print_results_table",
-    "fix_overall_water_recovery",
+    # "fix_overall_water_recovery",
     "set_operating_conditions",
     "initialize_system",
 ]
@@ -171,7 +171,6 @@ def unfix_dof(m, unfix_dead_volume_state=True, op_dict=None, **kwargs):
 
     elif m.fs.configuration == "flushing":
 
-        m.fs.flushing.flushing_time.unfix()
         m.fs.flushing.mean_residence_time.unfix()
         m.fs.flushing.flushing_efficiency.fix(op_dict["flushing_efficiency"])
         m.fs.dead_volume.dead_volume.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
@@ -675,22 +674,3 @@ def print_results_table(mp, w=15):
     )
 
 
-def fix_overall_water_recovery(mp, overall_water_recovery):
-
-    mp.overall_recovery.fix(overall_water_recovery)
-
-    # Fixed for accumulation time for initialization
-    for t, m in enumerate(mp.get_active_process_blocks()):
-        m.fs.dead_volume.accumulation_time.unfix()
-        # m.fs.dead_volume.accumulation_time.setlb(1)
-        # m.fs.dead_volume.accumulation_time.setub(400)
-
-        set_scaling_factor(m.fs.dead_volume.accumulation_time, 1e-2)
-
-    # Equal accumulation time across all filtration periods
-    @mp.Constraint(list(range(1, mp.n_time_points - 1)))
-    def accumulation_time_cons(mp, t):
-        blks = list(mp.get_active_process_blocks())
-        return blks[t].fs.dead_volume.accumulation_time[0] == (
-            blks[0].fs.dead_volume.accumulation_time[0]
-        )

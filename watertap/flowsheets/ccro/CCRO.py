@@ -674,6 +674,26 @@ def add_costing(m=None, mp=None):
 
     m.fs.costing.add_specific_energy_consumption(mp.avg_product_flow_rate, name="SEC")
 
+def fix_overall_water_recovery(mp, overall_water_recovery):
+
+    mp.overall_recovery.fix(overall_water_recovery)
+
+    # Fixed for accumulation time for initialization
+    for t, m in enumerate(mp.get_active_process_blocks()):
+        m.fs.dead_volume.accumulation_time.unfix()
+        # m.fs.dead_volume.accumulation_time.setlb(1)
+        # m.fs.dead_volume.accumulation_time.setub(400)
+
+        set_scaling_factor(m.fs.dead_volume.accumulation_time, 1e-2)
+
+    # Equal accumulation time across all filtration periods
+    @mp.Constraint(list(range(1, mp.n_time_points - 1)))
+    def accumulation_time_cons(mp, t):
+        blks = list(mp.get_active_process_blocks())
+        return blks[t].fs.dead_volume.accumulation_time[0] == (
+            blks[0].fs.dead_volume.accumulation_time[0]
+        )
+
 
 def setup_optimization(
     mp, overall_water_recovery=0.5, max_cycle_time_hr=1, recycle_flow_bounds=(0.1, 20)
@@ -774,7 +794,7 @@ if __name__ == "__main__":
     )
 
     op_dict = config_op_dict(op_dict)
-    mp = create_multiperiod(n_time_points=21, include_costing=True, op_dict=op_dict)
+    mp = create_multiperiod(n_time_points=11, include_costing=True, op_dict=op_dict)
     results = solve(mp, tee=False)
     print_results_table(mp, w=16)
 
