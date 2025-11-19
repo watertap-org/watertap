@@ -87,6 +87,8 @@ def check_dof(blk, fail_flag=False, logger=_log, expected_dof=0):
 
     """
     if degrees_of_freedom(blk) != expected_dof:
+        # can fix by initizalizing msg or can disable message
+        msg = "Message failed to initialize."
         if expected_dof == 0:
             msg = (
                 f"Non-zero degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. "
@@ -102,6 +104,7 @@ def check_dof(blk, fail_flag=False, logger=_log, expected_dof=0):
                 f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. "
                 f"Expected {expected_dof}. Fix {degrees_of_freedom(blk) - expected_dof} variable(s)"
             )
+
         if fail_flag:
             logger.error(msg)
             raise InitializationError(msg)

@@ -62,6 +62,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.custom_exceptions import WaterTapDeveloperError
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -1059,9 +1060,17 @@ class WaterStateBlockData(StateBlockData):
                 ) ** (
                     1 / 3
                 )
+            else:
+                raise WaterTapDeveloperError(
+                    f"Index '{p}' is not valid for indexed component 'fs.stream[0].therm_cond_phase"
+                )
             return (
                 b.therm_cond_phase[p]
-                == 10**log10_kw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
+                == 10**log10_kw  # pylint: disable=possibly-used-before-assignment
+                * 1e-3
+                * pyunits.W
+                / pyunits.m
+                / pyunits.K
             )
 
         self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)

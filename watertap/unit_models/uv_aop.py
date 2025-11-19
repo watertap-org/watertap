@@ -862,13 +862,17 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.uv_intensity) is None:
             sf = iscale.get_scaling_factor(self.uv_intensity, default=0.1, warning=True)
-        iscale.set_scaling_factor(self.uv_intensity, sf)
-
+        # take a look at this test together
+        iscale.set_scaling_factor(
+            self.uv_intensity, sf  # pylint: disable=used-before-assignment
+        )
         if iscale.get_scaling_factor(self.exposure_time) is None:
             sf = iscale.get_scaling_factor(
                 self.exposure_time, default=1e-2, warning=True
             )
-            iscale.set_scaling_factor(self.exposure_time, sf)
+            iscale.set_scaling_factor(
+                self.exposure_time, sf
+            )  # why is this one set inside the if but none of the rest?
 
         if iscale.get_scaling_factor(self.uv_dose) is None:
             sf = iscale.get_scaling_factor(self.uv_dose, default=1e-3, warning=True)

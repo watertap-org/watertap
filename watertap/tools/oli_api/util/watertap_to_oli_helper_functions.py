@@ -78,6 +78,7 @@ def get_oli_name(watertap_name: str) -> str:
     components = watertap_name.split("_")
     if len(components) == 0:
         raise IOError(f" Unable to parse solute '{watertap_name}'.")
+    molecule = ""
     if len(components) == 1:
         molecule = components[0]
     elif len(components) == 2:

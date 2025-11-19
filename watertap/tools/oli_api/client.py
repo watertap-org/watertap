@@ -474,6 +474,7 @@ def _get_result_link(req_json):
     :return result_link: string indicating URL to access call results
     """
 
+    result_link = None
     if "data" in req_json:
         if "status" in req_json["data"]:
             if req_json["data"]["status"] in ["IN QUEUE", "IN PROGRESS"]:
