@@ -59,6 +59,12 @@ from watertap.costing import (
     ROType,
 )
 
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    set_scaling_factor,
+    constraint_scaling_transform,
+)
+
 from watertap.flowsheets.ccro.utils import *
 
 __all__ = [
