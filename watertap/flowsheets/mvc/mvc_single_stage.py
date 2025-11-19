@@ -67,17 +67,19 @@ def main():
 
     print("\n***---First solve - simulation results---***")
     solver = get_solver()
-    results = solve(m, solver=solver, tee=False)
+    results = solve(m, solver=solver, tee=True)
     print("Termination condition: ", results.solver.termination_condition)
-    assert_optimal_termination(results)
-    display_metrics(m)
-    display_design(m)
+    if check_optimal_termination(results):
+        display_metrics(m)
+        display_design(m)
+    else:
+        print("First solve did not terminate optimally.")
 
     print("\n***---Second solve - optimization results---***")
     m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
     del m.fs.objective
     set_up_optimization(m)
-    results = solve(m, solver=solver, tee=False)
+    results = solve(m, solver=solver, tee=True)
     print("Termination condition: ", results.solver.termination_condition)
     display_metrics(m)
     display_design(m)
@@ -91,7 +93,12 @@ def build():
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Properties
-    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
+    # m.fs.properties_feed = props_sw.SeawaterParameterBlock()
+    m.fs.properties_feed = MCASParameterBlock(solute_list=["TDS"],
+                                              mw_data={"TDS": 58.44e-3},
+                                              diffusivity_data ={('Liq',"TDS"): 1.61e-9},
+                                              material_flow_basis=MaterialFlowBasis.mass
+                                              )
     m.fs.properties_vapor = props_w.WaterParameterBlock()
 
     # Unit models

@@ -2530,9 +2530,9 @@ class MCASStateBlockData(StateBlockData):
             return self.flow_mass_phase_comp[p, j]
 
     # TODO: add enthalpy terms later
-    # def get_enthalpy_flow_terms(self, p):
-    #     """Create enthalpy flow terms."""
-    #     return self.enth_flow
+    def get_enthalpy_flow_terms(self, p):
+        """Create enthalpy flow terms."""
+        return self.enth_flow
 
     # TODO: make property package compatible with dynamics
     # def get_material_density_terms(self, p, j):
@@ -2545,7 +2545,7 @@ class MCASStateBlockData(StateBlockData):
         return MaterialBalanceType.componentTotal
 
     def default_energy_balance_type(self):
-        return EnergyBalanceType.none
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(self):
         if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
