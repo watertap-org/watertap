@@ -55,6 +55,7 @@ from pathlib import Path
 from copy import deepcopy
 from itertools import product
 
+from watertap.custom_exceptions import WaterTapDeveloperError
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_name,
     get_charge,
@@ -697,11 +698,13 @@ class Flash:
             ]
             missing_args = _check_args(args)
             not_floats = _check_floats(args)
-        if missing_args:  # pylint: disable=possibly-used-before-assignment
+        else:
+            raise WaterTapDeveloperError(f"Unsupported flow_type: {flow_type}")
+        if missing_args:
             raise RuntimeError(
                 f"Missing argument(s) for {flash_method}: {missing_args}"
             )
-        if not_floats:  # pylint: disable=possibly-used-before-assignment
+        if not_floats:
             raise RuntimeError(
                 f"Invalid values for argument(s): {not_floats}. Expected value"
             )

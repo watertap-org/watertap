@@ -78,14 +78,12 @@ def get_oli_name(watertap_name: str) -> str:
     components = watertap_name.split("_")
     if len(components) == 0:
         raise IOError(f" Unable to parse solute '{watertap_name}'.")
-    molecule = ""  # option to resolve issue
+    molecule = ""
     if len(components) == 1:
         molecule = components[0]
     elif len(components) == 2:
         molecule = components[0] + "ION"
-    oli_name = (
-        molecule.replace("[", "").replace("]", "").upper()
-    )  # pylint: disable=possibly-used-before-assignment
+    oli_name = molecule.replace("[", "").replace("]", "").upper()
     return oli_name
 
 

@@ -862,7 +862,7 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.uv_intensity) is None:
             sf = iscale.get_scaling_factor(self.uv_intensity, default=0.1, warning=True)
-        # only this sf is facing the pylint warning. seeing the above comment, I am inlclined to ignore it
+        # take a look at this test together
         iscale.set_scaling_factor(
             self.uv_intensity, sf  # pylint: disable=used-before-assignment
         )

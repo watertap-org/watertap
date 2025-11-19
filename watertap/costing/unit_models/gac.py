@@ -14,6 +14,8 @@ import pyomo.environ as pyo
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
 from idaes.core.util.math import smooth_min
+
+from watertap.custom_exceptions import WaterTapDeveloperError
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -101,11 +103,11 @@ def cost_gac_gravity(blk):
 def _build_gac_cost_param_block(blk, contactor_type):
 
     adsorbent_unit_cost_coeff_data = {0: 4.58342, 1: -1.25311e-5}
-    contactor_cost_coeff_data, other_cost_param_data, energy_consumption_coeff_data = (
-        {},
-        {},
-        {},
-    )  # OTHER OPTION
+    # contactor_cost_coeff_data, other_cost_param_data, energy_consumption_coeff_data = (
+    #     {},
+    #     {},
+    #     {},
+    # )  # other option is to initialize as empty dicts and fill based on contactor type
     if contactor_type == ContactorType.pressure:
         contactor_cost_coeff_data = {0: 10010.9, 1: 2204.95, 2: -15.9378, 3: 0.110592}
         other_cost_param_data = {0: 16660.7, 1: 0.552207}
@@ -114,6 +116,10 @@ def _build_gac_cost_param_block(blk, contactor_type):
         contactor_cost_coeff_data = {0: 75131.3, 1: 735.550, 2: -1.01827, 3: 0.000000}
         other_cost_param_data = {0: 38846.9, 1: 0.490571}
         energy_consumption_coeff_data = {0: 0.123782, 1: 0.132403, 2: -1.41512e-5}
+    else:
+        raise WaterTapDeveloperError(
+            f"Unexpected contactor type {contactor_type} in GAC costing parameter block."
+        )
 
     # ---------------------------------------------------------------------
     # design options
@@ -149,7 +155,7 @@ def _build_gac_cost_param_block(blk, contactor_type):
 
     # USD_2020 embedded in equation
     blk.contactor_cost_coeff = pyo.Var(
-        contactor_cost_coeff_data,  # pylint: disable=possibly-used-before-assignment
+        contactor_cost_coeff_data,
         initialize=contactor_cost_coeff_data,
         units=pyo.units.dimensionless,
         doc="contactor polynomial cost coefficients",
@@ -163,7 +169,7 @@ def _build_gac_cost_param_block(blk, contactor_type):
     )
     # USD_2020 embedded in equation other_process_cost_constraint
     blk.other_cost_param = pyo.Var(
-        other_cost_param_data,  # pylint: disable=possibly-used-before-assignment
+        other_cost_param_data,
         initialize=other_cost_param_data,
         units=pyo.units.dimensionless,
         doc="other process cost power law parameters",
@@ -180,7 +186,7 @@ def _build_gac_cost_param_block(blk, contactor_type):
     )
     # kW embedded in equation energy_consumption_constraint
     blk.energy_consumption_coeff = pyo.Var(
-        energy_consumption_coeff_data,  # pylint: disable=possibly-used-before-assignment
+        energy_consumption_coeff_data,
         initialize=energy_consumption_coeff_data,
         units=pyo.units.dimensionless,
         doc="energy consumption polynomial coefficients",

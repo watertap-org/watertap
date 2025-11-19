@@ -474,6 +474,7 @@ def _get_result_link(req_json):
     :return result_link: string indicating URL to access call results
     """
 
+    result_link = None
     if "data" in req_json:
         if "status" in req_json["data"]:
             if req_json["data"]["status"] in ["IN QUEUE", "IN PROGRESS"]:
@@ -481,7 +482,7 @@ def _get_result_link(req_json):
                     result_link = req_json["data"]["resultsLink"]
             if "resultsLink" in req_json["data"]:
                 result_link = req_json["data"]["resultsLink"]
-    if not result_link:  # pylint: disable=used-before-assignment
+    if not result_link:
         raise RuntimeError(f"Failed to get 'resultsLink'. Response: {req_json.json()}")
     return result_link
 
