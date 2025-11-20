@@ -1376,7 +1376,7 @@ class MCASStateBlockData(StateBlockData):
         # Add state variables
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 373.15),
+            bounds=(273.15, 1000),
             domain=NonNegativeReals,
             units=pyunits.K,
             doc="State temperature",
@@ -1384,7 +1384,7 @@ class MCASStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, None),
+            bounds=(1e3, 50000000),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
@@ -2191,7 +2191,7 @@ class MCASStateBlockData(StateBlockData):
         # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
         try:
             total_dissolved_solids_temp = pyunits.convert(
-                sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.ion_set),
+                sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.solute_set),
                 to_units=pyunits.mg / pyunits.L,
             )
 
@@ -2365,12 +2365,16 @@ class MCASStateBlockData(StateBlockData):
         def rule_enth_mass_phase(b, p):
             # temperature in degC, but pyunits in K
             t = b.temperature - 273.15 * pyunits.K
-            S_kg_kg = (
-                pyunits.convert(
-                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
-                )
-                / b.dens_mass_phase[p]
-            )
+            # if value(b.total_dissolved_solids)>0:
+            #     S_kg_kg = (
+            #         pyunits.convert(
+            #             b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
+            #         )
+            #         / b.dens_mass_phase[p]
+            #     )
+            # else:
+            S_kg_kg = sum(
+                    b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
@@ -2492,12 +2496,16 @@ class MCASStateBlockData(StateBlockData):
         # Nayar et al.(2016), eq. 5 and 6, 0-180 C, 0-160 g/kg
         def rule_pressure_sat(b):
             t = b.temperature
-            S_kg_kg = (
-                pyunits.convert(
-                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
-                )
-                / b.dens_mass_phase["Liq"]
-            )
+            # if value(b.total_dissolved_solids)>0:
+            #     S_kg_kg = (
+            #         pyunits.convert(    
+            #             b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
+            #         )
+            #         / b.dens_mass_phase["Liq"]
+            #     )
+            # else:
+            S_kg_kg = sum(
+                    b.mass_frac_phase_comp["Liq", j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000 * pyunits.g / pyunits.kg
             psatw = (
                 exp(

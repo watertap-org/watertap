@@ -55,9 +55,12 @@ _log = idaeslog.getLogger(__name__)
 def main():
     # build, set operating conditions, initialize for simulation
     m = build()
+    calculate_scaling_factors(m)
+
     set_operating_conditions(m)
     add_Q_ext(m, time_point=m.fs.config.time)
     initialize_system(m)
+
     # rescale costs after initialization because scaling depends on flow rates
     scale_costs(m)
     fix_outlet_pressures(m)  # outlet pressure are initially unfixed for initialization
@@ -95,13 +98,15 @@ def build():
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Properties
-    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    # m.fs.properties_feed = MCASParameterBlock(solute_list=["TDS"],
-    #                                           mw_data={"TDS": 31.4038218e-3},
-    #                                           diffusivity_data ={('Liq',"TDS"): 1.61e-9},
-    #                                           material_flow_basis=MaterialFlowBasis.mass
-    #                                           )
+    # m.fs.properties_feed = props_sw.SeawaterParameterBlock()
+    m.fs.properties_feed = MCASParameterBlock(solute_list=["TDS"],
+                                              mw_data={"TDS": 31.4038218e-3},
+                                              diffusivity_data ={('Liq',"TDS"): 1.61e-9},
+                                              material_flow_basis=MaterialFlowBasis.mass,
+                                              density_calculation="seawater"
+                                              )
     m.fs.properties_vapor = props_w.WaterParameterBlock()
+
 
     # Unit models
     m.fs.feed = Feed(property_package=m.fs.properties_feed)
@@ -249,7 +254,11 @@ def build():
         == m.fs.recovery[0]
     )
 
-    # Scaling
+ 
+    return m
+
+def calculate_scaling_factors(m):
+       # Scaling
     # properties
     m.fs.properties_feed.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
@@ -298,12 +307,13 @@ def build():
     )
 
     # evaporator
+    # m.fs.evaporator.area.setub(None)
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.U, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_out, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.lmtd, 1e-1)
-
+    # iscale.constraint_scaling_transform(m.fs.evaporator.eq_evaporator_heat[0], 1e-3)
     # compressor
     iscale.set_scaling_factor(m.fs.compressor.control_volume.work, 1e-6)
 
@@ -312,8 +322,6 @@ def build():
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
-
-    return m
 
 
 def add_Q_ext(m, time_point=None):
@@ -530,137 +538,10 @@ def initialize_system(m, solver=None):
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix()
     
     # fixes and unfixes those values
-    # m.fs.evaporator.initialize(delta_temperature_in=60, 
-    #                            solver="ipopt-watertap""ipopt-watertap",
-    #                            outlvl=idaeslog.DEBUG)
-    
-    delta_temperature_in=60
-    
-    outlvl=idaeslog.DEBUG
-    
-    init_log = idaeslog.getInitLogger(m.fs.evaporator.name, outlvl, tag="unit")
-    solve_log = idaeslog.getSolveLogger(m.fs.evaporator.name, outlvl, tag="unit")
-    
-    # Set solver options
-    solver="ipopt-watertap"
-    opt = get_solver()
-    optarg = None
-    if hasattr(m.fs.evaporator, "connection_to_condenser"):
-        m.fs.evaporator.connection_to_condenser.deactivate()
+    m.fs.evaporator.initialize(delta_temperature_in=60, 
+                               solver="ipopt-watertap",
+                               outlvl=idaeslog.DEBUG)
 
-    # ---------------------------------------------------------------------
-    # Initialize feed side
-    flags_feed = m.fs.evaporator.properties_feed.initialize(
-        solver=solver, optarg=optarg, hold_state=True
-    )
-    init_log.info_high("Initialization Step 1 Complete.")
-    # # ---------------------------------------------------------------------
-    # # Initialize brine
-    # Set state_args from inlet state
-    state_args=None
-    if state_args is None:
-        state_args = {}
-        state_dict = m.fs.evaporator.properties_feed[
-            m.fs.evaporator.flowsheet().config.time.first()
-        ].define_port_members()
-
-        for k in state_dict.keys():
-            if state_dict[k].is_indexed():
-                state_args[k] = {}
-                for mm in state_dict[k].keys():
-                    state_args[k][mm] = state_dict[k][mm].value
-            else:
-                state_args[k] = state_dict[k].value
-    print(m)
-    m.fs.evaporator.properties_brine.initialize(
-        outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args
-    )
-
-    state_args_vapor = {}
-    state_args_vapor["pressure"] = 0.5 * state_args["pressure"]
-    state_args_vapor["temperature"] = state_args["temperature"]
-    state_args_vapor["flow_mass_phase_comp"] = {
-        ("Liq", "H2O"): m.fs.evaporator.properties_vapor[0]
-        .flow_mass_phase_comp["Liq", "H2O"]
-        .lb,
-        ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")],
-    }
-
-    m.fs.evaporator.properties_vapor.initialize(
-        outlvl=outlvl,
-        optarg=optarg,
-        solver=solver,
-        state_args=state_args_vapor,
-    )
-
-    init_log.info_high("Initialization Step 2 Complete.")
-
-    # incorporate guessed temperature differences
-    has_guessed_delta_temperature_in = False
-    if delta_temperature_in is not None:
-        if m.fs.evaporator.delta_temperature_in.is_fixed():
-            raise RuntimeError(
-                "A guess was provided for the delta_temperature_in variable in the "
-                "initialization, but it is already fixed. Either do not "
-                "provide a guess for or unfix delta_temperature_in"
-            )
-        m.fs.evaporator.delta_temperature_in.fix(delta_temperature_in)
-        has_guessed_delta_temperature_in = True
-
-    has_guessed_delta_temperature_out = False
-    delta_temperature_out = None
-    if delta_temperature_out is not None:
-        if m.fs.evaporator.delta_temperature_out.is_fixed():
-            raise RuntimeError(
-                "A guess was provided for the delta_temperature_out variable in the "
-                "initialization, but it is already fixed. Either do not "
-                "provide a guess for or unfix delta_temperature_out"
-            )
-        m.fs.evaporator.delta_temperature_out.fix(delta_temperature_out)
-        has_guessed_delta_temperature_out = True
-
-    # Solve unit
-    m.fs.evaporator.pprint()
-    m.fs.evaporator.display()
-    # m.fs.evaporator.report()
-    return m
-    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        res = opt.solve(m.fs.evaporator, tee=slc.tee)
-    init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
-    # ---------------------------------------------------------------------
-    # Release feed and condenser inlet states and release delta_temperature
-    m.fs.evaporator.properties_feed.release_state(flags_feed, outlvl=outlvl)
-    if has_guessed_delta_temperature_in:
-        m.fs.evaporator.delta_temperature_in.unfix()
-    if has_guessed_delta_temperature_out:
-        m.fs.evaporator.delta_temperature_out.unfix()
-    if hasattr(m.fs.evaporator, "connection_to_condenser"):
-        m.fs.evaporator.connection_to_condenser.activate()
-
-    init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-    if not check_optimal_termination(res):
-        return m
-        # raise RuntimeError(f"Unit model {m.fs.evaporator.name} failed to initialize")
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     m.fs.Q_ext[0].unfix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].unfix()
 
@@ -728,7 +609,7 @@ def initialize_system(m, solver=None):
 
     m.fs.costing.initialize()
 
-    solver.solve(m, tee=False)
+    solver.solve(m, tee=True)
 
     print("Initialization done")
 
@@ -748,7 +629,7 @@ def fix_outlet_pressures(m):
 
 
 def calculate_cost_sf(cost):
-    sf = 10 ** -(math.log10(abs(cost.value)))
+    sf = 10*10 ** -(math.log10(abs(cost.value)))
     iscale.set_scaling_factor(cost, sf)
 
 
