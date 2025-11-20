@@ -1,7 +1,7 @@
 .. _howto_ui-api:
 
-Add a flowsheet to the UI
-==========================
+How to add a flowsheet to the UI
+=================================
 .. py:currentmodule:: idaes_flowsheet_processor.api
 
 This API is intended for model developers who would like to connect their flowsheets to the UI.
