@@ -17,18 +17,20 @@ Authors: Chenyu Wang
 import pytest
 from pyomo.environ import ConcreteModel, Expression, Param, units, value, Var, Suffix
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
-from watertap.property_models.unit_specific.activated_sludge.asm3_properties import (
-    ASM3ParameterBlock,
-    ASM3StateBlock,
-    ASM3PropertiesScaler,
-)
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
 
+from watertap.property_models import (
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MaterialFlowBasis,
+    ASM3ParameterBlock,
+    ASM3StateBlock,
+    ASM3PropertiesScaler,
+)
 from watertap.core.solvers import get_solver
 
 
