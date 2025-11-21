@@ -25,7 +25,8 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Feed, Product
-from watertap.unit_models.ion_exchange_0D import (
+
+from watertap.unit_models import (
     IonExchange0D,
     IonExchangeType,
     RegenerantChem,

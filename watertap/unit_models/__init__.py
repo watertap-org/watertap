@@ -37,7 +37,12 @@ from .electrodialysis_1D import (
 )
 from .electrolyzer import Electrolyzer
 from .gac import GAC, FilmTransferCoefficientType, SurfaceDiffusionCoefficientType
-from .ion_exchange_0D import IonExchange0D
+from .ion_exchange_0D import (
+    IonExchange0D,
+    IonExchangeType,
+    RegenerantChem,
+    IsothermType,
+)
 from .thickener import Thickener, ThickenerScaler
 from .dewatering import DewateringUnit, DewatererScaler, ActivatedSludgeModelType
 from .electroNP_ZO import ElectroNPZO
