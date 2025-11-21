@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: ["*"]
 
 concurrency:
   # NOTE: the value of `group` should be chosen carefully,
