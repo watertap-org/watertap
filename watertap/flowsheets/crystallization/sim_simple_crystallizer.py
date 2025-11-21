@@ -17,12 +17,11 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from watertap.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 
+from watertap.core.solvers import get_solver
 from watertap.property_models import CrystallizerParameterBlock
 from watertap.unit_models.crystallizer import Crystallization
 from watertap.costing import WaterTAPCosting, CrystallizerCostType
