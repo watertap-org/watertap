@@ -14,8 +14,6 @@ from pyomo.environ import (
     value,
     assert_optimal_termination,
 )
-from watertap.core.solvers import get_solver
-from watertap.core.util.initialization import assert_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 from watertap.flowsheets.dye_desalination.dye_desalination import (
     build,
@@ -28,6 +26,8 @@ from watertap.flowsheets.dye_desalination.dye_desalination import (
     display_results,
     display_costing,
 )
+from watertap.core.solvers import get_solver
+from watertap.core.util.initialization import assert_degrees_of_freedom
 
 solver = get_solver()
 

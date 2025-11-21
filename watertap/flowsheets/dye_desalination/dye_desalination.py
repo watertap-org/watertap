@@ -79,7 +79,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
 )
 from watertap.costing import MultiUnitModelCostingBlock
 from watertap.core.wt_database import Database
-import watertap.property_models.zero_order_properties as prop_ZO
+from watertap.property_models import ZOParameterBlock
 from watertap.unit_models.zero_order import (
     FeedZO,
     PumpElectricityZO,
