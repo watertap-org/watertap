@@ -37,8 +37,7 @@ from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.misc import StrEnum
-from idaes.models.unit_models import Feed, Product, Mixer
-from idaes.models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models import Feed, Product, Mixer, MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from idaes.core.util.model_statistics import fixed_variables_in_activated_equalities_set
