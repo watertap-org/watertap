@@ -29,10 +29,10 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import CSTR
-from idaes.core import MaterialFlowBasis
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.property_models import (
+    MaterialFlowBasis,
     ASM1ParameterBlock,
     ASM1ReactionParameterBlock,
     ASM1ReactionBlock,
