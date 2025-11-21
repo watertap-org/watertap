@@ -18,14 +18,14 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,
 )
-from watertap.property_models import NaClParameterTDepBlock
+from watertap.property_models import NaClTDepParameterBlock
 
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 class TestNaClTDepProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
-        self.prop_pack = NaClParameterTDepBlock
+        self.prop_pack = NaClTDepParameterBlock
         self.param_args = {}
         self.prop_args = {}
         self.has_density_terms = False
@@ -33,7 +33,7 @@ class TestNaClTDepProperty_idaes(PropertyTestHarness_idaes):
 
 class TestNaClTDepProperty(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = NaClParameterTDepBlock
+        self.prop_pack = NaClTDepParameterBlock
         self.param_args = {}
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
@@ -72,7 +72,7 @@ class TestNaClTDepProperty(PropertyTestHarness):
 @pytest.mark.component
 class TestNaClTDepPropertySolution_1(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = NaClParameterTDepBlock
+        self.prop_pack = NaClTDepParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -115,7 +115,7 @@ class TestNaClTDepPropertySolution_1(PropertyRegressionTest):
 @pytest.mark.component
 class TestNaClTDepPropertySolution_2(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = NaClParameterTDepBlock
+        self.prop_pack = NaClTDepParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -158,7 +158,7 @@ class TestNaClTDepPropertySolution_2(PropertyRegressionTest):
 @pytest.mark.component
 class TestNaClTDepPropertySolution_3(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = NaClParameterTDepBlock
+        self.prop_pack = NaClTDepParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"

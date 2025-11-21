@@ -68,15 +68,15 @@ from watertap.core.util.scaling import transform_property_constraints
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("NaClParameterTDepBlock")
-class NaClParameterTDepData(PhysicalParameterBlock):
+@declare_process_block_class("NaClTDepParameterBlock")
+class NaClTDepParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     def build(self):
         """
         Callable method for Block construction.
         """
-        super(NaClParameterTDepData, self).build()
+        super(NaClTDepParameterData, self).build()
 
         self._state_block_class = NaClTDepStateBlock
 
