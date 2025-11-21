@@ -398,7 +398,7 @@ class DeadVolume0DData(InitializationMixin, UnitModelBlockData):
             )
         for p in self.config.property_package.phase_list:
             for c in self.config.property_package.component_list:
-                sf = 10
+                sf = 1
                 iscale.set_scaling_factor(self.dead_volume.mass_frac_phase_comp, sf)
 
                 iscale.set_scaling_factor(self.delta_state.mass_frac_phase_comp, sf)
@@ -413,7 +413,7 @@ class DeadVolume0DData(InitializationMixin, UnitModelBlockData):
                 sf = iscale.get_scaling_factor(
                     self.dead_volume.properties_in[0].flow_mass_phase_comp[p, c]
                 )
-                sf = 10
+                sf = 1
                 # print(sf)
                 # assert False
                 iscale.set_scaling_factor(self.dead_volume.mass_phase_comp[0, p, c], sf)
