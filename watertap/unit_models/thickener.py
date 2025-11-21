@@ -22,7 +22,6 @@ Benchmark Simulation Model no. 2 (BSM2)
 
 Modifications made to TSS formulation based on ASM type.
 """
-from enum import Enum, auto
 
 from pyomo.environ import (
     Constraint,

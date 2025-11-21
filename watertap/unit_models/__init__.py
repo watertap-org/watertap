@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from .anaerobic_digester import AD
+from .anaerobic_digester import AD, ADScaler
 from .reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -38,10 +38,10 @@ from .electrodialysis_1D import (
 from .electrolyzer import Electrolyzer
 from .gac import GAC
 from .ion_exchange_0D import IonExchange0D
-from .thickener import Thickener
-from .dewatering import DewateringUnit, ActivatedSludgeModelType
+from .thickener import Thickener, ThickenerScaler
+from .dewatering import DewateringUnit, DewatererScaler, ActivatedSludgeModelType
 from .electroNP_ZO import ElectroNPZO
-from .cstr import CSTR
-from .clarifier import Clarifier
+from .cstr import CSTR, CSTRScaler
+from .clarifier import Clarifier, ClarifierScaler
 from .cstr_injection import CSTR_Injection
-from .aeration_tank import AerationTank
+from .aeration_tank import AerationTank, AerationTankScaler, ElectricityConsumption
