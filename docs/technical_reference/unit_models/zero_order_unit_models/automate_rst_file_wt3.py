@@ -40,7 +40,8 @@ def grab_unit_components(unit_class, i):
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props = ZOParameterBlock(solute_list=[
+    m.fs.props = ZOParameterBlock(
+        solute_list=[
             "toc",
             "tss",
             "tkn",
@@ -160,7 +161,8 @@ def grab_unit_components_feed(unit_class):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props = ZOParameterBlock(solute_list=[
+    m.fs.props = ZOParameterBlock(
+        solute_list=[
             "toc",
             "tkn",
             "tss",
