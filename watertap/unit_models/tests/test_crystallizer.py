@@ -14,19 +14,14 @@ from pyomo.environ import (
     ConcreteModel,
 )
 
-from idaes.core import (
-    FlowsheetBlock,
-)
-
-from watertap.core.solvers import get_solver
-from idaes.core import UnitModelCostingBlock
+import idaes.core.util.scaling as iscale
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-import idaes.core.util.scaling as iscale
-
-from watertap.unit_models.crystallizer import Crystallization
-import watertap.property_models.unit_specific.cryst_prop_pack as props
+from watertap.unit_models import Crystallization
+from watertap.property_models import CrystallizerParameterBlock
 from watertap.costing import WaterTAPCosting, CrystallizerCostType
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -38,7 +33,7 @@ def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = CrystallizerParameterBlock()
 
     m.fs.unit = Crystallization(property_package=m.fs.properties)
 
@@ -101,7 +96,7 @@ def build_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = CrystallizerParameterBlock()
 
     m.fs.unit = Crystallization(property_package=m.fs.properties)
 
