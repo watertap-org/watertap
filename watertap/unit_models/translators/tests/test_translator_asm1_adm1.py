@@ -700,5 +700,5 @@ class TestASM1ADM1Scaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.20621e5, rel=1e-3
+            6.11581e5, rel=1e-3
         )

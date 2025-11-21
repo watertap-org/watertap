@@ -1042,7 +1042,9 @@ def initialize_system(m):
     seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
     seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
 
-    initializer = BlockTriangularizationInitializer()
+    initializer = BlockTriangularizationInitializer(
+        calculate_variable_options={"eps": 2e-8}, skip_final_solve=True
+    )
 
     def function(unit):
         try:
