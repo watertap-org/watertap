@@ -47,7 +47,8 @@ class TestOzoneZO_with_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "cryptosporidium",
                 "toc",
                 "giardia_lamblia",
@@ -77,7 +78,8 @@ class TestOzoneZO_with_default_removal:
         model.db = Database()
 
         model.fs = FlowsheetBlock(dynamic=False)
-        model.fs.params = ZOParameterBlock(solute_list=["cryptosporidium", "giardia_lamblia", "eeq"]
+        model.fs.params = ZOParameterBlock(
+            solute_list=["cryptosporidium", "giardia_lamblia", "eeq"]
         )
         with pytest.raises(
             ConfigurationError,
@@ -189,7 +191,8 @@ class TestOzoneZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "cryptosporidium",
                 "toc",
                 "giardia_lamblia",

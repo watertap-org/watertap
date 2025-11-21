@@ -47,7 +47,8 @@ class TestPeraceticAcidDisinfection:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
         )
 
         m.fs.unit = PeraceticAcidDisinfectionZO(
@@ -205,7 +206,8 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = ZOParameterBlock(solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
     )
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),

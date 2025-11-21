@@ -46,7 +46,8 @@ class TestEvaporationPondZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["tds", "magnesium", "calcium", "nitrate", "sulfate", "tss"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["tds", "magnesium", "calcium", "nitrate", "sulfate", "tss"]
         )
 
         m.fs.unit = EvaporationPondZO(property_package=m.fs.params, database=m.db)
@@ -268,7 +269,8 @@ def test_costing():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = ZOParameterBlock(solute_list=["tds", "magnesium", "calcium", "nitrate", "sulfate", "tss"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["tds", "magnesium", "calcium", "nitrate", "sulfate", "tss"]
     )
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = EvaporationPondZO(property_package=m.fs.params, database=m.db)

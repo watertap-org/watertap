@@ -47,7 +47,8 @@ class TestChlorinationZO_with_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["total_coliforms_fecal_ecoli", "viruses_enteric", "tss"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["total_coliforms_fecal_ecoli", "viruses_enteric", "tss"]
         )
 
         m.fs.unit = ChlorinationZO(property_package=m.fs.params, database=m.db)
@@ -158,7 +159,8 @@ class TestChlorinationZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["total_coliforms_fecal_ecoli", "viruses_enteric"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["total_coliforms_fecal_ecoli", "viruses_enteric"]
         )
 
         m.fs.unit = ChlorinationZO(property_package=m.fs.params, database=m.db)

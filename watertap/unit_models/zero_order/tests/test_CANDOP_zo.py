@@ -45,7 +45,8 @@ class TestCANDOPZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "nitrogen",
                 "phosphates",
                 "bioconcentrated_phosphorous",
@@ -205,7 +206,8 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = ZOParameterBlock(solute_list=[
+    m.fs.params = ZOParameterBlock(
+        solute_list=[
             "nitrogen",
             "phosphates",
             "bioconcentrated_phosphorous",

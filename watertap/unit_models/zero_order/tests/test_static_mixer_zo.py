@@ -46,7 +46,8 @@ class TestStaticMixerZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["calcium", "magnesium", "foo", "sulfate"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["calcium", "magnesium", "foo", "sulfate"]
         )
 
         m.fs.unit = StaticMixerZO(property_package=m.fs.params, database=m.db)

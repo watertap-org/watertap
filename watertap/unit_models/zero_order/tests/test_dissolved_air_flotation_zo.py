@@ -176,7 +176,8 @@ class TestDissolvedAirFlotationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["bod", "oil_and_grease", "tss", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["bod", "oil_and_grease", "tss", "foo"]
         )
 
         m.fs.unit = DissolvedAirFlotationZO(property_package=m.fs.params, database=m.db)

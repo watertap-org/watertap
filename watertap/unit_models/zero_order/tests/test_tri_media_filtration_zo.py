@@ -46,7 +46,8 @@ class TestTriMediaFiltrationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["eeq", "nonvolatile_toc", "toc", "nitrate", "tss"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["eeq", "nonvolatile_toc", "toc", "nitrate", "tss"]
         )
 
         m.fs.unit = TriMediaFiltrationZO(property_package=m.fs.params, database=m.db)
@@ -197,7 +198,8 @@ class TestTriMediaFiltrationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["eeq", "nonvolatile_toc", "toc", "nitrate", "tss", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["eeq", "nonvolatile_toc", "toc", "nitrate", "tss", "foo"]
         )
 
         m.fs.unit = TriMediaFiltrationZO(property_package=m.fs.params, database=m.db)

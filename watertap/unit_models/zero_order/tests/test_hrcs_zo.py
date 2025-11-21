@@ -45,7 +45,8 @@ class TestHRCSZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tss",
                 "cod",
                 "oxygen",
@@ -195,7 +196,8 @@ class TestHRCSZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tss",
                 "cod",
                 "oxygen",
@@ -353,7 +355,8 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=["tss", "cod", "oxygen", "carbon_dioxide"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["tss", "cod", "oxygen", "carbon_dioxide"]
     )
 
     m.fs.costing = ZeroOrderCosting()

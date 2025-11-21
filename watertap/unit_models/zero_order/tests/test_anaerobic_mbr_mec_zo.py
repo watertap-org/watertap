@@ -47,7 +47,8 @@ class TestAnaerobicMBRMECZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "cod",
                 "nonbiodegradable_cod",
                 "ammonium_as_nitrogen",
@@ -255,7 +256,8 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=[
+    m.fs.params = ZOParameterBlock(
+        solute_list=[
             "cod",
             "nonbiodegradable_cod",
             "ammonium_as_nitrogen",

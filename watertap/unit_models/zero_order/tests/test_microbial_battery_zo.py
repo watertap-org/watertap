@@ -46,7 +46,8 @@ class TestMicrobialBattery:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "arsenic",
                 "uranium",
                 "nitrate",
@@ -216,7 +217,8 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = ZOParameterBlock(solute_list=[
+    m.fs.params = ZOParameterBlock(
+        solute_list=[
             "arsenic",
             "uranium",
             "nitrate",

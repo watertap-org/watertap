@@ -45,7 +45,8 @@ class TestMABRZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
         )
 
         m.fs.unit = MABRZO(property_package=m.fs.params, database=m.db)
@@ -191,7 +192,8 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
     )
 
     m.fs.costing = ZeroOrderCosting()

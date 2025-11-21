@@ -46,7 +46,8 @@ class TestMBRZOdefault:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tss",
                 "nonvolatile_toc",
                 "toc",
@@ -237,7 +238,8 @@ class TestMBRZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tss",
                 "nonvolatile_toc",
                 "toc",
@@ -445,7 +447,8 @@ class TestMBRZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tss",
                 "nonvolatile_toc",
                 "toc",

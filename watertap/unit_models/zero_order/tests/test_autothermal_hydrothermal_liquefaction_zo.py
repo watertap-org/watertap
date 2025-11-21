@@ -47,7 +47,8 @@ class TestATHTLZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "organic_solid",
                 "organic_liquid",
                 "inorganic_solid",
@@ -191,7 +192,8 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=[
+    m.fs.params = ZOParameterBlock(
+        solute_list=[
             "organic_solid",
             "organic_liquid",
             "inorganic_solid",

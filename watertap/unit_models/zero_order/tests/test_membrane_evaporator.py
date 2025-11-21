@@ -47,7 +47,8 @@ class TestMembraneEvaporator:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["acetic_acid", "ammonium_as_nitrogen"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["acetic_acid", "ammonium_as_nitrogen"]
         )
 
         m.fs.unit = MembraneEvaporatorZO(property_package=m.fs.params, database=m.db)
@@ -169,8 +170,7 @@ def test_costing():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = ZOParameterBlock(solute_list=["acetic_acid", "ammonium_as_nitrogen"]
-    )
+    m.fs.params = ZOParameterBlock(solute_list=["acetic_acid", "ammonium_as_nitrogen"])
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = MembraneEvaporatorZO(property_package=m.fs.params, database=m.db)
 

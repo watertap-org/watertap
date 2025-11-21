@@ -309,7 +309,8 @@ def test_costing_wt3(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tds", "ammonium_as_nitrogen"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["sulfur", "toc", "tds", "ammonium_as_nitrogen"]
     )
 
     m.fs.costing = ZeroOrderCosting()

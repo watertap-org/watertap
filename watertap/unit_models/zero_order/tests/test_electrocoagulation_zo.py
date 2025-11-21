@@ -54,7 +54,8 @@ class TestECZO_AL:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tds",
                 "tss",
                 "toc",
@@ -237,7 +238,8 @@ class TestECZO_FE:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tds",
                 "tss",
                 "toc",
@@ -428,7 +430,8 @@ class TestECZO_OverpotentialCalculation:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "tds",
                 "tss",
                 "toc",

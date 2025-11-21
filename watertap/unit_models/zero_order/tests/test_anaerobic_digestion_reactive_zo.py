@@ -47,7 +47,8 @@ class TestAnaerobicDigestionReactiveZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
         )
 
         m.fs.unit = AnaerobicDigestionReactiveZO(
@@ -206,7 +207,8 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = ZOParameterBlock(solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
     )
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = AnaerobicDigestionReactiveZO(
@@ -293,7 +295,8 @@ def test_costing_GLSD():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
     )
 
     m.fs.costing = ZeroOrderCosting()

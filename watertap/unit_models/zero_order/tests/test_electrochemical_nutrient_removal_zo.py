@@ -47,7 +47,8 @@ class TestElectroNPZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["nitrogen", "phosphorus", "calcium", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["nitrogen", "phosphorus", "calcium", "foo"]
         )
 
         m.fs.unit = ElectroNPZO(property_package=m.fs.params, database=m.db)
@@ -185,7 +186,8 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=["nitrogen", "phosphorus", "calcium", "foo"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["nitrogen", "phosphorus", "calcium", "foo"]
     )
 
     source_file = os.path.join(

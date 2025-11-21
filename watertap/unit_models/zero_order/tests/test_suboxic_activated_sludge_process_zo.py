@@ -45,7 +45,8 @@ class TestSuboxicASMZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["bod", "tss", "tkn", "phosphorus", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["bod", "tss", "tkn", "phosphorus", "foo"]
         )
 
         m.fs.unit = SuboxicASMZO(property_package=m.fs.params, database=m.db)

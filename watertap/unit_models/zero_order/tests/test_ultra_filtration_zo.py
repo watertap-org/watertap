@@ -46,7 +46,8 @@ class TestUltraFiltrationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["eeq", "toc", "tss", "cryptosporidium"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["eeq", "toc", "tss", "cryptosporidium"]
         )
 
         m.fs.unit = UltraFiltrationZO(property_package=m.fs.params, database=m.db)
@@ -187,7 +188,8 @@ class TestUltraFiltrationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["eeq", "toc", "tss", "cryptosporidium", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["eeq", "toc", "tss", "cryptosporidium", "foo"]
         )
 
         m.fs.unit = UltraFiltrationZO(property_package=m.fs.params, database=m.db)

@@ -46,7 +46,8 @@ class TestPrimarySeparatorZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["oil_and_grease", "oily_matter", "tss"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["oil_and_grease", "oily_matter", "tss"]
         )
 
         m.fs.unit = PrimarySeparatorZO(property_package=m.fs.params, database=m.db)
@@ -177,7 +178,8 @@ class TestPrimarySeparatorZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["oil_and_grease", "oily_matter", "tss", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["oil_and_grease", "oily_matter", "tss", "foo"]
         )
 
         m.fs.unit = PrimarySeparatorZO(property_package=m.fs.params, database=m.db)

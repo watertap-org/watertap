@@ -176,7 +176,8 @@ class TestDualMediaFiltrationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["nonvolatile_toc", "toc", "tss", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["nonvolatile_toc", "toc", "tss", "foo"]
         )
 
         m.fs.unit = DualMediaFiltrationZO(property_package=m.fs.params, database=m.db)

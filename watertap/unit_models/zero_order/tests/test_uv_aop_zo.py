@@ -46,7 +46,8 @@ class TestUVAOPZO_with_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "viruses_enteric",
                 "tss",
                 "toc",
@@ -168,7 +169,8 @@ class TestUVAOPZO_subtype_no_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=[
+        m.fs.params = ZOParameterBlock(
+            solute_list=[
                 "viruses_enteric",
                 "toc",
                 "cryptosporidium",
@@ -298,7 +300,8 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = ZOParameterBlock(solute_list=["viruses_enteric", "toc", "cryptosporidium"]
+    m.fs.params = ZOParameterBlock(
+        solute_list=["viruses_enteric", "toc", "cryptosporidium"]
     )
 
     m.fs.costing = ZeroOrderCosting()

@@ -48,7 +48,8 @@ class TestCofermentationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = ZOParameterBlock(solute_list=["cod", "nonbiodegradable_cod", "foo"]
+        m.fs.params = ZOParameterBlock(
+            solute_list=["cod", "nonbiodegradable_cod", "foo"]
         )
 
         m.fs.unit = CofermentationZO(property_package=m.fs.params, database=m.db)
