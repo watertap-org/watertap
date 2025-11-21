@@ -1111,7 +1111,9 @@ class _CrystallizerStateBlock(StateBlock):
         return results
 
 
-@declare_process_block_class("CrystallizerStateBlock", block_class=_CrystallizerStateBlock)
+@declare_process_block_class(
+    "CrystallizerStateBlock", block_class=_CrystallizerStateBlock
+)
 class CrystallizerStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
