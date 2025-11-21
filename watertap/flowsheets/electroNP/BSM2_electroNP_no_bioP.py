@@ -29,9 +29,7 @@ __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
 
-from idaes.core import (
-    FlowsheetBlock,
-)
+from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
     CSTR,
     Feed,
@@ -39,9 +37,9 @@ from idaes.models.unit_models import (
     Product,
     Mixer,
     PressureChanger,
+    SplittingType,
+    MomentumMixingType,
 )
-from idaes.models.unit_models.separator import SplittingType
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -49,41 +47,31 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
-from watertap.unit_models.cstr_injection import CSTR_Injection
-from watertap.unit_models.clarifier import Clarifier
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
-    ModifiedADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
-    ADM1_vaporParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
-    ModifiedADM1ReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
-    ModifiedASM2dReactionParameterBlock,
+
+from watertap.unit_models import (
+    CSTR_Injection,
+    Clarifier,
+    AD,
+    DewateringUnit,
+    ElectroNPZO,
+    Thickener,
+    ActivatedSludgeModelType,
 )
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
 )
-from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
 )
-from watertap.unit_models.anaerobic_digester import AD
-from watertap.unit_models.dewatering import (
-    DewateringUnit,
-    ActivatedSludgeModelType as dewater_type,
-)
-from watertap.unit_models.thickener import (
-    Thickener,
-    ActivatedSludgeModelType as thickener_type,
+from watertap.property_models import (
+    ModifiedADM1ParameterBlock,
+    ADM1_vaporParameterBlock,
+    ModifiedADM1ReactionParameterBlock,
+    ModifiedASM2dParameterBlock,
+    ModifiedASM2dReactionParameterBlock,
 )
 from watertap.core.util.initialization import check_solve
-from watertap.unit_models.electroNP_ZO import ElectroNPZO
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -210,7 +198,7 @@ def build_flowsheet(has_electroNP=False):
     # Thickener
     m.fs.thickener = Thickener(
         property_package=m.fs.props_ASM2D,
-        activated_sludge_model=thickener_type.modified_ASM2D,
+        activated_sludge_model=ActivatedSludgeModelType.modified_ASM2D,
     )
     # Mixing feed and recycle streams from thickener and dewatering unit
     m.fs.MX3 = Mixer(
@@ -261,7 +249,7 @@ def build_flowsheet(has_electroNP=False):
     # Dewatering Unit
     m.fs.dewater = DewateringUnit(
         property_package=m.fs.props_ASM2D,
-        activated_sludge_model=dewater_type.modified_ASM2D,
+        activated_sludge_model=ActivatedSludgeModelType.modified_ASM2D,
     )
 
     # ======================================================================
