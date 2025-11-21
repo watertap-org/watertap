@@ -39,7 +39,7 @@ from .electrolyzer import Electrolyzer
 from .gac import GAC
 from .ion_exchange_0D import IonExchange0D
 from .thickener import Thickener
-from .dewatering import DewateringUnit
+from .dewatering import DewateringUnit, ActivatedSludgeModelType
 from .electroNP_ZO import ElectroNPZO
 from .cstr import CSTR
 from .clarifier import Clarifier
