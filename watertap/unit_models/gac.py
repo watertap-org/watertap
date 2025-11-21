@@ -32,7 +32,6 @@ from idaes.core import (
     MaterialFlowBasis,
     useDefault,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -43,6 +42,7 @@ import idaes.logger as idaeslog
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.gac import cost_gac
+from watertap.core.solvers import get_solver
 
 __author__ = "Hunter Barber"
 

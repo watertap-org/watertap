@@ -10,10 +10,10 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from enum import Enum, auto
+
 from pyomo.common.config import ConfigValue, In
 from pyomo.environ import Var, units as pyunits, Expr_if, value
-
-from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.models.unit_models.pressure_changer import PumpData
