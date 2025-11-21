@@ -9,11 +9,56 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+# IDAES imports
+from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
+
 from .multicomp_aq_sol_prop_pack import *
 from .NaCl_prop_pack import NaClParameterBlock, NaClParameterData
 from .NaCl_T_dep_prop_pack import NaClParameterTDepBlock, NaClParameterTDepData
 from .seawater_prop_pack import SeawaterParameterBlock, SeawaterParameterData
 from .water_prop_pack import WaterParameterBlock, WaterParameterData
+from .zero_order_properties import ZOParameterBlock, ZOParameterData, ZOStateBlock
+
+# Unit Specific
+from .unit_specific.activated_sludge.asm1_properties import (
+    ASM1ParameterBlock,
+    ASM1StateBlock,
+    ASM1PropertiesScaler,
+    ASM1ParameterData,
+)
+from .unit_specific.activated_sludge.asm1_reactions import (
+    ASM1ReactionParameterBlock,
+    ASM1ReactionScaler,
+    ASM1ReactionBlock,
+)
+from .unit_specific.activated_sludge.asm2d_properties import (
+    ASM2dParameterBlock,
+    ASM2dStateBlock,
+)
+from .unit_specific.activated_sludge.asm2d_reactions import (
+    ASM2dReactionParameterBlock,
+    ASM2dReactionBlock,
+)
+from .unit_specific.activated_sludge.asm3_properties import (
+    ASM3ParameterBlock,
+    ASM3PropertiesScaler,
+    ASM3StateBlock,
+)
+from .unit_specific.activated_sludge.asm3_reactions import (
+    ASM3ReactionParameterBlock,
+    ASM3ReactionScaler,
+    ASM3ReactionBlock,
+)
+from .unit_specific.activated_sludge.modified_asm2d_properties import (
+    ModifiedASM2dParameterBlock,
+    ModifiedASM2dPropertiesScaler,
+    ModifiedASM2dStateBlock,
+)
+from .unit_specific.activated_sludge.modified_asm2d_reactions import (
+    ModifiedASM2dReactionParameterBlock,
+    ModifiedASM2dReactionScaler,
+    ModifiedASM2dReactionBlock,
+)
 from .unit_specific.coagulation_prop_pack import (
     CoagulationParameterBlock,
     CoagulationParameterData,
@@ -25,4 +70,3 @@ from .unit_specific.cryst_prop_pack import (
     HeatOfCrystallizationModel,
 )
 from .unit_specific.NDMA_prop_pack import NDMAParameterBlock, NDMAParameterData
-from .zero_order_properties import ZOParameterBlock, ZOParameterData, ZOStateBlock
