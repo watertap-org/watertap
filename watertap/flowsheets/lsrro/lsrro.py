@@ -9,8 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
 import itertools
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 from pyomo.environ import (
     ConcreteModel,
@@ -32,7 +34,6 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.misc import StrEnum
@@ -41,13 +42,17 @@ from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from idaes.core.util.model_statistics import fixed_variables_in_activated_equalities_set
-from watertap.unit_models.reverse_osmosis_1D import (
-    ReverseOsmosis1D,
+
+from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.unit_models import (
+    ReverseOsmosis1D,
+    Pump,
+    EnergyRecoveryDevice,
+)
 from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
@@ -57,12 +62,11 @@ from watertap.costing import (
     make_capital_cost_var,
     register_costing_parameter_block,
 )
-import watertap.property_models.NaCl_prop_pack as props
-from parameter_sweep import LinearSample, parameter_sweep
+from watertap.property_models import NaClParameterBlock
 from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+from watertap.core.solvers import get_solver
+
+from parameter_sweep import LinearSample, parameter_sweep
 
 
 _log = idaeslogger.getLogger(__name__)
@@ -168,7 +172,7 @@ def build(
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
