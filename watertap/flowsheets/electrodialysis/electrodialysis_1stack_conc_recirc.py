@@ -31,17 +31,17 @@ from idaes.models.unit_models import Feed, Product, Separator, Mixer
 from idaes.models.unit_models.mixer import MixingType, MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
-from watertap.unit_models.electrodialysis_1D import (
+
+from watertap.unit_models import (
+    Pump,
+    Electrodialysis1D,
     ElectricalOperationMode,
     PressureDropMethod,
     FrictionFactorMethod,
     HydraulicDiameterMethod,
     LimitingCurrentDensityMethod,
 )
-
-from watertap.unit_models.pressure_changer import Pump
-from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.costing.watertap_costing_package import WaterTAPCosting
+from watertap.costing import WaterTAPCosting
 from watertap.property_models import MCASParameterBlock
 from watertap.core.solvers import get_solver
 

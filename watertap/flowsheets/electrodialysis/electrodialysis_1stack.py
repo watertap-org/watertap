@@ -30,7 +30,7 @@ from idaes.models.unit_models import Feed, Product, Separator
 import idaes.core.util.scaling as iscale
 
 from watertap.core.util.initialization import check_dof, check_solve
-from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
+from watertap.unit_models import Electrodialysis1D
 from watertap.core.solvers import get_solver
 from watertap.costing import WaterTAPCosting
 from watertap.property_models import MCASParameterBlock

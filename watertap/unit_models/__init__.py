@@ -27,7 +27,14 @@ from .pressure_changer import Pump, EnergyRecoveryDevice
 from .crystallizer import Crystallization
 from .uv_aop import Ultraviolet0D
 from .electrodialysis_0D import Electrodialysis0D
-from .electrodialysis_1D import Electrodialysis1D
+from .electrodialysis_1D import (
+    Electrodialysis1D,
+    ElectricalOperationMode,
+    PressureDropMethod,
+    FrictionFactorMethod,
+    HydraulicDiameterMethod,
+    LimitingCurrentDensityMethod,
+)
 from .electrolyzer import Electrolyzer
 from .gac import GAC
 from .ion_exchange_0D import IonExchange0D
