@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
+import pandas as pd
 from pyomo.environ import (
     ConcreteModel,
     Var,
@@ -25,13 +25,10 @@ from pyomo.environ import (
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 import idaes.core.util.model_statistics as mstat
 from idaes.models.unit_models import Feed, Product, Separator, Mixer
-from watertap.unit_models.pressure_changer import Pump
 from idaes.models.unit_models.mixer import MixingType, MomentumMixingType
-import pandas as pd
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.unit_models.electrodialysis_1D import (
@@ -41,9 +38,12 @@ from watertap.unit_models.electrodialysis_1D import (
     HydraulicDiameterMethod,
     LimitingCurrentDensityMethod,
 )
+
+from watertap.unit_models.pressure_changer import Pump
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import WaterTAPCosting
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+from watertap.property_models import MCASParameterBlock
+from watertap.core.solvers import get_solver
 
 __author__ = "Xiangyu Bi"
 _log = idaeslogger.getLogger(__name__)
