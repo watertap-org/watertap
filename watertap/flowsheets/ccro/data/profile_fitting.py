@@ -45,7 +45,7 @@ if __name__ == "__main__":
     fig.set_dpi(300)
     # Set figure size
     fig.set_size_inches(3.25, 3.25, forward=True)
-    for data in ["flushing_profile_data.csv", "swc_1_worn.csv", "BW2540.csv"]:
+    for data in ["swc_1_new.csv", "swc_1_worn.csv", "BW2540.csv"]:
         t, f_t = get_data(data)
         bounds = [(1e-5, 500), (1, 50)]  # Bounds for tau and N
         result = differential_evolution(
