@@ -23,30 +23,29 @@ from pyomo.environ import (
     check_optimal_termination,
 )
 from pyomo.network import Arc
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
+
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
     propagate_state,
 )
 from idaes.models.unit_models import Product, Feed
-from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 from idaes.core.util.misc import StrEnum
 
-import watertap.property_models.NaCl_prop_pack as props
-from watertap.unit_models.reverse_osmosis_0D import (
+from watertap.property_models import NaClParameterBlock
+from watertap.unit_models import (
+    OsmoticallyAssistedReverseOsmosis0D,
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
+    Pump,
+    EnergyRecoveryDevice,
 )
-from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
-    OsmoticallyAssistedReverseOsmosis0D,
-)
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 
 class ERDtype(StrEnum):
@@ -88,7 +87,7 @@ def build(erd_type=ERDtype.pump_as_turbine):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
