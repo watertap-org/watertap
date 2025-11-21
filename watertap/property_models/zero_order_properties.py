@@ -41,7 +41,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("ZOParameterBlock")
-class ZOParameterBlockData(PhysicalParameterBlock):
+class ZOParameterData(PhysicalParameterBlock):
     """
     Zero-Order Property Parameter Block Class
 
