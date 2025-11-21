@@ -10,23 +10,23 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import math
+
 from pyomo.environ import (
-    units as pyunits,
+    ConcreteModel,
+    TransformationFactory,
     Objective,
     Var,
     Constraint,
     NonNegativeReals,
     assert_optimal_termination,
     value,
+    units as pyunits,
 )
-
-
 from pyomo.network import Arc
-from idaes.core import (
-    FlowsheetBlock,
-)
 
-from watertap.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import (
@@ -35,25 +35,14 @@ from idaes.models.unit_models import (
     StateJunction,
 )
 
-from watertap.unit_models.nanofiltration_DSPMDE_0D import (
-    NanofiltrationDSPMDE0D,
-)
-
-from watertap.unit_models.pressure_changer import Pump
-
-from pyomo.environ import ConcreteModel, TransformationFactory
-
-import math
-
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
+from watertap.unit_models import NanofiltrationDSPMDE0D, Pump
+from watertap.property_models import (
     MCASParameterBlock,
     ActivityCoefficientModel,
     DensityCalculation,
 )
-import idaes.core.util.scaling as iscale
-
-from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 __author__ = "Alexander Dudchenko, Adam Atia"
 
