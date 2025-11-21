@@ -10,7 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 # IDAES imports
-from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
+from idaes.core import (
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MaterialFlowBasis,
+    MomentumBalanceType,
+)
 
 from .multicomp_aq_sol_prop_pack import *
 from .NaCl_prop_pack import NaClParameterBlock, NaClParameterData
