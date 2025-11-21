@@ -70,7 +70,7 @@ from idaes.models.unit_models import Mixer
 from idaes.models.unit_models.mixer import MixingType
 import idaes.logger as idaeslog
 
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
+from watertap.property_models import (
     MCASParameterBlock,
     MCASStateBlock,
     ActivityCoefficientModel,
