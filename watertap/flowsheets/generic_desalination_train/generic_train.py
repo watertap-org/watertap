@@ -25,6 +25,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (
     FlowsheetBlock,
+    MaterialFlowBasis,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -48,7 +49,6 @@ from watertap.property_models import (
     MCASParameterBlock,
     ActivityCoefficientModel,
     DensityCalculation,
-    MaterialFlowBasis,
 )
 from watertap.core.solvers import get_solver
 
