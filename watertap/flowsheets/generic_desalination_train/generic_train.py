@@ -20,42 +20,37 @@ from pyomo.environ import (
     NonNegativeReals,
     units as pyunits,
 )
+from pyomo.network import Arc
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import (
     FlowsheetBlock,
 )
-
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
-
-
-from watertap.core.solvers import get_solver
-
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    ActivityCoefficientModel,
-    DensityCalculation,
-    MaterialFlowBasis,
-)
-
 from idaes.core.util.initialization import propagate_state
-
 from idaes.models.unit_models import (
     Product,
     Feed,
 )
 
 import watertap.flowsheets.generic_desalination_train.utils.scale_utils as scaleTools
-from pyomo.util.check_units import assert_units_consistent
 from watertap.flowsheets.generic_desalination_train.costing import (
     generic_costing,
     stream_costing,
 )
-from pyomo.network import Arc
 from watertap.flowsheets.generic_desalination_train.unit_operations import (
     desalter,
     mixer,
     separator,
 )
+from watertap.property_models import (
+    MCASParameterBlock,
+    ActivityCoefficientModel,
+    DensityCalculation,
+    MaterialFlowBasis,
+)
+from watertap.core.solvers import get_solver
 
 import logging
 

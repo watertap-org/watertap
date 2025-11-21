@@ -20,17 +20,17 @@ from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import (
     Feed,
     Product,
 )
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+from watertap.property_models import MCASParameterBlock
 from watertap.unit_models.gac import GAC
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.solvers import get_solver
 
 __author__ = "Hunter Barber"
 
