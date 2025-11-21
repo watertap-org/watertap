@@ -40,9 +40,9 @@ from idaes.models.unit_models import (
     Product,
     Mixer,
     PressureChanger,
+    MomentumMixingType,
+    SplittingType,
 )
-from idaes.models.unit_models.separator import SplittingType
-from watertap.core.solvers import get_solver
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.scaling import set_scaling_factor
@@ -56,58 +56,47 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
-from watertap.unit_models.aeration_tank import (
+
+from watertap.unit_models import (
+    AD,
+    ADScaler,
     AerationTank,
     AerationTankScaler,
     ElectricityConsumption,
+    Thickener,
+    ThickenerScaler,
+    DewateringUnit,
+    DewatererScaler,
+    CSTR,
+    CSTRScaler,
+    Clarifier,
+    ClarifierScaler,
+    ActivatedSludgeModelType,
 )
-from watertap.unit_models.clarifier import Clarifier, ClarifierScaler
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
+from watertap.property_models import (
     ModifiedADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
     ADM1ASM2dScaler,
 )
-from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
     ASM2dADM1Scaler,
 )
-from watertap.unit_models.anaerobic_digester import AD, ADScaler
-from watertap.unit_models.cstr import CSTR, CSTRScaler
-from watertap.unit_models.dewatering import (
-    DewateringUnit,
-    ActivatedSludgeModelType as dewater_type,
-    DewatererScaler,
-)
-from watertap.unit_models.thickener import (
-    Thickener,
-    ActivatedSludgeModelType as thickener_type,
-    ThickenerScaler,
-)
-
 from watertap.core.util.initialization import (
     check_solve,
 )
-
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
+from watertap.core.solvers import get_solver
 
 
 # Set up logger
@@ -255,7 +244,7 @@ def build(bio_P=False):
     # Thickener
     m.fs.thickener = Thickener(
         property_package=m.fs.props_ASM2D,
-        activated_sludge_model=thickener_type.modified_ASM2D,
+        activated_sludge_model=ActivatedSludgeModelType.modified_ASM2D,
     )
     # Mixing feed and recycle streams from thickener and dewatering unit
     m.fs.MX3 = Mixer(
@@ -307,7 +296,7 @@ def build(bio_P=False):
     # Dewatering Unit
     m.fs.dewater = DewateringUnit(
         property_package=m.fs.props_ASM2D,
-        activated_sludge_model=dewater_type.modified_ASM2D,
+        activated_sludge_model=ActivatedSludgeModelType.modified_ASM2D,
     )
 
     # ======================================================================
