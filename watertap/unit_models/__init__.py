@@ -45,3 +45,5 @@ from .cstr import CSTR, CSTRScaler
 from .clarifier import Clarifier, ClarifierScaler
 from .cstr_injection import CSTR_Injection
 from .aeration_tank import AerationTank, AerationTankScaler, ElectricityConsumption
+from .generic_desalter import GenericDesalter
+from .generic_separation import GenericSeparation
