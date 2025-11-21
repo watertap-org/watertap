@@ -24,17 +24,11 @@ from pyomo.environ import (
     assert_optimal_termination,
     Suffix,
     TransformationFactory,
-)
-
-from idaes.core import (
-    FlowsheetBlock,
-)
-
-from pyomo.environ import (
     units,
 )
+from pyomo.util.check_units import assert_units_consistent
 
-from watertap.core.solvers import get_solver
+from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -46,33 +40,21 @@ from idaes.core.util.scaling import (
     jacobian_cond,
 )
 import idaes.core.util.scaling as iscale
-
 from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
     ADM1ASM2dScaler,
 )
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
+from watertap.property_models import (
     ModifiedADM1ParameterBlock,
     ModifiedADM1PropertiesScaler,
-)
-
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
     ModifiedASM2dPropertiesScaler,
-)
-
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
     ModifiedADM1ReactionParameterBlock,
-)
-
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
 )
-
-
-from pyomo.util.check_units import assert_units_consistent
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
