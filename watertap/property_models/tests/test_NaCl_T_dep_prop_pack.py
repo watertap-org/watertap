@@ -11,7 +11,6 @@
 #################################################################################
 
 import pytest
-from watertap.property_models import NaClParameterTDepBlock
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -19,6 +18,7 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,
 )
+from watertap.property_models import NaClParameterTDepBlock
 
 
 # -----------------------------------------------------------------------------
