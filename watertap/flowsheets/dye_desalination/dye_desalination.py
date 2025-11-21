@@ -19,7 +19,7 @@ Adsorption of Congo Red by Activated Carbon", 2014, Korean Chemical Engineering 
 Vol. 53 Iss. 1, pp. 64-70
 """
 import os
-import idaes.logger as idaeslog
+
 from pyomo.environ import (
     assert_optimal_termination,
     ConcreteModel,
@@ -36,11 +36,11 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (
     FlowsheetBlock,
     MomentumBalanceType,
+    UnitModelCostingBlock,
     UnitModelBlockData,
 )
-
+import idaes.logger as idaeslog
 from idaes.core.util.initialization import propagate_state
-
 import idaes.core.util.scaling as iscale
 from idaes.models.unit_models import (
     Mixer,
@@ -48,48 +48,43 @@ from idaes.models.unit_models import (
     Product,
     Translator,
     MomentumMixingType,
-)
-from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
 )
-
-from idaes.core import UnitModelCostingBlock
-
-from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump
-from watertap.core.util.initialization import assert_degrees_of_freedom
-
-from watertap.property_models import SeawaterParameterBlock
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
-    PressureChangeType,
+from watertap.core import Database
+from watertap.costing import (
+    WaterTAPCosting,
+    MultiUnitModelCostingBlock,
+    ZeroOrderCosting,
 )
-from watertap.unit_models.reverse_osmosis_1D import ReverseOsmosis1D
 from watertap.costing.unit_models.dewatering import (
     cost_centrifuge,
     cost_filter_belt_press,
     cost_filter_plate_press,
 )
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    DiffusivityCalculation,
+from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.unit_models import (
+    GAC,
+    PressureExchanger,
+    Pump,
+    ReverseOsmosis1D,
+    ReverseOsmosis0D,
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
 )
-from watertap.costing import MultiUnitModelCostingBlock
-from watertap.core.wt_database import Database
-from watertap.property_models import ZOParameterBlock
 from watertap.unit_models.zero_order import (
     FeedZO,
     PumpElectricityZO,
     NanofiltrationZO,
     SecondaryTreatmentWWTPZO,
 )
-from watertap.unit_models.gac import GAC
-
-from watertap.costing.zero_order_costing import ZeroOrderCosting
-from watertap.costing import WaterTAPCosting
+from watertap.property_models import (
+    ZOParameterBlock,
+    SeawaterParameterBlock,
+    MCASParameterBlock,
+    DiffusivityCalculation,
+)
 from watertap.core.solvers import get_solver
 
 # Set up logger
@@ -154,7 +149,7 @@ def build(
     m.fs = FlowsheetBlock(dynamic=False)
 
     # define property packages
-    m.fs.prop_nf = prop_ZO.ZOParameterBlock(solute_list=["tds", "dye"])
+    m.fs.prop_nf = ZOParameterBlock(solute_list=["tds", "dye"])
     m.fs.prop_ro = SeawaterParameterBlock()
 
     # define blocks
