@@ -11,7 +11,7 @@
 #################################################################################
 
 import pytest
-import watertap.property_models.NaCl_T_dep_prop_pack as props
+from watertap.property_models import NaClParameterTDepBlock
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -23,17 +23,17 @@ from watertap.property_models.tests.property_test_harness import (
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
-class TestNaClProperty_idaes(PropertyTestHarness_idaes):
+class TestNaClTDepProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = NaClParameterTDepBlock
         self.param_args = {}
         self.prop_args = {}
         self.has_density_terms = False
 
 
-class TestNaClProperty(PropertyTestHarness):
+class TestNaClTDepProperty(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = NaClParameterTDepBlock
         self.param_args = {}
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
@@ -70,9 +70,9 @@ class TestNaClProperty(PropertyTestHarness):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_1(PropertyRegressionTest):
+class TestNaClTDepPropertySolution_1(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = NaClParameterTDepBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -113,9 +113,9 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_2(PropertyRegressionTest):
+class TestNaClTDepPropertySolution_2(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = NaClParameterTDepBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -156,9 +156,9 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_3(PropertyRegressionTest):
+class TestNaClTDepPropertySolution_3(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = NaClParameterTDepBlock
         self.param_args = {}
 
         self.solver = "ipopt"

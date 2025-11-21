@@ -11,7 +11,7 @@
 #################################################################################
 from .multicomp_aq_sol_prop_pack import *
 from .NaCl_prop_pack import NaClParameterBlock, NaClParameterData
-from .NaCl_T_dep_prop_pack import NaClParameterBlock, NaClParameterData
+from .NaCl_T_dep_prop_pack import NaClParameterTDepBlock, NaClParameterTDepData
 from .seawater_prop_pack import SeawaterParameterBlock, SeawaterParameterData
 from .water_prop_pack import WaterParameterBlock, WaterParameterData
 from .unit_specific.coagulation_prop_pack import CoagulationParameterBlock, CoagulationParameterData

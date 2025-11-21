@@ -68,17 +68,17 @@ from watertap.core.util.scaling import transform_property_constraints
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("NaClParameterBlock")
-class NaClParameterData(PhysicalParameterBlock):
+@declare_process_block_class("NaClParameterTDepBlock")
+class NaClParameterTDepData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     def build(self):
         """
         Callable method for Block construction.
         """
-        super(NaClParameterData, self).build()
+        super(NaClParameterTDepData, self).build()
 
-        self._state_block_class = NaClStateBlock
+        self._state_block_class = NaClTDepStateBlock
 
         # components
         self.H2O = Solvent()
@@ -729,7 +729,7 @@ class NaClParameterData(PhysicalParameterBlock):
         )
 
 
-class _NaClStateBlock(StateBlock):
+class _NaClTDepStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -977,11 +977,11 @@ class _NaClStateBlock(StateBlock):
         return results
 
 
-@declare_process_block_class("NaClStateBlock", block_class=_NaClStateBlock)
-class NaClStateBlockData(StateBlockData):
+@declare_process_block_class("NaClTDepStateBlock", block_class=_NaClTDepStateBlock)
+class NaClTDepStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
-        super(NaClStateBlockData, self).build()
+        super(NaClTDepStateBlockData, self).build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
