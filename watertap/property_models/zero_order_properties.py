@@ -14,6 +14,9 @@ This module contains the general purpose property package for zero-order
 unit models. Zero-order models do not track temperature and pressure, or any
 form of energy flow.
 """
+from pyomo.environ import Expression, Param, PositiveReals, units as pyunits, Var
+from pyomo.common.config import ConfigValue
+
 from idaes.core import (
     EnergyBalanceType,
     MaterialBalanceType,
@@ -30,8 +33,6 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 
-from pyomo.environ import Expression, Param, PositiveReals, units as pyunits, Var
-from pyomo.common.config import ConfigValue
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
