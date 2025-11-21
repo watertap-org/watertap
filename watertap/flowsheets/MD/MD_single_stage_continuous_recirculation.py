@@ -22,25 +22,23 @@ from pyomo.environ import (
     check_optimal_termination,
 )
 from pyomo.network import Arc
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
+
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock, FlowDirection
+import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import (
-    propagate_state,
-)
-from idaes.models.unit_models import Heater, Separator, Mixer, Product, Feed
-from idaes.models.unit_models.separator import SplittingType
-from idaes.models.unit_models.mixer import MomentumMixingType
-from idaes.models.unit_models.heat_exchanger import (
-    HeatExchanger,
-    HeatExchangerFlowPattern,
-)
+from idaes.core.util.initialization import propagate_state
+from idaes.models.unit_models import Heater, Separator, Mixer, Product, Feed, HeatExchanger, HeatExchangerFlowPattern, SplittingType, MomentumMixingType
+# from idaes.models.unit_models.separator import SplittingType
+# from idaes.models.unit_models.mixer import MomentumMixingType
+# from idaes.models.unit_models.heat_exchanger import (
+#     HeatExchanger,
+#     HeatExchangerFlowPattern,
+# )
+
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
 )
-from watertap.unit_models.pressure_changer import Pump
-from idaes.core import UnitModelCostingBlock, FlowDirection
-import idaes.core.util.scaling as iscale
+from watertap.unit_models import Pump
 from watertap.unit_models.MD.membrane_distillation_0D import MembraneDistillation0D
 from watertap.unit_models.MD.MD_channel_base import (
     ConcentrationPolarizationType,
@@ -48,8 +46,7 @@ from watertap.unit_models.MD.MD_channel_base import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-import watertap.property_models.seawater_prop_pack as props_sw
-import watertap.property_models.water_prop_pack as props_w
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.pump import (
     cost_pump,
@@ -61,6 +58,7 @@ from watertap.core.util.initialization import (
     assert_degrees_of_freedom,
     interval_initializer,
 )
+from watertap.core.solvers import get_solver
 
 __author__ = "Elmira Shamlou"
 
@@ -91,9 +89,9 @@ def build():
     m.fs = FlowsheetBlock(dynamic=False)
 
     # properties
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = SeawaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties_hot_ch)
