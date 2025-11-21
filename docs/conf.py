@@ -23,6 +23,7 @@
 #
 import os
 import sys
+import importlib
 import sphinx_rtd_theme
 
 sys.path.insert(0, os.path.abspath(".."))

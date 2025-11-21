@@ -44,6 +44,7 @@ from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
 )
+from idaes.core.util.exceptions import InitializationError
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
@@ -64,6 +65,7 @@ from idaes.models.unit_models import (
     PressureChanger,
     Product,
 )
+import idaes.logger as idaeslog
 
 from watertap.unit_models.aeration_tank import (
     AerationTank,
@@ -81,6 +83,9 @@ from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def main(reactor_volume_equalities=True):
@@ -113,7 +118,7 @@ def main(reactor_volume_equalities=True):
     display_costing(m)
     display_performance_metrics(m)
 
-    return m, results
+    return m, results, rescaled_model
 
 
 def build():
@@ -136,7 +141,7 @@ def build():
     m.fs.MX1 = Mixer(
         property_package=m.fs.props_ASM1,
         inlet_list=["feed_water", "recycle"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
     # First reactor (anoxic) - standard CSTR
     m.fs.R1 = CSTR(
@@ -184,7 +189,7 @@ def build():
     m.fs.MX6 = Mixer(
         property_package=m.fs.props_ASM1,
         inlet_list=["clarifier", "reactor"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
 
     # Product Blocks
@@ -255,17 +260,17 @@ def build():
     m.fs.MX2 = Mixer(
         property_package=m.fs.props_ASM1,
         inlet_list=["feed_water1", "recycle1"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
     m.fs.MX3 = Mixer(
         property_package=m.fs.props_ASM1,
         inlet_list=["feed_water2", "recycle2"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
     m.fs.MX4 = Mixer(
         property_package=m.fs.props_ASM1,
         inlet_list=["thickener", "clarifier"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
 
     # Make connections related to AD section
@@ -289,7 +294,7 @@ def build():
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # keep handy all the mixers
-    m.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4, m.fs.MX6)
+    m.fs.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4, m.fs.MX6)
 
     return m
 
@@ -392,9 +397,9 @@ def set_operating_conditions(m):
     m.fs.TU.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.TU.diameter.fix(10 * pyo.units.m)
 
-    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
-    for mx in m.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
+    # Mixers - fix outlet pressures since MomentumMixingType.none and isobaric assumption
+    for mixer in m.fs.mixers:
+        mixer.outlet.pressure.fix()
 
 
 def scale_system(m):
@@ -1040,13 +1045,12 @@ def initialize_system(m):
     initializer = BlockTriangularizationInitializer()
 
     def function(unit):
-        initializer.initialize(unit)
+        try:
+            initializer.initialize(unit, output_level=_log.debug)
+        except InitializationError:
+            pass
 
     seq.run(m, function)
-
-    # TODO: resolve the danger of redundant constraint related to pressure equality constraints created in mixer, specifically for isobaric conditions. the mixer initializer will turn these constraints back on
-    for mx in m.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
 
 
 def add_costing(m):
@@ -1355,4 +1359,4 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(reactor_volume_equalities=True)
+    m, results, sm = main(reactor_volume_equalities=True)

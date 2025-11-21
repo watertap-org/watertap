@@ -14,7 +14,7 @@ This module contains utility functions for initialization of WaterTAP models.
 """
 
 
-__author__ = "Adam Atia"
+__author__ = "Adam Atia, Ben Knueven"
 
 from pyomo.environ import check_optimal_termination, ComponentMap, Var
 from pyomo.contrib.fbbt.fbbt import fbbt
@@ -141,7 +141,7 @@ def assert_no_degrees_of_freedom(blk):
 
 
 def interval_initializer(
-    blk, feasibility_tol=1e-6, default_initial_value=0.0, logger=_log
+    blk, feasibility_tol=1e-6, default_initial_value=0.0, logger=_log, fail_flag=False
 ):
     """
     Improve the initialization of ``blk`` utilizing interval arithmetic.
@@ -151,7 +151,8 @@ def interval_initializer(
         feasibility_tol : tolerance to use for FBBT (default: 1e-6)
         default_initial_value: set uninitialized variables to this value (default: 0.0)
         logger : logger to use (default: watertap.core.util.initialization)
-
+        fail_flag : Boolean argument to specify error or warning (Default: fail_flag=False produces logger warning.
+                        set fail_flag=True to raise an error and when interval initialization encounters exception.)
     Returns:
         None
 
@@ -190,9 +191,16 @@ def interval_initializer(
                     )
                     v.set_value(v.ub, skip_validation=True)
 
-    except:
-        raise
-
+    except Exception as e:
+        if fail_flag:
+            _log.error(
+                f"Interval initializer failed for {blk} because of the following: {e}"
+            )
+            raise e
+        else:
+            _log.warning(
+                f"Interval initializer failed for {blk} because of the following: {e}"
+            )
     finally:
         # restore the bounds before leaving this function
         for v, bounds in bound_cache.items():
