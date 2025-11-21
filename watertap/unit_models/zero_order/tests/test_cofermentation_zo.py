@@ -35,7 +35,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import CofermentationZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -48,8 +48,7 @@ class TestCofermentationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            solute_list=["cod", "nonbiodegradable_cod", "foo"]
+        m.fs.params = ZOParameterBlock(solute_list=["cod", "nonbiodegradable_cod", "foo"]
         )
 
         m.fs.unit = CofermentationZO(property_package=m.fs.params, database=m.db)
@@ -179,7 +178,7 @@ def test_COD_not_in_solute_list():
     model.db = Database()
 
     model.fs = FlowsheetBlock(dynamic=False)
-    model.fs.params = WaterParameterBlock(solute_list=["foo"])
+    model.fs.params = ZOParameterBlock(solute_list=["foo"])
     with pytest.raises(
         ValueError,
         match="cod must be included in the solute list since"
@@ -196,7 +195,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["cod", "nonbiodegradable_cod"])
+    m.fs.params = ZOParameterBlock(solute_list=["cod", "nonbiodegradable_cod"])
 
     m.fs.costing = ZeroOrderCosting()
 

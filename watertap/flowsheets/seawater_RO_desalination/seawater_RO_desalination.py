@@ -46,7 +46,7 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
-import watertap.core.zero_order_properties as prop_ZO
+import watertap.property_models.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
     FeedZO,
     SWOnshoreIntakeZO,
@@ -118,10 +118,10 @@ def build(erd_type=None):
     m.erd_type = erd_type
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.prop_prtrt = prop_ZO.WaterParameterBlock(solute_list=["tds", "tss"])
+    m.fs.prop_prtrt = prop_ZO.ZOParameterBlock(solute_list=["tds", "tss"])
     density = 1023.5 * pyunits.kg / pyunits.m**3
     m.fs.prop_prtrt.dens_mass_default = density
-    m.fs.prop_psttrt = prop_ZO.WaterParameterBlock(solute_list=["tds"])
+    m.fs.prop_psttrt = prop_ZO.ZOParameterBlock(solute_list=["tds"])
     m.fs.prop_desal = prop_SW.SeawaterParameterBlock()
 
     # block structure

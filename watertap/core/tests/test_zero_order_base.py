@@ -14,14 +14,15 @@ Tests for general zero-order base class
 """
 import pytest
 
+from pyomo.environ import ConcreteModel, Var, units as pyunits
+
 from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
-from pyomo.environ import ConcreteModel, Var, units as pyunits
+import idaes.logger as idaeslog
 
 from watertap.core import ZeroOrderBaseData
-from watertap.core import WaterParameterBlock
-import idaes.logger as idaeslog
+from watertap.property_models import ZOParameterBlock
 
 
 @declare_process_block_class("DerivedZOBase")
@@ -34,7 +35,7 @@ class DerivedZOBaseData(ZeroOrderBaseData):
 def test_private_attributes():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
+    m.fs.params = ZOParameterBlock(solute_list=["A", "B", "C"])
 
     m.fs.unit = DerivedZOBase(property_package=m.fs.params)
 
@@ -52,7 +53,7 @@ def test_private_attributes():
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
+    m.fs.params = ZOParameterBlock(solute_list=["A", "B", "C"])
 
     m.fs.unit = DerivedZOBase(property_package=m.fs.params)
 
@@ -66,7 +67,7 @@ class TestZOBase:
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.params = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.params.del_component(m.fs.params.phase_list)
         m.fs.params.del_component(m.fs.params.solvent_set)

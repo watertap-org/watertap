@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MicrobialBatteryZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,8 +46,7 @@ class TestMicrobialBattery:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            solute_list=[
+        m.fs.params = ZOParameterBlock(solute_list=[
                 "arsenic",
                 "uranium",
                 "nitrate",
@@ -217,8 +216,7 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(
-        solute_list=[
+    m.fs.params = ZOParameterBlock(solute_list=[
             "arsenic",
             "uranium",
             "nitrate",

@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import AnaerobicMBRMECZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -47,8 +47,7 @@ class TestAnaerobicMBRMECZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            solute_list=[
+        m.fs.params = ZOParameterBlock(solute_list=[
                 "cod",
                 "nonbiodegradable_cod",
                 "ammonium_as_nitrogen",
@@ -197,7 +196,7 @@ class Test_AnMBRMEC_ZO_subtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["cod", "nonbiodegradable_cod"])
+        m.fs.params = ZOParameterBlock(solute_list=["cod", "nonbiodegradable_cod"])
 
         m.fs.unit = AnaerobicMBRMECZO(property_package=m.fs.params, database=db)
 
@@ -222,7 +221,7 @@ def test_ffCOD_not_in_solute_list():
     model.db = Database()
 
     model.fs = FlowsheetBlock(dynamic=False)
-    model.fs.params = WaterParameterBlock(solute_list=["cod"])
+    model.fs.params = ZOParameterBlock(solute_list=["cod"])
     with pytest.raises(
         ValueError,
         match="nonbiodegradable_cod must be included in the solute list since"
@@ -239,7 +238,7 @@ def test_COD_not_in_solute_list():
     model.db = Database()
 
     model.fs = FlowsheetBlock(dynamic=False)
-    model.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
+    model.fs.params = ZOParameterBlock(solute_list=["nonbiodegradable_cod"])
     with pytest.raises(
         ValueError,
         match="fs.unit - key_reactant cod for reaction cod_to_nonbiodegradable_cod "
@@ -256,8 +255,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
-        solute_list=[
+    m.fs.params = ZOParameterBlock(solute_list=[
             "cod",
             "nonbiodegradable_cod",
             "ammonium_as_nitrogen",

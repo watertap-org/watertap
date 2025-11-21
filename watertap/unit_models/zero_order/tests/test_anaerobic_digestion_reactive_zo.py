@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import AnaerobicDigestionReactiveZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -47,8 +47,7 @@ class TestAnaerobicDigestionReactiveZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
+        m.fs.params = ZOParameterBlock(solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
         )
 
         m.fs.unit = AnaerobicDigestionReactiveZO(
@@ -207,8 +206,7 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(
-        solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
+    m.fs.params = ZOParameterBlock(solute_list=["tss", "cod", "tkn", "acetic_acid", "ammonium_as_nitrogen"]
     )
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = AnaerobicDigestionReactiveZO(
@@ -263,7 +261,7 @@ class TestAnaerobicDigestionReactivesubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss", "cod", "tkn"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss", "cod", "tkn"])
 
         m.fs.unit = AnaerobicDigestionReactiveZO(
             property_package=m.fs.params, database=db
@@ -295,8 +293,7 @@ def test_costing_GLSD():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
-        solute_list=["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
+    m.fs.params = ZOParameterBlock(solute_list=["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
     )
 
     m.fs.costing = ZeroOrderCosting()

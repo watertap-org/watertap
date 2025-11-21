@@ -39,7 +39,6 @@ from idaes.core import (
     UnitModelBlockData,
 )
 
-from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 
 import idaes.core.util.scaling as iscale
@@ -61,7 +60,7 @@ from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
-import watertap.property_models.seawater_prop_pack as prop_SW
+from watertap.property_models import SeawaterParameterBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -80,7 +79,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
 )
 from watertap.costing import MultiUnitModelCostingBlock
 from watertap.core.wt_database import Database
-import watertap.core.zero_order_properties as prop_ZO
+import watertap.property_models.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
     FeedZO,
     PumpElectricityZO,
@@ -91,6 +90,7 @@ from watertap.unit_models.gac import GAC
 
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -154,8 +154,8 @@ def build(
     m.fs = FlowsheetBlock(dynamic=False)
 
     # define property packages
-    m.fs.prop_nf = prop_ZO.WaterParameterBlock(solute_list=["tds", "dye"])
-    m.fs.prop_ro = prop_SW.SeawaterParameterBlock()
+    m.fs.prop_nf = prop_ZO.ZOParameterBlock(solute_list=["tds", "dye"])
+    m.fs.prop_ro = SeawaterParameterBlock()
 
     # define blocks
     if include_pretreatment:

@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MembraneEvaporatorZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -47,8 +47,7 @@ class TestMembraneEvaporator:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            solute_list=["acetic_acid", "ammonium_as_nitrogen"]
+        m.fs.params = ZOParameterBlock(solute_list=["acetic_acid", "ammonium_as_nitrogen"]
         )
 
         m.fs.unit = MembraneEvaporatorZO(property_package=m.fs.params, database=m.db)
@@ -170,8 +169,7 @@ def test_costing():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(
-        solute_list=["acetic_acid", "ammonium_as_nitrogen"]
+    m.fs.params = ZOParameterBlock(solute_list=["acetic_acid", "ammonium_as_nitrogen"]
     )
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = MembraneEvaporatorZO(property_package=m.fs.params, database=m.db)

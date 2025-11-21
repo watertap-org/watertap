@@ -22,7 +22,7 @@ The ideal water properties module contains a simple property package for saline 
   m.fs = FlowsheetBlock(dynamic=False)
 
   # Add an instance of the ideal water property package with three solutes A, B and C
-  m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+  m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
 Package Details
 ---------------

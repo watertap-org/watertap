@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import CASZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,7 +46,7 @@ class TestCASZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["viruses_enteric", "tss", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["viruses_enteric", "tss", "foo"])
 
         m.fs.unit = CASZO(property_package=m.fs.params, database=m.db)
 
@@ -182,7 +182,7 @@ class Test_CASZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["viruses_enteric"])
+        m.fs.params = ZOParameterBlock(solute_list=["viruses_enteric"])
 
         m.fs.unit = CASZO(property_package=m.fs.params, database=db)
 
@@ -210,7 +210,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 

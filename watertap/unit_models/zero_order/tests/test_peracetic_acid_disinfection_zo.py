@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import PeraceticAcidDisinfectionZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -47,8 +47,7 @@ class TestPeraceticAcidDisinfection:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
+        m.fs.params = ZOParameterBlock(solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
         )
 
         m.fs.unit = PeraceticAcidDisinfectionZO(
@@ -206,8 +205,7 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(
-        solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
+    m.fs.params = ZOParameterBlock(solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
     )
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),

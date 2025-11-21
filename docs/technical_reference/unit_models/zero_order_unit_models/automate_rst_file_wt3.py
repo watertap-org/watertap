@@ -18,7 +18,7 @@ from watertap.core import ZeroOrderBaseData
 from pyomo.environ import ConcreteModel, Var, Constraint
 from watertap.core.wt_database import Database
 from idaes.core import FlowsheetBlock
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 import watertap.unit_models.zero_order as zo
 from watertap.core import ZeroOrderBaseData
 from watertap.core.tests.test_zero_order_base import DerivedZOBase
@@ -40,8 +40,7 @@ def grab_unit_components(unit_class, i):
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props = WaterParameterBlock(
-        solute_list=[
+    m.fs.props = ZOParameterBlock(solute_list=[
             "toc",
             "tss",
             "tkn",
@@ -161,8 +160,7 @@ def grab_unit_components_feed(unit_class):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.props = WaterParameterBlock(
-        solute_list=[
+    m.fs.props = ZOParameterBlock(solute_list=[
             "toc",
             "tkn",
             "tss",

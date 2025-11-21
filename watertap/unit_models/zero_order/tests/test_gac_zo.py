@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import GACZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,7 +46,7 @@ class TestGACZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss", "nonvolatile_toc"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss", "nonvolatile_toc"])
 
         m.fs.unit = GACZO(property_package=m.fs.params, database=m.db)
 
@@ -172,7 +172,7 @@ class TestGACZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss", "nonvolatile_toc", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss", "nonvolatile_toc", "foo"])
 
         m.fs.unit = GACZO(property_package=m.fs.params, database=m.db)
 
@@ -302,7 +302,7 @@ class TestGACZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss", "nonvolatile_toc"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss", "nonvolatile_toc"])
 
         m.fs.unit = GACZO(property_package=m.fs.params, database=db)
 
@@ -333,7 +333,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 

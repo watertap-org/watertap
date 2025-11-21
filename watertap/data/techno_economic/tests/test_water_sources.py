@@ -39,7 +39,7 @@ def test_default_source():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(database=m.db)
+    m.fs.params = ZOParameterBlock(solute_list=m.db)
 
     m.fs.unit = FeedZO(property_package=m.fs.params)
 
@@ -71,7 +71,7 @@ def test_all_sources(source):
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(database=m.db, water_source=source)
+    m.fs.params = ZOParameterBlock(solute_list=m.db, water_source=source)
 
     m.fs.unit = FeedZO(property_package=m.fs.params)
 
