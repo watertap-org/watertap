@@ -15,7 +15,6 @@ import watertap.property_models.unit_specific.NDMA_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
-import idaes.logger as idaeslog
 from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,

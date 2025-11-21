@@ -33,7 +33,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
 
 from idaes.models.unit_models.separator import SplittingType

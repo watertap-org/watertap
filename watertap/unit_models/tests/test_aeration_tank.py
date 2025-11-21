@@ -14,7 +14,6 @@ Tests for CSTR unit model with injection.
 Authors: Andrew Lee, Vibhav Dabadghao
 """
 
-from io import StringIO
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -41,7 +40,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.scaling.scaler_profiling import ScalingProfiler
 import idaes.core.util.scaling as iscale
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.util.testing import (

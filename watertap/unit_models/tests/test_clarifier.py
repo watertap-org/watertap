@@ -13,7 +13,6 @@
 Tests for clarifier.
 """
 __author__ = "Chenyu Wang"
-from io import StringIO
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -29,7 +28,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from watertap.core.solvers import get_solver
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness

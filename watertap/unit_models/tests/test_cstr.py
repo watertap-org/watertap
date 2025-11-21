@@ -13,7 +13,6 @@
 Tests for CSTR unit model.
 Authors: Marcus Holly
 """
-from io import StringIO
 import pytest
 
 from pyomo.environ import (
@@ -35,7 +34,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from watertap.unit_models.cstr import CSTR, CSTRScaler
 from watertap.costing import WaterTAPCosting
 
