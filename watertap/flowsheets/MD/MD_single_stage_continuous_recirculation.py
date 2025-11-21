@@ -27,13 +27,17 @@ from idaes.core import FlowsheetBlock, UnitModelCostingBlock, FlowDirection
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
-from idaes.models.unit_models import Heater, Separator, Mixer, Product, Feed, HeatExchanger, HeatExchangerFlowPattern, SplittingType, MomentumMixingType
-# from idaes.models.unit_models.separator import SplittingType
-# from idaes.models.unit_models.mixer import MomentumMixingType
-# from idaes.models.unit_models.heat_exchanger import (
-#     HeatExchanger,
-#     HeatExchangerFlowPattern,
-# )
+from idaes.models.unit_models import (
+    Heater,
+    Separator,
+    Mixer,
+    Product,
+    Feed,
+    HeatExchanger,
+    HeatExchangerFlowPattern,
+    SplittingType,
+    MomentumMixingType,
+)
 
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
