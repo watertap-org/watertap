@@ -48,7 +48,9 @@ from .dewatering import DewateringUnit, DewatererScaler, ActivatedSludgeModelTyp
 from .electroNP_ZO import ElectroNPZO
 from .cstr import CSTR, CSTRScaler
 from .clarifier import Clarifier, ClarifierScaler
-from .cstr_injection import CSTR_Injection
+from .cstr_injection import CSTR_Injection, CSTR_InjectionScaler
 from .aeration_tank import AerationTank, AerationTankScaler, ElectricityConsumption
 from .generic_desalter import GenericDesalter
 from .generic_separation import GenericSeparation
+from .coag_floc_model import CoagulationFlocculation
+from .boron_removal import BoronRemoval
