@@ -502,14 +502,20 @@ def scale_system(m, bio_P=False):
     ad_scaler = ADScaler()
     ad_scaler.scale_model(m.fs.AD)
 
-    set_scaling_factor(m.fs.AD.KH_co2, 1e1)
-    set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
-    set_scaling_factor(m.fs.AD.KH_h2, 1e2)
-    set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e1)
+    for vardata in m.fs.AD.KH_co2.values():
+        set_scaling_factor(vardata, 1e1)
+    for vardata in m.fs.AD.KH_ch4.values():
+        set_scaling_factor(vardata, 1e1)
+    for vardata in m.fs.AD.KH_h2.values():
+        set_scaling_factor(vardata, 1e2)
+    for vardata in m.fs.AD.liquid_phase.heat.values():
+        set_scaling_factor(vardata, 1e1)
     if bio_P:
-        set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e1)
+        for blkdata in m.fs.AD.liquid_phase.reactions.values():
+            set_scaling_factor(blkdata.S_H, 1e1)
     else:
-        set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e2)
+        for blkdata in m.fs.AD.liquid_phase.reactions.values():
+            set_scaling_factor(blkdata.S_H, 1e2)
 
     cstr_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4]
     cstr_scaler = CSTRScaler()
@@ -517,7 +523,8 @@ def scale_system(m, bio_P=False):
         cstr_scaler.scale_model(unit)
 
     for unit in cstr_list:
-        set_scaling_factor(unit.hydraulic_retention_time, 1e-3)
+        for vardata in unit.hydraulic_retention_time.values():
+            set_scaling_factor(vardata, 1e-3)
 
     aeration_list = [m.fs.R5, m.fs.R6, m.fs.R7]
     aeration_scaler = AerationTankScaler()
@@ -525,29 +532,39 @@ def scale_system(m, bio_P=False):
         aeration_scaler.scale_model(unit)
 
     for R in aeration_list:
-        set_scaling_factor(R.KLa, 1e-1)
+        for vardata in R.KLa.values():
+            set_scaling_factor(vardata, 1e-1)
         if bio_P:
-            set_scaling_factor(R.hydraulic_retention_time[0], 1e-2)
+            for vardata in R.hydraulic_retention_time.values():
+                set_scaling_factor(vardata, 1e-2)
 
     reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5, m.fs.R6, m.fs.R7]
     for unit in reactor_list:
-        set_scaling_factor(unit.control_volume.reactions[0.0].rate_expression, 1e3)
-        set_scaling_factor(unit.cstr_performance_eqn, 1e3)
-        set_scaling_factor(
-            unit.control_volume.rate_reaction_stoichiometry_constraint, 1e3
-        )
-        set_scaling_factor(unit.control_volume.material_balances, 1e3)
+        for blkdata in unit.control_volume.reactions.values():
+            for vardata in blkdata.rate_expression.values():
+                set_scaling_factor(vardata, 1e3)
+        for condata in unit.cstr_performance_eqn.values():
+            set_scaling_factor(condata, 1e3)
+        for (
+            condata
+        ) in unit.control_volume.rate_reaction_stoichiometry_constraint.values():
+            set_scaling_factor(condata, 1e3)
+        for condata in unit.control_volume.material_balances.values():
+            set_scaling_factor(condata, 1e3)
 
     if bio_P:
-        set_scaling_factor(
-            m.fs.R5.control_volume.rate_reaction_generation[0, "Liq", "S_I"], 1e-3
-        )
-        constraint_scaling_transform(
-            m.fs.R5.control_volume.rate_reaction_stoichiometry_constraint[
-                0, "Liq", "H2O"
-            ],
-            1e-6,
-        )
+        for t in m.fs.time:
+            set_scaling_factor(
+                m.fs.R5.control_volume.rate_reaction_generation[t, "Liq", "S_I"], 1e-3
+            )
+            # TODO is it intentional that we're setting scaling factors for some constraints
+            # but doing constraint scaling transforms for others?
+            constraint_scaling_transform(
+                m.fs.R5.control_volume.rate_reaction_stoichiometry_constraint[
+                    t, "Liq", "H2O"
+                ],
+                1e-6,
+            )
 
     clarifier_list = [m.fs.CL, m.fs.CL2]
     clarifier_scaler = ClarifierScaler()
@@ -566,7 +583,8 @@ def scale_system(m, bio_P=False):
     ad_as_scaler = ADM1ASM2dScaler()
     ad_as_scaler.scale_model(m.fs.translator_adm1_asm2d)
 
-    set_scaling_factor(m.fs.P1.control_volume.work[0], 1e-2)
+    for vardata in m.fs.P1.control_volume.work.values():
+        set_scaling_factor(vardata, 1e-2)
 
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:

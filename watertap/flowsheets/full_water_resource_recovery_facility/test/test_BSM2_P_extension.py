@@ -75,17 +75,9 @@ class TestFullFlowsheetBioPFalse:
     @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
-        warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 3
+        warnings, _ = dt._collect_numerical_warnings()
+        assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
-        assert (
-            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
-        assert (
-            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -201,17 +193,9 @@ class TestFullFlowsheetBioPTrue:
     @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
-        warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 3
+        warnings, _ = dt._collect_numerical_warnings()
+        assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
-        assert (
-            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
-        assert (
-            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -340,7 +324,7 @@ class TestScaledBioPFalse:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.6954462e15, rel=1e-3
+            2.987651e15, rel=1e-3
         )
 
 
@@ -391,5 +375,5 @@ class TestScaledBioPTrue:
         jac, _ = get_jacobian(sm, scaled=False)
 
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            8.82538591e14, rel=1e-2
+            7.43640e14, rel=1e-2
         )

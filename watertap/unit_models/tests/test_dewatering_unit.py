@@ -1023,8 +1023,6 @@ class TestThickenerScaler:
 
         m.fs.unit.hydraulic_retention_time.fix()
 
-        sb = ScalerBase()
-
         scaler = DewatererScaler()
         scaler.scale_model(
             m.fs.unit,
@@ -1039,7 +1037,7 @@ class TestThickenerScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.10895296e4, rel=1e-3
+            53957.5009, rel=1e-3
         )
 
 
