@@ -10,11 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from pyomo.environ import value
 from watertap.unit_models.generic_desalter import (
     GenericDesalter,
-)
-from pyomo.environ import (
-    value,
 )
 from watertap.flowsheets.generic_desalination_train.costing import (
     desalter_costing,
