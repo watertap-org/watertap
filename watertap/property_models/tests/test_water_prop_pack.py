@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-import watertap.property_models.water_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -18,12 +17,13 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,
 )
+from watertap.property_models import WaterParameterBlock
 
 
 # -----------------------------------------------------------------------------
 class TestWaterProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
-        self.prop_pack = props.WaterParameterBlock
+        self.prop_pack = WaterParameterBlock
         self.param_args = {}
         self.prop_args = {}
         self.has_density_terms = False
@@ -31,7 +31,7 @@ class TestWaterProperty_idaes(PropertyTestHarness_idaes):
 
 class TestWaterProperty(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = props.WaterParameterBlock
+        self.prop_pack = WaterParameterBlock
         self.param_args = {}
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
@@ -65,7 +65,7 @@ class TestWaterProperty(PropertyTestHarness):
 @pytest.mark.component
 class TestWaterPropertySolution_1(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.WaterParameterBlock
+        self.prop_pack = WaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -103,7 +103,7 @@ class TestWaterPropertySolution_1(PropertyRegressionTest):
 @pytest.mark.component
 class TestWaterPropertySolution_2(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.WaterParameterBlock
+        self.prop_pack = WaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
