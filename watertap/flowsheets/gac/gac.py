@@ -12,10 +12,10 @@
 
 import math
 import pyomo.environ as pyo
-import idaes.core.util.scaling as iscale
-
 from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
+
+import idaes.core.util.scaling as iscale
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
@@ -26,8 +26,9 @@ from idaes.models.unit_models import (
     Feed,
     Product,
 )
+
 from watertap.property_models import MCASParameterBlock
-from watertap.unit_models.gac import GAC
+from watertap.unit_models import GAC
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.core.solvers import get_solver

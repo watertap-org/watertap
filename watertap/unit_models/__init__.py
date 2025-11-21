@@ -36,7 +36,7 @@ from .electrodialysis_1D import (
     LimitingCurrentDensityMethod,
 )
 from .electrolyzer import Electrolyzer
-from .gac import GAC
+from .gac import GAC, FilmTransferCoefficientType, SurfaceDiffusionCoefficientType
 from .ion_exchange_0D import IonExchange0D
 from .thickener import Thickener, ThickenerScaler
 from .dewatering import DewateringUnit, DewatererScaler, ActivatedSludgeModelType

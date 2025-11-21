@@ -14,16 +14,17 @@ import pytest
 
 from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core import MaterialFlowBasis
-from watertap.core.solvers import get_solver
+
 from idaes.core.util.model_statistics import degrees_of_freedom
-from watertap.property_models.multicomp_aq_sol_prop_pack import DiffusivityCalculation
-from watertap.unit_models.gac import (
+
+from watertap.property_models import MaterialFlowBasis, DiffusivityCalculation
+from watertap.unit_models import (
     FilmTransferCoefficientType,
     SurfaceDiffusionCoefficientType,
 )
 from watertap.costing.unit_models.gac import ContactorType
 from watertap.flowsheets.gac import gac as gac_fs
+from watertap.core.solvers import get_solver
 
 __author__ = "Hunter Barber"
 
