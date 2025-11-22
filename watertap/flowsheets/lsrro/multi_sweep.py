@@ -16,7 +16,7 @@ from pyomo.environ import (
 )
 
 from parameter_sweep import LinearSample, parameter_sweep
-import watertap.flowsheets.lsrro as lsrro
+from watertap.flowsheets.lsrro import lsrro
 
 
 def _lsrro_presweep(
