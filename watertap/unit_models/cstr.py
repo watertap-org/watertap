@@ -22,11 +22,8 @@ from pyomo.environ import (
 )
 
 # Import IDAES cores
-from idaes.core import (
-    declare_process_block_class,
-)
+from idaes.core import declare_process_block_class
 from idaes.models.unit_models.cstr import CSTRData as CSTRIDAESData
-
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 

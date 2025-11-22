@@ -9,26 +9,22 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import ConcreteModel, value, assert_optimal_termination
 import pytest
-from watertap.core.solvers import get_solver
+
+from pyomo.environ import ConcreteModel, value, assert_optimal_termination
 
 from idaes.core import FlowsheetBlock
-
+from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
-
-from watertap.unit_models.generic_separation import (
-    GenericSeparation,
-)
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
+from watertap.unit_models import GenericSeparation
+from watertap.property_models import (
     MCASParameterBlock,
     ActivityCoefficientModel,
     DensityCalculation,
     MaterialFlowBasis,
 )
-
-from idaes.core.util.model_statistics import degrees_of_freedom
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

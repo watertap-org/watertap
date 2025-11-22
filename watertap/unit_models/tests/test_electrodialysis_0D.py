@@ -11,39 +11,41 @@
 #################################################################################
 import pytest
 import re
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.unit_models.electrodialysis_0D import (
-    ElectricalOperationMode,
-    Electrodialysis0D,
-    PressureDropMethod,
-    FrictionFactorMethod,
-    HydraulicDiameterMethod,
-)
-from watertap.unit_models.electrodialysis_0D import LimitingCurrentDensityMethod
-from watertap.costing import WaterTAPCosting
+
 from pyomo.environ import (
     ConcreteModel,
-    assert_optimal_termination,
-    value,
     Set,
     Param,
     Var,
     Constraint,
+    assert_optimal_termination,
+    value,
 )
-from idaes.core import (
-    FlowsheetBlock,
+from pyomo.util.check_units import assert_units_consistent
+
+import idaes.logger as idaeslog
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.core.util.scaling as iscale
+from idaes.core.util.testing import initialization_tester
+
+from watertap.property_models import (
+    MCASParameterBlock,
     EnergyBalanceType,
     MaterialBalanceType,
     MomentumBalanceType,
 )
-from idaes.core import UnitModelCostingBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
-from pyomo.util.check_units import assert_units_consistent
-import idaes.core.util.scaling as iscale
-from idaes.core.util.testing import initialization_tester
+from watertap.unit_models import Electrodialysis0D
+from watertap.unit_models.electrodialysis_0D import (
+    ElectricalOperationMode,
+    PressureDropMethod,
+    FrictionFactorMethod,
+    HydraulicDiameterMethod,
+    LimitingCurrentDensityMethod,
+)
+from watertap.costing import WaterTAPCosting
 from watertap.core.solvers import get_solver
-from idaes.core.util.exceptions import ConfigurationError
-import idaes.logger as idaeslog
 
 __author__ = "Xiangyu Bi, Kejia Hu"
 

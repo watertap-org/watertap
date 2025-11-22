@@ -11,6 +11,7 @@
 #################################################################################
 
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
@@ -19,20 +20,11 @@ from pyomo.environ import (
     log10,
     units as pyunits,
 )
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Port
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
-from watertap.unit_models.uv_aop import Ultraviolet0D, UVDoseType
-import watertap.property_models.unit_specific.NDMA_prop_pack as props
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    MaterialFlowBasis,
-)
-from watertap.core.solvers import get_solver
+
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -46,8 +38,17 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
-from pyomo.util.check_units import assert_units_consistent
-from idaes.core import UnitModelCostingBlock
+
+from watertap.unit_models import Ultraviolet0D, UVDoseType
+from watertap.property_models import (
+    NDMAParameterBlock,
+    MCASParameterBlock,
+    MaterialFlowBasis,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
+from watertap.core.solvers import get_solver
 from watertap.costing import WaterTAPCosting
 
 # -----------------------------------------------------------------------------
@@ -61,7 +62,7 @@ class TestUV:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props.NDMAParameterBlock()
+        m.fs.properties = NDMAParameterBlock()
 
         m.fs.unit = Ultraviolet0D(property_package=m.fs.properties)
 
@@ -273,7 +274,7 @@ class TestUV_standard:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props.NDMAParameterBlock()
+        m.fs.properties = NDMAParameterBlock()
 
         m.fs.unit = Ultraviolet0D(property_package=m.fs.properties)
 
@@ -734,7 +735,7 @@ class TestUV_detailed:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props.NDMAParameterBlock()
+        m.fs.properties = NDMAParameterBlock()
 
         m.fs.unit = Ultraviolet0D(
             property_package=m.fs.properties, uv_dose_type=UVDoseType.calculated
@@ -963,7 +964,7 @@ class TestUVAOP:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props.NDMAParameterBlock()
+        m.fs.properties = NDMAParameterBlock()
 
         m.fs.unit = Ultraviolet0D(property_package=m.fs.properties, has_aop=True)
 

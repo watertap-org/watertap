@@ -25,9 +25,7 @@ from pyomo.environ import (
     sqrt,
     units as pyunits,
 )
-from pyomo.dae import (
-    DerivativeVar,
-)
+from pyomo.dae import DerivativeVar
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
