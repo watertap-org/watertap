@@ -360,6 +360,18 @@ The total variable operating cost is the sum of the total variable operating cos
 Aggregate Metrics
 ------------------
 
+Built in methods can be used to add variables and constraints for common aggregate metrics used in WaterTAP technoeconomic analyses.
+The following metrics can be added to the WaterTAPCostingBlockData class by calling the respective method.
+
+.. csv-table::
+   :header: "Method", "Description"
+   :widths: 20, 80
+
+   "``add_LCOW``", "Adds Levelized Cost of Water (LCOW) variable and constraint"
+   "``add_specific_energy_consumption``", "Adds specific energy consumption variable and constraint"
+   "``add_specific_electrical_carbon_intensity``", "Adds specific electrical carbon intensity variable and constraint"
+   "``add_annual_water_production``", "Adds annual water production variable and constraint"
+
 Levelized Cost of Water (LCOW)
 ++++++++++++++++++++++++++++++
 
