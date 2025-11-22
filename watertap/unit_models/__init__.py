@@ -47,7 +47,7 @@ from .reverse_osmosis_0D import (
     PressureChangeType,
 )
 from .reverse_osmosis_1D import ReverseOsmosis1D
-from .steam_ejector import SteamInjector
+from .steam_ejector import SteamEjector
 from .steam_heater_0D import SteamHeater0D
 from .stoichiometric_reactor import StoichiometricReactor
 from .surrogate_crystallizer import SurrogateCrystallizer
