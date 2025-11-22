@@ -23,7 +23,7 @@ users to model the chemical and physical properties of simple systems without th
     from watertap.core.solvers import get_solver
 
     # Import NaCl property model
-    import watertap.property_models.NaCl_prop_pack as props
+    from watertap.property_models import NaClParameterBlock
 
     # Import utility tool for calculating scaling factors
     import idaes.core.util.scaling as iscale
@@ -31,7 +31,7 @@ users to model the chemical and physical properties of simple systems without th
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     # Build the state block and specify a time (0 = steady state).
     m.fs.state_block = m.fs.properties.build_state_block([0])
