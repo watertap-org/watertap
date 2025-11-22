@@ -32,9 +32,8 @@ from idaes.models.unit_models.mixer import MixingType, MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 
-from watertap.unit_models import (
-    Pump,
-    Electrodialysis1D,
+from watertap.unit_models import Pump, Electrodialysis1D
+from watertap.unit_models.electrodialysis_1D import (
     ElectricalOperationMode,
     PressureDropMethod,
     FrictionFactorMethod,
