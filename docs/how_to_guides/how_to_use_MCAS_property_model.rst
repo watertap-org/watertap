@@ -25,7 +25,7 @@ users to model the chemical and physical properties of simple systems without th
     from watertap.core.solvers import get_solver
 
     # Import MCAS property model
-    import watertap.property_models.multicomp_aq_sol_prop_pack as props
+    from watertap.property_models import MCASParameterBlock
 
     # Import utility tool for calculating scaling factors
     import idaes.core.util.scaling as iscale
@@ -35,7 +35,7 @@ users to model the chemical and physical properties of simple systems without th
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Create an instance of the MCAS property model.
-    m.fs.properties = props.MCASParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-"],
         mw_data={"Na_+": 23e-3, "Cl_-": 35e-3},
         charge={"Na_+": 1, "Cl_-": -1},
@@ -124,7 +124,7 @@ However, the user can select component mass flowrate as the flow basis instead a
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Create an instance of the MCAS property model and use `material_flow_basis` argument to specify mass flowrate as the desired flow basis.
-    m.fs.properties = props.MCASParameterBlock(solute_list=["Na_+", "Cl_-"],
+    m.fs.properties = MCASParameterBlock(solute_list=["Na_+", "Cl_-"],
                                                mw_data={"Na_+": 23e-3, 
                                                         "Cl_-": 35e-3},
                                                charge={"Na_+": 1, 
