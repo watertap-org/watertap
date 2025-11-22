@@ -3,6 +3,11 @@
 NaCl Property Package
 =====================
 
+
+.. code-block:: python
+
+   from watertap.property_models import NaClParameterBlock
+
 This package implements property relationships for an NaCl solution as provided in `Bartholomew and Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_.
 
 This NaCl property package:

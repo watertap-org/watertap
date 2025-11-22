@@ -3,6 +3,11 @@
 Water Property Package
 ======================
 
+
+.. code-block:: python
+
+   from watertap.property_models import WaterParameterBlock
+
 This package implements property relationships for pure water.
 
 This water property package:

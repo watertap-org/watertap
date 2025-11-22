@@ -2,6 +2,9 @@
 
 Coagulation Property Package
 ============================
+.. code-block:: python
+
+   from watertap.property_models import CoagulationParameterBlock
 
 This package implements property relationships for water density as a function of
 temperature, pressure, and mass fraction of suspended/dissolved solids from

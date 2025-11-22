@@ -3,6 +3,11 @@
 Seawater Property Package
 =========================
 
+
+.. code-block:: python
+
+   from watertap.property_models import SeawaterParameterBlock
+
 This package implements property relationships for seawater as provided in `Sharqawy et al. (2010) <https://doi.org/10.5004/dwt.2010.1079>`_ and `Nayar et al. (2016) <https://doi.org/10.5004/dwt.2010.1079>`_.
 
 This seawater property package:
