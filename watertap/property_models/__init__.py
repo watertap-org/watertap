@@ -22,7 +22,7 @@ from .NaCl_prop_pack import NaClParameterBlock, NaClParameterData
 from .NaCl_T_dep_prop_pack import NaClTDepParameterBlock, NaClTDepParameterData
 from .seawater_prop_pack import SeawaterParameterBlock, SeawaterParameterData
 from .water_prop_pack import WaterParameterBlock, WaterParameterData
-from .zero_order_properties import ZOParameterBlock, ZOParameterData, ZOStateBlock
+from .zero_order_prop_pack import ZOParameterBlock, ZOParameterData, ZOStateBlock
 
 # Unit Specific
 from .unit_specific.coagulation_prop_pack import (
