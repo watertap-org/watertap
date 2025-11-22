@@ -10,20 +10,22 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-import idaes.core.util.scaling as iscale
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.unit_models.boron_removal import BoronRemoval
+import re
+
 from pyomo.environ import (
     ConcreteModel,
     units as pyunits,
 )
-from idaes.core import (
-    FlowsheetBlock,
-)
+
+from idaes.core import FlowsheetBlock
+import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
+
+from watertap.property_models import MCASParameterBlock
+from watertap.unit_models import BoronRemoval
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 from watertap.core.solvers import get_solver
-import re
+
 
 __author__ = "Austin Ladshaw"
 

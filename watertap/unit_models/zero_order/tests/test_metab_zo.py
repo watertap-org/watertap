@@ -32,7 +32,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MetabZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 
@@ -46,7 +46,7 @@ class TestMetabZO_hydrogen:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["cod", "hydrogen"])
+        m.fs.params = ZOParameterBlock(solute_list=["cod", "hydrogen"])
 
         m.fs.unit = MetabZO(
             property_package=m.fs.params, database=m.db, process_subtype="hydrogen"
@@ -136,7 +136,7 @@ class TestMetabZO_methane:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["cod", "hydrogen", "methane"])
+        m.fs.params = ZOParameterBlock(solute_list=["cod", "hydrogen", "methane"])
 
         m.fs.unit = MetabZO(
             property_package=m.fs.params, database=m.db, process_subtype="methane"
@@ -227,7 +227,7 @@ class TestMetabZO_hydrogen_cost:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["cod", "hydrogen"])
+        m.fs.params = ZOParameterBlock(solute_list=["cod", "hydrogen"])
 
         source_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -327,7 +327,7 @@ class TestMetabZO_methane_cost:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["cod", "methane"])
+        m.fs.params = ZOParameterBlock(solute_list=["cod", "methane"])
 
         source_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),

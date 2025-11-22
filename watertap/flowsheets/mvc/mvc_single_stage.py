@@ -9,6 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import math
 
 from pyomo.environ import (
     ConcreteModel,
@@ -20,34 +21,34 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.network import Arc, SequentialDecomposition
 
-import pyomo.environ as pyo
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
-from idaes.models.unit_models import Feed, Separator, Mixer, Product
-from idaes.models.unit_models.translator import Translator
-from idaes.models.unit_models.separator import SplittingType
-from idaes.models.unit_models.mixer import MomentumMixingType
-from idaes.models.unit_models.heat_exchanger import (
+from idaes.models.unit_models import (
+    Feed,
+    Separator,
+    Mixer,
+    Product,
+    SplittingType,
+    MomentumMixingType,
     HeatExchanger,
     HeatExchangerFlowPattern,
 )
-from idaes.core import UnitModelCostingBlock
+from idaes.models.unit_models.translator import Translator
 import idaes.core.util.scaling as iscale
 
+from watertap.unit_models import Pump
 from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
 )
-from watertap.unit_models.pressure_changer import Pump
-import watertap.property_models.seawater_prop_pack as props_sw
-import watertap.property_models.water_prop_pack as props_w
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
 from watertap.costing import WaterTAPCosting
-import math
+from watertap.core.solvers import get_solver
 
 
 def main():
@@ -91,8 +92,8 @@ def build():
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Properties
-    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_feed = SeawaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
 
     # Unit models
     m.fs.feed = Feed(property_package=m.fs.properties_feed)
@@ -353,7 +354,7 @@ def add_costing(m):
     m.fs.costing.add_annual_water_production(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
-    m.fs.costing.base_currency = pyo.units.USD_2020
+    m.fs.costing.base_currency = pyunits.USD_2020
 
 
 def set_operating_conditions(m):

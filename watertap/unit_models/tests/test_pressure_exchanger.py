@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     Var,
@@ -21,25 +22,13 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.network import Port
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from watertap.unit_models.pressure_exchanger import (
-    PressureExchanger,
-    PressureExchangeType,
-)
-import watertap.property_models.seawater_prop_pack as props
-import watertap.property_models.multicomp_aq_sol_prop_pack as props_multi
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
-from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
@@ -47,6 +36,20 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+
+from watertap.unit_models import (
+    PressureExchanger,
+    PressureExchangeType,
+)
+from watertap.property_models import SeawaterParameterBlock, MCASParameterBlock
+from watertap.core.solvers import get_solver
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -60,7 +63,7 @@ solver = get_solver()
 def test_config_no_mass_transfer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.properties = SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(property_package=m.fs.properties)
 
     # check unit config arguments
@@ -81,7 +84,7 @@ def test_config_no_mass_transfer():
 def test_config_mass_transfer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.properties = SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(property_package=m.fs.properties, has_mixing=True)
     # check mass_transfer is added
     assert m.fs.unit.config.has_mixing
@@ -93,7 +96,7 @@ def test_build(
 ):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.properties = SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(
         property_package=m.fs.properties, has_leakage=has_leakage, has_mixing=has_mixing
     )
@@ -201,7 +204,7 @@ class TestPressureExchanger_without_mass_transfer:
     def unit_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = props.SeawaterParameterBlock()
+        m.fs.properties = SeawaterParameterBlock()
         m.fs.unit = PressureExchanger(property_package=m.fs.properties)
 
         # Specify inlet conditions
@@ -338,7 +341,7 @@ class TestPressureExchanger_with_high_pressure_difference:
     def unit_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = props.SeawaterParameterBlock()
+        m.fs.properties = SeawaterParameterBlock()
         m.fs.unit = PressureExchanger(
             property_package=m.fs.properties,
             pressure_exchange_calculation=PressureExchangeType.high_pressure_difference,
@@ -477,7 +480,7 @@ class TestPressureExchanger_with_mass_transfer:
     def unit_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = props.SeawaterParameterBlock()
+        m.fs.properties = SeawaterParameterBlock()
         m.fs.unit = PressureExchanger(
             property_package=m.fs.properties,
             has_leakage=True,
@@ -626,7 +629,7 @@ class TestPressureExchanger_with_ion_prop_pack:
     def unit_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = props_multi.MCASParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["Na", "Ca", "Mg", "SO4", "Cl"],
             mw_data={
                 "H2O": 0.018,

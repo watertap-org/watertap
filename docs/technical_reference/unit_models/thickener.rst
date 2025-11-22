@@ -5,7 +5,7 @@ Thickener
 
 .. code-block:: python
 
-   from watertap.unit_models.thickener import Thickener
+   from watertap.unit_models import Thickener
 
 .. index::
    pair: watertap.unit_models.thickener;thickener

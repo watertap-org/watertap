@@ -32,14 +32,13 @@ from watertap.unit_models.mvc.components import Compressor
 from watertap.unit_models.mvc.components import Condenser
 
 # Import property packages
-import watertap.property_models.seawater_prop_pack as props_sw
-import watertap.property_models.water_prop_pack as props_w
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
 
 
 def build(m):
     # Properties
-    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_feed = SeawaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
 
     # Evaporator
     m.fs.evaporator = Evaporator(

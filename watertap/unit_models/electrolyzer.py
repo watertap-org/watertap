@@ -9,10 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
-import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
-
 from pyomo.environ import (
     Var,
     Suffix,
@@ -22,6 +18,9 @@ from pyomo.environ import (
     check_optimal_termination,
 )
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
+
+import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 from idaes.core import (
     declare_process_block_class,
     MaterialBalanceType,
@@ -30,14 +29,15 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.electrolyzer import cost_electrolyzer
+from watertap.core.solvers import get_solver
 
 __author__ = "Hunter Barber"
 

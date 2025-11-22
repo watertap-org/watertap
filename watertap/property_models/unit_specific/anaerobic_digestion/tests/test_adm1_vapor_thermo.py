@@ -24,21 +24,21 @@ from pyomo.environ import (
     Var,
     check_optimal_termination,
 )
-
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
-
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
-    ADM1_vaporParameterBlock,
-    ADM1_vaporStateBlock,
-    ADM1VaporPropertiesScaler,
-)
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
 
+from watertap.property_models import (
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MaterialFlowBasis,
+    ADM1_vaporParameterBlock,
+    ADM1_vaporStateBlock,
+    ADM1VaporPropertiesScaler,
+)
 from watertap.core.solvers import get_solver
 
 

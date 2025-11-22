@@ -27,31 +27,24 @@ from pyomo.environ import (
     Var,
 )
 
-from idaes.core import (
-    FlowsheetBlock,
-)
+import idaes.core.util.scaling as iscale
+from idaes.core.scaling.scaling_base import ScalerBase
+from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from watertap.core.solvers import get_solver
 
-from watertap.unit_models.anaerobic_digester import AD, ADScaler
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
+from watertap.core.solvers import get_solver
+from watertap.unit_models import AD, ADScaler
+from watertap.property_models import (
     ADM1ParameterBlock,
     ADM1PropertiesScaler,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
     ADM1ReactionScaler,
 )
-
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-import idaes.core.util.scaling as iscale
-from idaes.core.scaling.scaling_base import ScalerBase
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

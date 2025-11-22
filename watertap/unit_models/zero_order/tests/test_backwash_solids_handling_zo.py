@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import BackwashSolidsHandlingZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,7 +46,7 @@ class TestBackwashSolidsHandling_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nitrate", "tss", "toc", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["nitrate", "tss", "toc", "foo"])
 
         m.fs.unit = BackwashSolidsHandlingZO(
             property_package=m.fs.params, database=m.db
@@ -162,7 +162,7 @@ class TestIXZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nitrate"])
+        m.fs.params = ZOParameterBlock(solute_list=["nitrate"])
 
         m.fs.unit = BackwashSolidsHandlingZO(property_package=m.fs.params, database=db)
 
@@ -189,7 +189,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 

@@ -35,23 +35,19 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from watertap.unit_models.anaerobic_digester import AD
-from idaes.core import MaterialFlowBasis
-from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
+from watertap.unit_models import AD
+from watertap.property_models import (
+    MaterialFlowBasis,
     ADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
     ADM1_vaporParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
     ADM1ReactionBlock,
     ADM1ReactionScaler,
 )
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

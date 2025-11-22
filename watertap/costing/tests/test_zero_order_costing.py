@@ -42,7 +42,7 @@ from watertap.costing.zero_order_costing import (
     _load_case_study_definition,
 )
 from watertap.core.zero_order_base import ZeroOrderBaseData
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.core.wt_database import Database
 from watertap.unit_models.zero_order import ChemicalAdditionZO, NanofiltrationZO
 
@@ -65,7 +65,7 @@ class TestGeneralMethods:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.params = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.frame = ZeroOrderCosting()
 
@@ -324,7 +324,7 @@ class TestWorkflow:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.costing = ZeroOrderCosting()
 

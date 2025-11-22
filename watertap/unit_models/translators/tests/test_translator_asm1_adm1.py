@@ -27,20 +27,18 @@ from pyomo.environ import (
     Param,
     Suffix,
     TransformationFactory,
+    units,
 )
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
-from pyomo.environ import units
-
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
 )
-
 import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
@@ -53,22 +51,15 @@ from watertap.unit_models.translators.translator_asm1_adm1 import (
     Translator_ASM1_ADM1,
     ASM1ADM1Scaler,
 )
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
+from watertap.property_models import (
     ADM1ParameterBlock,
     ADM1PropertiesScaler,
-)
-
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
     ASM1PropertiesScaler,
-)
-
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
+from watertap.core.solvers import get_solver
 
-
-from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

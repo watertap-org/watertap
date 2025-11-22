@@ -5,7 +5,7 @@ Anaerobic Digester
 
 .. code-block:: python
 
-   from watertap.unit_models.anaerobic_digester import AD
+   from watertap.unit_models import AD
 
 Introduction
 ------------

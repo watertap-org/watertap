@@ -3,6 +3,11 @@
 NaCl Property Package
 =====================
 
+
+.. code-block:: python
+
+   from watertap.property_models import NaClParameterBlock
+
 This package implements property relationships for an NaCl solution as provided in `Bartholomew and Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_.
 
 This NaCl property package:
@@ -88,13 +93,13 @@ The user can specify the scaling factors for component mass flowrates with the f
 .. doctest::
    
    # relevant imports
-   import watertap.property_models.NaCl_prop_pack as props
+   from watertap.property_models import NaClParameterBlock
    from idaes.core.util.scaling import calculate_scaling_factors
 
    # relevant assignments
    m = ConcreteModel()
    m.fs = FlowsheetBlock(dynamic=False)
-   m.fs.properties = props.NaClParameterBlock()
+   m.fs.properties = NaClParameterBlock()
 
    # set scaling for component mass flowrate
    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
