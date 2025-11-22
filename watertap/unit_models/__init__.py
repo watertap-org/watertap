@@ -10,7 +10,36 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from .aeration_tank import AerationTank, AerationTankScaler, ElectricityConsumption
 from .anaerobic_digester import AD, ADScaler
+from .boron_removal import BoronRemoval
+from .clarifier import Clarifier, ClarifierScaler
+from .coag_floc_model import CoagulationFlocculation
+from .crystallizer import Crystallization
+from .cstr import CSTR, CSTRScaler
+from .cstr_injection import CSTR_Injection, CSTR_InjectionScaler
+from .dewatering import DewateringUnit, DewatererScaler, ActivatedSludgeModelType
+from .electrodialysis_0D import Electrodialysis0D
+from .electrodialysis_1D import Electrodialysis1D
+from .electrodialysis_bipolar_1D import Electrodialysis_Bipolar_1D, LimitingCurrentDensitybpmMethod
+from .electrolyzer import Electrolyzer
+from .electroNP_ZO import ElectroNPZO
+from .gac import GAC, FilmTransferCoefficientType, SurfaceDiffusionCoefficientType
+from .generic_desalter import GenericDesalter
+from .generic_separation import GenericSeparation
+from .ion_exchange_0D import (
+    IonExchange0D,
+    IonExchangeType,
+    RegenerantChem,
+    IsothermType,
+)
+from .nanofiltration_0D import Nanofiltration0D
+from .nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
+from .nanofiltration_ZO import NanofiltrationZO
+from .osmotically_assisted_reverse_osmosis_0D import OsmoticallyAssistedReverseOsmosis0D
+from .osmotically_assisted_reverse_osmosis_1D import OsmoticallyAssistedReverseOsmosis1D
+from .pressure_changer import Pump, EnergyRecoveryDevice
+from .pressure_exchanger import PressureExchanger
 from .reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -18,39 +47,10 @@ from .reverse_osmosis_0D import (
     PressureChangeType,
 )
 from .reverse_osmosis_1D import ReverseOsmosis1D
-from .osmotically_assisted_reverse_osmosis_0D import OsmoticallyAssistedReverseOsmosis0D
-from .nanofiltration_ZO import NanofiltrationZO
-from .nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
-from .nanofiltration_0D import Nanofiltration0D
-from .pressure_exchanger import PressureExchanger
-from .pressure_changer import Pump, EnergyRecoveryDevice
-from .crystallizer import Crystallization
-from .uv_aop import Ultraviolet0D
-from .electrodialysis_0D import Electrodialysis0D
-from .electrodialysis_1D import (
-    Electrodialysis1D,
-    ElectricalOperationMode,
-    PressureDropMethod,
-    FrictionFactorMethod,
-    HydraulicDiameterMethod,
-    LimitingCurrentDensityMethod,
-)
-from .electrolyzer import Electrolyzer
-from .gac import GAC, FilmTransferCoefficientType, SurfaceDiffusionCoefficientType
-from .ion_exchange_0D import (
-    IonExchange0D,
-    IonExchangeType,
-    RegenerantChem,
-    IsothermType,
-)
+from .steam_ejector import SteamInjector
+from .steam_heater_0D import SteamHeater0D
+from .stoichiometric_reactor import StoichiometricReactor
+from .surrogate_crystallizer import SurrogateCrystallizer
 from .thickener import Thickener, ThickenerScaler
-from .dewatering import DewateringUnit, DewatererScaler, ActivatedSludgeModelType
-from .electroNP_ZO import ElectroNPZO
-from .cstr import CSTR, CSTRScaler
-from .clarifier import Clarifier, ClarifierScaler
-from .cstr_injection import CSTR_Injection, CSTR_InjectionScaler
-from .aeration_tank import AerationTank, AerationTankScaler, ElectricityConsumption
-from .generic_desalter import GenericDesalter
-from .generic_separation import GenericSeparation
-from .coag_floc_model import CoagulationFlocculation
-from .boron_removal import BoronRemoval
+from .uv_aop import Ultraviolet0D
+
