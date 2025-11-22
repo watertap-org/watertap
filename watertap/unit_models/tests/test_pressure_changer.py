@@ -14,8 +14,6 @@ from pyomo.environ import ConcreteModel
 import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock
 
-import watertap.property_models.seawater_prop_pack as props
-import watertap.property_models.multicomp_aq_sol_prop_pack as props2
 from watertap.property_models import SeawaterParameterBlock, MCASParameterBlock
 from watertap.unit_models import (
     Pump,

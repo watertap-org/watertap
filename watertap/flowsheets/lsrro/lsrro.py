@@ -57,7 +57,8 @@ from watertap.costing import (
     make_capital_cost_var,
     register_costing_parameter_block,
 )
-import watertap.property_models.NaCl_prop_pack as props
+
+from watertap.property_models import NaClParameterBlock
 from parameter_sweep import LinearSample, parameter_sweep
 from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
 import pandas as pd
@@ -168,7 +169,7 @@ def build(
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
