@@ -59,7 +59,8 @@ from watertap.costing import (
 )
 import watertap.property_models.NaCl_prop_pack as props
 from parameter_sweep import LinearSample, parameter_sweep
-from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
+
+# from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -83,6 +84,36 @@ class ABTradeoff(StrEnum):
     inequality_constraint = "inequality_constraint"
     equality_constraint = "equality_constraint"
     none = "none"
+
+
+def _lsrro_presweep(
+    number_of_stages=2,
+    A_value=5 / 3.6e11,
+    permeate_quality_limit=1000e-6,
+    has_CP=True,
+    quick_start=False,
+):
+    m = build(
+        number_of_stages=number_of_stages,
+        has_NaCl_solubility_limit=True,
+        has_calculated_concentration_polarization=has_CP,
+        has_calculated_ro_pressure_drop=True,
+    )
+    set_operating_conditions(m)
+    if not quick_start:
+        initialize(m)
+    solve(m)
+    m.fs.feed.flow_mass_phase_comp.unfix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
+    optimize_set_up(
+        m,
+        set_default_bounds_on_module_dimensions=True,
+        A_value=A_value,
+        permeate_quality_limit=permeate_quality_limit,
+    )
+
+    return m
 
 
 def run_lsrro_case(
