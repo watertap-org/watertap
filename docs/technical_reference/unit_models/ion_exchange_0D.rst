@@ -5,7 +5,7 @@ Ion Exchange (0D)
 
 .. code-block:: python
 
-   from watertap.unit_models.ion_exchange_0D import IonExchange0D
+   from watertap.unit_models import IonExchange0D
 
 .. index::
    pair: watertap.unit_models.ion_exchange_0D;ion_exchange_0D

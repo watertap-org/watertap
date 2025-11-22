@@ -5,7 +5,7 @@ Electrodialysis (1D)
 
 .. code-block:: python
 
-   from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
+   from watertap.unit_models import Electrodialysis1D
 
 Introduction
 ------------

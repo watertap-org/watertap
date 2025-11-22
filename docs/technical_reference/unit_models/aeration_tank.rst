@@ -5,7 +5,7 @@ Aeration Tank
 
 .. code-block:: python
 
-   from watertap.unit_models.aeration_tank import AerationTank
+   from watertap.unit_models import AerationTank
 
 .. index::
    pair: watertap.unit_models.aeration_tank;aeration_tank

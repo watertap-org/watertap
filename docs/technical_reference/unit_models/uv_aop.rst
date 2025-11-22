@@ -5,7 +5,7 @@ Ultraviolet Advanced Oxidation Process
 
 .. code-block:: python
 
-   from watertap.unit_models.uv_aop import Ultraviolet0D
+   from watertap.unit_models import Ultraviolet0D
 
 .. index::
    pair: watertap.unit_models.uv_aop;uv_aop

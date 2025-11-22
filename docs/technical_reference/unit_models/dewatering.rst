@@ -5,7 +5,7 @@ Dewatering Unit
 
 .. code-block:: python
 
-   from watertap.unit_models.dewatering import DewateringUnit
+   from watertap.unit_models import DewateringUnit
 
 .. index::
    pair: watertap.unit_models.dewatering;dewatering

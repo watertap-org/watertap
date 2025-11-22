@@ -5,7 +5,7 @@ Continuously Stirred Tank Reactor with Injection
 
 .. code-block:: python
 
-   from watertap.unit_models.cstr_injection import CSTR_Injection
+   from watertap.unit_models import CSTR_Injection
 
 .. index::
    pair: watertap.unit_models.cstr_injection;cstr_injection

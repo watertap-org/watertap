@@ -5,7 +5,7 @@ Coagulation-Flocculation
 
 .. code-block:: python
 
-   from watertap.unit_models.coag_floc_model import CoagulationFlocculation
+   from watertap.unit_models import CoagulationFlocculation
 
 Introduction
 ------------
