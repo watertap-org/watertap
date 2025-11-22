@@ -63,7 +63,7 @@ Example: Python file with recommended structure
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import NaCl property model
-    import watertap.property_models.NaCl_prop_pack as props
+    from watertap.property_models import NaClParameterBlock
     # Import utility tool for calculating scaling factors
     from idaes.core.util.scaling import calculate_scaling_factors
     # Import RO model
@@ -77,7 +77,7 @@ Example: Python file with recommended structure
         # Create a concrete model, flowsheet, and NaCl property parameter block.
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = props.NaClParameterBlock()
+        m.fs.properties = NaClParameterBlock()
         # Add an RO unit to the flowsheet.
         m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
@@ -128,7 +128,7 @@ Example: the same code without recommended structure (may cause errors on Window
    # Import flowsheet block from IDAES core
    from idaes.core import FlowsheetBlock
    # Import NaCl property model
-   import watertap.property_models.NaCl_prop_pack as props
+   from watertap.property_models import NaClParameterBlock
    # Import utility tool for calculating scaling factors
    from idaes.core.util.scaling import calculate_scaling_factors
    # Import RO model
@@ -139,7 +139,7 @@ Example: the same code without recommended structure (may cause errors on Window
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
     # Add an RO unit to the flowsheet.
     m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
