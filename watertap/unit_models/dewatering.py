@@ -35,7 +35,7 @@ from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
-from idaes.models.unit_models import SeparatorData, SplittingType
+from idaes.models.unit_models.separator import SeparatorData, SplittingType
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
