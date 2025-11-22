@@ -9,8 +9,8 @@ The example script shown below is for the dual media filtration zero-order model
     from idaes.core import FlowsheetBlock
     from watertap.core.solvers import get_solver
 
-    from watertap.core.wt_database import Database
-    from watertap.core.zero_order_properties import WaterParameterBlock
+    from watertap.core import Database
+    from watertap.property_models import ZOParameterBlock
     from watertap.unit_models.zero_order import DualMediaFiltrationZO
 
 
