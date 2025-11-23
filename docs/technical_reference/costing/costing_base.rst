@@ -366,9 +366,8 @@ The following metrics can be added to the costing block by calling the respectiv
 
 .. csv-table::
    :header: "Method", "Default Expression Name", "Description"
-   :widths: 20, 80
 
-   "``add_LCOW``", "``LCOW``", "Adds Levelized Cost of Water (LCOW) variable and constraint"
+   "``add_LCOW``", "``LCOW``", "Adds LCOW variable and constraint"
    "``add_specific_energy_consumption``", "``specific_energy_consumption``", "Adds specific energy consumption variable and constraint"
    "``add_specific_electrical_carbon_intensity``", "``specific_electrical_carbon_intensity``", "Adds specific electrical carbon intensity variable and constraint"
    "``add_annual_water_production``", "``annual_water_production``", "Adds annual water production variable and constraint" 
@@ -397,18 +396,23 @@ In addition to creating the LCOW expression at the system level, the ``add_LCOW`
 to further break down the cost components contributing to the LCOW:
 
 .. csv-table::
-   :header: "Description", "Default Expression Name", "Index", "Equation"
+   :header: "Description", "Default Expression Name :sup:`1`", "Index", "Equation :sup:`2`"
 
-    "Direct capital expenditure by flowsheet component", "``LCOW_component_direct_capex``", "Unit model flowsheet name", ":math:`\frac{f_{crf} C_{dir,u}}{f_{util} Q}`"
-    "Indirect capital expenditure by flowsheet component", "``LCOW_component_indirect_capex``", "Unit model flowsheet name", ":math:`\frac{f_{crf} C_{indir,u}}{f_{util} Q}`"
-    "Fixed operating expenditure by flowsheet component", "``LCOW_component_fixed_opex``", "Unit model flowsheet name", ":math:`\frac{f_{crf} C_{fop,u}}{f_{util} Q}`"
-    "Variable operating expenditure by flowsheet component", "``LCOW_component_variable_opex``", "Unit model flowsheet name _or_ flow name", ":math:`\frac{f_{crf} C_{vop,u}}{f_{util} Q}`"
-    "Aggregate direct capital expenditure by unit type", "``LCOW_aggregate_direct_capex``", "Unit model class name", ":math:`\frac{f_{crf} \sum C_{dir,u}}{f_{util} Q}`"
-    "Aggregate indirect capital expenditure by unit type", "``LCOW_aggregate_indirect_capex``", "Unit model class name", ":math:`\frac{f_{crf} \sum C_{indir,u}}{f_{util} Q}`"
-    "Aggregate fixed operating expenditure by unit type", "``LCOW_aggregate_fixed_opex``", "Unit model class name", ":math:`\frac{f_{crf} \sum C_{fop,u}}{f_{util} Q}`"
-    "Aggregate variable operating expenditure by unit type", "``LCOW_aggregate_variable_opex``", "Unit model class name _or_ flow name", ":math:`\frac{f_{crf} \sum C_{vop,u}}{f_{util} Q}`"
+    "Direct capital expenditure by flowsheet component", "``LCOW_component_direct_capex``", "Unit model flowsheet name ", ":math:`\cfrac{f_{crf} C_{dir,i}}{f_{util} Q}`"
+    "Indirect capital expenditure by flowsheet component", "``LCOW_component_indirect_capex``", "Unit model flowsheet name", ":math:`\cfrac{f_{crf} C_{indir,i}}{f_{util} Q}`"
+    "Fixed operating expenditure by flowsheet component", "``LCOW_component_fixed_opex``", "Unit model flowsheet name", ":math:`\cfrac{f_{crf} C_{fop,i}}{f_{util} Q}`"
+    "Variable operating expenditure by flowsheet component", "``LCOW_component_variable_opex``", "Unit model flowsheet name *or* flow name", ":math:`\cfrac{f_{crf} C_{vop,i}}{f_{util} Q}`"
+    "Aggregate direct capital expenditure by unit type", "``LCOW_aggregate_direct_capex``", "Unit model class name", ":math:`\cfrac{f_{crf} \sum C_{dir,u}}{f_{util} Q}`"
+    "Aggregate indirect capital expenditure by unit type", "``LCOW_aggregate_indirect_capex``", "Unit model class name", ":math:`\cfrac{f_{crf} \sum C_{indir,u}}{f_{util} Q}`"
+    "Aggregate fixed operating expenditure by unit type", "``LCOW_aggregate_fixed_opex``", "Unit model class name", ":math:`\cfrac{f_{crf} \sum C_{fop,u}}{f_{util} Q}`"
+    "Aggregate variable operating expenditure by unit type", "``LCOW_aggregate_variable_opex``", "Unit model class name *or* flow name", ":math:`\cfrac{f_{crf} \sum C_{vop,u}}{f_{util} Q}`"
 
-Note, the difference between the "component" and "aggregate" expressions is that the component expressions break down costs by individual unit model instances,
+.. note::
+    :sup:`1` The default expression names prepend the method argument `name` to the extended variable name; e.g., ``add_LCOW(flow_rate, name="MyLCOW")``, will result in ``MyLCOW_component_direct_capex``.
+
+    :sup:`2` The index :math:`i` refers to individual unit model instances on the flowsheet, while :math:`u` refers to unit model classes.
+
+Note, the difference between the "component" and "aggregate" expressions: the component expressions break down costs by individual unit model instances,
 while the aggregate expressions sum costs by unit model class (e.g., Mixer, Pump, RO Unit, etc.). So, if there are multiple pumps on the flowsheet, the individual contributions 
 to LCOW from each pump would be available in the ``LCOW_component_*`` expressions, while the total contribution from all pumps would be available as ``LCOW_aggregate_*`` expressions.
 The ``LCOW_component_*`` expressions are indexed by the unit model flowsheet name. This is the name that is assigned when the unit model
@@ -419,8 +423,8 @@ Importantly, both ``LCOW_component_variable_opex`` and ``LCOW_aggregate_variable
 Energy (e.g., ``electricity``) and material (e.g., ``naocl``, ``caustic``) flows registered with the costing package will have their variable operating costs
 broken out in these expressions. This allows the user to see the contribution of individual flow costs to the overall LCOW.
 
-For a example of the breakdowns presented by each of these expressions, consider a flowsheet that has two pump units (``m.fs.pump1``, ``m.fs.pump2``) and one chemical addition 
-unit (``m.fs.chem_add``), and has registered ``electricity`` and ``anti_scalant`` flows. The user adds the LCOW via ``m.fs.costing.add_LCOW(flow_rate)``. The following indexes would be available:
+For an example of the breakdowns presented by each of these expressions, consider a flowsheet that has two pump units (``m.fs.pump1``, ``m.fs.pump2``) and one chemical addition 
+unit (``m.fs.chem_add``), and has registered ``electricity`` and ``anti_scalant`` flows. The user adds the LCOW via ``m.fs.costing.add_LCOW(flow_rate)``. The following expressions and indexes would be available on ``m.fs.costing``:
 
 * ``LCOW_component_direct_capex``: ``fs.pump1``, ``fs.pump2``, ``fs.chem_add``
 * ``LCOW_component_indirect_capex``: ``fs.pump1``, ``fs.pump2``, ``fs.chem_add``
@@ -431,10 +435,10 @@ unit (``m.fs.chem_add``), and has registered ``electricity`` and ``anti_scalant`
 * ``LCOW_aggregate_fixed_opex``: ``Pump``, ``ChemicalAdditionZO``
 * ``LCOW_aggregate_variable_opex``: ``Pump``, ``ChemicalAdditionZO``, ``electricity``, ``anti_scalant``
 
-Importantly, the contribution of ``electricity`` and ``anti_scalant`` flows to the LCOW is found as both an individual contribution as as part of the individual unit model breakdown. For example, ``electricity`` is counted both in
-``LCOW_component_variable_opex['electricity']`` as well as part of the ``LCOW_component_variable_opex`` for each of the unit models that contribute electricity flow (e.g. ``LCOW_component_variable_opex['fs.pump1']`` includes the electricity cost for pump1). 
+Importantly, the contribution of flows to the LCOW is found as both an individual contribution to individual unit model breakdownd *and* as separate entries. For example, ``electricity`` is counted both in
+``LCOW_component_variable_opex['electricity']`` as well as part of the ``LCOW_component_variable_opex`` for each of the unit models that contribute electricity flow (e.g., ``LCOW_component_variable_opex['fs.pump1']`` includes the electricity cost for pump1). 
 Similarly, ``electricity`` is counted both as ``LCOW_aggregate_variable_opex['electricity']`` as well as part of the ``LCOW_aggregate_variable_opex['Pump']``. For this reason, the system LCOW 
-is the summatio nof all indexes in any of the component or aggregate expressions _except_ those indexed by flow.
+is the summation of all indexes in any of the component or aggregate expressions *except* those indexed by flow.
 
 Specific Energy Consumption
 +++++++++++++++++++++++++++
