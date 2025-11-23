@@ -7,7 +7,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/watertap-org/watertap/"
+# https://github.com/watertap-org/watertap/
 #################################################################################
 # IDAES imports
 from idaes.core import (
@@ -17,7 +17,17 @@ from idaes.core import (
     MomentumBalanceType,
 )
 
-from .multicomp_aq_sol_prop_pack import *
+from .multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
+    ActivityCoefficientModel,
+    DensityCalculation,
+    DiffusivityCalculation,
+    ElectricalMobilityCalculation,
+    EquivalentConductivityCalculation,
+    TransportNumberCalculation,
+    MCASScaler,
+)
 from .NaCl_prop_pack import NaClParameterBlock, NaClParameterData
 from .NaCl_T_dep_prop_pack import NaClTDepParameterBlock, NaClTDepParameterData
 from .seawater_prop_pack import SeawaterParameterBlock, SeawaterParameterData
