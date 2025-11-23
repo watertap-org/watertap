@@ -257,7 +257,7 @@ def set_operating_conditions(
         feed_state_block=m.fs.feed.properties[0],
         over_pressure=over_pressure,
         water_recovery_mass=water_recovery,
-        NaCl_passage=0.01,
+        salt_passage=0.01,
         solver=solver,
     )
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
