@@ -202,7 +202,7 @@ def build(erd_type=ERDtype.pressure_exchanger):
 def set_operating_conditions(
     m,
     water_recovery=0.5,
-    over_pressure=0.3,
+    over_pressure_factor=1.3,
     flow_vol=1e-3,
     salt_mass_conc=35e-3,
     solver=None,
@@ -254,8 +254,8 @@ def set_operating_conditions(
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
     operating_pressure = calculate_operating_pressure(
-        feed_state_block=m.fs.feed.properties[0],
-        over_pressure=over_pressure,
+        state_block=m.fs.feed.properties[0],
+        over_pressure_factor=over_pressure_factor,
         water_recovery_mass=water_recovery,
         salt_passage=0.01,
         solver=solver,
