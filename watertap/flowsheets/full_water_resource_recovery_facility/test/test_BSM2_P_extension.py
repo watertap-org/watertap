@@ -22,7 +22,7 @@ __author__ = "Chenyu Wang"
 import platform
 import pytest
 
-from pyomo.environ import log, value
+from pyomo.environ import value
 
 from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.scaling import (
@@ -318,13 +318,30 @@ class TestScaledBioPFalse:
 
     @pytest.mark.solver
     @pytest.mark.component
-    def test_condition_number(self, system_frame):
+    @linux_platform_only
+    def test_condition_number_on_linux(self, system_frame):
         m = system_frame
 
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
-        assert log(jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            log(2.987650e15), rel=0, abs=0.5 * log(10)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            2.987650e15, rel=1e-2
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @reference_platform_only
+    def test_condition_number_on_windows(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        cond = jacobian_cond(jac=jac, scaled=False)
+        assert (
+            # Python 3.9-3.11
+            cond == pytest.approx(4.3021828e15, rel=1e-2)
+            # Python 3.12
+            or cond == pytest.approx(2.987651e15, rel=1e-2)
         )
 
 
