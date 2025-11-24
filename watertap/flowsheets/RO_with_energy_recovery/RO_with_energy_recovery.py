@@ -313,7 +313,6 @@ def set_operating_conditions(
         )
 
 
-
 def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
