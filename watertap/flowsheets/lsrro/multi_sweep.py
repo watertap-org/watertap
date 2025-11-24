@@ -349,5 +349,5 @@ def run_case(number_of_stages, nx, output_filename=None, quick_start=False):
 
 if __name__ == "__main__":
     for n in range(1, 9):
-        global_results, sweep_params, m = run_case(number_of_stages=n, nx=2)
+        global_results, sweep_params, m = run_case(number_of_stages=n, nx=4)
         print(global_results)
