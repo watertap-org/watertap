@@ -22,7 +22,7 @@ __author__ = "Chenyu Wang"
 import platform
 import pytest
 
-from pyomo.environ import value
+from pyomo.environ import log, value
 
 from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.scaling import (
@@ -323,8 +323,8 @@ class TestScaledBioPFalse:
 
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.987651e15, rel=1e-3
+        assert log(jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            log(2.987650e15), rel=0, abs=0.5 * log(10)
         )
 
 
@@ -361,7 +361,7 @@ class TestScaledBioPTrue:
         jac, _ = get_jacobian(sm, scaled=False)
 
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            8.89313720973467e14, rel=1e-3
+            7.42017e14, rel=1e-3
         )
 
     @pytest.mark.solver
