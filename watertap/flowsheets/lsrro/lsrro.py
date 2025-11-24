@@ -59,7 +59,6 @@ from watertap.costing import (
 )
 import watertap.property_models.NaCl_prop_pack as props
 from parameter_sweep import LinearSample, parameter_sweep
-from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1455,6 +1454,8 @@ def feed_concentration_recovery_profile(
     outputs = {}
     nx = points_per_sweep
     if m is None:
+        from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
+
         m = _lsrro_presweep(number_of_stages=number_of_stages, quick_start=quick_start)
     else:
         if (m.fs.NumberOfStages == number_of_stages) or (m.fs.NumberOfStages is None):
