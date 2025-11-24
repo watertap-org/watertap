@@ -13,5 +13,5 @@ sphinx==7.1.*
 nbsphinx
 sphinx_rtd_theme
 
-git+https://github.com/IDAES/idaes-pse.git@refs/pull/1711/merge
+git+https://github.com/IDAES/idaes-pse.git@main
 -e .[testing,notebooks,oli_api]
