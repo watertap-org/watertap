@@ -179,27 +179,27 @@ def test_calculate_operating_pressure_errors():
 
     with pytest.raises(
         TypeError,
-        match="feed_state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock",
+        match="state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock",
     ):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = MCASParameterBlock(solute_list=["Na_+"])
         m.fs.feed = Feed(property_package=m.fs.properties)
-        calculate_operating_pressure(feed_state_block=m.fs.feed.properties[0])
+        calculate_operating_pressure(state_block=m.fs.feed.properties[0])
 
     with pytest.raises(
         TypeError,
-        match="feed_state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock",
+        match="state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock",
     ):
         m = build_ro0d_model()
-        calculate_operating_pressure(feed_state_block=m.fs.RO.inlet)
+        calculate_operating_pressure(state_block=m.fs.RO.inlet)
 
     with pytest.raises(
         ValueError, match="salt_passage argument must be between 0.001 and 0.999"
     ):
         m = build_seawater_prop_model()
         calculate_operating_pressure(
-            feed_state_block=m.fs.feed.properties[0], salt_passage=1.1
+            state_block=m.fs.feed.properties[0], salt_passage=1.1
         )
 
     with pytest.raises(
@@ -207,5 +207,14 @@ def test_calculate_operating_pressure_errors():
     ):
         m = build_nacl_prop_model()
         calculate_operating_pressure(
-            feed_state_block=m.fs.feed.properties[0], water_recovery_mass=2.5
+            state_block=m.fs.feed.properties[0], water_recovery_mass=2.5
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="over_pressure_factor argument must be greater than or equal to 1.0",
+    ):
+        m = build_nacl_prop_model()
+        calculate_operating_pressure(
+            state_block=m.fs.feed.properties[0], over_pressure_factor=0.9
         )

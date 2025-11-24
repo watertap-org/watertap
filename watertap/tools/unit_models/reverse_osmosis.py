@@ -16,7 +16,7 @@ ReverseOsmosis0D or ReverseOsmosis1D unit models.
 
 from pyomo.environ import (
     ConcreteModel,
-    assert_optimal_termination,
+    check_optimal_termination,
     value,
 )
 from idaes.core.util.initialization import solve_indexed_blocks
@@ -34,8 +34,8 @@ __all__ = ["calculate_operating_pressure"]
 
 
 def calculate_operating_pressure(
-    feed_state_block=None,
-    over_pressure=0.15,
+    state_block=None,
+    over_pressure_factor=1.15,
     water_recovery_mass=0.5,
     salt_passage=0.01,
     solver=None,
@@ -44,9 +44,9 @@ def calculate_operating_pressure(
     Estimate operating pressure for RO unit model given the following arguments:
 
     Arguments:
-        feed_state_block:   the state block of the RO feed that has the non-pressure state
+        state_block:   the state block of the RO feed that has the non-pressure state
                             variables initialized to their values (default=None)
-        over_pressure:  the amount of operating pressure above the brine osmotic pressure
+        over_pressure_factor:  the amount of operating pressure above the brine osmotic pressure
                         represented as a fraction (default=0.15)
         water_recovery_mass: the mass-based fraction of inlet H2O that becomes permeate
                         (default=0.5)
@@ -56,17 +56,17 @@ def calculate_operating_pressure(
     """
 
     if any(
-        isinstance(feed_state_block, cls)
+        isinstance(state_block, cls)
         for cls in [MembraneChannel0DBlock, MembraneChannel1DBlock]
     ):
-        feed_state_block = feed_state_block.properties[0, 0]
+        state_block = state_block.properties[0, 0]
 
     if not any(
-        isinstance(feed_state_block, cls)
+        isinstance(state_block, cls)
         for cls in [SeawaterStateBlockData, NaClStateBlockData, NaClTDepStateBlockData]
     ):
         raise TypeError(
-            "feed_state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock"
+            "state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock"
         )
 
     if not 1e-3 < salt_passage < 0.999:
@@ -75,39 +75,48 @@ def calculate_operating_pressure(
     if not 1e-3 < water_recovery_mass < 0.999:
         raise ValueError("water_recovery_mass argument must be between 0.001 and 0.999")
 
-    if isinstance(feed_state_block, NaClStateBlockData) or isinstance(
-        feed_state_block, NaClTDepStateBlockData
-    ):
-        comp = "NaCl"
-    if isinstance(feed_state_block, SeawaterStateBlockData):
-        comp = "TDS"
+    if not over_pressure_factor >= 1.0:
+        raise ValueError(
+            "over_pressure_factor argument must be greater than or equal to 1.0"
+        )
+
+    print(over_pressure_factor, water_recovery_mass, salt_passage)
+
+    comp = [c for c in state_block.component_list if c != "H2O"][0]
+
+    if comp not in ["NaCl", "TDS"]:
+        raise ValueError(
+            f"salt_passage calculation only supported for NaCl or TDS components but found {comp}"
+        )
 
     if solver is None:
         solver = get_solver()
 
     tmp = ConcreteModel()  # create temporary model
-    prop = feed_state_block.config.parameters
+    prop = state_block.config.parameters
 
     tmp.feed = prop.build_state_block([0])
     tmp.feed[0].pressure_osm_phase
 
     # specify state block
     tmp.feed[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", "H2O"])
+        value(state_block.flow_mass_phase_comp["Liq", "H2O"])
         * (1 - water_recovery_mass)
     )
     tmp.feed[0].flow_mass_phase_comp["Liq", comp].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", comp]) * (1 - salt_passage)
+        value(state_block.flow_mass_phase_comp["Liq", comp]) * (1 - salt_passage)
     )
-    tmp.feed[0].pressure.fix(
-        101325
-    )  # valid when osmotic pressure is independent of hydraulic pressure
-    tmp.feed[0].temperature.fix(value(feed_state_block.temperature))
+    tmp.feed[0].temperature.fix(value(state_block.temperature))
+    tmp.feed[0].pressure.fix(101325)
 
     # solve state block
     results = solve_indexed_blocks(solver, [tmp.feed])
-    assert_optimal_termination(results)
 
-    op_pressure = value(tmp.feed[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
+    if not check_optimal_termination(results):
+        raise RuntimeError(
+            "Failed to solve temporary state block for operating pressure"
+        )
+
+    op_pressure = value(tmp.feed[0].pressure_osm_phase["Liq"]) * over_pressure_factor
 
     return op_pressure
