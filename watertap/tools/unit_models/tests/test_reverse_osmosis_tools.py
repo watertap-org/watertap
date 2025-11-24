@@ -135,7 +135,7 @@ def test_calculate_operating_pressure_sw():
 
     m = build_seawater_prop_model()
     osm = calculate_operating_pressure(m.fs.feed.properties[0])
-    assert pytest.approx(osm, rel=1e-3) == 6034067.12
+    assert pytest.approx(osm, rel=1e-3) == 6098990.3
 
 
 @pytest.mark.component
@@ -143,7 +143,7 @@ def test_calculate_operating_pressure_nacl():
 
     m = build_nacl_prop_model()
     osm = calculate_operating_pressure(m.fs.feed.properties[0])
-    assert pytest.approx(osm, rel=1e-3) == 6624988.52
+    assert pytest.approx(osm, rel=1e-3) == 6695261.0
 
 
 @pytest.mark.component
@@ -151,7 +151,7 @@ def test_calculate_operating_pressure_nacl_tdep():
 
     m = build_nacl_tdep_prop_model()
     osm = calculate_operating_pressure(m.fs.feed.properties[0])
-    assert pytest.approx(osm, rel=1e-3) == 6607568.15
+    assert pytest.approx(osm, rel=1e-3) == 6677498.9
 
 
 @pytest.mark.component
@@ -161,7 +161,7 @@ def test_calculate_operating_pressure_ro0d():
     osm1 = calculate_operating_pressure(m.fs.RO.feed_side.properties[0, 0])
     osm2 = calculate_operating_pressure(m.fs.RO.feed_side)
     assert osm1 == osm2
-    assert pytest.approx(osm1, rel=1e-3) == 6034067.12
+    assert pytest.approx(osm1, rel=1e-3) == 6098990.3
 
 
 @pytest.mark.component
@@ -171,7 +171,7 @@ def test_calculate_operating_pressure_ro1d():
     osm1 = calculate_operating_pressure(m.fs.RO.feed_side.properties[0, 0])
     osm2 = calculate_operating_pressure(m.fs.RO.feed_side)
     assert osm1 == osm2
-    assert pytest.approx(osm1, rel=1e-3) == 6607568.14
+    assert pytest.approx(osm1, rel=1e-3) == 6677498.9
 
 
 @pytest.mark.unit
@@ -195,7 +195,7 @@ def test_calculate_operating_pressure_errors():
         calculate_operating_pressure(state_block=m.fs.RO.inlet)
 
     with pytest.raises(
-        ValueError, match="salt_passage argument must be between 0.001 and 0.999"
+        ValueError, match="salt_passage argument must be between 0 and 0.999"
     ):
         m = build_seawater_prop_model()
         calculate_operating_pressure(

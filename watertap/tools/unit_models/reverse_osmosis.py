@@ -37,7 +37,7 @@ def calculate_operating_pressure(
     state_block=None,
     over_pressure_factor=1.15,
     water_recovery_mass=0.5,
-    salt_passage=0.01,
+    salt_passage=0,
     solver=None,
 ):
     """
@@ -69,8 +69,8 @@ def calculate_operating_pressure(
             "state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock"
         )
 
-    if not 1e-3 < salt_passage < 0.999:
-        raise ValueError("salt_passage argument must be between 0.001 and 0.999")
+    if not 0 <= salt_passage < 0.999:
+        raise ValueError("salt_passage argument must be between 0 and 0.999")
 
     if not 1e-3 < water_recovery_mass < 0.999:
         raise ValueError("water_recovery_mass argument must be between 0.001 and 0.999")
