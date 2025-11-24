@@ -165,6 +165,8 @@ def reverse_osmosis_operation_model(blk, params: um_params.ROParams):
         blk.set_ro_skids,
         model_func=ro_skid_operation_model,
         model_args={"params": params},
+        minimum_up_time=params.minimum_uptime,
+        minimum_down_time=params.minimum_downtime,
     )
 
     # Remove overall mass balance and power consumption calculation
