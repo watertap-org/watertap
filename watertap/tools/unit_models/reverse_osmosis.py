@@ -44,15 +44,11 @@ def calculate_operating_pressure(
     Estimate operating pressure for RO unit model given the following arguments:
 
     Arguments:
-        state_block:   the state block of the RO feed that has the non-pressure state
-                            variables initialized to their values (default=None)
-        over_pressure_factor:  the amount of operating pressure above the brine osmotic pressure
-                        represented as a fraction (default=0.15)
-        water_recovery_mass: the mass-based fraction of inlet H2O that becomes permeate
-                        (default=0.5)
-        salt_passage:   the mass-based fraction of inlet salt that becomes permeate
-                        (default=0.01)
-        solver:     solver object to be used (default=None)
+        state_block: the state block of the RO feed that has the non-pressure state variables set to desired values (default=None)
+        over_pressure_factor: the amount of operating pressure above the brine osmotic pressure represented as a fraction (default=1.15)
+        water_recovery_mass: the mass-based fraction of inlet H2O that becomes permeate (default=0.5)
+        salt_passage: the mass-based fraction of inlet salt that becomes permeate (default=0)
+        solver: solver object to be used (default=None)
     """
 
     if any(
@@ -80,9 +76,7 @@ def calculate_operating_pressure(
             "over_pressure_factor argument must be greater than or equal to 1.0"
         )
 
-    print(over_pressure_factor, water_recovery_mass, salt_passage)
-
-    comp = [c for c in state_block.component_list if c != "H2O"][0]
+    comp = state_block.params.solute_set.first()
 
     if comp not in ["NaCl", "TDS"]:
         raise ValueError(
