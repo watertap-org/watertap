@@ -23,6 +23,11 @@ from idaes.core.util.initialization import solve_indexed_blocks
 
 from watertap.property_models.seawater_prop_pack import SeawaterStateBlockData
 from watertap.property_models.NaCl_prop_pack import NaClStateBlockData
+from watertap.property_models.NaCl_T_dep_prop_pack import (
+    NaClStateBlockData as NaClTDepStateBlockData,
+)
+from watertap.core import MembraneChannel0DBlock, MembraneChannel1DBlock
+from watertap.core.solvers import get_solver
 
 
 __all__ = ["calculate_operating_pressure"]
@@ -49,41 +54,60 @@ def calculate_operating_pressure(
                         (default=0.01)
         solver:     solver object to be used (default=None)
     """
+
+    if any(
+        isinstance(feed_state_block, cls)
+        for cls in [MembraneChannel0DBlock, MembraneChannel1DBlock]
+    ):
+        feed_state_block = feed_state_block.properties[0, 0]
+
     if not any(
         isinstance(feed_state_block, cls)
-        for cls in [SeawaterStateBlockData, NaClStateBlockData]
+        for cls in [SeawaterStateBlockData, NaClStateBlockData, NaClTDepStateBlockData]
     ):
         raise TypeError(
-            "feed_state_block argument must be a SeawaterStateBlockData or NaClStateBlockData object"
+            "feed_state_block must be created with SeawaterParameterBlock, NaClParameterBlock, or NaClTDepParameterBlock"
         )
 
-    if isinstance(feed_state_block, NaClStateBlockData):
+    if not 1e-3 < salt_passage < 0.999:
+        raise ValueError("salt_passage argument must be between 0.001 and 0.999")
+
+    if not 1e-3 < water_recovery_mass < 0.999:
+        raise ValueError("water_recovery_mass argument must be between 0.001 and 0.999")
+
+    if isinstance(feed_state_block, NaClStateBlockData) or isinstance(
+        feed_state_block, NaClTDepStateBlockData
+    ):
         comp = "NaCl"
     if isinstance(feed_state_block, SeawaterStateBlockData):
         comp = "TDS"
-        
+
+    if solver is None:
+        solver = get_solver()
+
     tmp = ConcreteModel()  # create temporary model
     prop = feed_state_block.config.parameters
-    tmp.brine = prop.build_state_block([0])
-    tmp.brine[0].pressure_osm_phase
+
+    tmp.feed = prop.build_state_block([0])
+    tmp.feed[0].pressure_osm_phase
 
     # specify state block
-    tmp.brine[0].flow_mass_phase_comp["Liq", "H2O"].fix(
+    tmp.feed[0].flow_mass_phase_comp["Liq", "H2O"].fix(
         value(feed_state_block.flow_mass_phase_comp["Liq", "H2O"])
         * (1 - water_recovery_mass)
     )
-    tmp.brine[0].flow_mass_phase_comp["Liq", comp].fix(
+    tmp.feed[0].flow_mass_phase_comp["Liq", comp].fix(
         value(feed_state_block.flow_mass_phase_comp["Liq", comp]) * (1 - salt_passage)
     )
-    tmp.brine[0].pressure.fix(
+    tmp.feed[0].pressure.fix(
         101325
     )  # valid when osmotic pressure is independent of hydraulic pressure
-    tmp.brine[0].temperature.fix(value(feed_state_block.temperature))
-    
+    tmp.feed[0].temperature.fix(value(feed_state_block.temperature))
+
     # solve state block
-    results = solve_indexed_blocks(solver, [tmp.brine])
+    results = solve_indexed_blocks(solver, [tmp.feed])
     assert_optimal_termination(results)
 
-    op_pressure = value(tmp.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
+    op_pressure = value(tmp.feed[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
     return op_pressure
