@@ -29,7 +29,6 @@ from idaes.models.unit_models.mixer import (
 )
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 
-from watertap.flowsheets.ccro.utils.ccro_utils import composition_calculator
 from watertap.unit_models.pressure_changer import Pump
 from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
 from watertap.unit_models.reverse_osmosis_1D import (
@@ -72,54 +71,26 @@ __all__ = [
     "build_ccro_system",
     "create_ccro_multiperiod",
     "add_ccro_costing",
-    "fix_overall_water_recovery",
-    "setup_optimization",
 ]
 
 solver = get_solver()
 
 
-op_dict_default = dict(
-    n_time_points=11,
-    rho=1000,
-    raw_feed_conc=5,  # g/L
-    raw_feed_flowrate=1.8,  # L/min
-    recycle_flowrate=49.1,  # L/min
-    recycle_conc_start=11.7,
-    temperature=25,  # °C
-    p1_pressure_start=306,  # psi
-    p2_pressure_start=306,
-    p1_eff=0.8,
-    p2_eff=0.8,
-    A_comp=5.96e-12,
-    B_comp=3.08e-08,
-    membrane_area=7.9,  # m2
-    membrane_length=1,  # m
-    channel_height=0.0008636,
-    spacer_porosity=0.9,
-    dead_volume=0.035564,
-    accumulation_time=60,
-    single_pass_water_recovery=0.063,
-    include_costing=True,
-    flushing_efficiency=0.9,
-)
-
-
-def build_ccro_system(time_blk=None, configuration=None):
+def build_ccro_system(time_blk=None, operation_mode=None):
     """
     Build the CCRO steady state flowsheet
     """
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.configuration = configuration
+    m.fs.operation_mode = operation_mode
 
     m.fs.properties = NaClParameterBlock()
 
     # Low concentration feed to the system
     m.fs.raw_feed = Feed(property_package=m.fs.properties)
 
-    # Dead volume is included in both configurations
+    # Dead volume is included in both operation_modes
     m.fs.dead_volume = DeadVolume0D(property_package=m.fs.properties)
 
     # Touch relevant parameters
@@ -131,7 +102,7 @@ def build_ccro_system(time_blk=None, configuration=None):
     m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
     m.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase
 
-    if m.fs.configuration == "filtration":
+    if m.fs.operation_mode == "filtration":
 
         # Feed pump
         m.fs.P1 = Pump(property_package=m.fs.properties)
@@ -191,7 +162,7 @@ def build_ccro_system(time_blk=None, configuration=None):
         m.fs.M1.mixed_state[0].flow_vol_phase
         m.fs.M1.mixed_state[0].conc_mass_phase_comp
         
-    elif m.fs.configuration == "flushing":
+    elif m.fs.operation_mode == "flushing":
 
         m.fs.P1 = Pump(property_package=m.fs.properties)
         m.fs.P2 = Pump(property_package=m.fs.properties)
@@ -236,9 +207,9 @@ def create_ccro_multiperiod(n_time_points=10, include_costing=True, op_dict=None
     mp.n_time_points = n_time_points
     mp.include_costing = include_costing
 
-    configuration_list = ["filtration"] * (n_time_points - 1) + ["flushing"]
+    operation_mode_list = ["filtration"] * (n_time_points - 1) + ["flushing"]
     flowsheet_options = {
-        t: {"time_blk": t, "configuration": configuration_list[t]}
+        t: {"time_blk": t, "operation_mode": operation_mode_list[t]}
         for t in range(n_time_points)
     }
 
@@ -362,7 +333,7 @@ def setup_optimization(
         m.fs.dead_volume.delta_state.volume[0, "Liq"].unfix()
 
 
-        # if m.fs.configuration == "filtration":
+        # if m.fs.operation_mode == "filtration":
         #     m.fs.RO.recovery_vol_phase[0.0, "Liq"].setub(0.1)
 
 
@@ -375,20 +346,6 @@ def setup_optimization(
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
                 recycle_flow_bounds[1] * pyunits.L / pyunits.min
             )
-        # else:
-        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].unfix()
-        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setlb(
-        #         recycle_flow_bounds[0] * pyunits.L / pyunits.min
-        #     )
-        #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].setub(
-        #         recycle_flow_bounds[1] * pyunits.L / pyunits.min
-        #     )
-        #     m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
-        #         recycle_flow_bounds[0] * pyunits.L / pyunits.min
-        #     )
-        #     m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-        #         recycle_flow_bounds[1] * pyunits.L / pyunits.min
-        #     )
 
     if mp.include_costing:
         mp.cost_objective = Objective(expr=mp.costing.LCOW)
@@ -397,31 +354,31 @@ def setup_optimization(
 
 
 if __name__ == "__main__":
-    op_dict = dict(
-        rho=1000,
-        raw_feed_conc=5,  # g/L
-        raw_feed_flowrate=1.8,  # L/min
-        recycle_flowrate=49.1,  # L/min
-        recycle_conc_start=11.7,
-        temperature=298,  # K
-        p1_pressure_start=306,  # psi
-        p2_pressure_start=306,
-        p1_eff=0.8,
-        p2_eff=0.8,
-        A_comp=5.96e-12,
-        B_comp=3.08e-08,
-        membrane_area=7.9,  # m2
-        membrane_length=1,  # m
-        channel_height=0.0008636,
-        spacer_porosity=0.9,
-        dead_volume=0.035564,
-        accumulation_time=60,
-        single_pass_water_recovery=0.063,
-        include_costing=True,
-        flushing_efficiency=0.9,
+    operating_conditions_dict = dict(
+        raw_feed_conc = 5,  # g/L
+        raw_feed_flowrate = 1.8,  # L/min
+        recycle_flowrate = 49.1,  # L/min
+        recycle_conc_start = 11.7,
+        flushing_conc = 5,  # g/L
+        flushing_flowrate = 50.9,  # L/min
+        flushing_efficiency = 0.9,
+        temperature = 298,  # K
+        p1_pressure_start = 306,  # psi
+        p2_pressure_start = 306,
+        p1_eff = 0.8,
+        p2_eff = 0.8,
+        A_comp = 5.96e-12,
+        B_comp = 3.08e-08,
+        membrane_area = 7.9,  # m2
+        membrane_length = 1,  # m
+        channel_height = 0.0008636, # m
+        spacer_porosity = 0.9,
+        dead_volume = 0.035564, # m3
+        accumulation_time = 60, #s
+        include_costing = True,
     )
 
-    op_dict = config_op_dict(op_dict)
+    op_dict = config_operating_dict(operating_conditions_dict)
     mp = create_ccro_multiperiod(n_time_points=11, include_costing=True, op_dict=op_dict)
     results = solve(mp, tee=False)
     print_results_table(mp, w=15)
