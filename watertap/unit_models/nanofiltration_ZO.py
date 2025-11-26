@@ -42,7 +42,7 @@ import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
-from watertap.custom_exceptions import WaterTapDeveloperError
+from watertap.custom_exceptions import FrozenPipes
 
 
 _log = idaeslog.getLogger(__name__)
@@ -235,7 +235,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         elif hasattr(self.config.property_package, "solute_set"):
             solute_set = self.config.property_package.solute_set
         else:
-            raise WaterTapDeveloperError(
+            raise FrozenPipes(
                 "Property package must have either ion_set or solute_set attribute."
             )
 

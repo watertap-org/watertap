@@ -19,7 +19,7 @@ from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, ZeroOrderBaseData
-from watertap.custom_exceptions import WaterTapDeveloperError
+from watertap.custom_exceptions import FrozenPipes
 
 # Some more information about this module
 __author__ = "Adam Atia"
@@ -209,7 +209,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
             elif j == "polymer":
                 chemical_dosage = blk.polymer_dose[t]
             else:
-                raise WaterTapDeveloperError(
+                raise FrozenPipes(
                     f"Unexpected chemical {j} in coagulation/flocculation unit"
                 )
             return blk.chemical_flow_mass[t, j] == pyunits.convert(

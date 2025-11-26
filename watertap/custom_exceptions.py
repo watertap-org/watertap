@@ -1,4 +1,4 @@
-class WaterTapDeveloperError(Exception):
+class FrozenPipes(Exception):
     """
     Custom exception for WaterTap developer errors.
 
@@ -16,4 +16,4 @@ class WaterTapDeveloperError(Exception):
         super().__init__(self.message)
 
     def __str__(self):
-        return f"WaterTapDeveloperError: {self.message}"
+        return f"FrozenPipes: {self.message}"

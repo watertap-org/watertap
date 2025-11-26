@@ -28,6 +28,7 @@ from watertap.core.util.chemistry import (
     get_charge_group,
     get_molar_mass,
 )
+from watertap.custom_exceptions import FrozenPipes
 
 # TODO: consider replacing some functionality with molmass: https://pypi.org/project/molmass
 
@@ -78,11 +79,15 @@ def get_oli_name(watertap_name: str) -> str:
     components = watertap_name.split("_")
     if len(components) == 0:
         raise IOError(f" Unable to parse solute '{watertap_name}'.")
-    molecule = ""
+
     if len(components) == 1:
         molecule = components[0]
     elif len(components) == 2:
         molecule = components[0] + "ION"
+    else:
+        raise FrozenPipes(
+            f"molecule name could not be determined from the string '{watertap_name}'"
+        )
     oli_name = molecule.replace("[", "").replace("]", "").upper()
     return oli_name
 

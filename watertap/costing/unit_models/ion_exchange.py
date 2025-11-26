@@ -12,7 +12,7 @@
 
 import pyomo.environ as pyo
 
-from watertap.custom_exceptions import WaterTapDeveloperError
+from watertap.custom_exceptions import FrozenPipes
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -271,7 +271,7 @@ def cost_ion_exchange(blk):
     elif ix_type == "anion":
         resin_cost = ion_exchange_params.anion_exchange_resin_cost
     else:
-        raise WaterTapDeveloperError(
+        raise FrozenPipes(
             f"Invalid ion exchange type {ix_type}. Valid types are 'cation' or 'anion'."
         )
 

@@ -15,7 +15,6 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
 from idaes.core.util.math import smooth_min
 
-from watertap.custom_exceptions import WaterTapDeveloperError
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -103,12 +102,12 @@ def cost_gac_gravity(blk):
 def _build_gac_cost_param_block(blk, contactor_type):
 
     adsorbent_unit_cost_coeff_data = {0: 4.58342, 1: -1.25311e-5}
-    # contactor_cost_coeff_data, other_cost_param_data, energy_consumption_coeff_data = (
-    #     {},
-    #     {},
-    #     {},
-    # )  # other option is to initialize as empty dicts and fill based on contactor type
-    if contactor_type == ContactorType.pressure:
+    contactor_cost_coeff_data, other_cost_param_data, energy_consumption_coeff_data = (
+        {},
+        {},
+        {},
+    )
+    if contactor_type == ContactorType.wpressure:
         contactor_cost_coeff_data = {0: 10010.9, 1: 2204.95, 2: -15.9378, 3: 0.110592}
         other_cost_param_data = {0: 16660.7, 1: 0.552207}
         energy_consumption_coeff_data = {0: 8.09926e-4, 1: 8.70577e-4, 2: 0}
@@ -116,10 +115,6 @@ def _build_gac_cost_param_block(blk, contactor_type):
         contactor_cost_coeff_data = {0: 75131.3, 1: 735.550, 2: -1.01827, 3: 0.000000}
         other_cost_param_data = {0: 38846.9, 1: 0.490571}
         energy_consumption_coeff_data = {0: 0.123782, 1: 0.132403, 2: -1.41512e-5}
-    else:
-        raise WaterTapDeveloperError(
-            f"Unexpected contactor type {contactor_type} in GAC costing parameter block."
-        )
 
     # ---------------------------------------------------------------------
     # design options
