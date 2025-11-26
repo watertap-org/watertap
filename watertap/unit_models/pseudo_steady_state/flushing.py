@@ -31,15 +31,14 @@ from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
 
 from watertap.core.solvers import get_solver
-from idaes.core.surrogate.sampling.data_utils import split_training_validation
-from idaes.core.surrogate.pysmo_surrogate import PysmoRBFTrainer, PysmoSurrogate
-from idaes.core.surrogate.surrogate_block import SurrogateBlock
+from scipy.optimize import rosen, differential_evolution
 
-# TODO:
-# Create surrogate model during initialization if experimental dataset is provided
 
-@declare_process_block_class("FlushingSurrogate")
-class FlushingSurrogateData(UnitModelBlockData):
+__author__ = "Mukta Hardikar, Kurban Sitterley, Alexander V. Dudchenko"
+
+
+@declare_process_block_class("Flushing")
+class FlushingData(UnitModelBlockData):
     """
     This is a surrogate unit model for flushing.
     1. If filepath is passed to configuration variable 'dataset_filename', the number of tanks in series and mean residence time are estimated using the experimental data provided in the file.
@@ -97,17 +96,71 @@ class FlushingSurrogateData(UnitModelBlockData):
     )
 
 
-    # def create_surrogate_model(self):
+    def get_data(self,file_path):
+        """Load data from a CSV file and return as a pandas DataFrame."""
+        data = pd.read_csv(file_path)
+        t = data["t"].to_numpy()
+        f_t = data["F_t"].to_numpy()
 
-    #     # Create the surrogate model for the flushing process
-    #     # Check is a dataset file was passed
+        return t, f_t
 
-    #     if self.config.dataset_filename is not None:
-    #         # Load dataset
-    #         data = pd.read_csv(self.config.dataset_filename)
-            
-    #         pass
 
+    def ft_profile(self,params, t):
+        """Calculate the profile function F(t) based on the given parameters."""
+        t_m, N = params
+        tau = t_m / int(N)
+        N = int(N)
+        sum_terms = [np.zeros(len(t))]
+        for n in range(N - 1):
+            term = ((t / tau) ** n) / math.factorial(n)
+            sum_terms.append(term)
+        # print(np.sum(sum_terms, axis=0))
+        if N == 1:
+            F_t = 1 - np.exp(-t / tau)
+        else:
+            F_t = 1 - np.exp(-t / tau) * np.sum(sum_terms, axis=0)
+        # print(F_t)
+        return F_t
+
+
+    def objective_function(self, params, t, f_t):
+        """Calculate the sum of squared errors between the model and data."""
+        f_t_model = self.ft_profile(params, t)
+        return np.sum((f_t - f_t_model) ** 2)
+
+
+    def fit_rtd_profile(self):
+        """Fit the RTD profile using the provided dataset filename in the configuration.
+
+        The function uses the profile_fitting module to optimize the number of tanks in series
+        and mean residence time based on the experimental data provided in the CSV file.
+        """
+        data_file = self.config.dataset_filename
+        if not os.path.isfile(data_file):
+            raise ConfigurationError(
+                f"The specified dataset file '{data_file}' does not exist."
+            )
+
+        t_data, f_t_data = self.get_data(data_file)
+
+        bounds = [(1e-5, 500), (1, 50)]  # Bounds for tau and N
+        result = differential_evolution(
+            self.objective_function,
+            bounds,
+            # workers=8,
+            args=(t_data, f_t_data),
+            tol=0.0001,
+        )
+
+        tau_opt, N_opt = result.x
+        N_opt = int(N_opt)
+
+        self.mean_residence_time.fix(tau_opt * N_opt)
+        self.number_tanks_in_series.set_value(N_opt)
+
+        idaeslog.getLogger(self.name).info(
+            f"Fitted RTD profile: mean residence time = {tau_opt * N_opt}, number of tanks in series = {N_opt}"
+        )
 
 
     def build(self):
@@ -158,19 +211,19 @@ class FlushingSurrogateData(UnitModelBlockData):
         )
 
         if self.config.dataset_filename is not None:
-            self.create_surrogate_model()
-        else:
-            # Add the constraint to calculate flushing efficiency using parameters in the unit model
-            @self.Constraint(
-                doc="Constraint to calculate flushing efficiency using number of tanks in series and mean residence time"
-            )
-            def flushing_efficiency_constraint(b):
-                N = b.number_tanks_in_series
-                t = b.flushing_time
-                tau = b.mean_residence_time / N  # mean residence time PER TANK
-                theta = t / tau
-                series_sum = sum(theta**m / math.factorial(m) for m in range(N()))
-                return b.flushing_efficiency == 1.0 - exp(-theta) * series_sum
+            self.fit_rtd_profile()
+        
+        # Add the constraint to calculate flushing efficiency using parameters in the unit model
+        @self.Constraint(
+            doc="Constraint to calculate flushing efficiency using number of tanks in series and mean residence time"
+        )
+        def flushing_efficiency_constraint(b):
+            N = b.number_tanks_in_series
+            t = b.flushing_time
+            tau = b.mean_residence_time / N  # mean residence time PER TANK
+            theta = t / tau
+            series_sum = sum(theta**m / math.factorial(m) for m in range(N()))
+            return b.flushing_efficiency == 1.0 - exp(-theta) * series_sum
 
 
         # Constraint to calculate the concentration of the accumulation volume at the end of flushing
@@ -200,32 +253,23 @@ class FlushingSurrogateData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
+        # Check if pre-flushing and post-flushing concentrations are fixed before intialization
         pre_con_fixed = self.pre_flushing_concentration.fixed
         post_con_fixed = self.post_flushing_concentration.fixed
+
+        # Fix for initialization routine
         self.pre_flushing_concentration.fix()
         self.post_flushing_concentration.unfix()
 
-        # Check if surrogate model exists
-        if hasattr(self, "surrogate"):
-            # Initialize surrogate model
-            self.init_data = pd.DataFrame(
-                {
-                    "time": [value(self.flushing_time)],
-                    "mean_residence_time": [value(self.mean_residence_time)],
-                }
-            )
-            self.init_output = self.surrogate.evaluate_surrogate(self.init_data)
-
-            # Set initial values for model variables
-            self.flushing_efficiency.set_value(self.init_output["F_t"].values[0])
-
+        if self.config.dataset_filename is not None:
+            init_log.info("Fitting RTD profile from experimental data...")
+            self.fit_rtd_profile()
         else:
             init_log.warning(
-                "No surrogate model found. Using default flushing efficiency constraint."
+                "No RTD data found. Using default flushing efficiency constraint."
             )
             self.flushing_time.fix()
             self.mean_residence_time.fix()
-
 
         # Solve unit
         opt = get_solver(solver, optarg)
@@ -240,9 +284,6 @@ class FlushingSurrogateData(UnitModelBlockData):
 
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
-        
-        self.flushing_time.unfix()
-        self.mean_residence_time.unfix()
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
