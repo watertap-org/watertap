@@ -46,7 +46,7 @@ def build():
     m.fs.unit = Flushing()
     m.fs.unit.mean_residence_time.fix(60)  # s
     m.fs.unit.flushing_time.fix(20)
-    m.fs.unit.raw_feed_concentration.fix(5.8)
+    m.fs.unit.flushing_feed_concentration.fix(5.8)
     m.fs.unit.pre_flushing_concentration.fix(20)
     return m
 
@@ -61,7 +61,7 @@ def build_with_test_data():
     )
 
     m.fs.unit.flushing_time.fix(20)
-    m.fs.unit.raw_feed_concentration.fix(5.8)
+    m.fs.unit.flushing_feed_concentration.fix(5.8)
     m.fs.unit.pre_flushing_concentration.fix(20)
 
     return m

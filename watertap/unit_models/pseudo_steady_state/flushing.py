@@ -181,7 +181,7 @@ class FlushingData(UnitModelBlockData):
         )
 
         # Variables
-        self.raw_feed_concentration = Var(
+        self.flushing_feed_concentration = Var(
             initialize=0.0,
             units=pyunits.kg / pyunits.m**3,
             doc="Concentration of the raw feed used for flushing",
@@ -230,7 +230,7 @@ class FlushingData(UnitModelBlockData):
         self.flushing_concentration_constraint = Constraint(
             expr=self.post_flushing_concentration
             == (1 - self.flushing_efficiency) * self.pre_flushing_concentration
-            + self.flushing_efficiency * self.raw_feed_concentration
+            + self.flushing_efficiency * self.flushing_feed_concentration
         )
 
     def initialize_build(
