@@ -107,7 +107,7 @@ def _build_gac_cost_param_block(blk, contactor_type):
         {},
         {},
     )
-    if contactor_type == ContactorType.wpressure:
+    if contactor_type == ContactorType.pressure:
         contactor_cost_coeff_data = {0: 10010.9, 1: 2204.95, 2: -15.9378, 3: 0.110592}
         other_cost_param_data = {0: 16660.7, 1: 0.552207}
         energy_consumption_coeff_data = {0: 8.09926e-4, 1: 8.70577e-4, 2: 0}
