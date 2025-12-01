@@ -71,7 +71,7 @@ def set_pump_operating_pressure(unit, osmotic_pressure, configuration_options):
             + 2e5
         )  # Pa
         print(
-            f"Setting P1 outlet pressure based on osmotic pressure of: {value(osmotic_pressure)/1e5} bar, pressure is set to {(set_pressure)/1e5} bar"
+            f"Setting {unit.name} outlet pressure based on osmotic pressure of: {value(osmotic_pressure)/1e5} bar, pressure is set to {(set_pressure)/1e5} bar"
         )
         unit.control_volume.properties_out[0].pressure.fix(set_pressure)
     else:

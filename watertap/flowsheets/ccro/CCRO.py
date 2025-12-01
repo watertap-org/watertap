@@ -53,14 +53,17 @@ from watertap.costing import (
 
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
-    set_scaling_factor,
-    constraint_scaling_transform,
 )
 
 import watertap.flowsheets.ccro.utils.utils as cc_utils
 from watertap.flowsheets.ccro.utils.cc_configuration import CCROConfiguration
 
-solver = get_solver()
+
+from watertap.flowsheets.ccro.ccro_flowsheet_functions import (
+    multi_period_constraints as ccro_mp_constraints,
+    scaling as ccro_scaling,
+    operating_conditions as ccro_operating_conditions,
+)
 
 
 def create_ccro_multiperiod(
@@ -81,7 +84,7 @@ def create_ccro_multiperiod(
         process_model_func=build_ccro_system,
         linking_variable_func=get_variable_pairs,
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof,
+        unfix_dof_func=ccro_operating_conditions.unfix_dof,
         solver=watertap_solver,
         outlvl=logging.WARNING,
     )
@@ -120,7 +123,7 @@ def create_ccro_multiperiod(
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
         if t == 1:
             fix_dof_and_initialize(m, cc_configuration=cc_configuration)
-            unfix_dof(
+            ccro_operating_conditions.unfix_dof(
                 m, unfix_dead_volume_state=False, cc_configuration=cc_configuration
             )
             old_m = m
@@ -141,7 +144,7 @@ def create_ccro_multiperiod(
                 ],
             )
             fix_dof_and_initialize(m, cc_configuration=cc_configuration)
-            unfix_dof(
+            ccro_operating_conditions.unfix_dof(
                 m, unfix_dead_volume_state=False, cc_configuration=cc_configuration
             )
         else:
@@ -166,12 +169,14 @@ def create_ccro_multiperiod(
 
         results = solve(model=m, tee=True)
         assert_optimal_termination(results)
-        unfix_dof(m, unfix_dead_volume_state=True, cc_configuration=cc_configuration)
+        ccro_operating_conditions.unfix_dof(
+            m, unfix_dead_volume_state=True, cc_configuration=cc_configuration
+        )
         old_m = m
 
     print("--- Completed sequential initialization ---")
-    add_multiperiod_variables(mp)
-    add_multiperiod_constraints(mp)
+    ccro_mp_constraints.add_multiperiod_variables(mp)
+    ccro_mp_constraints.add_multiperiod_constraints(mp)
 
     if include_costing:
         print("Adding costing")
@@ -181,7 +186,7 @@ def create_ccro_multiperiod(
 
         mp.costing.initialize()
 
-    scale_multiperiod_model(mp)
+    ccro_scaling.scale_multiperiod_model(mp)
     calculate_scaling_factors(mp)
 
     print("Multi-period DOF:", degrees_of_freedom(mp))
@@ -304,15 +309,9 @@ def initialize_system(m, **kwargs):
     """
 
     if m.fs.operation_mode == "filtration":
-
         propagate_state(m.fs.raw_feed_to_P1)
 
-        m.fs.P1.outlet.pressure[0].fix(
-            m.fs.raw_feed.properties[0].pressure_osm_phase["Liq"].value * 2 + 2e5
-        )
-        m.fs.P2.outlet.pressure[0].fix(
-            m.fs.raw_feed.properties[0].pressure_osm_phase["Liq"].value * 2 + 2e5
-        )
+        # m.fs.P2.outlet.pressure[0].fix(m.fs.P1.outlet.pressure[0].value)
         m.fs.P1.initialize()
 
         propagate_state(m.fs.P1_to_M1)
@@ -362,8 +361,6 @@ def initialize_system(m, **kwargs):
         m.fs.flushing.flushing_time.unfix()
         m.fs.flushing.pre_flushing_concentration.fix()
         m.fs.flushing.flushing_efficiency.fix()
-        m.fs.flushing.pre_flushing_concentration.display()
-        m.fs.flushing.display()
         m.fs.flushing.initialize()
 
     return m
@@ -378,8 +375,9 @@ def fix_dof_and_initialize(m, cc_configuration=None, **kwargs):
     """
     Fix DOF for MP model and initialize steady-state models.
     """
-
-    set_operating_conditions(m=m, cc_configuration=cc_configuration, **kwargs)
+    ccro_operating_conditions.set_operating_conditions(
+        m=m, cc_configuration=cc_configuration, **kwargs
+    )
     initialize_system(m=m, **kwargs)
 
 
@@ -402,244 +400,6 @@ def get_variable_pairs(t1, t2):
             t1.fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"],
         ),
     ]
-
-
-def set_operating_conditions(m, cc_configuration=None, **kwargs):
-
-    if m.fs.operation_mode == "filtration":
-
-        # Feed block operating conditions
-        m.fs.raw_feed.properties[0].pressure.fix(101325 * pyunits.Pa)
-        m.fs.raw_feed.properties[0].temperature.fix(293.15)
-
-        m.fs.raw_feed.properties[0].pressure_osm_phase["Liq"]
-        m.fs.raw_feed.properties[0].flow_vol_phase["Liq"]
-        m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
-
-        m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(
-            cc_configuration["raw_feed_flowrate"]
-        )
-        m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(
-            cc_configuration["raw_feed_conc"]
-        )
-
-        solver = get_solver()
-        solver.solve(m.fs.raw_feed)
-
-        # Dead Volume operating conditions
-        # Fix volume
-        m.fs.dead_volume.volume.fix(cc_configuration["dead_volume"])
-        m.fs.dead_volume.delta_state.volume.fix(cc_configuration["dead_volume"])
-
-        m.fs.dead_volume.accumulation_time.fix(cc_configuration["accumulation_time"])
-
-        # Fixing the flow rate of the dead volume delta state to the feed to calculate the mass fraction and density
-        # I found fixing mass fraction and density is easiest way to get initial state
-        # we will also use these as connection points between current and future state.
-
-        m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].fix(
-            m.fs.raw_feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"].value
-        )
-        m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].fix(
-            m.fs.raw_feed.properties[0].dens_mass_phase["Liq"].value
-        )
-
-        # Pump 1 operating conditions
-        m.fs.P1.efficiency_pump.fix(cc_configuration["p1_eff"])
-
-        cc_utils.set_pump_operating_pressure(
-            unit=m.fs.P1,
-            configuration_options=cc_configuration,
-            osmotic_pressure=m.fs.raw_feed.properties[0].pressure_osm_phase["Liq"],
-        )
-
-        # Pump 2 operating conditions
-        m.fs.P2.efficiency_pump.fix(cc_configuration["p2_eff"])
-
-        # Set RO configuration parameters
-        m.fs.RO.A_comp.fix(cc_configuration["A_comp"])
-        m.fs.RO.B_comp.fix(cc_configuration["B_comp"])
-        m.fs.RO.area.fix(cc_configuration["membrane_area"])
-        m.fs.RO.length.unfix()
-        m.fs.RO.width.unfix()
-        m.fs.RO.feed_side.velocity[0, 0].fix(0.15)
-        m.fs.RO.feed_side.channel_height.fix(cc_configuration["channel_height"])
-        m.fs.RO.feed_side.spacer_porosity.fix(cc_configuration["spacer_porosity"])
-
-        m.fs.RO.permeate.pressure[0].fix(101325 * pyunits.Pa)
-
-        m.fs.RO.feed_side.friction_factor_darcy.setub(200)
-        # m.fs.RO.flux_mass_phase_comp.setub(1)
-        # m.fs.RO.feed_side.cp_modulus.setub(50)
-        # m.fs.RO.feed_side.cp_modulus.setlb(0.1)
-        m.fs.RO.deltaP.setlb(None)
-
-        scale_filtration_system(m)
-
-    elif m.fs.operation_mode == "flushing":
-
-        # Pump 1 operating conditions
-        m.fs.P1.efficiency_pump.fix(cc_configuration["p1_eff"])
-
-        cc_utils.set_pump_operating_pressure(
-            unit=m.fs.P1,
-            configuration_options=cc_configuration,
-            osmotic_pressure=m.fs.raw_feed.properties[0].pressure_osm_phase["Liq"],
-        )
-
-        # Pump 2 operating conditions - Add only for costing function. No work is done by this pump
-        m.fs.P2.efficiency_pump.fix(cc_configuration["p2_eff"])
-
-        # Concentration of the flushing water is the raw feed concentration
-        if cc_configuration["flushing_conc"] == "raw_feed_conc":
-            m.fs.flushing.flushing_feed_concentration.fix(
-                cc_configuration["raw_feed_conc"]
-            )
-        else:
-            m.fs.flushing.flushing_feed_concentration.fix(
-                cc_configuration["flushing_conc"]
-            )
-
-        # Calculating values for the dead volume and delta state
-        # Feed block operating conditions
-        m.fs.raw_feed.properties[0].pressure.fix(101325 * pyunits.Pa)
-        m.fs.raw_feed.properties[0].temperature.fix(cc_configuration["temperature"])
-
-        m.fs.raw_feed.properties[0].pressure_osm_phase["Liq"]
-        m.fs.raw_feed.properties[0].flow_vol_phase["Liq"]
-        m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
-
-        # Reassign the raw feed flowrate and concentration
-        if cc_configuration["flushing_flowrate"] == "raw_feed_flowrate":
-            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(
-                cc_configuration["raw_feed_flowrate"]
-            )
-        else:
-            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(
-                cc_configuration["flushing_flowrate"]
-            )
-        if cc_configuration["flushing_conc"] == "raw_feed_conc":
-            m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(
-                cc_configuration["raw_feed_conc"]
-            )
-        else:
-            m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(
-                cc_configuration["flushing_conc"]
-            )
-        solver = get_solver()
-        solver.solve(m.fs.raw_feed)
-
-        # Dead Volume operating conditions
-        # Fix volume
-        m.fs.dead_volume.volume.fix(cc_configuration["dead_volume"])
-        m.fs.dead_volume.delta_state.volume.fix(cc_configuration["dead_volume"])
-        m.fs.dead_volume.accumulation_time.fix(cc_configuration["accumulation_time"])
-        m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].fix()
-        m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].fix()
-        m.fs.flushing.flushing_efficiency.fix(cc_configuration["flushing_efficiency"])
-
-        # Constraints
-        @m.fs.Constraint()
-        def dead_volume_residence_time_constraint(m):
-            return m.flushing.mean_residence_time == (
-                pyunits.convert(
-                    m.dead_volume.volume[0, "Liq"]
-                    / m.raw_feed.properties[0].flow_vol_phase["Liq"],
-                    to_units=pyunits.s,
-                )
-            )
-
-        # Calculate pre-flushing/ dead volume delta state concentration. Concentration before
-        # flushing should be the delta state concentration
-        @m.fs.Constraint()
-        def pre_flushing_conc_constraint(m):
-            return (
-                m.flushing.pre_flushing_concentration
-                == m.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]
-                * m.dead_volume.delta_state.dens_mass_phase[0, "Liq"]
-            )
-
-        # Concentration after flushing should be the dead volume properties out concentration
-        @m.fs.Constraint()
-        def post_flushing_conc_constraint(m):
-            return (
-                m.dead_volume.dead_volume.mass_phase_comp[0, "Liq", "NaCl"]
-                == m.flushing.post_flushing_concentration
-                * m.dead_volume.volume[0, "Liq"]
-            )
-
-        scale_flushing_system(m)
-
-    return m
-
-
-def scale_flushing_system(m=None):
-    """
-    Scale flushing model configuration
-    """
-
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
-    )
-
-    set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
-    set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
-
-    set_scaling_factor(m.fs.dead_volume.dead_volume.mass_frac_phase_comp, 10)
-    set_scaling_factor(m.fs.dead_volume.delta_state.mass_frac_phase_comp, 10)
-
-    constraint_scaling_transform(m.fs.post_flushing_conc_constraint, 1e-1)
-    constraint_scaling_transform(m.fs.pre_flushing_conc_constraint, 1e-1)
-    set_scaling_factor(m.fs.flushing.pre_flushing_concentration, 1e-1)
-    set_scaling_factor(m.fs.flushing.post_flushing_concentration, 1e-1)
-
-    calculate_scaling_factors(m)
-
-
-def scale_filtration_system(m):
-    """
-    Scale filtration model configuration
-    """
-
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
-    )
-
-    set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
-    set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
-    set_scaling_factor(m.fs.RO.area, 1e-2)
-
-    set_scaling_factor(m.fs.dead_volume.dead_volume.mass_frac_phase_comp, 10)
-    set_scaling_factor(m.fs.dead_volume.delta_state.mass_frac_phase_comp, 10)
-
-    calculate_scaling_factors(m)
-
-
-def scale_multiperiod_model(mp):
-
-    iscale.set_scaling_factor(mp.dead_volume_to_area_ratio, 1e2)
-    iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
-    iscale.set_scaling_factor(mp.total_cycle_time, 1e-3)
-    iscale.set_scaling_factor(mp.total_filtration_time, 1e-3)
-    iscale.set_scaling_factor(mp.final_concentration, 1e-1)
-
-    iscale.constraint_scaling_transform(mp.total_filtration_time_constraint, 1e-3)
-    iscale.constraint_scaling_transform(mp.total_cycle_time_constraint, 1e-3)
-    iscale.constraint_scaling_transform(mp.final_concentration_constraint, 1e-1)
-    iscale.constraint_scaling_transform(mp.global_dead_volume_constraint, 1e2)
-
-    for c in mp.ro_membrane_area_constraint.values():
-        iscale.constraint_scaling_transform(c, 1e-1)
-    for c in mp.ro_membrane_length_constraint.values():
-        iscale.constraint_scaling_transform(c, 1e-1)
-    for c in mp.equal_dead_volume_constraint.values():
-        iscale.constraint_scaling_transform(c, 1e2)
-    for c in mp.equal_delta_dead_volume_constraint.values():
-        iscale.constraint_scaling_transform(c, 1e2)
-    for c in mp.equal_recycle_rate.values():
-        iscale.constraint_scaling_transform(c, 1e2)
 
 
 def solve(model=None, solver=None, tee=True, raise_on_failure=True):
@@ -677,351 +437,13 @@ def solve(model=None, solver=None, tee=True, raise_on_failure=True):
     return results
 
 
-def unfix_dof(m, unfix_dead_volume_state=True, cc_configuration=None, **kwargs):
-    """
-    Unfix linking variables in MP model
-    """
-
-    if unfix_dead_volume_state:
-        m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
-        m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].unfix()
-
-    if m.fs.operation_mode == "filtration":
-
-        m.fs.P1.control_volume.properties_out[0].pressure.unfix()
-        m.fs.P2.control_volume.properties_out[0].pressure.unfix()
-
-        m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
-            cc_configuration["recycle_flowrate"]
-        )
-
-    elif m.fs.operation_mode == "flushing":
-        m.fs.dead_volume.accumulation_time.unfix()
-        m.fs.flushing.flushing_efficiency.fix(cc_configuration["flushing_efficiency"])
-        m.fs.flushing.flushing_time.unfix()
-        m.fs.flushing.mean_residence_time.unfix()
-        m.fs.dead_volume.dead_volume.mass_frac_phase_comp[0, "Liq", "NaCl"].unfix()
-        m.fs.flushing.pre_flushing_concentration.unfix()
-        m.fs.flushing.post_flushing_concentration.unfix()
-
-
-def add_multiperiod_variables(mp):
-    """
-    Add variables to the multiperiod model.
-    """
-    mp.dead_volume_to_area_ratio = Var(
-        initialize=1,
-        domain=NonNegativeReals,
-        units=pyunits.m**3 / pyunits.m**2,
-        doc="Global dead volume over all time periods",
-    )
-    iscale.set_scaling_factor(mp.dead_volume_to_area_ratio, 1e2)
-
-    mp.dead_volume_to_area_multiplier = Var(
-        initialize=2,
-        domain=NonNegativeReals,
-        units=pyunits.dimensionless,
-        doc="Global dead volume over all time periods",
-    )
-    iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
-
-    mp.dead_volume_to_area_multiplier.fix(1)
-    mp.dead_volume_to_area_ratio.fix(
-        value(1 * pyunits.m * (3.14 * 0.1016**2) * pyunits.m**2 / (7.2 * pyunits.m**2))
-    )
-
-    # Permeate and feed
-    mp.overall_recovery = Var(
-        initialize=0.5,
-        # bounds=(0, 1),
-        domain=NonNegativeReals,
-        units=pyunits.dimensionless,
-        doc="Overall water recovery over all time periods",
-    )
-    mp.apparent_recovery = Var(
-        initialize=0.5,
-        # bounds=(0, 1),
-        domain=NonNegativeReals,
-        units=pyunits.dimensionless,
-        doc="Apparent water recovery over all time periods",  # from BLM report on OCWD pilot
-    )
-
-    mp.final_concentration = Var(
-        initialize=0.5,
-        domain=NonNegativeReals,
-        units=pyunits.g / pyunits.L,
-        doc="Final concentration of the product stream",
-    )
-
-    mp.total_permeate = Var(
-        initialize=0.5,
-        domain=NonNegativeReals,
-        units=pyunits.m**3,
-        doc="Total permeate over all time periods",
-    )
-
-    mp.total_feed = Var(
-        initialize=0.5,
-        domain=NonNegativeReals,
-        units=pyunits.m**3,
-        doc="Total feed over all time periods",
-    )
-
-    # mp.total_brine = Var(
-    #     initialize=0.5,
-    #     domain=NonNegativeReals,
-    #     units=pyunits.m**3,
-    #     doc="Total brine over all time periods",
-    # )
-
-    mp.avg_product_flow_rate = Var(
-        initialize=1,
-        domain=NonNegativeReals,
-        units=pyunits.m**3 / pyunits.s,
-        doc="Average permeate production over all time periods",
-    )
-
-    mp.total_filtration_time = Var(
-        initialize=1,
-        domain=NonNegativeReals,
-        units=pyunits.s,
-        doc="Total filtration time excluding flushing",
-    )
-
-    mp.total_cycle_time = Var(
-        initialize=1,
-        domain=NonNegativeReals,
-        units=pyunits.s,
-        doc="Total cycle time including flushing",
-    )
-
-    mp.cycle_time_ratio = Var(
-        initialize=1,
-        domain=NonNegativeReals,
-        bounds=(0, 1.0001),
-        units=pyunits.dimensionless,
-        doc="Ratio of total cycle time to filtration time",
-    )
-
-
-def add_multiperiod_constraints(mp):
-    """
-    Add constraints to the multiperiod model.
-    """
-
-    # Get all filtration time blocks
-    blks = list(mp.get_active_process_blocks())
-    b0 = blks[mp.TIME.first()]
-
-    # RO membrane area should be the same across all time periods - except flushing
-    @mp.Constraint(
-        mp.TIME,
-        doc="RO membrane area equality through all filtration periods",
-    )
-    def ro_membrane_area_constraint(b, t):
-        if t in [b.TIME.first(), b.TIME.last()]:
-            return Constraint.Skip
-        return blks[t].fs.RO.area == b0.fs.RO.area
-
-    mp.ro_membrane_area_constraint.deactivate()
-
-    # RO membrane length should be the same across all time periods - except flushing
-    @mp.Constraint(
-        mp.TIME,
-        doc="RO membrane length equality through all filtration periods",
-    )
-    def ro_membrane_length_constraint(b, t):
-        if t in [b.TIME.first(), b.TIME.last()]:
-            return Constraint.Skip
-        return blks[t].fs.RO.length == b0.fs.RO.length
-
-    mp.ro_membrane_length_constraint.deactivate()
-
-    # Dead volume should be the same across all time periods
-    @mp.Constraint(
-        mp.TIME,
-        doc="Dead volume equality through all filtration periods",
-    )
-    def equal_dead_volume_constraint(b, t):
-        if t == b.TIME.first():
-            return Constraint.Skip
-        return (
-            blks[t].fs.dead_volume.volume[0, "Liq"]
-            == b0.fs.dead_volume.volume[0, "Liq"]
-        )
-
-    mp.equal_dead_volume_constraint.deactivate()
-
-    @mp.Constraint(
-        mp.TIME, doc="Delta dead volume equality through all filtration periods"
-    )
-    def equal_delta_dead_volume_constraint(b, t):
-        return (
-            blks[t].fs.dead_volume.volume[0, "Liq"]
-            == blks[t].fs.dead_volume.delta_state.volume[0, "Liq"]
-        )
-
-    mp.equal_delta_dead_volume_constraint.deactivate()
-
-    # Recycle rate should be the same across all time periods
-    @mp.Constraint(
-        mp.TIME,
-        doc="Recycle rate equality through all filtration periods",
-    )
-    def equal_recycle_rate(b, t):
-        if t in [b.TIME.first(), b.TIME.last()]:
-            return Constraint.Skip
-        return (
-            blks[t].fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]
-            == blks[0].fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]
-        )
-
-    mp.equal_recycle_rate.deactivate()
-
-    @mp.Constraint(doc="Global dead volume constraint")
-    def global_dead_volume_constraint(b):
-        return (
-            b0.fs.dead_volume.volume[0, "Liq"]
-            == b0.fs.RO.area
-            * b.dead_volume_to_area_ratio
-            * b.dead_volume_to_area_multiplier
-        )
-
-    calculate_variable_from_constraint(
-        b0.fs.dead_volume.volume[0, "Liq"], mp.global_dead_volume_constraint
-    )
-
-    mp.global_dead_volume_constraint.deactivate()
-
-    # Density at the start of cycle should be the same as end of flushing
-    # (Initial condition and after flushing)
-    @mp.Constraint(
-        doc="Density equality between end of flushing and start of filtration"
-    )
-    def cycle_end_density_constraint(b):
-        return (
-            b0.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"]
-            == blks[-1]
-            .fs.dead_volume.dead_volume.properties_out[0]
-            .dens_mass_phase["Liq"]
-        )
-
-    # Mass fraction at the start of cycle should be the same as end of flushing
-    # (Initial condition and after flushing)
-    @mp.Constraint(
-        doc="Mass fraction equality between end of flushing and start of filtration"
-    )
-    def cycle_end_mass_frac_constraint(b):
-        return (
-            b0.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]
-            == blks[-1]
-            .fs.dead_volume.dead_volume.properties_out[0]
-            .mass_frac_phase_comp["Liq", "NaCl"]
-        )
-
-    @mp.Constraint(doc="Total filtration time constraint")
-    def total_filtration_time_constraint(b):
-        return b.total_filtration_time == sum(
-            blks[t].fs.dead_volume.accumulation_time[0]
-            for t in range(b.n_time_points - 1)
-        )
-
-    @mp.Constraint(doc="Total cycle time constraint")
-    def total_cycle_time_constraint(b):
-        return (
-            b.total_cycle_time
-            == b.total_filtration_time + blks[-1].fs.flushing.flushing_time
-        )
-
-    @mp.Constraint(doc="Cycle time ratio constraint")
-    def cycle_time_ratio_constraint(b):
-        return b.cycle_time_ratio == (b.total_filtration_time / b.total_cycle_time)
-
-    @mp.Constraint(doc="Final concentration constraint")
-    def final_concentration_constraint(b):
-        return b.final_concentration == blks[-1].fs.flushing.pre_flushing_concentration
-
-    # Total permeate
-    @mp.Constraint(doc="Total permeate produced over all time periods")
-    def total_permeate_constraint(b):
-        return b.total_permeate == sum(
-            blks[t].fs.product.properties[0].flow_vol_phase["Liq"]
-            * blks[t].fs.dead_volume.accumulation_time[0]
-            for t in range(b.n_time_points - 1)
-        )
-
-    # # Total brine -> Convert to expression
-    # @mp.Constraint(doc="Total brine produced over all time periods")
-    # def total_brine_constraint(mp):
-    #     blks = list(mp.get_active_process_blocks())
-    #     return mp.total_brine == sum(
-    #         blks[t].fs.brine.properties[0].flow_vol_phase["Liq"]
-    #         * blks[t].fs.dead_volume.accumulation_time[0]
-    #         for t in range(n_time_points - 1)
-    #     )
-
-    @mp.Constraint(doc="Average product flow rate over all time periods")
-    def eq_avg_product_flow_rate(mp):
-        blks = mp.get_active_process_blocks()
-        return mp.avg_product_flow_rate == pyunits.convert(
-            mp.total_permeate
-            / (
-                sum(
-                    blks[t].fs.dead_volume.accumulation_time[0]
-                    for t in range(len(blks) - 1)
-                )
-                + blks[-1].fs.flushing.flushing_time
-            ),
-            to_units=pyunits.m**3 / pyunits.s,
-        )
-
-    # Total feed
-    @mp.Constraint(doc="Total feed volume over all time periods")
-    def total_feed_constraint(b):
-        return (
-            b.total_feed
-            == sum(
-                blks[t].fs.raw_feed.properties[0].flow_vol_phase["Liq"]
-                * blks[t].fs.dead_volume.accumulation_time[0]
-                for t in range(b.n_time_points - 1)
-            )
-            + b0.fs.dead_volume.volume[0, "Liq"]
-        )
-
-    # Overall water recovery
-    @mp.Constraint(doc="Overall water recovery for system")
-    def overall_water_recovery_constraint(b):
-        return b.total_permeate == b.overall_recovery * b.total_feed
-
-
-def fix_overall_water_recovery(mp, overall_water_recovery):
-
-    mp.overall_recovery.fix(overall_water_recovery)
-
-    # Fixed for accumulation time for initialization
-    for t, m in enumerate(mp.get_active_process_blocks()):
-        m.fs.dead_volume.accumulation_time.unfix()
-        # m.fs.dead_volume.accumulation_time.setlb(1)
-        # m.fs.dead_volume.accumulation_time.setub(400)
-
-        set_scaling_factor(m.fs.dead_volume.accumulation_time, 1e-2)
-
-    # Equal accumulation time across all filtration periods
-    @mp.Constraint(list(range(1, mp.n_time_points - 1)))
-    def accumulation_time_cons(mp, t):
-        blks = list(mp.get_active_process_blocks())
-        return blks[t].fs.dead_volume.accumulation_time[0] == (
-            blks[0].fs.dead_volume.accumulation_time[0]
-        )
-
-
 def setup_optimization(
     mp, overall_water_recovery=0.5, max_cycle_time_hr=1, recycle_flow_bounds=(0.1, 20)
 ):
     """
     Setup the multiperiod model for optimization.
     """
-    fix_overall_water_recovery(mp, overall_water_recovery)
+    ccro_mp_constraints.fix_overall_water_recovery(mp, overall_water_recovery)
     mp.global_dead_volume_constraint.activate()
     mp.equal_dead_volume_constraint.activate()
     mp.equal_delta_dead_volume_constraint.activate()
@@ -1233,9 +655,9 @@ def print_results_table(mp, w=15):
 
 if __name__ == "__main__":
     cc_config = CCROConfiguration()
-    cc_config["raw_feed_conc"] = 5 * pyunits.g / pyunits.L
+    cc_config["raw_feed_conc"] = 35 * pyunits.g / pyunits.L
     mp = create_ccro_multiperiod(
-        n_time_points=6, include_costing=True, cc_configuration=cc_config
+        n_time_points=21, include_costing=True, cc_configuration=cc_config
     )
     # results = solve(mp, tee=False)
     # print_results_table(mp, w=15)

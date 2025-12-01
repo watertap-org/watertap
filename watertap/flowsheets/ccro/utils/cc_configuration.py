@@ -16,7 +16,7 @@ class CCROConfiguration(dict):
             flushing_efficiency=0.9 * pyunits.dimensionless,
             temperature=298 * pyunits.K,  # K
             p1_pressure_start="osmotic_pressure",  # psi
-            osmotic_overpressure=1.25 * pyunits.dimensionless,
+            osmotic_overpressure=2 * pyunits.dimensionless,
             p1_eff=0.8 * pyunits.dimensionless,
             p2_eff=0.8 * pyunits.dimensionless,
             A_comp=5.96e-12 * pyunits.meter / (pyunits.second * pyunits.Pa),
@@ -25,7 +25,7 @@ class CCROConfiguration(dict):
             channel_height=0.001 * pyunits.meter,  # m
             spacer_porosity=0.9 * pyunits.dimensionless,
             dead_volume=0.035564 * pyunits.meter**3,  # m3
-            accumulation_time=60 * pyunits.second,
+            accumulation_time=10 * pyunits.second,
         )  # s
         self.update(self.default_config)
         self.display()
