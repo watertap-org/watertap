@@ -4,6 +4,7 @@ from pyomo.environ import (
     Constraint,
     Suffix,
     Block,
+    check_optimal_termination,
     units as pyunits,
 )
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
@@ -18,11 +19,13 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
+
+from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.core.solvers import get_solver
-from idaes.core.util.tables import create_stream_table_dataframe
 
 from idaes.core.util.config import is_physical_parameter_block
 
+from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -238,6 +241,7 @@ class DeadVolume0DData(InitializationMixin, UnitModelBlockData):
             units=units_meta("mass") / units_meta("volume"),
             doc="Prior density in dead volume",
         )
+
         # self.delta_state.conc_mass_phase_comp = Expression(self.config.property_package.phase_list,self.config.property_package.component_list,)
         @self.delta_state.Expression(
             self.config.property_package.phase_list,
@@ -382,8 +386,16 @@ class DeadVolume0DData(InitializationMixin, UnitModelBlockData):
             state_args=state_args,
         )
         init_log.info_high("Dead Volume Step 1 Initialized.")
+        assert (
+            degrees_of_freedom(self) == 0
+        ), "Dead volume unit model has non-zero degrees of freedom at the time of initialization. DOFs are {}".format(
+            degrees_of_freedom(self)
+        )
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
+
         init_log.info_high("Dead Volume Step 2 Initialized.")
         self.dead_volume.release_state(dead_space, outlvl)
 

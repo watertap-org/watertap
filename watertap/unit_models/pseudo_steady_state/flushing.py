@@ -26,6 +26,7 @@ from idaes.core import (
     useDefault,
 )
 
+from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
@@ -43,7 +44,7 @@ class FlushingData(UnitModelBlockData):
     This is a surrogate unit model for flushing.
     1. If filepath is passed to configuration variable 'dataset_filename', the number of tanks in series and mean residence time are estimated using the experimental data provided in the file.
     2. If no experimental data is provided, the default values for number_of_tanks_in_series will be used to create a profile for the given mean residence time.
-  
+
     """
 
     CONFIG = ConfigBlock()
@@ -94,9 +95,17 @@ class FlushingData(UnitModelBlockData):
             doc="""Path to data file. Must be a .csv""",
         ),
     )
+    CONFIG.declare(
+        "number_tanks_in_series",
+        ConfigValue(
+            default=2,
+            domain=PositiveInt,
+            description="Number of tanks in series to represent the a plug flow reactor with mixing",
+            doc="Number of tanks in series to represent the a plug flow reactor with mixing",
+        ),
+    )
 
-
-    def get_data(self,file_path):
+    def get_data(self, file_path):
         """Load data from a CSV file and return as a pandas DataFrame."""
         data = pd.read_csv(file_path)
         t = data["t"].to_numpy()
@@ -104,8 +113,7 @@ class FlushingData(UnitModelBlockData):
 
         return t, f_t
 
-
-    def ft_profile(self,params, t):
+    def ft_profile(self, params, t):
         """Calculate the profile function F(t) based on the given parameters."""
         t_m, N = params
         tau = t_m / int(N)
@@ -122,12 +130,10 @@ class FlushingData(UnitModelBlockData):
         # print(F_t)
         return F_t
 
-
     def objective_function(self, params, t, f_t):
         """Calculate the sum of squared errors between the model and data."""
         f_t_model = self.ft_profile(params, t)
         return np.sum((f_t - f_t_model) ** 2)
-
 
     def fit_rtd_profile(self):
         """Fit the RTD profile using the provided dataset filename in the configuration.
@@ -162,15 +168,15 @@ class FlushingData(UnitModelBlockData):
             f"Fitted RTD profile: mean residence time = {tau_opt * N_opt}, number of tanks in series = {N_opt}"
         )
 
-
     def build(self):
 
         super().build()
 
         # Parameters
         self.number_tanks_in_series = Param(
-            initialize=2,
+            initialize=self.config.number_tanks_in_series,
             units=pyunits.dimensionless,
+            mutable=False,
             doc="Number of tanks in series to represent the a plug flow reactor with mixing",
         )
 
@@ -207,12 +213,15 @@ class FlushingData(UnitModelBlockData):
         )
 
         self.flushing_time = Var(
-            initialize=20.0, units=pyunits.s, doc="Duration of flushing"
+            initialize=20.0,
+            bounds=(1, None),
+            units=pyunits.s,
+            doc="Duration of flushing",
         )
 
         if self.config.dataset_filename is not None:
             self.fit_rtd_profile()
-        
+
         # Add the constraint to calculate flushing efficiency using parameters in the unit model
         @self.Constraint(
             doc="Constraint to calculate flushing efficiency using number of tanks in series and mean residence time"
@@ -224,7 +233,6 @@ class FlushingData(UnitModelBlockData):
             theta = t / tau
             series_sum = sum(theta**m / math.factorial(m) for m in range(N()))
             return b.flushing_efficiency == 1.0 - exp(-theta) * series_sum
-
 
         # Constraint to calculate the concentration of the accumulation volume at the end of flushing
         self.flushing_concentration_constraint = Constraint(
@@ -254,31 +262,16 @@ class FlushingData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Check if pre-flushing and post-flushing concentrations are fixed before intialization
-        pre_con_fixed = self.pre_flushing_concentration.fixed
-        post_con_fixed = self.post_flushing_concentration.fixed
-
-        # Fix for initialization routine
-        self.pre_flushing_concentration.fix()
-        self.post_flushing_concentration.unfix()
-
-        if self.config.dataset_filename is not None:
-            init_log.info("Fitting RTD profile from experimental data...")
-            self.fit_rtd_profile()
-        else:
-            init_log.warning(
-                "No RTD data found. Using default flushing efficiency constraint."
-            )
-            self.flushing_time.fix()
-            self.mean_residence_time.fix()
+        assert (
+            degrees_of_freedom(self) == 0
+        ), "Flushing unit model has non-zero degrees of freedom at the time of initialization. DOFs are {}".format(
+            degrees_of_freedom(self)
+        )
 
         # Solve unit
         opt = get_solver(solver, optarg)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        if pre_con_fixed == False:
-            self.pre_flushing_concentration.unfix()
-        if post_con_fixed == False:
-            self.post_flushing_concentration.unfix()
 
         init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
 
@@ -286,6 +279,7 @@ class FlushingData(UnitModelBlockData):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        self.display()
 
     def calculate_scaling_factors(self):
         pass
