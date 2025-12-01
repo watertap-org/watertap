@@ -9,13 +9,13 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "**Standard RO**"
+   "**Standard RO**", " ", "``standard``"
    "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "``factor_membrane_replacement``", "0.2", ":math:`\text{yr}^{-1}`"
-   "Membrane unit cost", ":math:`C_{mem}`", "``membrane_unit_cost``", "30", ":math:`\text{USD}_{2018}\text{/m}^2`"
+   "Membrane unit cost", ":math:`C_{mem}`", "``membrane_cost``", "30", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
-   "**High-pressure RO**"
+   "**High-pressure RO**", " ", "``high_pressure``"
    "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "``factor_membrane_replacement``", "0.2", ":math:`\text{yr}^{-1}`"
-   "Membrane unit cost", ":math:`C_{mem}`", "``membrane_unit_cost``", "75", ":math:`\text{USD}_{2018}\text{/m}^2`"
+   "Membrane unit cost", ":math:`C_{mem}`", "``high_pressure_membrane_cost``", "75", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
