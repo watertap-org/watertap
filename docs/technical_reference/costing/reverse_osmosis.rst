@@ -13,7 +13,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "``factor_membrane_replacement``", "0.2", ":math:`\text{yr}^{-1}`"
    "Membrane unit cost", ":math:`C_{mem}`", "``membrane_cost``", "30", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
-   "**High-pressure RO** (cost method = ``cost_high_pressure reverse_osmosis``)"
+   "**High-pressure RO** (cost method = ``cost_high_pressure_reverse_osmosis``)"
    "Membrane replacement factor (fraction of membrane replaced/year)", ":math:`f_{mem,\, replace}`", "``factor_membrane_replacement``", "0.2", ":math:`\text{yr}^{-1}`"
    "Membrane unit cost", ":math:`C_{mem}`", "``high_pressure_membrane_cost``", "75", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
