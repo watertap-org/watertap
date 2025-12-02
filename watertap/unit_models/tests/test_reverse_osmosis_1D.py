@@ -154,6 +154,8 @@ class TestReverseOsmosis1D(UnitTestHarness):
             },
         }
 
+        self.condition_number = 4.8157167e15
+
         return m
 
 
@@ -262,6 +264,8 @@ class TestReverseOsmosis1D_basic(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.condition_number = 3.40497838e14
 
         return m
 
@@ -388,6 +392,8 @@ class TestReverseOsmosis1D_SKK(UnitTestHarness):
             },
         }
 
+        self.condition_number = 4.14262023e17
+
         return m
 
 
@@ -497,6 +503,8 @@ class TestReverseOsmosis1D_cp_mod_fixed(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.condition_number = 1.9452857e15
 
         return m
 
@@ -608,6 +616,8 @@ class TestReverseOsmosis1D_cp_calculated_kf_fixed(UnitTestHarness):
             },
         }
 
+        self.condition_number = 6.166070e14
+
         return m
 
 
@@ -717,6 +727,8 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.condition_number = 1.27214033e17
 
         return m
 
@@ -829,6 +841,8 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.condition_number = 2.7895630e14
 
         return m
 
@@ -944,6 +958,8 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_dx(
             },
         }
 
+        self.condition_number = 1.3695196e17
+
         return m
 
 
@@ -1058,5 +1074,7 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.condition_number = 1.5101144e17
 
         return m

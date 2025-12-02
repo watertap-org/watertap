@@ -21,6 +21,7 @@ from idaes.core.util.model_statistics import (
 from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling.util import jacobian_cond
 import idaes.logger as idaeslog
 
 
@@ -217,6 +218,14 @@ class UnitTestHarness(abc.ABC):
                 )
             if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
+
+        if hasattr(self, "condition_number"):
+            cond = jacobian_cond(blk)
+            assert cond == pytest.approx(
+                self.condition_number,
+                abs=self.default_absolute_tolerance,
+                rel=self.default_relative_tolerance,
+            )
 
     @pytest.mark.component
     def test_reporting(self, frame):
