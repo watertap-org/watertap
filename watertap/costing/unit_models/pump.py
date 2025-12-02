@@ -51,7 +51,7 @@ def cost_pump(blk, pump_type=PumpType.high_pressure, cost_electricity_flow=True)
 
 def build_high_pressure_pump_cost_param_block(blk):
 
-    blk.high_pressure_pump_cost = pyo.Var(
+    blk.cost = pyo.Var(
         initialize=53 / 1e5 * 3600,  # 1.908
         bounds=(0, None),
         doc="High pressure pump cost",
@@ -102,7 +102,7 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
 
 def build_low_pressure_pump_cost_param_block(blk):
 
-    blk.low_pressure_pump_cost = pyo.Var(
+    blk.cost = pyo.Var(
         initialize=889,
         doc="Low pressure pump cost",
         units=pyo.units.USD_2018 / (pyo.units.liter / pyo.units.second),

@@ -12,10 +12,10 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
    "**High-pressure pump** (cost method = ``cost_high_pressure_pump``)"
-   "Pump unit cost", ":math:`C_{pump}`", "``high_pressure_pump_cost``", "1.908", ":math:`\text{USD}_{2018}\text{/W}`"
+   "Pump unit cost", ":math:`C_{pump}`", "``cost``", "1.908", ":math:`\text{USD}_{2018}\text{/W}`"
 
    "**Low-pressure pump** (cost method = ``cost_low_pressure_pump``)"
-   "Pump unit cost", ":math:`C_{pump}`", "``low_pressure_pump_cost``", "889", ":math:`\text{USD}_{2018}\text{/L/s}`"
+   "Pump unit cost", ":math:`C_{pump}`", "``cost``", "889", ":math:`\text{USD}_{2018}\text{/L/s}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
