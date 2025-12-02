@@ -279,7 +279,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="Inlet NaCl concentration",
+        name="Feed NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=2,
