@@ -268,7 +268,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed
     exports.add(
         obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
+        name="Feed volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hour,
         display_units="m3/hr",
         rounding=2,
@@ -292,7 +292,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Product
     exports.add(
         obj=fs.product.properties[0].flow_vol,
-        name="Volumetric flow rate",
+        name="Product volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
@@ -316,11 +316,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Disposal
     exports.add(
         obj=fs.disposal.properties[0].flow_vol,
-        name="Volumetric flow rate",
+        name="Waste volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
-        description="Outlet product water volumetric flow rate",
+        description="Outlet wastewater volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category="Disposal",
