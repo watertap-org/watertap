@@ -279,7 +279,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Inlet NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=2,
@@ -303,7 +303,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Product NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
@@ -327,11 +327,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Waste NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
-        description="Outlet product water NaCl concentration",
+        description="Outlet wastewater NaCl concentration",
         is_input=False,
         is_output=True,
         output_category="Disposal",
