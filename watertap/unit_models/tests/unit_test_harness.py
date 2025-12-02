@@ -180,6 +180,19 @@ class UnitTestHarness(abc.ABC):
             )
         results = opt.solve(blk, tee=True)
 
+        if hasattr(self, "condition_number"):
+            cond = jacobian_cond(blk)
+            assert cond == pytest.approx(
+                self.condition_number,
+                abs=self.default_absolute_tolerance,
+                rel=self.default_relative_tolerance,
+            )
+
+        if hasattr(self, "skip_badly_scaled_vars"):
+            skip_badly_scaled_vars = self.skip_badly_scaled_vars
+        else:
+            skip_badly_scaled_vars = False
+
         # check solve
         badly_scaled_vars = list(
             iscale.badly_scaled_var_generator(
@@ -189,7 +202,7 @@ class UnitTestHarness(abc.ABC):
                 zero=self.default_zero,
             )
         )
-        if badly_scaled_vars:
+        if not skip_badly_scaled_vars and len(badly_scaled_vars) > 0:
             lines = [
                 f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
                 for x in badly_scaled_vars
@@ -218,14 +231,6 @@ class UnitTestHarness(abc.ABC):
                 )
             if not comp_obj == value(var):
                 raise AssertionError(f"{var}: Expected {val}, got {value(var)} instead")
-
-        if hasattr(self, "condition_number"):
-            cond = jacobian_cond(blk)
-            assert cond == pytest.approx(
-                self.condition_number,
-                abs=self.default_absolute_tolerance,
-                rel=self.default_relative_tolerance,
-            )
 
     @pytest.mark.component
     def test_reporting(self, frame):
