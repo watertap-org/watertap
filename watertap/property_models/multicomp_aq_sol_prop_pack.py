@@ -1407,8 +1407,8 @@ class MCASStateBlockData(StateBlockData):
 
             def rule_flow_mol_phase_comp(b, p, j):
                 return (
-                    b.flow_mass_phase_comp[p, j]
-                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
+                    == b.flow_mol_phase_comp[p, j]
                 )
 
             self.eq_flow_mol_phase_comp = Constraint(
