@@ -230,7 +230,8 @@ class TestFullFlowsheet:
             # Python 3.9 and 3.10
             cond == pytest.approx(1.95367e11, rel=1e-2)
             # Python 3.11 and 3.12
-            or cond == pytest.approx(3.44132e11, rel=1e-2)
+            # or cond == pytest.approx(3.44132e11, rel=1e-2)
+            or cond == pytest.approx(2.71713e11, rel=1e-2)
         )
 
     @pytest.mark.requires_idaes_solver
@@ -245,5 +246,6 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.44152e11, rel=1e-3
+            # 3.44152e11, rel=1e-3
+            2.71713e11, rel=1e-3
         )

@@ -182,11 +182,15 @@ class UnitTestHarness(abc.ABC):
 
         if hasattr(self, "condition_number"):
             cond = jacobian_cond(blk)
-            assert cond == pytest.approx(
+            if not cond == pytest.approx(
                 self.condition_number,
                 abs=self.default_absolute_tolerance,
                 rel=self.default_relative_tolerance,
-            )
+            ):
+                # Testing to a relative tolerance of 1e-3, so four significant digits should suffice.
+                raise AssertionError(
+                    f"Condition number: Expected {self.condition_number:.4E}, got {cond:.4E} instead"
+                )
 
         if hasattr(self, "skip_badly_scaled_vars"):
             skip_badly_scaled_vars = self.skip_badly_scaled_vars

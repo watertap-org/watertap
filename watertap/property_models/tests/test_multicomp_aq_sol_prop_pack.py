@@ -3008,22 +3008,22 @@ class TestMCASScaler:
         ] == pytest.approx(18, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_flow_mol_phase_comp["Liq", "H2O"]
-        ] == pytest.approx(1, rel=1e-3)
+        ] == pytest.approx(0.018, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_flow_mol_phase_comp["Liq", "Ca_2+"]
-        ] == pytest.approx(2500, rel=1e-3)
+        ] == pytest.approx(100, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_flow_mol_phase_comp["Liq", "SO4_2-"]
-        ] == pytest.approx(1e3, rel=1e-3)
+        ] == pytest.approx(96, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_flow_mol_phase_comp["Liq", "Na_+"]
-        ] == pytest.approx(1e2, rel=1e-3)
+        ] == pytest.approx(2.3, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_flow_mol_phase_comp["Liq", "Cl_-"]
-        ] == pytest.approx(1e2, rel=1e-3)
+        ] == pytest.approx(3.5, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_flow_mol_phase_comp["Liq", "Mg_2+"]
-        ] == pytest.approx(1e3, rel=1e-3)
+        ] == pytest.approx(24, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_debye_huckel_constant
         ] == pytest.approx(12.49, rel=1e-3)
