@@ -247,5 +247,6 @@ class TestFullFlowsheet:
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             # 3.44152e11, rel=1e-3
-            2.71713e11, rel=1e-3
+            2.71713e11,
+            rel=1e-3,
         )
