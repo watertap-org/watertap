@@ -316,22 +316,22 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Disposal
     exports.add(
         obj=fs.disposal.properties[0].flow_vol,
-        name="Waste volumetric flow rate",
+        name="Waste brine volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
-        description="Outlet wastewater volumetric flow rate",
+        description="Outlet brine volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category="Disposal",
     )
     exports.add(
         obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="Waste NaCl concentration",
+        name="Waste brine NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
-        description="Outlet wastewater NaCl concentration",
+        description="Outlet brine NaCl concentration",
         is_input=False,
         is_output=True,
         output_category="Disposal",
