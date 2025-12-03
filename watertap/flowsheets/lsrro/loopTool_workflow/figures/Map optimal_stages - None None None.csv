@@ -1,0 +1,17 @@
+Figure generated with AnalysisWaterTAP tools
+Map data for Number of Stages (#),
+First column is Water recovery (%)
+First row is Feed TDS (g/L)
+Internal data is Number of Stages (#)
+,5.0,32.22222,59.44444,86.66667,113.88889,141.11111,168.33333,nan
+30.0,2.0,2.0,2.0,2.0,3.0,4.0,6.0,nan
+36.66667,2.0,2.0,2.0,2.0,3.0,5.0,nan,nan
+43.33333,2.0,2.0,2.0,3.0,4.0,6.0,nan,nan
+50.0,2.0,2.0,2.0,3.0,5.0,nan,nan,nan
+56.66667,2.0,2.0,2.0,4.0,nan,nan,nan,nan
+63.33333,2.0,2.0,3.0,5.0,nan,nan,nan,nan
+70.0,2.0,2.0,4.0,nan,nan,nan,nan,nan
+76.66667,2.0,2.0,6.0,nan,nan,nan,nan,nan
+83.33333,2.0,3.0,nan,nan,nan,nan,nan,nan
+90.0,2.0,nan,nan,nan,nan,nan,nan,nan
+nan,nan,nan,nan,nan,nan,nan,nan,nan
