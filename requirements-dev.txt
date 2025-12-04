@@ -13,5 +13,4 @@ sphinx==7.1.*
 nbsphinx
 sphinx_rtd_theme
 
-idaes-pse==2.10.0rc0
 -e .[testing,notebooks,oli_api]
