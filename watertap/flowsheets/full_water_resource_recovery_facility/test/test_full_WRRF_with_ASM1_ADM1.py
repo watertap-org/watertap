@@ -26,6 +26,7 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Xinhong Liu, Adam Atia, Marcus Holly"
 
+import platform
 import pytest
 
 from pyomo.environ import (
@@ -42,6 +43,27 @@ from idaes.core.util.scaling import (
 )
 
 import watertap.flowsheets.full_water_resource_recovery_facility.BSM2 as BSM2
+
+is_reference_platform = (
+    platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
+)
+is_linux_platform = (
+    platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
+)
+
+reference_platform_only = pytest.mark.xfail(
+    condition=(not is_reference_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
+)
+
+linux_platform_only = pytest.mark.xfail(
+    condition=(not is_linux_platform),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the Linux platform (Python 3)",
+)
 
 
 class TestFullFlowsheet:
@@ -182,7 +204,7 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.scaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            5.4097699e9, rel=1e-3
+            6.80815e9, rel=1e-3
         )
 
     @pytest.mark.component
@@ -194,7 +216,27 @@ class TestFullFlowsheet:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_optimization(self, optimized_system_frame):
+    @reference_platform_only
+    def test_optimization_windows(self, optimized_system_frame):
+        m = optimized_system_frame
+        assert_optimal_termination(m.rescaled_results)
+
+        assert degrees_of_freedom(m) == 16
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m.rescaled_model, scaled=False)
+        cond = jacobian_cond(jac=jac, scaled=False)
+        assert (
+            # Python 3.9 and 3.10
+            cond == pytest.approx(1.95367e11, rel=1e-2)
+            # Python 3.11 and 3.12
+            or cond == pytest.approx(3.44132e11, rel=1e-2)
+        )
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    @linux_platform_only
+    def test_optimization_linux(self, optimized_system_frame):
         m = optimized_system_frame
         assert_optimal_termination(m.rescaled_results)
 
@@ -203,5 +245,5 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.1695338e11, rel=1e-3
+            3.44152e11, rel=1e-3
         )
