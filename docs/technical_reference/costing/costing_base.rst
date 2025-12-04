@@ -417,7 +417,7 @@ while the aggregate expressions sum costs by unit model class (e.g., Mixer, Pump
 to LCOW from each pump would be available in the ``LCOW_component_*`` expressions, while the total contribution from all pumps would be available as ``LCOW_aggregate_*`` expressions.
 The ``LCOW_component_*`` expressions are indexed by the unit model flowsheet name. This is the name that is assigned when the unit model
 is added to the flowsheet. For example, if you add a unit model as ``m.fs.unit1 = MyUnitModel()``, the name used in the LCOW component expressions will be ``fs.unit1``.
-The indexes for the ``LCOW_aggregate_*`` expressions are by unit model class name, which is the string representation of the class used to define the unit model.
+The indexes for the ``LCOW_aggregate_*`` expressions are by unit model class name, which is the string representation of the class used to define the unit model (e.g., "ReverseOsmosis0D", "Pump").
 
 Importantly, both ``LCOW_component_variable_opex`` and ``LCOW_aggregate_variable_opex`` expressions are also indexed by flow name for registered flows.
 Energy (e.g., ``electricity``) and material (e.g., ``naocl``, ``caustic``) flows registered with the costing package will have their variable operating costs
@@ -435,7 +435,7 @@ unit (``m.fs.chem_add``), and has registered ``electricity`` and ``anti_scalant`
 * ``LCOW_aggregate_fixed_opex``: ``Pump``, ``ChemicalAdditionZO``
 * ``LCOW_aggregate_variable_opex``: ``Pump``, ``ChemicalAdditionZO``, ``electricity``, ``anti_scalant``
 
-Importantly, the contribution of flows to the LCOW is found as both an individual contribution to individual unit model breakdownd *and* as separate entries. For example, ``electricity`` is counted both in
+The contribution of flows to the LCOW is found as both an individual contribution to individual unit model breakdown *and* as separate entries. For example, ``electricity`` is counted both in
 ``LCOW_component_variable_opex['electricity']`` as well as part of the ``LCOW_component_variable_opex`` for each of the unit models that contribute electricity flow (e.g., ``LCOW_component_variable_opex['fs.pump1']`` includes the electricity cost for pump1). 
 Similarly, ``electricity`` is counted both as ``LCOW_aggregate_variable_opex['electricity']`` as well as part of the ``LCOW_aggregate_variable_opex['Pump']``. For this reason, the system LCOW 
 is the summation of all indexes in any of the component or aggregate expressions *except* those indexed by flow.
@@ -449,6 +449,15 @@ For a given volumetric flow `Q`, the specific energy consumption, :math:`E_{spec
   
         E_{spec,Q} = \frac{C_{el,tot}}{Q}
 
+Additionally, the specific energy consumption will be broken down by unit model. An expression is created with ``_component`` prepended to the name provided by the user (or ``specific_energy_consumption`` by default).
+This expression is indexed by unit model flowsheet name and is calculated as
+    
+    .. math::
+  
+        E^{component}_{spec,Q,i} = \frac{C_{el,i}}{Q}
+
+For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_energy_consumption(flow_rate, name="SEC")`` would create ``m.fs.costing.SEC`` and ``m.fs.costing.SEC_component`` indexed by ``fs.pump1`` and ``fs.pump2``.
+
 Specific Electrical Carbon Intensity
 ++++++++++++++++++++++++++++++++++++
 
@@ -457,6 +466,15 @@ For a given volumetric flow `Q`, the specific electrical carbon intensity, :math
     .. math::
   
         E^{C}_{spec,Q} = \frac{f_{eci} C_{el,tot}}{Q}
+
+Additionally, the specific electrical carbon intensity will be broken down by unit model. An expression is created with ``_component`` prepended to the name provided by the user (or ``specific_electrical_carbon_intensity`` by default).
+This expression is indexed by unit model flowsheet name and is calculated as
+    
+    .. math::
+    
+            E^{C}_{spec,Q,i} = \frac{f_{eci} C_{el,i}}{Q}
+
+For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_electrical_carbon_intensity(flow_rate, name="SECI")`` would create ``m.fs.costing.SECI`` and ``m.fs.costing.SECI_component`` indexed by ``fs.pump1`` and ``fs.pump2``.
 
 Annual Water Production
 +++++++++++++++++++++++
