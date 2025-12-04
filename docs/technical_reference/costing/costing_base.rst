@@ -413,7 +413,7 @@ to further break down the cost components contributing to the LCOW:
     :sup:`2` The index :math:`i` refers to individual unit model instances on the flowsheet, while :math:`u` refers to unit model classes.
 
 Note, the difference between the "component" and "aggregate" expressions: the component expressions break down costs by individual unit model instances,
-while the aggregate expressions sum costs by unit model class (e.g., Mixer, Pump, RO Unit, etc.). So, if there are multiple pumps on the flowsheet, the individual contributions 
+while the aggregate expressions sum costs by unit model class (e.g., Mixer, Pump, ReverseOsmosis0D, etc.). So, if there are multiple pumps on the flowsheet, the individual contributions 
 to LCOW from each pump would be available in the ``LCOW_component_*`` expressions, while the total contribution from all pumps would be available as ``LCOW_aggregate_*`` expressions.
 The ``LCOW_component_*`` expressions are indexed by the unit model flowsheet name. This is the name that is assigned when the unit model
 is added to the flowsheet. For example, if you add a unit model as ``m.fs.unit1 = MyUnitModel()``, the name used in the LCOW component expressions will be ``fs.unit1``.
@@ -472,7 +472,7 @@ This expression is indexed by unit model flowsheet name and is calculated as
     
     .. math::
     
-            E^{C}_{spec,Q,i} = \frac{f_{eci} C_{el,i}}{Q}
+            E^{C,comp}_{spec,Q,i} = \frac{f_{eci} C_{el,i}}{Q}
 
 For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_electrical_carbon_intensity(flow_rate, name="SECI")`` would create ``m.fs.costing.SECI`` and ``m.fs.costing.SECI_component`` indexed by ``fs.pump1`` and ``fs.pump2``.
 
