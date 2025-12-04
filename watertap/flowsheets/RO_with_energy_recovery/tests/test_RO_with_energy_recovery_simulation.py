@@ -142,7 +142,7 @@ class TestROwithPX:
         m = system_frame
 
         set_operating_conditions(
-            m, water_recovery=0.5, over_pressure=0.3, solver=solver
+            m, water_recovery=0.5, over_pressure_factor=1.3, solver=solver
         )
 
         # check fixed variables
@@ -513,7 +513,7 @@ class TestROnoERD:
         m = system_frame
 
         set_operating_conditions(
-            m, water_recovery=0.5, over_pressure=0.3, solver=solver
+            m, water_recovery=0.5, over_pressure_factor=1.3, solver=solver
         )
 
         # check fixed variables
