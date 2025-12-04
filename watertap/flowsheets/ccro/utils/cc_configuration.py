@@ -21,7 +21,7 @@ class CCROConfiguration(dict):
             p2_eff=0.8 * pyunits.dimensionless,
             A_comp=5.96e-12 * pyunits.meter / (pyunits.second * pyunits.Pa),
             B_comp=3.08e-08 * pyunits.meter / pyunits.second,
-            membrane_area=1000 * pyunits.meter**2,  # m2
+            membrane_area=500 * pyunits.meter**2,  # m2
             channel_height=0.001 * pyunits.meter,  # m
             spacer_porosity=0.9 * pyunits.dimensionless,
             dead_volume=0.035564 * pyunits.meter**3,  # m3

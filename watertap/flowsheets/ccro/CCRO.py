@@ -506,10 +506,10 @@ def print_results_table(mp, w=15):
 
     # Header
     print(
-        f"{'Period':<{w}s}{'Acc Time':<{w}s}{'Raw Feed':<{w}s}{'Permeate':<{w}s}{'SP Recovery':<{w}s}{'P1':<{w}s}{'P2':<{w}s}{'RO In':<{w}s}{'RO In':<{w}s}{'Dead Vol In':<{w}s}{'Dead Vol In':<{w}s}{'Delta State':<{w}s}{'Dead Vol':<{w}s}"
+        f"{'Period':<{w}s}{'Acc Time':<{w}s}{'Raw Feed':<{w}s}{'Permeate':<{w}s}{'Raw Feed':<{w}s}{'Permeate':<{w}s}{'SP Recovery':<{w}s}{'P1':<{w}s}{'P2':<{w}s}{'RO In':<{w}s}{'RO In':<{w}s}{'Dead Vol In':<{w}s}{'Dead Vol In':<{w}s}{'Dead Vol In':<{w}s}{'Delta State':<{w}s}{'Dead Vol':<{w}s}{'Dead dens delta':<{w}s}{'Dead dens in':<{w}s}{'Dead dens out':<{w}s}"
     )
     print(
-        f"{'':<{w}s}{'(s)':<{w}s}{'(L/min)':<{w}s}{'(L/min)':<{w}s}{'(%)':<{w}s}{'(kW)':<{w}s}{'(kW)':<{w}s}{'(Pa)':<{w}s}{'(Psi)':<{w}s}{'(L/min)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m³)':<{w}s}"
+        f"{'':<{w}s}{'(s)':<{w}s}{'(L/min)':<{w}s}{'(L/min)':<{w}s}{'(kg/min)':<{w}s}{'(kg/min)':<{w}s}{'(%)':<{w}s}{'(kW)':<{w}s}{'(kW)':<{w}s}{'(Pa)':<{w}s}{'(Psi)':<{w}s}{'(L/min)':<{w}s}{'(kg/min)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m3)':<{w}s}{'(kg/m3)':<{w}s}{'(kg/m3)':<{w}s}"
     )
     print(f"{'-' * (n * w)}")
 
@@ -525,13 +525,27 @@ def print_results_table(mp, w=15):
             blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
             to_units=pyunits.L / pyunits.min,
         )()
-
+        raw_feed_mass = sum(
+            pyunits.convert(
+                blks.fs.raw_feed.properties[0].flow_mass_phase_comp["Liq", comp],
+                to_units=pyunits.kg / pyunits.min,
+            )()
+            for comp in blks.fs.properties.component_list
+        )
         if blks.fs.find_component("product") is not None:
             permeate = pyunits.convert(
                 blks.fs.product.properties[0].flow_vol_phase["Liq"],
                 to_units=pyunits.L / pyunits.min,
             )()
+            permeate_mass = sum(
+                pyunits.convert(
+                    blks.fs.product.properties[0].flow_mass_phase_comp["Liq", comp],
+                    to_units=pyunits.kg / pyunits.min,
+                )()
+                for comp in blks.fs.properties.component_list
+            )
         else:
+            permeate_mass = 0
             permeate = 0
         if blks.fs.operation_mode == "filtration":
 
@@ -563,12 +577,33 @@ def print_results_table(mp, w=15):
             blks.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase["Liq"],
             to_units=pyunits.L / pyunits.min,
         )()
+        dead_vol_mass = sum(
+            pyunits.convert(
+                blks.fs.dead_volume.dead_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", comp
+                ],
+                to_units=pyunits.kg / pyunits.min,
+            )()
+            for comp in blks.fs.properties.component_list
+        )
         dead_vol_in_conc = (
             blks.fs.dead_volume.dead_volume.properties_in[0]
             .conc_mass_phase_comp["Liq", "NaCl"]
             .value
         )
-
+        dead_vol_dense_in = (
+            blks.fs.dead_volume.dead_volume.properties_in[0]
+            .dens_mass_phase["Liq"]
+            .value
+        )
+        dead_vol_dense_out = (
+            blks.fs.dead_volume.dead_volume.properties_out[0]
+            .dens_mass_phase["Liq"]
+            .value
+        )
+        dead_vol_dense_delta = blks.fs.dead_volume.delta_state.dens_mass_phase[
+            0, "Liq"
+        ].value
         delta_state_conc = blks.fs.dead_volume.delta_state.conc_mass_phase_comp[
             "Liq", "NaCl"
         ]()
@@ -579,7 +614,7 @@ def print_results_table(mp, w=15):
         )
 
         print(
-            f"{t:<{w}d}{accumulation_time:<{w}.2f}{raw_feed:<{w}.6f}{permeate:<{w}.6f}{sp_recovery:<{w}.6f}{p1_out:<{w}.6f}{p2_out:<{w}.6f}{ro_pressure:<{w}.2f}{ro_pressure_psi:<{w}.2f}{dead_vol_in:<{w}.6f}{dead_vol_in_conc:<{w}.6f}{delta_state_conc:<{w}.6f}{dead_vol_out_conc:<{w}.6f}"
+            f"{t:<{w}d}{accumulation_time:<{w}.2f}{raw_feed:<{w}.6f}{permeate:<{w}.6f}{raw_feed_mass:<{w}.6f}{permeate_mass:<{w}.6f}{sp_recovery:<{w}.6f}{p1_out:<{w}.6f}{p2_out:<{w}.6f}{ro_pressure:<{w}.2f}{ro_pressure_psi:<{w}.2f}{dead_vol_in:<{w}.6f}{dead_vol_mass:<{w}.6f}{dead_vol_in_conc:<{w}.6f}{delta_state_conc:<{w}.6f}{dead_vol_out_conc:<{w}.6f}{dead_vol_dense_delta:<{w}.6f}{dead_vol_dense_in:<{w}.6f}{dead_vol_dense_out:<{w}.6f}"
         )
 
     print(f"{'=' * (n * w)}")
@@ -655,13 +690,10 @@ def print_results_table(mp, w=15):
 
 if __name__ == "__main__":
     cc_config = CCROConfiguration()
-    cc_config["raw_feed_conc"] = 35 * pyunits.g / pyunits.L
+    cc_config["raw_feed_conc"] = 5 * pyunits.g / pyunits.L
     mp = create_ccro_multiperiod(
-        n_time_points=21, include_costing=True, cc_configuration=cc_config
+        n_time_points=5, include_costing=True, cc_configuration=cc_config
     )
-    # results = solve(mp, tee=False)
-    # print_results_table(mp, w=15)
-
     setup_optimization(
         mp,
         overall_water_recovery=0.8,
@@ -671,3 +703,6 @@ if __name__ == "__main__":
 
     results = solve(mp)
     print_results_table(mp, w=16)
+    blks = list(mp.get_active_process_blocks())
+    blks[0].fs.raw_feed.properties[0].display()
+    blks[-1].fs.raw_feed.properties[0].display()

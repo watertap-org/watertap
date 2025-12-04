@@ -178,3 +178,5 @@ watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/Recycle.svg
 watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/retentate tds.csv
 watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/retentate tds.jpg
 watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/retentate tds.svg
+*.h5
+*.bak

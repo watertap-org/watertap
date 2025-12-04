@@ -23,12 +23,10 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
 
         # Feed block operating conditions
         m.fs.raw_feed.properties[0].pressure.fix(101325 * pyunits.Pa)
-        m.fs.raw_feed.properties[0].temperature.fix(293.15)
-
         m.fs.raw_feed.properties[0].pressure_osm_phase["Liq"]
         m.fs.raw_feed.properties[0].flow_vol_phase["Liq"]
         m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
-
+        m.fs.raw_feed.properties[0].temperature.fix(cc_configuration["temperature"])
         m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(
             cc_configuration["raw_feed_flowrate"]
         )
@@ -179,9 +177,10 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
         @m.fs.Constraint()
         def post_flushing_conc_constraint(m):
             return (
-                m.dead_volume.dead_volume.mass_phase_comp[0, "Liq", "NaCl"]
+                m.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp[
+                    "Liq", "NaCl"
+                ]
                 == m.flushing.post_flushing_concentration
-                * m.dead_volume.volume[0, "Liq"]
             )
 
         ccro_scaling.scale_flushing_system(m)

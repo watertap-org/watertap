@@ -12,7 +12,7 @@
 
 ccro_sweep_brackish_recovery:
   build_defaults:
-    n_points: 11
+    time_steps: 11
     feed_tds: 5
   sweep_param_loop:
     overall_recovery:
