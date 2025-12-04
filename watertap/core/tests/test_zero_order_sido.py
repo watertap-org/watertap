@@ -13,13 +13,8 @@
 Tests for general zero-order property package
 """
 import pytest
-
 from types import MethodType
-from idaes.core import declare_process_block_class, FlowsheetBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester
-from watertap.core.solvers import get_solver
-import idaes.core.util.scaling as iscale
+
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
@@ -31,18 +26,24 @@ from pyomo.environ import (
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
+from idaes.core import declare_process_block_class, FlowsheetBlock, MaterialFlowBasis
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.testing import initialization_tester
+import idaes.core.util.scaling as iscale
 
-from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    MaterialFlowBasis,
-)
 from watertap.core.zero_order_sido import (
     build_sido,
     initialize_sido,
     calculate_scaling_factors_sido,
     _get_Q_sido,
 )
+from watertap.core import ZeroOrderBaseData
+from watertap.property_models import (
+    MCASParameterBlock,
+    ZOParameterBlock,
+    ZOStateBlock,
+)
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -62,7 +63,7 @@ class TestSIDO:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.unit = DerivedSIDO(property_package=m.fs.water_props)
 
@@ -100,9 +101,9 @@ class TestSIDO:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert isinstance(model.fs.unit.properties_in, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_treated, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_byproduct, WaterStateBlock)
+        assert isinstance(model.fs.unit.properties_in, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_treated, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_byproduct, ZOStateBlock)
 
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.treated, Port)

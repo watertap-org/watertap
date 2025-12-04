@@ -11,17 +11,20 @@
 #################################################################################
 
 
+from enum import Enum, auto
+
+from pyomo.common.config import ConfigValue
+
 from idaes.core import (
     declare_process_block_class,
 )
 from idaes.models.unit_models.heat_exchanger import HeatExchangerData
-from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
+
 from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
 )
-from enum import Enum, auto
-from pyomo.common.config import ConfigValue
+from watertap.core.solvers import get_solver
 
 
 _log = idaeslog.getLogger(__name__)

@@ -2,6 +2,9 @@
 
 Coagulation Property Package
 ============================
+.. code-block:: python
+
+   from watertap.property_models import CoagulationParameterBlock
 
 This package implements property relationships for water density as a function of
 temperature, pressure, and mass fraction of suspended/dissolved solids from
@@ -96,13 +99,13 @@ The user can specify the scaling factors for component mass flowrates with the f
 .. doctest::
 
   # relevant imports
-  import watertap.property_models.unit_specific.coagulation_prop_pack as props
+  from watertap.property_models import CoagulationParameterBlock
   from idaes.core.util.scaling import calculate_scaling_factors
 
   # relevant assignments
   m = ConcreteModel()
   m.fs = FlowsheetBlock(dynamic=False)
-  m.fs.properties = props.CoagulationParameterBlock()
+  m.fs.properties = CoagulationParameterBlock()
 
   # set scaling for component mass flowrate
   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq','H2O'))

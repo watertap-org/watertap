@@ -3,7 +3,7 @@ Bipolar Electrodialysis (1D)
 
 .. code-block:: python
 
-   from watertap.unit_models.electrodialysis_bipolar_1D import Electrodialysis_Bipolar_1D
+   from watertap.unit_models import Electrodialysis_Bipolar_1D
 
 Introduction
 ------------

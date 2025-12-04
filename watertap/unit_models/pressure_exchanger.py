@@ -33,8 +33,6 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from watertap.core.solvers import get_solver
-from watertap.core.util.initialization import interval_initializer
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -42,6 +40,8 @@ import idaes.core.util.scaling as iscale
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.costing.unit_models.pressure_exchanger import cost_pressure_exchanger
+from watertap.core.solvers import get_solver
+from watertap.core.util.initialization import interval_initializer
 
 _log = idaeslog.getLogger(__name__)
 

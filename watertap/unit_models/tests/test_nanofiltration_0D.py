@@ -33,10 +33,8 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-)
-from watertap.unit_models.nanofiltration_0D import (
+from watertap.property_models import MCASParameterBlock
+from watertap.unit_models import (
     Nanofiltration0D,
     Nanofiltration0DInitializer,
     Nanofiltration0DScaler,

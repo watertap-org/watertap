@@ -5,7 +5,7 @@ Boron Removal
 
 .. code-block:: python
 
-   from watertap.unit_models.boron_removal import BoronRemoval
+   from watertap.unit_models import BoronRemoval
 
 Introduction
 ------------

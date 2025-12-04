@@ -29,18 +29,16 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import CSTR
-from idaes.core import MaterialFlowBasis
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.property_models import (
+    MaterialFlowBasis,
     ASM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
     ASM1ReactionBlock,
     ASM1ReactionScaler,
 )
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

@@ -20,42 +20,7 @@ but comprises different specifications for default values than BSM2.
 __author__ = "Alejandro Garciadiego, Adam Atia, Marcus Holly, Chenyu Wang, Ben Knueven, Xinhong Liu,"
 
 import pyomo.environ as pyo
-
 from pyomo.network import Arc, SequentialDecomposition
-from watertap.unit_models.anaerobic_digester import AD, ADScaler
-from watertap.unit_models.thickener import Thickener, ThickenerScaler
-from watertap.unit_models.dewatering import DewateringUnit, DewatererScaler
-from watertap.unit_models.cstr import CSTR, CSTRScaler
-from watertap.unit_models.clarifier import Clarifier, ClarifierScaler
-
-from watertap.unit_models.translators.translator_asm1_adm1 import (
-    Translator_ASM1_ADM1,
-    ASM1ADM1Scaler,
-)
-from watertap.unit_models.translators.translator_adm1_asm1 import (
-    Translator_ADM1_ASM1,
-    ADM1ASM1Scaler,
-)
-
-from watertap.core.solvers import get_solver
-from idaes.core.initialization import BlockTriangularizationInitializer
-from idaes.core.scaling import set_scaling_factor
-from idaes.core.scaling.custom_scaler_base import (
-    CustomScalerBase,
-    ConstraintScalingScheme,
-)
-from idaes.core.util.exceptions import InitializationError
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
-    ADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
-    ADM1ReactionParameterBlock,
-)
-from idaes.models.unit_models.mixer import MomentumMixingType
-from idaes.models.unit_models.separator import SplittingType
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
-    ADM1_vaporParameterBlock,
-)
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock, UnitModelBlockData
 from idaes.models.unit_models import (
@@ -64,18 +29,46 @@ from idaes.models.unit_models import (
     Separator,
     PressureChanger,
     Product,
+    MomentumMixingType,
+    SplittingType,
 )
 import idaes.logger as idaeslog
+from idaes.core.initialization import BlockTriangularizationInitializer
+from idaes.core.scaling import set_scaling_factor
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
+from idaes.core.util.exceptions import InitializationError
 
-from watertap.unit_models.aeration_tank import (
+from watertap.unit_models import (
+    AD,
+    ADScaler,
     AerationTank,
     AerationTankScaler,
     ElectricityConsumption,
+    Thickener,
+    ThickenerScaler,
+    DewateringUnit,
+    DewatererScaler,
+    CSTR,
+    CSTRScaler,
+    Clarifier,
+    ClarifierScaler,
 )
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.unit_models.translators.translator_asm1_adm1 import (
+    Translator_ASM1_ADM1,
+    ASM1ADM1Scaler,
+)
+from watertap.unit_models.translators.translator_adm1_asm1 import (
+    Translator_ADM1_ASM1,
+    ADM1ASM1Scaler,
+)
+from watertap.property_models import (
+    ADM1ParameterBlock,
+    ADM1ReactionParameterBlock,
+    ADM1_vaporParameterBlock,
     ASM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 from watertap.costing import WaterTAPCosting
@@ -83,6 +76,7 @@ from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_primary_clarifier,
 )
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

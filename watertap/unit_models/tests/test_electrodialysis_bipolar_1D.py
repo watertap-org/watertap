@@ -9,32 +9,30 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import numpy as np
-import idaes.core.util.scaling as iscale
 import pytest
-from idaes.core import (
-    FlowsheetBlock,
-)
+import numpy as np
+
 from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
     value,
-    units as pyunits,
     TransformationFactory,
+    units as pyunits,
 )
-from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util.initialization import (
-    propagate_state,
-)
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester
+from pyomo.network import Arc
 
-from idaes.core.util.math import smooth_min
+from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Feed
+from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.core.util.scaling as iscale
+from idaes.core.util.initialization import propagate_state
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util.math import smooth_min
 
+from watertap.property_models import MCASParameterBlock
+from watertap.unit_models import Electrodialysis_Bipolar_1D
 from watertap.unit_models.electrodialysis_bipolar_1D import (
-    Electrodialysis_Bipolar_1D,
     ElectricalOperationMode,
     LimitingCurrentDensitybpmMethod,
     PressureDropMethod,
@@ -42,7 +40,6 @@ from watertap.unit_models.electrodialysis_bipolar_1D import (
     HydraulicDiameterMethod,
 )
 from watertap.core.solvers import get_solver
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 
 __author__ = "Johnson Dhanasekaran"

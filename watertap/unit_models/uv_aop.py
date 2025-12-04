@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from enum import Enum, auto
+
 # Import Pyomo libraries
 from pyomo.environ import (
     NonNegativeReals,
@@ -25,7 +27,6 @@ from pyomo.environ import (
 )
 from idaes.core.util.math import smooth_max
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
@@ -37,7 +38,6 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -47,6 +47,7 @@ from idaes.core.util.misc import add_object_reference
 
 from watertap.core import InitializationMixin
 from watertap.costing.unit_models.uv_aop import cost_uv_aop
+from watertap.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
