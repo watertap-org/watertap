@@ -314,7 +314,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating annual water production
-            name (optional) - name for the annual water productionvariable
+            name (optional) - name for the annual water production
                               Expression (default: annual_water_production)
         """
         self.add_component(
