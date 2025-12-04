@@ -1,6 +1,6 @@
 class FrozenPipes(Exception):
     """
-    Custom exception for WaterTap developer errors.
+    Custom exception for WaterTAP developer errors.
 
     Raised when there's an issue that indicates a problem with the model
     implementation or configuration, rather than user input.
