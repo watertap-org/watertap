@@ -19,7 +19,6 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     check_optimal_termination,
-    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 
