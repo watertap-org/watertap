@@ -19,7 +19,6 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     check_optimal_termination,
-    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 
@@ -46,16 +45,26 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MaterialFlowBasis,
+)
 from watertap.costing import WaterTAPCosting
 import math
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 def main():
     # build, set operating conditions, initialize for simulation
     m = build()
+    calculate_scaling_factors(m)
+
     set_operating_conditions(m)
     add_Q_ext(m, time_point=m.fs.config.time)
     initialize_system(m)
+
     # rescale costs after initialization because scaling depends on flow rates
     scale_costs(m)
     fix_outlet_pressures(m)  # outlet pressure are initially unfixed for initialization
@@ -67,17 +76,19 @@ def main():
 
     print("\n***---First solve - simulation results---***")
     solver = get_solver()
-    results = solve(m, solver=solver, tee=False)
+    results = solve(m, solver=solver, tee=True)
     print("Termination condition: ", results.solver.termination_condition)
-    assert_optimal_termination(results)
-    display_metrics(m)
-    display_design(m)
+    if check_optimal_termination(results):
+        display_metrics(m)
+        display_design(m)
+    else:
+        print("First solve did not terminate optimally.")
 
     print("\n***---Second solve - optimization results---***")
     m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
     del m.fs.objective
     set_up_optimization(m)
-    results = solve(m, solver=solver, tee=False)
+    results = solve(m, solver=solver, tee=True)
     print("Termination condition: ", results.solver.termination_condition)
     display_metrics(m)
     display_design(m)
@@ -85,13 +96,27 @@ def main():
     return m, results
 
 
-def build():
+def build(feed_properties=None):
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Properties
-    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
+    if feed_properties is None or feed_properties == "seawater":
+        m.fs.properties_feed = props_sw.SeawaterParameterBlock()
+    elif feed_properties == "MCAS":
+        m.fs.properties_feed = MCASParameterBlock(
+            solute_list=["TDS"],
+            mw_data={"TDS": 31.4038218e-3},
+            diffusivity_data={("Liq", "TDS"): 1.61e-9},
+            material_flow_basis=MaterialFlowBasis.mass,
+            density_calculation="seawater",
+        )
+    else:
+        # TODO: this is temporary until we make MVC compatible with NaCL prop model AND convert flowsheets to classes, so we don't need to pass in an arg like this. Instead, the property_package for the feed would be defined by the config of the MVC model class.
+        raise ValueError(
+            "MVC flowsheet supports seawater or MCAS property packages only."
+        )
     m.fs.properties_vapor = props_w.WaterParameterBlock()
 
     # Unit models
@@ -240,6 +265,10 @@ def build():
         == m.fs.recovery[0]
     )
 
+    return m
+
+
+def calculate_scaling_factors(m):
     # Scaling
     # properties
     m.fs.properties_feed.set_default_scaling(
@@ -289,12 +318,13 @@ def build():
     )
 
     # evaporator
+    # m.fs.evaporator.area.setub(None)
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.U, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_out, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.lmtd, 1e-1)
-
+    iscale.constraint_scaling_transform(m.fs.evaporator.eq_evaporator_heat[0], 1e-3)
     # compressor
     iscale.set_scaling_factor(m.fs.compressor.control_volume.work, 1e-6)
 
@@ -303,8 +333,6 @@ def build():
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
-
-    return m
 
 
 def add_Q_ext(m, time_point=None):
@@ -519,8 +547,12 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s07)
     m.fs.Q_ext[0].fix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix()
+
     # fixes and unfixes those values
-    m.fs.evaporator.initialize(delta_temperature_in=60, solver="ipopt-watertap")
+    m.fs.evaporator.initialize(
+        delta_temperature_in=60, solver="ipopt-watertap", outlvl=idaeslog.DEBUG
+    )
+
     m.fs.Q_ext[0].unfix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].unfix()
 
@@ -588,7 +620,7 @@ def initialize_system(m, solver=None):
 
     m.fs.costing.initialize()
 
-    solver.solve(m, tee=False)
+    solver.solve(m, tee=True)
 
     print("Initialization done")
 
@@ -608,7 +640,7 @@ def fix_outlet_pressures(m):
 
 
 def calculate_cost_sf(cost):
-    sf = 10 ** -(math.log10(abs(cost.value)))
+    sf = 10 * 10 ** -(math.log10(abs(cost.value)))
     iscale.set_scaling_factor(cost, sf)
 
 
