@@ -11,6 +11,8 @@
 #################################################################################
 
 import pyomo.environ as pyo
+
+from watertap.custom_exceptions import FrozenPipes
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -268,6 +270,10 @@ def cost_ion_exchange(blk):
 
     elif ix_type == "anion":
         resin_cost = ion_exchange_params.anion_exchange_resin_cost
+    else:
+        raise FrozenPipes(
+            f"Invalid ion exchange type {ix_type}. Valid types are 'cation' or 'anion'."
+        )
 
     blk.capital_cost_vessel_constraint = pyo.Constraint(
         expr=blk.capital_cost_vessel
@@ -282,7 +288,8 @@ def cost_ion_exchange(blk):
     blk.capital_cost_resin_constraint = pyo.Constraint(
         expr=blk.capital_cost_resin
         == pyo.units.convert(
-            resin_cost * bed_vol_ft3, to_units=blk.costing_package.base_currency
+            resin_cost * bed_vol_ft3,
+            to_units=blk.costing_package.base_currency,
         )
     )
     if blk.unit_model.config.regenerant == "single_use":

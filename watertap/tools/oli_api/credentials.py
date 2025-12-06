@@ -59,6 +59,7 @@ from pyomo.common.dependencies import attempt_import
 cryptography, cryptography_available = attempt_import(
     "cryptography", defer_import=False
 )
+# could also write a massive ftn to make sure it imports
 if cryptography_available:
     from cryptography.fernet import Fernet
 requests, requests_available = attempt_import("requests", defer_import=False)
@@ -214,6 +215,7 @@ class CredentialManager:
             with open(self.config_file, "rb") as f:
                 encrypted_credentials = f.read()
 
+            # pylint: disable=possibly-used-before-assignment
             cipher = Fernet(self.encryption_key)
             decrypted_credentials = cipher.decrypt(encrypted_credentials).decode()
             credentials = json.loads(decrypted_credentials)

@@ -23,6 +23,8 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
+from watertap.custom_exceptions import FrozenPipes
+
 _log = idaeslog.getLogger(__name__)
 
 
@@ -102,6 +104,9 @@ def check_dof(blk, fail_flag=False, logger=_log, expected_dof=0):
                 f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. "
                 f"Expected {expected_dof}. Fix {degrees_of_freedom(blk) - expected_dof} variable(s)"
             )
+        else:
+            raise FrozenPipes("Logic error in degrees of freedom check.")
+
         if fail_flag:
             logger.error(msg)
             raise InitializationError(msg)
