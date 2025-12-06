@@ -2641,10 +2641,6 @@ class MCASStateBlockData(StateBlockData):
 
         # touch this var since it is required for this method
         self.conc_mol_phase_comp
-        """this could also be defined 'state_var["Liq", adjust_by_ion].fix(ion_adjusted)' 
-            on line 2606 but isn't necessary because the same check on 2675 does define it and 
-            adjust_by_ion will either be none or defined since it is a parameter to the method
-            """
         if solve:
 
             if adjust_by_ion is not None:
