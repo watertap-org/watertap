@@ -152,7 +152,6 @@ def _build_gac_cost_param_block(blk, contactor_type):
 
     # check if cost data was provided
 
-
     # USD_2020 embedded in equation
     blk.contactor_cost_coeff = pyo.Var(
         contactor_cost_coeff_data,
