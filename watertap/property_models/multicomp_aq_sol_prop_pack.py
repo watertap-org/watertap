@@ -2191,7 +2191,9 @@ class MCASStateBlockData(StateBlockData):
         # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
         try:
             total_dissolved_solids_temp = pyunits.convert(
-                sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.solute_set),
+                sum(
+                    self.conc_mass_phase_comp["Liq", j] for j in self.params.solute_set
+                ),
                 to_units=pyunits.mg / pyunits.L,
             )
 
@@ -2373,8 +2375,7 @@ class MCASStateBlockData(StateBlockData):
             #         / b.dens_mass_phase[p]
             #     )
             # else:
-            S_kg_kg = sum(
-                    b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
+            S_kg_kg = sum(b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
@@ -2498,14 +2499,13 @@ class MCASStateBlockData(StateBlockData):
             t = b.temperature
             # if value(b.total_dissolved_solids)>0:
             #     S_kg_kg = (
-            #         pyunits.convert(    
+            #         pyunits.convert(
             #             b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
             #         )
             #         / b.dens_mass_phase["Liq"]
             #     )
             # else:
-            S_kg_kg = sum(
-                    b.mass_frac_phase_comp["Liq", j] for j in b.params.solute_set)
+            S_kg_kg = sum(b.mass_frac_phase_comp["Liq", j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000 * pyunits.g / pyunits.kg
             psatw = (
                 exp(

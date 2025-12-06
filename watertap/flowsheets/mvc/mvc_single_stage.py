@@ -46,11 +46,16 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock, MaterialFlowBasis
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MaterialFlowBasis,
+)
 from watertap.costing import WaterTAPCosting
 import math
 import idaes.logger as idaeslog
+
 _log = idaeslog.getLogger(__name__)
+
 
 def main():
     # build, set operating conditions, initialize for simulation
@@ -99,14 +104,14 @@ def build():
 
     # Properties
     # m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    m.fs.properties_feed = MCASParameterBlock(solute_list=["TDS"],
-                                              mw_data={"TDS": 31.4038218e-3},
-                                              diffusivity_data ={('Liq',"TDS"): 1.61e-9},
-                                              material_flow_basis=MaterialFlowBasis.mass,
-                                              density_calculation="seawater"
-                                              )
+    m.fs.properties_feed = MCASParameterBlock(
+        solute_list=["TDS"],
+        mw_data={"TDS": 31.4038218e-3},
+        diffusivity_data={("Liq", "TDS"): 1.61e-9},
+        material_flow_basis=MaterialFlowBasis.mass,
+        density_calculation="seawater",
+    )
     m.fs.properties_vapor = props_w.WaterParameterBlock()
-
 
     # Unit models
     m.fs.feed = Feed(property_package=m.fs.properties_feed)
@@ -254,11 +259,11 @@ def build():
         == m.fs.recovery[0]
     )
 
- 
     return m
 
+
 def calculate_scaling_factors(m):
-       # Scaling
+    # Scaling
     # properties
     m.fs.properties_feed.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
@@ -536,11 +541,11 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s07)
     m.fs.Q_ext[0].fix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix()
-    
+
     # fixes and unfixes those values
-    m.fs.evaporator.initialize(delta_temperature_in=60, 
-                               solver="ipopt-watertap",
-                               outlvl=idaeslog.DEBUG)
+    m.fs.evaporator.initialize(
+        delta_temperature_in=60, solver="ipopt-watertap", outlvl=idaeslog.DEBUG
+    )
 
     m.fs.Q_ext[0].unfix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].unfix()
@@ -629,7 +634,7 @@ def fix_outlet_pressures(m):
 
 
 def calculate_cost_sf(cost):
-    sf = 10*10 ** -(math.log10(abs(cost.value)))
+    sf = 10 * 10 ** -(math.log10(abs(cost.value)))
     iscale.set_scaling_factor(cost, sf)
 
 
