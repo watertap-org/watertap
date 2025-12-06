@@ -97,20 +97,27 @@ def main():
     return m, results
 
 
-def build():
+def build(feed_properties=None):
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Properties
-    # m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    m.fs.properties_feed = MCASParameterBlock(
-        solute_list=["TDS"],
-        mw_data={"TDS": 31.4038218e-3},
-        diffusivity_data={("Liq", "TDS"): 1.61e-9},
-        material_flow_basis=MaterialFlowBasis.mass,
-        density_calculation="seawater",
-    )
+    if feed_properties is None or feed_properties == "seawater":
+        m.fs.properties_feed = props_sw.SeawaterParameterBlock()
+    elif feed_properties == "MCAS":
+        m.fs.properties_feed = MCASParameterBlock(
+            solute_list=["TDS"],
+            mw_data={"TDS": 31.4038218e-3},
+            diffusivity_data={("Liq", "TDS"): 1.61e-9},
+            material_flow_basis=MaterialFlowBasis.mass,
+            density_calculation="seawater",
+        )
+    else:
+        # TODO: this is temporary until we make MVC compatible with NaCL prop model AND convert flowsheets to classes, so we don't need to pass in an arg like this. Instead, the property_package for the feed would be defined by the config of the MVC model class.
+        raise ValueError(
+            "MVC flowsheet supports seawater or MCAS property packages only."
+        )
     m.fs.properties_vapor = props_w.WaterParameterBlock()
 
     # Unit models
@@ -318,7 +325,7 @@ def calculate_scaling_factors(m):
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_out, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.lmtd, 1e-1)
-    # iscale.constraint_scaling_transform(m.fs.evaporator.eq_evaporator_heat[0], 1e-3)
+    iscale.constraint_scaling_transform(m.fs.evaporator.eq_evaporator_heat[0], 1e-3)
     # compressor
     iscale.set_scaling_factor(m.fs.compressor.control_volume.work, 1e-6)
 
