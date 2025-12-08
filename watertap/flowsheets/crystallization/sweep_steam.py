@@ -30,9 +30,7 @@ def run_steam_cost_sweep(nx=200, output_filename="steam_cost_sweep.csv"):
 
     sweep_params = {}
 
-    sweep_params["steam_cost"] = LinearSample(
-        m.fs.costing.steam.cost, 0.00, 0.008, nx
-    )
+    sweep_params["steam_cost"] = LinearSample(m.fs.costing.steam.cost, 0.00, 0.008, nx)
 
     global_results = parameter_sweep(
         m,
