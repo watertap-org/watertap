@@ -242,14 +242,14 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             self.release_state(source_flags, outlvl)
 
     def calculate_scaling_factors(self):
+        if iscale.get_scaling_factor(self.area) is None:
+            iscale.set_scaling_factor(self.area, 100)
+
         super().calculate_scaling_factors()
 
         # setting scaling factors for variables
 
         # will not override if the user provides the scaling factor
-        ## default of 1 set by ControlVolume1D
-        if iscale.get_scaling_factor(self.area) == 1:
-            iscale.set_scaling_factor(self.area, 100)
 
         if hasattr(self, "pressure_change_total"):
             for v in self.pressure_change_total.values():

@@ -282,16 +282,17 @@ def initialize_sido(
 
 def calculate_scaling_factors_sido(self):
     # Get default scale factors and do calculations from base classes
-    for t, v in self.water_recovery_equation.items():
-        iscale.constraint_scaling_transform(
-            v,
-            iscale.get_scaling_factor(
-                self.properties_in[t].flow_mass_comp["H2O"],
-                default=1,
-                warning=True,
-                hint=" for water recovery",
-            ),
-        )
+    if hasattr(self, "water_recovery_equation"):
+        for t, v in self.water_recovery_equation.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.properties_in[t].flow_mass_comp["H2O"],
+                    default=1,
+                    warning=True,
+                    hint=" for water recovery",
+                ),
+            )
 
     for t, v in self.water_balance.items():
         iscale.constraint_scaling_transform(
@@ -319,6 +320,15 @@ def calculate_scaling_factors_sido(self):
                 self.properties_in[t].flow_mass_comp[j], default=1, warning=False
             ),
         )  # would just be a duplicate of above
+
+    if hasattr(self, "eq_isobaric"):
+        for (t, port), condata in self.eq_isobaric.items():
+            obj = getattr(self, port)
+            sf_P = min(
+                iscale.get_scaling_factor(self.inlet.pressure[t], default=1),
+                iscale.get_scaling_factor(obj.pressure[t], default=1),
+            )
+            iscale.constraint_scaling_transform(condata, sf_P)
 
 
 def _get_Q_sido(self, t):

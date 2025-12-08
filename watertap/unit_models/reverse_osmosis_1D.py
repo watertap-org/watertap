@@ -242,3 +242,59 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             for v in self.deltaP.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)
+
+        if hasattr(self, "eq_permeate_outlet_isobaric"):
+            for (t, x), condata in self.eq_permeate_outlet_isobaric.items():
+                sf_P = min(
+                    iscale.get_scaling_factor(
+                        self.permeate_side[t, x].pressure, default=1
+                    ),
+                    iscale.get_scaling_factor(
+                        self.mixed_permeate[t].pressure, default=1
+                    ),
+                )
+                iscale.constraint_scaling_transform(condata, sf_P)
+
+        if self.config.pressure_change_type == PressureChangeType.fixed_per_stage:
+            # TODO additional scaling
+            pass
+        else:
+            for t, condata in self.eq_pressure_drop.items():
+                sf_dP = iscale.get_scaling_factor(self.deltaP[t])
+                iscale.constraint_scaling_transform(condata, sf_dP)
+
+        for (t, p, j), condata in self.eq_permeate_production.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, x, p, j), condata in self.eq_mass_transfer_term.items():
+            sf = min(
+                iscale.get_scaling_factor(
+                    self.mass_transfer_phase_comp[t, x, p, j], default=1
+                ),
+                iscale.get_scaling_factor(
+                    self.feed_side.mass_transfer_term[t, x, p, j], default=1
+                ),
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, x, p, j), condata in self.eq_connect_mass_transfer.items():
+            sf = iscale.get_scaling_factor(
+                self.permeate_side[t, x].get_material_flow_terms(p, j), default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, x, p, j), condata in self.eq_mass_flux_equal_mass_transfer.items():
+            sf_xfer = iscale.get_scaling_factor(
+                self.feed_side.mass_transfer_term[t, x, p, j]
+            )
+            sf_ell = iscale.get_scaling_factor(
+                self.length, default=1 / value(self.length)
+            )
+            sf_A = iscale.get_scaling_factor(self.area, default=1 / value(self.area))
+            iscale.set_scaling_factor(
+                self.flux_mass_phase_comp[t, x, p, j], sf_xfer * sf_ell / sf_A
+            )
+            iscale.constraint_scaling_transform(condata, sf_xfer * sf_ell)
