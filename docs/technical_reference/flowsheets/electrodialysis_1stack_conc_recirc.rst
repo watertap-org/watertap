@@ -51,11 +51,11 @@ The electrodialysis 1D block is set up with the following configuration argument
 
      .. math::
          LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
- 
- The product water salinity is set to 0.1 :math:`g L^{-1}`.
+
+ The product water salinity is set to 0.1 :math:`\text{g L}^{-1}`.
 
 Documentation for unit models from WaterTAP: 
-    * :ref:`NaCl Property Package <ED_1D>`
+    * :ref:`NaCl Property Package <nacl>`
     * :ref:`Pressure exchanger <pressure_exchanger>`
 Documentation for unit models from IDAES: 
     * `Feed block <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/feed.html>`_
@@ -67,7 +67,13 @@ Documentation for the property model:
 
 Degrees of Freedom
 ------------------
-The number of degrees of freedom (DOF) is associated with the number of fixed variables (parameters) determined by the purpose of the modeling case. There are two implemented modeling cases in the flowsheet: (1) the prediction of desalination outcome (salinity of the product water and saline disposal) and (2) the optimization of key decision variables in system design.  In the first case, DOF is set to zero by fixing all initial conditions of the feed solution fluid and definite ED stack parameters. All fixed values are presented in the section to follow.  In the second case, the values of those chosen to be the decision variables in the optimization are unfixed. The DOF number is therefore the number of decision variables. In this example, the decision variables are:
+The number of degrees of freedom (DOF) is associated with the number of fixed variables (parameters) determined by the purpose of the modeling case. 
+There are two implemented modeling cases in the flowsheet: (1) the prediction of desalination outcome (salinity of the product water and saline disposal) 
+and (2) the optimization of key decision variables in system design.  In the first case, DOF is set to zero by fixing all initial conditions 
+of the feed solution fluid and definite ED stack parameters. 
+All fixed values are presented in the section to follow. 
+In the second case, the values of those chosen to be the decision variables in the optimization are unfixed. 
+The DOF number is therefore the number of decision variables. In this example, the decision variables are:
 
     * stack voltage applied
     * ED cell pair number 
@@ -79,29 +85,29 @@ Flowsheet Specifications
    :header: Name, Value, Unit, Reference
    :widths: 30, 20, 20, 10
 
-   "Salinity (NaCl)", ":math:`2`", ":math:`g L^{-1}`", "--"
-   "Volume flow rate", ":math:`5.2 \times 10^{-4}`", ":math:`m^3 s^{-1}`", [2]_
-   "Temperature", ":math:`298.15`", ":math:`K`", "--"
-   "Pressure", ":math:`101325`", ":math:`Pa`", "--"
-   "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
-   "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
-   "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`m^2 s^{-1}`", [4]_
+   "Salinity (NaCl)", ":math:`2`", ":math:`\text{g L}^{-1}`", "--"
+   "Volume flow rate", ":math:`5.2 \times 10^{-4}`", ":math:`\text{m}^3 \text{ s}^{-1}`", [2]_
+   "Temperature", ":math:`298.15`", ":math:`\text{K}`", "--"
+   "Pressure", ":math:`101325`", ":math:`\text{Pa}`", "--"
+   "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`\text{m}^2 \text{ s}^{-1}`",[3]_
+   "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`\text{m}^2 \text{ s}^{-1}`",[3]_
+   "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`\text{m}^2 \text{ s}^{-1}`", [4]_
    "Cell pair number", ":math:`56`", ":math:`1`", "--"
-   "Cell length", ":math:`1.68`", ":math:`m`", [2]_
-   "Cell width", ":math:`0.197`", ":math:`m`",[5]_
-   "Channel height", ":math:`7.1 \times 10^{-4}`", ":math:`m`", "--"
+   "Cell length", ":math:`1.68`", ":math:`\text{m}`", [2]_
+   "Cell width", ":math:`0.197`", ":math:`\text{m}`",[5]_
+   "Channel height", ":math:`7.1 \times 10^{-4}`", ":math:`\text{m}`", "--"
    "Water recovery", ":math:`70%`", ":math:`1`", "--"
-   "Stack voltage", ":math:`10`", ":math:`V`", "--"
-   "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`m`",[5]_
-   "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega m^2`", [5]_
-   "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega m^2`",[5]_
-   "Water permeability, aem", ":math:`1.75 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`",[5]_
-   "Water permeability, cem", ":math:`2.16 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`", [5]_
+   "Stack voltage", ":math:`10`", ":math:`\text{V}`", "--"
+   "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`\text{m}`",[5]_
+   "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega \text{ m}^2`", [5]_
+   "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega \text{ m}^2`",[5]_
+   "Water permeability, aem", ":math:`1.75 \times 10^{-14}`", ":math:`\text{m} \text{ s}^{-1} \text{ Pa}^{-1}`",[5]_
+   "Water permeability, cem", ":math:`2.16 \times 10^{-14}`", ":math:`\text{m} \text{ s}^{-1} \text{ Pa}^{-1}`", [5]_
    "Water transport number, aem", ":math:`4.3`", ":math:`1`",[6]_
    "Water transport number, cem", ":math:`5.8`", ":math:`1`", [7]_
-   "NaCl mass diffusivity, aem and cem", ":math:`3.28 \times 10^{-11}`", ":math:`m^2 s^{-1}`", [8]_
+   "NaCl mass diffusivity, aem and cem", ":math:`3.28 \times 10^{-11}`", ":math:`\text{m}^2 \text{ s}^{-1}`", [8]_
    "Spacer porosity", ":math:`0.83`", ":math:`1`", [2]_
-   "Spacer specific surface area", ":math:`10400`", ":math:`m^{-1}`", [9]_
+   "Spacer specific surface area", ":math:`10400`", ":math:`\text{m}^{-1}`", [9]_
    "Pump efficiency", ":math:`0.8`", ":math:`1`", "--"
 
 

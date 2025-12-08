@@ -23,6 +23,7 @@
 #
 import os
 import sys
+import importlib
 import sphinx_rtd_theme
 
 sys.path.insert(0, os.path.abspath(".."))
@@ -35,9 +36,9 @@ copyright = "2020-2025, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "1.4.dev0"
+release = importlib.metadata.version("watertap")
 # The short X.Y version
-version = "1.4.dev0"
+version = importlib.metadata.version("watertap")
 # -- General configuration ---------------------------------------------------
 
 

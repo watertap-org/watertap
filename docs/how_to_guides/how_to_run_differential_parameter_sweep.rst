@@ -1,4 +1,4 @@
-How to Run Differential Parameter Sweep
+How to run differential parameter sweep
 ============================================
 
 Overview
@@ -59,11 +59,14 @@ Once the model has been setup, we specify the variables to sample using a dictio
 
     def build_sweep_params(model, num_samples=5):
         sweep_params = dict()
-        sweep_params["A_comp"] = UniformSample(model.fs.RO.A_comp, 4.2e-12, 2.1e-11, num_samples)
+        sweep_params["A_comp"] = UniformSample(
+            model.fs.RO.A_comp, 4.2e-12, 2.1e-11, num_samples
+        )
         sweep_params["membrane_cost"] = UniformSample(
             model.fs.costing.reverse_osmosis.membrane_cost, 30, 10, num_samples
         )
         return sweep_params
+
 
 where the ``A_comp`` attribute will be randomly selected from a uniform distribution of values in the range :math:`[4.2e-12, 2.1e-11]` and ``membrane_cost`` will be drawn from a uniform distribution between :math:`[30, 10]`.  For this example, we will extract flowsheet outputs associated with cost, the levelized cost of water (LCOW) and energy consumption (EC), defined via another dictionary.
 Next we will construct a specification dictionary to run the differential parameter sweep.
@@ -196,10 +199,6 @@ With the flowsheet defined and suitably initialized, along with the definitions 
             num_diff_samples=2,
             seed=seed,
         )
-
-.. testoutput::
-
-    ...
 
 .. testcleanup::
 
