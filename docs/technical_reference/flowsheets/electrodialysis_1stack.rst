@@ -47,7 +47,7 @@ where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital r
         LCOW_{Q} = \frac{f_{crf}   C_{cap,tot} + C_{op,tot}}{f_{util} Q}
 
 
-The product water salinity is set to 1 :math:`g L^{-1}` (from a feed salinity of 9.9 :math:`g L^{-1}`).
+The product water salinity is set to 1 :math:`\text{g L}^{-1}` (from a feed salinity of 9.9 :math:`\text{g L}^{-1}`).
 
 Documentation for unit models from WaterTAP: 
     * :ref:`Electrodialysis 1D <ED_1D>`
@@ -71,27 +71,27 @@ Flowsheet Specifications
    :header: Name, Value, Unit, Reference
    :widths: 30, 20, 20, 10
 
-   "Salinity (NaCl)", ":math:`9.9`", ":math:`g L^{-1}`", "--"
-   "Volume flow rate", ":math:`8.7 \times 10^{-5}`", ":math:`m^3 s^{-1}`", [2]_
-   "Temperature", ":math:`298.15`", ":math:`K`", "--"
-   "Pressure", ":math:`101325`", ":math:`Pa`", "--"
-   "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
-   "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`m^2 s^{-1}`",[3]_
-   "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`m^2 s^{-1}`", [4]_
+   "Salinity (NaCl)", ":math:`9.9`", ":math:`\text{g L}^{-1}`", "--"
+   "Volume flow rate", ":math:`8.7 \times 10^{-5}`", ":math:`\text{m}^3 \text{ s}^{-1}`", [2]_
+   "Temperature", ":math:`298.15`", ":math:`\text{K}`", "--"
+   "Pressure", ":math:`101325`", ":math:`\text{Pa}`", "--"
+   "Na^+ diffusivity", ":math:`1.33 \times 10^{-9}`", ":math:`\text{m}^2 \text{ s}^{-1}`",[3]_
+   "Cl^- diffusivity", ":math:`2.03 \times 10^{-9}`", ":math:`\text{m}^2 \text{ s}^{-1}`",[3]_
+   "NaCl mass diffusivity", ":math:`1.60 \times 10^{-9}`", ":math:`\text{m}^2 \text{ s}^{-1}`", [4]_
    "Cell pair number", ":math:`100`", ":math:`1`", "--"
-   "Cell length", ":math:`0.79`", ":math:`m`", "--"
-   "Cell width", ":math:`0.1`", ":math:`m`",[5]_
-   "Channel height", ":math:`2.7 \times 10^{-4}`", ":math:`m`", "--"
-   "Stack voltage", ":math:`5`", ":math:`V`", "--"
-   "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`m`",[5]_
-   "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega m^2`", [5]_
-   "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega m^2`",[5]_
-   "Water permeability, aem", ":math:`1.75 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`",[5]_
-   "Water permeability, cem", ":math:`2.16 \times 10^{-14}`", ":math:`m s^{-1} Pa^{-1}`", [5]_
+   "Cell length", ":math:`0.79`", ":math:`\text{m}`", "--"
+   "Cell width", ":math:`0.1`", ":math:`\text{m}`",[5]_
+   "Channel height", ":math:`2.7 \times 10^{-4}`", ":math:`\text{m}`", "--"
+   "Stack voltage", ":math:`5`", ":math:`\text{V}`", "--"
+   "Thickness, aem and cem", ":math:`1.3 \times 10^{-5}`", ":math:`\text{m}`",[5]_
+   "Areal resistance, aem", ":math:`1.77 \times 10^{-4}`", ":math:`\Omega \text{ m}^2`", [5]_
+   "Areal resistance, cem", ":math:`1.89 \times 10^{-4}`", ":math:`\Omega \text{ m}^2`",[5]_
+   "Water permeability, aem", ":math:`1.75 \times 10^{-14}`", ":math:`\text{m s}^{-1} \text{ Pa}^{-1}`",[5]_
+   "Water permeability, cem", ":math:`2.16 \times 10^{-14}`", ":math:`\text{m s}^{-1} \text{ Pa}^{-1}`", [5]_
    "Water transport number, aem", ":math:`4.3`", ":math:`1`",[6]_
    "Water transport number, cem", ":math:`5.8`", ":math:`1`", [7]_
-   "NaCl mass diffusivity, aem", ":math:`1.25 \times 10^{-10}`", ":math:`m^2 s^{-1}`", [8]_
-   "NaCl mass diffusivity, cem", ":math:`1.8 \times 10^{-10}`", ":math:`m^2 s^{-1}`", [8]_
+   "NaCl mass diffusivity, aem", ":math:`1.25 \times 10^{-10}`", ":math:`\text{m}^2 \text{ s}^{-1}`", [8]_
+   "NaCl mass diffusivity, cem", ":math:`1.8 \times 10^{-10}`", ":math:`\text{m}^2 \text{ s}^{-1}`", [8]_
    "Spacer Porosity", ":math:`1`", ":math:`1`", [2]_
    "Pump efficiency", ":math:`0.8`", ":math:`1`", "--"
 
