@@ -37,7 +37,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed conditions
     exports.add(
         obj=fs.feed.flow_vol[0],
-        name="Volumetric flow rate",
+        name="Feed volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=0,
@@ -49,7 +49,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "dye"],
-        name="Dye concentration",
+        name="Feed dye concentration",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
         rounding=2,
@@ -61,22 +61,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "tds"],
-        name="TDS concentration",
+        name="Feed TDS concentration",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
         rounding=2,
         description="Inlet total dissolved solids (TDS) concentration",
-        is_input=True,
-        input_category="Feed",
-        is_output=True,
-        output_category="Feed",
-    )
-    exports.add(
-        obj=fs.tb_nf_ro.properties_out[0].temperature,
-        name="Solution temperature",
-        ui_units=pyunits.K,
-        display_units="K",
-        rounding=2,
         is_input=True,
         input_category="Feed",
         is_output=True,
@@ -108,7 +97,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, rHGO Nanofiltration
     exports.add(
         obj=fs.dye_separation.nanofiltration.recovery_frac_mass_H2O[0],
-        name="Water recovery",
+        name="NF water recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
         rounding=2,
@@ -119,7 +108,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
-        name="Mass removal fraction, dye",
+        name="NF mass removal fraction of dye",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
         rounding=2,
@@ -130,7 +119,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "tds"],
-        name="Mass removal fraction, TDS",
+        name="NF mass removal fraction of TDS",
         ui_units=pyunits.dimensionless,
         display_units="fraction",  # we should change to %
         rounding=2,
@@ -141,7 +130,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
-        name="NF Water permeability Coefficient, A",
+        name="NF water permeability coefficient, A",
         ui_units=pyunits.L / pyunits.m**2 / pyunits.hour / pyunits.bar,
         display_units="LMH/bar",
         rounding=2,
@@ -167,7 +156,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     if hasattr(fs, "pretreatment"):
         exports.add(
             obj=fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
-            name="Specific energy consumption per inlet flow rate",
+            name="Pretreatment specific energy consumption per inlet flow rate",
             ui_units=pyunits.kWh / pyunits.m**3,
             display_units="kWh/m3",
             rounding=2,
@@ -183,7 +172,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     v = fs.desalination.RO.A_comp
     exports.add(
         obj=v[0, "H2O"],
-        name="RO Water permeability coefficient, A",
+        name="RO water permeability coefficient, A",
         ui_units=getattr(pyunits, str(v._units)),
         display_units=str(v._units),
         rounding=12,
@@ -195,7 +184,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     v = fs.desalination.RO.B_comp
     exports.add(
         obj=v[0, "TDS"],
-        name="RO Salt permeability coefficient, B",
+        name="RO salt permeability coefficient, B",
         ui_units=getattr(pyunits, str(v._units)),
         display_units=str(v._units),
         rounding=8,
@@ -366,7 +355,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # NF Results for rejection and membrane area
     exports.add(
         obj=fs.dye_separation.nanofiltration.rejection_comp[0, "dye"],
-        name="Solute Rejection- dye",
+        name="Solute rejection of dye",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -377,7 +366,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.dye_separation.nanofiltration.rejection_comp[0, "tds"],
-        name="Solute Rejection- tds",
+        name="Solute rejection of tds",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -412,7 +401,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.concentrated_dye.properties[0].conc_mass_comp["dye"],
-        name="NF retentate concentration, dye",
+        name="NF retentate concentration of dye",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
         rounding=2,
@@ -423,7 +412,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.concentrated_dye.properties[0].conc_mass_comp["tds"],
-        name="NF retentate concentration, tds",
+        name="NF retentate concentration of tds",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
         rounding=2,
@@ -445,7 +434,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"],
-        name="RO permeate concentration, TDS",
+        name="RO permeate concentration of TDS",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg/m3",
         rounding=2,
@@ -513,7 +502,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.LCOW,
-        name="Net levelized cost of water  w/revenue and disposal costs",
+        name="Net levelized cost of water w/revenue and disposal costs",
         ui_units=fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=2,
@@ -527,7 +516,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     total_capital_norm = fs.total_capital_cost / fs.feed.properties[0].flow_vol
     exports.add(
         obj=total_capital_norm,
-        name="Total capital",
+        name="Normalized total capital cost",
         ui_units=fs.zo_costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
@@ -551,7 +540,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     ) / annual_water_inlet
     exports.add(
         obj=elec_operating_norm,
-        name="Electricity",
+        name="Normalized annual electricity cost",
         ui_units=fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
@@ -572,7 +561,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         rounding=3,
         is_input=False,
         is_output=True,
-        output_category="Normalized performance metrics",
+        output_category="Performance metrics",
     )
     dye_recovery = (
         fs.concentrated_dye.flow_mass_comp[0, "dye"] / fs.feed.flow_mass_comp[0, "dye"]
@@ -586,13 +575,13 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         description="Mass recovery of dye [mass dye in NF retentate/mass dye in feed]",
         is_input=False,
         is_output=True,
-        output_category="Normalized performance metrics",
+        output_category="Performance metrics",
     )
 
     # Capital costs
     exports.add(
         obj=fs.total_capital_cost,
-        name="Total",
+        name="Total capital cost",
         ui_units=fs.zo_costing.base_currency,
         display_units="$",
         rounding=2,
@@ -606,7 +595,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         wwtp_capex = fs.pretreatment.wwtp.costing.capital_cost
         exports.add(
             obj=wwtp_capex,
-            name="Secondary WWTP Cost",
+            name="Secondary WWTP capital cost",
             ui_units=fs.zo_costing.base_currency,
             display_units="$",
             rounding=2,
@@ -623,7 +612,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=nf_capex,
-        name="rHGO Nanofiltration system costs",
+        name="rHGO Nanofiltration system capital cost",
         ui_units=fs.zo_costing.base_currency,
         display_units="$",
         rounding=2,
@@ -634,7 +623,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.ro_costing.total_capital_cost,
-        name="RO system costs",
+        name="RO system capital cost",
         ui_units=fs.zo_costing.base_currency,
         display_units="$",
         rounding=2,
@@ -647,7 +636,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Operating costs
     exports.add(
         obj=fs.total_operating_cost,
-        name="Total",
+        name="Total operating cost",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
@@ -661,7 +650,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     +fs.ro_costing.aggregate_flow_costs["electricity"]
     exports.add(
         obj=total_elec_cost,
-        name="Electricity",
+        name="Annual electricity cost",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
@@ -672,7 +661,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.brine_cost,
-        name="RO brine disposal",
+        name="Annual RO brine disposal cost",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
@@ -683,7 +672,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.dye_cost,
-        name="Dye disposal",
+        name="Annual dye disposal cost",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,
@@ -695,7 +684,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     if hasattr(fs, "pretreatment"):
         exports.add(
             obj=fs.sludge_disposal_cost,
-            name="WWTP sludge disposal",
+            name="Annual WWTP sludge disposal cost",
             ui_units=fs.zo_costing.base_currency / pyunits.year,
             display_units="$/year",
             rounding=2,
@@ -709,7 +698,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Revenue
     exports.add(
         obj=fs.water_recovery_revenue,
-        name="Water",
+        name="Annual water recovery revenue",
         ui_units=fs.zo_costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=2,

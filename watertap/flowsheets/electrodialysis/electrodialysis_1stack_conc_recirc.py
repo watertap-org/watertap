@@ -185,7 +185,7 @@ def build():
         bounds=(0, 1),
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
-        doc="flowsheet level water recovery calculated by volumeric flow rate",
+        doc="flowsheet level water recovery calculated by volumetric flow rate",
     )
 
     m.fs.feed_salinity = Var(
