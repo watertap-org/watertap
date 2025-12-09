@@ -496,16 +496,22 @@ def optimize(m, solver=None):
 
 
 def display_system(m):
+    print(f"Levelized cost of water: {value(m.fs.costing.LCOW):.2f} $/m3")
     print(
-        "Crystalizer Inlet temperature:", m.fs.crystallizer.inlet.temperature[0].value
+        f"Crystallizer inlet temperature: {value(m.fs.crystallizer.inlet.temperature[0]):.2f} {pyunits.get_units(m.fs.crystallizer.inlet.temperature[0])}"
     )
-    print("operating temperature:", m.fs.crystallizer.temperature_operating.value)
-    print("recycle :", m.fs.mixer.recycle.flow_mass_phase_comp[0, "Liq", "H2O"].value)
-    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
     print(
-        "steam:", m.fs.heater.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].value
+        f"Operating temperature: {value(m.fs.crystallizer.temperature_operating):.2f} {pyunits.get_units(m.fs.crystallizer.temperature_operating)}"
     )
-    print("heater area:", m.fs.heater.area.value)
+    print(
+        f"Recycle mass flow rate water: {value(m.fs.mixer.recycle.flow_mass_phase_comp[0, 'Liq', 'H2O']):.2f} {pyunits.get_units(m.fs.mixer.recycle.flow_mass_phase_comp[0, 'Liq', 'H2O'])}"
+    )
+    print(
+        f"Steam mass flow rate: {value(m.fs.heater.hot_side_inlet.flow_mass_phase_comp[0, 'Vap', 'H2O']):.2f} {pyunits.get_units(m.fs.heater.hot_side_inlet.flow_mass_phase_comp[0, 'Vap', 'H2O'])}"
+    )
+    print(
+        f"Heater area: {value(m.fs.heater.area):.2f} {pyunits.get_units(m.fs.heater.area)}"
+    )
 
 
 if __name__ == "__main__":
