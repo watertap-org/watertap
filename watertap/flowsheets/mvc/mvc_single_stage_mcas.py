@@ -408,7 +408,7 @@ def set_electroneutral_ion_fractions(m, tds=0.1):
     Algorithm:
       1. Separate ions into cations (charge > 0) and anions (charge < 0)
       2. Distribute TDS equally among all ions initially
-      3. Compute molar equivalents: eq_i = (mass_i / MW_i) * |charge_i|
+      3. Compute molar equivalents: eq_i = (mass_i / MW_i) * abs(charge_i)
       4. Scale anion masses so sum(eq_cations) = sum(eq_anions)
       5. Renormalize to exact TDS target
 
