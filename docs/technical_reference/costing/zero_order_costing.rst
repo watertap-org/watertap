@@ -33,7 +33,7 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
   m = ConcreteModel()
   m.db = Database()
   m.fs = FlowsheetBlock(dynamic=False)
-  m.fs.params = WaterParameterBlock(solute_list=["comp_a", "comp_b", "comp_c"])
+  m.fs.params = ZOParameterBlock(solute_list=["comp_a", "comp_b", "comp_c"])
   m.fs.costing = ZeroOrderCosting()
   m.fs.unit = MyZOUnit(property_package=m.fs.params, database=m.db)
 

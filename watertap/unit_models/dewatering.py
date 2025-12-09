@@ -24,15 +24,6 @@ Modifications made to TSS formulation based on ASM type.
 """
 from enum import Enum, auto
 
-# Import IDAES cores
-from idaes.core import (
-    declare_process_block_class,
-)
-from idaes.models.unit_models.separator import SeparatorData, SplittingType
-
-from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.logger as idaeslog
-
 from pyomo.environ import (
     Constraint,
     Param,
@@ -42,10 +33,14 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In
 
-from idaes.core.util.exceptions import (
-    ConfigurationError,
-)
+# Import IDAES cores
+from idaes.core import declare_process_block_class
+from idaes.models.unit_models.separator import SeparatorData, SplittingType
+from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.logger as idaeslog
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
+
 from watertap.costing.unit_models.dewatering import cost_dewatering
 
 __author__ = "Alejandro Garciadiego, Adam Atia"

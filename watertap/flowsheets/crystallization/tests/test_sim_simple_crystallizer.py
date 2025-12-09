@@ -22,7 +22,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.unit_models.crystallizer import Crystallization
 from watertap.flowsheets.crystallization.sim_simple_crystallizer import main as cryst_ex
-from watertap.property_models.unit_specific.cryst_prop_pack import NaClParameterBlock
+from watertap.property_models import CrystallizerParameterBlock
 from watertap.costing import CrystallizerCostType
 
 
@@ -39,7 +39,7 @@ class TestCrystallizerBuild:
         # Test basic build
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties, NaClParameterBlock)
+        assert isinstance(m.fs.properties, CrystallizerParameterBlock)
         assert isinstance(m.fs.costing, Block)
         assert isinstance(m.fs.crystallizer, Crystallization)
 

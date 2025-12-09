@@ -30,8 +30,8 @@ from pyomo.environ import (
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
-
-from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
+from watertap.core import ZeroOrderBaseData
+from watertap.property_models import ZOParameterBlock, ZOStateBlock
 from watertap.core.zero_order_siso import (
     build_siso,
     initialize_siso,
@@ -57,7 +57,7 @@ class TestSISO:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.unit = DerivedSISO(property_package=m.fs.water_props)
 
@@ -93,8 +93,8 @@ class TestSISO:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert isinstance(model.fs.unit.properties_in, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_treated, WaterStateBlock)
+        assert isinstance(model.fs.unit.properties_in, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_treated, ZOStateBlock)
 
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.treated, Port)

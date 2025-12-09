@@ -26,7 +26,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import PumpZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -39,7 +39,7 @@ class TestPumpZOdefault:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.unit = PumpZO(property_package=m.fs.params, database=m.db)
 
@@ -112,7 +112,7 @@ class TestPumpZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.unit = PumpZO(property_package=m.fs.params, database=db)
 
@@ -140,7 +140,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 

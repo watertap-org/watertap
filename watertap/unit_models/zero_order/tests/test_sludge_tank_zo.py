@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import SludgeTankZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,7 +46,7 @@ class TestSludgeTankZO_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=["toc", "tds", "eeq", "nitrate", "tss"]
         )
 
@@ -212,7 +212,7 @@ class TestSludgeTankZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss"])
 
         m.fs.unit = SludgeTankZO(property_package=m.fs.params, database=m.db)
 
@@ -335,7 +335,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 

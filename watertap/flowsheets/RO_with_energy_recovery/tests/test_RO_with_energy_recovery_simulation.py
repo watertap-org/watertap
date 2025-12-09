@@ -18,17 +18,20 @@ from pyomo.environ import (
     value,
     Expression,
 )
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Port
+
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, number_total_objectives
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from pyomo.util.check_units import assert_units_consistent
 
-import watertap.property_models.NaCl_prop_pack as props
-from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.property_models import NaClParameterBlock
+from watertap.unit_models import (
+    ReverseOsmosis0D,
+    PressureExchanger,
+    Pump,
+    EnergyRecoveryDevice,
+)
 from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     build,
     set_operating_conditions,
@@ -41,6 +44,7 @@ from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import 
     display_design,
     ERDtype,
 )
+from watertap.core.solvers import get_solver
 
 
 solver = get_solver()
@@ -61,7 +65,7 @@ class TestROwithPX:
         # model set up
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties, props.NaClParameterBlock)
+        assert isinstance(m.fs.properties, NaClParameterBlock)
         assert isinstance(m.fs.costing, Block)
 
         # unit models
@@ -461,7 +465,7 @@ class TestROnoERD:
         # model set up
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties, props.NaClParameterBlock)
+        assert isinstance(m.fs.properties, NaClParameterBlock)
         assert isinstance(m.fs.costing, Block)
 
         # unit models

@@ -3,6 +3,10 @@
 NaCl Property Package with Temperature Dependence
 =================================================
 
+.. code-block:: python
+
+   from watertap.property_models import NaClTDepParameterBlock
+
 This package implements property relationships for an NaCl solution.
 
 This NaCl property package:

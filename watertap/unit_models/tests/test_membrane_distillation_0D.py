@@ -11,18 +11,13 @@
 #################################################################################
 from pyomo.environ import ConcreteModel
 
-from watertap.core.solvers import get_solver
-
-
 from idaes.core import (
     FlowsheetBlock,
     FlowDirection,
 )
 import idaes.core.util.scaling as iscale
-from pyomo.environ import ConcreteModel
-from idaes.core import FlowsheetBlock
-import watertap.property_models.seawater_prop_pack as props_sw
-import watertap.property_models.water_prop_pack as props_w
+
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
 from watertap.unit_models.MD.membrane_distillation_0D import MembraneDistillation0D
 from watertap.unit_models.MD.MD_channel_base import (
     ConcentrationPolarizationType,
@@ -30,9 +25,9 @@ from watertap.unit_models.MD.MD_channel_base import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-
 from watertap.unit_models.MD.membrane_distillation_base import MDconfigurationType
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -40,9 +35,9 @@ solver = get_solver()
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -135,9 +130,9 @@ def build_temperature_polarization_none():
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -225,9 +220,9 @@ def build_temperature_polarization_fixed():
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -320,9 +315,9 @@ def build_temperature_polarization_calculated():
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -418,9 +413,9 @@ def build_temperature_polarization_calculated_concentration_polarization_fixed()
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -519,9 +514,9 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -622,9 +617,9 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -726,9 +721,9 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -835,9 +830,9 @@ def build_temperature_polarization_calculated_concentration_polarization_calcula
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         hot_ch={
             "property_package": m.fs.properties_hot_ch,
@@ -936,9 +931,9 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_concentratio
 def build_temperature_polarization_none_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         MD_configuration_Type=MDconfigurationType.VMD,
         hot_ch={
@@ -1013,9 +1008,9 @@ class TestMembraneDisillation0D_temperature_polarization_none_vmd(UnitTestHarnes
 def build_temperature_polarization_fixed_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         MD_configuration_Type=MDconfigurationType.VMD,
         hot_ch={
@@ -1091,9 +1086,9 @@ class TestMembraneDisillation0D_temperature_polarization_fixed_hot_vmd(UnitTestH
 def build_temperature_polarization_calculated_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         MD_configuration_Type=MDconfigurationType.VMD,
         hot_ch={
@@ -1174,9 +1169,9 @@ class TestMembraneDisillation0D_temperature_polarization_calculated_hot_vmd(
 def build_temperature_polarization_concentration_polarization_calculated_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         MD_configuration_Type=MDconfigurationType.VMD,
         hot_ch={
@@ -1259,9 +1254,9 @@ class TestMembraneDisillation0D_temperature_polarization_concentration_polarizat
 def build_temperature_polarization_concentration_polarization_pressure_calculated_hot_vmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         MD_configuration_Type=MDconfigurationType.VMD,
         hot_ch={
@@ -1346,9 +1341,9 @@ class TestMembraneDisillation0D_temperature_polarization_concentration_polarizat
 def build_temperature_polarization_none_pgmd():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_hot_ch = props_sw.SeawaterParameterBlock()
-    m.fs.properties_cold_ch = props_w.WaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_hot_ch = SeawaterParameterBlock()
+    m.fs.properties_cold_ch = WaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.unit = MembraneDistillation0D(
         MD_configuration_Type=MDconfigurationType.GMD,
         hot_ch={

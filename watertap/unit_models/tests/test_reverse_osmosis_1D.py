@@ -11,24 +11,19 @@
 #################################################################################
 from pyomo.environ import ConcreteModel
 
-from watertap.core.solvers import get_solver
-
 from idaes.core import FlowsheetBlock
-
 import idaes.core.util.scaling as iscale
 
 from watertap.unit_models.reverse_osmosis_base import TransportModel, ModuleType
-
-import watertap.property_models.NaCl_prop_pack as props
-
+from watertap.property_models import NaClParameterBlock
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-
+from watertap.unit_models import ReverseOsmosis1D
 from watertap.unit_models.reverse_osmosis_1D import (
-    ReverseOsmosis1D,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -40,7 +35,7 @@ def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -161,7 +156,7 @@ def build_basic():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -270,7 +265,7 @@ def build_SKK():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -395,7 +390,7 @@ def build_cp_mod_fixed():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -505,7 +500,7 @@ def build_cp_calculated_kf_fixed():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -615,7 +610,7 @@ def build_cp_calculated_kf_calculated():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -725,7 +720,7 @@ def build_friction_factor_spiral_wound():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -837,7 +832,7 @@ def build_cp_calculated_kf_calculated_pdrop_fixed_by_dx():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -951,7 +946,7 @@ def build_cp_calculated_kf_calculated_pdrop_fixed_by_stage():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis1D(
         property_package=m.fs.properties,
