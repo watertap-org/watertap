@@ -9,71 +9,49 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import (
-    ConcreteModel,
-    TerminationCondition,
-)
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
     Objective,
-    Var,
-    NonNegativeReals,
     TransformationFactory,
-    units as pyunits,
     check_optimal_termination,
 )
 from pyomo.network import Arc
+
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
     propagate_state,
 )
-from watertap.unit_models.pressure_changer import Pump
-from watertap.costing.unit_models.pump import (
-    cost_pump,
-)
-from pyomo.util.check_units import assert_units_consistent
-
-from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
-
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
-from watertap.core.solvers import get_solver
-from idaes.core import UnitModelCostingBlock
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.models.unit_models.translator import Translator
+from idaes.models.unit_models import (
+    Separator,
+    Mixer,
+    Product,
+    Feed,
+    SplittingType,
+    MomentumMixingType,
+    HeatExchangerFlowPattern,
+)
 
-from watertap.property_models.unit_specific import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
 from watertap.costing import WaterTAPCosting, CrystallizerCostType
-
-from io import StringIO
-from pyomo.util.infeasible import (
-    log_infeasible_constraints,
-)
-from watertap.unit_models.steam_heater_0D import SteamHeater0D, Mode
-from idaes.models.unit_models import Heater, Separator, Mixer, Product, Feed
-from idaes.models.unit_models.mixer import MomentumMixingType
-from watertap.core.solvers import get_solver
+from watertap.unit_models.mvc.components import Compressor
+from watertap.unit_models.pressure_changer import Pump
+from watertap.costing.unit_models.pump import cost_pump
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
 )
-from idaes.models.unit_models.heat_exchanger import (
-    HeatExchangerFlowPattern,
-)
-from watertap.unit_models.mvc.components import Compressor
 from watertap.property_models.unit_specific import cryst_prop_pack as props
 import watertap.property_models.water_prop_pack as props_w
 import watertap.property_models.NaCl_T_dep_prop_pack as props_nacl
-from pyomo.common.log import LoggingIntercept
-from idaes.models.unit_models.translator import Translator
-from idaes.models.unit_models.separator import SplittingType
-import logging
-
-# from watertap.core.util.model_debug_mode import activate
-# activate()
+from watertap.unit_models.steam_heater_0D import SteamHeater0D, Mode
+from watertap.property_models.unit_specific import cryst_prop_pack as props
+from watertap.core.solvers import get_solver
 
 
 __author__ = "Elmira Shamlou"
