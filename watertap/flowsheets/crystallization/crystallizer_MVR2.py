@@ -17,6 +17,7 @@ from pyomo.environ import (
     Objective,
     TransformationFactory,
     check_optimal_termination,
+    units as pyunits,
 )
 from pyomo.network import Arc
 
@@ -430,19 +431,23 @@ def optimize(m, solver=None):
 
 
 def display_system(m):
-    print("operating temperature:", m.fs.crystallizer.temperature_operating.value)
-    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
-    print("Inlet temperature heater:", m.fs.heater.cold_side_inlet.temperature[0].value)
-    print("compressor pressure ratio:", m.fs.compressor.pressure_ratio.value)
+    print(f"Levelized cost of water: {value(m.fs.costing.LCOW):.2f} $/m3")
     print(
-        "separator split recycle:",
-        m.fs.separator.recycle.flow_mass_phase_comp[0, "Liq", "H2O"].value,
+        f"Operating temperature: {value(m.fs.crystallizer.temperature_operating):.2f} {pyunits.get_units(m.fs.crystallizer.temperature_operating)}"
     )
     print(
-        "separator split purge:",
-        m.fs.separator.purge.flow_mass_phase_comp[0, "Liq", "H2O"].value,
+        f"Inlet temperature heater: {value(m.fs.heater.cold_side_inlet.temperature[0]):.2f} {pyunits.get_units(m.fs.heater.cold_side_inlet.temperature[0])}"
     )
-    print("distillate:", m.fs.distillate.flow_mass_phase_comp[0, "Liq", "H2O"].value)
+    print(f"Compressor pressure ratio: {value(m.fs.compressor.pressure_ratio):.2f} ")
+    print(
+        f"Separator split recycle mass flow rate (H2O): {value(m.fs.separator.recycle.flow_mass_phase_comp[0, 'Liq', 'H2O']):.2f} {pyunits.get_units(m.fs.separator.recycle.flow_mass_phase_comp[0, 'Liq', 'H2O'])}"
+    )
+    print(
+        f"Separator split purge mass flow rate (H2O): {value(m.fs.separator.purge.flow_mass_phase_comp[0, 'Liq', 'H2O']):.2f} {pyunits.get_units(m.fs.separator.purge.flow_mass_phase_comp[0, 'Liq', 'H2O'])}"
+    )
+    print(
+        f"Distillate mass flow rate (H2O): {value(m.fs.distillate.flow_mass_phase_comp[0, 'Liq', 'H2O']):.2f} {pyunits.get_units(m.fs.distillate.flow_mass_phase_comp[0, 'Liq', 'H2O'])}"
+    )
 
 
 if __name__ == "__main__":
