@@ -21,11 +21,8 @@ from pyomo.environ import (
 )
 from pyomo.network import Arc
 
-from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import (
-    propagate_state,
-)
+from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.models.unit_models.translator import Translator
@@ -46,9 +43,7 @@ from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
 )
 from watertap.unit_models.pressure_changer import Pump
-from watertap.costing.unit_models.pump import (
-    cost_pump,
-)
+from watertap.costing.unit_models.pump import cost_pump
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
 )
