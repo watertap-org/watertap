@@ -494,8 +494,10 @@ def set_electroneutral_ion_fractions(m, tds=0.1):
         # current charge imbalance (positive -> need more anion equivalents)
         charge_imbalance = eq_cations_final - eq_anions_final
         if abs(charge_imbalance) > 1e-12:
-            ion_mass_fracs[adjust_ion] += charge_imbalance * ion_data[adjust_ion]["mw"] / abs(
-                ion_data[adjust_ion]["charge"]
+            ion_mass_fracs[adjust_ion] += (
+                charge_imbalance
+                * ion_data[adjust_ion]["mw"]
+                / abs(ion_data[adjust_ion]["charge"])
             )
             # keep masses non-negative
             ion_mass_fracs[adjust_ion] = max(ion_mass_fracs[adjust_ion], 0.0)
@@ -510,7 +512,7 @@ def set_electroneutral_ion_fractions(m, tds=0.1):
     # Fix mass fractions in model
     for j, mf in ion_mass_fracs.items():
         m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j].fix(mf)
-    
+
     # Touch molar concentration to check electroneutrality
     for j in m.fs.properties_mcas.solute_set:
         m.fs.feed.properties[0].conc_mol_phase_comp["Liq", j]
@@ -530,6 +532,7 @@ def set_electroneutral_ion_fractions(m, tds=0.1):
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j].unfix()
 
     return ion_mass_fracs
+
 
 def set_operating_conditions(m):
     # Feed inlet
