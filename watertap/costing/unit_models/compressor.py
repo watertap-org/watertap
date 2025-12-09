@@ -42,10 +42,14 @@ def cost_compressor(blk, cost_electricity_flow=True):
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.cost_factor
-        * (
-            blk.costing_package.compressor.unit_cost_intercept
-            + blk.costing_package.compressor.unit_cost_slope * compressor_power_kW**0.6
+        == pyo.units.convert(
+            blk.cost_factor
+            * (
+                blk.costing_package.compressor.unit_cost_intercept
+                + blk.costing_package.compressor.unit_cost_slope
+                * compressor_power_kW**0.6
+            ),
+            to_units=blk.costing_package.base_currency,
         )
     )
 
