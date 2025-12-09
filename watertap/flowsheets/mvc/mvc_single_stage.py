@@ -411,7 +411,7 @@ def set_operating_conditions(m):
     m.fs.costing.electricity_cost = 0.1  # 0.15
     m.fs.costing.heat_exchanger.material_factor_cost.fix(5)
     m.fs.costing.evaporator.material_factor_cost.fix(5)
-    m.fs.costing.compressor.unit_cost.fix(1 * 7364)
+    # m.fs.costing.compressor.unit_cost.fix(1 * 7364)
 
     # Temperature bounds
     m.fs.evaporator.properties_vapor[0].temperature.setub(75 + 273.15)
@@ -746,4 +746,4 @@ def display_design(m):
 
 
 if __name__ == "__main__":
-    m = main()
+    m, results = main()
