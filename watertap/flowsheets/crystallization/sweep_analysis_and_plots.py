@@ -1,13 +1,31 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from matplotlib.lines import Line2D
 from matplotlib.colors import ListedColormap
 from scipy.ndimage import label, center_of_mass
-from sweep_electricity import run_electricity_price_sweep as run_electricity_sweep
-from sweep_steam import run_steam_cost_sweep as run_steam_hr_sweep
-from sweep_steam_no_heat_recovery import run_steam_cost_sweep as run_steam_nhr_sweep
-from matplotlib.ticker import MaxNLocator
+
+from watertap.flowsheets.crystallization.sweep_electricity import (
+    run_electricity_price_sweep as run_electricity_sweep,
+)
+from watertap.flowsheets.crystallization.sweep_steam import (
+    run_steam_cost_sweep as run_steam_hr_sweep,
+)
+from watertap.flowsheets.crystallization.sweep_steam_no_heat_recovery import (
+    run_steam_cost_sweep as run_steam_nhr_sweep,
+)
 
 
 def main():

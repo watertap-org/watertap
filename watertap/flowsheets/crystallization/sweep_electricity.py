@@ -1,7 +1,18 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Renewable Energy Laboratory, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
+import pandas as pd
 from parameter_sweep import LinearSample, parameter_sweep
-from pyomo.environ import units as pyunits
-from watertap.costing import WaterTAPCosting
-from watertap.flowsheets.crystallization.Crystallizer_MVR import (
+
+from watertap.flowsheets.crystallization.crystallizer_MVR import (
     build,
     set_operating_conditions,
     initialize_system,
@@ -9,7 +20,6 @@ from watertap.flowsheets.crystallization.Crystallizer_MVR import (
     solve,
     get_solver,
 )
-import pandas as pd
 
 
 def set_up_sensitivity(m):
