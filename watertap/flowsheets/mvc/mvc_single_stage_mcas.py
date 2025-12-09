@@ -38,7 +38,8 @@ from idaes.models.unit_models.heat_exchanger import (
 )
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
-from idaes.core.util import DiagnosticsToolbox
+
+# from idaes.core.util import DiagnosticsToolbox
 
 from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
