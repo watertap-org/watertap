@@ -570,27 +570,31 @@ def optimize(m, solver=None):
 
 
 def display_system(m):
-    print("operating temperature:", m.fs.crystallizer.temperature_operating.value)
-    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
-    print("Inlet temperature heater:", m.fs.heater.cold_side_inlet.temperature[0].value)
+    print(f"Levelized cost of water: {value(m.fs.costing.LCOW):.2f} $/m3")
     print(
-        "outlet temperature condenser:",
-        m.fs.condenser.cold_side_outlet.temperature[0].value,
+        f"Operating temperature: {value(m.fs.crystallizer.temperature_operating):.2f} {pyunits.get_units(m.fs.crystallizer.temperature_operating)}"
     )
     print(
-        "outlet temperature condenser:",
-        m.fs.condenser.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].value,
-    )
-    print("thermocompressor pressure ratio:", m.fs.SteamEjector.compression_ratio.value)
-    print(
-        "separator split recycle:",
-        m.fs.separator.recycle.flow_mass_phase_comp[0, "Liq", "H2O"].value,
+        f"Inlet temperature heater: {value(m.fs.heater.cold_side_inlet.temperature[0]):.2f} {pyunits.get_units(m.fs.heater.cold_side_inlet.temperature[0])}"
     )
     print(
-        "separator split purge:",
-        m.fs.separator.purge.flow_mass_phase_comp[0, "Liq", "H2O"].value,
+        f"Condenser outlet temperature: {value(m.fs.condenser.cold_side_outlet.temperature[0]):.2f} {pyunits.get_units(m.fs.condenser.cold_side_outlet.temperature[0])}"
     )
-    print("heater area:", m.fs.heater.area.value)
+    print(
+        f"Condenser inlet H2O flow rate: {value(m.fs.condenser.cold_side_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']):.2f} {pyunits.get_units(m.fs.condenser.cold_side_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])}"
+    )
+    print(
+        f"Thermocompressor pressure ratio: {value(m.fs.SteamEjector.compression_ratio):.2f} "
+    )
+    print(
+        f"Separator split recycle mass flow rate (H2O): {value(m.fs.separator.recycle.flow_mass_phase_comp[0, 'Liq', 'H2O']):.2f} {pyunits.get_units(m.fs.separator.recycle.flow_mass_phase_comp[0, 'Liq', 'H2O'])}"
+    )
+    print(
+        f"Separator split purge mass flow rate (H2O): {value(m.fs.separator.purge.flow_mass_phase_comp[0, 'Liq', 'H2O']):.2f} {pyunits.get_units(m.fs.separator.purge.flow_mass_phase_comp[0, 'Liq', 'H2O'])}"
+    )
+    print(
+        f"Heater area: {value(m.fs.heater.area):.2f} {pyunits.get_units(m.fs.heater.area)}"
+    )
 
 
 if __name__ == "__main__":
