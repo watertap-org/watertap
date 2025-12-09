@@ -557,8 +557,8 @@ def scale_system(m, bio_P=False):
             set_scaling_factor(
                 m.fs.R5.control_volume.rate_reaction_generation[t, "Liq", "S_I"], 1e-3
             )
-            # TODO is it intentional that we're setting scaling factors for some constraints
-            # but doing constraint scaling transforms for others?
+            # TODO switch away from constraint_scaling_transform when the flowsheet's
+            # scaling is improved.
             constraint_scaling_transform(
                 m.fs.R5.control_volume.rate_reaction_stoichiometry_constraint[
                     t, "Liq", "H2O"
