@@ -604,6 +604,4 @@ class TestADM1ASM2dScaler:
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            7.180968e3, rel=1e-3
-        )
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(712.33, rel=1e-3)

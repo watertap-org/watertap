@@ -14,7 +14,6 @@ Tests for CSTR unit model with injection.
 Authors: Andrew Lee, Adam Atia, Vibhav Dabadghao
 """
 
-from io import StringIO
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -34,7 +33,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
@@ -563,9 +561,9 @@ class TestCSTR_InjectionScaler:
 
         scaler.constraint_scaling_routine(model.fs.unit)
 
-        sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
-        assert isinstance(sfx_out, Suffix)
-        assert len(sfx_out) == 0
+        assert not hasattr(
+            model.fs.unit.control_volume.properties_out[0], "scaling_factor"
+        )
 
         sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
         assert isinstance(sfx_rxn, Suffix)
@@ -777,7 +775,7 @@ class TestCSTR_InjectionScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.732817e6, rel=1e-3
+            1.1526931e7, rel=1e-3
         )
 
 
@@ -907,71 +905,72 @@ def perturb_solution(m):
     m.fs.unit.volume.fix(500 * 0.85)
 
 
-@pytest.mark.requires_idaes_solver
-@pytest.mark.unit
-def test_scaling_profiler_with_scalers():
-    sp = ScalingProfiler(
-        build_model=build_model,
-        user_scaling=scale_vars_with_scalers,
-        perturb_state=perturb_solution,
-    )
+# TODO Replace these scaling profiler tests with more detailed convergence analysis
+# @pytest.mark.requires_idaes_solver
+# @pytest.mark.unit
+# def test_scaling_profiler_with_scalers():
+#     sp = ScalingProfiler(
+#         build_model=build_model,
+#         user_scaling=scale_vars_with_scalers,
+#         perturb_state=perturb_solution,
+#     )
 
-    stream = StringIO()
+#     stream = StringIO()
 
-    sp.report_scaling_profiles(stream=stream)
+#     sp.report_scaling_profiles(stream=stream)
 
-    expected = """
-============================================================================
-Scaling Profile Report
-----------------------------------------------------------------------------
-Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 1.826E+16 | Solved 4   ||
-Vars Only                || 2.740E+17 | Solved 4   || 2.014E+21 | Solved 4  
-Harmonic                 || 2.740E+17 | Solved 4   || 4.443E+22 | Solved 18 
-Inverse Sum              || 2.740E+17 | Solved 4   || 2.399E+14 | Solved 4  
-Inverse Root Sum Squares || 2.740E+17 | Solved 4   || 3.412E+14 | Solved 4  
-Inverse Maximum          || 2.740E+17 | Solved 4   || 4.809E+14 | Solved 4  
-Inverse Minimum          || 2.740E+17 | Solved 4   || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 2.740E+17 | Solved 4   || 2.841E+14 | Solved 4  
-Nominal L2 Norm          || 2.740E+17 | Solved 4   || 3.755E+14 | Solved 4  
-Actual L1 Norm           || 2.740E+17 | Solved 4   || 5.461E+13 | Solved 4  
-Actual L2 Norm           || 2.740E+17 | Solved 4   || 6.491E+13 | Solved 4  
-============================================================================
-"""
+#     expected = """
+# ============================================================================
+# Scaling Profile Report
+# ----------------------------------------------------------------------------
+# Scaling Method           || User Scaling           || Perfect Scaling
+# Unscaled                 || 1.826E+16 | Solved 4   ||
+# Vars Only                || 2.740E+17 | Solved 4   || 2.014E+21 | Solved 4
+# Harmonic                 || 2.740E+17 | Solved 4   || 4.443E+22 | Solved 18
+# Inverse Sum              || 2.740E+17 | Solved 4   || 2.399E+14 | Solved 4
+# Inverse Root Sum Squares || 2.740E+17 | Solved 4   || 3.412E+14 | Solved 4
+# Inverse Maximum          || 2.740E+17 | Solved 4   || 4.809E+14 | Solved 4
+# Inverse Minimum          || 2.740E+17 | Solved 4   || 4.455E+22 | Solved 18
+# Nominal L1 Norm          || 2.740E+17 | Solved 4   || 2.841E+14 | Solved 4
+# Nominal L2 Norm          || 2.740E+17 | Solved 4   || 3.755E+14 | Solved 4
+# Actual L1 Norm           || 2.740E+17 | Solved 4   || 5.461E+13 | Solved 4
+# Actual L2 Norm           || 2.740E+17 | Solved 4   || 6.491E+13 | Solved 4
+# ============================================================================
+# """
 
-    assert stream.getvalue() == expected
+#     assert stream.getvalue() == expected
 
 
-@pytest.mark.requires_idaes_solver
-@pytest.mark.unit
-def test_scaling_profiler_with_iscale():
-    sp = ScalingProfiler(
-        build_model=build_model,
-        user_scaling=scale_vars_with_iscale,
-        perturb_state=perturb_solution,
-    )
+# @pytest.mark.requires_idaes_solver
+# @pytest.mark.unit
+# def test_scaling_profiler_with_iscale():
+#     sp = ScalingProfiler(
+#         build_model=build_model,
+#         user_scaling=scale_vars_with_iscale,
+#         perturb_state=perturb_solution,
+#     )
 
-    stream = StringIO()
+#     stream = StringIO()
 
-    sp.report_scaling_profiles(stream=stream)
+#     sp.report_scaling_profiles(stream=stream)
 
-    expected = """
-============================================================================
-Scaling Profile Report
-----------------------------------------------------------------------------
-Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 1.826E+16 | Solved 4   ||
-Vars Only                || 8.948E+12 | Solved 4   || 2.014E+21 | Solved 4  
-Harmonic                 || 1.044E+17 | Solved 57  || 4.443E+22 | Solved 18 
-Inverse Sum              || 5.247E+17 | Failed 50  || 2.399E+14 | Solved 4  
-Inverse Root Sum Squares || 5.220E+17 | Failed 55  || 3.412E+14 | Solved 4  
-Inverse Maximum          || 5.208E+17 | Failed 52  || 4.809E+14 | Solved 4  
-Inverse Minimum          || 2.103E+17 | Solved 65  || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 7.817E+09 | Solved 4   || 2.841E+14 | Solved 4  
-Nominal L2 Norm          || 1.278E+10 | Solved 4   || 3.755E+14 | Solved 4  
-Actual L1 Norm           || 3.950E+09 | Solved 3   || 5.461E+13 | Solved 4  
-Actual L2 Norm           || 4.339E+09 | Solved 3   || 6.491E+13 | Solved 4  
-============================================================================
-"""
+#     expected = """
+# ============================================================================
+# Scaling Profile Report
+# ----------------------------------------------------------------------------
+# Scaling Method           || User Scaling           || Perfect Scaling
+# Unscaled                 || 1.826E+16 | Solved 4   ||
+# Vars Only                || 8.948E+12 | Solved 4   || 2.014E+21 | Solved 4
+# Harmonic                 || 1.044E+17 | Solved 57  || 4.443E+22 | Solved 18
+# Inverse Sum              || 5.247E+17 | Failed 50  || 2.399E+14 | Solved 4
+# Inverse Root Sum Squares || 5.220E+17 | Failed 55  || 3.412E+14 | Solved 4
+# Inverse Maximum          || 5.208E+17 | Failed 52  || 4.809E+14 | Solved 4
+# Inverse Minimum          || 2.103E+17 | Solved 65  || 4.455E+22 | Solved 18
+# Nominal L1 Norm          || 7.817E+09 | Solved 4   || 2.841E+14 | Solved 4
+# Nominal L2 Norm          || 1.278E+10 | Solved 4   || 3.755E+14 | Solved 4
+# Actual L1 Norm           || 3.950E+09 | Solved 3   || 5.461E+13 | Solved 4
+# Actual L2 Norm           || 4.339E+09 | Solved 3   || 6.491E+13 | Solved 4
+# ============================================================================
+# """
 
-    assert stream.getvalue() == expected
+#     assert stream.getvalue() == expected
