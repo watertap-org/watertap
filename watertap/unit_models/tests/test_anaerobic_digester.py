@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -351,9 +351,9 @@ class TestADScaler:
 
         scaler.constraint_scaling_routine(model.fs.unit)
 
-        sfx_out = model.fs.unit.liquid_phase.properties_out[0].scaling_factor
-        assert isinstance(sfx_out, Suffix)
-        assert len(sfx_out) == 0
+        assert not hasattr(
+            model.fs.unit.liquid_phase.properties_out[0], "scaling_factor"
+        )
 
         sfx_rxn = model.fs.unit.liquid_phase.reactions[0].scaling_factor
         assert isinstance(sfx_rxn, Suffix)
@@ -525,7 +525,7 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.41888877e11, rel=1e-3
+            2.504226e11, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -610,5 +610,5 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            7.986901e10, rel=1e-3
+            8.432989e10, rel=1e-3
         )
