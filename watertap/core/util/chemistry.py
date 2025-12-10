@@ -133,7 +133,7 @@ def get_charge_group(charge: int) -> str:
         group = "Neutrals"
     elif charge > 0:
         group = "Cations"
-    elif charge < 0:
+    else:
         group = "Anions"
     return group
 

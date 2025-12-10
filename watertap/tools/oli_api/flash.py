@@ -55,6 +55,7 @@ from pathlib import Path
 from copy import deepcopy
 from itertools import product
 
+from watertap.custom_exceptions import FrozenPipes
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_name,
     get_charge,
@@ -697,6 +698,8 @@ class Flash:
             ]
             missing_args = _check_args(args)
             not_floats = _check_floats(args)
+        else:
+            raise FrozenPipes(f"Unsupported flow_type: {flow_type}")
         if missing_args:
             raise RuntimeError(
                 f"Missing argument(s) for {flash_method}: {missing_args}"

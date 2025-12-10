@@ -230,6 +230,7 @@ def build(
     else:
         m.fs.concentrated_dye = Product(property_package=m.fs.prop_nf)
 
+    # pylint: disable=possibly-used-before-assignment
     # pretreatment
     if hasattr(m.fs, "pretreatment"):
         prtrt.wwtp = SecondaryTreatmentWWTPZO(

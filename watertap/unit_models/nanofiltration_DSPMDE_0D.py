@@ -80,6 +80,7 @@ class ConcentrationPolarizationType(Enum):
     calculated = auto()
 
 
+# pylint: disable=possibly-used-before-assignment
 @declare_process_block_class("NanofiltrationDSPMDE0D")
 class NanofiltrationData(InitializationMixin, UnitModelBlockData):
     """
