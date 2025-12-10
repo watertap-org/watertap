@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -62,6 +62,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.custom_exceptions import FrozenPipes
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -1058,6 +1059,10 @@ class WaterStateBlockData(StateBlockData):
                     1 - t / (b.params.therm_cond_phase_param_7)
                 ) ** (
                     1 / 3
+                )
+            else:
+                raise FrozenPipes(
+                    f"Index '{p}' is not valid for indexed component 'fs.stream[0].therm_cond_phase"
                 )
             return (
                 b.therm_cond_phase[p]
