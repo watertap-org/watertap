@@ -95,8 +95,7 @@ def test_against_paper_analysis(csv_file, row_index):
             has_calculated_ro_pressure_drop=True,
             A_value=5 / 3.6e11,
             B_max=None,
-            number_of_RO_finite_elements=10,
-            quick_start=True
+            number_of_RO_finite_elements=10
         )
     except ValueError:
         results = None

@@ -19,7 +19,37 @@ from parameter_sweep import LinearSample, parameter_sweep
 from watertap.flowsheets.lsrro import lsrro
 
 
-def run_case(number_of_stages, nx, output_filename=None, quick_start=False):
+def _lsrro_presweep(
+    number_of_stages=2,
+    A_value=5 / 3.6e11,
+    permeate_quality_limit=1000e-6,
+    has_CP=True,
+    quick_start=False,
+):
+    m = lsrro.build(
+        number_of_stages=number_of_stages,
+        has_NaCl_solubility_limit=True,
+        has_calculated_concentration_polarization=has_CP,
+        has_calculated_ro_pressure_drop=True,
+    )
+    lsrro.set_operating_conditions(m)
+    if not quick_start:
+        lsrro.initialize(m)
+    lsrro.solve(m)
+    m.fs.feed.flow_mass_phase_comp.unfix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
+    lsrro.optimize_set_up(
+        m,
+        set_default_bounds_on_module_dimensions=True,
+        A_value=A_value,
+        permeate_quality_limit=permeate_quality_limit,
+    )
+
+    return m
+
+
+def run_case(number_of_stages, nx, output_filename=None):
     """
     Run the parameter sweep tool on the LSRRO flowsheet, sweeping over feed
     concentration from 5 to 250 kg/m^3 and water recovery from 30% to 90%.
@@ -49,9 +79,7 @@ def run_case(number_of_stages, nx, output_filename=None, quick_start=False):
     sweep_params = {}
     outputs = {}
 
-    m = lsrro._lsrro_presweep(
-        number_of_stages=number_of_stages, quick_start=quick_start
-    )
+    m = _lsrro_presweep(number_of_stages=number_of_stages)
 
     # Sweep parameters ------------------------------------------------------------------------
 
