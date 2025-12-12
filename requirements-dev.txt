@@ -4,9 +4,9 @@ pre-commit
 # coverage
 pytest-cov
 
-# TODO pin exact version for pylint and astroid
-pylint<3
-astroid
+# pylint and astroid should be pinned to exact versions
+pylint==3.3.9
+astroid==3.3.11
 
 # docs
 sphinx==7.1.*
