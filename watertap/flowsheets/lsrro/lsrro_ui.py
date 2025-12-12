@@ -128,7 +128,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed conditions
     exports.add(
         obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
+        name="Feed volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hour,
         display_units="m3/hr",
         rounding=2,
@@ -139,7 +139,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Feed NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=2,
@@ -189,7 +189,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         name = f"Stage {idx}"
         exports.add(
             obj=stage.A_comp[0, "H2O"],
-            name=f"Stage {idx} water permeability coefficient",
+            name=f"RO Stage {idx} water permeability coefficient",
             ui_units=pyunits.L / pyunits.hr / pyunits.m**2 / pyunits.bar,
             display_units="LMH/bar",
             rounding=2,
@@ -200,7 +200,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         )
         exports.add(
             obj=stage.B_comp[0, "NaCl"],
-            name=f"Stage {idx} salt permeability coefficient",
+            name=f"RO Stage {idx} salt permeability coefficient",
             ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
             display_units="LMH",
             rounding=2,
@@ -211,7 +211,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         )
         exports.add(
             obj=stage.area,
-            name=f"Stage {idx} membrane area",
+            name=f"RO Stage {idx} membrane area",
             ui_units=pyunits.m**2,
             display_units="m2",
             rounding=2,
@@ -223,7 +223,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         )
         exports.add(
             obj=stage.width,
-            name=f"Stage {idx} width",
+            name=f"RO Stage {idx} width",
             ui_units=pyunits.m,
             display_units="m",
             rounding=2,
@@ -234,7 +234,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         )
         exports.add(
             obj=stage.mixed_permeate[0].pressure,
-            name=f"Stage {idx} permeate pressure",
+            name=f"RO Stage {idx} permeate pressure",
             ui_units=pyunits.bar,
             display_units="bar",
             rounding=1,
@@ -249,7 +249,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ):
             exports.add(
                 obj=stage.feed_side.channel_height,
-                name=f"Stage {idx} channel height",
+                name=f"RO Stage {idx} channel height",
                 ui_units=pyunits.mm,
                 display_units="mm",
                 rounding=1,
@@ -260,7 +260,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             )
             exports.add(
                 obj=stage.feed_side.spacer_porosity,
-                name=f"Stage {idx} space porosity",
+                name=f"RO Stage {idx} space porosity",
                 ui_units=pyunits.dimensionless,
                 display_units="fraction",
                 rounding=2,
@@ -340,7 +340,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.costing.reverse_osmosis.factor_membrane_replacement,
-        name="Membrane replacement factor",
+        name="RO membrane replacement factor",
         ui_units=pyunits.yr**-1,
         display_units="1/yr",
         rounding=3,
@@ -351,7 +351,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.costing.reverse_osmosis.membrane_cost,
-        name="Membrane cost",
+        name="RO membrane cost",
         ui_units=pyunits.USD_2018 / (pyunits.m**2),
         display_units="$/m2",
         rounding=3,
@@ -362,7 +362,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.costing.reverse_osmosis.high_pressure_membrane_cost,
-        name="High pressure membrane cost",
+        name="High pressure RO membrane cost",
         ui_units=pyunits.USD_2018 / (pyunits.m**2),
         display_units="$/m2",
         rounding=3,
@@ -436,7 +436,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Product
     exports.add(
         obj=fs.product.properties[0].flow_vol,
-        name="Volumetric flow rate",
+        name="Product volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
@@ -447,7 +447,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Product NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
@@ -460,7 +460,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Disposal
     exports.add(
         obj=fs.disposal.properties[0].flow_vol,
-        name="Volumetric flow rate",
+        name="Disposal volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
@@ -471,7 +471,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Disposal NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
