@@ -1,0 +1,72 @@
+diff_param_loop:
+  pump_pressure:
+    diff_mode: percentile
+    diff_sample_type: UniformSample
+    param: fs.sense_manager.pump_pressure
+    relative_lb: -0.01
+    relative_ub: -0.01
+    nominal_lb: 7500000.0
+    nominal_ub: 7500000.0
+    num_samples: 1
+  a_value:
+    diff_mode: percentile
+    diff_sample_type: UniformSample
+    param: fs.sense_manager.a_value
+    relative_lb: -0.01
+    relative_ub: -0.01
+    nominal_lb: 4.2e-12
+    nominal_ub: 4.2e-12
+    num_samples: 1
+  lsrro_membrane_cost:
+    diff_mode: percentile
+    diff_sample_type: UniformSample
+    param: fs.sense_manager.lsrro_membrane_cost
+    relative_lb: -0.01
+    relative_ub: -0.01
+    nominal_lb: 50
+    nominal_ub: 50
+    num_samples: 1
+  pump_cost:
+    diff_mode: percentile
+    diff_sample_type: UniformSample
+    param: fs.sense_manager.pump_cost
+    relative_lb: -0.01
+    relative_ub: -0.01
+    nominal_lb: 1.908
+    nominal_ub: 1.908
+    num_samples: 1
+  pump_efficiency:
+    diff_mode: percentile
+    diff_sample_type: UniformSample
+    param: fs.sense_manager.pump_efficiency
+    relative_lb: -0.01
+    relative_ub: -0.01
+    nominal_lb: 0.75
+    nominal_ub: 0.75
+    num_samples: 1
+  sweep_reference_params:
+    pump_pressure:
+      type: UniformSample
+      param: fs.sense_manager.pump_pressure
+      lower_limit: 7500000.0
+      upper_limit: 7500000.0
+    a_value:
+      type: UniformSample
+      param: fs.sense_manager.a_value
+      lower_limit: 4.2e-12
+      upper_limit: 4.2e-12
+    lsrro_membrane_cost:
+      type: UniformSample
+      param: fs.sense_manager.lsrro_membrane_cost
+      lower_limit: 50
+      upper_limit: 50
+    pump_cost:
+      type: UniformSample
+      param: fs.sense_manager.pump_cost
+      lower_limit: 1.908
+      upper_limit: 1.908
+    pump_efficiency:
+      type: UniformSample
+      param: fs.sense_manager.pump_efficiency
+      lower_limit: 0.75
+      upper_limit: 0.75
