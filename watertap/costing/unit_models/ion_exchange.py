@@ -20,7 +20,7 @@ from ..util import (
 
 def build_hcl_cost_param_block(blk):
 
-    blk.cost = pyo.Param(
+    blk.HCl_cost = pyo.Param(
         mutable=True,
         initialize=0.17,
         doc="HCl cost",  # for 37% sol'n - CatCost v 1.0.4
@@ -34,12 +34,12 @@ def build_hcl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("HCl", blk.cost / blk.purity)
+    costing.register_flow_type("HCl", blk.HCl_cost / blk.purity)
 
 
 def build_naoh_cost_param_block(blk):
 
-    blk.cost = pyo.Param(
+    blk.NaOH_cost = pyo.Param(
         mutable=True,
         initialize=0.59,
         doc="NaOH cost",  # for 30% sol'n - iDST
@@ -54,12 +54,12 @@ def build_naoh_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("NaOH", blk.cost / blk.purity)
+    costing.register_flow_type("NaOH", blk.NaOH_cost / blk.purity)
 
 
 def build_meoh_cost_param_block(blk):
     # MeOH = Methanol
-    blk.cost = pyo.Param(
+    blk.MeOH_cost = pyo.Param(
         mutable=True,
         initialize=3.395,
         doc="MeOH cost",  # for 100% purity - ICIS
@@ -74,12 +74,12 @@ def build_meoh_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("MeOH", blk.cost / blk.purity)
+    costing.register_flow_type("MeOH", blk.MeOH_cost / blk.purity)
 
 
 def build_nacl_cost_param_block(blk):
 
-    blk.cost = pyo.Param(
+    blk.NaCl_cost = pyo.Param(
         mutable=True,
         initialize=0.09,
         doc="NaCl cost",  # for solid, 100% purity - CatCost
@@ -94,7 +94,7 @@ def build_nacl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("NaCl", blk.cost / blk.purity)
+    costing.register_flow_type("NaCl", blk.NaCl_cost / blk.purity)
 
 
 def build_ion_exhange_cost_param_block(blk):
