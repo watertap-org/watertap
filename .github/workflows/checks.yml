@@ -275,3 +275,19 @@ jobs:
     - name: Run pytest with nbmake
       run: |
         pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
+    - name: Clone watertap-academy repository
+      uses: actions/checkout@v4
+      with:
+        repository: watertap-org/watertap-academy
+        path: watertap-academy
+    
+    - name: Install academy kernel
+      run: |
+        jupyter kernelspec list
+        python -m ipykernel install --user --name "watertap-academy"
+        jupyter kernelspec list
+
+    - name: Run pytest on academy notebooks
+      run: |
+        cd watertap-academy
+        pytest --nbmake --nbmake-kernel="watertap-academy" **/*.ipynb
