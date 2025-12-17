@@ -37,9 +37,13 @@ def copy_state(old_model, new_model):
 
 
 def register_costed_unit(
-    mp, unit, costing_method_arguments={}, register_electricity_flow_only=False
+    mp,
+    unit,
+    costing_method_arguments={},
+    register_electricity_cost=True,
+    register_capital_cost=True,
 ):
-    if register_electricity_flow_only:
+    if register_electricity_cost:
         lb = unit.work_mechanical[0.0].lb
         # set lower bound to 0 to avoid negative defined flow warning when lb is not >= 0
         unit.work_mechanical.setlb(0)
@@ -49,7 +53,7 @@ def register_costed_unit(
         )
         # set lower bound back to its original value that was assigned to lb
         unit.work_mechanical.setlb(lb)
-    else:
+    if register_capital_cost:
         unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mp.costing,
             costing_method_arguments=costing_method_arguments,

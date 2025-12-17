@@ -13,6 +13,7 @@ def main():
         save_name="ccro_brine_sweep",
         saving_dir=get_working_dir(),
         number_of_subprocesses=1,
+        num_loop_workers=1,
     )
 
 

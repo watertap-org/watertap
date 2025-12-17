@@ -65,6 +65,8 @@ from watertap.flowsheets.ccro.ccro_flowsheet_functions import (
     operating_conditions as ccro_operating_conditions,
 )
 
+import watertap.flowsheets.ccro.utils.ipoptv2 as ipt2
+
 
 def create_ccro_multiperiod(
     n_time_points=10, include_costing=True, cc_configuration=None
@@ -106,19 +108,49 @@ def create_ccro_multiperiod(
         for t, m in enumerate(mp.get_active_process_blocks(), 1):
             if t == 1:
                 cc_utils.register_costed_unit(
-                    mp, m.fs.P1, register_electricity_flow_only=True
+                    mp,
+                    m.fs.P1,
+                    register_electricity_cost=True,
+                    register_capital_cost=False,
                 )
-                cc_utils.register_costed_unit(mp, m.fs.RO)
+                cc_utils.register_costed_unit(
+                    mp,
+                    m.fs.P2,
+                    register_electricity_cost=True,
+                    register_capital_cost=False,
+                )
+                cc_utils.register_costed_unit(
+                    mp,
+                    m.fs.RO,
+                    register_electricity_cost=False,
+                    register_capital_cost=True,
+                )
             elif t == n_time_points - 1:
-                cc_utils.register_costed_unit(mp, m.fs.P2)
-                cc_utils.register_costed_unit(mp, m.fs.P1)
+                cc_utils.register_costed_unit(
+                    mp,
+                    m.fs.P2,
+                    register_electricity_cost=True,
+                    register_capital_cost=True,
+                )
+                cc_utils.register_costed_unit(
+                    mp,
+                    m.fs.P1,
+                    register_electricity_cost=True,
+                    register_capital_cost=True,
+                )
             # Last time period is flushing
             elif t == n_time_points:
                 cc_utils.register_costed_unit(
-                    mp, m.fs.P2, register_electricity_flow_only=True
+                    mp,
+                    m.fs.P2,
+                    register_electricity_cost=True,
+                    register_capital_cost=False,
                 )
                 cc_utils.register_costed_unit(
-                    mp, m.fs.P1, register_electricity_flow_only=True
+                    mp,
+                    m.fs.P1,
+                    register_electricity_cost=True,
+                    register_capital_cost=False,
                 )
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
         if t == 1:
@@ -175,8 +207,10 @@ def create_ccro_multiperiod(
         old_m = m
 
     print("--- Completed sequential initialization ---")
-    ccro_mp_constraints.add_multiperiod_variables(mp)
-    ccro_mp_constraints.add_multiperiod_constraints(mp)
+    ccro_mp_constraints.add_multiperiod_variables(mp, cc_configuration=cc_configuration)
+    ccro_mp_constraints.add_multiperiod_constraints(
+        mp, cc_configuration=cc_configuration
+    )
 
     if include_costing:
         print("Adding costing")
@@ -241,7 +275,7 @@ def build_ccro_system(time_blk=None, operation_mode=None):
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
-            finite_elements=4,
+            finite_elements=10,
             module_type="spiral_wound",
             has_full_reporting=True,
         )
@@ -359,8 +393,14 @@ def initialize_system(m, **kwargs):
         m.fs.flushing.mean_residence_time.fix()
 
         m.fs.flushing.flushing_time.unfix()
+        m.fs.flushing.flushing_time = value(m.fs.flushing.mean_residence_time)
         m.fs.flushing.pre_flushing_concentration.fix()
+        m.fs.flushing.post_flushing_concentration.fix(
+            value(m.fs.flushing.pre_flushing_concentration)
+        )
+        m.fs.flushing.post_flushing_concentration.unfix()
         m.fs.flushing.flushing_efficiency.fix()
+        m.fs.flushing.display()
         m.fs.flushing.initialize()
 
     return m
@@ -402,10 +442,27 @@ def get_variable_pairs(t1, t2):
     ]
 
 
-def solve(model=None, solver=None, tee=True, raise_on_failure=True):
+def solve(
+    model=None,
+    solver=None,
+    tee=True,
+    raise_on_failure=True,
+    use_ipoptv2=False,
+):
     # ---solving---
-    if solver is None:
+    if solver is None and use_ipoptv2 == False:
         solver = get_solver()
+    elif solver is None and use_ipoptv2:
+
+        solver = ipt2.get_solver()
+        # for constraint in model.component_data_objects(Constraint, active=True):
+        #     sc = iscale.get_constraint_transform_applied_scaling_factor(constraint)
+        #     if sc is not None:
+        #         print(f"Constraint: {constraint.name}, Scaling: {sc}")
+        #         iscale.constraint_scaling_transform_undo(constraint)
+        #         iscale.set_scaling_factor(constraint, sc)
+        # else:
+        #     print(f"Constraint: {constraint.name}, No scaling factor found")
 
     print("\n--------- SOLVING ---------\n")
     print(f"Degrees of Freedom: {degrees_of_freedom(model)}")
@@ -564,6 +621,7 @@ def print_results_table(mp, w=15):
             sp_recovery = blks.fs.RO.recovery_vol_phase[0.0, "Liq"].value
 
         if blks.fs.operation_mode == "flushing":
+
             mixer_out = value(
                 pyunits.convert(
                     blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
@@ -689,19 +747,30 @@ def print_results_table(mp, w=15):
 
 
 if __name__ == "__main__":
+    from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+
     cc_config = CCROConfiguration()
-    cc_config["raw_feed_conc"] = 5 * pyunits.g / pyunits.L
+    cc_config["raw_feed_conc"] = 35 * pyunits.g / pyunits.L
+
+    cc_config["accumulation_time"] = 1 * pyunits.second
     mp = create_ccro_multiperiod(
-        n_time_points=5, include_costing=True, cc_configuration=cc_config
+        n_time_points=51,
+        include_costing=True,
+        cc_configuration=cc_config,
     )
     setup_optimization(
         mp,
-        overall_water_recovery=0.8,
+        overall_water_recovery=0.5,
         max_cycle_time_hr=1,
         recycle_flow_bounds=(0.1, 100),
     )
 
-    results = solve(mp)
+    db = DiagnosticsToolbox(mp)
+    db.display_constraints_with_large_residuals()
+    # assert False
+    results = solve(mp, use_ipoptv2=False)
+    mp.overall_recovery.fix(0.55)
+    results = solve(mp, use_ipoptv2=False)
     print_results_table(mp, w=16)
     blks = list(mp.get_active_process_blocks())
     blks[0].fs.raw_feed.properties[0].display()

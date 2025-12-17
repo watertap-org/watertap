@@ -14,7 +14,7 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import idaes.core.util.scaling as iscale
 
 
-def add_multiperiod_variables(mp):
+def add_multiperiod_variables(mp, cc_configuration=None):
     """
     Add variables to the multiperiod model.
     """
@@ -35,9 +35,7 @@ def add_multiperiod_variables(mp):
     iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
 
     mp.dead_volume_to_area_multiplier.fix(1)
-    mp.dead_volume_to_area_ratio.fix(
-        value(1 * pyunits.m * (3.14 * 0.1016**2) * pyunits.m**2 / (7.2 * pyunits.m**2))
-    )
+    mp.dead_volume_to_area_ratio.fix(cc_configuration["dead_volume_to_area_ratio"])
 
     # Permeate and feed
     mp.overall_recovery = Var(
@@ -113,7 +111,7 @@ def add_multiperiod_variables(mp):
     )
 
 
-def add_multiperiod_constraints(mp):
+def add_multiperiod_constraints(mp, cc_configuration=None):
     """
     Add constraints to the multiperiod model.
     """

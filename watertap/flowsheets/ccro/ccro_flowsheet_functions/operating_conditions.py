@@ -38,8 +38,18 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
         solver.solve(m.fs.raw_feed)
         # Dead Volume operating conditions
         # Fix volume
-        m.fs.dead_volume.volume.fix(cc_configuration["dead_volume"])
-        m.fs.dead_volume.delta_state.volume.fix(cc_configuration["dead_volume"])
+        if cc_configuration["dead_volume"] == "base_on_dead_volume_to_area_ratio":
+            dead_volume = (
+                cc_configuration["dead_volume_to_area_ratio"]
+                * cc_configuration["membrane_area"]
+            )
+            print(f"Dead Volume set to {dead_volume}")
+        else:
+            dead_volume = cc_configuration["dead_volume"] = cc_configuration[
+                "dead_volume"
+            ]
+        m.fs.dead_volume.volume.fix(dead_volume)
+        m.fs.dead_volume.delta_state.volume.fix(dead_volume)
 
         m.fs.dead_volume.accumulation_time.fix(cc_configuration["accumulation_time"])
 
@@ -145,8 +155,17 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
 
         # Dead Volume operating conditions
         # Fix volume
-        m.fs.dead_volume.volume.fix(cc_configuration["dead_volume"])
-        m.fs.dead_volume.delta_state.volume.fix(cc_configuration["dead_volume"])
+        if cc_configuration["dead_volume"] == "base_on_dead_volume_to_area_ratio":
+            dead_volume = (
+                cc_configuration["dead_volume_to_area_ratio"]
+                * cc_configuration["membrane_area"]
+            )
+        else:
+            dead_volume = cc_configuration["dead_volume"] = cc_configuration[
+                "dead_volume"
+            ]
+        m.fs.dead_volume.volume.fix(dead_volume)
+        m.fs.dead_volume.delta_state.volume.fix(dead_volume)
         m.fs.dead_volume.accumulation_time.fix(cc_configuration["accumulation_time"])
         m.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"].fix()
         m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].fix()

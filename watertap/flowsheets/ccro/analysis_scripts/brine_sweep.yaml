@@ -1,35 +1,37 @@
-# ccro_sweep_brackish:
+# mesh_study_BGW:
 #   build_defaults:
-#     n_points: 11
 #     feed_tds: 5
-#   sweep_param_loop:
-#     final_concentration:
-#       type: LinearSample
-#       param: final_concentration
-#       lower_limit: 10
-#       upper_limit: 80
-#       num_samples: 13
-
-ccro_sweep_brackish_recovery:
-  build_defaults:
-    time_steps: 11
-    feed_tds: 5
-  sweep_param_loop:
-    overall_recovery:
-      type: LinearSample
-      param: overall_recovery
-      lower_limit: 0.5
-      upper_limit: 0.95
-      num_samples: 10
-# ccro_sweep_sw:
-#   build_defaults:
-#     n_points: 6
-#     feed_tds: 35
-#   sweep_param_loop:
-#     salinity_map:   
+#   build_loop:
+#     time_steps:
+#       - 11
+#       - 21
+#       - 51
+#       - 101
+#       - 201
+#       - 501
+#     sweep_param_loop:
 #       final_concentration:
 #         type: LinearSample
-#         param: fs.final_concentration
-#         lower_limit: 50
-#         upper_limit: 80
-#         num_samples: 7
+#         param: overall_recovery
+#         lower_limit: 0.5
+#         upper_limit: 0.9
+#         num_samples: 5
+
+mesh_study_SW:
+  build_defaults:
+    feed_tds: 35
+  build_loop:
+    time_steps:
+      - 11
+      - 21
+      - 51
+      - 101
+      - 201
+      # - 501
+    sweep_param_loop:
+      final_concentration:
+        type: LinearSample
+        param: overall_recovery
+        lower_limit: 0.4
+        upper_limit: 0.7
+        num_samples: 5

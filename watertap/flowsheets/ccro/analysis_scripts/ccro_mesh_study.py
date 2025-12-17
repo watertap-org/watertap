@@ -17,7 +17,7 @@ def get_sequence(data_manager, dir, key, time_periods):
 if __name__ == "__main__":
     data_manager = psDataManager(
         [
-            "output/ccro_brine_sweep_analysisType_ccro_sweep_brackish_recovery.h5",
+            "output/ccro_brine_sweep_analysisType_mesh_study_BGW.h5",
         ]
     )
     import_keys = [
@@ -32,7 +32,7 @@ if __name__ == "__main__":
             "units": "g/L",
         },
         {
-            "filekey": "blocks[0].process.fs.costing.LCOW",
+            "filekey": "costing.LCOW",
             "return_key": "LCOW",
         },
         {
@@ -40,11 +40,23 @@ if __name__ == "__main__":
             "return_key": "RO area",
         },
         {
+            "filekey": f"blocks[0].process.fs.RO.length",
+            "return_key": "RO length",
+        },
+        {
+            "filekey": f"blocks[0].process.fs.RO.width",
+            "return_key": "RO width",
+        },
+        {
+            "filekey": f"blocks[0].process.fs.RO.feed_side.velocity[0.0,0.0]",
+            "return_key": "RO inlet velocity",
+        },
+        {
             "filekey": f"blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
             "return_key": "Recycle flow",
         },
     ]
-    time_periods = range(200)
+    time_periods = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     for t in time_periods:
         import_keys.append(
@@ -65,6 +77,13 @@ if __name__ == "__main__":
                 "return_key": (t, "RO pressure"),
             }
         )
+        import_keys.append(
+            {
+                "filekey": f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
+                "return_key": (t, "RO SP"),
+            }
+        )
+
         # import_keys.append(
         #     {
         #         "filekey": f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,0.0].pressure",
@@ -77,73 +96,156 @@ if __name__ == "__main__":
 
     fig = figureGenerator()
     fig.init_figure()
-    fig.plot_line(
-        data_manager[
-            "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-        ].data,
-        data_manager["ccro_sweep_brackish_recovery/overall_recovery", "LCOW"].data,
-        color="black",
-    )
+    for ts in [11, 51, 101, 201]:
+        fig.plot_line(
+            data_manager[("time_steps", ts), "Water recovery"].data,
+            data_manager[("time_steps", ts), "LCOW"].data,
+            label=f"Time steps: {ts}",
+        )
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="LCOW ($\$$/m$^3$)",
         xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3],
+        yticks=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
     )
+    fig.add_legend()
     # fig.show()
     fig.save(file_name="lcow", save_location="figs")
+    # assert False
     fig = figureGenerator()
     fig.init_figure()
-    data_manager[
-        "ccro_sweep_brackish_recovery/overall_recovery", "Recycle flow"
-    ].to_units("L/min")
-    fig.plot_line(
-        data_manager[
-            "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-        ].data,
-        data_manager[
-            "ccro_sweep_brackish_recovery/overall_recovery", "Recycle flow"
-        ].data,
-        color="black",
-    )
+    for ts in [11, 51, 101, 201]:
+        data_manager[("time_steps", ts), "Recycle flow"].to_units("L/min")
+        fig.plot_line(
+            data_manager[("time_steps", ts), "Water recovery"].data,
+            data_manager[("time_steps", ts), "Recycle flow"].data,
+            label=f"Time steps: {ts}",
+        )
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="Recycle flow rate (L/min)",
         xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 10, 20, 30],
+        yticks=[0, 1000, 2000, 3000, 4000],
     )
+    fig.add_legend()
     # fig.show()
     fig.save(file_name="Recycle", save_location="figs")
-    fig.show()
-    assert False
+
     fig = figureGenerator()
     fig.init_figure()
-    # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
-    #     "l/hr"
-    # )
-    fig.plot_line(
-        data_manager[
-            "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-        ].data,
-        data_manager["ccro_sweep_brackish_recovery/overall_recovery", "RO area"].data,
-        color="black",
-    )
+    for ts in [11, 51, 101, 201]:
+        # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
+        #     "l/hr"
+        # )
+        fig.plot_line(
+            data_manager[("time_steps", ts), "Water recovery"].data,
+            data_manager[("time_steps", ts), "RO area"].data,
+            label=f"Time steps: {ts}",
+        )
+    fig.add_legend()
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="Area (m$^2$)",
         xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 10, 20, 30, 40],
+        yticks=[0, 50, 100, 150, 200, 250],
     )
     # fig.show()
     fig.save(file_name="Area", save_location="figs")
+    # assert False
 
-    d = get_sequence(
-        data_manager,
-        "ccro_sweep_brackish_recovery/overall_recovery",
-        "RO feed TDS",
-        time_periods,
+    fig = figureGenerator()
+    fig.init_figure()
+    for ts in [11, 51, 101, 201]:
+        # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
+        #     "l/hr"
+        # )
+        fig.plot_line(
+            data_manager[("time_steps", ts), "Water recovery"].data,
+            data_manager[("time_steps", ts), "RO length"].data,
+            label=f"Time steps: {ts}",
+        )
+    fig.add_legend()
+    fig.set_axis(
+        xlabel="Water recovery (%)",
+        ylabel="Length (m)",
+        xticks=[50, 60, 70, 80, 90],
+        yticks=[0, 2, 4, 6, 8, 10],
     )
+    # fig.show()
+    fig.save(file_name="Length", save_location="figs")
 
+    fig = figureGenerator()
+    fig.init_figure()
+    for ts in [11, 51, 101, 201]:
+        # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
+        #     "l/hr"
+        # )
+        fig.plot_line(
+            data_manager[("time_steps", ts), "Water recovery"].data,
+            data_manager[("time_steps", ts), "RO width"].data,
+            label=f"Time steps: {ts}",
+        )
+    fig.add_legend()
+    fig.set_axis(
+        xlabel="Water recovery (%)",
+        ylabel="width (m)",
+        xticks=[50, 60, 70, 80, 90],
+        yticks=[0, 200, 400, 600, 800, 1000],
+    )
+    # fig.show()
+    fig.save(file_name="Width", save_location="figs")
+    fig = figureGenerator()
+    fig.init_figure()
+
+    # assert False
+    for ts in [11, 51, 101, 201]:
+
+        d = get_sequence(
+            data_manager,
+            ("time_steps", ts),
+            "RO SP",
+            time_periods,
+        )
+        print(np.average(d, axis=1))
+        fig.plot_line(
+            data_manager[("time_steps", ts), "Water recovery"].data,
+            np.average(d, axis=1) * 100,
+            label=f"Time steps: {ts}",
+        )
+    fig.add_legend()
+    fig.set_axis(
+        xlabel="Water recovery (%)",
+        ylabel="RO Single Pass Recovery (%)",
+        xticks=[50, 60, 70, 80, 90],
+        yticks=[0, 20, 40, 60, 80, 100],
+    )
+    fig.save(file_name="RO SP", save_location="figs")
+
+    fig = figureGenerator()
+    fig.init_figure()
+
+    # assert False
+    for ts in [11, 51, 101, 201]:
+
+        residence_time = (
+            data_manager[("time_steps", ts), "RO length"].data
+            / data_manager[("time_steps", ts), "RO inlet velocity"].data
+        )
+        fig.plot_line(
+            data_manager[("time_steps", ts), "Water recovery"].data,
+            residence_time,
+            label=f"Time steps: {ts}",
+        )
+    fig.add_legend()
+    fig.set_axis(
+        xlabel="Water recovery (%)",
+        ylabel="Residence Time (s)",
+        xticks=[50, 60, 70, 80, 90],
+        yticks=[0, 20, 40, 60],
+    )
+    fig.show()
+    fig.save(file_name="RO residence time", save_location="figs")
+    assert False
     fig = figureGenerator()
     fig.init_figure()
     map_object = fig.gen_colormap(num_samples=14)
@@ -181,7 +283,7 @@ if __name__ == "__main__":
         xticks=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         yticks=[0, 20, 40, 60, 80, 100],
     )
-    # fig.show()
+    fig.show()
     fig.save(file_name="feed tds", save_location="figs")
 
     d = get_sequence(

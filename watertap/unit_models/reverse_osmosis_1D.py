@@ -36,6 +36,8 @@ from watertap.core.membrane_channel1d import CONFIG_Template
 from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
+    _add_custom_feed_side_mass_transfer_term,
+    _add_delay_build,
 )
 
 __author__ = "Adam Atia, Bernard Knueven"
@@ -51,6 +53,9 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
     CONFIG = CONFIG_Template()
 
     _add_has_full_reporting(CONFIG)
+
+    _add_custom_feed_side_mass_transfer_term(CONFIG)
+    _add_delay_build(CONFIG)
 
     def _process_config(self):
         if self.config.transformation_method is useDefault:

@@ -24,8 +24,12 @@ class CCROConfiguration(dict):
             membrane_area=500 * pyunits.meter**2,  # m2
             channel_height=0.001 * pyunits.meter,  # m
             spacer_porosity=0.9 * pyunits.dimensionless,
-            dead_volume=0.035564 * pyunits.meter**3,  # m3
+            dead_volume="base_on_dead_volume_to_area_ratio",  # m3
             accumulation_time=10 * pyunits.second,
+            dead_volume_to_area_ratio=value(
+                1 * pyunits.m * (3.14 * 0.1016**2) * pyunits.m**2 / (7.2 * pyunits.m**2)
+            )
+            * pyunits.m,
         )  # s
         self.update(self.default_config)
         self.display()
