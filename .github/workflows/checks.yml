@@ -70,160 +70,160 @@ jobs:
         run: |
           pylint watertap
 
-  # tests:
-  #   name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
-  #   runs-on: ${{ matrix.os-version }}
-  #   needs: [code-formatting]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       python-version:
-  #         - '3.9'
-  #         - '3.10'
-  #         - '3.11'
-  #       os:
-  #         - linux
-  #         - win64
-  #         # - macos
-  #       include:
-  #         - os: linux
-  #           os-version: ubuntu-22.04
-  #         - os: win64
-  #           os-version: windows-2022
-  #         # - os: macos
-  #         #   os-version: macos-10.15
-  #         - python-version: '3.10'
-  #           # limit uploading coverage report for a single Python version in the matrix
-  #           coverage: true
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - name: Set up Python ${{ matrix.python-version }}
-  #     uses: conda-incubator/setup-miniconda@v3
-  #     with:
-  #       activate-environment: watertap-dev
-  #       python-version: ${{ matrix.python-version }}
-  #       miniforge-version: latest
-  #   - name: Install dependencies
-  #     run: |
-  #       echo '::group::Output of "conda install" commands'
-  #       conda install --quiet --yes pip setuptools wheel pandoc
-  #       echo '::endgroup::'
-  #       echo '::group::Output of "pip install" commands'
-  #       pip install -r requirements-dev.txt
-  #       echo '::endgroup::'
-  #       echo '::group::Output of "conda install -c conda-forge cyipopt" command'
-  #       conda install -c conda-forge cyipopt
-  #       echo '::endgroup::'
-  #       echo '::group::Display installed packages'
-  #       conda list
-  #       pip list
-  #       pip show idaes-pse
-  #       echo '::endgroup::'
-  #       echo '::group::Output of "idaes get-extensions" command'
-  #       idaes get-extensions --extra petsc --verbose
-  #       echo '::endgroup::'
-  #   - name: Add coverage report pytest options
-  #     if: matrix.coverage
-  #     run:
-  #       |
-  #       echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> $GITHUB_ENV
-  #   - name: Test with pytest
-  #     run: |
-  #       pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets
-  #   - name: Upload coverage report as job artifact
-  #     if: matrix.coverage
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: coverage-report-${{ matrix.os }}
-  #       path: coverage.xml
-  #       if-no-files-found: error
-  #   - name: Test documentation code
-  #     run: |
-  #       make -C docs doctest -d
-  #   # TODO: this should be moved to a dedicated job/workflow
-  #   # until then, we can leave this here as a reminder
-  #   - name: Test documentation links
-  #     if: 'false'
-  #     run: |
-  #       make -C docs linkcheck -d
+  tests:
+    name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.9'
+          - '3.10'
+          - '3.11'
+        os:
+          - linux
+          - win64
+          # - macos
+        include:
+          - os: linux
+            os-version: ubuntu-22.04
+          - os: win64
+            os-version: windows-2022
+          # - os: macos
+          #   os-version: macos-10.15
+          - python-version: '3.10'
+            # limit uploading coverage report for a single Python version in the matrix
+            coverage: true
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: watertap-dev
+        python-version: ${{ matrix.python-version }}
+        miniforge-version: latest
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip setuptools wheel pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Output of "conda install -c conda-forge cyipopt" command'
+        conda install -c conda-forge cyipopt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Add coverage report pytest options
+      if: matrix.coverage
+      run:
+        |
+        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> $GITHUB_ENV
+    - name: Test with pytest
+      run: |
+        pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets
+    - name: Upload coverage report as job artifact
+      if: matrix.coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ matrix.os }}
+        path: coverage.xml
+        if-no-files-found: error
+    - name: Test documentation code
+      run: |
+        make -C docs doctest -d
+    # TODO: this should be moved to a dedicated job/workflow
+    # until then, we can leave this here as a reminder
+    - name: Test documentation links
+      if: 'false'
+      run: |
+        make -C docs linkcheck -d
 
-  # upload-coverage:
-  #   name: Upload coverage report (Codecov)
-  #   needs: [tests]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     # the checkout step is needed to have access to codecov.yml
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         pattern: coverage-report-*
-  #     - name: Upload coverage report to Codecov
-  #       uses: codecov/codecov-action@v4
-  #       with:
-  #         fail_ci_if_error: true
-  #         verbose: true
-  #         # NOTE: secrets are not available for pull_request workflows
-  #         # However, as of 2024-02-10, Codecov is still allowing tokenless upload from PRs
-  #         # but does require token for other workflows e.g. merge to `main`
-  #         # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
-  #         token: ${{ secrets.CODECOV_TOKEN }}
-  #         # downgrading after v0.7.0 broke tokenless upload
-  #         # see codecov/codecov-action#1487
-  #         version: v0.6.0
+  upload-coverage:
+    name: Upload coverage report (Codecov)
+    needs: [tests]
+    runs-on: ubuntu-latest
+    steps:
+      # the checkout step is needed to have access to codecov.yml
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-report-*
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          verbose: true
+          # NOTE: secrets are not available for pull_request workflows
+          # However, as of 2024-02-10, Codecov is still allowing tokenless upload from PRs
+          # but does require token for other workflows e.g. merge to `main`
+          # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # downgrading after v0.7.0 broke tokenless upload
+          # see codecov/codecov-action#1487
+          version: v0.6.0
 
-  # user-mode-pytest:
-  #   name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
-  #   runs-on: ${{ matrix.os-version }}
-  #   needs: [code-formatting]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       python-version:
-  #         - '3.9'
-  #         - '3.11'
-  #       os:
-  #         - linux
-  #         - win64
-  #       include:
-  #         - os: linux
-  #           os-version: ubuntu-22.04
-  #         - os: win64
-  #           os-version: windows-2022
-  #   steps:
-  #   - name: Set up Python ${{ matrix.python-version }}
-  #     uses: conda-incubator/setup-miniconda@v3
-  #     with:
-  #       activate-environment: watertap
-  #       python-version: ${{ matrix.python-version }}
-  #   - name: Define install URL (default)
-  #     env:
-  #       _repo_full_name: watertap-org/watertap
-  #       _ref_to_install: main
-  #     run: |
-  #       echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
-  #   - name: Define install URL (for PRs)
-  #     if: github.event.pull_request
-  #     env:
-  #       _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
-  #       _ref_to_install: ${{ github.event.pull_request.head.sha }}
-  #     run:
-  #       echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
-  #   - name: Install watertap and testing dependencies
-  #     run: |
-  #       echo '::group::Output of "pip install" commands'
-  #       pip install "watertap @ ${_install_url}" pytest
-  #       echo '::endgroup::'
-  #       echo '::group::Display installed packages'
-  #       conda list
-  #       pip list
-  #       pip show idaes-pse
-  #       echo '::endgroup::'
-  #       echo '::group::Output of "idaes get-extensions" command'
-  #       idaes get-extensions --extra petsc --verbose
-  #       echo '::endgroup::'
-  #   - name: Run pytest
-  #     run: |
-  #       pytest --pyargs watertap
+  user-mode-pytest:
+    name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.9'
+          - '3.11'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-22.04
+          - os: win64
+            os-version: windows-2022
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: watertap
+        python-version: ${{ matrix.python-version }}
+    - name: Define install URL (default)
+      env:
+        _repo_full_name: watertap-org/watertap
+        _ref_to_install: main
+      run: |
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Define install URL (for PRs)
+      if: github.event.pull_request
+      env:
+        _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
+        _ref_to_install: ${{ github.event.pull_request.head.sha }}
+      run:
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Install watertap and testing dependencies
+      run: |
+        echo '::group::Output of "pip install" commands'
+        pip install "watertap @ ${_install_url}" pytest
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Run pytest
+      run: |
+        pytest --pyargs watertap
 
   notebooks:
     name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
