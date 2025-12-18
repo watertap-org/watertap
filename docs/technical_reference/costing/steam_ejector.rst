@@ -33,7 +33,7 @@ Operating Cost Calculations
 
 The only operating cost associated with this steam ejector model is the cost of steam,
 which is a function of the steam cost (on a mass basis), :math:`C_{steam}`, and the
-mass flow of steam, :math:`Q_{steam}, as shown in the equation below:
+mass flow of steam, :math:`Q_{steam}`, as shown in the equation below:
 
     .. math::
 
