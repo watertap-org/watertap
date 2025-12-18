@@ -45,6 +45,9 @@ from watertap.unit_models.reverse_osmosis_1D import (
     ReverseOsmosis1D,
 )
 from watertap.unit_models.pseudo_steady_state import DeadVolume0D
+from watertap.unit_models.pseudo_steady_state.reverse_osmosis_1D_with_holdup import (
+    ReverseOsmosis1DwithHoldUp,
+)
 from watertap.unit_models.pseudo_steady_state.flushing import Flushing
 
 from watertap.costing import (
@@ -69,7 +72,10 @@ import watertap.flowsheets.ccro.utils.ipoptv2 as ipt2
 
 
 def create_ccro_multiperiod(
-    n_time_points=10, include_costing=True, cc_configuration=None
+    n_time_points=10,
+    include_costing=True,
+    cc_configuration=None,
+    use_ro_with_hold_up=False,
 ):
     """
     Create multiperiod model for CCRO system
@@ -96,7 +102,11 @@ def create_ccro_multiperiod(
 
     operation_mode_list = ["filtration"] * (n_time_points - 1) + ["flushing"]
     flowsheet_options = {
-        t: {"time_blk": t, "operation_mode": operation_mode_list[t]}
+        t: {
+            "time_blk": t,
+            "operation_mode": operation_mode_list[t],
+            "use_ro_with_hold_up": use_ro_with_hold_up,
+        }
         for t in range(n_time_points)
     }
 
@@ -160,41 +170,53 @@ def create_ccro_multiperiod(
             )
             old_m = m
         # Last time period is flushing
+
         if t == n_time_points:
-            cc_utils.copy_time_period_links(
-                old_m,
-                m,
-                [
-                    {
-                        "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]',
-                        "new_model_var": 'fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]',
-                    },
-                    {
-                        "new_model_var": 'fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"]',
-                        "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"]',
-                    },
-                ],
-            )
+            base_links = [
+                {
+                    "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]',
+                    "new_model_var": 'fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]',
+                },
+                {
+                    "new_model_var": 'fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"]',
+                    "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"]',
+                },
+            ]
+
+            cc_utils.copy_time_period_links(old_m, m, base_links)
             fix_dof_and_initialize(m, cc_configuration=cc_configuration)
             ccro_operating_conditions.unfix_dof(
                 m, unfix_dead_volume_state=False, cc_configuration=cc_configuration
             )
         else:
+
+            base_links = [
+                {
+                    "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]',
+                    "new_model_var": 'fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]',
+                },
+                {
+                    "new_model_var": 'fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"]',
+                    "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"]',
+                },
+            ]
+            if m.fs.ro_model_with_hold_up:
+                idx = m.fs.RO.difference_elements
+                for i in idx:
+                    base_links.append(
+                        {
+                            "old_model_var": f'fs.RO.feed_side.properties[0, {i}].mass_frac_phase_comp["Liq", "NaCl"]',
+                            "new_model_var": f'fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[0, {i}, "Liq", "NaCl" ]',
+                        },
+                    )
+                    base_links.append(
+                        {
+                            "old_model_var": f'fs.RO.feed_side.properties[0, {i}].dens_mass_phase["Liq"]',
+                            "new_model_var": f'fs.RO.feed_side.delta_state.node_dens_mass_phase[0, {i}, "Liq"]',
+                        },
+                    )
             cc_utils.copy_state(old_m, m)
-            cc_utils.copy_time_period_links(
-                old_m,
-                m,
-                [
-                    {
-                        "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]',
-                        "new_model_var": 'fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]',
-                    },
-                    {
-                        "new_model_var": 'fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"]',
-                        "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"]',
-                    },
-                ],
-            )
+            cc_utils.copy_time_period_links(old_m, m, base_links)
 
         print(f"Period {t} DOF:", degrees_of_freedom(m))
         assert degrees_of_freedom(m) == 0
@@ -227,7 +249,7 @@ def create_ccro_multiperiod(
     return mp
 
 
-def build_ccro_system(time_blk=None, operation_mode=None):
+def build_ccro_system(time_blk=None, operation_mode=None, use_ro_with_hold_up=True):
     """
     Build the CCRO steady state flowsheet
     """
@@ -235,7 +257,7 @@ def build_ccro_system(time_blk=None, operation_mode=None):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.operation_mode = operation_mode
-
+    m.fs.ro_model_with_hold_up = use_ro_with_hold_up
     m.fs.properties = NaClParameterBlock()
 
     # Low concentration feed to the system
@@ -266,19 +288,32 @@ def build_ccro_system(time_blk=None, operation_mode=None):
             num_inlets=2,
             momentum_mixing_type=MomentumMixingType.equality,
         )
-
-        m.fs.RO = ReverseOsmosis1D(
-            property_package=m.fs.properties,
-            has_pressure_change=True,
-            pressure_change_type=PressureChangeType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
-            transformation_scheme="BACKWARD",
-            transformation_method="dae.finite_difference",
-            finite_elements=10,
-            module_type="spiral_wound",
-            has_full_reporting=True,
-        )
+        if use_ro_with_hold_up:
+            m.fs.RO = ReverseOsmosis1DwithHoldUp(
+                property_package=m.fs.properties,
+                has_pressure_change=True,
+                pressure_change_type=PressureChangeType.calculated,
+                mass_transfer_coefficient=MassTransferCoefficient.calculated,
+                concentration_polarization_type=ConcentrationPolarizationType.calculated,
+                transformation_scheme="BACKWARD",
+                transformation_method="dae.finite_difference",
+                finite_elements=10,
+                module_type="spiral_wound",
+                has_full_reporting=True,
+            )
+        else:
+            m.fs.RO = ReverseOsmosis1D(
+                property_package=m.fs.properties,
+                has_pressure_change=True,
+                pressure_change_type=PressureChangeType.calculated,
+                mass_transfer_coefficient=MassTransferCoefficient.calculated,
+                concentration_polarization_type=ConcentrationPolarizationType.calculated,
+                transformation_scheme="BACKWARD",
+                transformation_method="dae.finite_difference",
+                finite_elements=10,
+                module_type="spiral_wound",
+                has_full_reporting=True,
+            )
 
         m.fs.product = Product(property_package=m.fs.properties)
 
@@ -427,19 +462,44 @@ def get_variable_pairs(t1, t2):
     1. dead_volume mass fraction to delta_state
     2. dead_volume density to delta_state
     """
-
-    return [
+    pair_list = []
+    if t1.fs.ro_model_with_hold_up:
+        idx = t1.fs.RO.difference_elements
+        if t2.fs.operation_mode == "filtration":
+            for i in idx:
+                pair_list.append(
+                    (
+                        t2.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
+                            0, i, "Liq", "NaCl"
+                        ],
+                        t1.fs.RO.feed_side.properties[0, i].mass_frac_phase_comp[
+                            "Liq", "NaCl"
+                        ],
+                    ),
+                )
+                pair_list.append(
+                    (
+                        t2.fs.RO.feed_side.delta_state.node_dens_mass_phase[
+                            0, i, "Liq"
+                        ],
+                        t1.fs.RO.feed_side.properties[0, i].dens_mass_phase["Liq"],
+                    ),
+                )
+    pair_list.append(
         (
             t2.fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"],
             t1.fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp[
                 "Liq", "NaCl"
             ],
         ),
+    )
+    pair_list.append(
         (
             t2.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"],
             t1.fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"],
         ),
-    ]
+    )
+    return pair_list
 
 
 def solve(
@@ -502,6 +562,9 @@ def setup_optimization(
     """
     ccro_mp_constraints.fix_overall_water_recovery(mp, overall_water_recovery)
     mp.global_dead_volume_constraint.activate()
+    if mp.find_component("global_ro_volume_constraint") is not None:
+        mp.global_ro_volume_constraint.activate()
+        mp.equal_ro_volume_constraint.activate()
     mp.equal_dead_volume_constraint.activate()
     mp.equal_delta_dead_volume_constraint.activate()
     mp.ro_membrane_area_constraint.activate()
@@ -529,6 +592,17 @@ def setup_optimization(
             m.fs.RO.feed_side.velocity[0, 0].setub(0.3)
             m.fs.RO.feed_side.velocity[0, 0].setlb(0.05)
             m.fs.RO.feed_side.velocity[0, 0].unfix()
+            if m.fs.ro_model_with_hold_up:
+                for i in m.fs.RO.difference_elements:
+                    m.fs.RO.feed_side.volume.unfix()
+                    m.fs.RO.feed_side.accumulation_time.unfix()
+                    # should be redundunt
+                    m.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
+                        0, i, "Liq", "NaCl"
+                    ].unfix()
+                    m.fs.RO.feed_side.delta_state.node_dens_mass_phase[
+                        0, i, "Liq"
+                    ].unfix()
         m.fs.dead_volume.volume.unfix()
         m.fs.dead_volume.delta_state.volume[0, "Liq"].unfix()
 
@@ -750,17 +824,18 @@ if __name__ == "__main__":
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
     cc_config = CCROConfiguration()
-    cc_config["raw_feed_conc"] = 35 * pyunits.g / pyunits.L
+    cc_config["raw_feed_conc"] = 5 * pyunits.g / pyunits.L
 
     cc_config["accumulation_time"] = 1 * pyunits.second
     mp = create_ccro_multiperiod(
         n_time_points=51,
         include_costing=True,
         cc_configuration=cc_config,
+        use_ro_with_hold_up=False,
     )
     setup_optimization(
         mp,
-        overall_water_recovery=0.5,
+        overall_water_recovery=0.8,
         max_cycle_time_hr=1,
         recycle_flow_bounds=(0.1, 100),
     )
@@ -769,7 +844,7 @@ if __name__ == "__main__":
     db.display_constraints_with_large_residuals()
     # assert False
     results = solve(mp, use_ipoptv2=False)
-    mp.overall_recovery.fix(0.55)
+    mp.overall_recovery.fix(0.85)
     results = solve(mp, use_ipoptv2=False)
     print_results_table(mp, w=16)
     blks = list(mp.get_active_process_blocks())

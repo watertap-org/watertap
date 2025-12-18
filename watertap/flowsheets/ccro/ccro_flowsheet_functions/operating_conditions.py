@@ -10,6 +10,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from watertap.core.solvers import get_solver
 
@@ -48,6 +49,8 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
             dead_volume = cc_configuration["dead_volume"] = cc_configuration[
                 "dead_volume"
             ]
+        if m.fs.ro_model_with_hold_up:
+            dead_volume = dead_volume * cc_configuration["pipe_to_module_ratio"]
         m.fs.dead_volume.volume.fix(dead_volume)
         m.fs.dead_volume.delta_state.volume.fix(dead_volume)
 
@@ -63,7 +66,27 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
         m.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].fix(
             m.fs.raw_feed.properties[0].dens_mass_phase["Liq"].value
         )
-
+        if m.fs.ro_model_with_hold_up:
+            m.fs.RO.feed_side.volume.fix(
+                cc_configuration["dead_volume_to_area_ratio"]
+                * cc_configuration["membrane_area"]
+            )
+            m.fs.RO.feed_side.accumulation_time.fix(
+                cc_configuration["accumulation_time"]
+            )
+            idx = m.fs.RO.difference_elements
+            for i in idx:
+                m.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
+                    0, i, "Liq", "NaCl"
+                ].fix(
+                    m.fs.raw_feed.properties[0]
+                    .mass_frac_phase_comp["Liq", "NaCl"]
+                    .value
+                )
+                m.fs.RO.feed_side.delta_state.node_dens_mass_phase[0, i, "Liq"].fix(
+                    m.fs.raw_feed.properties[0].dens_mass_phase["Liq"].value
+                )
+            solver.solve(m.fs.RO.feed_side.delta_state)
         # Pump 1 operating conditions
         m.fs.P1.efficiency_pump.fix(cc_configuration["p1_eff"])
 
@@ -164,6 +187,8 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
             dead_volume = cc_configuration["dead_volume"] = cc_configuration[
                 "dead_volume"
             ]
+        if m.fs.ro_model_with_hold_up:
+            dead_volume = dead_volume * (1 + cc_configuration["pipe_to_module_ratio"])
         m.fs.dead_volume.volume.fix(dead_volume)
         m.fs.dead_volume.delta_state.volume.fix(dead_volume)
         m.fs.dead_volume.accumulation_time.fix(cc_configuration["accumulation_time"])
@@ -223,7 +248,13 @@ def unfix_dof(m, unfix_dead_volume_state=True, cc_configuration=None, **kwargs):
         m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
             cc_configuration["recycle_flowrate"]
         )
-
+        if m.fs.ro_model_with_hold_up:
+            idx = m.fs.RO.difference_elements
+            for i in idx:
+                m.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
+                    0, i, "Liq", "NaCl"
+                ].unfix()
+                m.fs.RO.feed_side.delta_state.node_dens_mass_phase[0, i, "Liq"].unfix()
     elif m.fs.operation_mode == "flushing":
         m.fs.dead_volume.accumulation_time.unfix()
         m.fs.flushing.flushing_efficiency.fix(cc_configuration["flushing_efficiency"])

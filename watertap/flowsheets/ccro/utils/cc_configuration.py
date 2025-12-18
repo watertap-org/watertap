@@ -22,15 +22,17 @@ class CCROConfiguration(dict):
             A_comp=5.96e-12 * pyunits.meter / (pyunits.second * pyunits.Pa),
             B_comp=3.08e-08 * pyunits.meter / pyunits.second,
             membrane_area=500 * pyunits.meter**2,  # m2
+            membrane_length="auto",  # m2
             channel_height=0.001 * pyunits.meter,  # m
             spacer_porosity=0.9 * pyunits.dimensionless,
             dead_volume="base_on_dead_volume_to_area_ratio",  # m3
-            accumulation_time=10 * pyunits.second,
-            dead_volume_to_area_ratio=value(
-                1 * pyunits.m * (3.14 * 0.1016**2) * pyunits.m**2 / (7.2 * pyunits.m**2)
-            )
+            accumulation_time=1 * pyunits.second,
+            dead_volume_to_area_ratio=value(1.2 * 0.001 * pyunits.meter * 0.9)
             * pyunits.m,
-        )  # s
+            pipe_to_module_ratio=0.2
+            * pyunits.dimensionless,  # fraction of dead volume in pipes/pumps if we have hold up in RO
+            # Total dead volume is module_area*dead_volume_to_area_ratio + module_area*dead_volume_to_area_ratio*pipe_to_module_ratio
+        )
         self.update(self.default_config)
         self.display()
 

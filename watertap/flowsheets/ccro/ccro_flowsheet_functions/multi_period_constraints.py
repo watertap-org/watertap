@@ -36,7 +36,15 @@ def add_multiperiod_variables(mp, cc_configuration=None):
 
     mp.dead_volume_to_area_multiplier.fix(1)
     mp.dead_volume_to_area_ratio.fix(cc_configuration["dead_volume_to_area_ratio"])
-
+    mp.pipe_to_module_ratio = Var(
+        initialize=0.2,
+        domain=NonNegativeReals,
+        units=pyunits.dimensionless,
+        doc="Global dead volume over all time periods",
+    )
+    iscale.set_scaling_factor(mp.pipe_to_module_ratio, 1)
+    mp.pipe_to_module_ratio.fix(cc_configuration["pipe_to_module_ratio"])
+    mp.dead_volume_to_area_multiplier.fix(1)
     # Permeate and feed
     mp.overall_recovery = Var(
         initialize=0.5,
@@ -152,10 +160,16 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
     def equal_dead_volume_constraint(b, t):
         if t == b.TIME.first():
             return Constraint.Skip
-        return (
-            blks[t].fs.dead_volume.volume[0, "Liq"]
-            == b0.fs.dead_volume.volume[0, "Liq"]
-        )
+        elif t == b.TIME.last() and blks[t].fs.ro_model_with_hold_up:
+            return (
+                blks[t].fs.dead_volume.volume[0, "Liq"]
+                == b0.fs.dead_volume.volume[0, "Liq"] + b0.fs.RO.feed_side.volume
+            )
+        else:
+            return (
+                blks[t].fs.dead_volume.volume[0, "Liq"]
+                == b0.fs.dead_volume.volume[0, "Liq"]
+            )
 
     mp.equal_dead_volume_constraint.deactivate()
 
@@ -187,18 +201,55 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
 
     @mp.Constraint(doc="Global dead volume constraint")
     def global_dead_volume_constraint(b):
-        return (
-            b0.fs.dead_volume.volume[0, "Liq"]
-            == b0.fs.RO.area
-            * b.dead_volume_to_area_ratio
-            * b.dead_volume_to_area_multiplier
-        )
+        if b0.fs.ro_model_with_hold_up:
+            return (
+                b0.fs.dead_volume.volume[0, "Liq"]
+                == b.dead_volume_to_area_ratio
+                * b0.fs.RO.area
+                * b.dead_volume_to_area_multiplier
+                * b.pipe_to_module_ratio
+            )
+        else:
+            return (
+                b0.fs.dead_volume.volume[0, "Liq"]
+                == b0.fs.RO.area
+                * b.dead_volume_to_area_ratio
+                * b.dead_volume_to_area_multiplier
+            )
 
     calculate_variable_from_constraint(
         b0.fs.dead_volume.volume[0, "Liq"], mp.global_dead_volume_constraint
     )
 
     mp.global_dead_volume_constraint.deactivate()
+    if b0.fs.ro_model_with_hold_up:
+
+        @mp.Constraint(doc="Global dead volume constraint")
+        def global_ro_volume_constraint(b):
+            return (
+                b0.fs.RO.feed_side.volume
+                == b0.fs.RO.area
+                * b.dead_volume_to_area_ratio
+                * b.dead_volume_to_area_multiplier
+            )
+
+        calculate_variable_from_constraint(
+            b0.fs.RO.feed_side.volume, mp.global_ro_volume_constraint
+        )
+
+        mp.global_ro_volume_constraint.deactivate()
+
+        @mp.Constraint(
+            mp.TIME,
+            doc="Dead volume equality through all filtration periods",
+        )
+        def equal_ro_volume_constraint(b, t):
+            if t == b.TIME.first() or t == b.TIME.last():
+                return Constraint.Skip
+            else:
+                return blks[t].fs.RO.feed_side.volume == b0.fs.RO.feed_side.volume
+
+        mp.equal_ro_volume_constraint.deactivate()
 
     # Density at the start of cycle should be the same as end of flushing
     # (Initial condition and after flushing)
@@ -225,6 +276,37 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             .fs.dead_volume.dead_volume.properties_out[0]
             .mass_frac_phase_comp["Liq", "NaCl"]
         )
+
+    ### linking ro start stat to final flushed state here
+    if b0.fs.ro_model_with_hold_up:
+
+        @mp.Constraint(
+            b0.fs.RO.difference_elements,
+            doc="Density equality between end of flushing and start of filtration",
+        )
+        def ro_cycle_end_density_constraint(b, i):
+            return (
+                b0.fs.RO.feed_side.delta_state.node_dens_mass_phase[0, i, "Liq"]
+                == blks[-1]
+                .fs.dead_volume.dead_volume.properties_out[0]
+                .dens_mass_phase["Liq"]
+            )
+
+        # Mass fraction at the start of cycle should be the same as end of flushing
+        # (Initial condition and after flushing)
+        @mp.Constraint(
+            b0.fs.RO.difference_elements,
+            doc="Mass fraction equality between end of flushing and start of filtration",
+        )
+        def ro_cycle_end_mass_frac_constraint(b, i):
+            return (
+                b0.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
+                    0, i, "Liq", "NaCl"
+                ]
+                == blks[-1]
+                .fs.dead_volume.dead_volume.properties_out[0]
+                .mass_frac_phase_comp["Liq", "NaCl"]
+            )
 
     @mp.Constraint(doc="Total filtration time constraint")
     def total_filtration_time_constraint(b):
@@ -306,8 +388,12 @@ def fix_overall_water_recovery(mp, overall_water_recovery):
     mp.overall_recovery.fix(overall_water_recovery)
 
     # Fixed for accumulation time for initialization
+    build_acc_time_links = False
     for t, m in enumerate(mp.get_active_process_blocks()):
         m.fs.dead_volume.accumulation_time.unfix()
+        if m.fs.find_component("RO.feed_side.accumulation_time") is not None:
+            m.fs.RO.feed_side.accumulation_time.unfix()
+            build_acc_time_links = True
         # m.fs.dead_volume.accumulation_time.setlb(1)
         # m.fs.dead_volume.accumulation_time.setub(400)
 
@@ -320,3 +406,12 @@ def fix_overall_water_recovery(mp, overall_water_recovery):
         return blks[t].fs.dead_volume.accumulation_time[0] == (
             blks[0].fs.dead_volume.accumulation_time[0]
         )
+
+    if build_acc_time_links:
+
+        @mp.Constraint(list(range(0, mp.n_time_points - 1)))
+        def ro_accumulation_time_cons(b, t):
+            blks = list(b.get_active_process_blocks())
+            return blks[t].fs.RO.feed_side.accumulation_time[0] == (
+                blks[t].fs.dead_volume.accumulation_time[0]
+            )

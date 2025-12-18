@@ -237,10 +237,68 @@ class ReverseOsmosis1DwithHoldUpData(ReverseOsmosis1DData):
     def calculate_scaling_factors(self):
 
         super().calculate_scaling_factors()
+        sf = iscale.get_scaling_factor(self.feed_side.accumulation_time[0])
+        if sf is None:
+            sf = 1 / self.feed_side.accumulation_time[0].value
+            iscale.set_scaling_factor(
+                self.feed_side.accumulation_time[0],
+                sf,
+            )
+        sf = iscale.get_scaling_factor(self.feed_side.volume)
+        if sf is None:
+            sf = 1 / self.feed_side.volume.value
+            iscale.set_scaling_factor(
+                self.feed_side.volume,
+                sf,
+            )
+
+        for t, x, p in self.feed_side.delta_state.node_dens_mass_phase:
+            sf = iscale.get_scaling_factor(
+                self.feed_side.properties[t, x].dens_mass_phase[p]
+            )
+            iscale.set_scaling_factor(
+                self.feed_side.delta_state.node_dens_mass_phase[t, x, p],
+                sf,
+            )
+        sf = 1
+        for t, x, p, j in self.feed_side.delta_state.node_mass_frac_phase_comp:
+            iscale.set_scaling_factor(
+                self.feed_side.delta_state.node_mass_frac_phase_comp[t, x, p, j],
+                sf,
+            )
+            iscale.constraint_scaling_transform(
+                self.feed_side.delta_state.eq_mass_frac_phase_comp[t, x, p, j], sf
+            )
+            if "H2O" not in j:
+                iscale.constraint_scaling_transform(
+                    self.feed_side.eq_node_mass_frac_equality[t, x, p, j], sf
+                )
+        for t, x, p, j in self.feed_side.delta_state.node_mass_phase_comp:
+            sf = iscale.get_scaling_factor(
+                self.feed_side.delta_state.node_mass_phase_comp[t, x, p, j]
+            )
+            if sf is None:
+                sf_vol = iscale.get_scaling_factor(self.feed_side.volume)
+                sf_dense = iscale.get_scaling_factor(
+                    self.feed_side.properties[t, x].dens_mass_phase[p]
+                )
+                sf_mass_frac = sf_vol * sf_dense
+
+                iscale.set_scaling_factor(
+                    self.feed_side.node_mass_phase_comp[t, x, p, j],
+                    sf_mass_frac,
+                )
+                iscale.set_scaling_factor(
+                    self.feed_side.delta_state.node_mass_phase_comp[t, x, p, j],
+                    sf_mass_frac,
+                )
+
         for t, x, p, j in self.feed_side.delta_state.node_mass_phase_comp:
             sf = iscale.get_scaling_factor(
                 self.feed_side.mass_transfer_term[t, x, p, j]
             )
+            sf_time = iscale.get_scaling_factor(self.feed_side.accumulation_time[t])
+            sf = sf * sf_time
             iscale.set_scaling_factor(
                 self.feed_side.accumulation_mass_transfer_term[t, x, p, j], sf
             )
