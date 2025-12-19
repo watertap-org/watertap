@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -863,35 +863,33 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.uv_intensity) is None:
             sf = iscale.get_scaling_factor(self.uv_intensity, default=0.1, warning=True)
-        iscale.set_scaling_factor(self.uv_intensity, sf)
-
+            iscale.set_scaling_factor(self.uv_intensity, sf)
         if iscale.get_scaling_factor(self.exposure_time) is None:
             sf = iscale.get_scaling_factor(
                 self.exposure_time, default=1e-2, warning=True
             )
             iscale.set_scaling_factor(self.exposure_time, sf)
-
         if iscale.get_scaling_factor(self.uv_dose) is None:
             sf = iscale.get_scaling_factor(self.uv_dose, default=1e-3, warning=True)
-        iscale.set_scaling_factor(self.uv_dose, sf)
+            iscale.set_scaling_factor(self.uv_dose, sf)
 
         if iscale.get_scaling_factor(self.inactivation_rate) is None:
             sf = iscale.get_scaling_factor(
                 self.inactivation_rate, default=1e4, warning=True
             )
-        iscale.set_scaling_factor(self.inactivation_rate, sf)
+            iscale.set_scaling_factor(self.inactivation_rate, sf)
 
         if iscale.get_scaling_factor(self.rate_constant) is None:
             sf = iscale.get_scaling_factor(
                 self.rate_constant, default=1e3, warning=True
             )
-        iscale.set_scaling_factor(self.rate_constant, sf)
+            iscale.set_scaling_factor(self.rate_constant, sf)
 
         if iscale.get_scaling_factor(self.electrical_efficiency_phase_comp) is None:
             sf = iscale.get_scaling_factor(
                 self.electrical_efficiency_phase_comp, default=1e-5, warning=True
             )
-        iscale.set_scaling_factor(self.electrical_efficiency_phase_comp, sf)
+            iscale.set_scaling_factor(self.electrical_efficiency_phase_comp, sf)
 
         if hasattr(self, "photolysis_rate_constant"):
             if iscale.get_scaling_factor(self.photolysis_rate_constant) is None:

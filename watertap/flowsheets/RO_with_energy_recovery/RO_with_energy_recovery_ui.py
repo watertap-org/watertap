@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -38,7 +38,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed conditions
     exports.add(
         obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
-        name="Water mass flowrate",
+        name="Feed water mass flowrate",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=3,
@@ -49,7 +49,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl mass flowrate",
+        name="Feed NaCl mass flowrate",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=3,
@@ -62,7 +62,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, feed pump
     exports.add(
         obj=fs.P1.efficiency_pump[0],
-        name="Pump efficiency",
+        name="Feed pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -73,7 +73,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.P1.control_volume.properties_out[0].pressure,
-        name="Operating pressure",
+        name="Feed pump operating pressure",
         ui_units=pyunits.bar,
         display_units="bar",
         rounding=2,
@@ -86,7 +86,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, RO
     exports.add(
         obj=fs.RO.A_comp[0, "H2O"],
-        name="Water permeability coefficient",
+        name="RO water permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2 / pyunits.bar,
         display_units="LMH/bar",
         rounding=2,
@@ -98,7 +98,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.RO.B_comp[0, "NaCl"],
-        name="Salt permeability coefficient",
+        name="RO salt permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
         display_units="LMH",
         rounding=2,
@@ -109,7 +109,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.RO.feed_side.channel_height,
-        name="Feed-side channel height",
+        name="RO feed-side channel height",
         ui_units=pyunits.mm,
         display_units="mm",
         rounding=2,
@@ -120,7 +120,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.RO.feed_side.spacer_porosity,
-        name="Feed-side spacer porosity",
+        name="RO feed-side spacer porosity",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -131,7 +131,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.RO.permeate.pressure[0],
-        name="Permeate-side pressure",
+        name="RO permeate-side pressure",
         ui_units=pyunits.bar,
         display_units="bar",
         rounding=2,
@@ -142,7 +142,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.RO.width,
-        name="Width",
+        name="RO stage width",
         ui_units=pyunits.m,
         display_units="m",
         rounding=2,
@@ -153,7 +153,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
-        name="Water mass recovery",
+        name="RO water mass recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -167,7 +167,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, ERD
     exports.add(
         obj=fs.ERD.efficiency_pump[0],
-        name="Pump efficiency",
+        name="ERD Pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -178,7 +178,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.ERD.control_volume.properties_out[0].pressure,
-        name="Operating pressure",
+        name="ERD operating pressure",
         ui_units=pyunits.bar,
         display_units="bar",
         rounding=2,
@@ -270,7 +270,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed
     exports.add(
         obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
+        name="Feed volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hour,
         display_units="m3/hr",
         rounding=2,
@@ -281,7 +281,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Feed NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=2,
@@ -294,7 +294,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Product
     exports.add(
         obj=fs.product.properties[0].flow_vol,
-        name="Volumetric flow rate",
+        name="Product volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
@@ -305,7 +305,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Product NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
@@ -318,22 +318,22 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Disposal
     exports.add(
         obj=fs.disposal.properties[0].flow_vol,
-        name="Volumetric flow rate",
+        name="Waste brine volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
-        description="Outlet product water volumetric flow rate",
+        description="Outlet brine volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category="Disposal",
     )
     exports.add(
         obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="NaCl concentration",
+        name="Waste brine NaCl concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
-        description="Outlet product water NaCl concentration",
+        description="Outlet brine NaCl concentration",
         is_input=False,
         is_output=True,
         output_category="Disposal",
@@ -342,7 +342,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # System metrics
     exports.add(
         obj=fs.RO.area,
-        name="Area",
+        name="RO membrane area",
         ui_units=pyunits.m**2,
         display_units="m^2",
         rounding=2,

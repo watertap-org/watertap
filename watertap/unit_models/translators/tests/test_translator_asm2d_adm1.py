@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -714,9 +714,7 @@ class TestADM1ASM2dScaler:
 
         scaler.constraint_scaling_routine(model.fs.unit)
 
-        sfx_out = model.fs.unit.properties_out[0].scaling_factor
-        assert isinstance(sfx_out, Suffix)
-        assert len(sfx_out) == 0
+        assert not hasattr(model.fs.unit.properties_out[0], "scaling_factor")
 
     @pytest.mark.component
     def test_scale_model(self, model):
@@ -906,5 +904,5 @@ class TestADM1ASM2dScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            5.640234319533e3, rel=1e-3
+            3969.50, rel=1e-3
         )

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -49,7 +49,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
-        name="Na_+ molar concentration",
+        name="Feed Na_+ molar concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol m^-3",
         rounding=3,
@@ -61,7 +61,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.feed.properties[0].conc_mol_phase_comp["Liq", "Cl_-"],
-        name="Cl_- molar concentration",
+        name="feed Cl_- molar concentration",
         ui_units=pyunits.mol / pyunits.m**3,
         display_units="mol m^-3",
         rounding=3,
@@ -74,7 +74,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # ED stack conditions
     exports.add(
         obj=fs.EDstack.voltage_applied[0],
-        name="Stack voltage",
+        name="ED stack voltage",
         ui_units=pyunits.volt,
         display_units="V",
         rounding=3,
@@ -86,7 +86,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.EDstack.cell_pair_num,
-        name="Cell pair number",
+        name="ED stack cell pair number",
         ui_units=pyunits.dimensionless,
         display_units="",
         rounding=0,
@@ -98,7 +98,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.EDstack.channel_height,
-        name="Channel height",
+        name="ED flow channel height",
         ui_units=pyunits.meter,
         display_units="m",
         rounding=4,
@@ -110,7 +110,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.EDstack.cell_width,
-        name="Cell width",
+        name="ED cell width",
         ui_units=pyunits.meter,
         display_units="m",
         rounding=3,
@@ -122,7 +122,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.EDstack.cell_length,
-        name="Channel length",
+        name="ED channel length",
         ui_units=pyunits.meter,
         display_units="m",
         rounding=3,
@@ -135,7 +135,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.EDstack.spacer_porosity,
-        name="Spacer porosity",
+        name="ED spacer porosity",
         ui_units=pyunits.dimensionless,
         display_units="",
         rounding=2,
@@ -147,7 +147,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.EDstack.spacer_specific_area,
-        name="Spacer specific surface area",
+        name="ED spacer specific surface area",
         ui_units=pyunits.meter**-1,
         display_units="m^-1",
         rounding=0,
@@ -159,7 +159,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.EDstack.electrodes_resistance,
-        name="Electrode resistance",
+        name="ED electrode resistance",
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
         rounding=2,
@@ -171,7 +171,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.EDstack.current_utilization,
-        name="Current utilization coefficient",
+        name="ED current utilization coefficient",
         ui_units=pyunits.dimensionless,
         display_units="",
         rounding=2,
@@ -183,7 +183,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.recovery_vol_H2O,
-        name="Water recovery by volume",
+        name="System water recovery by volume",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -243,7 +243,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.EDstack.membrane_areal_resistance["cem"],
-        name="Areal resistnace of CEM",
+        name="Areal resistance of CEM",
         ui_units=pyunits.ohm * pyunits.meter**2,
         display_units="ohm m^2",
         rounding=2,
@@ -383,7 +383,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed pump properties
     exports.add(
         obj=fs.pump0.efficiency_pump[0],
-        name="Concentrate Pump efficiency",
+        name="Concentrate pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -395,7 +395,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.pump1.efficiency_pump[0],
-        name="Diluate Pump efficiency",
+        name="Diluate pump efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -487,7 +487,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed
     exports.add(
         obj=fs.feed_salinity,
-        name="NaCl mass concentration",
+        name="Feed NaCl mass concentration",
         ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg m^-3",
         rounding=2,
@@ -500,7 +500,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Product
     exports.add(
         obj=fs.prod.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
+        name="Product volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
@@ -511,7 +511,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.prod.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
-        name="NaCl molar concentration",
+        name="Product NaCl molar concentration",
         ui_units=pyunits.mol / pyunits.meter**3,
         display_units="mol m^-3",
         rounding=3,
@@ -522,7 +522,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product_salinity,
-        name="NaCl mass concentration",
+        name="Product NaCl mass concentration",
         ui_units=pyunits.kg / pyunits.meter**3,
         display_units="kg m^-3",
         rounding=3,
@@ -535,7 +535,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Disposal
     exports.add(
         obj=fs.disp.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
+        name="Disposal volumetric flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
@@ -546,7 +546,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.disp.properties[0].conc_mol_phase_comp["Liq", "Na_+"],
-        name="NaCl molar concentration",
+        name="Disposal NaCl molar concentration",
         ui_units=pyunits.mol / pyunits.meter**3,
         display_units="mol m^-3",
         rounding=3,
@@ -557,7 +557,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.disposal_salinity,
-        name="NaCl mass concentration",
+        name="Disposal NaCl mass concentration",
         ui_units=pyunits.kg / pyunits.meter**3,
         display_units="kg m^-3",
         rounding=3,
@@ -571,7 +571,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     exports.add(
         obj=fs.mem_area,
-        name="Membrane area",
+        name="Membrane area of CEM and AEM",
         ui_units=pyunits.m**2,
         display_units="m^2",
         rounding=2,

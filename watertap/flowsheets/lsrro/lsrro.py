@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -60,7 +60,6 @@ from watertap.costing import (
 
 from watertap.property_models import NaClParameterBlock
 from parameter_sweep import LinearSample, parameter_sweep
-from watertap.flowsheets.lsrro.multi_sweep import _lsrro_presweep
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1816,6 +1815,39 @@ def feed_concentration_recovery_profile(
     ax.clabel(contours)
 
     return results, output_filename, fig, ax
+
+
+def _lsrro_presweep(
+    number_of_stages=2,
+    A_value=5 / 3.6e11,
+    permeate_quality_limit=1000e-6,
+    has_CP=True,
+    quick_start=False,
+):
+    """
+    Set up model for optimization, unfix feed mass flowrates, and fix mass concentration and volumetric flowrate for anticipated parameter sensitivity
+    """
+    m = build(
+        number_of_stages=number_of_stages,
+        has_NaCl_solubility_limit=True,
+        has_calculated_concentration_polarization=has_CP,
+        has_calculated_ro_pressure_drop=True,
+    )
+    set_operating_conditions(m)
+    if not quick_start:
+        initialize(m)
+    solve(m)
+    m.fs.feed.flow_mass_phase_comp.unfix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
+    optimize_set_up(
+        m,
+        set_default_bounds_on_module_dimensions=True,
+        A_value=A_value,
+        permeate_quality_limit=permeate_quality_limit,
+    )
+
+    return m
 
 
 if __name__ == "__main__":

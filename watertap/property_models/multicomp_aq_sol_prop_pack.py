@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -2641,8 +2641,8 @@ class MCASStateBlockData(StateBlockData):
 
         # touch this var since it is required for this method
         self.conc_mol_phase_comp
-
         if solve:
+
             if adjust_by_ion is not None:
                 ion_before_adjust = state_var["Liq", adjust_by_ion].value
             solve = get_solver()
@@ -2693,7 +2693,7 @@ class MCASStateBlockData(StateBlockData):
                             )
                     msg = (
                         f"{adjust_by_ion} adjusted: {state_var}['Liq',{adjust_by_ion}] was adjusted from "
-                        f"{ion_before_adjust} and fixed "
+                        f"{ion_before_adjust} and fixed "  # pylint: disable=used-before-assignment
                         f"to {ion_adjusted}."
                     )
                 else:

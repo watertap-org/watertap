@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -30,7 +30,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from idaes.models.unit_models.separator import SplittingType
 from idaes.core.util.model_statistics import (
@@ -1130,8 +1129,6 @@ class TestThickenerScaler:
 
         m.fs.unit.hydraulic_retention_time.fix()
 
-        sb = ScalerBase()
-
         scaler = DewatererScaler()
         scaler.scale_model(
             m.fs.unit,
@@ -1146,7 +1143,7 @@ class TestThickenerScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.10895296e4, rel=1e-3
+            53957.5009, rel=1e-3
         )
 
 

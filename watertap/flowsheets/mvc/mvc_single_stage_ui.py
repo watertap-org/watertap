@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -51,7 +51,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"],
-        name="TDS mass fraction",
+        name="Feed TDS mass fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -518,7 +518,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     # System metrics
     exports.add(
         obj=fs.costing.LCOW,
-        name="LCOW",
+        name="Levelized cost of water",
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of centrate",
         rounding=3,
@@ -531,7 +531,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     total_capital_norm = fs.costing.total_capital_cost / fs.feed.properties[0].flow_vol
     exports.add(
         obj=total_capital_norm,
-        name="Total capital",
+        name="Normalized total capital cost",
         ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
@@ -558,7 +558,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     # Capital costs
     exports.add(
         obj=fs.costing.total_capital_cost,
-        name="Total",
+        name="Total capital cost",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
@@ -570,7 +570,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.hx_distillate.costing.capital_cost,
-        name="Distillate heat exchanger",
+        name="Distillate heat exchanger capital cost",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
@@ -581,7 +581,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.hx_brine.costing.capital_cost,
-        name="Brine heat exchanger",
+        name="Brine heat exchanger capital cost",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
@@ -592,7 +592,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.mixer_feed.costing.capital_cost,
-        name="Feed mixer",
+        name="Feed mixer capital cost",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
@@ -603,7 +603,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.evaporator.costing.capital_cost,
-        name="Evaporator",
+        name="Evaporator capital cost",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
@@ -614,7 +614,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.compressor.costing.capital_cost,
-        name="Compressor",
+        name="Compressor capital cost",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
@@ -626,7 +626,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     # Operating costs
     exports.add(
         obj=fs.costing.total_operating_cost,
-        name="Total",
+        name="Total operating cost",
         ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
@@ -638,7 +638,7 @@ def export_variables(flowsheet, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.costing.aggregate_flow_costs["electricity"],
-        name="Electricity",
+        name="Annual electricity cost",
         ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
