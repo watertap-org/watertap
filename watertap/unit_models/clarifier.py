@@ -13,17 +13,6 @@
 Clarifier unit model for BSM2 and plant-wide wastewater treatment modeling.
 This unit inherits from the IDAES separator unit.
 """
-
-# Import IDAES cores
-from idaes.core import (
-    declare_process_block_class,
-)
-from idaes.models.unit_models.separator import SeparatorData, SplittingType
-
-from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.logger as idaeslog
-from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
-
 from pyomo.environ import (
     Constraint,
     Var,
@@ -31,6 +20,14 @@ from pyomo.environ import (
     units as pyunits,
 )
 
+# Import IDAES cores
+from idaes.core import (
+    declare_process_block_class,
+)
+from idaes.models.unit_models.separator import SeparatorData, SplittingType
+from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )

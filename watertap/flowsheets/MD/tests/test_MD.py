@@ -15,19 +15,22 @@ from pyomo.environ import (
     value,
     Var,
 )
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
-from idaes.models.unit_models import Heater, Separator, Mixer, Product, Feed
 
-from idaes.models.unit_models.heat_exchanger import (
+from idaes.core import FlowsheetBlock
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.models.unit_models import (
+    Heater,
+    Separator,
+    Mixer,
+    Product,
+    Feed,
     HeatExchanger,
 )
+
 from watertap.unit_models.pressure_changer import Pump
 from watertap.unit_models.MD.membrane_distillation_0D import MembraneDistillation0D
-import watertap.property_models.seawater_prop_pack as props_sw
-import watertap.property_models.water_prop_pack as props_w
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
 from watertap.flowsheets.MD.MD_single_stage_continuous_recirculation import (
     main,
     build,
@@ -36,6 +39,7 @@ from watertap.flowsheets.MD.MD_single_stage_continuous_recirculation import (
     initialize_system,
     solve,
 )
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -54,9 +58,9 @@ class TestMDContinuousRecirculation:
         # model set up
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties_hot_ch, props_sw.SeawaterParameterBlock)
-        assert isinstance(m.fs.properties_cold_ch, props_sw.SeawaterParameterBlock)
-        assert isinstance(m.fs.properties_vapor, props_w.WaterParameterBlock)
+        assert isinstance(m.fs.properties_hot_ch, SeawaterParameterBlock)
+        assert isinstance(m.fs.properties_cold_ch, SeawaterParameterBlock)
+        assert isinstance(m.fs.properties_vapor, WaterParameterBlock)
 
         # unit models
         assert isinstance(m.fs.feed, Feed)

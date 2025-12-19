@@ -13,9 +13,7 @@
 from pyomo.environ import Constraint
 
 import idaes.core.util.scaling as iscale
-from idaes.models.unit_models import Mixer
-from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
-
+from idaes.models.unit_models import Mixer, MomentumMixingType, MixingType
 
 __author__ = "Alexander V. Dudchenko"
 

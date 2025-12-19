@@ -14,6 +14,7 @@ Tests for dewatering unit example.
 """
 from io import StringIO
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -22,26 +23,15 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
 )
+from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    MomentumBalanceType,
-)
-
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
-
 from idaes.models.unit_models.separator import SplittingType
-
-from pyomo.environ import (
-    units,
-)
-
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -52,35 +42,30 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import (
     initialization_tester,
 )
-
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )
 
-from watertap.unit_models.dewatering import (
+from watertap.unit_models import (
     DewateringUnit,
     ActivatedSludgeModelType,
     DewatererScaler,
 )
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.property_models import (
+    MaterialBalanceType,
+    MomentumBalanceType,
     ASM1ParameterBlock,
     ASM1PropertiesScaler,
-)
-
-from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
-from pyomo.util.check_units import assert_units_consistent
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.dewatering import (
     cost_dewatering,
     cost_centrifuge,
     DewateringType,
 )
-from idaes.core import UnitModelCostingBlock
+from watertap.core.solvers import get_solver
 
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
@@ -146,27 +131,39 @@ class TestDu(object):
 
         m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-        m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+        m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
+            130.867 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(
+            258.5789 * pyunits.mg / pyunits.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
-            17216.2434 * units.mg / units.liter
+            17216.2434 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
+            2611.4843 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(
+            626.0652 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
-            1442.7882 * units.mg / units.liter
+            1442.7882 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-        m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(
+            0.54323 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(
+            100.8668 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
         m.fs.unit.hydraulic_retention_time.fix()
 
@@ -324,34 +321,60 @@ class TestDUASM2d(object):
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
 
-        m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(8.0209 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(6.6395 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(7.8953 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
+        m.fs.unit.inlet.flow_vol.fix(300 * pyunits.m**3 / pyunits.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+        m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(
+            7.9707 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(
+            29.0603 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(
+            8.0209 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(
+            6.6395 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(
+            7.8953 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(
+            0.4748 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(
+            0.0336 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+            1695.7695 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
+            68.2975 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(
+            1855.5067 * pyunits.mg / pyunits.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
-            214.5319 * units.mg / units.liter
+            214.5319 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(
+            63.5316 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(
+            2.7381 * pyunits.mg / pyunits.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
-            118.3582 * units.mg / units.liter
+            118.3582 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_MeOH"].fix(
+            EPS * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * pyunits.mg / pyunits.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "X_TSS"].fix(
-            3525.429 * units.mg / units.liter
+            3525.429 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
+        m.fs.unit.inlet.alkalinity[0].fix(4.6663 * pyunits.mmol / pyunits.liter)
 
         m.fs.unit.hydraulic_retention_time.fix()
 
@@ -398,30 +421,54 @@ class TestDUModifiedASM2d(object):
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
 
-        m.fs.unit.inlet.flow_vol.fix(300 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(8.0209 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(6.6395 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(7.8953 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(7 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(10 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
-            214.5319 * units.mg / units.liter
+        m.fs.unit.inlet.flow_vol.fix(300 * pyunits.m**3 / pyunits.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+        m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O2"].fix(
+            7.9707 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_N2"].fix(
+            29.0603 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NH4"].fix(
+            8.0209 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO3"].fix(
+            6.6395 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_PO4"].fix(
+            7.8953 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_F"].fix(
+            0.4748 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_A"].fix(
+            0.0336 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(30 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_K"].fix(7 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_Mg"].fix(6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(10 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+            1695.7695 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
+            68.2975 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_H"].fix(
+            1855.5067 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PAO"].fix(
+            214.5319 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PP"].fix(
+            63.5316 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_PHA"].fix(
+            2.7381 * pyunits.mg / pyunits.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_AUT"].fix(
-            118.3582 * units.mg / units.liter
+            118.3582 * pyunits.mg / pyunits.liter
         )
         m.fs.unit.hydraulic_retention_time.fix()
 
@@ -463,23 +510,27 @@ def test_du_default_costing():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+    m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        17216.2434 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        1442.7882 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
     m.fs.unit.hydraulic_retention_time.fix()
 
@@ -528,23 +579,27 @@ def test_du_centrifuge_costing():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+    m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        17216.2434 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        1442.7882 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
     m.fs.unit.hydraulic_retention_time.fix()
 
@@ -594,23 +649,27 @@ def test_du_centrifuge_costing2():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+    m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        17216.2434 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        1442.7882 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
     m.fs.unit.hydraulic_retention_time.fix()
 
@@ -661,23 +720,27 @@ def test_du_filter_plate_press_costing():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+    m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        17216.2434 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        1442.7882 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
     m.fs.unit.hydraulic_retention_time.fix()
 
@@ -731,23 +794,27 @@ def test_du_filter_belt_press_costing():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+    m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        17216.2434 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        1442.7882 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
     m.fs.unit.hydraulic_retention_time.fix()
 
@@ -801,23 +868,27 @@ def test_du_costing_config_err():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+    m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        17216.2434 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        1442.7882 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
     m.fs.unit.hydraulic_retention_time.fix()
 
@@ -846,27 +917,39 @@ class TestThickenerScaler:
 
         m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-        m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+        m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
+            130.867 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(
+            258.5789 * pyunits.mg / pyunits.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
-            17216.2434 * units.mg / units.liter
+            17216.2434 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
+            2611.4843 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(
+            626.0652 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
-            1442.7882 * units.mg / units.liter
+            1442.7882 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-        m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(
+            0.54323 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(
+            100.8668 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
         m.fs.unit.hydraulic_retention_time.fix()
 
@@ -956,27 +1039,39 @@ class TestThickenerScaler:
 
         m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-        m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+        m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
+            130.867 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(
+            258.5789 * pyunits.mg / pyunits.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
-            17216.2434 * units.mg / units.liter
+            17216.2434 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
+            2611.4843 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(
+            626.0652 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
-            1442.7882 * units.mg / units.liter
+            1442.7882 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-        m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(
+            0.54323 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(
+            100.8668 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
         m.fs.unit.hydraulic_retention_time.fix()
 
@@ -998,27 +1093,39 @@ class TestThickenerScaler:
 
         m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-        m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-        m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-        m.fs.unit.inlet.pressure.fix(1 * units.atm)
+        m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+        m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+        m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
+            130.867 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(
+            258.5789 * pyunits.mg / pyunits.liter
+        )
         m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
-            17216.2434 * units.mg / units.liter
+            17216.2434 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(
+            2611.4843 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(
+            626.0652 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
         m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
-            1442.7882 * units.mg / units.liter
+            1442.7882 * pyunits.mg / pyunits.liter
         )
-        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-        m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(
+            0.54323 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(
+            100.8668 * pyunits.mg / pyunits.liter
+        )
+        m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
         m.fs.unit.hydraulic_retention_time.fix()
 
@@ -1048,23 +1155,27 @@ def build_model():
 
     m.fs.unit = DewateringUnit(property_package=m.fs.props)
 
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * units.m**3 / units.day)
-    m.fs.unit.inlet.temperature.fix(308.15 * units.K)
-    m.fs.unit.inlet.pressure.fix(1 * units.atm)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * pyunits.m**3 / pyunits.day)
+    m.fs.unit.inlet.temperature.fix(308.15 * pyunits.K)
+    m.fs.unit.inlet.pressure.fix(1 * pyunits.atm)
 
-    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(17216.2434 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(1442.7882 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * units.mg / units.liter)
-    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * units.mg / units.liter)
-    m.fs.unit.inlet.alkalinity.fix(97.8459 * units.mol / units.m**3)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(130.867 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_S"].fix(258.5789 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(
+        17216.2434 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "X_S"].fix(2611.4843 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BH"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_BA"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_P"].fix(626.0652 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_O"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NO"].fix(1e-6 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "S_NH"].fix(
+        1442.7882 * pyunits.mg / pyunits.liter
+    )
+    m.fs.unit.inlet.conc_mass_comp[0, "S_ND"].fix(0.54323 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.conc_mass_comp[0, "X_ND"].fix(100.8668 * pyunits.mg / pyunits.liter)
+    m.fs.unit.inlet.alkalinity.fix(97.8459 * pyunits.mol / pyunits.m**3)
 
     m.fs.unit.hydraulic_retention_time.fix()
 
@@ -1092,9 +1203,9 @@ def scale_vars_with_iscale(m):
 
 
 def perturb_solution(m):
-    m.fs.unit.inlet.flow_vol.fix(178.4674 * 0.8 * units.m**3 / units.day)
+    m.fs.unit.inlet.flow_vol.fix(178.4674 * 0.8 * pyunits.m**3 / pyunits.day)
     m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(
-        130.867 * 0.55 * units.mg / units.liter
+        130.867 * 0.55 * pyunits.mg / pyunits.liter
     )
 
 

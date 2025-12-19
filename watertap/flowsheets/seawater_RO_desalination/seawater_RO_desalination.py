@@ -19,8 +19,7 @@ from pyomo.environ import (
 from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.initialization import (
     propagate_state,
     fix_state_vars,
@@ -28,25 +27,21 @@ from idaes.core.util.initialization import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.unit_models.translator import Translator
-from idaes.models.unit_models import Mixer, Separator, Product
-from idaes.models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models import Mixer, Separator, Product, MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core import UnitModelCostingBlock
 
-import watertap.property_models.seawater_prop_pack as prop_SW
-from watertap.unit_models.reverse_osmosis_0D import (
+from watertap.core import Database
+from watertap.property_models import SeawaterParameterBlock, ZOParameterBlock
+from watertap.unit_models import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
+    PressureExchanger,
+    Pump,
+    EnergyRecoveryDevice,
 )
-from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
-
-from watertap.core.wt_database import Database
-import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
     FeedZO,
     SWOnshoreIntakeZO,
@@ -62,8 +57,9 @@ from watertap.unit_models.zero_order import (
     MunicipalDrinkingZO,
     LandfillZO,
 )
-from watertap.costing.zero_order_costing import ZeroOrderCosting
-from watertap.costing import WaterTAPCosting
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.costing import WaterTAPCosting, ZeroOrderCosting
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -118,11 +114,11 @@ def build(erd_type=None):
     m.erd_type = erd_type
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.prop_prtrt = prop_ZO.WaterParameterBlock(solute_list=["tds", "tss"])
+    m.fs.prop_prtrt = ZOParameterBlock(solute_list=["tds", "tss"])
     density = 1023.5 * pyunits.kg / pyunits.m**3
     m.fs.prop_prtrt.dens_mass_default = density
-    m.fs.prop_psttrt = prop_ZO.WaterParameterBlock(solute_list=["tds"])
-    m.fs.prop_desal = prop_SW.SeawaterParameterBlock()
+    m.fs.prop_psttrt = ZOParameterBlock(solute_list=["tds"])
+    m.fs.prop_desal = SeawaterParameterBlock()
 
     # block structure
     prtrt = m.fs.pretreatment = Block()

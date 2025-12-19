@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import VFARecoveryZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -47,7 +47,7 @@ class TestVFARecoveryZO_no_default:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
+        m.fs.params = ZOParameterBlock(solute_list=["nonbiodegradable_cod"])
 
         m.fs.unit = VFARecoveryZO(property_package=m.fs.params, database=m.db)
 
@@ -165,7 +165,7 @@ class TestVFARecoveryZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["nonbiodegradable_cod", "foo"])
 
         m.fs.unit = VFARecoveryZO(property_package=m.fs.params, database=m.db)
 
@@ -299,7 +299,7 @@ class Test_VFARecovery_ZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
+        m.fs.params = ZOParameterBlock(solute_list=["nonbiodegradable_cod"])
 
         m.fs.unit = VFARecoveryZO(property_package=m.fs.params, database=db)
 
@@ -324,7 +324,7 @@ def test_ffCOD_not_in_solute_list():
     model.db = Database()
 
     model.fs = FlowsheetBlock(dynamic=False)
-    model.fs.params = WaterParameterBlock(solute_list=["cod"])
+    model.fs.params = ZOParameterBlock(solute_list=["cod"])
     with pytest.raises(
         ValueError,
         match="nonbiodegradable_cod must be included in the solute list since"
@@ -341,7 +341,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
+    m.fs.params = ZOParameterBlock(solute_list=["nonbiodegradable_cod"])
 
     m.fs.costing = ZeroOrderCosting()
 

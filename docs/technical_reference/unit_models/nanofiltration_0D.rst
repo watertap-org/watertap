@@ -1,5 +1,9 @@
 Nanofiltration (0D)
 ====================
+.. code-block:: python
+
+   from watertap.unit_models import Nanofiltration0D
+
 This nanofiltration (NF) unit model is suitable for non-predictive case studies where the user wishes to specify constant rejection fractions
 whilst preserving electroneutrality in the permeate stream (optional). A single recovery fraction is assumed for all solvents, whilst
 individual rejection fractions can be set for all solutes, with the exception of one ion specified for maintaining

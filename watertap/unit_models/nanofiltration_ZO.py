@@ -33,7 +33,6 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -42,6 +41,7 @@ import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
+from watertap.core.solvers import get_solver
 from watertap.custom_exceptions import FrozenPipes
 
 

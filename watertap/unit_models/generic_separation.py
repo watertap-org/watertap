@@ -28,7 +28,6 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
-
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale

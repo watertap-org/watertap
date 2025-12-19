@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import math
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -24,13 +25,8 @@ from pyomo.environ import (
     sqrt,
     units as pyunits,
 )
-from pyomo.dae import (
-    DerivativeVar,
-)
+from pyomo.dae import DerivativeVar
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
-
-# Import Watertap cores
-from watertap.core.util.initialization import check_solve, check_dof
 
 # Import IDAES cores
 from idaes.core import (
@@ -42,20 +38,19 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.misc import add_object_reference
-from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.math import smooth_min
-
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
-
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.constants import Constants
-from enum import Enum
 
+# Import Watertap cores
+from watertap.core.util.initialization import check_solve, check_dof
 from watertap.core import ControlVolume1DBlock, InitializationMixin
 from watertap.costing.unit_models.electrodialysis import cost_electrodialysis
+from watertap.core.solvers import get_solver
 
 __author__ = "Johnson Dhanasekaran"
 

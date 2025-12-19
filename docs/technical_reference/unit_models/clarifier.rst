@@ -5,7 +5,7 @@ Clarifier
 
 .. code-block:: python
 
-   from watertap.unit_models.clarifier import Clarifier
+   from watertap.unit_models import Clarifier
 
 .. index::
    pair: watertap.unit_models.clarifier;clarifier

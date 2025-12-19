@@ -11,21 +11,19 @@
 #################################################################################
 
 import pytest
-import pyomo.environ as pyo
 
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, Var
 
+import idaes.logger as idaeslog
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     calculate_scaling_factors,
 )
 import idaes.core.util.scaling as iscale
+
 from watertap.core.solvers import get_solver
-
-import watertap.property_models.NaCl_prop_pack as props
-
-import idaes.logger as idaeslog
+from watertap.property_models import NaClParameterBlock
 
 __author__ = "Marcus Holly"
 
@@ -42,7 +40,7 @@ class TestScaling:
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = props.NaClParameterBlock()
+        m.fs.properties = NaClParameterBlock()
 
         return m
 
@@ -69,7 +67,7 @@ class TestScaling:
             var_str = p.name
             if p.method is not None and m.fs.stream[0].is_property_constructed(var_str):
                 var = getattr(self, var_str)
-                if not isinstance(var, pyo.Var):
+                if not isinstance(var, Var):
                     continue  # properties that are not vars do not have constraints
                 # adding a conditional to check if a constraint exists for property; in the case when we only add and object reference, there would not be a constraint
                 if hasattr(self, "eq_" + var_str):
@@ -104,7 +102,7 @@ class TestScaling:
             var_str = p.name
             if p.method is not None and m.fs.stream[0].is_property_constructed(var_str):
                 var = getattr(self, var_str)
-                if not isinstance(var, pyo.Var):
+                if not isinstance(var, Var):
                     continue  # properties that are not vars do not have constraints
                 # adding a conditional to check if a constraint exists for property; in the case when we only add and object reference, there would not be a constraint
                 if hasattr(self, "eq_" + var_str):

@@ -5,7 +5,7 @@ Generic Desalter Unit
 
 .. code-block:: python
 
-   from watertap.unit_models.generic_desalter import GenericDesalter
+   from watertap.unit_models import GenericDesalter
 
 .. index::
    pair: watertap.unit_models.generic_desalter;generic_desalter

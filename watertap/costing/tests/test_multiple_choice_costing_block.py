@@ -11,21 +11,20 @@
 #################################################################################
 
 import pytest
-
 import re
 
 import pyomo.environ as pyo
-from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.costing import MultiUnitModelCostingBlock
 
-import watertap.property_models.NaCl_prop_pack as props
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+
+from watertap.property_models import NaClParameterBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.costing import WaterTAPCosting
+from watertap.costing import WaterTAPCosting, MultiUnitModelCostingBlock
 from watertap.costing.unit_models.reverse_osmosis import (
     cost_reverse_osmosis,
 )
@@ -36,7 +35,7 @@ def setup_flowsheet():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     m.fs.RO = ReverseOsmosis0D(

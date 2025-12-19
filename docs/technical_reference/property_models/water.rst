@@ -3,6 +3,11 @@
 Water Property Package
 ======================
 
+
+.. code-block:: python
+
+   from watertap.property_models import WaterParameterBlock
+
 This package implements property relationships for pure water.
 
 This water property package:
@@ -86,13 +91,13 @@ The user can specify the scaling factors for component mass flowrates with the f
 .. doctest::
    
    # relevant imports
-   import watertap.property_models.water_prop_pack as props
+   from watertap.property_models import WaterParameterBlock
    from idaes.core.util.scaling import calculate_scaling_factors
 
    # relevant assignments
    m = ConcreteModel()
    m.fs = FlowsheetBlock(dynamic=False)
-   m.fs.properties = props.WaterParameterBlock()
+   m.fs.properties = WaterParameterBlock()
 
    # set scaling for component mass flowrate
    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq','H2O'))

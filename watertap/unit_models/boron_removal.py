@@ -22,7 +22,6 @@ from pyomo.environ import (
     log10,
     units as pyunits,
 )
-
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -35,13 +34,13 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.constants import Constants
-from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
+from watertap.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
 

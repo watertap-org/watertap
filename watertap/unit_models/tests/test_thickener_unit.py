@@ -14,6 +14,7 @@ Tests for thickener unit example.
 """
 from io import StringIO
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     units,
@@ -22,42 +23,29 @@ from pyomo.environ import (
     Var,
 )
 
-from idaes.core import FlowsheetBlock
-
-from idaes.models.unit_models.separator import SplittingType
-
-from watertap.core.solvers import get_solver
-
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.models.unit_models import SplittingType
 import idaes.core.util.scaling as iscale
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
+from idaes.core.util.scaling import get_jacobian, jacobian_cond
+
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from idaes.core.scaling.scaling_base import ScalerBase
+from idaes.core.util.exceptions import ConfigurationError
 
-from idaes.core.util.exceptions import (
-    ConfigurationError,
-)
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-from watertap.unit_models.thickener import (
+from watertap.unit_models import (
     Thickener,
     ActivatedSludgeModelType,
     ThickenerScaler,
 )
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.property_models import (
     ASM1ParameterBlock,
     ASM1PropertiesScaler,
-)
-
-from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
 from watertap.costing import WaterTAPCosting
-from idaes.core import UnitModelCostingBlock
+from watertap.core.solvers import get_solver
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 

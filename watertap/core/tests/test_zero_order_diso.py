@@ -30,8 +30,8 @@ from pyomo.environ import (
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
-
-from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
+from watertap.core import ZeroOrderBaseData
+from watertap.property_models import ZOParameterBlock, ZOStateBlock
 from watertap.core.zero_order_diso import (
     build_diso,
     initialize_diso,
@@ -57,7 +57,7 @@ class TestDISO:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.unit = DerivedDISO(property_package=m.fs.water_props)
 
@@ -100,9 +100,9 @@ class TestDISO:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert isinstance(model.fs.unit.properties_in1, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_in2, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_treated, WaterStateBlock)
+        assert isinstance(model.fs.unit.properties_in1, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_in2, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_treated, ZOStateBlock)
 
         assert isinstance(model.fs.unit.inlet1, Port)
         assert isinstance(model.fs.unit.inlet2, Port)

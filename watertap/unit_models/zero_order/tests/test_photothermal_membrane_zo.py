@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import PhotothermalMembraneZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,7 +46,7 @@ class TestPhotothermalMembraneZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nitrogen"])
+        m.fs.params = ZOParameterBlock(solute_list=["nitrogen"])
 
         m.fs.unit = PhotothermalMembraneZO(property_package=m.fs.params, database=m.db)
 
@@ -152,7 +152,7 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["nitrogen"])
+    m.fs.params = ZOParameterBlock(solute_list=["nitrogen"])
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = PhotothermalMembraneZO(property_package=m.fs.params, database=m.db)
 

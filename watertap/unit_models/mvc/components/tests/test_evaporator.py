@@ -14,13 +14,12 @@ import pytest
 from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
 from watertap.unit_models.mvc.components import Evaporator
-import watertap.property_models.seawater_prop_pack as props_sw
-import watertap.property_models.water_prop_pack as props_w
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -31,8 +30,8 @@ solver = get_solver()
 def test_evaporator():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    m.fs.properties_vapor = props_w.WaterParameterBlock()
+    m.fs.properties_feed = SeawaterParameterBlock()
+    m.fs.properties_vapor = WaterParameterBlock()
     m.fs.evaporator = Evaporator(
         property_package_feed=m.fs.properties_feed,
         property_package_vapor=m.fs.properties_vapor,

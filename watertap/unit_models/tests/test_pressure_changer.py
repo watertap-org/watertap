@@ -9,37 +9,30 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from pyomo.environ import (
-    ConcreteModel,
-)
+from pyomo.environ import ConcreteModel
 
+import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 
-import watertap.property_models.seawater_prop_pack as props
-import watertap.property_models.multicomp_aq_sol_prop_pack as props2
-from watertap.unit_models.pressure_changer import (
+from watertap.property_models import SeawaterParameterBlock, MCASParameterBlock
+from watertap.unit_models import (
     Pump,
     EnergyRecoveryDevice,
     VariableEfficiency,
 )
-
-import idaes.core.util.scaling as iscale
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
 
 
-# -----------------------------------------------------------------------------
-
-
 def build_pump():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.properties = SeawaterParameterBlock()
 
     m.fs.unit = Pump(property_package=m.fs.properties)
 
@@ -74,7 +67,7 @@ def build_energy_recovery_device():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.properties = SeawaterParameterBlock()
 
     m.fs.unit = EnergyRecoveryDevice(property_package=m.fs.properties)
 
@@ -109,7 +102,7 @@ def build_pump_variable_flow():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.properties = SeawaterParameterBlock()
 
     m.fs.unit = Pump(
         property_package=m.fs.properties,
@@ -149,7 +142,7 @@ def build_pump_isothermal_energybalancetype_none():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props2.MCASParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["TDS"],
         mw_data={"TDS": 58e-3},
         ignore_neutral_charge=True,

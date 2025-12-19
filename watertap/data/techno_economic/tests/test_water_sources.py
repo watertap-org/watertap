@@ -22,7 +22,8 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 
 from watertap.unit_models.zero_order import FeedZO
-from watertap.core import Database, WaterParameterBlock
+from watertap.core import Database
+from watertap.property_models import ZOParameterBlock
 
 dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 with open(os.path.join(dbpath, "water_sources.yaml"), "r") as f:
@@ -39,7 +40,7 @@ def test_default_source():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(database=m.db)
+    m.fs.params = ZOParameterBlock(database=m.db)
 
     m.fs.unit = FeedZO(property_package=m.fs.params)
 
@@ -71,7 +72,7 @@ def test_all_sources(source):
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(database=m.db, water_source=source)
+    m.fs.params = ZOParameterBlock(database=m.db, water_source=source)
 
     m.fs.unit = FeedZO(property_package=m.fs.params)
 

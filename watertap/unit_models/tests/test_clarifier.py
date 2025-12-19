@@ -21,9 +21,8 @@ from pyomo.environ import (
     TransformationFactory,
 )
 
-from idaes.core import (
-    FlowsheetBlock,
-)
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.models.unit_models.separator import SplittingType
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
@@ -31,23 +30,18 @@ from idaes.core.util.scaling import (
 from watertap.core.solvers import get_solver
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-import idaes.core.util.scaling as iscale
-
-from watertap.unit_models.clarifier import Clarifier, ClarifierScaler
-from idaes.models.unit_models.separator import SplittingType
-
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.unit_models import Clarifier, ClarifierScaler
+from watertap.property_models import (
     ASM1ParameterBlock,
     ASM1PropertiesScaler,
 )
-
-from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_rectangular_clarifier,
     cost_primary_clarifier,
 )
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

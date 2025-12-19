@@ -33,7 +33,7 @@ The following example assumes a test file is being created for the NaCl property
     from idaes.models.properties.tests.test_harness import PropertyTestHarness as PropertyTestHarness_idaes
 
     # Import the property model to be tested
-    import watertap.property_models.NaCl_prop_pack as props
+    from watertap.property_models import NaClParameterBlock
 
 Next, test the configuration of the property package against the IDAES property test harness.
 
@@ -42,7 +42,7 @@ Next, test the configuration of the property package against the IDAES property 
     @pytest.mark.unit
     class TestNaClProperty_idaes(PropertyTestHarness_idaes):
         def configure(self):
-            self.prop_pack = props.NaClParameterBlock
+            self.prop_pack = NaClParameterBlock
             self.param_args = {}
             self.prop_args = {}
             self.has_density_terms = False
@@ -54,7 +54,7 @@ stateblock statistics, and the expected solutions for the model's variables.
 
     class TestNaClProperty(PropertyTestHarness):
         def configure(self):
-            self.prop_pack = props.NaClParameterBlock
+            self.prop_pack = NaClParameterBlock
             self.param_args = {}
             self.scaling_args = {
                 ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
@@ -91,7 +91,7 @@ Finally, test the regression outputs of the property model by specifying the pro
 
     class TestNaClPropertySolution_1(PropertyRegressionTest):
         def configure(self):
-            self.prop_pack = props.NaClParameterBlock
+            self.prop_pack = NaClParameterBlock
             self.param_args = {}
 
             self.solver = "ipopt"

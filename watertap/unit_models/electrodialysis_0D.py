@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from enum import Enum
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Set,
@@ -35,19 +37,16 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.misc import add_object_reference
-from watertap.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
-
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.constants import Constants
-from enum import Enum
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.costing.unit_models.electrodialysis import cost_electrodialysis
+from watertap.core.solvers import get_solver
 
 __author__ = " Xiangyu Bi, Austin Ladshaw, Kejia Hu"
 

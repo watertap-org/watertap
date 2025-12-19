@@ -9,17 +9,14 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import logging
 
-from watertap.unit_models.generic_desalter import (
-    GenericDesalter,
-)
-from pyomo.environ import (
-    value,
-)
+from pyomo.environ import value
+
+from watertap.unit_models import GenericDesalter
 from watertap.flowsheets.generic_desalination_train.costing import (
     desalter_costing,
 )
-import logging
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()

@@ -32,9 +32,9 @@ from pyomo.util.check_units import assert_units_consistent
 from watertap.core import (
     constant_intensity,
     pump_electricity,
-    WaterParameterBlock,
     ZeroOrderBaseData,
 )
+from watertap.property_models import ZOParameterBlock
 
 solver = get_solver()
 
@@ -59,7 +59,7 @@ class TestConstantIntensity:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.unit = DerivedZO(property_package=m.fs.water_props)
 
@@ -129,7 +129,7 @@ class TestPumpElectricity:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.unit = DerivedZO(property_package=m.fs.water_props)
 

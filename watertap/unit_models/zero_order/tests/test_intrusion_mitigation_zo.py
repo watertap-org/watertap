@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import IntrusionMitigationZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,7 +46,7 @@ class TestIntrusionMitigationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss", "sulfate", "foo", "bar"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss", "sulfate", "foo", "bar"])
 
         m.fs.unit = IntrusionMitigationZO(property_package=m.fs.params, database=m.db)
 
@@ -120,7 +120,7 @@ def test_costing():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["tss", "sulfate", "foo", "bar"])
+    m.fs.params = ZOParameterBlock(solute_list=["tss", "sulfate", "foo", "bar"])
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = IntrusionMitigationZO(property_package=m.fs.params, database=m.db)
     m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)

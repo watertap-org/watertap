@@ -23,7 +23,6 @@ from .membrane_channel0d import MembraneChannel0DBlock
 from .membrane_channel1d import MembraneChannel1DBlock
 from .wt_database import Database
 from .zero_order_base import ZeroOrderBaseData
-from .zero_order_properties import WaterParameterBlock, WaterStateBlock
 from .zero_order_electricity import constant_intensity, pump_electricity
 from .zero_order_pt import build_pt
 from .zero_order_sido import build_sido

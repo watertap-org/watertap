@@ -14,13 +14,12 @@ import pytest
 import pyomo.environ as pyo
 
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-)
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.unit_models.electrolyzer import Electrolyzer
+from idaes.core.util.scaling import calculate_scaling_factors
+
+from watertap.property_models import MCASParameterBlock
+from watertap.unit_models import Electrolyzer
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.core.solvers import get_solver
 
 __author__ = "Hunter Barber"
 

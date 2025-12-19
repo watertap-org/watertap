@@ -15,6 +15,7 @@ Authors: Andrew Lee, Vibhav Dabadghao
 """
 
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     units,
@@ -23,13 +24,9 @@ from pyomo.environ import (
     Suffix,
     TransformationFactory,
 )
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -46,44 +43,29 @@ from idaes.core.util.testing import (
     initialization_tester,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from watertap.core.solvers import get_solver
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
-from watertap.unit_models.aeration_tank import (
+from watertap.unit_models import (
     AerationTank,
     ElectricityConsumption,
     AerationTankScaler,
 )
-
-from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.property_models import (
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
     ASM1ParameterBlock,
     ASM1PropertiesScaler,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
     ASM1ReactionScaler,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
-)
-
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

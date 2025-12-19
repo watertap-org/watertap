@@ -51,7 +51,6 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -63,6 +62,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

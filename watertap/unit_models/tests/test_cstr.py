@@ -24,7 +24,6 @@ from pyomo.environ import (
     TransformationFactory,
 )
 
-from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 from idaes.core import (
     FlowsheetBlock,
@@ -34,31 +33,31 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-from watertap.unit_models.cstr import CSTR, CSTRScaler
-from watertap.costing import WaterTAPCosting
-
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
-    ASM1ParameterBlock,
-    ASM1PropertiesScaler,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
-    ASM1ReactionParameterBlock,
-    ASM1ReactionScaler,
-)
-
-from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock,
-)
-from idaes.models.properties.examples.saponification_reactions import (
-    SaponificationReactionParameterBlock,
-)
-from watertap.core.solvers import get_solver
+from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
 import idaes.logger as idaeslog
+from idaes.models.properties.examples.saponification_thermo import (
+    SaponificationParameterBlock,
+)
+from idaes.models.properties.examples.saponification_reactions import (
+    SaponificationReactionParameterBlock,
+)
+
+from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.unit_models import CSTR, CSTRScaler
+from watertap.costing import WaterTAPCosting
+from watertap.property_models import (
+    ASM1ParameterBlock,
+    ASM1PropertiesScaler,
+    ASM1ReactionParameterBlock,
+    ASM1ReactionScaler,
+)
+from watertap.core.solvers import get_solver
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

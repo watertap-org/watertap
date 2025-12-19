@@ -2,6 +2,10 @@
 
 Modified ASM2D Property Package
 ===============================
+
+.. code-block:: python
+
+   from watertap.property_models import ModifiedASM2dParameterBlock
 .. raw:: html
 
     <style> .red {color:red} </style>

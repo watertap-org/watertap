@@ -13,7 +13,7 @@
 import pytest
 import numpy as np
 from math import log
-import idaes.logger as idaeslog
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -26,26 +26,14 @@ from pyomo.environ import (
 from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Port
+
+import idaes.logger as idaeslog
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    ActivityCoefficientModel,
-    DensityCalculation,
-    MCASStateBlock,
-)
-from watertap.unit_models.nanofiltration_DSPMDE_0D import (
-    NanofiltrationDSPMDE0D,
-    MassTransferCoefficient,
-    ConcentrationPolarizationType,
-)
-from watertap.core.util.initialization import check_dof
-
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
@@ -59,10 +47,22 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import propagate_state
-from idaes.models.unit_models import (
-    Feed,
+from idaes.models.unit_models import Feed
+
+from watertap.property_models import (
+    MCASParameterBlock,
+    ActivityCoefficientModel,
+    DensityCalculation,
+    MCASStateBlock,
 )
-import idaes.logger as idaeslog
+from watertap.unit_models import NanofiltrationDSPMDE0D
+from watertap.unit_models.nanofiltration_DSPMDE_0D import (
+    MassTransferCoefficient,
+    ConcentrationPolarizationType,
+)
+from watertap.core.util.initialization import check_dof
+from watertap.core.solvers import get_solver
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

@@ -11,27 +11,16 @@
 #################################################################################
 
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     Var,
     assert_optimal_termination,
 )
-from pyomo.network import Port
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
-from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
-
-import watertap.property_models.multicomp_aq_sol_prop_pack as props
-
-from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.network import Port
 
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
@@ -44,6 +33,17 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
+
+from watertap.unit_models import NanofiltrationZO
+from watertap.property_models import MCASParameterBlock, MaterialFlowBasis
+from watertap.core.util.initialization import assert_no_degrees_of_freedom
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -55,7 +55,7 @@ solver = get_solver()
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.MCASParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"]
     )
     m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
@@ -75,7 +75,7 @@ def test_config():
 def test_option_has_pressure_change():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.MCASParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"]
     )
     m.fs.unit = NanofiltrationZO(
@@ -92,9 +92,9 @@ class TestNanofiltration:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props.MCASParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["Na_+", "Ca_2+", "Mg_2+", "SO4_2-", "Cl_-"],
-            material_flow_basis=props.MaterialFlowBasis.mass,
+            material_flow_basis=MaterialFlowBasis.mass,
         )
 
         m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)

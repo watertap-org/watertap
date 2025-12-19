@@ -32,7 +32,7 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.core import WaterParameterBlock, WaterStateBlock
+from watertap.property_models import ZOParameterBlock, ZOStateBlock
 from watertap.core.wt_database import Database
 from watertap.unit_models.zero_order import GasSpargedMembraneZO
 from watertap.unit_models.zero_order.gas_sparged_membrane_zo import (
@@ -51,7 +51,7 @@ class TestGasSpargedMembraneZO:
         m.db = Database()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["cod"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["cod"])
 
         m.fs.unit = GasSpargedMembraneZO(
             property_package=m.fs.water_props, database=m.db
@@ -87,9 +87,9 @@ class TestGasSpargedMembraneZO:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert isinstance(model.fs.unit.properties_in, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_treated, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_byproduct, WaterStateBlock)
+        assert isinstance(model.fs.unit.properties_in, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_treated, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_byproduct, ZOStateBlock)
 
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.treated, Port)

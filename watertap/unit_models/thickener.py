@@ -22,16 +22,6 @@ Benchmark Simulation Model no. 2 (BSM2)
 
 Modifications made to TSS formulation based on ASM type.
 """
-from enum import Enum, auto
-
-# Import IDAES cores
-from idaes.core import (
-    declare_process_block_class,
-)
-from idaes.models.unit_models.separator import SeparatorData, SplittingType
-from idaes.core.util.constants import Constants
-from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.logger as idaeslog
 
 from pyomo.environ import (
     Constraint,
@@ -42,10 +32,20 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In
 
+# Import IDAES cores
+from idaes.core import (
+    declare_process_block_class,
+)
+from idaes.models.unit_models.separator import SeparatorData, SplittingType
+from idaes.core.util.constants import Constants
+from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.logger as idaeslog
 from idaes.core.util.exceptions import (
     ConfigurationError,
 )
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
+
+from watertap.unit_models.dewatering import ActivatedSludgeModelType
 from watertap.costing.unit_models.thickener import cost_thickener
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
@@ -53,18 +53,6 @@ __author__ = "Alejandro Garciadiego, Adam Atia"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-class ActivatedSludgeModelType(Enum):
-    """
-    ASM1: ASM1 model
-    ASM2D: ASM2D model
-    modified_ASM2D: modified ASM2D model for ADM1 compatibility
-    """
-
-    ASM1 = auto()
-    ASM2D = auto()
-    modified_ASM2D = auto()
 
 
 class ThickenerScaler(CustomScalerBase):

@@ -23,11 +23,8 @@ from pyomo.environ import (
     Suffix,
     TransformationFactory,
 )
-from idaes.core import (
-    FlowsheetBlock,
-)
 
-from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
     get_jacobian,
@@ -41,42 +38,27 @@ from idaes.models.properties.examples.saponification_reactions import (
     SaponificationReactionParameterBlock,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from watertap.core.solvers import get_solver
 
-from watertap.unit_models.cstr_injection import (
+from watertap.unit_models import (
     CSTR_Injection,
     ElectricityConsumption,
     CSTR_InjectionScaler,
 )
-from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.property_models import (
     ASM1ParameterBlock,
     ASM1PropertiesScaler,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
     ASM1ReactionScaler,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
     ModifiedASM2dReactionParameterBlock,
-)
-
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
+from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

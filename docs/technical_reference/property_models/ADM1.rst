@@ -3,6 +3,10 @@
 ADM1 Property Package
 =====================
 
+.. code-block:: python
+
+   from watertap.property_models import ADM1ParameterBlock
+
 This package implements properties and reactions of an anaerobic digestion model for industrial wastewater treatment from food and beverage production using an anaerobic digester as provided in
 `Batstone, D. J. et al. (2002) <https://iwaponline.com/wst/article-abstract/45/10/65/6034>`_ and `Rosen and Jeppsson (2006) <https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf>`_.
 
