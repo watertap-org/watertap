@@ -87,7 +87,7 @@ def build_naocl_mixer_cost_param_block(blk):
 
 def build_naocl_cost_param_block(blk):
 
-    blk.NaOCl_cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         initialize=0.23,
         doc="NaOCl cost",
         units=pyo.units.USD_2018 / pyo.units.kg,
@@ -133,7 +133,7 @@ def cost_naocl_mixer(blk, dosing_rate):
 
 
 def build_caoh2_cost_param_block(blk):
-    blk.CaOH2_cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         mutable=True,
         initialize=0.12,
         doc="CaOH2 cost",
