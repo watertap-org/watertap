@@ -127,6 +127,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
     # Get all filtration time blocks
     blks = list(mp.get_active_process_blocks())
     b0 = blks[mp.TIME.first()]
+    bl = blks[mp.TIME.last()]
 
     # RO membrane area should be the same across all time periods - except flushing
     @mp.Constraint(
@@ -210,11 +211,10 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                 * b.pipe_to_module_ratio
             )
         else:
-            return (
-                b0.fs.dead_volume.volume[0, "Liq"]
-                == b0.fs.RO.area
-                * b.dead_volume_to_area_ratio
-                * b.dead_volume_to_area_multiplier
+            return b0.fs.dead_volume.volume[
+                0, "Liq"
+            ] == b0.fs.RO.area * b.dead_volume_to_area_ratio * b.dead_volume_to_area_multiplier * (
+                1 + b.pipe_to_module_ratio
             )
 
     calculate_variable_from_constraint(
@@ -374,7 +374,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                 * blks[t].fs.dead_volume.accumulation_time[0]
                 for t in range(b.n_time_points - 1)
             )
-            + b0.fs.dead_volume.volume[0, "Liq"]
+            + bl.fs.dead_volume.volume[0, "Liq"]
         )
 
     # Overall water recovery
@@ -413,5 +413,5 @@ def fix_overall_water_recovery(mp, overall_water_recovery):
         def ro_accumulation_time_cons(b, t):
             blks = list(b.get_active_process_blocks())
             return blks[t].fs.RO.feed_side.accumulation_time[0] == (
-                blks[t].fs.dead_volume.accumulation_time[0]
+                blks[0].fs.dead_volume.accumulation_time[0]
             )

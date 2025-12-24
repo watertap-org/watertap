@@ -1,37 +1,76 @@
-# mesh_study_BGW:
+# study_BGW_mesh_study_optimization_lcow:
 #   build_defaults:
 #     feed_tds: 5
+#     fixed_setup: False
 #   build_loop:
 #     time_steps:
 #       - 11
 #       - 21
 #       - 51
 #       - 101
-#       - 201
-#       - 501
-#     sweep_param_loop:
-#       final_concentration:
-#         type: LinearSample
-#         param: overall_recovery
-#         lower_limit: 0.5
-#         upper_limit: 0.9
-#         num_samples: 5
+#     build_loop:
+#       use_hold_up:
+#         - True
+#         - False
+#       sweep_param_loop:
+#         final_concentration:
+#           type: LinearSample
+#           param: overall_recovery
+#           lower_limit: 0.5
+#           upper_limit: 0.9
+#           num_samples: 21
 
-mesh_study_SW:
+
+study_SW_mesh_study_optimization_lcow:
   build_defaults:
-    feed_tds: 35
+    feed_tds: 5
+    fixed_setup: False
   build_loop:
     time_steps:
       - 11
       - 21
       - 51
-      - 101
-      - 201
-      # - 501
-    sweep_param_loop:
-      final_concentration:
-        type: LinearSample
-        param: overall_recovery
-        lower_limit: 0.4
-        upper_limit: 0.7
-        num_samples: 5
+      # - 101
+    build_loop:
+      use_hold_up:
+        - True
+        - False
+      sweep_param_loop:
+        final_concentration:
+          type: LinearSample
+          param: overall_recovery
+          lower_limit: 0.5
+          upper_limit: 0.9
+          num_samples: 21
+# # study_BGW_fixed_design:
+# #   build_defaults:
+# #     feed_tds: 5
+# #     time_steps: 101
+# #     fixed_design: True
+# #   build_loop:
+# #     use_hold_up:
+# #       - True
+# #       - False
+# #     sweep_param_loop:
+# #       final_concentration:
+# #         type: LinearSample
+# #         param: overall_recovery
+# #         lower_limit: 0.5
+# #         upper_limit: 0.9
+# #         num_samples: 21
+# study_SW_optimization_lcow:
+#   build_defaults:
+#     feed_tds: 35
+#     time_steps: 101
+#     fixed_setup: False
+#   build_loop:
+#     use_hold_up:
+#       - True
+#       - False
+#     sweep_param_loop:
+#       final_concentration:
+#         type: LinearSample
+#         param: overall_recovery
+#         lower_limit: 0.4
+#         upper_limit: 0.7
+#         num_samples: 16

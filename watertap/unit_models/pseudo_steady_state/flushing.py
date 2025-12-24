@@ -171,7 +171,8 @@ class FlushingData(UnitModelBlockData):
     def build(self):
 
         super().build()
-
+        if self.config.dataset_filename is not None:
+            self.fit_rtd_profile()
         # Parameters
         self.number_tanks_in_series = Param(
             initialize=self.config.number_tanks_in_series,
@@ -218,9 +219,6 @@ class FlushingData(UnitModelBlockData):
             units=pyunits.s,
             doc="Duration of flushing",
         )
-
-        if self.config.dataset_filename is not None:
-            self.fit_rtd_profile()
 
         # Add the constraint to calculate flushing efficiency using parameters in the unit model
         @self.Constraint(
@@ -282,4 +280,9 @@ class FlushingData(UnitModelBlockData):
         self.display()
 
     def calculate_scaling_factors(self):
-        pass
+
+        iscale.set_scaling_factor(self.flushing_feed_concentration, 1)
+        iscale.set_scaling_factor(self.mean_residence_time, 1)
+        iscale.set_scaling_factor(self.flushing_efficiency, 1)
+        iscale.constraint_scaling_transform(self.flushing_efficiency_constraint, 10)
+        iscale.constraint_scaling_transform(self.flushing_concentration_constraint, 1)

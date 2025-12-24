@@ -109,7 +109,7 @@ def create_ccro_multiperiod(
         }
         for t in range(n_time_points)
     }
-
+    print(flowsheet_options)
     # Build instances of the process model for each time period
     mp.build_multi_period_model(model_data_kwargs=flowsheet_options)
 
@@ -141,6 +141,7 @@ def create_ccro_multiperiod(
                     m.fs.P2,
                     register_electricity_cost=True,
                     register_capital_cost=True,
+                    # costing_method_arguments={"pump_type": "low_pressure"},
                 )
                 cc_utils.register_costed_unit(
                     mp,
@@ -222,6 +223,7 @@ def create_ccro_multiperiod(
         assert degrees_of_freedom(m) == 0
 
         results = solve(model=m, tee=True)
+        print_close_to_bounds(m)
         assert_optimal_termination(results)
         ccro_operating_conditions.unfix_dof(
             m, unfix_dead_volume_state=True, cc_configuration=cc_configuration
@@ -533,6 +535,7 @@ def solve(
     msg = (
         "The current configuration is infeasible. Please adjust the decision variables."
     )
+    print_close_to_bounds(model)
     if raise_on_failure:
         print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
 
@@ -545,12 +548,7 @@ def solve(
         print("\n--------- INFEASIBLE CONSTRAINTS ---------\n")
         print_infeasible_constraints(model)
 
-        raise RuntimeError(msg)
-    else:
-        print(msg)
-        # debug(model, solver=solver, automate_rescale=False, resolve=False)
-        # check_jac(model)
-        assert False
+        # raise RuntimeError(msg)
     return results
 
 
@@ -578,12 +576,10 @@ def setup_optimization(
             m.fs.RO.length.unfix()
 
             m.fs.RO.width.unfix()
-            m.fs.RO.length.setlb(0.1)
+            m.fs.RO.length.setlb(4)
 
             m.fs.RO.width.setlb(0.1)
 
-            # m.fs.RO.mixed_permeate[0].conc_mass_phase_comp.display()
-            m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"].setub(0.5)
             m.fs.RO.area.setlb(50)
             m.fs.RO.area.unfix()
             m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(
@@ -615,10 +611,81 @@ def setup_optimization(
                 recycle_flow_bounds[1] * pyunits.L / pyunits.s
             )
 
+    blkfs = mp.get_active_process_blocks()[-1]
+    blkfs.fs.flushing.flushing_efficiency.unfix()
+    blkfs.fs.flushing.flushing_efficiency.setub(0.95)
+    blkfs.fs.flushing.flushing_efficiency.setlb(0.1)
     if mp.include_costing:
-        mp.cost_objective = Objective(expr=mp.costing.LCOW)
+        mp.cost_objective = Objective(expr=(10 * mp.costing.LCOW**2))
 
     print("DOF for optimization:", degrees_of_freedom(mp))
+
+
+def fix_optimization_dofs(
+    mp,
+    accumulation_time=None,
+    overal_water_recovery=None,
+    add_water_recovery_objective=False,
+    add_initial_pressure_objective=False,
+    membrane_area=None,
+    membrane_length=None,
+    recycle_rate=None,
+    flushing_efficiency=None,
+    target_pressure=245 * pyunits.psi,
+):
+    blk0 = mp.get_active_process_blocks()[0]
+    blkfs = mp.get_active_process_blocks()[-1]
+    blk0.fs.RO.length.fix()
+    blk0.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
+    if membrane_area is not None:
+        blk0.fs.RO.area.fix(membrane_area)
+    if membrane_length is not None:
+        blk0.fs.RO.length.fix(membrane_length)
+    if recycle_rate is not None:
+        blk0.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
+            recycle_rate
+        )
+    blk0.fs.RO.area.fix()
+    for t, m in enumerate(mp.get_active_process_blocks(), 1):
+        if t != mp.n_time_points:
+            m.fs.RO.area.setlb(0)
+            m.fs.RO.feed_side.velocity[0, 0].setub(None)
+            m.fs.RO.feed_side.velocity[0, 0].setlb(None)
+    if accumulation_time is not None:
+        blk0.fs.dead_volume.accumulation_time[0].fix(accumulation_time)
+    mp.total_cycle_time.setub(None)
+    mp.overall_recovery.unfix()
+    if add_water_recovery_objective:
+        mp.min_water_recovery = Objective(
+            expr=(mp.overall_recovery * 100 - overal_water_recovery * 100) ** 2
+        )
+        mp.min_water_recovery.pprint()
+        mp.overall_recovery.unfix()
+        mp.overall_recovery.setlb(overal_water_recovery + 0.1)
+        mp.overall_recovery.setlb(overal_water_recovery - 0.1)
+        if mp.find_component("cost_objective") is not None:
+            mp.cost_objective.deactivate()
+    elif overal_water_recovery is not None:
+        mp.overall_recovery.fix(overal_water_recovery)
+    if flushing_efficiency is not None:
+        blkfs.fs.flushing.flushing_efficiency.fix(flushing_efficiency)
+    else:
+        blkfs.fs.flushing.flushing_efficiency.unfix()
+        blkfs.fs.flushing.flushing_efficiency.setub(0.95)
+        blkfs.fs.flushing.flushing_efficiency.setlb(0.25)
+    if add_initial_pressure_objective:
+        mp.min_initial_pressure = Objective(
+            expr=(
+                pyunits.convert(blk0.fs.P1.outlet.pressure[0], to_units=pyunits.bar)
+                - pyunits.convert(target_pressure, to_units=pyunits.bar)
+            )
+            ** 2
+        )
+        if mp.find_component("cost_objective") is not None:
+            mp.cost_objective.deactivate()
+        mp.min_initial_pressure.pprint()
+
+    print("DOF with MP fixed:", degrees_of_freedom(mp))
 
 
 def print_results_table(mp, w=15):
@@ -654,15 +721,20 @@ def print_results_table(mp, w=15):
 
         raw_feed = pyunits.convert(
             blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
-            to_units=pyunits.L / pyunits.min,
+            to_units=pyunits.L / pyunits.s,
         )()
-        raw_feed_mass = sum(
-            pyunits.convert(
-                blks.fs.raw_feed.properties[0].flow_mass_phase_comp["Liq", comp],
-                to_units=pyunits.kg / pyunits.min,
-            )()
-            for comp in blks.fs.properties.component_list
-        )
+        if blks.fs.operation_mode == "filtration":
+            raw_feed_mass = sum(
+                pyunits.convert(
+                    blks.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp[
+                        "Liq", comp
+                    ],
+                    to_units=pyunits.kg / pyunits.s,
+                )()
+                for comp in blks.fs.properties.component_list
+            )
+        else:
+            raw_feed_mass = 0
         if blks.fs.find_component("product") is not None:
             permeate = pyunits.convert(
                 blks.fs.product.properties[0].flow_vol_phase["Liq"],
@@ -797,6 +869,16 @@ def print_results_table(mp, w=15):
         .dens_mass_phase["Liq"]
         .value,
     )
+    if mp.get_active_process_blocks()[0].fs.ro_model_with_hold_up:
+        print(
+            f"{'Total Hold-up Volume:':<{w}s}",
+            mp.get_active_process_blocks()[0].fs.RO.feed_side.volume.value
+            + mp.get_active_process_blocks()[0].fs.dead_volume.volume[0, "Liq"].value,
+        )
+        print(
+            f"{'RO Hold-up Volume:':<{w}s}",
+            mp.get_active_process_blocks()[0].fs.RO.feed_side.volume.value,
+        )
     print(
         f"{'Dead Volume:':<{w}s}",
         mp.get_active_process_blocks()[0].fs.dead_volume.volume[0, "Liq"].value,
@@ -818,6 +900,108 @@ def print_results_table(mp, w=15):
         f"{'RO Inlet Velocity:':<{w}s}",
         mp.get_active_process_blocks()[0].fs.RO.feed_side.velocity[0, 0].value,
     )
+    if mp.find_component("costing"):
+        print(
+            f"{'Levelized Cost of Water ($/m3):':<{w}s}",
+            value(mp.costing.LCOW),
+        )
+
+
+def validation_configs():
+    config = CCROConfiguration()
+
+    config["raw_feed_conc"] = 1.028 * pyunits.g / pyunits.L
+    config["raw_feed_flowrate"] = pyunits.convert(
+        6.4 * pyunits.gallon / pyunits.ft**2 / pyunits.day * (3 * 37.2) * pyunits.m**2,
+        to_units=pyunits.L / pyunits.min,
+    )
+    config["temperature"] = (273.15 + 20) * pyunits.K
+    config["membrane_area"] = 3 * 37.2 * pyunits.m**2
+    config["membrane_length"] = 3 * pyunits.m
+    config["osmotic_overpressure"] = 1.5 * pyunits.dimensionless
+    config["A_comp"] = 1.37778e-11 * pyunits.meter / (pyunits.second * pyunits.Pa)
+    config["B_comp"] = 3.2e-08 * pyunits.meter / pyunits.second
+    config["channel_height"] = 0.00086 * pyunits.m
+    config["spacer_porosity"] = 0.9 * pyunits.dimensionless
+    config["dead_volume_to_area_ratio"] = (
+        1.1 * 0.00086 * 0.9 * pyunits.m**3 / pyunits.m**2
+    )
+    config["accumulation_time"] = 10 * pyunits.second
+    config["recycle_flowrate"] = 3.28 * pyunits.L / pyunits.s
+    config["flushing_efficiency"] = 0.85 * pyunits.dimensionless
+    config["pipe_to_module_ratio"] = 1 * pyunits.dimensionless
+    config.display()
+    return config
+
+
+def validation_seedling_configs():
+    config = CCROConfiguration()
+
+    config["raw_feed_conc"] = 5.831466976 * pyunits.g / pyunits.L
+    config["raw_feed_flowrate"] = pyunits.convert(
+        15 * pyunits.L / pyunits.m**2 / pyunits.hr * (7.9) * pyunits.m**2,
+        to_units=pyunits.L / pyunits.min,
+    )
+    config["temperature"] = (273.15 + 20) * pyunits.K
+    config["membrane_area"] = 7.9 * pyunits.m**2
+    config["membrane_length"] = 1 * pyunits.m
+    config["osmotic_overpressure"] = 1.5 * pyunits.dimensionless
+    config["A_comp"] = (
+        5.963600814843386e-12 * pyunits.meter / (pyunits.second * pyunits.Pa)
+    )
+    config["B_comp"] = 3.0790017613480806e-08 * pyunits.meter / pyunits.second
+    config["channel_height"] = 0.0008636000000000001 * pyunits.m
+    config["spacer_porosity"] = 0.9 * pyunits.dimensionless
+    config["dead_volume_to_area_ratio"] = (
+        1.1 * 0.00086 * 0.9 * pyunits.m**3 / pyunits.m**2
+    )
+    config["pipe_to_module_ratio"] = 1 * pyunits.dimensionless
+    config["accumulation_time"] = 10 * pyunits.second
+    config["recycle_flowrate"] = 50 * pyunits.L / pyunits.min
+    config["flushing_efficiency"] = 0.9 * pyunits.dimensionless
+    config.display()
+    return config
+
+
+def check_jac(m, print_extreme_jacobian_values=True):
+    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(m, min_scale=1e-8)
+    try:
+        cond_number = iscale.jacobian_cond(m, jac=jac_scaled) / 1e10
+        print("--------------------------")
+        print("COND NUMBER:", cond_number)
+    except:
+        print("Cond number failed")
+        cond_number = None
+    if print_extreme_jacobian_values:
+        print("--------------------------")
+        print("Extreme Jacobian entries:")
+        extreme_entries = iscale.extreme_jacobian_entries(
+            m, jac=jac_scaled, nlp=nlp, zero=1e-20, large=100
+        )
+        for val, var, con in extreme_entries:
+            print(val, var.name, con.name)
+        print("--------------------------")
+        print("Extreme Jacobian columns:")
+        extreme_cols = iscale.extreme_jacobian_columns(
+            m, jac=jac_scaled, nlp=nlp, small=1e-3
+        )
+        for val, var in extreme_cols:
+            print(val, var.name)
+        print("------------------------")
+        print("Extreme Jacobian rows:")
+        extreme_rows = iscale.extreme_jacobian_rows(
+            m, jac=jac_scaled, nlp=nlp, small=1e-3
+        )
+        for val, con in extreme_rows:
+            print(val, con.name)
+    for var, scale in iscale.badly_scaled_var_generator(m):
+        print(
+            "Badly scaled variable:",
+            var.name,
+            var.value,
+            iscale.get_scaling_factor(var),
+        )
+    return cond_number
 
 
 if __name__ == "__main__":
@@ -825,28 +1009,37 @@ if __name__ == "__main__":
 
     cc_config = CCROConfiguration()
     cc_config["raw_feed_conc"] = 5 * pyunits.g / pyunits.L
+    cc_config["membrane_area"] = 100 * pyunits.meter**2
 
-    cc_config["accumulation_time"] = 1 * pyunits.second
+    # cc_config["accumulation_time"] = 1 * pyunits.second
+    # cc_config = validation_seedling_configs()
+    peridos = 11
     mp = create_ccro_multiperiod(
-        n_time_points=51,
+        n_time_points=peridos,
         include_costing=True,
         cc_configuration=cc_config,
         use_ro_with_hold_up=False,
     )
     setup_optimization(
         mp,
-        overall_water_recovery=0.8,
-        max_cycle_time_hr=1,
-        recycle_flow_bounds=(0.1, 100),
+        overall_water_recovery=0.5,
+        max_cycle_time_hr=10,
+        recycle_flow_bounds=(10, 100),
     )
-
-    db = DiagnosticsToolbox(mp)
-    db.display_constraints_with_large_residuals()
-    # assert False
-    results = solve(mp, use_ipoptv2=False)
-    mp.overall_recovery.fix(0.85)
+    # fix_optimization_dofs(
+    #     mp,
+    #     overal_water_recovery=0.5,
+    #     add_water_recovery_objective=True,
+    #     membrane_area=200 * pyunits.meter**2,
+    #     membrane_length=1 * pyunits.meter,
+    #     recycle_rate=10 * pyunits.L / pyunits.s,
+    #     flushing_efficiency=0.8,
+    # )
+    # check_jac(m)
+    # # assert False
     results = solve(mp, use_ipoptv2=False)
     print_results_table(mp, w=16)
-    blks = list(mp.get_active_process_blocks())
-    blks[0].fs.raw_feed.properties[0].display()
-    blks[-1].fs.raw_feed.properties[0].display()
+    mp.overall_recovery.fix(0.9)
+    results = solve(mp, use_ipoptv2=False)
+    print_results_table(mp, w=16)
+    # blks = list(mp.get_active_process_blocks())

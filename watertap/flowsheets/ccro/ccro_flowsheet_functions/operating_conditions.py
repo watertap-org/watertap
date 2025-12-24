@@ -43,6 +43,7 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
             dead_volume = (
                 cc_configuration["dead_volume_to_area_ratio"]
                 * cc_configuration["membrane_area"]
+                * (1 + cc_configuration["pipe_to_module_ratio"])
             )
             print(f"Dead Volume set to {dead_volume}")
         else:
@@ -108,8 +109,11 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
         m.fs.RO.B_comp.fix(cc_configuration["B_comp"])
         m.fs.RO.area.fix(cc_configuration["membrane_area"])
         m.fs.RO.length.unfix()
-        m.fs.RO.width.unfix()
-        m.fs.RO.feed_side.velocity[0, 0].fix(0.15)
+        if cc_configuration["membrane_length"] != "auto":
+            m.fs.RO.length.fix(cc_configuration["membrane_length"])
+        else:
+            m.fs.RO.width.unfix()
+            m.fs.RO.feed_side.velocity[0, 0].fix(0.15)
         m.fs.RO.feed_side.channel_height.fix(cc_configuration["channel_height"])
         m.fs.RO.feed_side.spacer_porosity.fix(cc_configuration["spacer_porosity"])
 
@@ -120,7 +124,16 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
         # m.fs.RO.feed_side.cp_modulus.setub(50)
         # m.fs.RO.feed_side.cp_modulus.setlb(0.1)
         m.fs.RO.deltaP.setlb(None)
-
+        m.fs.RO.feed_side.K.setlb(1e-6)
+        m.fs.RO.feed_side.friction_factor_darcy.setub(200)
+        m.fs.RO.flux_mass_phase_comp.setub(1)
+        m.fs.RO.feed_side.cp_modulus.setub(50)
+        m.fs.RO.feed_side.cp_modulus.setlb(0.1)
+        m.fs.RO.deltaP.setlb(None)
+        for e in m.fs.RO.permeate_side:
+            if e[-1] != 0:
+                m.fs.RO.permeate_side[e].pressure_osm_phase["Liq"].setlb(200)
+                m.fs.RO.permeate_side[e].molality_phase_comp["Liq", "NaCl"].setlb(1e-8)
         ccro_scaling.scale_filtration_system(m)
 
     elif m.fs.operation_mode == "flushing":

@@ -17,7 +17,7 @@ def get_sequence(data_manager, dir, key, time_periods):
 if __name__ == "__main__":
     data_manager = psDataManager(
         [
-            "output/ccro_brine_sweep_analysisType_study_BGW_optimization_lcow.h5",
+            "output/ccro_brine_sweep_analysisType_study_SW_optimization_lcow.h5",
         ]
     )
     import_keys = [
@@ -55,14 +55,13 @@ if __name__ == "__main__":
         {
             "filekey": f"blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
             "return_key": "Recycle flow",
-            "units": "L/s",
         },
         # {
         #     "filekey": f"blocks[0].process.fs.RO.area",
         #     "return_key": "Flushing efficiency",
         # },
     ]
-    time_periods = range(300)
+    time_periods = range(200)
 
     for t in time_periods:
         import_keys.append(
@@ -120,13 +119,13 @@ if __name__ == "__main__":
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="LCOW ($\$$/m$^3$)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 0.2, 0.4, 0.6, 0.8, 1],
+        xticks=[40, 50, 60, 70],
+        yticks=[0, 0.5, 1, 1.5, 2, 2.5],
     )
 
     fig.add_legend()
 
-    fig.save(file_name="BGW lcow", save_location="figs")
+    fig.save(file_name="SW lcow", save_location="figs")
     # fig = figureGenerator()
     # fig.init_figure()
     # for lp in line_plots_options:
@@ -138,14 +137,15 @@ if __name__ == "__main__":
     # fig.set_axis(
     #     xlabel="Water recovery (%)",
     #     ylabel="SEC (kWh/m$^3$)",
-    #     xticks=[50, 60, 70, 80, 90],
+    #     xticks=[40,50,60,70],
     #     yticks=[0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3],
     # )
     # fig.show()
-    fig.save(file_name="BGW lcow", save_location="figs")
+    fig.save(file_name="SW lcow", save_location="figs")
     fig = figureGenerator()
     fig.init_figure()
     for lp in line_plots_options:
+        data_manager[("use_hold_up", lp), "Recycle flow"].to_units("L/min")
         fig.plot_line(
             data_manager[("use_hold_up", lp), "Water recovery"].data,
             data_manager[("use_hold_up", lp), "Recycle flow"].data,
@@ -155,16 +155,17 @@ if __name__ == "__main__":
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="Recycle flow rate (L/min)",
-        xticks=[50, 60, 70, 80, 90],
+        xticks=[40, 50, 60, 70],
         yticks=[0, 50, 100, 150, 200],
     )
     fig.add_legend()
     # fig.show()
-    fig.save(file_name="BGW Recycle", save_location="figs")
+    fig.save(file_name="SW Recycle", save_location="figs")
 
     fig = figureGenerator()
     fig.init_figure()
     for lp in line_plots_options:
+        data_manager[("use_hold_up", lp), "Recycle flow"].to_units("L/min")
         fig.plot_line(
             data_manager[("use_hold_up", lp), "Water recovery"].data,
             data_manager[("use_hold_up", lp), "RO area"].data,
@@ -174,15 +175,16 @@ if __name__ == "__main__":
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="Area (m$^2$)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 50, 100, 150, 200, 250, 300],
+        xticks=[40, 50, 60, 70],
+        yticks=[0, 50, 100, 150, 200, 250, 300, 350, 400],
     )
     # fig.show()
     fig.add_legend()
-    fig.save(file_name="BGW Area", save_location="figs")
+    fig.save(file_name="SW Area", save_location="figs")
     fig = figureGenerator()
     fig.init_figure()
     for lp in line_plots_options:
+        data_manager[("use_hold_up", lp), "Recycle flow"].to_units("L/min")
         fig.plot_line(
             data_manager[("use_hold_up", lp), "Water recovery"].data,
             data_manager[("use_hold_up", lp), "RO length"].data,
@@ -192,12 +194,12 @@ if __name__ == "__main__":
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="Length (m)",
-        xticks=[50, 60, 70, 80, 90],
+        xticks=[40, 50, 60, 70],
         yticks=[0, 2, 4, 6, 8, 10, 12],
     )
     # fig.show()
     fig.add_legend()
-    fig.save(file_name="BGW Length", save_location="figs")
+    fig.save(file_name="SW Length", save_location="figs")
     fig = figureGenerator()
     fig.init_figure()
     # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
@@ -214,18 +216,19 @@ if __name__ == "__main__":
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="Total cycle time (min)",
-        xticks=[50, 60, 70, 80, 90],
+        xticks=[40, 50, 60, 70],
         yticks=[0, 10, 20, 30, 40, 50, 60],
     )
     # fig.show()
     fig.add_legend(location="upper right")
-    fig.save(file_name="BGW Total cycle time", save_location="figs")
+    fig.save(file_name="SW Total cycle time", save_location="figs")
     fig = figureGenerator()
     fig.init_figure()
     # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
     #     "l/hr"
     # )
     for lp in line_plots_options:
+        data_manager[("use_hold_up", lp), "Recycle flow"].to_units("L/min")
         fig.plot_line(
             data_manager[("use_hold_up", lp), "Water recovery"].data,
             data_manager[("use_hold_up", lp), "Flushing efficiency"].data * 100,
@@ -235,12 +238,12 @@ if __name__ == "__main__":
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="Flushing efficiency (%)",
-        xticks=[50, 60, 70, 80, 90],
+        xticks=[40, 50, 60, 70],
         yticks=[0, 25, 50, 75, 100],
     )
     # fig.show()
     fig.add_legend(location="upper right")
-    fig.save(file_name="BGW Flushing efficiency", save_location="figs")
+    fig.save(file_name="SW Flushing efficiency", save_location="figs")
     fig = figureGenerator()
     fig.init_figure()
     # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
@@ -256,13 +259,14 @@ if __name__ == "__main__":
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="RO SP recovery (%)",
-        xticks=[50, 60, 70, 80, 90],
+        xticks=[40, 50, 60, 70],
         yticks=[0, 25, 50, 75, 100],
     )
     # fig.show()
     fig.add_legend(location="upper right")
-    fig.save(file_name="BGW SP recovery", save_location="figs")
+    fig.save(file_name="SW SP recovery", save_location="figs")
     fig.show()
+
     # d = get_sequence(
     #     data_manager,
     #     "ccro_sweep_brackish_recovery/overall_recovery",
@@ -308,7 +312,7 @@ if __name__ == "__main__":
     #     yticks=[0, 20, 40, 60, 80, 100],
     # )
     # # fig.show()
-    # fig.save(file_name="BGW feed tds", save_location="figs")
+    # fig.save(file_name="SW feed tds", save_location="figs")
 
     # d = get_sequence(
     #     data_manager,
@@ -349,7 +353,7 @@ if __name__ == "__main__":
     #     yticks=[0, 20, 40, 60, 80, 100],
     # )
     # # fig.show()
-    # fig.save(file_name="BGW retentate tds", save_location="figs")
+    # fig.save(file_name="SW retentate tds", save_location="figs")
 
     # d = get_sequence(
     #     data_manager,
@@ -390,4 +394,4 @@ if __name__ == "__main__":
     #     yticks=[0, 20, 40, 60, 80, 100],
     # )
     # fig.show()
-    # fig.save(file_name="BGW pressure", save_location="figs")
+    # fig.save(file_name="SW pressure", save_location="figs")

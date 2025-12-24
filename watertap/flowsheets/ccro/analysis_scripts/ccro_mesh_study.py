@@ -7,17 +7,33 @@ from psPlotKit.data_manager.ps_data import psData
 def get_sequence(data_manager, dir, key, time_periods):
     sequence = []
     for t in time_periods:
-        if (dir, (t, key)) in data_manager:
-            sequence.append(data_manager[dir, (t, key)].data)
+        print((*dir, (t, key)))
+        if (*dir, (t, key)) in data_manager:
+            sequence.append(data_manager[(*dir, (t, key))].data)
     sequence = np.array(sequence)
 
     return sequence.T
 
 
+def add_legend(fig, cl, ms):
+    for c in cl:
+        fig.plot_line([], [], color=cl[c], ls="-", marker="s", label=f"Periods: {c}")
+
+    for m in ms:
+        fig.plot_line(
+            [],
+            [],
+            color="black",
+            ls=ms[m]["ls"],
+            marker=ms[m]["marker"],
+            label=ms[m]["label"],
+        )
+
+
 if __name__ == "__main__":
     data_manager = psDataManager(
         [
-            "output/ccro_brine_sweep_analysisType_mesh_study_BGW.h5",
+            "output/ccro_brine_sweep_analysisType_study_BGW_mesh_study_optimization_lcow.h5",
         ]
     )
     import_keys = [
@@ -32,8 +48,17 @@ if __name__ == "__main__":
             "units": "g/L",
         },
         {
+            "filekey": "total_cycle_time",
+            "return_key": "Total cycle time",
+            "units": "min",
+        },
+        {
             "filekey": "costing.LCOW",
             "return_key": "LCOW",
+        },
+        {
+            "filekey": "costing.specific_energy_consumption[0]",
+            "return_key": "SEC",
         },
         {
             "filekey": f"blocks[0].process.fs.RO.area",
@@ -44,19 +69,16 @@ if __name__ == "__main__":
             "return_key": "RO length",
         },
         {
-            "filekey": f"blocks[0].process.fs.RO.width",
-            "return_key": "RO width",
-        },
-        {
-            "filekey": f"blocks[0].process.fs.RO.feed_side.velocity[0.0,0.0]",
-            "return_key": "RO inlet velocity",
-        },
-        {
             "filekey": f"blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
             "return_key": "Recycle flow",
+            "units": "L/s",
         },
+        # {
+        #     "filekey": f"blocks[0].process.fs.RO.area",
+        #     "return_key": "Flushing efficiency",
+        # },
     ]
-    time_periods = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    time_periods = range(300)
 
     for t in time_periods:
         import_keys.append(
@@ -79,11 +101,16 @@ if __name__ == "__main__":
         )
         import_keys.append(
             {
-                "filekey": f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
-                "return_key": (t, "RO SP"),
+                "filekey": f"blocks[{t}].process.fs.flushing.flushing_efficiency",
+                "return_key": "Flushing efficiency",
             }
         )
-
+        import_keys.append(
+            {
+                "filekey": f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
+                "return_key": "RO SP recovery",
+            }
+        )
         # import_keys.append(
         #     {
         #         "filekey": f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,0.0].pressure",
@@ -91,17 +118,28 @@ if __name__ == "__main__":
         #     }
         # )
 
+    mesh_steps = {11: "#a6cee3", 21: "#1f78b4", 51: "#b2df8a", 101: "#33a02c"}
     data_manager.load_data(import_keys, exact_keys=True)
     data_manager.display()
 
+    line_plots_options = {
+        "True": {"ls": "--", "marker": "o", "label": "With Hold Up"},
+        "False": {"ls": "-", "marker": "d", "label": "No Hold Up"},
+    }
     fig = figureGenerator()
     fig.init_figure()
-    for ts in [11, 51, 101, 201]:
-        fig.plot_line(
-            data_manager[("time_steps", ts), "Water recovery"].data,
-            data_manager[("time_steps", ts), "LCOW"].data,
-            label=f"Time steps: {ts}",
-        )
+    for lp in line_plots_options:
+        for ts in mesh_steps:
+            fig.plot_line(
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+                ].data,
+                data_manager[("time_steps", ts), ("use_hold_up", lp), "LCOW"].data,
+                color=mesh_steps[ts],
+                ls=line_plots_options[lp]["ls"],
+                marker=line_plots_options[lp]["marker"],
+            )
+    add_legend(fig, mesh_steps, line_plots_options)
     fig.set_axis(
         xlabel="Water recovery (%)",
         ylabel="LCOW ($\$$/m$^3$)",
@@ -114,34 +152,47 @@ if __name__ == "__main__":
     # assert False
     fig = figureGenerator()
     fig.init_figure()
-    for ts in [11, 51, 101, 201]:
-        data_manager[("time_steps", ts), "Recycle flow"].to_units("L/min")
-        fig.plot_line(
-            data_manager[("time_steps", ts), "Water recovery"].data,
-            data_manager[("time_steps", ts), "Recycle flow"].data,
-            label=f"Time steps: {ts}",
-        )
+    for lp in line_plots_options:
+        for ts in mesh_steps:
+            data_manager[
+                ("time_steps", ts), ("use_hold_up", lp), "Recycle flow"
+            ].to_units("L/s")
+            fig.plot_line(
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+                ].data,
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Recycle flow"
+                ].data,
+                color=mesh_steps[ts],
+                ls=line_plots_options[lp]["ls"],
+                marker=line_plots_options[lp]["marker"],
+            )
     fig.set_axis(
         xlabel="Water recovery (%)",
-        ylabel="Recycle flow rate (L/min)",
+        ylabel="Recycle flow rate (L/s)",
         xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 1000, 2000, 3000, 4000],
+        yticks=[0, 1, 2, 3, 4, 5],
     )
+    add_legend(fig, mesh_steps, line_plots_options)
     fig.add_legend()
     # fig.show()
     fig.save(file_name="Recycle", save_location="figs")
 
     fig = figureGenerator()
     fig.init_figure()
-    for ts in [11, 51, 101, 201]:
-        # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
-        #     "l/hr"
-        # )
-        fig.plot_line(
-            data_manager[("time_steps", ts), "Water recovery"].data,
-            data_manager[("time_steps", ts), "RO area"].data,
-            label=f"Time steps: {ts}",
-        )
+    for lp in line_plots_options:
+        for ts in mesh_steps:
+            fig.plot_line(
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+                ].data,
+                data_manager[("time_steps", ts), ("use_hold_up", lp), "RO area"].data,
+                color=mesh_steps[ts],
+                ls=line_plots_options[lp]["ls"],
+                marker=line_plots_options[lp]["marker"],
+            )
+    add_legend(fig, mesh_steps, line_plots_options)
     fig.add_legend()
     fig.set_axis(
         xlabel="Water recovery (%)",
@@ -155,15 +206,18 @@ if __name__ == "__main__":
 
     fig = figureGenerator()
     fig.init_figure()
-    for ts in [11, 51, 101, 201]:
-        # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
-        #     "l/hr"
-        # )
-        fig.plot_line(
-            data_manager[("time_steps", ts), "Water recovery"].data,
-            data_manager[("time_steps", ts), "RO length"].data,
-            label=f"Time steps: {ts}",
-        )
+    for lp in line_plots_options:
+        for ts in mesh_steps:
+            fig.plot_line(
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+                ].data,
+                data_manager[("time_steps", ts), ("use_hold_up", lp), "RO length"].data,
+                color=mesh_steps[ts],
+                ls=line_plots_options[lp]["ls"],
+                marker=line_plots_options[lp]["marker"],
+            )
+    add_legend(fig, mesh_steps, line_plots_options)
     fig.add_legend()
     fig.set_axis(
         xlabel="Water recovery (%)",
@@ -174,44 +228,47 @@ if __name__ == "__main__":
     # fig.show()
     fig.save(file_name="Length", save_location="figs")
 
-    fig = figureGenerator()
-    fig.init_figure()
-    for ts in [11, 51, 101, 201]:
-        # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
-        #     "l/hr"
-        # )
-        fig.plot_line(
-            data_manager[("time_steps", ts), "Water recovery"].data,
-            data_manager[("time_steps", ts), "RO width"].data,
-            label=f"Time steps: {ts}",
-        )
-    fig.add_legend()
-    fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="width (m)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 200, 400, 600, 800, 1000],
-    )
-    # fig.show()
-    fig.save(file_name="Width", save_location="figs")
+    # fig = figureGenerator()
+    # fig.init_figure()
+    # for ts in mesh_steps:
+    #     # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
+    #     #     "l/hr"
+    #     # )
+    #     fig.plot_line(
+    #         data_manager[("time_steps", ts), "Water recovery"].data,
+    #         data_manager[("time_steps", ts), "RO width"].data,
+    #         label=f"Time periods: {ts}",
+    #     )
+
+    # add_legend(fig, mesh_steps, line_plots_options)
+    # fig.add_legend()
+    # fig.set_axis(
+    #     xlabel="Water recovery (%)",
+    #     ylabel="width (m)",
+    #     xticks=[50, 60, 70, 80, 90],
+    #     yticks=[0, 200, 400, 600, 800, 1000],
+    # )
+    # # fig.show()
+    # fig.save(file_name="Width", save_location="figs")
     fig = figureGenerator()
     fig.init_figure()
 
-    # assert False
-    for ts in [11, 51, 101, 201]:
+    for lp in line_plots_options:
+        for ts in mesh_steps:
 
-        d = get_sequence(
-            data_manager,
-            ("time_steps", ts),
-            "RO SP",
-            time_periods,
-        )
-        print(np.average(d, axis=1))
-        fig.plot_line(
-            data_manager[("time_steps", ts), "Water recovery"].data,
-            np.average(d, axis=1) * 100,
-            label=f"Time steps: {ts}",
-        )
+            fig.plot_line(
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+                ].data,
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "RO SP recovery"
+                ].data
+                * 100,
+                color=mesh_steps[ts],
+                ls=line_plots_options[lp]["ls"],
+                marker=line_plots_options[lp]["marker"],
+            )
+    add_legend(fig, mesh_steps, line_plots_options)
     fig.add_legend()
     fig.set_axis(
         xlabel="Water recovery (%)",
@@ -220,31 +277,95 @@ if __name__ == "__main__":
         yticks=[0, 20, 40, 60, 80, 100],
     )
     fig.save(file_name="RO SP", save_location="figs")
+    # fig = figureGenerator()
+    # fig.init_figure()
 
+    # # assert False
+    # for lp in line_plots_options:
+    #     for ts in mesh_steps:
+
+    #         residence_time = (
+    #             data_manager[("time_steps", ts), ("use_hold_up", lp), "RO length"].data
+    #             / data_manager[
+    #                 ("time_steps", ts), ("use_hold_up", lp), "RO inlet velocity"
+    #             ].data
+    #         )
+    #         fig.plot_line(
+    #             data_manager[
+    #                 ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+    #             ].data,
+    #             residence_time,
+    #             color=mesh_steps[ts],
+    #             ls=line_plots_options[lp]["ls"],
+    #             marker=line_plots_options[lp]["marker"],
+    #         )
+    # add_legend(fig, mesh_steps, line_plots_options)
+    # fig.add_legend()
+    # fig.set_axis(
+    #     xlabel="Water recovery (%)",
+    #     ylabel="Residence Time (s)",
+    #     xticks=[50, 60, 70, 80, 90],
+    #     yticks=[0, 20, 40, 60],
+    # )
+    # fig.save(file_name="RO residence time", save_location="figs")
     fig = figureGenerator()
     fig.init_figure()
-
-    # assert False
-    for ts in [11, 51, 101, 201]:
-
-        residence_time = (
-            data_manager[("time_steps", ts), "RO length"].data
-            / data_manager[("time_steps", ts), "RO inlet velocity"].data
-        )
-        fig.plot_line(
-            data_manager[("time_steps", ts), "Water recovery"].data,
-            residence_time,
-            label=f"Time steps: {ts}",
-        )
-    fig.add_legend()
+    # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
+    #     "l/hr"
+    # )
+    for lp in line_plots_options:
+        for ts in mesh_steps:
+            fig.plot_line(
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+                ].data,
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Total cycle time"
+                ].data,
+                color=mesh_steps[ts],
+                ls=line_plots_options[lp]["ls"],
+                marker=line_plots_options[lp]["marker"],
+            )
     fig.set_axis(
         xlabel="Water recovery (%)",
-        ylabel="Residence Time (s)",
+        ylabel="Total cycle time (min)",
         xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 20, 40, 60],
+        yticks=[0, 10, 20, 30, 40, 50, 60],
     )
+    # fig.show()
+    add_legend(fig, mesh_steps, line_plots_options)
+    fig.add_legend(location="upper right")
+    fig.save(file_name="Total cycle time", save_location="figs")
+    fig = figureGenerator()
+    fig.init_figure()
+    # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
+    #     "l/hr"
+    # )
+    for lp in line_plots_options:
+        for ts in mesh_steps:
+            fig.plot_line(
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Water recovery"
+                ].data,
+                data_manager[
+                    ("time_steps", ts), ("use_hold_up", lp), "Flushing efficiency"
+                ].data
+                * 100,
+                color=mesh_steps[ts],
+                ls=line_plots_options[lp]["ls"],
+                marker=line_plots_options[lp]["marker"],
+            )
+    fig.set_axis(
+        xlabel="Water recovery (%)",
+        ylabel="Flushing efficiency (%)",
+        xticks=[50, 60, 70, 80, 90],
+        yticks=[0, 25, 50, 75, 100],
+    )
+    # fig.show()
+    add_legend(fig, mesh_steps, line_plots_options)
+    fig.add_legend(location="upper right")
+    fig.save(file_name="Flushing efficiency", save_location="figs")
     fig.show()
-    fig.save(file_name="RO residence time", save_location="figs")
     assert False
     fig = figureGenerator()
     fig.init_figure()

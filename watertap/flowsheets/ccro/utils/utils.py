@@ -59,6 +59,8 @@ def register_costed_unit(
             costing_method_arguments=costing_method_arguments,
         )
 
+        # assert False
+
 
 def set_pump_operating_pressure(unit, osmotic_pressure, configuration_options):
     """

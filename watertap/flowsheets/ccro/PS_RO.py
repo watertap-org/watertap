@@ -74,7 +74,7 @@ import pandas as pd
 
 def load_validation_data_into_model(
     mp=None,
-    file_path="validation_data/sine_500-900psi_10s_period.csv",
+    file_path="validation_data/sine_500-900psi_60s_period.csv",
     data_point_skips=20,
 ):
     """
@@ -87,34 +87,34 @@ def load_validation_data_into_model(
     data = pd.read_csv(file_path)
     if mp is not None:
         for t, m in enumerate(mp.get_active_process_blocks()):
-            dp = t * data_point_skips
-            if dp != 0:
-                run_time = (
-                    data["Runtime (min)"].to_numpy()[dp]
-                    - data["Runtime (min)"].to_numpy()[dp - data_point_skips]
-                ) * pyunits.min
-                m.fs.time_point = Var(
-                    initialize=run_time, domain=NonNegativeReals, units=pyunits.min
-                )
-                m.fs.time_point.fix(run_time)
-                flow_rate = (
-                    data["Feed Flowrate (L/min)"].to_numpy()[dp]
-                    * pyunits.m**3
-                    / pyunits.s
-                )
-                pressure = data["Feed Pressure (psi)"].to_numpy()[dp] * pyunits.psi
-                m.fs.P1.outlet.pressure[0].fix(pressure)
-                m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(flow_rate)
+            dp = (t + 1) * data_point_skips
 
-                if m.fs.ro_model_with_hold_up:
-                    m.fs.RO.feed_side.accumulation_time.fix(run_time)
+            run_time = (
+                data["Runtime (min)"].to_numpy()[dp]
+                - data["Runtime (min)"].to_numpy()[dp - data_point_skips]
+            ) * pyunits.min
+            print(
+                f"Loading data point {data['Runtime (min)'].to_numpy()[dp]*60} into time period {t}"
+            )
+            m.fs.time_point = Var(
+                initialize=run_time, domain=NonNegativeReals, units=pyunits.min
+            )
+            m.fs.time_point.fix(data["Runtime (min)"].to_numpy()[dp] * pyunits.min)
+            flow_rate = (
+                data["Feed Flowrate (L/min)"].to_numpy()[dp] * pyunits.L / pyunits.min
+            )
+            pressure = data["Feed Pressure (psi)"].to_numpy()[dp] * pyunits.psi
+            m.fs.P1.outlet.pressure[0].fix(pressure)
+            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(flow_rate)
+
+            if m.fs.ro_model_with_hold_up:
+                m.fs.RO.feed_side.accumulation_time.fix(run_time)
 
     return data
 
 
 def create_ccro_multiperiod(
     n_time_points=10,
-    include_costing=True,
     cc_configuration=None,
     use_ro_with_hold_up=False,
 ):
@@ -139,9 +139,7 @@ def create_ccro_multiperiod(
     )
 
     mp.n_time_points = n_time_points
-    mp.include_costing = include_costing
 
-    operation_mode_list = ["filtration"] * (n_time_points - 1) + ["flushing"]
     flowsheet_options = {
         t: {
             "time_blk": t,
@@ -186,6 +184,9 @@ def create_ccro_multiperiod(
         if t != 1:
             unfix_dof(m)
         old_m = m
+        if t == 1:
+            unfix_dof(m)
+            create_stabilization_constraints(m)
 
     calculate_scaling_factors(mp)
 
@@ -295,6 +296,24 @@ def unfix_dof(
             m.fs.RO.feed_side.delta_state.node_dens_mass_phase[0, i, "Liq"].unfix()
 
 
+def create_stabilization_constraints(m):
+    if m.fs.ro_model_with_hold_up:
+
+        @m.fs.RO.feed_side.Constraint(m.fs.RO.difference_elements)
+        def frac_stabilization_constraint(b, i):
+            return (
+                b.delta_state.node_mass_frac_phase_comp[0, i, "Liq", "NaCl"]
+                == b.properties[0, i].mass_frac_phase_comp["Liq", "NaCl"]
+            )
+
+        @m.fs.RO.feed_side.Constraint(m.fs.RO.difference_elements)
+        def dense_stabilization_constraint(b, i):
+            return (
+                b.delta_state.node_dens_mass_phase[0, i, "Liq"]
+                == b.properties[0, i].dens_mass_phase["Liq"]
+            )
+
+
 def build_psro_system(time_blk=None, use_ro_with_hold_up=True):
     """
     Build the CCRO steady state flowsheet
@@ -399,6 +418,7 @@ def solve(
     tee=True,
     raise_on_failure=True,
     use_ipoptv2=False,
+    **kwargs,
 ):
     # ---solving---
     if solver is None and use_ipoptv2 == False:
@@ -447,11 +467,15 @@ def solve(
 
 def validation_configs():
     config = CCROConfiguration()
-    config["raw_feed_conc"] = 35 * pyunits.g / pyunits.L
+
+    config["raw_feed_conc"] = 34.8 * pyunits.g / pyunits.L
     config["raw_feed_flowrate"] = 21.28 * pyunits.L / pyunits.min
     config["temperature"] = (273.15 + 20) * pyunits.K
     config["membrane_area"] = 7.4 * pyunits.m**2
     config["membrane_length"] = 1 * pyunits.m
+    config["osmotic_overpressure"] = 1.5 * pyunits.dimensionless
+    config["A_comp"] = 4.4e-12 * pyunits.meter / (pyunits.second * pyunits.Pa)
+    config["B_comp"] = 3.08e-08 * pyunits.meter / pyunits.second
     config["channel_height"] = 0.0007112 * pyunits.m
     config["spacer_porosity"] = 0.89 * pyunits.dimensionless
     config["dead_volume_to_area_ratio"] = (
@@ -467,8 +491,13 @@ if __name__ == "__main__":
     cc_config = validation_configs()
 
     mp = create_ccro_multiperiod(
-        n_time_points=3,
-        include_costing=True,
+        n_time_points=21,
         cc_configuration=cc_config,
         use_ro_with_hold_up=True,
     )
+    load_validation_data_into_model(
+        mp,
+        file_path="validation_data/sine_700-900psi_60s_period.csv",
+        data_point_skips=40,
+    )
+    solve(mp, use_ipoptv2=False)
