@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -44,6 +44,7 @@ from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
 )
+from idaes.core.util.exceptions import InitializationError
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
@@ -1041,10 +1042,15 @@ def initialize_system(m):
     seq.set_guesses_for(m.fs.R1.inlet, tear_guesses1)
     seq.set_guesses_for(m.fs.asm_adm.inlet, tear_guesses2)
 
-    initializer = BlockTriangularizationInitializer()
+    initializer = BlockTriangularizationInitializer(
+        calculate_variable_options={"eps": 2e-8}, skip_final_solve=True
+    )
 
     def function(unit):
-        initializer.initialize(unit, output_level=_log.debug)
+        try:
+            initializer.initialize(unit, output_level=_log.debug)
+        except InitializationError:
+            pass
 
     seq.run(m, function)
 

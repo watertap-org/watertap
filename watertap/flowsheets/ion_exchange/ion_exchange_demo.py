@@ -1,22 +1,22 @@
-# #################################################################################
-# # WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
-# # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# # National Renewable Energy Laboratory, and National Energy Technology
-# # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
-# # of Energy). All rights reserved.
-# #
-# # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
-# # information, respectively. These files are also available online at the URL
-# # "https://github.com/watertap-org/watertap/"
-# #################################################################################
-# from pyomo.environ import (
-#     ConcreteModel,
-#     Objective,
-#     assert_optimal_termination,
-#     TransformationFactory,
-#     units as pyunits,
-# )
-# from pyomo.network import Arc
+#################################################################################
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Laboratory of the Rockies, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
+from pyomo.environ import (
+    ConcreteModel,
+    Objective,
+    assert_optimal_termination,
+    TransformationFactory,
+    units as pyunits,
+)
+from pyomo.network import Arc
 
 # from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 # from idaes.core.util.model_statistics import degrees_of_freedom

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -195,6 +195,45 @@ class TestROwithPX:
 
         initialize_system(m, solver=solver)
 
+        # check results across pressure exchanger, proxy for both upstream and downstream of RO
+        # high pressure inlet
+        assert value(
+            m.fs.PXR.brine_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.4928, rel=1e-3)
+        assert value(
+            m.fs.PXR.brine_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        ) == pytest.approx(3.561e-2, rel=1e-3)
+        assert value(m.fs.PXR.brine_inlet.temperature[0]) == pytest.approx(
+            298.15, rel=1e-3
+        )
+        assert value(m.fs.PXR.brine_inlet.pressure[0]) == pytest.approx(
+            7.242e6, rel=1e-3
+        )
+        # low pressure inlet
+        assert value(
+            m.fs.PXR.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.4980, rel=1e-3)
+        assert value(
+            m.fs.PXR.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        ) == pytest.approx(1.806e-2, rel=1e-3)
+        assert value(m.fs.PXR.feed_inlet.temperature[0]) == pytest.approx(
+            298.15, rel=1e-3
+        )
+        assert value(m.fs.PXR.feed_inlet.pressure[0]) == pytest.approx(101325, rel=1e-3)
+        # low pressure outlet
+        assert value(m.fs.PXR.feed_outlet.pressure[0]) == pytest.approx(
+            6.885e6, rel=1e-3
+        )
+
+    @pytest.mark.component
+    def test_initialize_system_with_relaxation(self, system_frame):
+        m = build(erd_type="pressure_exchanger")
+
+        set_operating_conditions(m)
+        initialize_system(m, solver=solver, relaxed_initialization=True)
+        assert degrees_of_freedom(m) == 0
+        # test that the area_objective has been removed
+        assert getattr(m.fs.RO, "area_objective", None) is None
         # check results across pressure exchanger, proxy for both upstream and downstream of RO
         # high pressure inlet
         assert value(
