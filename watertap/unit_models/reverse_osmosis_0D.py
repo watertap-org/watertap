@@ -198,6 +198,12 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
 
         for (t, p, j), condata in self.eq_permeate_production.items():
             sf = iscale.get_scaling_factor(
-                self.mixed_permeate[t].get_material_flow_terms(p, j), 1
+                self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, p, j), condata in self.eq_connect_mass_transfer.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
             )
             iscale.constraint_scaling_transform(condata, sf)

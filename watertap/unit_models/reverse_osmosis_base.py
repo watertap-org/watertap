@@ -896,6 +896,16 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             )
             iscale.constraint_scaling_transform(condata, sf)
 
+        for (t, x), condata in self.eq_permeate_outlet_isobaric.items():
+            sf1 = iscale.get_scaling_factor(
+                self.mixed_permeate[t].pressure, default=1
+            )
+            sf2 = iscale.get_scaling_factor(
+                self.permeate_side[t, x].pressure, default=1
+            )
+            sf = min(sf1, sf2)
+            iscale.constraint_scaling_transform(condata, sf)
+
     @property
     def default_costing_method(self):
         return cost_reverse_osmosis

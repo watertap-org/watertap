@@ -2798,6 +2798,26 @@ class MCASStateBlockData(StateBlockData):
                             self.flow_mol_phase_comp["Liq", j], sf
                         )
 
+        if self.is_property_constructed("flow_mol_comp"):
+            for j in self.flow_mol_comp:
+                iscale.set_scaling_factor(
+                    self.flow_mol_comp[j],
+                    # Don't provide a default since this should always be set
+                    iscale.get_scaling_factor(
+                        self.flow_mol_phase_comp["Liq", j]
+                    )
+                )
+
+        if self.is_property_constructed("flow_mass_comp"):
+            for j in self.flow_mass_comp:
+                iscale.set_scaling_factor(
+                    self.flow_mass_comp[j],
+                    # Don't provide a default since this should always be set
+                    iscale.get_scaling_factor(
+                        self.flow_mass_phase_comp["Liq", j]
+                    )
+                )
+
         # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value
         # will override.
