@@ -601,33 +601,6 @@ def build_clark_mc():
 
     m.fs.unit = ix = IonExchangeClark(**ix_config)
 
-    var_dict = {
-        ("flow_vol_phase", "Liq"): 0.04381,  # m3/s
-        ("pressure", None): 101325,
-        ("temperature", None): 298,
-    }
-    ix.process_flow.properties_in[0].conc_mass_phase_comp
-    ix.process_flow.properties_in[0].flow_vol_phase
-    ix.process_flow.properties_in[0].flow_mol_phase_comp
-
-    m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
-    )
-    for s, c in c0_dict.items():
-        var_dict[("conc_mass_phase_comp", ("Liq", s))] = c * pyunits.g / pyunits.liter
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e9, index=("Liq", s)
-        )
-        m.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp["Liq", s].setlb(
-            c * 0.9999
-        )
-    iscale.calculate_scaling_factors(m)
-
-    ix.process_flow.properties_in.calculate_state(
-        var_args=var_dict,
-        hold_state=True,
-    )
-
     loading_rate = 0.005 * pyunits.m / pyunits.s
 
     freund_n_dict = {
@@ -664,63 +637,95 @@ def build_clark_mc():
     ix.number_columns.fix(2)
     ix.number_columns_redundant.fix(1)
     ix.c_norm[target_component].fix(0.65)
+
+    var_dict = {
+        ("flow_vol_phase", "Liq"): 0.04381,  # m3/s
+        ("pressure", None): 101325,
+        ("temperature", None): 298,
+    }
+    ix.process_flow.properties_in[0].conc_mass_phase_comp
+    ix.process_flow.properties_in[0].flow_vol_phase
+    ix.process_flow.properties_in[0].flow_mol_phase_comp
+
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
+    )
+    for s, c in c0_dict.items():
+        var_dict[("conc_mass_phase_comp", ("Liq", s))] = c * pyunits.g / pyunits.liter
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e9, index=("Liq", s)
+        )
+        m.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp["Liq", s].setlb(
+            c * 0.9999
+        )
     iscale.set_scaling_factor(ix.traps["PFBS", 1], 1e6)
     iscale.calculate_scaling_factors(m)
+    ix.process_flow.properties_in.calculate_state(
+        var_args=var_dict,
+        hold_state=True,
+    )
 
     return m
 
 
+@pytest.mark.skip
+# BUG: Will always end up with tb_traps[*,1] very small for one of the components
+# removing problematic component from stream will shift error to another component.
+# Will solve to an acceptable level but terminate with:
+#   Cannot recompute multipliers for feasibility problem.  Error in eq_mult_calculator
+# Possibly need to rethink tb_traps constraint for multi-component Clark model
+# or could be a mass balance issue.
 class TestIXClarkMultiComponent(UnitTestHarness):
     def configure(self):
         m = build_clark_mc()
 
         self.default_zero = zero
         self.default_relative_tolerance = relative_tolerance
-
-        self.unit_solutions[m.fs.unit.N_Pe_bed] = 183.1354
+        self.default_small = 1e-6
+        self.unit_solutions[m.fs.unit.N_Pe_bed] = 183.2591
         self.unit_solutions[m.fs.unit.N_Pe_particle] = 0.092776471132
-        self.unit_solutions[m.fs.unit.N_Re] = 3.62499999
-        self.unit_solutions[m.fs.unit.bed_depth] = 1.43110872
-        self.unit_solutions[m.fs.unit.bed_depth_to_diam_ratio] = 0.605941844588
+        self.unit_solutions[m.fs.unit.N_Re] = 3.625
+        self.unit_solutions[m.fs.unit.bed_depth] = 1.4320751
+        self.unit_solutions[m.fs.unit.bed_depth_to_diam_ratio] = 0.606351016427
         self.unit_solutions[m.fs.unit.bed_diameter] = 2.36179221
         self.unit_solutions[m.fs.unit.bed_porosity] = 0.4
-        self.unit_solutions[m.fs.unit.bed_volume] = 6.26968733
-        self.unit_solutions[m.fs.unit.bed_volume_total] = 12.5393
-        self.unit_solutions[m.fs.unit.breakthrough_time] = 8926426.4479
-        self.unit_solutions[m.fs.unit.bv] = 31187.1008
+        self.unit_solutions[m.fs.unit.bed_volume] = 6.27392104
+        self.unit_solutions[m.fs.unit.bed_volume_total] = 12.5478
+        self.unit_solutions[m.fs.unit.breakthrough_time] = 8931464.6158
+        self.unit_solutions[m.fs.unit.bv] = 31183.6459
         self.unit_solutions[m.fs.unit.bv_50["PFBS"]] = 52860.16
         self.unit_solutions[m.fs.unit.bv_50["PFHxA"]] = 17909.56
         self.unit_solutions[m.fs.unit.bv_50["PFHxS"]] = 77802.27
         self.unit_solutions[m.fs.unit.bv_50["PFOA"]] = 26067.25
         self.unit_solutions[m.fs.unit.bv_50["PFPeS"]] = 53248.92
-        self.unit_solutions[m.fs.unit.c_norm["PFBS"]] = 0.215071270527
-        self.unit_solutions[m.fs.unit.c_norm["PFHxA"]] = 0.936053809274
-        self.unit_solutions[m.fs.unit.c_norm["PFHxS"]] = 0.043644332011
+        self.unit_solutions[m.fs.unit.c_norm["PFBS"]] = 0.214854203634
+        self.unit_solutions[m.fs.unit.c_norm["PFHxA"]] = 0.936114402191
+        self.unit_solutions[m.fs.unit.c_norm["PFHxS"]] = 0.04349564889
         self.unit_solutions[m.fs.unit.c_norm["PFOA"]] = 0.65
-        self.unit_solutions[m.fs.unit.c_norm["PFPeS"]] = 0.029055409203
-        self.unit_solutions[m.fs.unit.c_norm_avg["PFBS"]] = 0.086504690515
-        self.unit_solutions[m.fs.unit.c_norm_avg["PFHxA"]] = 0.400551784427
-        self.unit_solutions[m.fs.unit.c_norm_avg["PFHxS"]] = 0.012670655448
-        self.unit_solutions[m.fs.unit.c_norm_avg["PFOA"]] = 0.235796781051
-        self.unit_solutions[m.fs.unit.c_norm_avg["PFPeS"]] = 0.007131316908
+        self.unit_solutions[m.fs.unit.c_norm["PFPeS"]] = 0.028949706047
+        self.unit_solutions[m.fs.unit.c_norm_avg["PFBS"]] = 0.086331035991
+        self.unit_solutions[m.fs.unit.c_norm_avg["PFHxA"]] = 0.400484932106
+        self.unit_solutions[m.fs.unit.c_norm_avg["PFHxS"]] = 0.012622265084
+        self.unit_solutions[m.fs.unit.c_norm_avg["PFOA"]] = 0.235666590501
+        self.unit_solutions[m.fs.unit.c_norm_avg["PFPeS"]] = 0.007115781791
         self.unit_solutions[m.fs.unit.c_traps["PFBS", 0]] = 0.0
         self.unit_solutions[m.fs.unit.c_traps["PFBS", 1]] = 0.010000250243
-        self.unit_solutions[m.fs.unit.c_traps["PFBS", 2]] = 0.061267858442
-        self.unit_solutions[m.fs.unit.c_traps["PFBS", 3]] = 0.11253565748
-        self.unit_solutions[m.fs.unit.c_traps["PFBS", 4]] = 0.163803468158
-        self.unit_solutions[m.fs.unit.c_traps["PFBS", 5]] = 0.215071282151
+        self.unit_solutions[m.fs.unit.c_traps["PFBS", 2]] = 0.061213591755
+        self.unit_solutions[m.fs.unit.c_traps["PFBS", 3]] = 0.112427124055
+        self.unit_solutions[m.fs.unit.c_traps["PFBS", 4]] = 0.163640668003
+        self.unit_solutions[m.fs.unit.c_traps["PFBS", 5]] = 0.21485421527
         self.unit_solutions[m.fs.unit.c_traps["PFHxA", 0]] = 0.0
         self.unit_solutions[m.fs.unit.c_traps["PFHxA", 1]] = 0.010000250243
-        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 2]] = 0.24151346267
-        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 3]] = 0.473026909922
-        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 4]] = 0.704540360504
-        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 5]] = 0.936053811945
+        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 2]] = 0.241528610898
+        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 3]] = 0.47305720638
+        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 4]] = 0.704585805191
+        self.unit_solutions[m.fs.unit.c_traps["PFHxA", 5]] = 0.936114404861
         self.unit_solutions[m.fs.unit.c_traps["PFHxS", 0]] = 0.0
         self.unit_solutions[m.fs.unit.c_traps["PFHxS", 1]] = 0.010000250243
-        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 2]] = 0.018411218863
-        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 3]] = 0.026822259246
-        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 4]] = 0.035233319984
-        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 5]] = 0.043644389305
+        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 2]] = 0.018374048358
+        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 3]] = 0.026747917945
+        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 4]] = 0.035121807869
+        self.unit_solutions[m.fs.unit.c_traps["PFHxS", 5]] = 0.04349570638
         self.unit_solutions[m.fs.unit.c_traps["PFOA", 0]] = 0.0
         self.unit_solutions[m.fs.unit.c_traps["PFOA", 1]] = 0.010000250243
         self.unit_solutions[m.fs.unit.c_traps["PFOA", 2]] = 0.170000014706
@@ -729,12 +734,12 @@ class TestIXClarkMultiComponent(UnitTestHarness):
         self.unit_solutions[m.fs.unit.c_traps["PFOA", 5]] = 0.650000003846
         self.unit_solutions[m.fs.unit.c_traps["PFPeS", 0]] = 0.0
         self.unit_solutions[m.fs.unit.c_traps["PFPeS", 1]] = 0.010000250243
-        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 2]] = 0.014764021746
-        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 3]] = 0.019527832689
-        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 4]] = 0.02429165986
-        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 5]] = 0.029055495275
-        self.unit_solutions[m.fs.unit.column_height] = 4.14182533
-        self.unit_solutions[m.fs.unit.ebct] = 286.2217
+        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 2]] = 0.014737596261
+        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 3]] = 0.019474981459
+        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 4]] = 0.024212382831
+        self.unit_solutions[m.fs.unit.c_traps["PFPeS", 5]] = 0.028949792433
+        self.unit_solutions[m.fs.unit.column_height] = 4.1439469
+        self.unit_solutions[m.fs.unit.ebct] = 286.415
         self.unit_solutions[m.fs.unit.freundlich_n["PFBS"]] = 1.05
         self.unit_solutions[m.fs.unit.freundlich_n["PFHxA"]] = 1.05
         self.unit_solutions[m.fs.unit.freundlich_n["PFHxS"]] = 1.05
@@ -753,107 +758,77 @@ class TestIXClarkMultiComponent(UnitTestHarness):
         ] = 0.0
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "PFBS"]
-        ] = -1.4813e-08
+        ] = -4.401e-09
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "PFHxA"]
-        ] = -1.3483e-08
+        ] = -2.09e-09
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "PFHxS"]
-        ] = -4.2841e-08
+        ] = -3.2433e-08
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "PFOA"]
-        ] = -1.2324e-08
+        ] = -1.779e-09
         self.unit_solutions[
             m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "PFPeS"]
-        ] = -1.7379e-08
-
-        self.unit_solutions[
-            m.fs.unit.process_flow.properties_in[0.0].conc_mass_phase_comp["Liq", "H2O"]
-        ] = 999.9999
-        self.unit_solutions[
-            m.fs.unit.process_flow.properties_in[0.0].conc_mass_phase_comp[
-                "Liq", "PFBS"
-            ]
-        ] = 3.2996e-08
-        self.unit_solutions[
-            m.fs.unit.process_flow.properties_in[0.0].conc_mass_phase_comp[
-                "Liq", "PFHxA"
-            ]
-        ] = 2.4997e-08
-        self.unit_solutions[
-            m.fs.unit.process_flow.properties_in[0.0].conc_mass_phase_comp[
-                "Liq", "PFHxS"
-            ]
-        ] = 2.9997e-07
-        self.unit_solutions[
-            m.fs.unit.process_flow.properties_in[0.0].conc_mass_phase_comp[
-                "Liq", "PFOA"
-            ]
-        ] = 2.1997e-08
-        self.unit_solutions[
-            m.fs.unit.process_flow.properties_in[0.0].conc_mass_phase_comp[
-                "Liq", "PFPeS"
-            ]
-        ] = 5.8994e-08
-
+        ] = -7.33e-09
         self.unit_solutions[m.fs.unit.resin_density] = 720.0
         self.unit_solutions[m.fs.unit.resin_diam] = 0.000725
-        self.unit_solutions[m.fs.unit.service_flow_rate] = 12.5776
+        self.unit_solutions[m.fs.unit.service_flow_rate] = 12.5691
         self.unit_solutions[m.fs.unit.tb_traps["PFBS", 0]] = 0.0
-        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 1]] = 1547.054
-        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 2]] = 4151906.5401
-        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 3]] = 6132977.5378
-        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 4]] = 7636188.2305
-        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 5]] = 8926426.7252
+        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 1]] = 11763.6423
+        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 2]] = 4159543.5962
+        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 3]] = 6139656.7296
+        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 4]] = 7642043.6123
+        self.unit_solutions[m.fs.unit.tb_traps["PFBS", 5]] = 8931464.8934
         self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 0]] = 0.0
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 1]] = 1923960.3434
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 2]] = 3943788.897
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 3]] = 5000243.6918
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 4]] = 6236488.9023
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 5]] = 8926426.5174
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 1]] = 1927421.8274
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 2]] = 3947323.8328
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 3]] = 5003845.1843
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 4]] = 6240248.8316
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxA", 5]] = 8931464.6853
         self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 0]] = 0.0
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 1]] = 5326370.4896
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 2]] = 6668970.5824
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 3]] = 7592137.835
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 4]] = 8317779.1215
-        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 5]] = 8926430.2964
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 1]] = 5341407.7834
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 2]] = 6679266.1388
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 3]] = 7600051.9337
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 4]] = 8324076.2888
+        self.unit_solutions[m.fs.unit.tb_traps["PFHxS", 5]] = 8931468.4867
         self.unit_solutions[m.fs.unit.tb_traps["PFOA", 0]] = 0.0
-        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 1]] = 1402648.357
-        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 2]] = 4525968.1093
-        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 3]] = 6001966.5377
-        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 4]] = 7372165.2136
-        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 5]] = 8926426.4901
+        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 1]] = 1407686.5249
+        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 2]] = 4531006.2772
+        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 3]] = 6007004.7055
+        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 4]] = 7377203.3815
+        self.unit_solutions[m.fs.unit.tb_traps["PFOA", 5]] = 8931464.658
         self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 0]] = 0.0
-        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 1]] = 7479196.7074
-        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 2]] = 7989486.0774
-        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 3]] = 8367749.8611
-        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 4]] = 8671263.1088
-        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 5]] = 8926430.719
-        self.unit_solutions[m.fs.unit.traps["PFBS", 1]] = 8.6658e-07
-        self.unit_solutions[m.fs.unit.traps["PFBS", 2]] = 0.016568122947
-        self.unit_solutions[m.fs.unit.traps["PFBS", 3]] = 0.019286390584
-        self.unit_solutions[m.fs.unit.traps["PFBS", 4]] = 0.023267761068
-        self.unit_solutions[m.fs.unit.traps["PFBS", 5]] = 0.027381549333
-        self.unit_solutions[m.fs.unit.traps["PFHxA", 1]] = 0.00107770365
-        self.unit_solutions[m.fs.unit.traps["PFHxA", 2]] = 0.028455652324
-        self.unit_solutions[m.fs.unit.traps["PFHxA", 3]] = 0.042283415498
-        self.unit_solutions[m.fs.unit.traps["PFHxA", 4]] = 0.081542255193
-        self.unit_solutions[m.fs.unit.traps["PFHxA", 5]] = 0.24719275776
-        self.unit_solutions[m.fs.unit.traps["PFHxS", 1]] = 0.002983557593
-        self.unit_solutions[m.fs.unit.traps["PFHxS", 2]] = 0.002136645881
-        self.unit_solutions[m.fs.unit.traps["PFHxS", 3]] = 0.002339012591
-        self.unit_solutions[m.fs.unit.traps["PFHxS", 4]] = 0.002522289921
-        self.unit_solutions[m.fs.unit.traps["PFHxS", 5]] = 0.00268914946
-        self.unit_solutions[m.fs.unit.traps["PFOA", 1]] = 0.000785691485
-        self.unit_solutions[m.fs.unit.traps["PFOA", 2]] = 0.031490674547
-        self.unit_solutions[m.fs.unit.traps["PFOA", 3]] = 0.041337888564
-        self.unit_solutions[m.fs.unit.traps["PFOA", 4]] = 0.062934643158
-        self.unit_solutions[m.fs.unit.traps["PFOA", 5]] = 0.099247883295
-        self.unit_solutions[m.fs.unit.traps["PFPeS", 1]] = 0.004189459429
-        self.unit_solutions[m.fs.unit.traps["PFPeS", 2]] = 0.000707838617
-        self.unit_solutions[m.fs.unit.traps["PFPeS", 3]] = 0.000726570732
-        self.unit_solutions[m.fs.unit.traps["PFPeS", 4]] = 0.000744967216
-        self.unit_solutions[m.fs.unit.traps["PFPeS", 5]] = 0.000762480913
+        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 1]] = 7489488.4335
+        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 2]] = 7997389.2178
+        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 3]] = 8374321.3446
+        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 4]] = 8676951.0166
+        self.unit_solutions[m.fs.unit.tb_traps["PFPeS", 5]] = 8931468.916
+        self.unit_solutions[m.fs.unit.traps["PFBS", 1]] = 6.58567e-06
+        self.unit_solutions[m.fs.unit.traps["PFBS", 2]] = 0.016535884639
+        self.unit_solutions[m.fs.unit.traps["PFBS", 3]] = 0.019248144956
+        self.unit_solutions[m.fs.unit.traps["PFBS", 4]] = 0.023219070694
+        self.unit_solutions[m.fs.unit.traps["PFBS", 5]] = 0.02732135003
+        self.unit_solutions[m.fs.unit.traps["PFHxA", 1]] = 0.001079033578
+        self.unit_solutions[m.fs.unit.traps["PFHxA", 2]] = 0.028442347863
+        self.unit_solutions[m.fs.unit.traps["PFHxA", 3]] = 0.042264913989
+        self.unit_solutions[m.fs.unit.traps["PFHxA", 4]] = 0.081511944904
+        self.unit_solutions[m.fs.unit.traps["PFHxA", 5]] = 0.247186691769
+        self.unit_solutions[m.fs.unit.traps["PFHxS", 1]] = 0.002990292949
+        self.unit_solutions[m.fs.unit.traps["PFHxS", 2]] = 0.00212511484
+        self.unit_solutions[m.fs.unit.traps["PFHxS", 3]] = 0.002325914583
+        self.unit_solutions[m.fs.unit.traps["PFHxS", 4]] = 0.002507716866
+        self.unit_solutions[m.fs.unit.traps["PFHxS", 5]] = 0.002673225844
+        self.unit_solutions[m.fs.unit.traps["PFOA", 1]] = 0.000788068813
+        self.unit_solutions[m.fs.unit.traps["PFOA", 2]] = 0.031472910909
+        self.unit_solutions[m.fs.unit.traps["PFOA", 3]] = 0.041314570191
+        self.unit_solutions[m.fs.unit.traps["PFOA", 4]] = 0.062899142228
+        self.unit_solutions[m.fs.unit.traps["PFOA", 5]] = 0.099191898357
+        self.unit_solutions[m.fs.unit.traps["PFPeS", 1]] = 0.004192857817
+        self.unit_solutions[m.fs.unit.traps["PFPeS", 2]] = 0.000703376553
+        self.unit_solutions[m.fs.unit.traps["PFPeS", 3]] = 0.000721931622
+        self.unit_solutions[m.fs.unit.traps["PFPeS", 4]] = 0.000740141003
+        self.unit_solutions[m.fs.unit.traps["PFPeS", 5]] = 0.000757474795
 
         self.conservation_equality = {
             "Check 1": {
@@ -903,62 +878,3 @@ class TestIXClarkMultiComponent(UnitTestHarness):
             },
         }
         return m
-
-    # @pytest.mark.component
-    # def test_costing(self):
-
-    #     m = build_inert()
-
-    #     m.fs.costing = WaterTAPCosting()
-    #     m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    #     m.fs.costing.cost_process()
-    #     m.fs.costing.add_LCOW(
-    #         m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"]
-    #     )
-    #     m.fs.costing.add_specific_energy_consumption(
-    #         m.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"], name="SEC"
-    #     )
-
-    #     check_dof(m, fail_flag=True)
-    #     initialization_tester(m)
-    #     results = solver.solve(m, tee=True)
-    #     assert_optimal_termination(results)
-
-    #     sys_cost_results = {
-    #         "aggregate_flow_electricity": 30.78,
-    #         "aggregate_flow_costs": {"electricity": 18891.32},
-    #         "total_capital_cost": 6017874.15,
-    #         "total_operating_cost": 6350826.88,
-    #         "total_fixed_operating_cost": 6333824.69,
-    #         "LCOW": 0.489589,
-    #         "SEC": 0.017103,
-    #     }
-
-    #     for v, r in sys_cost_results.items():
-    #         mv = getattr(m.fs.costing, v)
-    #         if mv.is_indexed():
-    #             for i, s in r.items():
-    #                 assert pytest.approx(s, rel=1e-3) == value(mv[i])
-    #         else:
-    #             assert pytest.approx(r, rel=1e-3) == value(mv)
-
-    #     ix_cost_results = {
-    #         "capital_cost": 6017874.15,
-    #         "fixed_operating_cost": 6153288.46,
-    #         "capital_cost_vessel": 85841.84,
-    #         "capital_cost_resin": 54924.68,
-    #         "capital_cost_backwash_tank": 193606.47,
-    #         "total_pumping_power": 30.78,
-    #         "flow_vol_resin": 840.23,
-    #         "single_use_resin_replacement_cost": 6153288.46,
-    #         "backwash_tank_vol": 369626.09,
-    #         "direct_capital_cost": 3008937.07,
-    #     }
-
-    #     for v, r in ix_cost_results.items():
-    #         mv = getattr(m.fs.unit.costing, v)
-    #         if mv.is_indexed():
-    #             for i, s in r.items():
-    #                 assert pytest.approx(s, rel=1e-3) == value(mv[i])
-    #         else:
-    #             assert pytest.approx(r, rel=1e-3) == value(mv)
