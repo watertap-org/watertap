@@ -1024,7 +1024,7 @@ if __name__ == "__main__":
         mp,
         overall_water_recovery=0.5,
         max_cycle_time_hr=10,
-        recycle_flow_bounds=(10, 100),
+        recycle_flow_bounds=(1, 100),
     )
     # fix_optimization_dofs(
     #     mp,
@@ -1037,6 +1037,9 @@ if __name__ == "__main__":
     # )
     # check_jac(m)
     # # assert False
+    mp.find_component(
+        "blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]"
+    ).fix(0.02)
     results = solve(mp, use_ipoptv2=False)
     print_results_table(mp, w=16)
     mp.overall_recovery.fix(0.9)

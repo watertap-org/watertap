@@ -17,15 +17,15 @@ def build(time_steps=11, use_hold_up=True, feed_tds=5, fixed_setup=False, **kwar
         CCRO.setup_optimization(
             mp,
             overall_water_recovery=0.5,
-            max_cycle_time_hr=2,
-            recycle_flow_bounds=(1, 50),
+            max_cycle_time_hr=5,
+            recycle_flow_bounds=(0.1, 50),
         )
     else:
         CCRO.setup_optimization(
             mp,
             overall_water_recovery=0.5,
             max_cycle_time_hr=10,
-            recycle_flow_bounds=(1, 50),
+            recycle_flow_bounds=(0, 50),
         )
         CCRO.fix_optimization_dofs(
             mp,

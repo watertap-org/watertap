@@ -23,7 +23,7 @@
 
 study_SW_mesh_study_optimization_lcow:
   build_defaults:
-    feed_tds: 5
+    feed_tds: 35
     fixed_setup: False
   build_loop:
     time_steps:
@@ -39,9 +39,9 @@ study_SW_mesh_study_optimization_lcow:
         final_concentration:
           type: LinearSample
           param: overall_recovery
-          lower_limit: 0.5
-          upper_limit: 0.9
-          num_samples: 21
+          lower_limit: 0.4
+          upper_limit: 0.7
+          num_samples: 16
 # # study_BGW_fixed_design:
 # #   build_defaults:
 # #     feed_tds: 5

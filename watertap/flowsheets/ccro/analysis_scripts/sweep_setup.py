@@ -6,11 +6,21 @@ from pathlib import Path
 
 def main():
 
+    # loopTool(
+    #     get_working_dir() + "/brine_sweep.yaml",
+    #     build_function=ccro.build,
+    #     optimize_function=ccro.solve_model,
+    #     save_name="ccro_brine_sweep",
+    #     saving_dir=get_working_dir(),
+    #     number_of_subprocesses=1,
+    #     num_loop_workers=1,
+    # )
+
     loopTool(
-        get_working_dir() + "/brine_sweep.yaml",
+        get_working_dir() + "/map_sweep.yaml",
         build_function=ccro.build,
         optimize_function=ccro.solve_model,
-        save_name="ccro_brine_sweep",
+        save_name="ccro_map_sweep",
         saving_dir=get_working_dir(),
         number_of_subprocesses=1,
         num_loop_workers=1,

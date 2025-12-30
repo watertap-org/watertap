@@ -1,0 +1,101 @@
+study_BGW_map:
+  build_defaults:
+    feed_tds: 5
+    fixed_setup: False
+    time_steps: 51
+  build_loop:
+    use_hold_up:
+      - True
+      - False
+    sweep_param_loop:
+      recycle_map:
+        recovery:
+          type: LinearSample
+          param: overall_recovery
+          lower_limit: 0.5
+          upper_limit: 0.9
+          num_samples: 21
+        recycle_flow_rate:
+          type: LinearSample
+          param: blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]
+          lower_limit: 0.001
+          upper_limit: 0.02
+          num_samples: 20
+
+study_SW_map:
+  build_defaults:
+    feed_tds: 35
+    fixed_setup: False
+    time_steps: 51
+  build_loop:
+    use_hold_up:
+      - True
+      - False
+    sweep_param_loop:
+      recycle_map:
+        recovery:
+          type: LinearSample
+          param: overall_recovery
+          lower_limit: 0.4
+          upper_limit: 0.7
+          num_samples: 21
+        recycle_flow_rate:
+          type: LinearSample
+          param: blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]
+          lower_limit: 0.001
+          upper_limit: 0.02
+          num_samples: 20
+# study_SW_mesh_study_optimization_lcow:
+#   build_defaults:
+#     feed_tds: 35
+#     fixed_setup: False
+#   build_loop:
+#     time_steps:
+#       - 11
+#       - 21
+#       - 51
+#       # - 101
+#     build_loop:
+#       use_hold_up:
+#         - True
+#         - False
+#       sweep_param_loop:
+#         final_concentration:
+#           type: LinearSample
+#           param: overall_recovery
+#           lower_limit: 0.4
+#           upper_limit: 0.7
+#           num_samples: 16
+          
+# # study_BGW_fixed_design:
+# #   build_defaults:
+# #     feed_tds: 5
+# #     time_steps: 101
+# #     fixed_design: True
+# #   build_loop:
+# #     use_hold_up:
+# #       - True
+# #       - False
+# #     sweep_param_loop:
+# #       final_concentration:
+# #         type: LinearSample
+# #         param: overall_recovery
+# #         lower_limit: 0.5
+# #         upper_limit: 0.9
+# #         num_samples: 21
+# study_SW_optimization_lcow:
+#   build_defaults:
+#     feed_tds: 35
+#     time_steps: 101
+#     fixed_setup: False
+#   build_loop:
+#     use_hold_up:
+#       - True
+#       - False
+#     sweep_param_loop:
+#       final_concentration:
+#         type: LinearSample
+#         param: overall_recovery
+#         lower_limit: 0.4
+#         upper_limit: 0.7
+#         num_samples: 16
