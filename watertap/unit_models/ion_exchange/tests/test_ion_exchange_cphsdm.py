@@ -15,13 +15,11 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     assert_optimal_termination,
-    units as pyunits,
 )
 
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
-    MaterialFlowBasis,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
@@ -655,12 +653,140 @@ class TestIXCPHSDMCrittenden(UnitTestHarness):
                 assert pytest.approx(r, rel=1e-3) == value(mv)
 
 
-def build_ix_multicomponent():
+def build_ix_crittenden_surrogate():
+    # trial problem from Crittenden, 2012 for removal of TCE
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
-    # arbitrary diffusivity data for non-target species
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["TCE"],
+        mw_data={"H2O": 0.018, "TCE": 0.1314},
+        diffus_calculation="HaydukLaudie",
+        molar_volume_data={("Liq", "TCE"): 9.81e-5},
+        charge={"TCE": -1},
+        ignore_neutral_charge=True,
+    )
+    m.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+    m.fs.properties.dens_mass_const = 999.7
+    ix_config = {
+        "property_package": m.fs.properties,
+        "target_component": "TCE",
+        "cphsdm_calculation_method": "surrogate",
+    }
+    m.fs.unit = IonExchangeCPHSDM(**ix_config)
+
+    unit_feed = m.fs.unit.process_flow.properties_in[0]
+    unit_feed.pressure.fix(101325)
+    unit_feed.temperature.fix(273.15 + 25)
+    unit_feed.flow_mol_phase_comp["Liq", "H2O"].fix(823.8)
+    unit_feed.flow_mol_phase_comp["Liq", "TCE"].fix(5.6444e-05)
+
+    m.fs.unit.resin_density.setlb(0)
+
+    m.fs.unit.freundlich_k.fix(1062e-6 * (1e6**0.48))
+    m.fs.unit.freundlich_ninv.fix(0.48)
+    m.fs.unit.resin_density_app.fix(803.4)
+    m.fs.unit.resin_diam.fix(0.001026)
+    m.fs.unit.ebct.fix(600)
+    m.fs.unit.bed_porosity.fix(0.44)
+    m.fs.unit.loading_rate.fix((5 / 3600))
+    m.fs.unit.c_norm["TCE"].fix(0.80)
+    m.fs.unit.surf_diff_coeff.fix(1.24e-14)
+    m.fs.unit.film_mass_transfer_coeff.fix(3.73e-05)
+    m.fs.unit.number_columns.fix(1)
+
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-2, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e5, index=("Liq", "TCE")
+    )
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+class TestIXCPHSDMSurrogateCrittenden(UnitTestHarness):
+    def configure(self):
+        m = build_ix_crittenden_surrogate()
+
+        self.default_zero = zero
+        self.default_relative_tolerance = relative_tolerance
+        self.unit_solutions[m.fs.unit.bed_volume] = 8.899
+        self.unit_solutions[m.fs.unit.bed_depth] = 0.833
+        self.unit_solutions[m.fs.unit.column_height] = 2.829
+        self.unit_solutions[m.fs.unit.bed_diameter] = 3.688
+        self.unit_solutions[m.fs.unit.bed_depth_to_diam_ratio] = 0.226
+        self.unit_solutions[m.fs.unit.breakthrough_time] = 12573768
+        self.unit_solutions[m.fs.unit.bv] = 20956
+        self.unit_solutions[m.fs.unit.c_eq["TCE"]] = 0.020971
+        self.unit_solutions[m.fs.unit.mass_adsorbed] = 74.4781
+        self.unit_solutions[m.fs.unit.min_N_St] = 32.0981
+        self.unit_solutions[m.fs.unit.min_breakthrough_time] = 16127386
+        self.unit_solutions[m.fs.unit.min_ebct] = 788.3
+        self.unit_solutions[m.fs.unit.min_t_contact] = 346.85
+        self.unit_solutions[m.fs.unit.min_tb_traps[1]] = 11384169
+        self.unit_solutions[m.fs.unit.min_tb_traps[2]] = 12149408
+        self.unit_solutions[m.fs.unit.min_tb_traps[3]] = 12667838
+        self.unit_solutions[m.fs.unit.min_tb_traps[4]] = 13555300
+        self.unit_solutions[m.fs.unit.min_tb_traps[5]] = 16127386
+        self.unit_solutions[m.fs.unit.traps["TCE", 1]] = 0.003113
+        self.unit_solutions[m.fs.unit.traps["TCE", 2]] = 0.006618
+        self.unit_solutions[m.fs.unit.traps["TCE", 3]] = 0.012627
+        self.unit_solutions[m.fs.unit.traps["TCE", 4]] = 0.035554
+        self.unit_solutions[m.fs.unit.traps["TCE", 5]] = 0.143447
+        self.unit_solutions[
+            m.fs.unit.process_flow.mass_transfer_term[0.0, "Liq", "TCE"]
+        ] = -4.350e-05
+        self.unit_solutions[
+            m.fs.unit.process_flow.properties_out[0.0].flow_mol_phase_comp["Liq", "TCE"]
+        ] = 1.2942e-05
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mol_phase_comp["Liq", "H2O"]
+        ] = 0.618032
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "H2O"]
+        ] = 0.0111245
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_mass_phase_comp["Liq", "TCE"]
+        ] = 5.92e-06
+        self.unit_solutions[
+            m.fs.unit.regeneration_stream[0.0].flow_vol_phase["Liq"]
+        ] = 1.113e-05
+        self.conservation_equality = {
+            "Check 1": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_in[0.0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mol_phase_comp[
+                    "Liq", "H2O"
+                ]
+                + m.fs.unit.process_flow.properties_out[0.0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mol_phase_comp["Liq", "TCE"],
+            },
+            "Check 2": {
+                "in": m.fs.unit.process_flow.properties_in[0.0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ],
+                "out": m.fs.unit.process_flow.properties_out[0.0].flow_mol_phase_comp[
+                    "Liq", "TCE"
+                ]
+                + m.fs.unit.regeneration_stream[0.0].flow_mol_phase_comp["Liq", "TCE"],
+            },
+        }
+
+        return m
+
+
+def build_ix_cphsdm_inert():
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
         solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
         mw_data={
@@ -682,7 +808,6 @@ def build_ix_multicomponent():
     )
     m.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
     m.fs.properties.dens_mass_const = 1000
-    # testing target_species arg
     ix_config = {
         "property_package": m.fs.properties,
         "target_component": "TCE",
@@ -692,7 +817,6 @@ def build_ix_multicomponent():
     m.fs.unit = IonExchangeCPHSDM(**ix_config)
 
     unit_feed = m.fs.unit.process_flow.properties_in[0]
-    # feed specifications
     unit_feed.pressure.fix(101325)
     unit_feed.temperature.fix(273.15 + 25)
     unit_feed.flow_mol_phase_comp["Liq", "H2O"].fix(824.0736620370348)
@@ -735,9 +859,9 @@ def build_ix_multicomponent():
     return m
 
 
-class TestIXCPHSDMCrittenden(UnitTestHarness):
+class TestIXCPHSDMInert(UnitTestHarness):
     def configure(self):
-        m = build_ix_multicomponent()
+        m = build_ix_cphsdm_inert()
 
         self.default_zero = zero
         self.default_relative_tolerance = relative_tolerance
