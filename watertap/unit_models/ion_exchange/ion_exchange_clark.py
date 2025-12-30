@@ -53,14 +53,6 @@ class IonExchangeClarkData(IonExchangeBaseData):
             description="Designates other reactive species",
         ),
     )
-    CONFIG.declare(
-        "number_traps",
-        ConfigValue(
-            default=5,
-            domain=int,
-            description="Number of trapezoids to use for steady-state effluent concentration estimation",
-        ),
-    )
 
     def build(self):
         super().build()
@@ -79,6 +71,11 @@ class IonExchangeClarkData(IonExchangeBaseData):
 
         inerts = comps - self.reactive_component_set
         self.inert_set = Set(initialize=inerts)
+
+        if len(self.reactive_component_set) > 1:
+            raise ConfigurationError(
+                f"Multicomponent model for IonExchangeClark not implemented."
+            )
 
         if len(self.target_component_set) > 1:
             raise ConfigurationError(
