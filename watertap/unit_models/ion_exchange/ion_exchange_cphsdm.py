@@ -11,6 +11,7 @@
 #################################################################################
 import os
 import pandas as pd
+from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigValue, In
@@ -618,6 +619,7 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        fail_flag=False,
     ):
         """
         General wrapper for initialization routines
@@ -684,6 +686,8 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
                     init_out = self.throughput_surrogate.evaluate_surrogate(init_data)
                     self.throughput_traps[trap].value = init_out["throughput"].values[0]
 
+            init_log.info_high("Surrogate initialization complete.")
+
         # Initialize control volume
         flags = self.process_flow.initialize(
             outlvl=outlvl,
@@ -696,22 +700,11 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
 
         # ---------------------------------------------------------------------
         # Initialize regeneration_stream
-        from copy import deepcopy
 
         state_args_regen = deepcopy(state_args)
 
-        # All inert species initialized to 0
         for j in inerts:
-            if j == self.config.target_component:
-                if self.flow_basis == MaterialFlowBasis.molar:
-                    state_args_regen["flow_mol_phase_comp"][("Liq", j)] = (
-                        self.process_flow.mass_transfer_term[0, "Liq", j].value * -1
-                    )
-                else:
-                    state_args_regen["flow_mass_phase_comp"][("Liq", j)] = (
-                        self.process_flow.mass_transfer_term[0, "Liq", j].value * -1
-                    )
-            elif j != "H2O":
+            if j != "H2O":
                 if self.flow_basis == MaterialFlowBasis.molar:
                     state_args_regen["flow_mol_phase_comp"][("Liq", j)] = 0
                 else:
@@ -744,10 +737,15 @@ class IonExchangeCPHSDMData(IonExchangeBaseData):
         init_log.info_high("Initialization Step 2 Complete.")
 
         # Pre-solve using interval arithmetic
-        interval_initializer(self)
+        interval_initializer(self, fail_flag=fail_flag, logger=init_log)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                res = opt.solve(self, tee=slc.tee)
 
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
