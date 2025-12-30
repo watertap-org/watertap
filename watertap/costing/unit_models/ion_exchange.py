@@ -258,17 +258,16 @@ def cost_ion_exchange(blk):
 
     elif ix_type == "anion":
         resin_cost = ion_exchange_params.anion_exchange_resin_cost
-    else:
-        raise FrozenPipes(
-            f"Invalid ion exchange type {ix_type}. Valid types are 'cation' or 'anion'."
-        )
-
     elif ix_type == "demineralize":
         resin_cost = (
             ion_exchange_params.cation_exchange_resin_cost
             * blk.unit_model.charge_ratio_cx
             + ion_exchange_params.anion_exchange_resin_cost
             * blk.unit_model.charge_ratio_ax
+        )
+    else:
+        raise FrozenPipes(
+            f"Invalid ion exchange type {ix_type}. Valid types are 'cation' or 'anion'."
         )
 
     blk.capital_cost_vessel_constraint = pyo.Constraint(
