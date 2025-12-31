@@ -160,3 +160,7 @@ References
 
 Chen, J. J. J. (1987). Comments on improvements on a replacement for the logarithmic mean. Chemical Engineering Science,
 42(10), 2488–2489. https://doi.org/10.1016/0009-2509(87)80128-8
+
+Carson I. Tucker, Timothy V. Bartholomew, Alexander V. Dudchenko, Meagan S. Mauter (2024),
+Component innovations for lower cost mechanical vapor compression, Water Research, Volume 260,
+121950. https://www.sciencedirect.com/science/article/pii/S0043135424008510
