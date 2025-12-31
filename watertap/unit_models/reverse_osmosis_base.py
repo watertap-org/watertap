@@ -897,9 +897,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(condata, sf)
 
         for (t, x), condata in self.eq_permeate_outlet_isobaric.items():
-            sf1 = iscale.get_scaling_factor(
-                self.mixed_permeate[t].pressure, default=1
-            )
+            sf1 = iscale.get_scaling_factor(self.mixed_permeate[t].pressure, default=1)
             sf2 = iscale.get_scaling_factor(
                 self.permeate_side[t, x].pressure, default=1
             )

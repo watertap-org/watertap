@@ -1410,8 +1410,7 @@ class MCASStateBlockData(StateBlockData):
                 doc="Component molar flow rate",
             )
         else:
-            raise ConfigurationError() 
-
+            raise ConfigurationError()
 
     # -----------------------------------------------------------------------------
     # Property Methods
@@ -2803,9 +2802,7 @@ class MCASStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(
                     self.flow_mol_comp[j],
                     # Don't provide a default since this should always be set
-                    iscale.get_scaling_factor(
-                        self.flow_mol_phase_comp["Liq", j]
-                    )
+                    iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]),
                 )
 
         if self.is_property_constructed("flow_mass_comp"):
@@ -2813,9 +2810,7 @@ class MCASStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(
                     self.flow_mass_comp[j],
                     # Don't provide a default since this should always be set
-                    iscale.get_scaling_factor(
-                        self.flow_mass_phase_comp["Liq", j]
-                    )
+                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j]),
                 )
 
         # The following variables and parameters have computed scaling factors;

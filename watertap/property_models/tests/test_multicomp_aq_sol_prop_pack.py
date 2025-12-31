@@ -66,7 +66,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 
 # Import idaes mixer to check compatibility in absence of get_enthalpy_flow_terms()
-from idaes.models.unit_models import Mixer
+from idaes.models.unit_models import Feed, Mixer
 from idaes.models.unit_models.mixer import MixingType
 import idaes.logger as idaeslog
 
@@ -243,6 +243,11 @@ def test_property_ions(model):
     m = model
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
+    assert m.fs.stream[0].is_property_constructed("flow_mol_phase_comp")
+    assert not m.fs.stream[0].is_property_constructed("eq_flow_mol_phase_comp")
+    assert not m.fs.stream[0].is_property_constructed("flow_mass_phase_comp")
+    assert not m.fs.stream[0].is_property_constructed("eq_flow_mass_phase_comp")
+
     m.fs.stream[0].flow_mol_phase_comp["Liq", "A"].fix(0.000407)
     m.fs.stream[0].flow_mol_phase_comp["Liq", "B"].fix(0.010479)
     m.fs.stream[0].flow_mol_phase_comp["Liq", "C"].fix(0.010479)
@@ -253,8 +258,21 @@ def test_property_ions(model):
 
     m.fs.stream[0].assert_electroneutrality(defined_state=True)
 
-    m.fs.stream[0].mole_frac_phase_comp
     m.fs.stream[0].flow_mass_phase_comp
+
+    assert m.fs.stream[0].is_property_constructed("flow_mol_phase_comp")
+    assert not m.fs.stream[0].is_property_constructed("eq_flow_mol_phase_comp")
+    assert m.fs.stream[0].is_property_constructed("flow_mass_phase_comp")
+    assert m.fs.stream[0].is_property_constructed("eq_flow_mass_phase_comp")
+
+    assert str(m.fs.stream[0].eq_flow_mass_phase_comp["Liq", "A"].expr) == (
+        "fs.stream[0].flow_mass_phase_comp[Liq,A]  ==  fs.properties.mw_comp[A]*fs.stream[0].flow_mol_phase_comp[Liq,A]"
+    )
+    assert str(m.fs.stream[0].eq_flow_mass_phase_comp["Liq", "H2O"].expr) == (
+        "fs.stream[0].flow_mass_phase_comp[Liq,H2O]  ==  fs.properties.mw_comp[H2O]*fs.stream[0].flow_mol_phase_comp[Liq,H2O]"
+    )
+
+    m.fs.stream[0].mole_frac_phase_comp
     m.fs.stream[0].molality_phase_comp
     m.fs.stream[0].pressure_osm_phase
     m.fs.stream[0].diffus_phase_comp
@@ -1604,6 +1622,11 @@ def test_flow_mass_basis():
 
     assert m.fs.properties.config.material_flow_basis == MaterialFlowBasis.mass
 
+    assert not m.fs.sb[0].is_property_constructed("flow_mol_phase_comp")
+    assert not m.fs.sb[0].is_property_constructed("eq_flow_mol_phase_comp")
+    assert m.fs.sb[0].is_property_constructed("flow_mass_phase_comp")
+    assert not m.fs.sb[0].is_property_constructed("eq_flow_mass_phase_comp")
+
     m.fs.sb[0].assert_electroneutrality(defined_state=False)
     assert hasattr(m.fs.sb[0], "get_material_flow_terms")
 
@@ -1617,6 +1640,55 @@ def test_flow_mass_basis():
         m.fs.sb[0].get_material_flow_terms("Liq", "A")
         == m.fs.sb[0].flow_mass_phase_comp["Liq", "A"]
     )
+
+    m.fs.sb[0].flow_mol_phase_comp
+
+    assert m.fs.sb[0].is_property_constructed("flow_mol_phase_comp")
+    assert m.fs.sb[0].is_property_constructed("eq_flow_mol_phase_comp")
+    assert m.fs.sb[0].is_property_constructed("flow_mass_phase_comp")
+    assert not m.fs.sb[0].is_property_constructed("eq_flow_mass_phase_comp")
+
+    assert str(m.fs.sb[0].eq_flow_mol_phase_comp["Liq", "A"].expr) == (
+        "1/fs.properties.mw_comp[A]*fs.sb[0].flow_mass_phase_comp[Liq,A]  ==  fs.sb[0].flow_mol_phase_comp[Liq,A]"
+    )
+    assert str(m.fs.sb[0].eq_flow_mol_phase_comp["Liq", "H2O"].expr) == (
+        "1/fs.properties.mw_comp[H2O]*fs.sb[0].flow_mass_phase_comp[Liq,H2O]  ==  fs.sb[0].flow_mol_phase_comp[Liq,H2O]"
+    )
+
+
+@pytest.mark.unit
+def test_compatibility_with_feed_mole_basis():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(time_set=[0, 1], dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23, "Cl_-": 35},
+        charge={"Na_+": 1, "Cl_-": -1},
+    )
+
+    # When the material flow state variable (flow_mol_phase_comp here) was being created
+    # as an on-demand property, an exception was raised when the Feed block tried to create
+    # a Reference to the state variables at the unit-model level. If the feed block builds,
+    # then the issue has been fixed.
+    m.fs.feed = Feed(property_package=m.fs.properties)
+
+
+@pytest.mark.unit
+def test_compatibility_with_feed_mass_basis():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(time_set=[0, 1], dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        material_flow_basis=MaterialFlowBasis.mass,
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23, "Cl_-": 35},
+        charge={"Na_+": 1, "Cl_-": -1},
+    )
+
+    # When the material flow state variable (flow_mass_phase_comp here) was being created
+    # as an on-demand property, an exception was raised when the Feed block tried to create
+    # a Reference to the state variables at the unit-model level. If the feed block builds,
+    # then the issue has been fixed.
+    m.fs.feed = Feed(property_package=m.fs.properties)
 
 
 @pytest.mark.unit

@@ -1425,11 +1425,11 @@ class SeawaterStateBlockData(StateBlockData):
             # We have b.energy_inernal_mass_phase
             # = b.enth_mass_phase[p] - b.pressure/b.dens_mass_phase[p]
             # Energy density is then just b.energy_inernal_mass_phase * b.dens_mass_phase[p]
-            return  self.enth_mass_phase[p] * self.dens_mass_phase[p] - b.pressure
+            return self.enth_mass_phase[p] * self.dens_mass_phase[p] - b.pressure
+
         self.energy_density_phase = Expression(
             self.params.phase_list, rule=rule_energy_density_phase
         )
-
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
