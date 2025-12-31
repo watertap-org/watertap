@@ -189,3 +189,21 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         if hasattr(self, "width"):
             if iscale.get_scaling_factor(self.width) is None:
                 iscale.set_scaling_factor(self.width, 1)
+
+        for (t, x, j), condata in self.eq_mass_frac_permeate.items():
+            sf = iscale.get_scaling_factor(
+                self.flux_mass_phase_comp[t, x, "Liq", j], default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, p, j), condata in self.eq_permeate_production.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, p, j), condata in self.eq_connect_mass_transfer.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
