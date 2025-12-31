@@ -1,7 +1,7 @@
 #################################################################################
 # WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -34,7 +34,9 @@ def test_against_multisweep(number_of_stages, tmp_path):
         _this_file_path, "parameter_sweep_baselines", csv_file_name
     )
     with pytest.warns(UserWarning, match=r"Too few points to perform interpolation\."):
-        run_case(number_of_stages, 2, output_filename=csv_test_file_name)
+        run_case(
+            number_of_stages, 2, output_filename=csv_test_file_name, quick_start=True
+        )
 
     baseline = pd.read_csv(csv_baseline_file_name).astype(float).T.to_dict()
     test = pd.read_csv(csv_test_file_name).astype(float).T.to_dict()
