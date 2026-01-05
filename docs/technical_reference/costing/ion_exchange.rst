@@ -34,10 +34,10 @@ These parameters are created directly on ``m.fs.costing``.
 .. csv-table::
    :header: "Description", "Parameter Name", "Default Value", "Units", "Notes"
 
-   "Unit cost of NaCl", "``unit_cost``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
-   "Unit cost of HCl", "``unit_cost``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
-   "Unit cost of NaOH", "``unit_cost``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
-   "Unit cost of Methanol (MeOH)", "``unit_cost``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
+   "Unit cost of NaCl", "``unit_cost_NaCl``", "0.09", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes solid NaCl. From CatCost v 1.0.4"
+   "Unit cost of HCl", "``unit_cost_HCl``", "0.17", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 37% solution HCl. From CatCost v 1.0.4"
+   "Unit cost of NaOH", "``unit_cost_NaOH``", "0.59", ":math:`\text{USD}_{2020}\text{/kg}`", "Assumes 30% solution NaOH. From iDST"
+   "Unit cost of Methanol (MeOH)", "``unit_cost_MeOH``", "3.395", ":math:`\text{USD}_{2008}\text{/kg}`", "Assumes 100% pure MeOH. From ICIS"
 
 Costing Method Variables
 ++++++++++++++++++++++++

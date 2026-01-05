@@ -87,7 +87,7 @@ def build_naocl_mixer_cost_param_block(blk):
 
 def build_naocl_cost_param_block(blk):
 
-    blk.unit_cost = pyo.Param(
+    blk.unit_cost_NaOCl = pyo.Param(
         initialize=0.23,
         doc="NaOCl cost",
         units=pyo.units.USD_2018 / pyo.units.kg,
@@ -100,7 +100,7 @@ def build_naocl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("NaOCl", blk.NaOCl_cost / blk.purity)
+    costing.register_flow_type("NaOCl", blk.unit_cost_NaOCl / blk.purity)
 
 
 @register_costing_parameter_block(
@@ -133,7 +133,7 @@ def cost_naocl_mixer(blk, dosing_rate):
 
 
 def build_caoh2_cost_param_block(blk):
-    blk.unit_cost = pyo.Param(
+    blk.unit_cost_CaOH2 = pyo.Param(
         mutable=True,
         initialize=0.12,
         doc="CaOH2 cost",
@@ -147,7 +147,7 @@ def build_caoh2_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("CaOH2", blk.CaOH2_cost / blk.purity)
+    costing.register_flow_type("CaOH2", blk.unit_cost_CaOH2 / blk.purity)
 
 
 def build_caoh2_mixer_cost_param_block(blk):
