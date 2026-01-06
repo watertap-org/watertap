@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -27,7 +27,7 @@ long_description = (cwd / "README.md").read_text()
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="1.5.dev0",
+    version="1.6.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -69,7 +69,7 @@ setup(
         # primary requirements for unit and property models
         # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
         # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
-        "idaes-pse >=2.9.0,<2.10.0rc0",
+        "idaes-pse>=2.10.0",
         "pyomo>=6.6.1",
         "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
