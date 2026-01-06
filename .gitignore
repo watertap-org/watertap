@@ -183,3 +183,4 @@ watertap/flowsheets/ccro/multiperiod/analysis_scripts/figs/retentate tds.svg
 *.csv
 *.jpg
 *.svg
+*.png
