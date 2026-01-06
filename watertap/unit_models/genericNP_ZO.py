@@ -112,17 +112,17 @@ class GenericNPZOdata(SeparatorData):
         self.frac_mass_H2O_treated.fix()
 
         # Define default removal factors for each component
+        # as Variables so they can be unfixed for parameter_sweep
         self.removal_factors = Var(
             ["S_PO4", "S_NH4", "S_NO3", "S_NO2"],
             within=NonNegativeReals,
-            initialize=0.0,
+            initialize={"S_PO4": 0.98, "S_NH4": 0.5, "S_NO3": 0.0, "S_NO2": 0.0},
+            bounds=(0, 1),
             doc="Removal fraction for components on a mass basis",
             units=pyunits.dimensionless,
         )
-        self.removal_factors["S_PO4"].fix(0.98)
-        self.removal_factors["S_NH4"].fix(0.5)
-        self.removal_factors["S_NO3"].fix(0.0)
-        self.removal_factors["S_NO2"].fix(0.0)
+        for comp in self.removal_factors:
+            self.removal_factors[comp].fix()
 
         # Add molar mass parameters for unit conversions
         self.molar_mass_NH4 = Param(
@@ -169,18 +169,25 @@ class GenericNPZOdata(SeparatorData):
         )
 
         # Energy consumption variable - basis determined by config
+        # as Variables so they can be unfixed for parameter_sweep
         if self.config.basis == "mass":
             self.energy_electric_flow = Var(
                 self.config.property_package.component_list,
+                initialize=0.0,
+                bounds=(0, None),
                 units=pyunits.kWh / pyunits.kg,
                 doc="Electricity intensity with respect to component removal (mass basis)",
             )
         else:  # molar basis
             self.energy_electric_flow = Var(
                 self.config.property_package.component_list,
+                initialize=0.0,
+                bounds=(0, None),
                 units=pyunits.kWh / pyunits.mol,
                 doc="Electricity intensity with respect to component removal (molar basis)",
             )
+        for comp in self.energy_electric_flow:
+            self.energy_electric_flow[comp].fix()
 
         @self.Constraint(
             self.flowsheet().time,
@@ -307,12 +314,6 @@ class GenericNPZOdata(SeparatorData):
 
         iscale.set_scaling_factor(self.frac_mass_H2O_treated, 1)
 
-        if iscale.get_scaling_factor(self.energy_electric_flow) is None:
-            sf = iscale.get_scaling_factor(
-                self.energy_electric_flow, default=1e-3, warning=True
-            )
-            iscale.set_scaling_factor(self.energy_electric_flow, sf)
-
         if iscale.get_scaling_factor(self.magnesium_chloride_dosage) is None:
             sf = iscale.get_scaling_factor(
                 self.magnesium_chloride_dosage, default=1e0, warning=True
@@ -340,9 +341,6 @@ class GenericNPZOdata(SeparatorData):
                     else:
                         sf = 1
             iscale.set_scaling_factor(v, sf)
-
-        for j in self.removal_factors:
-            iscale.set_scaling_factor(self.removal_factors[j], 1)
 
     @property
     def default_costing_method(self):

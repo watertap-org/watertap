@@ -115,13 +115,6 @@ _log = idaeslog.getLogger(__name__)
 
 this_file_dir = os.path.dirname(os.path.abspath(__file__))
 
-# DEBUG COST INFEASIBILITY: Costing debug options
-RELAX_COSTING_CONSTRAINTS = True  # Set True to relax == to >= or <=
-UNFIX_COSTING_PARAMETERS = True  # Set True to unfix all costing parameters
-COSTING_CONSTRAINTS_TO_KEEP = (
-    None  # List of constraint names to keep active, or None for all
-)
-
 
 def safe_value(x):
     try:
@@ -160,48 +153,6 @@ def print_constraint_violations(m):
                 print(f"{c.name}: ERROR ({e2})")
 
 
-# DEBUG COST INFEASIBILITY: Function to apply costing debug options
-def apply_costing_debug_options(m):
-    # Option 2: Unfix costing parameters
-    if UNFIX_COSTING_PARAMETERS:
-        for v in m.fs.costing.component_data_objects(pyo.Param, descend_into=True):
-            if hasattr(v, "fixed") and v.fixed:
-                v.fixed = False
-
-    # Option 3: Only keep a subset of costing constraints
-    if COSTING_CONSTRAINTS_TO_KEEP is not None:
-        for c in m.fs.costing.component_objects(pyo.Constraint, descend_into=True):
-            if c.name not in COSTING_CONSTRAINTS_TO_KEEP:
-                c.deactivate()
-
-    # DEBUG COST INFEASIBILITY: Targeted relaxation for genericNP capital cost constraint
-    if RELAX_COSTING_CONSTRAINTS:
-        if hasattr(m.fs, "genericNP") and hasattr(m.fs.genericNP, "costing"):
-            blk = m.fs.genericNP.costing
-            if hasattr(blk, "capital_cost_constraint"):
-                blk.capital_cost_constraint.deactivate()
-                expr = blk.capital_cost_constraint.expr
-                if expr.__class__.__name__ == "EqualityExpression":
-                    lhs = expr.args[0]
-                    rhs = expr.args[1]
-                    blk.relaxed_capital_cost_constraint = pyo.Constraint(
-                        expr=(lhs >= rhs)
-                    )  # or (lhs <= rhs)
-        # Optionally, relax flow cost constraints one by one (example for electricity):
-        if (
-            hasattr(blk, "cost_flow_constraint")
-            and "electricity" in blk.cost_flow_constraint
-        ):
-            blk.cost_flow_constraint["electricity"].deactivate()
-            expr = blk.cost_flow_constraint["electricity"].expr
-            if expr.__class__.__name__ == "EqualityExpression":
-                lhs = expr.args[0]
-                rhs = expr.args[1]
-                blk.relaxed_cost_flow_constraint_electricity = pyo.Constraint(
-                    expr=(lhs >= rhs)
-                )
-
-
 def print_costing_scaling(m):
     print("\n--- Costing Variable Scaling Factors ---")
     for v in m.fs.costing.component_data_objects(pyo.Var, descend_into=True):
@@ -225,29 +176,37 @@ def initialize_costing_block(m):
                 pass
 
 
-def main(has_genericNP=False, plot_network_before_solve=False):
-    m = build_flowsheet(has_genericNP=has_genericNP)
-    set_operating_conditions(m)
-    add_costing(m)
-    # Initialize costing block variables before process initialization
-    initialize_costing_block(m)
-    print("--- Key process variables before costing ---")
-    print("fs.genericNP.electricity[0] =", m.fs.genericNP.electricity[0].value)
-    print("fs.genericNP.MgCl2_flowrate[0] =", m.fs.genericNP.MgCl2_flowrate[0].value)
-    print(
-        "fs.genericNP.byproduct.flow_vol[0] =",
-        m.fs.genericNP.byproduct.flow_vol[0].value,
-    )
-    print(
-        "fs.genericNP.byproduct.conc_mass_comp[0, 'S_PO4'] =",
-        m.fs.genericNP.byproduct.conc_mass_comp[0, "S_PO4"].value,
-    )
-    print(
-        "fs.genericNP.byproduct.conc_mass_comp[0, 'S_NH4'] =",
-        m.fs.genericNP.byproduct.conc_mass_comp[0, "S_NH4"].value,
+def main(
+    has_genericNP=False,
+    plot_network_before_solve=False,
+    basis="mass",
+    p_removal=0.95,
+    n_to_p_ratio=0.3,
+    energy_intensity=0.044,
+    mgcl2_dosage=0.388,
+    water_recovery=0.99,
+    apply_costing=True,
+):
+    m = build_flowsheet(has_genericNP=has_genericNP, basis=basis)
+
+    # Add costing BEFORE setting operating conditions (if requested)
+    if apply_costing:
+        add_costing(m)
+        # Deactivate capital cost constraints during initialization
+        for c in m.fs.component_objects(pyo.Constraint, descend_into=True):
+            if "capital_cost" in c.name:
+                c.deactivate()
+
+    set_operating_conditions(
+        m,
+        p_removal=p_removal,
+        n_to_p_ratio=n_to_p_ratio,
+        energy_intensity=energy_intensity,
+        mgcl2_dosage=mgcl2_dosage,
+        water_recovery=water_recovery,
     )
 
-    # Now initialize the process (with costing present)
+    # Now initialize the process (with costing present if apply_costing=True)
     if plot_network_before_solve:
         # Create empty stream table for initial network plot
         stream_dict = {
@@ -278,27 +237,24 @@ def main(has_genericNP=False, plot_network_before_solve=False):
         else:
             print("Failed to create initial network visualization")
     initialize_system(m, has_genericNP=has_genericNP)
-    # Print scaling factors for costing variables and constraints
-    print_costing_scaling(m)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    # DEBUG COST INFEASIBILITY: Apply costing debug options if costing is present
-    if hasattr(m.fs, "costing"):
-        apply_costing_debug_options(m)
+    # Solve the process (with costing if apply_costing=True)
+    if apply_costing:
+        initialize_costing_block(m)
+        print_costing_scaling(m)
 
-    # Only print costing debug output if costing is present
-    if hasattr(m.fs, "costing"):
-
-        def safe_value(x):
+        def safe_cost_value(x):
             try:
                 return pyo.value(x)
             except Exception:
                 return "UNINITIALIZED"
 
+        # Costing debug output
         for unit in [
             m.fs.genericNP,
             m.fs.R1,
@@ -320,9 +276,9 @@ def main(has_genericNP=False, plot_network_before_solve=False):
         for c in m.fs.costing.component_objects(pyo.Constraint, descend_into=True):
             for idx in c:
                 try:
-                    body = safe_value(c[idx].body)
-                    lb = safe_value(c[idx].lower) if c[idx].has_lb() else None
-                    ub = safe_value(c[idx].upper) if c[idx].has_ub() else None
+                    body = safe_cost_value(c[idx].body)
+                    lb = safe_cost_value(c[idx].lower) if c[idx].has_lb() else None
+                    ub = safe_cost_value(c[idx].upper) if c[idx].has_ub() else None
                     res = (
                         (body - lb)
                         if lb not in [None, "UNINITIALIZED"] and body != "UNINITIALIZED"
@@ -342,9 +298,9 @@ def main(has_genericNP=False, plot_network_before_solve=False):
             for idx in c:
                 try:
                     expr = c[idx].expr
-                    body = safe_value(c[idx].body)
-                    lb = safe_value(c[idx].lower) if c[idx].has_lb() else None
-                    ub = safe_value(c[idx].upper) if c[idx].has_ub() else None
+                    body = safe_cost_value(c[idx].body)
+                    lb = safe_cost_value(c[idx].lower) if c[idx].has_lb() else None
+                    ub = safe_cost_value(c[idx].upper) if c[idx].has_ub() else None
                     res = (
                         (body - lb)
                         if lb not in [None, "UNINITIALIZED"] and body != "UNINITIALIZED"
@@ -394,24 +350,29 @@ def main(has_genericNP=False, plot_network_before_solve=False):
         print("\n--- Degrees of Freedom ---")
         print(degrees_of_freedom(m))
 
+    # Final solve with costing active
     try:
-        results = solve(m)
+        results = solve(m, max_iter=5000)
         pyo.assert_optimal_termination(results)
         check_solve(
             results,
-            checkpoint="re-solve with controls in place",
+            checkpoint=(
+                "final solve with costing"
+                if apply_costing
+                else "final solve without costing"
+            ),
             logger=_log,
             fail_flag=True,
         )
         print_constraint_violations(m)
-    except Exception as e:
+    except Exception:
         print_constraint_violations(m)
         raise
 
     return m, results
 
 
-def build_flowsheet(has_genericNP=False):
+def build_flowsheet(has_genericNP=False, basis="mass"):
     m = pyo.ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -559,7 +520,7 @@ def build_flowsheet(has_genericNP=False):
     # ======================================================================
     # GenericNP
     if has_genericNP is True:
-        m.fs.genericNP = GenericNPZO(property_package=m.fs.props_ASM2D, basis="mass")
+        m.fs.genericNP = GenericNPZO(property_package=m.fs.props_ASM2D, basis=basis)
 
     # ======================================================================
     # Product Blocks
@@ -690,7 +651,14 @@ def build_flowsheet(has_genericNP=False):
     return m
 
 
-def set_operating_conditions(m):
+def set_operating_conditions(
+    m,
+    p_removal=0.95,
+    n_to_p_ratio=0.3,
+    energy_intensity=0.044,
+    mgcl2_dosage=0.388,
+    water_recovery=0.99,
+):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
@@ -807,16 +775,36 @@ def set_operating_conditions(m):
 
     # genericNP
     if m.fs.has_genericNP is True:
-        m.fs.genericNP.energy_electric_flow.fix(0.044 * pyo.units.kWh / pyo.units.kg)
-        m.fs.genericNP.magnesium_chloride_dosage.fix(0.388)
-        m.fs.genericNP.removal_factors["S_PO4"].fix(0.5)
-        m.fs.genericNP.removal_factors["S_NH4"].fix(0.2)
-        m.fs.genericNP.frac_mass_H2O_treated[0].fix(0.99)
+        nh4_removal = p_removal * n_to_p_ratio
+        m.fs.genericNP.removal_factors["S_PO4"].set_value(p_removal)
+        m.fs.genericNP.removal_factors["S_NH4"].set_value(nh4_removal)
+        if "S_NO3" in m.fs.genericNP.removal_factors:
+            m.fs.genericNP.removal_factors["S_NO3"].set_value(0.0)
+        if "S_NO2" in m.fs.genericNP.removal_factors:
+            m.fs.genericNP.removal_factors["S_NO2"].set_value(0.0)
+
+        if m.fs.genericNP.config.basis == "mass":
+            energy_units = pyo.units.kWh / pyo.units.kg
+            mg_units = pyo.units.kg / pyo.units.kg
+        else:
+            energy_units = pyo.units.kWh / pyo.units.mol
+            mg_units = pyo.units.kg / pyo.units.mol
+
+        for comp in m.fs.props_ASM2D.component_list:
+            if comp in ("S_PO4", "S_NH4"):
+                m.fs.genericNP.energy_electric_flow[comp].set_value(
+                    energy_intensity * energy_units
+                )
+            else:
+                m.fs.genericNP.energy_electric_flow[comp].set_value(0 * energy_units)
+
+        m.fs.genericNP.magnesium_chloride_dosage.fix(mgcl2_dosage * mg_units)
+        m.fs.genericNP.frac_mass_H2O_treated[0].fix(water_recovery)
 
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
             if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e0)
+                iscale.set_scaling_factor(var, 1e2)
             if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-2)
             if "pressure" in var.name:
@@ -835,11 +823,18 @@ def set_operating_conditions(m):
         )
         iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
-    # TODO: check if needed
-    if m.fs.genericNP.electricity[0].value is None:
-        m.fs.genericNP.electricity[0].set_value(1.0)
-    if m.fs.genericNP.MgCl2_flowrate[0].value is None:
-        m.fs.genericNP.MgCl2_flowrate[0].set_value(1.0)
+    # Initialize and scale genericNP unit
+    if m.fs.has_genericNP:
+        if m.fs.genericNP.electricity[0].value is None:
+            m.fs.genericNP.electricity[0].set_value(1.0)
+        if m.fs.genericNP.MgCl2_flowrate[0].value is None:
+            m.fs.genericNP.MgCl2_flowrate[0].set_value(1.0)
+
+        # Set scaling factors for genericNP
+        iscale.set_scaling_factor(m.fs.genericNP.electricity, 1e-1)
+        iscale.set_scaling_factor(m.fs.genericNP.MgCl2_flowrate, 1e0)
+        iscale.set_scaling_factor(m.fs.genericNP.magnesium_chloride_dosage, 1e0)
+        iscale.set_scaling_factor(m.fs.genericNP.frac_mass_H2O_treated, 1e0)
 
     # Apply scaling
     scale_variables(m)
@@ -978,9 +973,11 @@ def initialize_system(m, has_genericNP=False):
     seq.run(m, function)
 
 
-def solve(m, solver=None):
+def solve(m, solver=None, max_iter=3000):
     if solver is None:
         solver = get_solver()
+    # Temporarily increase iteration limit for genericNP convergence
+    solver.options["max_iter"] = max_iter
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
@@ -1036,8 +1033,15 @@ def build_sweep_params(model, nx=2, **kwargs):
 
 
 def build_model(**kwargs):
+    basis = kwargs.get("basis", "mass")
+    p_removal = kwargs.get("p_removal", 0.95)
+    n_to_p_ratio = kwargs.get("n_to_p_ratio", 0.3)
+    energy_intensity = kwargs.get("energy_intensity", 0.044)
+    mgcl2_dosage = kwargs.get("mgcl2_dosage", 0.388)
+    water_recovery = kwargs.get("water_recovery", 0.99)
+
     # return main(has_genericNP=has_genericNP)[0]
-    m = build_flowsheet(has_genericNP=True)
+    m = build_flowsheet(has_genericNP=True, basis=basis)
 
     add_costing(m)
 
@@ -1046,7 +1050,14 @@ def build_model(**kwargs):
         if "capital_cost" in c.name:
             c.deactivate()
 
-    set_operating_conditions(m)
+    set_operating_conditions(
+        m,
+        p_removal=p_removal,
+        n_to_p_ratio=n_to_p_ratio,
+        energy_intensity=energy_intensity,
+        mgcl2_dosage=mgcl2_dosage,
+        water_recovery=water_recovery,
+    )
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
     m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
@@ -1086,8 +1097,22 @@ def build_outputs(model, **kwargs):
     return outputs
 
 
-def reinitialize_system(model):
-    set_operating_conditions(model)
+def reinitialize_system(
+    model,
+    p_removal=0.95,
+    n_to_p_ratio=0.3,
+    energy_intensity=0.044,
+    mgcl2_dosage=0.388,
+    water_recovery=0.99,
+):
+    set_operating_conditions(
+        model,
+        p_removal=p_removal,
+        n_to_p_ratio=n_to_p_ratio,
+        energy_intensity=energy_intensity,
+        mgcl2_dosage=mgcl2_dosage,
+        water_recovery=water_recovery,
+    )
     initialize_system(model, has_genericNP=True)
 
 
@@ -1153,11 +1178,13 @@ def plot_results(results):
 
 if __name__ == "__main__":
     run_parameter_sweep = False  # Set to True to run parameter sweep
-    plot_network_before_solve = True  # Set to True to plot network before solving
+    plot_network_before_solve = False  # Set to True to plot network before solving
 
     if not run_parameter_sweep:
         m, results = main(
-            has_genericNP=True, plot_network_before_solve=plot_network_before_solve
+            has_genericNP=True,
+            plot_network_before_solve=plot_network_before_solve,
+            apply_costing=True,
         )
 
         # Create stream table
@@ -1165,9 +1192,14 @@ if __name__ == "__main__":
             "Feed": m.fs.FeedWater.outlet,
             "Treated": m.fs.Treated.inlet,
             "Sludge": m.fs.Sludge.inlet,
-            "genericNP_treated": m.fs.genericNP.treated,
-            "genericNP_byproduct": m.fs.genericNP.byproduct,
         }
+        if m.fs.has_genericNP:
+            stream_dict.update(
+                {
+                    "genericNP_treated": m.fs.genericNP.treated,
+                    "genericNP_byproduct": m.fs.genericNP.byproduct,
+                }
+            )
 
         stream_table = create_stream_table_dataframe(stream_dict, time_point=0)
         print(stream_table_dataframe_to_string(stream_table))

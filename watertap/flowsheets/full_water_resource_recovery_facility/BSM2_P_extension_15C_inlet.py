@@ -388,7 +388,9 @@ def set_operating_conditions(m, bio_P=False):
     # Feed Water Conditions
     print(f"DOF before feed: {degrees_of_freedom(m)}")
     m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
-    m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
+    m.fs.FeedWater.temperature.fix(
+        288.0 * pyo.units.K
+    )  # ~15°C to match BSM2 standard TODO: change back
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
     m.fs.FeedWater.conc_mass_comp[0, "S_O2"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_F"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
@@ -606,11 +608,16 @@ def scale_system(m, bio_P=False):
 
 
 def initialize_system(m, bio_P=False, solver=None):
+    # Initialize temperature variables to 288 K (~15°C)
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "temperature" in var.name and not var.fixed:
+            var.set_value(288.0)
+
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
-    seq.options.iterLim = 1
+    seq.options.iterLim = 3  # TODO: change back to 1?
     seq.options.tear_set = [m.fs.stream5, m.fs.stream10adm]
 
     G = seq.create_graph(m)
@@ -643,7 +650,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_PP"): 1.16,
                 (0, "X_S"): 0.059,
             },
-            "temperature": {0: 308.15},
+            "temperature": {0: 288.0},  # ~15°C for biological process TODO: change back
             "pressure": {0: 101325},
         }
 
@@ -669,7 +676,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_PP"): 2.9,
                 (0, "X_S"): 3.8,
             },
-            "temperature": {0: 308.15},
+            "temperature": {0: 288.0},  # ~15°C for biological process TODO: change back
             "pressure": {0: 101325},
         }
 
@@ -696,7 +703,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_PP"): 1.13,
                 (0, "X_S"): 0.057,
             },
-            "temperature": {0: 308.15},
+            "temperature": {0: 288.0},  # ~15°C for biological process TODO: change back
             "pressure": {0: 101325},
         }
 
@@ -722,7 +729,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "X_PP"): 2.7,
                 (0, "X_S"): 3.9,
             },
-            "temperature": {0: 308.15},
+            "temperature": {0: 288.0},  # ~15°C for biological process TODO: change back
             "pressure": {0: 101325},
         }
 
@@ -737,7 +744,12 @@ def initialize_system(m, bio_P=False, solver=None):
         if bio_P:
             unit.initialize(outlvl=idaeslog.DEBUG)
         else:
-            initializer.initialize(unit, output_level=_log.debug)
+            # Use standard initialize for Mixers since using lower temp
+            # (enthalpy balance can be sensitive)
+            if hasattr(unit, "feed_water") or "MX" in unit.name:
+                unit.initialize(outlvl=idaeslog.WARNING)
+            else:
+                initializer.initialize(unit, output_level=_log.debug)
 
     seq.run(m, function)
 
