@@ -18,8 +18,8 @@ from watertap.flowsheets.dye_desalination.dye_sweep import (
 
 # test the first 11 case studies that can be run with or without RO
 pytest_parameterize_NF = list(range(1, 12))
-# then test case studies 9-11 that can only run with RO
-pytest_parameterize_RO = list(range(12, 18))
+# then test case studies 12-20 that can only run with RO
+pytest_parameterize_RO = list(range(12, 20))
 
 
 @pytest.mark.parametrize("case_num", pytest_parameterize_NF)
