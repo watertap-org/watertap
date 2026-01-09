@@ -393,7 +393,7 @@ class TestNFZO_non_default_subtype:
         assert pytest.approx(23.710346, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["dye"]
         )
-        assert pytest.approx(4.605479, rel=1e-5) == value(model.fs.unit.area)
+        assert pytest.approx(16.119175, rel=1e-5) == value(model.fs.unit.area)
         assert pytest.approx(0.9899499, rel=1e-5) == value(
             model.fs.unit.rejection_comp[0, "dye"]
         )
@@ -496,8 +496,8 @@ def test_costing_non_default_subtype():
     # Check for optimal solution
     assert check_optimal_termination(results)
 
-    assert pytest.approx(46290.20269, rel=1e-5) == value(m.fs.unit.area)
-    assert pytest.approx(2.31451, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-    assert pytest.approx(0.462902, rel=1e-5) == value(
+    assert pytest.approx(162015.7094, rel=1e-5) == value(m.fs.unit.area)
+    assert pytest.approx(8.10079, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1.62016, rel=1e-5) == value(
         m.fs.unit.costing.fixed_operating_cost
     )
