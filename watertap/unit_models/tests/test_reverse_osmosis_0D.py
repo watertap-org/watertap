@@ -53,7 +53,6 @@ import pytest
 from idaes.core.solvers import petsc
 import numpy as np
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()

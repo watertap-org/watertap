@@ -13,6 +13,7 @@
 Tests for CSTR unit model.
 Authors: Marcus Holly
 """
+
 import pytest
 
 from pyomo.environ import (

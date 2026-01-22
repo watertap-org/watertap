@@ -12,6 +12,7 @@
 """
 Tests for zero-order cooling tower model
 """
+
 import pytest
 
 

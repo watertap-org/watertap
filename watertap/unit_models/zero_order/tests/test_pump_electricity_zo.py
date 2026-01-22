@@ -12,6 +12,7 @@
 """
 Tests for zero-order pump electricity model
 """
+
 import pytest
 
 

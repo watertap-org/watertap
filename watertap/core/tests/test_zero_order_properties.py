@@ -12,6 +12,7 @@
 """
 Tests for general zero-order proeprty package
 """
+
 import pytest
 
 from idaes.core import (

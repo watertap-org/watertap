@@ -13,6 +13,7 @@
 This module contains a zero-order representation of a chemical addition unit
 operation.
 """
+
 import pyomo.environ as pyo
 
 from idaes.core import declare_process_block_class
