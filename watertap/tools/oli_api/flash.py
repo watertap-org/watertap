@@ -1119,7 +1119,7 @@ def flatten_results(processed_requests):
                 elif "data" in values:
                     # intended for vaporDiffusivityMatrix
                     mat_dim = int(sqrt(len(values["data"])))
-                    diffmat = reshape(values["data"], newshape=(mat_dim, mat_dim))
+                    diffmat = reshape(values["data"])
 
                     extracted_values = {
                         f'({values["speciesNames"][i]},{values["speciesNames"][j]})': {
