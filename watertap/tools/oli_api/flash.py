@@ -1120,7 +1120,6 @@ def flatten_results(processed_requests):
                     # intended for vaporDiffusivityMatrix
                     mat_dim = int(sqrt(len(values["data"])))
                     diffmat = reshape(values["data"], shape=(mat_dim, mat_dim))
-
                     extracted_values = {
                         f'({values["speciesNames"][i]},{values["speciesNames"][j]})': {
                             "units": values["unit"],
