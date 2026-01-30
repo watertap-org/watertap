@@ -74,7 +74,7 @@ setup(
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep >=0.1.0",
-        "numpy",
+        "numpy <= 2.3.0",  # avoid numpy 2.4 compatibility issues. TODO: unpin this for future release
         "pint<0.25",
     ],
     extras_require={
