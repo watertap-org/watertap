@@ -85,5 +85,3 @@ def scale_multiperiod_model(mp):
         iscale.constraint_scaling_transform(c, 1e2)
     for c in mp.equal_delta_dead_volume_constraint.values():
         iscale.constraint_scaling_transform(c, 1e2)
-    for c in mp.equal_recycle_rate.values():
-        iscale.constraint_scaling_transform(c, 1e2)

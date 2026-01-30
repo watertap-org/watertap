@@ -57,6 +57,7 @@ class ReverseOsmosis1DwithHoldUpData(ReverseOsmosis1DData):
         self.feed_side.accumulation_time = Var(
             self.flowsheet().config.time,
             initialize=1,
+            bounds=(0, None),
             units=units_meta("time"),
             doc="Time for accumulation",
         )
@@ -282,7 +283,10 @@ class ReverseOsmosis1DwithHoldUpData(ReverseOsmosis1DData):
                 sf_dense = iscale.get_scaling_factor(
                     self.feed_side.properties[t, x].dens_mass_phase[p]
                 )
-                sf_mass_frac = sf_vol * sf_dense
+                if j == "H2O":
+                    sf_mass_frac = 1 / (sf_vol**-1 * sf_dense**-1)
+                else:
+                    sf_mass_frac = 10 / (sf_vol**-1 * sf_dense**-1)
 
                 iscale.set_scaling_factor(
                     self.feed_side.node_mass_phase_comp[t, x, p, j],

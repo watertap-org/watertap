@@ -12,11 +12,11 @@ class CCROConfiguration(dict):
             raw_feed_flowrate=1 * pyunits.L / pyunits.s,  # L/min
             recycle_flowrate=10 * pyunits.L / pyunits.s,  # L/min
             flushing_conc="raw_feed_conc",  # g/L
-            flushing_flowrate="raw_feed_flowrate",  # L/min
+            flushing_flowrate="recycle_flowrate",  # L/min
             flushing_efficiency=0.9 * pyunits.dimensionless,
             temperature=298 * pyunits.K,  # K
             p1_pressure_start="osmotic_pressure",  # psi
-            osmotic_overpressure=2 * pyunits.dimensionless,
+            osmotic_overpressure=3 * pyunits.dimensionless,
             p1_eff=0.8 * pyunits.dimensionless,
             p2_eff=0.8 * pyunits.dimensionless,
             A_comp=5.96e-12 * pyunits.meter / (pyunits.second * pyunits.Pa),
@@ -26,7 +26,7 @@ class CCROConfiguration(dict):
             channel_height=0.001 * pyunits.meter,  # m
             spacer_porosity=0.9 * pyunits.dimensionless,
             dead_volume="base_on_dead_volume_to_area_ratio",  # m3
-            accumulation_time=1 * pyunits.second,
+            accumulation_time=5 * pyunits.second,
             dead_volume_to_area_ratio=value(1.2 * 0.001 * pyunits.meter * 0.9)
             * pyunits.m,
             pipe_to_module_ratio=0.2

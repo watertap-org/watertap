@@ -68,6 +68,7 @@ from watertap.flowsheets.ccro.ccro_flowsheet_functions import (
     operating_conditions as ccro_operating_conditions,
 )
 
+from watertap.unit_models.pseudo_steady_state.flushing import Flushing
 import watertap.flowsheets.ccro.utils.ipoptv2 as ipt2
 import pandas as pd
 
@@ -113,10 +114,62 @@ def load_validation_data_into_model(
     return data
 
 
+def create_flush_setup(
+    mp,
+    starting_c=35,
+    flushing_c=5,
+    flush_flow=10 * pyunits.L / pyunits.s,
+    feed_flow=1 * pyunits.L / pyunits.s,
+    # time_step=1 * pyunits.s,
+):
+    """
+    Create flushing setup for multiperiod CCRO model
+    """
+
+    dead_volume = mp.get_active_process_blocks()[0].fs.RO.feed_side.volume
+    time_step = (
+        value(
+            pyunits.convert(
+                dead_volume * 2 / (feed_flow + flush_flow), to_units=pyunits.seconds
+            )
+        )
+        * pyunits.seconds
+    )
+    time_step = time_step / len(mp.get_active_process_blocks())
+    print("Dead Volume:", value(dead_volume))
+    print(f"Calculated time step for flushing: {time_step}")
+    for t, m in enumerate(mp.get_active_process_blocks()):
+        if t == 0:
+            m.fs.P1.outlet.pressure[0].unfix()
+            m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"].fix(feed_flow)
+            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(
+                feed_flow + flush_flow
+            )
+            m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(
+                starting_c
+            )
+
+            if m.fs.ro_model_with_hold_up:
+                m.fs.RO.feed_side.accumulation_time.fix(time_step)
+        else:
+            m.fs.P1.outlet.pressure[0].unfix()
+            m.fs.RO.mixed_permeate[0].flow_vol_phase["Liq"].fix(feed_flow)
+            m.fs.raw_feed.properties[0].flow_vol_phase["Liq"].fix(
+                feed_flow + flush_flow
+            )
+            m.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix(
+                flushing_c
+            )
+
+            if m.fs.ro_model_with_hold_up:
+                m.fs.RO.feed_side.accumulation_time.fix(time_step)
+
+
 def create_ccro_multiperiod(
     n_time_points=10,
     cc_configuration=None,
     use_ro_with_hold_up=False,
+    add_flushing=False,
 ):
     """
     Create multiperiod model for CCRO system
@@ -194,6 +247,104 @@ def create_ccro_multiperiod(
     return mp
 
 
+def add_flushing_unit(mp, cc_configuration, start_period=1, end_period=None):
+
+    m_start = mp.get_active_process_blocks()[start_period]
+
+    mp.flushing = Flushing()
+    if end_period is None:
+        blks = mp.get_active_process_blocks()[start_period:]
+
+        m_end = mp.get_active_process_blocks()[-1]
+    else:
+        blks = mp.get_active_process_blocks()[start_period:end_period]
+
+        m_end = mp.get_active_process_blocks()[end_period]
+    print(blks)
+    print(m_start.name)
+    print(m_end.name)
+    print(list(range(start_period, len(blks))))
+
+    @mp.Constraint(list(range(start_period, len(blks))))
+    def eq_flushing_time_constraint(m, i):
+        return blks[0].fs.RO.feed_side.accumulation_time[0] == (
+            blks[i].fs.RO.feed_side.accumulation_time[0]
+        )
+
+    for blk in blks:
+        print(blk.name)
+        blk.fs.RO.feed_side.accumulation_time.unfix()
+        blk.fs.RO.feed_side.accumulation_time[0].setlb(1e-8)
+
+    # Constraints
+    @mp.Constraint()
+    def dead_volume_residence_time_constraint(m):
+        return mp.flushing.mean_residence_time == (
+            pyunits.convert(
+                m_start.fs.RO.feed_side.volume
+                / m_start.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
+                to_units=pyunits.s,
+            )
+        )
+
+    # Calculate pre-flushing/ dead volume delta state concentration. Concentration before
+    # flushing should be the delta state concentration
+    @mp.Constraint()
+    def pre_flushing_conc_constraint(m):
+        return (
+            mp.flushing.pre_flushing_concentration
+            == m_start.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
+                0, 1, "Liq", "NaCl"
+            ]
+            * m_start.fs.RO.feed_side.delta_state.node_dens_mass_phase[0, 1, "Liq"]
+        )
+
+    # Concentration after flushing should be the dead volume properties out concentration
+    @mp.Constraint()
+    def post_flushing_conc_constraint(m):
+        return (
+            m_end.fs.RO.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+            == mp.flushing.post_flushing_concentration
+        )
+
+    iscale.constraint_scaling_transform(mp.pre_flushing_conc_constraint, 1)
+    # iscale.constraint_scaling_transform(mp.post_flushing_conc_constraint, 1)
+    iscale.set_scaling_factor(mp.flushing.pre_flushing_concentration, 1)
+    iscale.set_scaling_factor(mp.flushing.post_flushing_concentration, 1)
+    calculate_variable_from_constraint(
+        mp.flushing.pre_flushing_concentration,
+        mp.pre_flushing_conc_constraint,
+    )
+    calculate_variable_from_constraint(
+        mp.flushing.mean_residence_time,
+        mp.dead_volume_residence_time_constraint,
+    )
+    mp.flushing.mean_residence_time.fix()
+
+    mp.flushing.flushing_time.unfix()
+    mp.flushing.flushing_time = value(mp.flushing.mean_residence_time)
+    mp.flushing.pre_flushing_concentration.fix()
+    mp.flushing.post_flushing_concentration.fix(
+        value(
+            m_end.fs.RO.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
+        )
+    )
+
+    mp.flushing.flushing_efficiency.unfix()
+    mp.flushing.flushing_feed_concentration.fix(
+        5 * pyunits.g / pyunits.L  # value(mp.flushing.pre_flushing_concentration) / 2
+    )
+    mp.flushing.display()
+    mp.flushing.initialize()
+    mp.flushing.pre_flushing_concentration.unfix()
+    mp.flushing.flushing_time.unfix()
+    mp.flushing.flushing_time.setub(1000)
+    mp.flushing.flushing_time.setlb(1e-8)
+    mp.flushing.mean_residence_time.unfix()
+    mp.flushing.post_flushing_concentration.fix(6 * pyunits.g / pyunits.L)
+    # mp.flushing.flushing_efficiency.fix(0.9)
+
+
 def fix_dof_and_initialize(m, cc_configuration=None, **kwargs):
     """
     Fix DOF for MP model and initialize steady-state models.
@@ -213,6 +364,16 @@ def fix_dof_and_initialize(m, cc_configuration=None, **kwargs):
 
     solver = get_solver()
     solver.solve(m.fs.raw_feed)
+    flow_mass = m.fs.raw_feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].value
+    flow_nacl = m.fs.raw_feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].value
+    print(f"Flow H2O: {flow_mass}, Flow NaCl: {flow_nacl}")
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1 / flow_mass, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1 / flow_nacl, index=("Liq", "NaCl")
+    )
+
     # Dead Volume operating conditions
     # Fix volume
     if cc_configuration["dead_volume"] == "base_on_dead_volume_to_area_ratio":
@@ -259,7 +420,10 @@ def fix_dof_and_initialize(m, cc_configuration=None, **kwargs):
     m.fs.RO.A_comp.fix(cc_configuration["A_comp"])
     m.fs.RO.B_comp.fix(cc_configuration["B_comp"])
     m.fs.RO.area.fix(cc_configuration["membrane_area"])
-    if cc_configuration["membrane_length"] != "auto":
+    print(
+        cc_configuration["membrane_length"],
+    )
+    if cc_configuration["membrane_length"] == "auto":
         m.fs.RO.length.unfix()
         m.fs.RO.feed_side.velocity[0, 0].fix(0.15)
     else:
@@ -438,12 +602,23 @@ def solve(
     print("\n--------- SOLVING ---------\n")
     print(f"Degrees of Freedom: {degrees_of_freedom(model)}")
     results = solver.solve(model, tee=tee)
+    if model.find_component("flushing") is not None:
+        model.flushing.display()
+    if hasattr(model, "get_active_process_blocks"):
+        for blk in model.get_active_process_blocks():
+            print(
+                blk.fs.RO.feed_side.properties[0, 1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value,
+                blk.fs.RO.feed_side.accumulation_time[0].value,
+            )
     if check_optimal_termination(results):
         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
         return results
     msg = (
         "The current configuration is infeasible. Please adjust the decision variables."
     )
+
     if raise_on_failure:
         print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
 
@@ -485,19 +660,68 @@ def validation_configs():
     return config
 
 
+def check_jac(m, print_extreme_jacobian_values=True):
+    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(m, min_scale=1e-8)
+    try:
+        cond_number = iscale.jacobian_cond(m, jac=jac_scaled) / 1e10
+        print("--------------------------")
+        print("COND NUMBER:", cond_number)
+    except:
+        print("Cond number failed")
+        cond_number = None
+    if print_extreme_jacobian_values:
+        print("--------------------------")
+        print("Extreme Jacobian entries:")
+        extreme_entries = iscale.extreme_jacobian_entries(
+            m, jac=jac_scaled, nlp=nlp, zero=1e-20, large=100
+        )
+        for val, var, con in extreme_entries:
+            print(val, var.name, con.name)
+        print("--------------------------")
+        print("Extreme Jacobian columns:")
+        extreme_cols = iscale.extreme_jacobian_columns(
+            m, jac=jac_scaled, nlp=nlp, small=1e-3
+        )
+        for val, var in extreme_cols:
+            print(val, var.name)
+        print("------------------------")
+        print("Extreme Jacobian rows:")
+        extreme_rows = iscale.extreme_jacobian_rows(
+            m, jac=jac_scaled, nlp=nlp, small=1e-3
+        )
+        for val, con in extreme_rows:
+            print(val, con.name)
+    for var, scale in iscale.badly_scaled_var_generator(m):
+        print(
+            "Badly scaled variable:",
+            var.name,
+            var.value,
+            iscale.get_scaling_factor(var),
+        )
+    return cond_number
+
+
 if __name__ == "__main__":
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
-    cc_config = validation_configs()
-
+    cc_config = CCROConfiguration()  # validation_configs()
+    cc_config["raw_feed_conc"] = 35 * pyunits.g / pyunits.L
+    # cc_config["membrane_area"] = 100 * pyunits.m**2
+    cc_config["raw_feed_flowrate"] = 6 * pyunits.L / pyunits.s  # validation_configs()
+    # cc_config["membrane_length"] = 10 * pyunits.m
+    cc_config.display()
     mp = create_ccro_multiperiod(
-        n_time_points=21,
+        n_time_points=50,
         cc_configuration=cc_config,
         use_ro_with_hold_up=True,
     )
-    load_validation_data_into_model(
-        mp,
-        file_path="validation_data/sine_700-900psi_60s_period.csv",
-        data_point_skips=40,
-    )
+    create_flush_setup(mp)
+    # load_validation_data_into_model(
+    #     mp,
+    #     file_path="validation_data/sine_700-900psi_60s_period.csv",
+    #     data_point_skips=40,
+    # )
+    solve(mp, use_ipoptv2=False)
+
+    add_flushing_unit(mp, cc_configuration=cc_config)
     solve(mp, use_ipoptv2=False)

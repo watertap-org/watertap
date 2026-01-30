@@ -34,6 +34,7 @@ import idaes.logger as idaeslog
 from watertap.core.solvers import get_solver
 from scipy.optimize import rosen, differential_evolution
 
+import idaes.core.util.math as idaesMath
 
 __author__ = "Mukta Hardikar, Kurban Sitterley, Alexander V. Dudchenko"
 
@@ -196,12 +197,14 @@ class FlushingData(UnitModelBlockData):
 
         self.pre_flushing_concentration = Var(
             initialize=0.0,
+            bounds=(0, None),
             units=pyunits.kg / pyunits.m**3,
             doc="Concentration of the accumulation volume prior to flushing at the end of the concentration cycle",
         )
 
         self.post_flushing_concentration = Var(
             initialize=0.0,
+            bounds=(0, None),
             units=pyunits.kg / pyunits.m**3,
             doc="Concentration of the accumulation volume after flushing at the start of the concentration cycle",
         )
@@ -212,7 +215,13 @@ class FlushingData(UnitModelBlockData):
             bounds=(0, 1),
             doc="Flushing efficiency of the system",
         )
-
+        self.minimum_flushing_efficiency = Var(
+            initialize=0.05,
+            units=pyunits.dimensionless,
+            bounds=(0, 1),
+            doc="Flushing efficiency of the system",
+        )
+        self.minimum_flushing_efficiency.fix()
         self.flushing_time = Var(
             initialize=20.0,
             bounds=(1, None),
@@ -233,7 +242,15 @@ class FlushingData(UnitModelBlockData):
             return b.flushing_efficiency == 1.0 - exp(-theta) * series_sum
 
         # Constraint to calculate the concentration of the accumulation volume at the end of flushing
+        self.minimum_flushing_efficiency_constraint = Constraint(
+            expr=self.minimum_flushing_efficiency <= self.flushing_efficiency
+        )
         self.flushing_concentration_constraint = Constraint(
+            # expr=idaesMath.smooth_min(  # self.post_flushing_concentration
+            #     self.post_flushing_concentration,
+            #     self.pre_flushing_concentration
+            #     * (1 - self.minimum_flushing_efficiency),
+            # )
             expr=self.post_flushing_concentration
             == (1 - self.flushing_efficiency) * self.pre_flushing_concentration
             + self.flushing_efficiency * self.flushing_feed_concentration
@@ -268,8 +285,9 @@ class FlushingData(UnitModelBlockData):
 
         # Solve unit
         opt = get_solver(solver, optarg)
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        res = opt.solve(self, tee=False)
+        self.display()
 
         init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
 
@@ -284,5 +302,11 @@ class FlushingData(UnitModelBlockData):
         iscale.set_scaling_factor(self.flushing_feed_concentration, 1)
         iscale.set_scaling_factor(self.mean_residence_time, 1)
         iscale.set_scaling_factor(self.flushing_efficiency, 1)
+
+        iscale.set_scaling_factor(self.minimum_flushing_efficiency, 1)
         iscale.constraint_scaling_transform(self.flushing_efficiency_constraint, 10)
         iscale.constraint_scaling_transform(self.flushing_concentration_constraint, 1)
+
+        iscale.constraint_scaling_transform(
+            self.minimum_flushing_efficiency_constraint, 1
+        )

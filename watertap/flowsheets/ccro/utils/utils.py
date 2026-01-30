@@ -42,13 +42,19 @@ def register_costed_unit(
     costing_method_arguments={},
     register_electricity_cost=True,
     register_capital_cost=True,
+    utilization_factor=1.0,
 ):
     if register_electricity_cost:
         lb = unit.work_mechanical[0.0].lb
         # set lower bound to 0 to avoid negative defined flow warning when lb is not >= 0
         unit.work_mechanical.setlb(0)
+        utilization_factor = pyunits.convert(
+            utilization_factor, to_units=pyunits.dimensionless
+        )
+
         mp.costing.cost_flow(
-            pyunits.convert(unit.work_mechanical[0.0], to_units=pyunits.kW),
+            utilization_factor
+            * pyunits.convert(unit.work_mechanical[0.0], to_units=pyunits.kW),
             "electricity",
         )
         # set lower bound back to its original value that was assigned to lb

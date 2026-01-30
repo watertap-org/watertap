@@ -52,7 +52,7 @@ class ModelState:
                 else:
                     model.find_component(v).unfix()
             except:
-                print("failed setitng", v)
+                print("Model state tool failed to copy over", v)
         for v, active in self.constraintStatesDict.items():
             v = self.update_model_reference(v, self.old_model)
             try:

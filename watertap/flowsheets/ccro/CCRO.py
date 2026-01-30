@@ -1,78 +1,37 @@
 from pyomo.environ import (
     check_optimal_termination,
-    ConcreteModel,
-    Constraint,
     value,
-    Var,
-    NonNegativeReals,
     assert_optimal_termination,
     Objective,
     units as pyunits,
 )
-from pyomo.environ import TransformationFactory
-from pyomo.network import Arc
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
-
-from idaes.core.util.initialization import propagate_state
 import idaes.core.util.scaling as iscale
-from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models.unit_models import Product, Feed
-from idaes.models.unit_models.mixer import (
-    Mixer,
-    MomentumMixingType,
-)
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
-
-from watertap.unit_models.pressure_changer import Pump
-from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
-from watertap.unit_models.reverse_osmosis_1D import (
-    ReverseOsmosis1D,
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
-    PressureChangeType,
-)
-from watertap.unit_models.reverse_osmosis_0D import (
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
-)
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
-
-from watertap.unit_models.reverse_osmosis_1D import (
-    ReverseOsmosis1D,
-)
-from watertap.unit_models.pseudo_steady_state import DeadVolume0D
-from watertap.unit_models.pseudo_steady_state.reverse_osmosis_1D_with_holdup import (
-    ReverseOsmosis1DwithHoldUp,
-)
-from watertap.unit_models.pseudo_steady_state.flushing import Flushing
-
 from watertap.costing import (
     WaterTAPCosting,
 )
-
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
 )
-
 import watertap.flowsheets.ccro.utils.utils as cc_utils
+import watertap.flowsheets.ccro.ccro_flowsheet_functions.unit_operations as unit_operations
 from watertap.flowsheets.ccro.utils.cc_configuration import CCROConfiguration
-
-
 from watertap.flowsheets.ccro.ccro_flowsheet_functions import (
     multi_period_constraints as ccro_mp_constraints,
     scaling as ccro_scaling,
     operating_conditions as ccro_operating_conditions,
 )
-
 import watertap.flowsheets.ccro.utils.ipoptv2 as ipt2
 
 
 def create_ccro_multiperiod(
-    n_time_points=10,
+    n_time_points=5,
+    n_flushing_points=5,
     include_costing=True,
     cc_configuration=None,
     use_ro_with_hold_up=False,
@@ -86,9 +45,9 @@ def create_ccro_multiperiod(
         cc_configuration.update(user_config)
 
     watertap_solver = get_solver()
-
+    print(n_flushing_points + n_flushing_points)
     mp = MultiPeriodModel(
-        n_time_points=n_time_points,
+        n_time_points=n_time_points + n_flushing_points,
         process_model_func=build_ccro_system,
         linking_variable_func=get_variable_pairs,
         initialization_func=fix_dof_and_initialize,
@@ -97,50 +56,83 @@ def create_ccro_multiperiod(
         outlvl=logging.WARNING,
     )
 
-    mp.n_time_points = n_time_points
+    mp.time_points = n_time_points
+    mp.flushing_points = n_flushing_points
     mp.include_costing = include_costing
-
-    operation_mode_list = ["filtration"] * (n_time_points - 1) + ["flushing"]
+    operation_mode_list = []
+    for n in range(n_time_points):
+        operation_mode_list.append("filtration")
+    if n_flushing_points == 1:
+        operation_mode_list.append("flushing")
+    else:
+        for n in range(n_flushing_points):
+            operation_mode_list.append("flushing_with_filtration")
     flowsheet_options = {
         t: {
             "time_blk": t,
             "operation_mode": operation_mode_list[t],
             "use_ro_with_hold_up": use_ro_with_hold_up,
         }
-        for t in range(n_time_points)
+        for t in range(n_time_points + n_flushing_points)
     }
-    print(flowsheet_options)
+    for i, item in flowsheet_options.items():
+        print(i, item)
     # Build instances of the process model for each time period
     mp.build_multi_period_model(model_data_kwargs=flowsheet_options)
+    print("Built multi-period model with operation modes:")
+    for blk in mp.get_active_process_blocks():
+        print(blk.name, blk.fs.operation_mode)
+
+    ccro_mp_constraints.add_multiperiod_variables(mp, cc_configuration=cc_configuration)
+    if mp.flushing_points > 1:
+        unit_operations.build_flushing_unit_only(mp, start_period=mp.time_points)
+        unit_operations.build_conduit(mp)
 
     if include_costing:
         mp.costing = WaterTAPCosting()
         for t, m in enumerate(mp.get_active_process_blocks(), 1):
+            # this will track fraction of power used over the cycle.
+            if m.fs.operation_mode == "filtration":
+                utilization_ratio = (
+                    m.fs.dead_volume.accumulation_time[0] / mp.total_cycle_time
+                )
+            elif m.fs.operation_mode == "flushing_with_filtration":
+                utilization_ratio = (
+                    mp.flushing.flushing_time / mp.flushing_points
+                ) / mp.total_cycle_time
+            elif m.fs.operation_mode == "flushing":
+                utilization_ratio = m.fs.flushing.flushing_time / mp.total_cycle_time
             if t == 1:
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P1,
                     register_electricity_cost=True,
                     register_capital_cost=False,
+                    utilization_factor=utilization_ratio,
                 )
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P2,
                     register_electricity_cost=True,
                     register_capital_cost=False,
+                    utilization_factor=utilization_ratio,
                 )
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.RO,
                     register_electricity_cost=False,
                     register_capital_cost=True,
+                    utilization_factor=utilization_ratio,
                 )
-            elif t == n_time_points - 1:
+            elif (
+                t == n_time_points - 1
+            ):  # Last operating pressure - assume its highest !
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P2,
                     register_electricity_cost=True,
                     register_capital_cost=True,
+                    utilization_factor=utilization_ratio,
                     # costing_method_arguments={"pump_type": "low_pressure"},
                 )
                 cc_utils.register_costed_unit(
@@ -148,31 +140,45 @@ def create_ccro_multiperiod(
                     m.fs.P1,
                     register_electricity_cost=True,
                     register_capital_cost=True,
+                    utilization_factor=utilization_ratio,
                 )
             # Last time period is flushing
-            elif t == n_time_points:
+            elif t >= n_time_points:
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P2,
                     register_electricity_cost=True,
                     register_capital_cost=False,
+                    utilization_factor=utilization_ratio,
                 )
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P1,
                     register_electricity_cost=True,
                     register_capital_cost=False,
+                    utilization_factor=utilization_ratio,
                 )
+
+        if mp.flushing_points > 1:
+            cc_utils.register_costed_unit(
+                mp,
+                mp.conduit,
+                register_electricity_cost=False,
+                register_capital_cost=True,
+            )
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
+
+        # Last time period is flushing
+        print(f"Period {t}:", n_time_points, n_flushing_points, m.fs.operation_mode)
         if t == 1:
             fix_dof_and_initialize(m, cc_configuration=cc_configuration)
             ccro_operating_conditions.unfix_dof(
                 m, unfix_dead_volume_state=False, cc_configuration=cc_configuration
             )
             old_m = m
-        # Last time period is flushing
-
-        if t == n_time_points:
+        if (
+            t == (n_time_points + n_flushing_points) and n_flushing_points == 1
+        ):  # if we only have one flushing period its just dead volume being flushed!
             base_links = [
                 {
                     "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]',
@@ -189,8 +195,7 @@ def create_ccro_multiperiod(
             ccro_operating_conditions.unfix_dof(
                 m, unfix_dead_volume_state=False, cc_configuration=cc_configuration
             )
-        else:
-
+        elif t > n_time_points and n_flushing_points > 1 and t == n_time_points + 1:
             base_links = [
                 {
                     "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]',
@@ -216,9 +221,40 @@ def create_ccro_multiperiod(
                             "new_model_var": f'fs.RO.feed_side.delta_state.node_dens_mass_phase[0, {i}, "Liq"]',
                         },
                     )
+            fix_dof_and_initialize(m, cc_configuration=cc_configuration)
+            cc_utils.copy_time_period_links(old_m, m, base_links)
+            # ccro_operating_conditions.unfix_dof(
+            #     m, unfix_dead_volume_state=False, cc_configuration=cc_configuration
+            # )
+        else:
+            base_links = [
+                {
+                    "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp["Liq", "NaCl"]',
+                    "new_model_var": 'fs.dead_volume.delta_state.mass_frac_phase_comp[0, "Liq", "NaCl"]',
+                },
+                {
+                    "new_model_var": 'fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"]',
+                    "old_model_var": 'fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"]',
+                },
+            ]
+            if m.fs.ro_model_with_hold_up:
+                idx = m.fs.RO.difference_elements
+                for i in idx:
+                    base_links.append(
+                        {
+                            "old_model_var": f'fs.RO.feed_side.properties[0, {i}].mass_frac_phase_comp["Liq", "NaCl"]',
+                            "new_model_var": f'fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[0, {i}, "Liq", "NaCl" ]',
+                        },
+                    )
+                    base_links.append(
+                        {
+                            "old_model_var": f'fs.RO.feed_side.properties[0, {i}].dens_mass_phase["Liq"]',
+                            "new_model_var": f'fs.RO.feed_side.delta_state.node_dens_mass_phase[0, {i}, "Liq"]',
+                        },
+                    )
+            print("copying time period links...")
             cc_utils.copy_state(old_m, m)
             cc_utils.copy_time_period_links(old_m, m, base_links)
-
         print(f"Period {t} DOF:", degrees_of_freedom(m))
         assert degrees_of_freedom(m) == 0
 
@@ -229,9 +265,9 @@ def create_ccro_multiperiod(
             m, unfix_dead_volume_state=True, cc_configuration=cc_configuration
         )
         old_m = m
-
+    if mp.flushing_points > 1:
+        unit_operations.initialize_flushing(mp)
     print("--- Completed sequential initialization ---")
-    ccro_mp_constraints.add_multiperiod_variables(mp, cc_configuration=cc_configuration)
     ccro_mp_constraints.add_multiperiod_constraints(
         mp, cc_configuration=cc_configuration
     )
@@ -246,7 +282,15 @@ def create_ccro_multiperiod(
 
     ccro_scaling.scale_multiperiod_model(mp)
     calculate_scaling_factors(mp)
-
+    for m in mp.get_active_process_blocks():
+        if m.fs.find_component("RO") is not None:
+            print(
+                m.name,
+                "outle TDS:",
+                m.fs.RO.feed_side.properties[0, 1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value,
+            )
     print("Multi-period DOF:", degrees_of_freedom(mp))
     return mp
 
@@ -255,122 +299,21 @@ def build_ccro_system(time_blk=None, operation_mode=None, use_ro_with_hold_up=Tr
     """
     Build the CCRO steady state flowsheet
     """
+    if operation_mode == "filtration":
+        m = unit_operations.build_ro_systems(use_ro_with_hold_up=use_ro_with_hold_up)
 
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.operation_mode = operation_mode
-    m.fs.ro_model_with_hold_up = use_ro_with_hold_up
-    m.fs.properties = NaClParameterBlock()
-
-    # Low concentration feed to the system
-    m.fs.raw_feed = Feed(property_package=m.fs.properties)
-
-    # Dead volume is included in both operation_modes
-    m.fs.dead_volume = DeadVolume0D(property_package=m.fs.properties)
-
-    # Touch relevant parameters
-    m.fs.raw_feed.properties[0].flow_vol_phase
-    m.fs.raw_feed.properties[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase
-    m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_in[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase
-
-    if m.fs.operation_mode == "filtration":
-
-        # Feed pump
-        m.fs.P1 = Pump(property_package=m.fs.properties)
-        # Recirculation pump
-        m.fs.P2 = Pump(property_package=m.fs.properties)
-        # Mixer to combine feed and recycle streams
-        m.fs.M1 = Mixer(
-            property_package=m.fs.properties,
-            has_holdup=False,
-            num_inlets=2,
-            momentum_mixing_type=MomentumMixingType.equality,
-        )
-        if use_ro_with_hold_up:
-            m.fs.RO = ReverseOsmosis1DwithHoldUp(
-                property_package=m.fs.properties,
-                has_pressure_change=True,
-                pressure_change_type=PressureChangeType.calculated,
-                mass_transfer_coefficient=MassTransferCoefficient.calculated,
-                concentration_polarization_type=ConcentrationPolarizationType.calculated,
-                transformation_scheme="BACKWARD",
-                transformation_method="dae.finite_difference",
-                finite_elements=10,
-                module_type="spiral_wound",
-                has_full_reporting=True,
-            )
-        else:
-            m.fs.RO = ReverseOsmosis1D(
-                property_package=m.fs.properties,
-                has_pressure_change=True,
-                pressure_change_type=PressureChangeType.calculated,
-                mass_transfer_coefficient=MassTransferCoefficient.calculated,
-                concentration_polarization_type=ConcentrationPolarizationType.calculated,
-                transformation_scheme="BACKWARD",
-                transformation_method="dae.finite_difference",
-                finite_elements=10,
-                module_type="spiral_wound",
-                has_full_reporting=True,
-            )
-
-        m.fs.product = Product(property_package=m.fs.properties)
-
-        # Add connections
-        m.fs.raw_feed_to_P1 = Arc(
-            source=m.fs.raw_feed.outlet, destination=m.fs.P1.inlet
+    elif operation_mode == "flushing":
+        m = unit_operations.build_flushing_unit()
+        m.fs.ro_model_with_hold_up = (
+            use_ro_with_hold_up  # need to add for volume updates
         )
 
-        m.fs.P1_to_M1 = Arc(source=m.fs.P1.outlet, destination=m.fs.M1.inlet_1)
-        m.fs.P2_to_M1 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.inlet_2)
-
-        m.fs.M1_to_RO = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
-
-        m.fs.RO_permeate_to_product = Arc(
-            source=m.fs.RO.permeate, destination=m.fs.product.inlet
+    elif operation_mode == "flushing_with_filtration":
+        m = unit_operations.build_flushing_with_RO(
+            use_ro_with_hold_up=use_ro_with_hold_up
         )
-
-        m.fs.RO_retentate_to_dead_volume = Arc(
-            source=m.fs.RO.retentate, destination=m.fs.dead_volume.inlet
-        )
-        m.fs.dead_volume_to_P2 = Arc(
-            source=m.fs.dead_volume.outlet, destination=m.fs.P2.inlet
-        )
-
-        TransformationFactory("network.expand_arcs").apply_to(m)
-
-        # Touch relevant parameters
-        m.fs.M1.inlet_1_state[0].flow_vol_phase
-        m.fs.M1.inlet_1_state[0].conc_mass_phase_comp
-        m.fs.M1.inlet_2_state[0].flow_vol_phase
-        m.fs.M1.inlet_2_state[0].conc_mass_phase_comp
-        m.fs.M1.mixed_state[0].flow_vol_phase
-        m.fs.M1.mixed_state[0].conc_mass_phase_comp
-
-    elif m.fs.operation_mode == "flushing":
-
-        m.fs.P1 = Pump(property_package=m.fs.properties)
-        m.fs.P2 = Pump(property_package=m.fs.properties)
-
-        # Add connections
-        m.fs.raw_feed_to_P1 = Arc(
-            source=m.fs.raw_feed.outlet, destination=m.fs.P1.inlet
-        )
-        m.fs.P1_to_dead_volume = Arc(
-            source=m.fs.P1.outlet, destination=m.fs.dead_volume.inlet
-        )
-
-        m.fs.dead_volume_to_P2 = Arc(
-            source=m.fs.dead_volume.outlet, destination=m.fs.P2.inlet
-        )
-
-        m.fs.flushing = Flushing()
-
-        TransformationFactory("network.expand_arcs").apply_to(m)
-
+    else:
+        raise (ValueError("Invalid operation mode selected."))
     return m
 
 
@@ -380,72 +323,13 @@ def initialize_system(m, **kwargs):
     """
 
     if m.fs.operation_mode == "filtration":
-        propagate_state(m.fs.raw_feed_to_P1)
-
-        # m.fs.P2.outlet.pressure[0].fix(m.fs.P1.outlet.pressure[0].value)
-        m.fs.P1.initialize()
-
-        propagate_state(m.fs.P1_to_M1)
-        copy_inlet_state_for_mixer(m)
-
-        m.fs.M1.initialize()
-
-        propagate_state(m.fs.M1_to_RO)
-        m.fs.RO.initialize()
-
-        propagate_state(m.fs.RO_permeate_to_product)
-        propagate_state(m.fs.RO_retentate_to_dead_volume)
-
-        m.fs.dead_volume.initialize()
-
-        propagate_state(m.fs.dead_volume_to_P2)
-        m.fs.P2.initialize()
-        m.fs.P2.outlet.pressure[0].unfix()
-
-        propagate_state(m.fs.P2_to_M1)
-
-        m.fs.product.properties[0].flow_vol_phase["Liq"]
-        m.fs.product.initialize()
-
+        unit_operations.intialize_ro_systems(m)
     if m.fs.operation_mode == "flushing":
-
-        propagate_state(m.fs.raw_feed_to_P1)
-        m.fs.P1.initialize()
-
-        propagate_state(m.fs.P1_to_dead_volume)
-        m.fs.dead_volume.initialize()
-
-        propagate_state(m.fs.dead_volume_to_P2)
-        m.fs.P2.initialize()
-        m.fs.P2.outlet.pressure[0].fix(101325 * pyunits.Pa)
-
-        calculate_variable_from_constraint(
-            m.fs.flushing.pre_flushing_concentration,
-            m.fs.pre_flushing_conc_constraint,
-        )
-        calculate_variable_from_constraint(
-            m.fs.flushing.mean_residence_time,
-            m.fs.dead_volume_residence_time_constraint,
-        )
-        m.fs.flushing.mean_residence_time.fix()
-
-        m.fs.flushing.flushing_time.unfix()
-        m.fs.flushing.flushing_time = value(m.fs.flushing.mean_residence_time)
-        m.fs.flushing.pre_flushing_concentration.fix()
-        m.fs.flushing.post_flushing_concentration.fix(
-            value(m.fs.flushing.pre_flushing_concentration)
-        )
-        m.fs.flushing.post_flushing_concentration.unfix()
-        m.fs.flushing.flushing_efficiency.fix()
-        m.fs.flushing.display()
-        m.fs.flushing.initialize()
+        unit_operations.initialize_flushing_unit(m)
+    if m.fs.operation_mode == "flushing_with_filtration":
+        unit_operations.initialize_flushing_with_RO(m)
 
     return m
-
-
-def copy_inlet_state_for_mixer(m):
-    for idx, obj in m.fs.M1.inlet_2.flow_mass_phase_comp.items():
-        obj.value = m.fs.M1.inlet_1.flow_mass_phase_comp[idx].value
 
 
 def fix_dof_and_initialize(m, cc_configuration=None, **kwargs):
@@ -467,7 +351,10 @@ def get_variable_pairs(t1, t2):
     pair_list = []
     if t1.fs.ro_model_with_hold_up:
         idx = t1.fs.RO.difference_elements
-        if t2.fs.operation_mode == "filtration":
+        if (
+            t2.fs.operation_mode == "filtration"
+            or t2.fs.operation_mode == "flushing_with_filtration"
+        ):
             for i in idx:
                 pair_list.append(
                     (
@@ -574,12 +461,9 @@ def setup_optimization(
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
         if m.fs.find_component("RO") is not None:
             m.fs.RO.length.unfix()
-
             m.fs.RO.width.unfix()
-            m.fs.RO.length.setlb(4)
-
+            m.fs.RO.length.setlb(0.1)
             m.fs.RO.width.setlb(0.1)
-
             m.fs.RO.area.setlb(50)
             m.fs.RO.area.unfix()
             m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(
@@ -601,8 +485,8 @@ def setup_optimization(
                     ].unfix()
         m.fs.dead_volume.volume.unfix()
         m.fs.dead_volume.delta_state.volume[0, "Liq"].unfix()
-
-        if t != mp.n_time_points:
+        m.fs.dead_volume.accumulation_time[0].unfix()
+        if m.fs.operation_mode == "filtration":
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
                 recycle_flow_bounds[0] * pyunits.L / pyunits.s
@@ -610,13 +494,33 @@ def setup_optimization(
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
                 recycle_flow_bounds[1] * pyunits.L / pyunits.s
             )
-
-    blkfs = mp.get_active_process_blocks()[-1]
-    blkfs.fs.flushing.flushing_efficiency.unfix()
-    blkfs.fs.flushing.flushing_efficiency.setub(0.95)
-    blkfs.fs.flushing.flushing_efficiency.setlb(0.1)
+        elif m.fs.operation_mode == "flushing_with_filtration":
+            m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].unfix()
+            m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].setlb(
+                recycle_flow_bounds[0] * pyunits.L / pyunits.s
+            )
+            m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].setub(
+                recycle_flow_bounds[1] * pyunits.L / pyunits.s
+            )
+            m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
+            m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
+                recycle_flow_bounds[0] * pyunits.L / pyunits.s
+            )
+            m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
+                recycle_flow_bounds[1] * pyunits.L / pyunits.s
+            )
+        elif m.fs.operation_mode == "flushing":
+            m.fs.flushing.flushing_efficiency.unfix()
+            m.fs.flushing.flushing_efficiency.setub(0.95)
+            m.fs.flushing.flushing_efficiency.setlb(0.1)
+    if mp.find_component("flushing") is not None:
+        mp.flushing.flushing_efficiency.unfix()
+        mp.flushing.flushing_efficiency.setub(0.95)
+        mp.flushing.flushing_efficiency.setlb(0.1)
+    if mp.find_component("conduit") is not None:
+        mp.conduit.volume.unfix()
     if mp.include_costing:
-        mp.cost_objective = Objective(expr=(10 * mp.costing.LCOW**2))
+        mp.cost_objective = Objective(expr=mp.costing.LCOW)
 
     print("DOF for optimization:", degrees_of_freedom(mp))
 
@@ -723,7 +627,10 @@ def print_results_table(mp, w=15):
             blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
             to_units=pyunits.L / pyunits.s,
         )()
-        if blks.fs.operation_mode == "filtration":
+        if (
+            blks.fs.operation_mode == "filtration"
+            or blks.fs.operation_mode == "flushing_with_filtration"
+        ):
             raw_feed_mass = sum(
                 pyunits.convert(
                     blks.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp[
@@ -750,7 +657,10 @@ def print_results_table(mp, w=15):
         else:
             permeate_mass = 0
             permeate = 0
-        if blks.fs.operation_mode == "filtration":
+        if (
+            blks.fs.operation_mode == "filtration"
+            or blks.fs.operation_mode == "flushing_with_filtration"
+        ):
 
             p2_out = value(
                 pyunits.convert(blks.fs.P2.work_mechanical[0], to_units=pyunits.kW)
@@ -828,27 +738,29 @@ def print_results_table(mp, w=15):
         f"{'Total cycle time (s):':<{w}s}",
         mp.total_cycle_time.value,
     )
+    if mp.flushing_points > 1:
+        flushing_block = mp.flushing
+    else:
+        flushing_block = mp.get_active_process_blocks()[-1].fs.flushing
     print(
         f"{'Mean residence time (s):':<{w}s}",
-        mp.get_active_process_blocks()[-1].fs.flushing.mean_residence_time.value,
+        flushing_block.mean_residence_time.value,
     )
     print(
         f"{'Flushing time (s):':<{w}s}",
-        mp.get_active_process_blocks()[-1].fs.flushing.flushing_time.value,
+        flushing_block.flushing_time.value,
     )
     print(
         f"{'Flushing efficiency:':<{w}s}",
-        mp.get_active_process_blocks()[-1].fs.flushing.flushing_efficiency.value,
+        flushing_block.flushing_efficiency.value,
     )
     print(
         f"{'Pre-flushing conc (kg/m3):':<{w}s}",
-        mp.get_active_process_blocks()[-1].fs.flushing.pre_flushing_concentration.value,
+        flushing_block.pre_flushing_concentration.value,
     )
     print(
         f"{'Post-flushing conc (kg/m3):':<{w}s}",
-        mp.get_active_process_blocks()[
-            -1
-        ].fs.flushing.post_flushing_concentration.value,
+        flushing_block.post_flushing_concentration.value,
     )
 
     print(f"\n{'Overall recovery:':<{w}s}", mp.overall_recovery.value)
@@ -1011,21 +923,49 @@ if __name__ == "__main__":
     cc_config["raw_feed_conc"] = 5 * pyunits.g / pyunits.L
     cc_config["membrane_area"] = 100 * pyunits.meter**2
 
-    # cc_config["accumulation_time"] = 1 * pyunits.second
+    cc_config["accumulation_time"] = 1 * pyunits.second
     # cc_config = validation_seedling_configs()
-    peridos = 11
+    periods = 10
+    flushing_periods = 5
     mp = create_ccro_multiperiod(
-        n_time_points=peridos,
+        n_time_points=periods,
+        n_flushing_points=flushing_periods,
         include_costing=True,
         cc_configuration=cc_config,
-        use_ro_with_hold_up=False,
+        use_ro_with_hold_up=True,
     )
     setup_optimization(
         mp,
         overall_water_recovery=0.5,
         max_cycle_time_hr=10,
-        recycle_flow_bounds=(1, 100),
+        recycle_flow_bounds=(1, 20),
     )
+    from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+
+    blks = list(mp.get_active_process_blocks())
+    mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!
+    first_block = blks[0]
+    # first_block.fs.dead_volume.accumulation_time[0].fix(1 * pyunits.second)
+
+    # first_block.fs.RO.area.fix()
+    # first_block.fs.RO.length.fix()
+    # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
+    # if flushing_periods > 1:
+    #     flushing_block = blks[mp.time_points]
+    #     # flushing_block.fs.dead_volume.accumulation_time[0].setub(5 * pyunits.second)
+    #     flushing_block.fs.dead_volume.accumulation_time[0].fix(1 * pyunits.second)
+    # mp.flushing.display()
+    # dg = DiagnosticsToolbox(mp)
+    # dg.report_structural_issues()
+    # # dg.display_overconstrained_set()
+    # flushing_block.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].fix()
+
+    # dg = DiagnosticsToolbox(mp)
+    # dg.report_structural_issues()
+    # dg.display_overconstrained_set()
+    # mp.flushing.deactivate()
+    # mp.flushing.flushing_efficiency.fix(0.5)
+    # mp.flushing.flushing_time.fix(20 * pyunits.second)
     # fix_optimization_dofs(
     #     mp,
     #     overal_water_recovery=0.5,
@@ -1037,12 +977,43 @@ if __name__ == "__main__":
     # )
     # check_jac(m)
     # # assert False
-    mp.find_component(
-        "blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]"
-    ).fix(0.02)
+    # mp.find_component(
+    #     "blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]"
+    # ).fix(0.02)
+
     results = solve(mp, use_ipoptv2=False)
     print_results_table(mp, w=16)
-    mp.overall_recovery.fix(0.9)
-    results = solve(mp, use_ipoptv2=False)
-    print_results_table(mp, w=16)
-    # blks = list(mp.get_active_process_blocks())
+    for m in mp.get_active_process_blocks():
+        if m.fs.find_component("RO") is not None:
+            print(
+                m.name,
+                "inlet RO TDS:",
+                m.fs.RO.feed_side.properties[0, 0.1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value,
+                "outlet RO TDS:",
+                m.fs.RO.feed_side.properties[0, 1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value,
+                m.fs.RO.feed_side.accumulation_time[0].value,
+                m.fs.RO.feed_side.volume.value,
+            )
+    for r in [0.6, 0.7, 0.8, 0.9]:
+        mp.overall_recovery.fix(r)  # Unfixed with times fixed should get 1 DOF!
+        results = solve(mp, use_ipoptv2=False)
+        print_results_table(mp, w=16)
+        for m in mp.get_active_process_blocks():
+            if m.fs.find_component("RO") is not None:
+                print(
+                    m.name,
+                    "inlet RO TDS:",
+                    m.fs.RO.feed_side.properties[0, 0.1]
+                    .conc_mass_phase_comp["Liq", "NaCl"]
+                    .value,
+                    "outlet RO TDS:",
+                    m.fs.RO.feed_side.properties[0, 1]
+                    .conc_mass_phase_comp["Liq", "NaCl"]
+                    .value,
+                    m.fs.RO.feed_side.accumulation_time[0].value,
+                    m.fs.RO.feed_side.volume.value,
+                )
