@@ -73,7 +73,7 @@ setup(
         "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
-        "parameter-sweep@git+https://github.com/sufikaur/parameter-sweep@watertap-issue-1728",
+        "parameter-sweep@git+https://github.com/watertap-org/parameter-sweep",
         "numpy",
         "pint<0.25",
     ],
