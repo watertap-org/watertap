@@ -50,7 +50,6 @@ setup(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
@@ -75,7 +74,7 @@ setup(
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
         "parameter-sweep >=0.1.0",
-        "numpy",
+        "numpy <= 2.3.0",  # avoid numpy 2.4 compatibility issues. TODO: unpin this for future release
         "pint<0.25",
     ],
     extras_require={
