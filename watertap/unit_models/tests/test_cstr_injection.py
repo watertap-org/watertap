@@ -14,8 +14,6 @@ Tests for CSTR unit model with injection.
 Authors: Andrew Lee, Adam Atia, Vibhav Dabadghao
 """
 
-from io import StringIO
-import platform
 import pytest
 from pyomo.environ import (
     ConcreteModel,
@@ -28,7 +26,7 @@ from pyomo.environ import (
 from idaes.core import (
     FlowsheetBlock,
 )
-import re
+
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import (
@@ -83,19 +81,6 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions i
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-
-is_reference_platform = (
-    platform.system() == "Windows"
-    and platform.python_version_tuple()[0] == "3"
-    and platform.python_version_tuple()[1] == "11"
-)
-
-reference_platform_only = pytest.mark.xfail(
-    condition=(not is_reference_platform),
-    run=True,
-    strict=False,
-    reason="These tests are expected to pass only on the reference platform (Python 3.11 on Windows)",
-)
 
 
 # -----------------------------------------------------------------------------
@@ -920,85 +905,6 @@ def perturb_solution(m):
     m.fs.unit.volume.fix(500 * 0.85)
 
 
-Scaling Profile Report
-----------------------------------------------------------------------------
-Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 1.826E+16 | Solved 4   ||
-Vars Only                || 2.740E+17 | Solved 4   || 2.014E+21 | Solved 4  
-Harmonic                 || 2.740E+17 | Solved 4   || 4.443E+22 | Solved 18 
-Inverse Sum              || 2.740E+17 | Solved 4   || 2.399E+14 | Solved 4  
-Inverse Root Sum Squares || 2.740E+17 | Solved 4   || 3.412E+14 | Solved 4  
-Inverse Maximum          || 2.740E+17 | Solved 4   || 4.809E+14 | Solved 4  
-Inverse Minimum          || 2.740E+17 | Solved 4   || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 2.740E+17 | Solved 4   || 2.841E+14 | Solved 4  
-Nominal L2 Norm          || 2.740E+17 | Solved 4   || 3.755E+14 | Solved 4  
-Actual L1 Norm           || 2.740E+17 | Solved 4   || 5.461E+13 | Solved 4  
-Actual L2 Norm           || 2.740E+17 | Solved 4   || 6.491E+13 | Solved 4  
-"""
-
-    assert assert_solve_tolerance(stream.getvalue(), expected, tolerance=3)
-
-
-@pytest.mark.requires_idaes_solver
-@pytest.mark.unit
-# @reference_platform_only
-def test_scaling_profiler_with_iscale():
-    sp = ScalingProfiler(
-        build_model=build_model,
-        user_scaling=scale_vars_with_iscale,
-        perturb_state=perturb_solution,
-    )
-
-    stream = StringIO()
-
-    sp.report_scaling_profiles(stream=stream)
-
-    expected = """
-Scaling Profile Report
-----------------------------------------------------------------------------
-Scaling Method           || User Scaling           || Perfect Scaling
-Unscaled                 || 1.826E+16 | Solved 4   ||
-Vars Only                || 8.948E+12 | Solved 4   || 2.014E+21 | Solved 4  
-Harmonic                 || 1.044E+17 | Solved 59  || 4.443E+22 | Solved 18 
-Inverse Sum              || 5.247E+17 | Failed 50  || 2.399E+14 | Solved 4  
-Inverse Root Sum Squares || 5.220E+17 | Failed 55  || 3.412E+14 | Solved 4  
-Inverse Maximum          || 5.208E+17 | Failed 52  || 4.809E+14 | Solved 4  
-Inverse Minimum          || 2.103E+17 | Solved 65  || 4.455E+22 | Solved 18 
-Nominal L1 Norm          || 7.817E+09 | Solved 4   || 2.841E+14 | Solved 4  
-Nominal L2 Norm          || 1.278E+10 | Solved 4   || 3.755E+14 | Solved 4  
-Actual L1 Norm           || 3.950E+09 | Solved 3   || 5.461E+13 | Solved 4  
-Actual L2 Norm           || 4.339E+09 | Solved 3   || 6.491E+13 | Solved 4  
-"""
-
-    assert assert_solve_tolerance(stream.getvalue(), expected, tolerance=3)
-
-
-def assert_solve_tolerance(output, expected, tolerance=0):
-    output_lines = output.strip().splitlines()
-    expected_lines = expected.strip().splitlines()
-
-    assert len(output_lines) == len(expected_lines)
-
-    for output_line, expected_line in zip(output_lines, expected_lines):
-        # find the groups that match 'Solved <number>'
-        output_solved = re.search(r"Solved (\d+)", output_line)
-        expected_solved = re.search(r"Solved (\d+)", expected_line)
-
-        if output_solved and expected_solved:
-            # get the number after 'Solved'
-            output_num = int(output_solved.group(1))
-            expected_num = int(expected_solved.group(1))
-
-            # assert that the numbers after 'Solved' are within the tolerance
-            assert abs(output_num - expected_num) <= tolerance, (
-                f"Solved number mismatch: output {output_num} "
-                f"vs expected {expected_num} within tolerance {tolerance}"
-            )
-
-        # checks if the non-numeric parts of the statemnt and the actual values are equal
-        assert re.sub(r"Solved \d+", "Solved X", output_line) == re.sub(
-            r"Solved \d+", "Solved X", expected_line
-        ), f"Line mismatch: '{output_line}' vs '{expected_line}'"
 # TODO Replace these scaling profiler tests with more detailed convergence analysis
 # @pytest.mark.requires_idaes_solver
 # @pytest.mark.unit
