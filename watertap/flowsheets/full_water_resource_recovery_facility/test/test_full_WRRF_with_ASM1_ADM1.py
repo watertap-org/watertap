@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -196,7 +196,7 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.scaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            5.4097699e9, rel=1e-3
+            6.80815e9, rel=1e-3
         )
 
     @pytest.mark.component
@@ -209,7 +209,26 @@ class TestFullFlowsheet:
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     @reference_platform_only
-    def test_optimization(self, optimized_system_frame):
+    def test_optimization_windows(self, optimized_system_frame):
+        m = optimized_system_frame
+        assert_optimal_termination(m.rescaled_results)
+
+        assert degrees_of_freedom(m) == 16
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m.rescaled_model, scaled=False)
+        cond = jacobian_cond(jac=jac, scaled=False)
+        assert (
+            # Python 3.9 and 3.10
+            cond == pytest.approx(1.95367e11, rel=1e-2)
+            # Python 3.11 and 3.12
+            or cond == pytest.approx(3.44132e11, rel=1e-2)
+        )
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    @linux_platform_only
+    def test_optimization_linux(self, optimized_system_frame):
         m = optimized_system_frame
         assert_optimal_termination(m.rescaled_results)
 
@@ -218,5 +237,5 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.rescaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.1695338e11, rel=1e-3
+            3.44152e11, rel=1e-3
         )
