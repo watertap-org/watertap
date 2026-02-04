@@ -20,6 +20,16 @@ The WaterTAP development team is composed of researchers from:
 * SLAC National Accelerator Laboratory
 * Stanford University
 
+Contact
+-------
+For general inquiries about WaterTAP, including potential collaborations, partnerships, and analyses,
+please reach out to us at watertap-contact@lbl.gov. For technical questions or issues encountered while
+using WaterTAP, please contact our support team at watertap-support@lbl.gov. For al other inquiries
+about WaterTAP, please contact `Adam Atia <Adam.Atia@netl.doe.gov>`_.
+
+We are always eager to explore new opportunities and facilitate tailored solutions to problems in
+the water treatment industry.
+
 Cite this work
 --------------
 
