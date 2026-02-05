@@ -39,7 +39,6 @@ import idaes.logger as idaeslog
 from watertap.core import InitializationMixin
 from watertap.costing.unit_models.compressor import cost_compressor
 
-
 _log = idaeslog.getLogger(__name__)
 
 

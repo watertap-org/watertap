@@ -22,7 +22,6 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyCalculateStateTest,
 )
 
-
 # -----------------------------------------------------------------------------
 
 

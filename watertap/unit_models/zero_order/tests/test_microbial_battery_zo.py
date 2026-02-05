@@ -12,6 +12,7 @@
 """
 Tests for zero-order microbial battery model
 """
+
 import pytest
 import os
 

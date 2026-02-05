@@ -12,6 +12,7 @@
 """
 Tests for zero-order DISO unit model
 """
+
 import pytest
 
 from types import MethodType

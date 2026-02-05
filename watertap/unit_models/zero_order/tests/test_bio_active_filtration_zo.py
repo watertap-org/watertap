@@ -12,6 +12,7 @@
 """
 Tests for zero-order biologically active filtration model
 """
+
 import pytest
 
 from pyomo.environ import (
