@@ -12,6 +12,7 @@
 """
 Tests for zero-order coagulation/flocculation model
 """
+
 import pytest
 
 

@@ -12,6 +12,7 @@
 """
 Tests for zero-order walnut shell filter model
 """
+
 import pytest
 
 

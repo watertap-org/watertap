@@ -23,7 +23,6 @@ from idaes.core.util.testing import initialization_tester
 from watertap.costing import WaterTAPCosting
 from watertap.unit_models.tests.test_gac import build_crittenden
 
-
 __author__ = "Hunter Barber"
 
 solver = get_solver()

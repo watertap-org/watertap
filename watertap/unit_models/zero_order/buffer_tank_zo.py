@@ -14,7 +14,6 @@ This module contains a zero-order representation of a buffer tank unit
 operation.
 """
 
-
 from idaes.core import declare_process_block_class
 from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
 

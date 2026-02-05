@@ -12,6 +12,7 @@
 """
 Tests for zero-order electrochemical nutrient recovery model
 """
+
 import pytest
 import os
 

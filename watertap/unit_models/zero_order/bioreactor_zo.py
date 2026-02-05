@@ -13,7 +13,6 @@
 This module contains a zero-order representation of a bioreactor unit operation.
 """
 
-
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
 

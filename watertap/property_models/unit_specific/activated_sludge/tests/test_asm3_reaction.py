@@ -14,6 +14,7 @@ Tests for ASM3 reaction package.
 
 Authors: Chenyu Wang
 """
+
 import pytest
 
 from pyomo.environ import (
