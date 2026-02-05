@@ -12,6 +12,7 @@
 """
 Tests for zero-order bioreactor model
 """
+
 import pytest
 
 from pyomo.environ import (

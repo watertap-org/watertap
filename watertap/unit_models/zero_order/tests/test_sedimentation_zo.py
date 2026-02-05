@@ -12,6 +12,7 @@
 """
 Tests for zero-order sedimentation model
 """
+
 import pytest
 
 

@@ -12,6 +12,7 @@
 """
 Tests for zero-order mabr model
 """
+
 import pytest
 
 from pyomo.environ import (

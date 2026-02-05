@@ -12,6 +12,7 @@
 """
 Tests for zero-order energy recovery model
 """
+
 import pytest
 
 

@@ -12,6 +12,7 @@
 """
 Tests for general zero-order base class
 """
+
 import pytest
 
 from types import MethodType

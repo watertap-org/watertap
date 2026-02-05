@@ -13,6 +13,7 @@
 This module contains methods for constructing the material balances for
 zero-order single inlet-double outlet (SIDO) unit models.
 """
+
 from types import MethodType
 
 import idaes.logger as idaeslog
