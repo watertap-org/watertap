@@ -12,6 +12,7 @@
 """
 Tests for zero-order sludge tank model.
 """
+
 import pytest
 
 

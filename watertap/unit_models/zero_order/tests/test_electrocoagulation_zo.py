@@ -12,6 +12,7 @@
 """
 Tests for zero-order EC model
 """
+
 import pytest
 
 

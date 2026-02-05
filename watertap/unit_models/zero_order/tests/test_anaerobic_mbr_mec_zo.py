@@ -12,6 +12,7 @@
 """
 Tests for zero-order anaerobic MBR-MEC model
 """
+
 import pytest
 
 from pyomo.environ import (

@@ -12,6 +12,7 @@
 """
 Tests for zero-order high-rate contact stabilization (HR-CS) model
 """
+
 import pytest
 
 from pyomo.environ import (

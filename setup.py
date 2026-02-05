@@ -73,8 +73,8 @@ setup(
         "watertap-solvers",
         "pyyaml",  # watertap.core.wt_database
         # for parameter_sweep
-        "parameter-sweep >=0.1.0",
-        "numpy <= 2.3.0",  # avoid numpy 2.4 compatibility issues. TODO: unpin this for future release
+        "parameter-sweep@git+https://github.com/watertap-org/parameter-sweep",
+        "numpy",
         "pint<0.25",
     ],
     extras_require={
