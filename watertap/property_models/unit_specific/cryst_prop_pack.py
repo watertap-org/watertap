@@ -70,7 +70,6 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 

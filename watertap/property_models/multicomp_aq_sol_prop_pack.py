@@ -11,10 +11,10 @@
 #################################################################################
 """
 This property package computes a multi-component aqueous solution that can
-contain ionic and/or neutral solute species. It supports basic calculation 
-of component quantities and some physical, chemical and electrical properties. 
+contain ionic and/or neutral solute species. It supports basic calculation
+of component quantities and some physical, chemical and electrical properties.
 
-This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally 
+This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally
 designed for use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
 nanofiltration.
 """
@@ -1835,15 +1835,11 @@ class MCASStateBlockData(StateBlockData):
                 == ElectricalMobilityCalculation.none
             ):
                 if (p, j) not in self.params.config.elec_mobility_data.keys():
-                    raise ConfigurationError(
-                        """ 
+                    raise ConfigurationError(""" 
                         Missing the "elec_mobility_data" configuration to build the elec_mobility_phase_comp 
                         and/or its derived variables for {} in {}. 
                         Provide this configuration or use ElectricalMobilityCalculation.EinsteinRelation.
-                        """.format(
-                            j, self.name
-                        )
-                    )
+                        """.format(j, self.name))
                 else:
                     return (
                         b.elec_mobility_phase_comp[p, j]
@@ -1865,14 +1861,10 @@ class MCASStateBlockData(StateBlockData):
                     )
                 else:
                     if (p, j) in self.params.config.elec_mobility_data.keys():
-                        _log.warning(
-                            """
+                        _log.warning("""
                             The provided elec_mobility_data of {} will be overwritten 
                             by the calculated data for {} because the EinsteinRelation 
-                            method is selected.""".format(
-                                j, self.name
-                            )
-                        )
+                            method is selected.""".format(j, self.name))
 
                     return b.elec_mobility_phase_comp[p, j] == b.diffus_phase_comp[
                         p, j
@@ -2085,13 +2077,11 @@ class MCASStateBlockData(StateBlockData):
                     )
                 else:
                     if len(self.params.ion_set) > 2:
-                        _log.warning(
-                            """ 
+                        _log.warning(""" 
                             Caution should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
                             Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
                             the phase equivalent conductivity using the "EquivalentConductivityCalculation.ElectricalMobility" method 
-                            is recommended."""
-                        )
+                            is recommended.""")
                     return (
                         b.equiv_conductivity_phase[p]
                         == self.params.config.equiv_conductivity_phase_data[p]

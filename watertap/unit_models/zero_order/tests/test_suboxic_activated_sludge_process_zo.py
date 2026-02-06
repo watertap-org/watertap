@@ -12,6 +12,7 @@
 """
 Tests for zero-order suboxic activated sludge model
 """
+
 import pytest
 
 from pyomo.environ import (

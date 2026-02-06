@@ -32,7 +32,6 @@ from watertap.core.solvers import get_solver
 
 import math
 
-
 solver = get_solver()
 
 
