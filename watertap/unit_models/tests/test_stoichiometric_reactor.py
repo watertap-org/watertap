@@ -614,7 +614,7 @@ class TestStoichiometricReactor:
         )
 
     @pytest.mark.unit
-    def test_report(self, dissolution_reactor):
+    def test_dissolution_report(self, dissolution_reactor):
         m = dissolution_reactor
         m.fs.unit.report()
 
@@ -643,7 +643,7 @@ class TestStoichiometricReactor:
         )
 
     @pytest.mark.unit
-    def test_report(self, precipitation_reactor):
+    def test_precipitation_report(self, precipitation_reactor):
         m = precipitation_reactor
         m.fs.unit.report()
 
