@@ -23,8 +23,8 @@ from pyomo.environ import (
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
+from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
@@ -42,6 +42,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.tools.unit_models import calculate_operating_pressure
 from watertap.costing import WaterTAPCosting
 
 _logger = logging.getLogger(__name__)
@@ -200,7 +201,7 @@ def build(erd_type=ERDtype.pressure_exchanger):
 def set_operating_conditions(
     m,
     water_recovery=0.5,
-    over_pressure=0.3,
+    over_pressure_factor=1.3,
     flow_vol=1e-3,
     salt_mass_conc=35e-3,
     solver=None,
@@ -252,10 +253,10 @@ def set_operating_conditions(
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
     operating_pressure = calculate_operating_pressure(
-        feed_state_block=m.fs.feed.properties[0],
-        over_pressure=over_pressure,
-        water_recovery=water_recovery,
-        NaCl_passage=0.01,
+        state_block=m.fs.feed.properties[0],
+        over_pressure_factor=over_pressure_factor,
+        water_recovery_mass=water_recovery,
+        salt_passage=0.01,
         solver=solver,
     )
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
@@ -309,53 +310,6 @@ def set_operating_conditions(
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
-
-
-def calculate_operating_pressure(
-    feed_state_block=None,
-    over_pressure=0.15,
-    water_recovery=0.5,
-    NaCl_passage=0.01,
-    solver=None,
-):
-    """
-    Estimate operating pressure for RO unit model given the following arguments:
-
-    Arguments:
-        feed_state_block:   the state block of the RO feed that has the non-pressure state
-                            variables initialized to their values (default=None)
-        over_pressure:  the amount of operating pressure above the brine osmotic pressure
-                        represented as a fraction (default=0.15)
-        water_recovery: the mass-based fraction of inlet H2O that becomes permeate
-                        (default=0.5)
-        NaCl_passage:   the mass-based fraction of inlet NaCl that becomes permeate
-                        (default=0.01)
-        solver:     solver object to be used (default=None)
-    """
-    t = ConcreteModel()  # create temporary model
-    prop = feed_state_block.config.parameters
-    t.brine = prop.build_state_block([0])
-
-    # specify state block
-    t.brine[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", "H2O"])
-        * (1 - water_recovery)
-    )
-    t.brine[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", "NaCl"]) * (1 - NaCl_passage)
-    )
-    t.brine[0].pressure.fix(
-        101325
-    )  # valid when osmotic pressure is independent of hydraulic pressure
-    t.brine[0].temperature.fix(value(feed_state_block.temperature))
-    # calculate osmotic pressure
-    # since properties are created on demand, we must touch the property to create it
-    t.brine[0].pressure_osm_phase
-    # solve state block
-    results = solve_indexed_blocks(solver, [t.brine])
-    assert_optimal_termination(results)
-
-    return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
