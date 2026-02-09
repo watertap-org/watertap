@@ -12,6 +12,7 @@
 """
 Tests for zero-order aeration basin model
 """
+
 import pytest
 
 from pyomo.environ import (

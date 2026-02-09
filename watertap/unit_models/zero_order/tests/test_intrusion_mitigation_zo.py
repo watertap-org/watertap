@@ -12,6 +12,7 @@
 """
 Tests for zero-order intrusion mitigation model
 """
+
 import pytest
 
 

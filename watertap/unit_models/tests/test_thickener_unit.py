@@ -12,6 +12,7 @@
 """
 Tests for thickener unit example.
 """
+
 from io import StringIO
 import pytest
 from pyomo.environ import (

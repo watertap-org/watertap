@@ -23,7 +23,6 @@ from watertap.costing.unit_models.heat_exchanger import (
 from enum import Enum, auto
 from pyomo.common.config import ConfigValue
 
-
 _log = idaeslog.getLogger(__name__)
 
 

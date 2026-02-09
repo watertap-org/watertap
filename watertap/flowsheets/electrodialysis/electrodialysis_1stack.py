@@ -35,7 +35,6 @@ from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
