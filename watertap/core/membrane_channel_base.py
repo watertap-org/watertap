@@ -19,6 +19,7 @@ from pyomo.environ import (
     Expression,
     Param,
     NonNegativeReals,
+    value,
     Var,
     units as pyunits,
 )
@@ -996,7 +997,11 @@ class MembraneChannelMixin:
         if hasattr(self, "velocity"):
             for v in self.velocity.values():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1)
+                    sf_A = iscale.get_scaling_factor(self.area, default=1)
+                    sf_F_vol = iscale.get_scaling_factor(
+                        self.properties[t, x].flow_vol_phase["Liq"], default=1
+                    )
+                    iscale.set_scaling_factor(v, sf_F_vol / sf_A, 1)
 
         if hasattr(self, "friction_factor_darcy"):
             for v in self.friction_factor_darcy.values():
@@ -1007,6 +1012,71 @@ class MembraneChannelMixin:
             for v in self.cp_modulus.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
+
+        # TODO why did this file have zero scaling factors for constraints
+        if hasattr(self, "eq_dh"):
+            sf_dh = iscale.get_scaling_factor(self.dh, default=1)
+            iscale.constraint_scaling_transform(self.eq_dh, sf_dh)
+
+        if hasattr(self, "eq_area"):
+            sf_A = iscale.get_scaling_factor(self.area, default=1)
+            iscale.constraint_scaling_transform(self.eq_area, sf_A)
+
+        if hasattr(self, "eq_velocity"):
+            for (t, x), condata in self.eq_velocity.items():
+                sf_F_vol = iscale.get_scaling_factor(
+                    self.properties[t, x].flow_vol_phase["Liq"], default=1
+                )
+                iscale.constraint_scaling_transform(condata, sf_F_vol)
+
+        if hasattr(self, "eq_equal_flow_vol_interface"):
+            for (t, x), condata in self.eq_equal_flow_vol_interface.items():
+                sf_F_vol = min(
+                    iscale.get_scaling_factor(
+                        self.properties[t, x].flow_vol_phase["Liq"], default=1
+                    ),
+                    iscale.get_scaling_factor(
+                        self.properties_interface[t, x].flow_vol_phase["Liq"], default=1
+                    ),
+                )
+                iscale.constraint_scaling_transform(condata, sf_F_vol)
+
+        if hasattr(self, "eq_equal_pressure_interface"):
+            for (t, x), condata in self.eq_equal_pressure_interface.items():
+                sf_P = min(
+                    iscale.get_scaling_factor(
+                        self.properties_interface[t, x].pressure, default=1
+                    ),
+                    iscale.get_scaling_factor(
+                        self.properties[t, x].pressure, default=1
+                    ),
+                )
+                iscale.constraint_scaling_transform(condata, sf_P)
+
+        if hasattr(self, "eq_K"):
+            for (t, x, j), condata in self.eq_K.items():
+                sf_K = iscale.get_scaling_factor(self.K[t, x, j])
+                # Hopefully h has been calculated before this
+                sf_h = 1 / value(self.dh)
+                iscale.constraint_scaling_transform(condata, sf_K * sf_h)
+
+        if hasattr(self, "eq_N_Re"):
+            for (t, x), condata in self.eq_N_Re.items():
+                sf_Re = iscale.get_scaling_factor(self.N_Re[t, x], default=1)
+                sf_A = iscale.get_scaling_factor(
+                    self.area, default=1 / value(self.area)
+                )
+                sf_visc = iscale.get_scaling_factor(
+                    self.properties[t, x].visc_d_phase["Liq"], default=1
+                )
+                iscale.constraint_scaling_transform(condata, sf_Re * sf_A * sf_visc)
+
+        if hasattr(self, "eq_N_Sc_comp"):
+            for (t, x, j), condata in self.eq_N_Sc_comp.items():
+                sf_visc = iscale.get_scaling_factor(
+                    self.properties[t, x].visc_d_phase["Liq"], default=1
+                )
+                iscale.constraint_scaling_transform(condata, sf_visc)
 
 
 # helper for validating configuration arguments for this CV

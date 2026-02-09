@@ -1390,6 +1390,28 @@ class MCASStateBlockData(StateBlockData):
             doc="State pressure",
         )
 
+        if self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+            self.flow_mass_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.5,
+                bounds=(0, None),
+                units=pyunits.kg / pyunits.s,
+                doc="Component Mass flowrate",
+            )
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+            self.flow_mol_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.mol / pyunits.s,
+                doc="Component molar flow rate",
+            )
+        else:
+            raise ConfigurationError()
+
     # -----------------------------------------------------------------------------
     # Property Methods
     # Material flow state variables generated via on-demand props
@@ -1407,8 +1429,8 @@ class MCASStateBlockData(StateBlockData):
 
             def rule_flow_mol_phase_comp(b, p, j):
                 return (
-                    b.flow_mass_phase_comp[p, j]
-                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
+                    == b.flow_mol_phase_comp[p, j]
                 )
 
             self.eq_flow_mol_phase_comp = Constraint(
@@ -1441,15 +1463,9 @@ class MCASStateBlockData(StateBlockData):
             )
 
     def _flow_mass_comp(self):
-        add_object_reference(
-            self,
-            "flow_mass_comp",
-            {
-                j: self.flow_mass_phase_comp[p, j]
-                for j in self.params.component_list
-                for p in self.params.phase_list
-            },
-        )
+        @self.Expression(self.params.component_list)
+        def flow_mass_comp(b, j):
+            return b.flow_mass_phase_comp["Liq", j]
 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
@@ -2770,6 +2786,22 @@ class MCASStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(
                             self.flow_mol_phase_comp["Liq", j], sf
                         )
+
+        if self.is_property_constructed("flow_mol_comp"):
+            for j in self.flow_mol_comp:
+                iscale.set_scaling_factor(
+                    self.flow_mol_comp[j],
+                    # Don't provide a default since this should always be set
+                    iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]),
+                )
+
+        if self.is_property_constructed("flow_mass_comp"):
+            for j in self.flow_mass_comp:
+                iscale.set_scaling_factor(
+                    self.flow_mass_comp[j],
+                    # Don't provide a default since this should always be set
+                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j]),
+                )
 
         # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value
