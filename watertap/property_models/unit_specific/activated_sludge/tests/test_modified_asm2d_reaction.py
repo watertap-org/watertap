@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -19,6 +19,7 @@ X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
 Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -137,7 +138,7 @@ class TestParamBlock(object):
             # R8: Fermentation
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
-            ("R8", "Liq", "S_NH4"): -0.03352,
+            ("R8", "Liq", "S_NH4"): 0.03352,
             ("R8", "Liq", "S_PO4"): 0.00559,
             ("R8", "Liq", "S_IC"): -0.05657,
             # R9: Lysis
@@ -589,7 +590,7 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            15.565e-3, rel=1e-4
+            15.596e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -719,7 +720,7 @@ class TestAnoxic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            15.899e-3, rel=1e-4
+            16.1e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -863,7 +864,7 @@ class TestAerobic15C:
             29.606e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            6.8638e-3, rel=1e-4
+            6.8711e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             7.273e-3, abs=1e-4
@@ -1011,7 +1012,7 @@ class TestAnoxicPHA:
             20.524e-3, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            20.660e-3, rel=1e-4
+            22.126e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             4.3e-5, abs=1e-4

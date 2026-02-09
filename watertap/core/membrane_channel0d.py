@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -387,13 +387,18 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e3)
 
-        super().calculate_scaling_factors()
-
         if hasattr(self, "area"):
             if iscale.get_scaling_factor(self.area) is None:
                 iscale.set_scaling_factor(self.area, 100)
+
+        super().calculate_scaling_factors()
 
         if hasattr(self, "dP_dx"):
             for v in self.dP_dx.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)
+
+        if hasattr(self, "eq_pressure_change"):
+            for t, condata in self.eq_pressure_change.items():
+                sf = iscale.get_scaling_factor(self.deltaP[t], default=1)
+                iscale.constraint_scaling_transform(condata, sf)

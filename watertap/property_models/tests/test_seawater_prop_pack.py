@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -27,7 +27,7 @@ class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
         self.prop_pack = props.SeawaterParameterBlock
         self.param_args = {}
         self.prop_args = {}
-        self.has_density_terms = False
+        self.has_density_terms = True
 
 
 class TestSeawaterProperty(PropertyTestHarness):
@@ -106,6 +106,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("osm_coeff", None): 0.9029,
             ("pressure_osm_phase", "Liq"): 7.710e5,
             ("enth_mass_phase", "Liq"): 2.057e5,
+            ("energy_density_phase", "Liq"): 2.046e8,
             ("pressure_sat", None): 1.229e4,
             ("cp_mass_phase", "Liq"): 4.130e3,
             ("therm_cond_phase", "Liq"): 0.6400,
@@ -151,6 +152,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("osm_coeff", None): 0.9106,
             ("pressure_osm_phase", "Liq"): 3.591e6,
             ("enth_mass_phase", "Liq"): 4.783e4,
+            ("energy_density_phase", "Liq"): 3.968e7,
             ("pressure_sat", None): 1.194e3,
             ("cp_mass_phase", "Liq"): 3.916e3,
             ("therm_cond_phase", "Liq"): 0.5854,

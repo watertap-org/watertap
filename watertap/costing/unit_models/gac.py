@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -14,6 +14,9 @@ import pyomo.environ as pyo
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
 from idaes.core.util.math import smooth_min
+
+from watertap.custom_exceptions import FrozenPipes
+
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -109,6 +112,11 @@ def _build_gac_cost_param_block(blk, contactor_type):
         contactor_cost_coeff_data = {0: 75131.3, 1: 735.550, 2: -1.01827, 3: 0.000000}
         other_cost_param_data = {0: 38846.9, 1: 0.490571}
         energy_consumption_coeff_data = {0: 0.123782, 1: 0.132403, 2: -1.41512e-5}
+    else:
+        raise FrozenPipes(
+            f"{blk.unit_model.name} GAC costing unable to proceed. "
+            "Invalid contactor type provided."
+        )
 
     # ---------------------------------------------------------------------
     # design options
