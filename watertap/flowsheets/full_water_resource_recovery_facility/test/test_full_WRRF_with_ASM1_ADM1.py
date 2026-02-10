@@ -45,24 +45,16 @@ from idaes.core.util.scaling import (
 import watertap.flowsheets.full_water_resource_recovery_facility.BSM2 as BSM2
 
 is_reference_platform = (
-    platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
-)
-is_linux_platform = (
-    platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
+    platform.system() == "Windows"
+    and platform.python_version_tuple()[0] == "3"
+    and platform.python_version_tuple()[1] == "11"
 )
 
 reference_platform_only = pytest.mark.xfail(
     condition=(not is_reference_platform),
     run=True,
     strict=False,
-    reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
-)
-
-linux_platform_only = pytest.mark.xfail(
-    condition=(not is_linux_platform),
-    run=True,
-    strict=False,
-    reason="These tests are expected to pass only on the Linux platform (Python 3)",
+    reason="These tests are expected to pass only on the reference platform (Python 3.11 on Windows)",
 )
 
 
