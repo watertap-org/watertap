@@ -16,7 +16,7 @@ from ..util import cost_by_flow_volume, register_costing_parameter_block
 
 def build_pressure_exchanger_cost_param_block(blk):
 
-    blk.cost = pyo.Var(
+    blk.unit_cost = pyo.Var(
         initialize=535,
         doc="Pressure exchanger cost",
         units=pyo.units.USD_2018 / (pyo.units.meter**3 / pyo.units.hours),
@@ -35,7 +35,7 @@ def cost_pressure_exchanger(blk):
     """
     cost_by_flow_volume(
         blk,
-        blk.costing_package.pressure_exchanger.cost,
+        blk.costing_package.pressure_exchanger.unit_cost,
         pyo.units.convert(
             blk.unit_model.feed_side.properties_in[0].flow_vol,
             (pyo.units.meter**3 / pyo.units.hours),
