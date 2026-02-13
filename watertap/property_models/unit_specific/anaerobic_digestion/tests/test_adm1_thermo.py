@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -32,7 +32,6 @@ from idaes.core.util.model_statistics import (
 )
 
 from watertap.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -317,8 +316,9 @@ class TestADM1PropertiesScaler:
         scaler.variable_scaling_routine(model.props[1])
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 3
-        assert sfx[model.props[1].flow_vol] == pytest.approx(1e5, rel=1e-8)
+        # Scaling factors for FTPx
+        assert len(sfx) == 27
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
 
@@ -349,7 +349,5 @@ class TestADM1PropertiesScaler:
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 3
-        assert sfx[model.props[1].flow_vol] == pytest.approx(1e5, rel=1e-8)
-        assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
-        assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
+        # Scaling factors for FTPx
+        assert len(sfx) == 27

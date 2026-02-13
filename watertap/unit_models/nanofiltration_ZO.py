@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -21,6 +21,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -41,11 +42,17 @@ import idaes.logger as idaeslog
 
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
-
+from watertap.custom_exceptions import FrozenPipes
 
 _log = idaeslog.getLogger(__name__)
 
 
+@deprecated(
+    "The NanofiltrationZO model has been deprecated in favor of the Nanofiltration0D model. "
+    "The Nanofiltation0D model has most of the capabilities of the NanofiltrationZO model "
+    "with additional support for ensuring electroneutrality in outlets.",
+    version="1.3.0",
+)
 @declare_process_block_class("NanofiltrationZO")
 class NanofiltrationData(InitializationMixin, UnitModelBlockData):
     """
@@ -226,6 +233,10 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             solute_set = self.config.property_package.ion_set
         elif hasattr(self.config.property_package, "solute_set"):
             solute_set = self.config.property_package.solute_set
+        else:
+            raise FrozenPipes(
+                "Property package must have either ion_set or solute_set attribute."
+            )
 
         solvent_solute_set = self.config.property_package.solvent_set | solute_set
 

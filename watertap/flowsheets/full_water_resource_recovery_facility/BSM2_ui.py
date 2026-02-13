@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -13,19 +13,17 @@
 GUI configuration for the base BSM2 flowsheet.
 """
 
-from pyomo.environ import units as pyunits, assert_optimal_termination
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import units as pyunits, TransformationFactory
 
 from idaes_flowsheet_processor.api import FlowsheetInterface
-
-from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.flowsheets.full_water_resource_recovery_facility.BSM2 import (
     build,
     set_operating_conditions,
     initialize_system,
-    solve,
     add_costing,
+    scale_system,
+    solve,
     setup_optimization,
 )
 
@@ -328,7 +326,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, anaerobic digester
     exports.add(
         obj=fs.RADM.volume_liquid[0],
-        name="Liquid volume",
+        name="Anaerobic digester liquid volume",
         ui_units=pyunits.m**3,
         display_units="m3",
         rounding=1,
@@ -339,7 +337,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.RADM.volume_vapor[0],
-        name="Vapor volume",
+        name="Anaerobic digester vapor volume",
         ui_units=pyunits.m**3,
         display_units="m3",
         rounding=1,
@@ -352,7 +350,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, secondary clarifier
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "H2O"],
-        name="H2O split fraction",
+        name="Secondary clarifier H2O split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -363,7 +361,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "S_I"],
-        name="S_I split fraction",
+        name="Secondary clarifier S_I split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -374,7 +372,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "S_S"],
-        name="S_S split fraction",
+        name="Secondary clarifier S_S split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -385,7 +383,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "X_I"],
-        name="X_I split fraction",
+        name="Secondary clarifier X_I split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -396,7 +394,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "X_S"],
-        name="X_S split fraction",
+        name="Secondary clarifier X_S split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -407,7 +405,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "X_BH"],
-        name="X_BH split fraction",
+        name="Secondary clarifier X_BH split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -418,7 +416,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "X_BA"],
-        name="X_BA split fraction",
+        name="Secondary clarifier X_BA split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -429,7 +427,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "X_P"],
-        name="X_P split fraction",
+        name="Secondary clarifier X_P split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -440,7 +438,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "S_O"],
-        name="S_O split fraction",
+        name="Secondary clarifier S_O split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -451,7 +449,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "S_NO"],
-        name="S_NO split fraction",
+        name="Secondary clarifier S_NO split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -462,7 +460,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "S_NH"],
-        name="S_NH split fraction",
+        name="Secondary clarifier S_NH split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -473,7 +471,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "S_ND"],
-        name="S_ND split fraction",
+        name="Secondary clarifier S_ND split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -484,7 +482,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "X_ND"],
-        name="X_ND split fraction",
+        name="Secondary clarifier X_ND split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -495,7 +493,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL1.split_fraction[0, "effluent", "S_ALK"],
-        name="S_ALK split fraction",
+        name="Secondary clarifier S_ALK split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -507,7 +505,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, primary clarifier
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "H2O"],
-        name="H2O split fraction",
+        name="Primary clarifier H2O split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -518,7 +516,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "S_I"],
-        name="S_I split fraction",
+        name="Primary clarifier S_I split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -529,7 +527,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "S_S"],
-        name="S_S split fraction",
+        name="Primary clarifier S_S split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -540,7 +538,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "X_I"],
-        name="X_I split fraction",
+        name="Primary clarifier X_I split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -551,7 +549,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "X_S"],
-        name="X_S split fraction",
+        name="Primary clarifier X_S split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -562,7 +560,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "X_BH"],
-        name="X_BH split fraction",
+        name="Primary clarifier X_BH split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -573,7 +571,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "X_BA"],
-        name="X_BA split fraction",
+        name="Primary clarifier X_BA split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -584,7 +582,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "X_P"],
-        name="X_P split fraction",
+        name="Primary clarifier X_P split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -595,7 +593,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "S_O"],
-        name="S_O split fraction",
+        name="Primary clarifier S_O split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -606,7 +604,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "S_NO"],
-        name="S_NO split fraction",
+        name="Primary clarifier S_NO split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -617,7 +615,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "S_NH"],
-        name="S_NH split fraction",
+        name="Primary clarifier S_NH split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -628,7 +626,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "S_ND"],
-        name="S_ND split fraction",
+        name="Primary clarifier S_ND split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -639,7 +637,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "X_ND"],
-        name="X_ND split fraction",
+        name="Primary clarifier X_ND split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -650,7 +648,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.CL.split_fraction[0, "effluent", "S_ALK"],
-        name="S_ALK split fraction",
+        name="Primary clarifier S_ALK split fraction",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=5,
@@ -3041,7 +3039,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=recovery_vol,
-        name="Volumetric recovery",
+        name="Normalized volumetric recovery",
         ui_units=pyunits.dimensionless,
         display_units="m3 of product/m3 of feed",
         rounding=5,
@@ -3058,25 +3056,22 @@ def build_flowsheet(build_options=None, **kwargs):
     """
     m = build()
 
+    # Set up system
     set_operating_conditions(m)
-    assert_degrees_of_freedom(m, 0)
-    assert_units_consistent(m)
-
     initialize_system(m)
-
-    results = solve(m)
-    assert_optimal_termination(results)
-
     add_costing(m)
-    assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    # Handle scaling transformations
+    scale_system(m)
+    scaling = TransformationFactory("core.scale_model")
+    scaled_model = scaling.create_using(m, rename=False)
+    solve(scaled_model)
+    scaling.propagate_solution(scaled_model, m)
 
-    setup_optimization(m, reactor_volume_equalities=False)
-    results = solve(m)
-    assert_optimal_termination(results)
+    # Set up optimization with additional scaling
+    setup_optimization(m, reactor_volume_equalities=True)
+
     return m
 
 

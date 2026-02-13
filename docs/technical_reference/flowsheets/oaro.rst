@@ -27,7 +27,7 @@ Similarly, the resulting concentrate flows out of the feed-side, gets energy rec
 pressurized by the recycle pump, and flows back into permeate-side of the last stage.
 Meanwhile, the diluted sweep solution in the permeate-side flows into the next stage and finally into a conventional RO module.
 Costing relationships for each of the unit models is described in the
-:ref:`WaterTAP Costing Package Package <watertap_costing>`.
+:ref:`WaterTAP Costing Package <watertap_costing>`.
 The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
@@ -52,7 +52,7 @@ Documentation for the property model can be found here:
 Documentation for the costing relationships can be found below.
     * :ref:`WaterTAP Costing Package <watertap_costing>`
 
-This flowsheet aims to solve optimization problem that minimizes levelized cost of water (LCOW) with specified
+This flowsheet aims to solve optimization problem that minimizes LCOW with specified
 number of stages and system mass recovery.
 LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents capital recovery factor
 :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and

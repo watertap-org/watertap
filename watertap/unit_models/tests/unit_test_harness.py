@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -21,6 +21,7 @@ from idaes.core.util.model_statistics import (
 from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling.util import jacobian_cond
 import idaes.logger as idaeslog
 
 
@@ -179,6 +180,23 @@ class UnitTestHarness(abc.ABC):
             )
         results = opt.solve(blk, tee=True)
 
+        if hasattr(self, "condition_number"):
+            cond = jacobian_cond(blk)
+            if not cond == pytest.approx(
+                self.condition_number,
+                abs=self.default_absolute_tolerance,
+                rel=self.default_relative_tolerance,
+            ):
+                # Testing to a relative tolerance of 1e-3, so four significant digits should suffice.
+                raise AssertionError(
+                    f"Condition number: Expected {self.condition_number:.4E}, got {cond:.4E} instead"
+                )
+
+        if hasattr(self, "skip_badly_scaled_vars"):
+            skip_badly_scaled_vars = self.skip_badly_scaled_vars
+        else:
+            skip_badly_scaled_vars = False
+
         # check solve
         badly_scaled_vars = list(
             iscale.badly_scaled_var_generator(
@@ -188,7 +206,7 @@ class UnitTestHarness(abc.ABC):
                 zero=self.default_zero,
             )
         )
-        if badly_scaled_vars:
+        if not skip_badly_scaled_vars and len(badly_scaled_vars) > 0:
             lines = [
                 f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}"
                 for x in badly_scaled_vars

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -64,31 +64,31 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Treated.temperature[0]) == pytest.approx(298.15, rel=1e-4)
         assert value(model.fs.Treated.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Treated.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            3.590569e-5, rel=1e-4
+            2.653e-5, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            2.8211e-4, rel=1e-4
+            2.7466e-4, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_I"]) == pytest.approx(
             3.0e-2, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            1.948e-3, rel=1e-4
+            7.886e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            4.5516e-3, rel=1e-4
+            4.425e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
-            4.3574e-4, rel=1e-4
+            1.88e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            5.7698e-3, rel=1e-4
+            4.677e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            2.8055e-3, rel=1e-4
+            2.7906e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            1.0513e-1, rel=1e-4
+            1.0481e-1, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_K"]) == pytest.approx(
             0, abs=1e-4
@@ -97,13 +97,13 @@ class TestASM2DFlowsheet:
             0, abs=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
-            2.506e-4, rel=1e-4
+            1.02129e-3, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            5.5329e-2, rel=1e-4
+            5.489e-2, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            1.7452e-2, rel=1e-4
+            1.75925e-2, rel=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             0, abs=1e-4
@@ -115,7 +115,7 @@ class TestASM2DFlowsheet:
             0, abs=1e-4
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            1.043e-3, rel=1e-4
+            1.0456e-3, rel=1e-4
         )
 
         # Sludge stream
@@ -123,31 +123,31 @@ class TestASM2DFlowsheet:
         assert value(model.fs.Sludge.temperature[0]) == pytest.approx(298.15, rel=1e-4)
         assert value(model.fs.Sludge.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            3.5909e-5, rel=1e-4
+            2.65295e-5, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            2.8211e-4, rel=1e-4
+            2.74656e-4, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_I"]) == pytest.approx(
             3.0e-2, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_N2"]) == pytest.approx(
-            1.9481e-3, rel=1e-4
+            7.8862e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            4.5516e-3, rel=1e-4
+            4.4252e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
-            4.3574e-4, rel=1e-4
+            1.88e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_O2"]) == pytest.approx(
-            5.7698e-3, rel=1e-4
+            4.6767e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            2.8055e-3, rel=1e-4
+            2.7906e-3, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_IC"]) == pytest.approx(
-            0.10513, rel=1e-4
+            0.10481, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "S_K"]) == pytest.approx(
             0, abs=1e-4
@@ -156,13 +156,13 @@ class TestASM2DFlowsheet:
             0, abs=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
-            1.1075e-2, rel=1e-4
+            4.513e-2, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            2.4672, rel=1e-4
+            2.4477, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            0.78578, rel=1e-4
+            0.7921, rel=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
             0, abs=1e-4
@@ -174,5 +174,5 @@ class TestASM2DFlowsheet:
             0, abs=1e-4
         )
         assert value(model.fs.Sludge.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            0.04589, rel=1e-4
+            0.04601, rel=1e-4
         )

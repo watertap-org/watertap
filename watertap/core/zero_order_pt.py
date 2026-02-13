@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -14,6 +14,7 @@ This module contains the methods for constructing the material balances for
 zero-order pass-through unit models (i.e. units with a single inlet and single
 outlet where flow and composition do not change, such as pumps).
 """
+
 from types import MethodType
 from pyomo.environ import check_optimal_termination
 

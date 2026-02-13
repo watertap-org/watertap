@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -34,6 +34,7 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Xinhong Liu"
@@ -217,12 +218,56 @@ class _ADM1_vaporStateBlock(StateBlock):
         init_log.info("State Released.")
 
 
+class ADM1VaporPropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Anaerobic Digestion Model No.1 vapor property package.
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Pressure": (pyo.units.Pa, 1e-6),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e2,
+        "temperature": 1e-1,
+        "conc_mass_comp": 1e2,
+        "pressure_sat": 1e-3,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for c in model.params.component_list:
+            self.scale_variable_by_default(model.pressure_sat[c], overwrite=overwrite)
+        for c in model.params.solute_set:
+            self.scale_variable_by_default(model.conc_mass_comp[c], overwrite=overwrite)
+
+    # There are currently no constraints in this model
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for c in model.component_data_objects(pyo.Constraint, descend_into=True):
+            self.scale_constraint_by_nominal_value(
+                c,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+
 @declare_process_block_class("ADM1_vaporStateBlock", block_class=_ADM1_vaporStateBlock)
 class ADM1_vaporStateBlockData(StateBlockData):
     """
     StateBlock for calculating thermophysical properties associated with the ADM1
     reaction system.
     """
+
+    default_scaler = ADM1VaporPropertiesScaler
 
     def build(self):
         """
@@ -364,14 +409,6 @@ class ADM1_vaporStateBlockData(StateBlockData):
             rule=energy_density_expression, doc="Energy density term"
         )
 
-        iscale.set_scaling_factor(self.flow_vol, 1e5)
-        iscale.set_scaling_factor(self.temperature, 1e-1)
-        iscale.set_scaling_factor(self.pressure, 1e-3)
-        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
-        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e3)
-        iscale.set_scaling_factor(self.pressure_sat, 1e-3)
-        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-2)
-
     def get_material_flow_terms(self, p, j):
         return self.material_flow_expression[j]
 
@@ -412,6 +449,14 @@ class ADM1_vaporStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
+
+        iscale.set_scaling_factor(self.flow_vol, 1e5)
+        iscale.set_scaling_factor(self.temperature, 1e-1)
+        iscale.set_scaling_factor(self.pressure, 1e-3)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.conc_mass_comp["S_h2"], 1e3)
+        iscale.set_scaling_factor(self.pressure_sat, 1e-3)
+        iscale.set_scaling_factor(self.pressure_sat["S_h2"], 1e-2)
 
         # No constraints in this model as yet, just need to set scaling factors
         # for expressions

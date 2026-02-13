@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -157,6 +157,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
             domain=pyo.PositiveReals,
             doc="Conversion factor for BOD5",
         )
+
         # Fix Vars that are treated as Params
         for v in self.component_objects(pyo.Var):
             v.fix()
@@ -447,7 +448,7 @@ class ASM1StateBlockData(StateBlockData):
 
         def _BOD5(self, i):
             bod5 = (
-                self.conc_mass_comp["X_S"]
+                self.conc_mass_comp["S_S"]
                 + self.conc_mass_comp["X_S"]
                 + (1 - self.params.f_p)
                 * (self.conc_mass_comp["X_BH"] + self.conc_mass_comp["X_BA"])
@@ -465,7 +466,6 @@ class ASM1StateBlockData(StateBlockData):
             cod = (
                 self.conc_mass_comp["S_S"]
                 + self.conc_mass_comp["S_I"]
-                + self.conc_mass_comp["X_S"]
                 + self.conc_mass_comp["X_S"]
                 + self.conc_mass_comp["X_I"]
                 + self.conc_mass_comp["X_BH"]

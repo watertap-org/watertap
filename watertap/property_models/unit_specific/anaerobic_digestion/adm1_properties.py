@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -261,8 +261,9 @@ class ADM1PropertiesScaler(CustomScalerBase):
     }
 
     DEFAULT_SCALING_FACTORS = {
-        "flow_vol": 1e5,
+        "flow_vol": 1e3,
         "temperature": 1e-1,
+        "conc_mass_comp": 1e2,
     }
 
     def variable_scaling_routine(
@@ -271,6 +272,8 @@ class ADM1PropertiesScaler(CustomScalerBase):
         self.scale_variable_by_default(model.temperature, overwrite=overwrite)
         self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
         self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for c in model.params.solute_set:
+            self.scale_variable_by_default(model.conc_mass_comp[c], overwrite=overwrite)
 
     # There are currently no constraints in this model
     def constraint_scaling_routine(

@@ -73,19 +73,19 @@ Flowsheet Specifications
    :header: "Description", "value", "Units"
 
    "**MD Module**"
-   "Membrane permeability coefficient", "1e-10", "m/Pa/s"
-   "Membrane thickness", "1e-4", "m"
-   "Membrane thermal conductivity", "0.2", "W/m/K"
-   "MD hot and cold channels height", "0.0019", "m"
+   "Membrane permeability coefficient", "1e-10", ":math:`\text{m/Pa/s}`"
+   "Membrane thickness", "1e-4", ":math:`\text{m}`"
+   "Membrane thermal conductivity", "0.2", ":math:`\text{W/m/K}`"
+   "MD hot and cold channels height", "0.0019", ":math:`\text{m}`"
    "MD hot and cold channels spacer porosity", "0.77", ":math:`\text{dimensionless}`"
    "**Heat Exchanger**"
    "Overall heat transfer coefficient", "2000", ":math:`\text{W/m}^{2}\text{/K}`"
    "**Pumps**"
    "Efficiency", "0.8", ":math:`\text{dimensionless}`"
    "**Heater**"
-   "Maximum outlet temperature", "90", "°C"
+   "Maximum outlet temperature", "90", ":math:`\text{°C}`"
    "**Cooler**"
-   "Minimum outlet temperature", "10", "°C"
+   "Minimum outlet temperature", "10", ":math:`\text{°C}`"
 
 
 

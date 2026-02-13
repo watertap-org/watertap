@@ -60,11 +60,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - pytest
-          - pylint
-          - docs
-          - notebooks
+        python-version:
+          - '3.10'
+          - '3.11'
         os:
           - linux
           - win64
@@ -148,8 +146,62 @@ jobs:
           # see codecov/codecov-action#1487
           version: v0.6.0
 
-  user-env-tests:
-    name: User env tests (${{ matrix.target }}/py${{ matrix.python-version }}/${{ matrix.os }})
+  user-mode-pytest:
+    name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.11'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-22.04
+          - os: win64
+            os-version: windows-2022
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: watertap
+        python-version: ${{ matrix.python-version }}
+    - name: Define install URL (default)
+      env:
+        _repo_full_name: watertap-org/watertap
+        _ref_to_install: main
+      run: |
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Define install URL (for PRs)
+      if: github.event.pull_request
+      env:
+        _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
+        _ref_to_install: ${{ github.event.pull_request.head.sha }}
+      run:
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Install watertap and testing dependencies
+      run: |
+        echo '::group::Output of "pip install" commands'
+        pip install "watertap @ ${_install_url}" pytest
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Run pytest
+      run: |
+        pytest --pyargs watertap
+
+  notebooks:
+    name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     needs: [code-formatting]
     strategy:
@@ -159,7 +211,6 @@ jobs:
           - pytest
           # - notebooks  # testing notebooks needs more setup since the notebooks need to be downloaded separately
         python-version:
-          - '3.9'
           - '3.10'
           - '3.11'
         os:
@@ -172,16 +223,33 @@ jobs:
             os-version: windows-2022
     steps:
     - uses: actions/checkout@v4
-    - name: Set up WaterTAP user environment
-      uses: ./.github/actions/install
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v3
       with:
-        variant: standard
+        activate-environment: watertap-dev
         python-version: ${{ matrix.python-version }}
-    - name: Install pytest
-      if: matrix.target == 'pytest'
+    - name: Install dependencies
       run: |
-        pip install pytest
-    - name: Run pytest
-      if: matrix.target == 'pytest'
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip setuptools wheel pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Install Jupyter kernel
       run: |
-        pytest --pyargs watertap
+        jupyter kernelspec list
+        python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
+        jupyter kernelspec list
+
+    - name: Run pytest with nbmake
+      run: |
+        pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb

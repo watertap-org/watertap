@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -30,7 +30,6 @@ from idaes.core.util.model_statistics import (
 )
 
 from watertap.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -339,7 +338,7 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_expressions(self, model):
         assert value(model.props[1].TSS) == 0.375
-        assert value(model.props[1].COD) == pytest.approx(0.7999, rel=1e-3)
+        assert value(model.props[1].COD) == pytest.approx(0.7, rel=1e-3)
         assert value(model.props[1].BOD5["effluent"]) == 0.096
         assert value(model.props[1].BOD5["raw"]) == 0.096 * 0.65 / 0.25
         assert value(model.props[1].TKN) == pytest.approx(0.328, rel=1e-3)

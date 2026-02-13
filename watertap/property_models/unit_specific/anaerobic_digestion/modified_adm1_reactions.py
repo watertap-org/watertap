@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -2068,13 +2068,15 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         def Dissociation_rule(self, t):
+            ref_temp = self.params.temperature_ref + 1e-6 * pyo.units.K
+
             return pyo.log(10**-self.pKW) == (
                 pyo.log(1e-14)
                 + 55900
                 / pyo.units.mole
                 * pyo.units.joule
                 / (Constants.gas_constant)
-                * ((1 / self.params.temperature_ref) - (1 / self.temperature))
+                * ((1 / ref_temp) - (1 / self.temperature))
             )
 
         self.Dissociation = pyo.Constraint(

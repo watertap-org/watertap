@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -23,6 +23,7 @@
 #
 import os
 import sys
+import importlib
 import sphinx_rtd_theme
 
 sys.path.insert(0, os.path.abspath(".."))
@@ -35,9 +36,9 @@ copyright = "2020-2025, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "1.4.dev0"
+release = importlib.metadata.version("watertap")
 # The short X.Y version
-version = "1.4.dev0"
+version = importlib.metadata.version("watertap")
 # -- General configuration ---------------------------------------------------
 
 

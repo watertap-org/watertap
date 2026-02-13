@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from pyomo.environ import exp
 from pyomo.core.expr.visitor import identify_variables, identify_mutable_parameters
 from pyomo.core.base.units_container import _PyomoUnit
 
@@ -29,3 +30,17 @@ def is_constant_up_to_units(expr):
             continue
         return False
     return True
+
+
+# TODO: Should substitute instances of this with the IDAES math function after the next IDAES release
+def smooth_heaviside(x, k):
+    """
+    Provides a smooth, continuous approximation of a discontinuous function
+    Args:
+        x : Independent variable
+        k : Smoothing parameter representing the slope of the discontinuity
+    Returns:
+        function : Continuous approximation of a discontinuous function
+    """
+    function = 1 / (1 + exp(-k * x))
+    return function
