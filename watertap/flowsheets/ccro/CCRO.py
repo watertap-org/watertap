@@ -516,7 +516,7 @@ def setup_optimization(
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
         mp.flushing.flushing_efficiency.setub(0.95)
-        mp.flushing.flushing_efficiency.setlb(0.1)
+        mp.flushing.flushing_efficiency.setlb(0.25)
     if mp.find_component("conduit") is not None:
         mp.conduit.volume.unfix()
     if mp.include_costing:
@@ -937,7 +937,7 @@ if __name__ == "__main__":
     setup_optimization(
         mp,
         overall_water_recovery=0.5,
-        max_cycle_time_hr=10,
+        max_cycle_time_hr=2,
         recycle_flow_bounds=(1, 20),
     )
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
@@ -947,9 +947,29 @@ if __name__ == "__main__":
     first_block = blks[0]
     # first_block.fs.dead_volume.accumulation_time[0].fix(1 * pyunits.second)
 
+    for m in mp.get_active_process_blocks():
+        if m.fs.find_component("RO") is not None:
+            print(
+                m.name,
+                "inlet RO TDS:",
+                m.fs.RO.feed_side.properties[0, 0.1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value,
+                "outlet RO TDS:",
+                m.fs.RO.feed_side.properties[0, 1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value,
+                m.fs.RO.feed_side.accumulation_time[0].value,
+                m.fs.RO.feed_side.volume.value,
+                m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].value,
+                m.fs.dead_volume.dead_volume.properties_out[0]
+                .flow_vol_phase["Liq"]
+                .value,
+            )
+
     # first_block.fs.RO.area.fix()
     # first_block.fs.RO.length.fix()
-    # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
+    first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
     # if flushing_periods > 1:
     #     flushing_block = blks[mp.time_points]
     #     # flushing_block.fs.dead_volume.accumulation_time[0].setub(5 * pyunits.second)
@@ -957,7 +977,8 @@ if __name__ == "__main__":
     # mp.flushing.display()
     # dg = DiagnosticsToolbox(mp)
     # dg.report_structural_issues()
-    # # dg.display_overconstrained_set()
+    # dg.display_overconstrained_set()
+    # assert False
     # flushing_block.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].fix()
 
     # dg = DiagnosticsToolbox(mp)
@@ -997,7 +1018,12 @@ if __name__ == "__main__":
                 .value,
                 m.fs.RO.feed_side.accumulation_time[0].value,
                 m.fs.RO.feed_side.volume.value,
+                m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].value,
+                m.fs.dead_volume.dead_volume.properties_out[0]
+                .flow_vol_phase["Liq"]
+                .value,
             )
+    first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
     for r in [0.6, 0.7, 0.8, 0.9]:
         mp.overall_recovery.fix(r)  # Unfixed with times fixed should get 1 DOF!
         results = solve(mp, use_ipoptv2=False)
@@ -1016,4 +1042,10 @@ if __name__ == "__main__":
                     .value,
                     m.fs.RO.feed_side.accumulation_time[0].value,
                     m.fs.RO.feed_side.volume.value,
+                    m.fs.P2.control_volume.properties_out[0]
+                    .flow_vol_phase["Liq"]
+                    .value,
+                    m.fs.dead_volume.dead_volume.properties_out[0]
+                    .flow_vol_phase["Liq"]
+                    .value,
                 )

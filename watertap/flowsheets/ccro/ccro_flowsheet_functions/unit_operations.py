@@ -254,9 +254,24 @@ def build_flushing_with_RO(use_ro_with_hold_up=True):
     m.fs.RO_retentate_to_dead_volume = Arc(
         source=m.fs.RO.retentate, destination=m.fs.dead_volume.inlet
     )
-    m.fs.ro_product_constraint = Constraint(
-        expr=m.fs.raw_feed.properties[0].flow_vol_phase["Liq"]
-        == m.fs.product.properties[0].flow_vol_phase["Liq"]
+    # m.fs.ro_product_constraint = Constraint(
+    #     expr=m.fs.raw_feed.properties[0].flow_vol_phase["Liq"]
+    #     == m.fs.product.properties[0].flow_vol_phase["Liq"]
+    # )
+    # immitates a recycle
+    # m.fs.ro_equal_mass_constraint = Constraint(
+    #     expr=sum(
+    #         m.fs.conduit_feed.properties[0].flow_mass_phase_comp["Liq", comp]
+    #         for comp in m.fs.properties.component_list
+    #     )
+    #     == sum(
+    #         m.fs.dead_volume.outlet.flow_mass_phase_comp[0, "Liq", comp]
+    #         for comp in m.fs.properties.component_list
+    #     )
+    # )
+    m.fs.ro_equal_mass_constraint = Constraint(
+        expr=m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"]
+        == m.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase["Liq"]
     )
     m.fs.conduit_pressure_constraint = Constraint(
         expr=m.fs.conduit_feed.properties[0].pressure == m.fs.RO.retentate.pressure[0]
@@ -264,7 +279,7 @@ def build_flushing_with_RO(use_ro_with_hold_up=True):
 
     iscale.constraint_scaling_transform(m.fs.conduit_pressure_constraint, 1e-5)
     # m.fs.ro_product_constraint.deactivate()
-    iscale.constraint_scaling_transform(m.fs.ro_product_constraint, 1 / 0.001)
+    iscale.constraint_scaling_transform(m.fs.ro_equal_mass_constraint, 1 / 0.001)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Touch relevant parameters
@@ -375,7 +390,6 @@ def initialize_flushing_unit(m):
     )
     m.fs.flushing.post_flushing_concentration.unfix()
     m.fs.flushing.flushing_efficiency.unfix()
-    m.fs.flushing.display()
     m.fs.flushing.initialize()
 
 
@@ -399,10 +413,10 @@ def build_flushing_unit_only(mp, start_period=1, end_period=None):
     #         blks[i].fs.RO.feed_side.accumulation_time[0]
     #     )
 
-    for blk in mp.get_active_process_blocks():
-        print(blk.name, blk.fs.operation_mode)
+    # for blk in mp.get_active_process_blocks():
+    #     print(blk.name, blk.fs.operation_mode)
     for blk in blks:
-        print(blk.name, blk.fs.operation_mode)
+        # print(blk.name, blk.fs.operation_mode)
         blk.fs.RO.feed_side.accumulation_time.unfix()
         blk.fs.RO.feed_side.accumulation_time[0].setlb(1e-8)
 

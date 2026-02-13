@@ -424,9 +424,7 @@ def unfix_dof(m, unfix_dead_volume_state=True, cc_configuration=None, **kwargs):
         # m.fs.product.flow_vol_phase["Liq"].fix(
         #     m.fs.raw_feed.properties[0].flow_vol_phase["Liq"]
         # )
-        m.fs.raw_feed.properties[0].display()
-        m.fs.product.properties[0].display()
-        m.fs.ro_product_constraint.activate()
+        m.fs.ro_equal_mass_constraint.activate()
         # m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
         #     cc_configuration["recycle_flowrate"]
         # )
