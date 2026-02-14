@@ -129,7 +129,7 @@ rHGO_dye_rejection:
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
   applied_pressure:
-    value: 7   # corresponds to default of 100 psi
+    value: 2   # corresponds to default of 29 psi
     units: bar
   water_permeability_coefficient:
     value: 100
