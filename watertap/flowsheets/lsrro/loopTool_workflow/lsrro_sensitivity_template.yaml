@@ -1,0 +1,30 @@
+pump_pressure_multiplier:
+  type: LinearSample
+  param: fs.sense_manager.pump_pressure_multiplier
+  lower_limit: 0.8
+  upper_limit: 1.2
+  num_samples: 3
+a_value_multiplier:
+  type: LinearSample
+  param: fs.sense_manager.a_value_multiplier
+  lower_limit: 0.8
+  upper_limit: 1.2
+  num_samples: 3
+lsrro_membrane_cost_multiplier:
+  type: LinearSample
+  param: fs.sense_manager.lsrro_membrane_cost_multiplier
+  lower_limit: 0.8
+  upper_limit: 1.2
+  num_samples: 3
+pump_cost_multiplier:
+  type: LinearSample
+  param: fs.sense_manager.pump_cost_multiplier
+  lower_limit: 0.8
+  upper_limit: 1.2
+  num_samples: 3
+pump_efficiency_multiplier:
+  type: LinearSample
+  param: fs.sense_manager.pump_efficiency_multiplier
+  lower_limit: 0.8
+  upper_limit: 1.2
+  num_samples: 3

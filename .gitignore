@@ -155,3 +155,99 @@ auto-save-list
 
 # Example outputs
 output/
+watertap/flowsheets/ccro/validation_data/sine_700-900psi_60s_period.csv
+watertap/flowsheets/ccro/validation_data/sine_500-900psi_60s_period.csv
+watertap/flowsheets/ccro/validation_data/sine_500-900psi_10s_period.csv
+watertap/flowsheets/ccro/validation_data/Recovery.csv
+watertap/flowsheets/ccro/validation_data/Pressure and recovery from OC.jpg
+watertap/flowsheets/ccro/validation_data/Outlet Pressure.csv
+watertap/flowsheets/ccro/validation_data/Feed pressure.csv
+watertap/flowsheets/ccro/validation_data/Approx_3hr_15LMH_50Recirc.csv
+watertap/flowsheets/ccro/analysis_scripts/output_old/ccro_brine_sweep_analysisType_ccro_sweep_brackish_recovery_r1.h5
+watertap/flowsheets/ccro/analysis_scripts/output_old/ccro_brine_sweep_analysisType_ccro_sweep_brackish_recovery.h5_30_09-21_05_33_.bak
+watertap/flowsheets/ccro/analysis_scripts/output_old/ccro_brine_sweep_analysisType_ccro_sweep_brackish_recovery.h5_30_09-21_03_40_.bak
+watertap/flowsheets/ccro/analysis_scripts/output_old/ccro_brine_sweep_analysisType_ccro_sweep_brackish_recovery.h5
+watertap/flowsheets/ccro/analysis_scripts/output_old/ccro_brine_sweep_analysisType_ccro_sweep_brackish.h5_30_09-14_09_20_.bak
+watertap/flowsheets/ccro/analysis_scripts/output_old/ccro_brine_sweep_analysisType_ccro_sweep_brackish.h5
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW lcow map True.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW lcow map True.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW lcow map True.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW lcow map False.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW lcow map False.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW lcow map False.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW flushing efficiency map True.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW flushing efficiency map True.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW flushing efficiency map True.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW flushing efficiency map False.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW flushing efficiency map False.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW flushing efficiency map False.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW cycle time map True.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW cycle time map True.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW cycle time map True.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW cycle time map False.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW cycle time map False.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW cycle time map False.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW area map True.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW area map True.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW area map True.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW area map False.svg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW area map False.jpg
+watertap/flowsheets/ccro/analysis_scripts/map_figs/BGW area map False.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_water_flux.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_water_flux.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_water_flux.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_retentate_tds.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_retentate_tds.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_retentate_tds.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_permeate_tds.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_permeate_tds.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/validation_permeate_tds.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/Total cycle time.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/Total cycle time.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/Total cycle time.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Total cycle time.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Total cycle time.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Total cycle time.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/SW RO SP.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW RO SP.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW RO SP.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Recycle.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Recycle.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Recycle.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Length.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Length.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Length.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/SW lcow.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW lcow.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW lcow.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Flushing efficiency.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Flushing efficiency.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Flushing efficiency.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Area.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Area.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/SW Area.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/RO SP.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/RO SP.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/RO SP.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/RO residence time.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/Recycle.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/Recycle.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/Recycle.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/Length.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/Length.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/Length.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/lcow.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/lcow.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/lcow.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/Flushing efficiency.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/Flushing efficiency.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/Flushing efficiency.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/ccro_val_retentante_tds.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/ccro_val_retentante_tds.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/ccro_val_retentante_tds.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/ccro_val_feed_pressure.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/ccro_val_feed_pressure.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/ccro_val_feed_pressure.csv.csv
+watertap/flowsheets/ccro/analysis_scripts/figs/Area.svg
+watertap/flowsheets/ccro/analysis_scripts/figs/Area.jpg
+watertap/flowsheets/ccro/analysis_scripts/figs/Area.csv.csv

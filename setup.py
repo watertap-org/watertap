@@ -76,6 +76,7 @@ setup(
         "parameter-sweep@git+https://github.com/watertap-org/parameter-sweep",
         "numpy",
         "pint<0.25",
+        "psPlotKit @ git+https://github.com/avdudchenko/psPlotKit@V0.21alpha",
     ],
     extras_require={
         "testing": [
