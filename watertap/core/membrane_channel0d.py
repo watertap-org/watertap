@@ -387,13 +387,18 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e3)
 
-        super().calculate_scaling_factors()
-
         if hasattr(self, "area"):
             if iscale.get_scaling_factor(self.area) is None:
                 iscale.set_scaling_factor(self.area, 100)
+
+        super().calculate_scaling_factors()
 
         if hasattr(self, "dP_dx"):
             for v in self.dP_dx.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)
+
+        if hasattr(self, "eq_pressure_change"):
+            for t, condata in self.eq_pressure_change.items():
+                sf = iscale.get_scaling_factor(self.deltaP[t], default=1)
+                iscale.constraint_scaling_transform(condata, sf)

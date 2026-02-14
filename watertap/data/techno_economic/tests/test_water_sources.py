@@ -12,6 +12,7 @@
 """
 Tests for loading water source definitions
 """
+
 import pytest
 import yaml
 import os

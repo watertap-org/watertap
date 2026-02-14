@@ -12,6 +12,7 @@
 """
 Tests for zero-order brine concentrator model
 """
+
 import pytest
 
 from pyomo.environ import (

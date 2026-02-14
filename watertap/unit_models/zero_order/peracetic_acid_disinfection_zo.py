@@ -20,7 +20,6 @@ from pyomo.environ import Var, units as pyunits
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData
 
-
 # Some more information about this module
 __author__ = "Travis Arnold"
 
