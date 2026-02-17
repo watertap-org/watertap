@@ -23,6 +23,16 @@ class CrystallizerCostType(StrEnum):
     volume_basis = "volume_basis"
 
 
+def build_nacl_recovered_cost_param_block(blk):
+
+    blk.cost = pyo.Var(
+        initialize=0,
+        units=pyo.units.USD_2018 / pyo.units.kg,
+        doc="Unit recovery value of NaCl",
+    )
+    blk.parent_block().register_flow_type("NaCl_recovered", blk.cost)
+
+
 def build_crystallizer_cost_param_block(blk):
 
     blk.steam_pressure = pyo.Var(
@@ -80,22 +90,6 @@ def build_crystallizer_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    blk.steam_cost = pyo.Var(
-        initialize=0.004,
-        units=pyo.units.USD_2018 / (pyo.units.meter**3),
-        doc="Steam cost, Panagopoulos (2019)",
-    )
-
-    blk.NaCl_recovery_value = pyo.Var(
-        initialize=0,
-        units=pyo.units.USD_2018 / pyo.units.kg,
-        doc="Unit recovery value of NaCl",
-    )
-
-    costing = blk.parent_block()
-    costing.register_flow_type("steam", blk.steam_cost)
-    costing.register_flow_type("NaCl", blk.NaCl_recovery_value)
-
 
 def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
     """
@@ -120,34 +114,17 @@ def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
 
 
 def _cost_crystallizer_flows(blk):
-    blk.costing_package.cost_flow(
-        pyo.units.convert(
-            (
-                blk.unit_model.magma_circulation_flow_vol
-                * blk.unit_model.dens_mass_slurry
-                * Constants.acceleration_gravity
-                * blk.costing_package.crystallizer.pump_head_height
-                / blk.costing_package.crystallizer.efficiency_pump
-            ),
-            to_units=pyo.units.kW,
-        ),
-        "electricity",
-    )
-
-    blk.costing_package.cost_flow(
-        pyo.units.convert(
-            (blk.unit_model.work_mechanical[0] / _compute_steam_properties(blk)),
-            to_units=pyo.units.m**3 / pyo.units.s,
-        ),
-        "steam",
-    )
 
     blk.costing_package.cost_flow(
         blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", "NaCl"],
-        "NaCl",
+        "NaCl_recovered",
     )
 
 
+@register_costing_parameter_block(
+    build_rule=build_nacl_recovered_cost_param_block,
+    parameter_block_name="NaCl_recovered",
+)
 @register_costing_parameter_block(
     build_rule=build_crystallizer_cost_param_block,
     parameter_block_name="crystallizer",

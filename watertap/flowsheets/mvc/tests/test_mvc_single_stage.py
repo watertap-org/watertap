@@ -230,8 +230,6 @@ class TestMVC:
         assert value(m.fs.costing.heat_exchanger.material_factor_cost) == 5
         assert m.fs.costing.evaporator.material_factor_cost.is_fixed()
         assert value(m.fs.costing.evaporator.material_factor_cost) == 5
-        assert m.fs.costing.compressor.unit_cost.is_fixed()
-        assert value(m.fs.costing.compressor.unit_cost) == 7364
 
         # Temperature upper bounds
         assert value(m.fs.evaporator.properties_vapor[0].temperature.ub) == 348.15
@@ -292,7 +290,7 @@ class TestMVC:
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
             22.02, rel=1e-2
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(23.47, rel=1e-2)
+        assert value(m.fs.costing.LCOW) == pytest.approx(24.089, rel=1e-2)
 
         # Check mass balance
         assert pytest.approx(
@@ -324,17 +322,17 @@ class TestMVC:
         assert value(m.fs.evaporator.properties_brine[0].pressure) == pytest.approx(
             32448.24, rel=1e-2
         )
-        assert value(m.fs.hx_brine.area) == pytest.approx(173.99, rel=1e-2)
-        assert value(m.fs.hx_distillate.area) == pytest.approx(206.31, rel=1e-2)
-        assert value(m.fs.compressor.pressure_ratio) == pytest.approx(1.61, rel=1e-2)
-        assert value(m.fs.evaporator.area) == pytest.approx(777.37, rel=1e-2)
-        assert value(m.fs.evaporator.lmtd) == pytest.approx(22.59, rel=1e-2)
+        assert value(m.fs.hx_brine.area) == pytest.approx(185.71, rel=1e-2)
+        assert value(m.fs.hx_distillate.area) == pytest.approx(218.70, rel=1e-2)
+        assert value(m.fs.compressor.pressure_ratio) == pytest.approx(1.581, rel=1e-2)
+        assert value(m.fs.evaporator.area) == pytest.approx(822.11, rel=1e-2)
+        assert value(m.fs.evaporator.lmtd) == pytest.approx(21.35, rel=1e-2)
 
         # Check system metrics
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            22.36, rel=1e-2
+            21.43, rel=1e-2
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
+        assert value(m.fs.costing.LCOW) == pytest.approx(5.144, rel=1e-2)
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.unit

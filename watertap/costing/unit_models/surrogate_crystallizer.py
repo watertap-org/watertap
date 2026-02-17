@@ -17,6 +17,17 @@ from watertap.costing.util import (
 )
 
 
+def build_steam_cost_param_block(blk):
+
+    blk.cost = pyo.Var(
+        initialize=0.004,
+        units=pyo.units.USD_2018 / pyo.units.m**3,
+        doc="Steam cost per m^3",
+    )
+
+    blk.parent_block().register_flow_type("steam", blk.cost)
+
+
 def build_surrogate_crystallizer_cost_param_block(blk):
 
     blk.steam_pressure = pyo.Var(
@@ -62,15 +73,6 @@ def build_surrogate_crystallizer_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    blk.steam_cost = pyo.Var(
-        initialize=0.004,
-        units=pyo.units.USD_2018 / (pyo.units.meter**3),
-        doc="Steam cost, Panagopoulos (2019)",
-    )
-
-    costing = blk.parent_block()
-    costing.register_flow_type("steam", blk.steam_cost)
-
 
 def cost_surrogate_crystallizer(blk):
     """
@@ -90,6 +92,10 @@ def _cost_crystallizer_flows(blk):
     )
 
 
+@register_costing_parameter_block(
+    build_rule=build_steam_cost_param_block,
+    parameter_block_name="steam",
+)
 @register_costing_parameter_block(
     build_rule=build_surrogate_crystallizer_cost_param_block,
     parameter_block_name="surrogate_crystallizer",
