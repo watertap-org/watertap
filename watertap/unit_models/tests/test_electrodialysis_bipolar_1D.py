@@ -44,7 +44,6 @@ from watertap.unit_models.electrodialysis_bipolar_1D import (
 from watertap.core.solvers import get_solver
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
-
 __author__ = "Johnson Dhanasekaran"
 
 solver = get_solver()

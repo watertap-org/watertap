@@ -1020,7 +1020,7 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
 
         # TODO: update IDAES control volume to scale mass_transfer and enthalpy_transfer
         for ind, v in self.control_volume.mass_transfer_term.items():
-            (t, p, j) = ind
+            t, p, j = ind
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
                     self.control_volume.mass_transfer_term[t, p, j]
@@ -1062,29 +1062,29 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_outlet_conc.items():
-            (t, p, j) = ind
+            t, p, j = ind
             sf = iscale.get_scaling_factor(
                 self.control_volume.mass_transfer_term[t, p, j]
             )
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_electricity_demand_phase_comp.items():
-            (t, p, j) = ind
+            t, p, j = ind
             sf = iscale.get_scaling_factor(self.electricity_demand_phase_comp[t, p, j])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_max_phase_electricity_demand.items():
-            (t, p, j) = ind
+            t, p, j = ind
             sf = iscale.get_scaling_factor(self.max_phase_electricity_demand[t, p, j])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_electricity_demand_comp.items():
-            (t, j) = ind
+            t, j = ind
             sf = iscale.get_scaling_factor(self.electricity_demand_comp[t, j])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_max_electricity_demand.items():
-            (t, j) = ind
+            t, j = ind
             sf = iscale.get_scaling_factor(self.max_component_electricity_demand[t, j])
             iscale.constraint_scaling_transform(c, sf)
 

@@ -12,6 +12,7 @@
 """
 This module contains utility functions for infeasibility diagnostics of WaterTAP models.
 """
+
 import logging, sys
 
 from contextlib import contextmanager

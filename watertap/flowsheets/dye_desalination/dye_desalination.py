@@ -18,6 +18,7 @@ Journal of Chemical and Pharmaceutical Research, pp. 710-717
 Adsorption of Congo Red by Activated Carbon", 2014, Korean Chemical Engineering Research,
 Vol. 53 Iss. 1, pp. 64-70
 """
+
 import os
 import idaes.logger as idaeslog
 from pyomo.environ import (

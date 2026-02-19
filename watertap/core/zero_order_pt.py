@@ -14,6 +14,7 @@ This module contains the methods for constructing the material balances for
 zero-order pass-through unit models (i.e. units with a single inlet and single
 outlet where flow and composition do not change, such as pumps).
 """
+
 from types import MethodType
 from pyomo.environ import check_optimal_termination
 

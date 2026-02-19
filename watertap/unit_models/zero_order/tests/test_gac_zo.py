@@ -12,6 +12,7 @@
 """
 Tests for zero-order granular activated carbon model
 """
+
 import pytest
 
 

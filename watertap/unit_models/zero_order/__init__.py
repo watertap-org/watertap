@@ -80,7 +80,6 @@ from .injection_well_disposal_zo import InjectionWellDisposalZO
 from .surface_discharge_zo import SurfaceDischargeZO
 from .electrocoagulation_zo import ElectrocoagulationZO
 
-
 # =========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 

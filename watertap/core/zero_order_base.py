@@ -22,7 +22,6 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
 
-
 # Some more information about this module
 __author__ = "Andrew Lee, Adam Atia"
 
