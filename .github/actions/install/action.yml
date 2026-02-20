@@ -1,0 +1,95 @@
+name: Install WaterTAP
+description: Install WaterTAP and all required dependencies
+
+inputs:
+
+  variant:
+    description: "Which installation variant to use. Choices: standard (default); dev"
+    required: false
+    default: standard
+
+  python-version:
+    description: "Python version to use for installation"
+    required: true
+
+  info-packages:
+    description: Packages to show info for
+    required: false
+    default: watertap idaes-pse pyomo
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Validate Action inputs
+      if: "!((inputs.variant == 'standard') || (inputs.variant == 'dev'))"
+      shell: bash -l {0}
+      run: |
+        echo "Unsupported variant '${{ inputs.variant }}'"
+        exit 1
+
+    - name: Check out repository
+      if: inputs.variant == 'dev'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Conda environment (dev)
+      if: inputs.variant == 'dev'
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        environment-file: environment-dev.yml
+        activate-environment: watertap-dev
+        conda-remove-defaults: 'true'
+        miniforge-version: latest
+
+    - name: Install using pip (requirements-dev.txt)
+      if: inputs.variant == 'dev'
+      shell: bash -l {0}
+      run: |
+        pip install --progress-bar off -r requirements-dev.txt
+
+    - name: Ensure local directory is empty
+      if: inputs.variant == 'standard'
+      shell: bash -l {0}
+      run: |
+        rm -rf *
+        ls -ltrh .
+
+    - name: Set up Python (standard)
+      if: inputs.variant == 'standard'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install using pip (git+... URL)
+      if: inputs.variant == 'standard'
+      shell: bash -l {0}
+      env:
+        PIP_PROGRESS_BAR: 'off'
+        _pip_install_url: ${{ github.server_url }}/${{ github.repository }}@${{ github.ref }}
+      run: |
+        pip install "git+$_pip_install_url"
+
+    - name: Install extensions
+      shell: bash -l {0}
+      run: |
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose --extra petsc
+        echo '::endgroup::'
+
+    - name: Display environment info (dev)
+      if: inputs.variant == 'dev'
+      shell: bash -l {0}
+      run: |
+        conda env export --no-builds
+
+    - name: Display environment info
+      shell: bash -l {0}
+      run: |
+        echo '::group::Output of "pip list"'
+        pip list
+        echo '::endgroup::'
+        echo '::group::Output of "pip show ${{ inputs.info-packages }}"'
+        pip show ${{ inputs.info-packages }}
+        echo '::endgroup::'

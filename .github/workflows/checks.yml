@@ -53,25 +53,8 @@ jobs:
         run: |
           black --check .
 
-  pylint:
-    name: Code linting (pylint)
-    runs-on: ubuntu-latest
-    needs: [code-formatting]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dev dependencies
-        run: |
-          pip install -r requirements-dev.txt
-          pip list
-      - name: Run pylint
-        run: |
-          pylint watertap
-
-  tests:
-    name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
+  dev-env-tests:
+    name: Dev env tests (${{ matrix.target }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     needs: [code-formatting]
     strategy:
@@ -91,52 +74,33 @@ jobs:
             os-version: windows-2022
           # - os: macos
           #   os-version: macos-10.15
-          - python-version: '3.10'
-            # limit uploading coverage report for a single Python version in the matrix
-            coverage: true
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: conda-incubator/setup-miniconda@v3
+    - name: Set up WaterTAP dev environment
+      uses: ./.github/actions/install
       with:
-        activate-environment: watertap-dev
-        python-version: ${{ matrix.python-version }}
-        miniforge-version: latest
-    - name: Install dependencies
+        variant: dev
+
+    - name: Pylint
+      if: matrix.target == 'pylint'
       run: |
-        echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip setuptools wheel pandoc
-        echo '::endgroup::'
-        echo '::group::Output of "pip install" commands'
-        pip install -r requirements-dev.txt
-        echo '::endgroup::'
-        echo '::group::Output of "conda install -c conda-forge cyipopt" command'
-        conda install -c conda-forge cyipopt
-        echo '::endgroup::'
-        echo '::group::Display installed packages'
-        conda list
-        pip list
-        pip show idaes-pse
-        echo '::endgroup::'
-        echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
-        echo '::endgroup::'
-    - name: Add coverage report pytest options
-      if: matrix.coverage
-      run:
-        |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> $GITHUB_ENV
+        pylint watertap
+
     - name: Test with pytest
+      if: matrix.target == 'pytest'
       run: |
+        export PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml"
         pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets
     - name: Upload coverage report as job artifact
-      if: matrix.coverage
+      if: matrix.target == 'pytest'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report-${{ matrix.os }}
         path: coverage.xml
         if-no-files-found: error
+
     - name: Test documentation code
+      if: matrix.target == 'docs'
       run: |
         make -C docs doctest -d
     # TODO: this should be moved to a dedicated job/workflow
@@ -146,9 +110,21 @@ jobs:
       run: |
         make -C docs linkcheck -d
 
+    - name: Install Jupyter kernel
+      if: matrix.target == 'notebooks'
+      run: |
+        jupyter kernelspec list
+        python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
+        jupyter kernelspec list
+
+    - name: Run pytest with nbmake
+      if: matrix.target == 'notebooks'
+      run: |
+        pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
+
   upload-coverage:
     name: Upload coverage report (Codecov)
-    needs: [tests]
+    needs: [dev-env-tests]
     runs-on: ubuntu-latest
     steps:
       # the checkout step is needed to have access to codecov.yml
@@ -231,6 +207,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        target:
+          - pytest
+          # - notebooks  # testing notebooks needs more setup since the notebooks need to be downloaded separately
         python-version:
           - '3.10'
           - '3.11'
