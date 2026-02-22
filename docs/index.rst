@@ -8,6 +8,9 @@ WaterTAP is a National Alliance for Water Innovation (NAWI) funded initiative to
 that is compatible with the IDAES Platform, an advanced process systems engineering tool developed by the U.S. Department of Energy.
 Refer :ref:`here<background/what_is_watertap:What is WaterTAP>` for more background information.
 
+For more information on the IDAES platform and related projects, now called *IDAES+*,
+see the `IDAES+ web pages <https://idaesplus.readthedocs.io/latest/>`_.   
+
 Collaborating Institutions
 --------------------------
 
@@ -50,6 +53,7 @@ Content
    background/index
    license
    copyright
+   
 
 Indices and tables
 ------------------

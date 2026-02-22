@@ -21,6 +21,9 @@ This platform provides significant benefits over traditional modeling approaches
 open-source and commercial solvers, libraries of process units and property packages, and a diverse set of analysis tools,
 all within a single fully-featured programming language (Python).
 
+For more information on the IDAES platform and related projects, now called *IDAES+*,
+see the `IDAES+ web pages <https://idaesplus.readthedocs.io/latest/>`_.
+
 Advantages
 ^^^^^^^^^^
 
