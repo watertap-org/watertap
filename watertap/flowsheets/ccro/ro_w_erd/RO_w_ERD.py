@@ -14,7 +14,15 @@ from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
-from idaes.models.unit_models import Mixer, Separator, Product, Feed, StateJunction, Mixer, Separator
+from idaes.models.unit_models import (
+    Mixer,
+    Separator,
+    Product,
+    Feed,
+    StateJunction,
+    Mixer,
+    Separator,
+)
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
@@ -22,7 +30,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
 from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
-# from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
+from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -43,6 +51,7 @@ from watertap.core.util.model_diagnostics.infeasible import *
 
 
 solver = get_solver()
+
 
 def calculate_operating_pressure(
     feed_state_block=None,
@@ -91,10 +100,11 @@ def calculate_operating_pressure(
 
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
+
 def build_model():
+
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    # m.fs.erd_type = erd_type
     m.fs.properties = NaClParameterBlock()
 
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -130,6 +140,7 @@ def build_model():
     print(f"Degrees of freedom: {degrees_of_freedom(m)}")
 
     return m
+
 
 def scale_model(m):
     m.fs.properties.set_default_scaling(
@@ -167,19 +178,19 @@ def scale_model(m):
 
 
 def set_operating_conditions(m):
-    
+
     # FEED
-    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix(273.15 + 20)  # feed temperature [K]
+    m.fs.feed.properties[0].pressure.fix(101325)
+    m.fs.feed.properties[0].temperature.fix(273.15 + 20)
     # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(0.965)
     # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(0.035)
 
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("flow_vol_phase", "Liq"): flow_vol,  # feed volumetric flow rate [m3/s]
+            ("flow_vol_phase", "Liq"): flow_vol,
             ("mass_frac_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
-        },  # feed NaCl mass fraction [-]
-        hold_state=True,  # fixes the calculated component mass flow rates
+        },
+        hold_state=True,
     )
 
     ###################################
@@ -198,17 +209,15 @@ def set_operating_conditions(m):
     ###################################
     # RO
 
-    m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
-    m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
-    m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.85)  # spacer porosity in membrane stage [-]
-    m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    m.fs.RO.width.fix(5)  # stage width [m]
+    m.fs.RO.A_comp.fix(4.2e-12)
+    m.fs.RO.B_comp.fix(3.5e-8)
+    m.fs.RO.feed_side.channel_height.fix(1e-3)
+    m.fs.RO.feed_side.spacer_porosity.fix(0.85)
+    m.fs.RO.permeate.pressure[0].fix(101325)
+    m.fs.RO.width.fix(5)
     # m.fs.RO.length.fix(5)
-    # initialize RO
 
-
-    m.fs.RO.area.fix(60)  # guess area for RO initialization
+    m.fs.RO.area.fix(60)
 
     ###################################
     # ERD
@@ -216,8 +225,9 @@ def set_operating_conditions(m):
     m.fs.ERD.efficiency_pump.fix(0.95)
     m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
 
+
 def init_model(m):
-        
+
     m.fs.RO.feed_side.properties[0, :].flow_mass_phase_comp["Liq", "H2O"] = value(
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
     )
@@ -246,7 +256,7 @@ def init_model(m):
 
     m.fs.ERD.initialize()
     propagate_state(m.fs.ERD_to_disposal)
-    
+
     m.fs.disposal.initialize()
 
     propagate_state(m.fs.RO_to_product)
@@ -255,6 +265,7 @@ def init_model(m):
     print(f"Degrees of freedom: {degrees_of_freedom(m)}")
 
     m.fs.RO.area.fix()
+
 
 if __name__ == "__main__":
     flow_vol = 1e-3
