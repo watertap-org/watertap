@@ -101,9 +101,17 @@ def calculate_operating_pressure(
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
-def build_model():
+def build_model(
+    flow_vol=1e-3, salt_mass_frac=35e-3, water_recovery=0.5, over_pressure=0.3
+):
 
     m = ConcreteModel()
+
+    m.flow_vol = flow_vol
+    m.salt_mass_frac = salt_mass_frac
+    m.water_recovery = water_recovery
+    m.over_pressure = over_pressure
+
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = NaClParameterBlock()
 
@@ -144,10 +152,12 @@ def build_model():
 
 def scale_model(m):
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")
+        "flow_mass_phase_comp", 1000 * m.flow_vol, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e-3 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
+        "flow_mass_phase_comp",
+        1e-3 / m.flow_vol / m.salt_mass_frac,
+        index=("Liq", "NaCl"),
     )
 
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
@@ -187,8 +197,8 @@ def set_operating_conditions(m):
 
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("flow_vol_phase", "Liq"): flow_vol,
-            ("mass_frac_phase_comp", ("Liq", "NaCl")): salt_mass_conc,
+            ("flow_vol_phase", "Liq"): m.flow_vol,
+            ("mass_frac_phase_comp", ("Liq", "NaCl")): m.salt_mass_frac,
         },
         hold_state=True,
     )
@@ -197,8 +207,8 @@ def set_operating_conditions(m):
     # PUMP 1
     operating_pressure = calculate_operating_pressure(
         feed_state_block=m.fs.feed.properties[0],
-        over_pressure=over_pressure,
-        water_recovery=water_recovery,
+        over_pressure=m.over_pressure,
+        water_recovery=m.water_recovery,
         NaCl_passage=0.01,
         solver=solver,
     )
@@ -242,7 +252,7 @@ def init_model(m):
     )
     m.fs.RO.initialize()
     m.fs.RO.area.unfix()
-    m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
+    m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(m.water_recovery)
     m.fs.RO.initialize()
 
     m.fs.feed.initialize()
@@ -269,11 +279,16 @@ def init_model(m):
 
 if __name__ == "__main__":
     flow_vol = 1e-3
-    salt_mass_conc = 35e-3
+    salt_mass_frac = 35e-3
     water_recovery = 0.5
     over_pressure = 0.3
 
-    m = build_model()
+    m = build_model(
+        flow_vol=flow_vol,
+        salt_mass_frac=salt_mass_frac,
+        water_recovery=water_recovery,
+        over_pressure=over_pressure,
+    )
     scale_model(m)
     set_operating_conditions(m)
     init_model(m)
