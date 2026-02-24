@@ -76,7 +76,16 @@ def scale_multiperiod_model(mp):
     iscale.constraint_scaling_transform(mp.total_cycle_time_constraint, 1e-3)
     iscale.constraint_scaling_transform(mp.final_concentration_constraint, 1e-1)
     iscale.constraint_scaling_transform(mp.global_dead_volume_constraint, 1e2)
-
+    for c in mp.equal_recycle_rate.values():
+        iscale.constraint_scaling_transform(c, 1e2)
+    for c in mp.equal_ro_volume_constraint.values():
+        iscale.constraint_scaling_transform(c, 1e2)
+    for c in mp.cycle_end_density_constraint.values():
+        iscale.constraint_scaling_transform(c, 1)
+    for c in mp.ro_cycle_end_density_constraint.values():
+        iscale.constraint_scaling_transform(c, 1)
+    for c in mp.ro_cycle_end_mass_frac_constraint.values():
+        iscale.constraint_scaling_transform(c, 1)
     for c in mp.ro_membrane_area_constraint.values():
         iscale.constraint_scaling_transform(c, 1e-1)
     for c in mp.ro_membrane_length_constraint.values():

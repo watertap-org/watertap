@@ -1,6 +1,6 @@
 import os
 from parameter_sweep.loop_tool.loop_tool import loopTool, get_working_dir
-import watertap.flowsheets.ccro.analysis_scripts.flush_setup as psro
+import watertap.flowsheets.ccro.analysis_scripts.legacy.flush_setup as psro
 from pathlib import Path
 
 

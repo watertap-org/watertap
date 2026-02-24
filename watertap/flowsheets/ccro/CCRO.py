@@ -397,6 +397,7 @@ def solve(
     tee=True,
     raise_on_failure=True,
     use_ipoptv2=False,
+    max_iter=3000,
 ):
     # ---solving---
     if solver is None and use_ipoptv2 == False:
@@ -412,7 +413,7 @@ def solve(
         #         iscale.set_scaling_factor(constraint, sc)
         # else:
         #     print(f"Constraint: {constraint.name}, No scaling factor found")
-
+    solver.options["max_iter"] = max_iter
     print("\n--------- SOLVING ---------\n")
     print(f"Degrees of Freedom: {degrees_of_freedom(model)}")
     results = solver.solve(model, tee=tee)
@@ -440,7 +441,12 @@ def solve(
 
 
 def setup_optimization(
-    mp, overall_water_recovery=0.5, max_cycle_time_hr=1, recycle_flow_bounds=(0.1, 20)
+    mp,
+    overall_water_recovery=0.5,
+    max_cycle_time_hr=1,
+    recycle_flow_bounds=(0.1, 20),
+    min_accumulation_time=1,
+    min_flushing_time=10 * pyunits.seconds,
 ):
     """
     Setup the multiperiod model for optimization.
@@ -454,6 +460,7 @@ def setup_optimization(
     mp.equal_delta_dead_volume_constraint.activate()
     mp.ro_membrane_area_constraint.activate()
     mp.ro_membrane_length_constraint.activate()
+    mp.total_cycle_time.setlb(1 * pyunits.minute)
     mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
     # mp.total_cycle_time.setlb(0.98 * max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
@@ -462,9 +469,9 @@ def setup_optimization(
         if m.fs.find_component("RO") is not None:
             m.fs.RO.length.unfix()
             m.fs.RO.width.unfix()
-            m.fs.RO.length.setlb(0.1)
-            m.fs.RO.width.setlb(0.1)
-            m.fs.RO.area.setlb(50)
+            m.fs.RO.length.setlb(0.1 * pyunits.meter)
+            m.fs.RO.width.setlb(0.1 * pyunits.meter)
+            m.fs.RO.area.setlb(50 * pyunits.meter**2)
             m.fs.RO.area.unfix()
             m.fs.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(
                 0.001 * pyunits.kg / pyunits.m**2 / pyunits.hr
@@ -476,6 +483,9 @@ def setup_optimization(
                 for i in m.fs.RO.difference_elements:
                     m.fs.RO.feed_side.volume.unfix()
                     m.fs.RO.feed_side.accumulation_time.unfix()
+                    m.fs.RO.feed_side.accumulation_time.setlb(
+                        min_accumulation_time * pyunits.seconds
+                    )
                     # should be redundunt
                     m.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
                         0, i, "Liq", "NaCl"
@@ -486,6 +496,9 @@ def setup_optimization(
         m.fs.dead_volume.volume.unfix()
         m.fs.dead_volume.delta_state.volume[0, "Liq"].unfix()
         m.fs.dead_volume.accumulation_time[0].unfix()
+        m.fs.dead_volume.accumulation_time.setlb(
+            min_accumulation_time * pyunits.seconds
+        )
         if m.fs.operation_mode == "filtration":
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
@@ -513,10 +526,13 @@ def setup_optimization(
             m.fs.flushing.flushing_efficiency.unfix()
             m.fs.flushing.flushing_efficiency.setub(0.95)
             m.fs.flushing.flushing_efficiency.setlb(0.1)
+
+            m.fs.flushing.flushing_time.setlb(min_flushing_time)
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
         mp.flushing.flushing_efficiency.setub(0.95)
         mp.flushing.flushing_efficiency.setlb(0.25)
+        mp.flushing.flushing_time.setlb(min_flushing_time)
     if mp.find_component("conduit") is not None:
         mp.conduit.volume.unfix()
     if mp.include_costing:
@@ -576,7 +592,7 @@ def fix_optimization_dofs(
     else:
         blkfs.fs.flushing.flushing_efficiency.unfix()
         blkfs.fs.flushing.flushing_efficiency.setub(0.95)
-        blkfs.fs.flushing.flushing_efficiency.setlb(0.25)
+        blkfs.fs.flushing.flushing_efficiency.setlb(0.001)
     if add_initial_pressure_objective:
         mp.min_initial_pressure = Objective(
             expr=(
@@ -595,43 +611,30 @@ def fix_optimization_dofs(
 def print_results_table(mp, w=15):
     """
     Print multiperiod CCRO results in a tabular format in the terminal.
-    w = column width
+    w = column width (kept for backward compatibility but no longer used)
     """
-    n = 13  # number of columns
-    title = "CCRO MULTIPERIOD RESULTS"
-    side = int(((n * w) - len(title)) / 2) - 1
-    header = "=" * side + f" {title} " + "=" * side
-    print(f"\n{header}\n")
-    # print("\n" + "=" * 120)
-    # print("CCRO MULTIPERIOD RESULTS")
-    print(f"{'-' * (n * w)}")
+    from watertap.flowsheets.ccro.utils.utils import print_table
 
-    # Header
-    print(
-        f"{'Period':<{w}s}{'Acc Time':<{w}s}{'Raw Feed':<{w}s}{'Permeate':<{w}s}{'Raw Feed':<{w}s}{'Permeate':<{w}s}{'SP Recovery':<{w}s}{'P1':<{w}s}{'P2':<{w}s}{'RO In':<{w}s}{'RO In':<{w}s}{'Dead Vol In':<{w}s}{'Dead Vol In':<{w}s}{'Dead Vol In':<{w}s}{'Delta State':<{w}s}{'Dead Vol':<{w}s}{'Dead dens delta':<{w}s}{'Dead dens in':<{w}s}{'Dead dens out':<{w}s}"
-    )
-    print(
-        f"{'':<{w}s}{'(s)':<{w}s}{'(L/min)':<{w}s}{'(L/min)':<{w}s}{'(kg/min)':<{w}s}{'(kg/min)':<{w}s}{'(%)':<{w}s}{'(kW)':<{w}s}{'(kW)':<{w}s}{'(Pa)':<{w}s}{'(Psi)':<{w}s}{'(L/min)':<{w}s}{'(kg/min)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m³)':<{w}s}{'(kg/m3)':<{w}s}{'(kg/m3)':<{w}s}{'(kg/m3)':<{w}s}"
-    )
-    print(f"{'-' * (n * w)}")
-
-    # Data rows
+    # ── Build the per-period data dict ──────────────────────────────
+    period_data = {}
     for t, blks in enumerate(mp.get_active_process_blocks(), 1):
-        # if t == len(blks):
-        if blks.fs.operation_mode == "flushing":
-            accumulation_time = blks.fs.flushing.flushing_time.value
-        else:
-            accumulation_time = blks.fs.dead_volume.accumulation_time[0].value
+        row = {}
 
-        raw_feed = pyunits.convert(
+        # Accumulation / flushing time
+        if blks.fs.operation_mode == "flushing":
+            row["Acc Time (s)"] = blks.fs.flushing.flushing_time.value
+        else:
+            row["Acc Time (s)"] = blks.fs.dead_volume.accumulation_time[0].value
+
+        # Raw feed volume flow
+        row["Raw Feed (L/s)"] = pyunits.convert(
             blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
             to_units=pyunits.L / pyunits.s,
         )()
-        if (
-            blks.fs.operation_mode == "filtration"
-            or blks.fs.operation_mode == "flushing_with_filtration"
-        ):
-            raw_feed_mass = sum(
+
+        # Raw feed mass flow
+        if blks.fs.operation_mode in ("filtration", "flushing_with_filtration"):
+            row["Raw Feed (kg/s)"] = sum(
                 pyunits.convert(
                     blks.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp[
                         "Liq", comp
@@ -641,13 +644,15 @@ def print_results_table(mp, w=15):
                 for comp in blks.fs.properties.component_list
             )
         else:
-            raw_feed_mass = 0
+            row["Raw Feed (kg/s)"] = 0
+
+        # Permeate
         if blks.fs.find_component("product") is not None:
-            permeate = pyunits.convert(
+            row["Permeate (L/min)"] = pyunits.convert(
                 blks.fs.product.properties[0].flow_vol_phase["Liq"],
                 to_units=pyunits.L / pyunits.min,
             )()
-            permeate_mass = sum(
+            row["Permeate (kg/min)"] = sum(
                 pyunits.convert(
                     blks.fs.product.properties[0].flow_mass_phase_comp["Liq", comp],
                     to_units=pyunits.kg / pyunits.min,
@@ -655,43 +660,33 @@ def print_results_table(mp, w=15):
                 for comp in blks.fs.properties.component_list
             )
         else:
-            permeate_mass = 0
-            permeate = 0
-        if (
-            blks.fs.operation_mode == "filtration"
-            or blks.fs.operation_mode == "flushing_with_filtration"
-        ):
+            row["Permeate (L/min)"] = 0
+            row["Permeate (kg/min)"] = 0
 
-            p2_out = value(
-                pyunits.convert(blks.fs.P2.work_mechanical[0], to_units=pyunits.kW)
-            )
-            p1_out = value(
+        # Filtration-specific values
+        if blks.fs.operation_mode in ("filtration", "flushing_with_filtration"):
+            row["SP Recovery (%)"] = blks.fs.RO.recovery_vol_phase[0.0, "Liq"].value
+            row["P1 (kW)"] = value(
                 pyunits.convert(blks.fs.P1.work_mechanical[0], to_units=pyunits.kW)
             )
-            ro_pressure = blks.fs.M1.mixed_state[0].pressure.value
-            ro_pressure_psi = value(
+            row["P2 (kW)"] = value(
+                pyunits.convert(blks.fs.P2.work_mechanical[0], to_units=pyunits.kW)
+            )
+            row["RO In (Psi)"] = value(
                 pyunits.convert(
                     blks.fs.M1.mixed_state[0].pressure, to_units=pyunits.psi
                 )
             )
-            sp_recovery = blks.fs.RO.recovery_vol_phase[0.0, "Liq"].value
+        elif blks.fs.operation_mode == "flushing":
+            row["SP Recovery (%)"] = 0
+            row["RO In (Pa)"] = 0
 
-        if blks.fs.operation_mode == "flushing":
-
-            mixer_out = value(
-                pyunits.convert(
-                    blks.fs.raw_feed.properties[0].flow_vol_phase["Liq"],
-                    to_units=pyunits.L / pyunits.min,
-                )
-            )
-            sp_recovery = 0
-            ro_pressure = 0
-
-        dead_vol_in = pyunits.convert(
+        # Dead volume
+        row["Dead Vol In (L/min)"] = pyunits.convert(
             blks.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase["Liq"],
             to_units=pyunits.L / pyunits.min,
         )()
-        dead_vol_mass = sum(
+        row["Dead Vol In (kg/min)"] = sum(
             pyunits.convert(
                 blks.fs.dead_volume.dead_volume.properties_in[0].flow_mass_phase_comp[
                     "Liq", comp
@@ -700,123 +695,168 @@ def print_results_table(mp, w=15):
             )()
             for comp in blks.fs.properties.component_list
         )
-        dead_vol_in_conc = (
+        row["Dead Vol In (kg/m3)"] = (
             blks.fs.dead_volume.dead_volume.properties_in[0]
             .conc_mass_phase_comp["Liq", "NaCl"]
             .value
         )
-        dead_vol_dense_in = (
+        row["Dead dens in (kg/m3)"] = (
             blks.fs.dead_volume.dead_volume.properties_in[0]
             .dens_mass_phase["Liq"]
             .value
         )
-        dead_vol_dense_out = (
+        row["Dead dens out (kg/m3)"] = (
             blks.fs.dead_volume.dead_volume.properties_out[0]
             .dens_mass_phase["Liq"]
             .value
         )
-        dead_vol_dense_delta = blks.fs.dead_volume.delta_state.dens_mass_phase[
-            0, "Liq"
-        ].value
-        delta_state_conc = blks.fs.dead_volume.delta_state.conc_mass_phase_comp[
-            "Liq", "NaCl"
-        ]()
-        dead_vol_out_conc = (
+        row["Dead dens delta (kg/m3)"] = (
+            blks.fs.dead_volume.delta_state.dens_mass_phase[0, "Liq"].value
+        )
+        row["Delta State (kg/m3)"] = (
+            blks.fs.dead_volume.delta_state.conc_mass_phase_comp["Liq", "NaCl"]()
+        )
+        row["Dead Vol Out (kg/m3)"] = (
             blks.fs.dead_volume.dead_volume.properties_out[0]
             .conc_mass_phase_comp["Liq", "NaCl"]
             .value
         )
 
-        print(
-            f"{t:<{w}d}{accumulation_time:<{w}.2f}{raw_feed:<{w}.6f}{permeate:<{w}.6f}{raw_feed_mass:<{w}.6f}{permeate_mass:<{w}.6f}{sp_recovery:<{w}.6f}{p1_out:<{w}.6f}{p2_out:<{w}.6f}{ro_pressure:<{w}.2f}{ro_pressure_psi:<{w}.2f}{dead_vol_in:<{w}.6f}{dead_vol_mass:<{w}.6f}{dead_vol_in_conc:<{w}.6f}{delta_state_conc:<{w}.6f}{dead_vol_out_conc:<{w}.6f}{dead_vol_dense_delta:<{w}.6f}{dead_vol_dense_in:<{w}.6f}{dead_vol_dense_out:<{w}.6f}"
-        )
+        period_data[t] = row
 
-    print(f"{'=' * (n * w)}")
-    w = w * 2
+    # ── Print the period table ──────────────────────────────────────
+    print_table(period_data, title="CCRO MULTIPERIOD RESULTS", index_header="Period")
 
-    print(
-        f"{'Total cycle time (s):':<{w}s}",
-        mp.total_cycle_time.value,
-    )
+    # ── Summary metrics ─────────────────────────────────────────────
+    summary = {}
+    summary["Total cycle time (s)"] = mp.total_cycle_time.value
+
     if mp.flushing_points > 1:
         flushing_block = mp.flushing
     else:
         flushing_block = mp.get_active_process_blocks()[-1].fs.flushing
-    print(
-        f"{'Mean residence time (s):':<{w}s}",
-        flushing_block.mean_residence_time.value,
-    )
-    print(
-        f"{'Flushing time (s):':<{w}s}",
-        flushing_block.flushing_time.value,
-    )
-    print(
-        f"{'Flushing efficiency:':<{w}s}",
-        flushing_block.flushing_efficiency.value,
-    )
-    print(
-        f"{'Pre-flushing conc (kg/m3):':<{w}s}",
-        flushing_block.pre_flushing_concentration.value,
-    )
-    print(
-        f"{'Post-flushing conc (kg/m3):':<{w}s}",
-        flushing_block.post_flushing_concentration.value,
-    )
 
-    print(f"\n{'Overall recovery:':<{w}s}", mp.overall_recovery.value)
-    print(f"{'Total feed (m3):':<{w}s}", mp.total_feed.value)
-    print(f"{'Total permeate (m3):':<{w}s}", mp.total_permeate.value)
-
-    print(
-        f"{'Density at start of cycle:':<{w}s}",
+    summary["Mean residence time (s)"] = flushing_block.mean_residence_time.value
+    summary["Flushing time (s)"] = flushing_block.flushing_time.value
+    summary["Flushing efficiency"] = flushing_block.flushing_efficiency.value
+    summary["Effective flushing conc (kg/m3)"] = (
+        flushing_block.flushing_feed_concentration.value
+    )
+    summary["Pre-flushing conc (kg/m3)"] = (
+        flushing_block.pre_flushing_concentration.value
+    )
+    summary["Post-flushing conc (kg/m3)"] = (
+        flushing_block.post_flushing_concentration.value
+    )
+    summary["Overall recovery"] = mp.overall_recovery.value
+    summary["Total feed (m3)"] = mp.total_feed.value
+    summary["Total permeate (m3)"] = mp.total_permeate.value
+    summary["Density at start of cycle"] = (
         mp.get_active_process_blocks()[0]
         .fs.dead_volume.dead_volume.properties_out[0]
         .dens_mass_phase["Liq"]
-        .value,
+        .value
     )
-    print(
-        f"{'Density at the end of flushing:':<{w}s}",
+    summary["Density at end of flushing"] = (
         mp.get_active_process_blocks()[-1]
         .fs.dead_volume.dead_volume.properties_out[0]
         .dens_mass_phase["Liq"]
-        .value,
-    )
-    if mp.get_active_process_blocks()[0].fs.ro_model_with_hold_up:
-        print(
-            f"{'Total Hold-up Volume:':<{w}s}",
-            mp.get_active_process_blocks()[0].fs.RO.feed_side.volume.value
-            + mp.get_active_process_blocks()[0].fs.dead_volume.volume[0, "Liq"].value,
-        )
-        print(
-            f"{'RO Hold-up Volume:':<{w}s}",
-            mp.get_active_process_blocks()[0].fs.RO.feed_side.volume.value,
-        )
-    print(
-        f"{'Dead Volume:':<{w}s}",
-        mp.get_active_process_blocks()[0].fs.dead_volume.volume[0, "Liq"].value,
+        .value
     )
 
-    print(
-        f"{'Membrane Area:':<{w}s}", mp.get_active_process_blocks()[0].fs.RO.area.value
-    )
-    print(
-        f"{'Membrane Length:':<{w}s}",
-        mp.get_active_process_blocks()[0].fs.RO.length.value,
-    )
+    first_blk = mp.get_active_process_blocks()[0]
+    if first_blk.fs.ro_model_with_hold_up:
+        summary["Total Hold-up Volume"] = (
+            first_blk.fs.RO.feed_side.volume.value
+            + first_blk.fs.dead_volume.volume[0, "Liq"].value
+        )
+        summary["RO Hold-up Volume"] = first_blk.fs.RO.feed_side.volume.value
 
-    print(
-        f"{'Membrane Width:':<{w}s}",
-        mp.get_active_process_blocks()[0].fs.RO.width.value,
-    )
-    print(
-        f"{'RO Inlet Velocity:':<{w}s}",
-        mp.get_active_process_blocks()[0].fs.RO.feed_side.velocity[0, 0].value,
-    )
+    summary["Dead Volume"] = first_blk.fs.dead_volume.volume[0, "Liq"].value
+    summary["Membrane Area"] = first_blk.fs.RO.area.value
+    if mp.find_component("total_flush_volume") is not None:
+        summary["Total Flush Volume"] = mp.total_flush_volume.value
+    summary["Membrane Length"] = first_blk.fs.RO.length.value
+    summary["Membrane Width"] = first_blk.fs.RO.width.value
+    summary["RO Inlet Velocity"] = first_blk.fs.RO.feed_side.velocity[0, 0].value
     if mp.find_component("costing"):
-        print(
-            f"{'Levelized Cost of Water ($/m3):':<{w}s}",
-            value(mp.costing.LCOW),
-        )
+        summary["LCOW ($/m3)"] = value(mp.costing.LCOW)
+
+    print_table({"Value": summary}, title="SUMMARY", index_header="Metric")
+
+    # ── Per-block RO / pump detail ──────────────────────────────────
+    detail_data = {}
+    for m in mp.get_active_process_blocks():
+        row = {}
+        if m.fs.find_component("P1") is not None:
+            row["P1 flow (m3/s)"] = value(
+                pyunits.convert(
+                    m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"],
+                    to_units=pyunits.L / pyunits.min,
+                )
+            )
+            row["P2 flow (m3/s)"] = value(
+                pyunits.convert(
+                    m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"],
+                    to_units=pyunits.L / pyunits.min,
+                )
+            )
+        if m.fs.find_component("RO") is not None:
+            row["RO TDS in (kg/m3)"] = (
+                m.fs.RO.feed_side.properties[0, 0.1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value
+            )
+            row["RO TDS out (kg/m3)"] = (
+                m.fs.RO.feed_side.properties[0, 1]
+                .conc_mass_phase_comp["Liq", "NaCl"]
+                .value
+            )
+            row["RO flow vol out"] = value(
+                pyunits.convert(
+                    m.fs.RO.feed_side.properties[0, 1].flow_vol_phase["Liq"],
+                    to_units=pyunits.L / pyunits.min,
+                )
+            )
+            row["RO volume"] = value(
+                pyunits.convert(
+                    m.fs.RO.feed_side.volume,
+                    to_units=pyunits.L,
+                )
+            )
+            row["RO acc time"] = value(m.fs.RO.feed_side.accumulation_time[0])
+        if m.fs.find_component("dead_volume") is not None:
+            row["Dead Vol In (L/min)"] = value(
+                pyunits.convert(
+                    m.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase["Liq"],
+                    to_units=pyunits.L / pyunits.min,
+                )
+            )
+            row["Dead Vol Out (L/min)"] = value(
+                pyunits.convert(
+                    m.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase[
+                        "Liq"
+                    ],
+                    to_units=pyunits.L / pyunits.min,
+                )
+            )
+            row["Dead volume"] = value(
+                pyunits.convert(
+                    m.fs.dead_volume.volume[0, "Liq"],
+                    to_units=pyunits.L,
+                )
+            )
+            row["Delta volume"] = value(
+                pyunits.convert(
+                    m.fs.dead_volume.delta_state.volume[0, "Liq"],
+                    to_units=pyunits.L,
+                )
+            )
+        if row:
+            detail_data[m.name] = row
+
+    if detail_data:
+        print_table(detail_data, title="BLOCK DETAILS", index_header="Block")
 
 
 def validation_configs():
@@ -920,7 +960,7 @@ if __name__ == "__main__":
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
     cc_config = CCROConfiguration()
-    cc_config["raw_feed_conc"] = 5 * pyunits.g / pyunits.L
+    cc_config["raw_feed_conc"] = 35 * pyunits.g / pyunits.L
     cc_config["membrane_area"] = 100 * pyunits.meter**2
 
     cc_config["accumulation_time"] = 1 * pyunits.second
@@ -938,7 +978,7 @@ if __name__ == "__main__":
         mp,
         overall_water_recovery=0.5,
         max_cycle_time_hr=2,
-        recycle_flow_bounds=(1, 20),
+        recycle_flow_bounds=(2, 20),
     )
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
@@ -967,42 +1007,13 @@ if __name__ == "__main__":
                 .value,
             )
 
-    # first_block.fs.RO.area.fix()
-    # first_block.fs.RO.length.fix()
-    first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
-    # if flushing_periods > 1:
-    #     flushing_block = blks[mp.time_points]
-    #     # flushing_block.fs.dead_volume.accumulation_time[0].setub(5 * pyunits.second)
-    #     flushing_block.fs.dead_volume.accumulation_time[0].fix(1 * pyunits.second)
-    # mp.flushing.display()
-    # dg = DiagnosticsToolbox(mp)
-    # dg.report_structural_issues()
-    # dg.display_overconstrained_set()
-    # assert False
-    # flushing_block.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].fix()
-
     # dg = DiagnosticsToolbox(mp)
     # dg.report_structural_issues()
     # dg.display_overconstrained_set()
     # mp.flushing.deactivate()
     # mp.flushing.flushing_efficiency.fix(0.5)
-    # mp.flushing.flushing_time.fix(20 * pyunits.second)
-    # fix_optimization_dofs(
-    #     mp,
-    #     overal_water_recovery=0.5,
-    #     add_water_recovery_objective=True,
-    #     membrane_area=200 * pyunits.meter**2,
-    #     membrane_length=1 * pyunits.meter,
-    #     recycle_rate=10 * pyunits.L / pyunits.s,
-    #     flushing_efficiency=0.8,
-    # )
-    # check_jac(m)
-    # # assert False
-    # mp.find_component(
-    #     "blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]"
-    # ).fix(0.02)
 
-    results = solve(mp, use_ipoptv2=False)
+    results = solve(mp, use_ipoptv2=False, max_iter=1500)
     print_results_table(mp, w=16)
     for m in mp.get_active_process_blocks():
         if m.fs.find_component("RO") is not None:
@@ -1024,28 +1035,10 @@ if __name__ == "__main__":
                 .value,
             )
     first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
+    mp.flushing.minimum_flushing_efficiency.fix(0.5)
     for r in [0.6, 0.7, 0.8, 0.9]:
         mp.overall_recovery.fix(r)  # Unfixed with times fixed should get 1 DOF!
         results = solve(mp, use_ipoptv2=False)
         print_results_table(mp, w=16)
-        for m in mp.get_active_process_blocks():
-            if m.fs.find_component("RO") is not None:
-                print(
-                    m.name,
-                    "inlet RO TDS:",
-                    m.fs.RO.feed_side.properties[0, 0.1]
-                    .conc_mass_phase_comp["Liq", "NaCl"]
-                    .value,
-                    "outlet RO TDS:",
-                    m.fs.RO.feed_side.properties[0, 1]
-                    .conc_mass_phase_comp["Liq", "NaCl"]
-                    .value,
-                    m.fs.RO.feed_side.accumulation_time[0].value,
-                    m.fs.RO.feed_side.volume.value,
-                    m.fs.P2.control_volume.properties_out[0]
-                    .flow_vol_phase["Liq"]
-                    .value,
-                    m.fs.dead_volume.dead_volume.properties_out[0]
-                    .flow_vol_phase["Liq"]
-                    .value,
-                )
+
+        mp.flushing.flushing_efficiency.display()

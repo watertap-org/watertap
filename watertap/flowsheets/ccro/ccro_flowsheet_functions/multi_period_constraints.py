@@ -212,6 +212,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                 == blks[0].fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]
             )
 
+    mp.equal_recycle_rate.pprint()
     mp.equal_recycle_rate.deactivate()
 
     @mp.Constraint(doc="Global dead volume constraint")
@@ -534,5 +535,5 @@ def fix_overall_water_recovery(mp, overall_water_recovery):
                     flushing_block.fs.dead_volume.accumulation_time[0]
                 )
 
-        # for c in mp.ro_accumulation_time_cons.values():
-        #     iscale.constraint_scaling_transform(c, 1)
+        for c in mp.ro_accumulation_time_cons.values():
+            iscale.constraint_scaling_transform(c, 1)

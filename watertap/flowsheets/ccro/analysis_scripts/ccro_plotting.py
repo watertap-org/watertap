@@ -1,393 +1,474 @@
-from psPlotKit.data_manager.ps_data_manager import psDataManager
-from psPlotKit.data_plotter.fig_generator import figureGenerator
+from psPlotKit.data_manager.ps_data_manager import PsDataManager
 import numpy as np
-from psPlotKit.data_manager.ps_data import psData
+from psPlotKit.data_plotter.ps_line_plotter import LinePlotter
+from psPlotKit.data_plotter.fig_generator import FigureGenerator
 
 
-def get_sequence(data_manager, dir, key, time_periods):
+def get_sequence(data_manager, dir, key, time_periods, new_dir, index=0):
     sequence = []
-    for t in time_periods:
-        if (dir, (t, key)) in data_manager:
-            sequence.append(data_manager[dir, (t, key)].data)
-    sequence = np.array(sequence)
 
-    return sequence.T
+    for t in time_periods:
+        if dir == "":  # top-level key
+            if (t, key) in data_manager:
+                sequence.append(data_manager[t, key].data[index])
+    sequence = np.array(sequence)
+    data_manager.add_data(new_dir, "time_periods", time_periods)
+    data_manager.add_data(new_dir, key, sequence.T)
 
 
 if __name__ == "__main__":
-    data_manager = psDataManager(
-        [
-            "output/ccro_brine_sweep_analysisType_study_BGW_optimization_lcow.h5",
-        ]
+    # Load data
+    dm = PsDataManager(
+        "output/old/ccro_flow_sweep_analysisType_study_BGW_mesh_study_optimization_lcow.h5"
     )
-    import_keys = [
-        {
-            "filekey": "overall_recovery",
-            "return_key": "Water recovery",
-            "units": "%",
-        },
-        {
-            "filekey": "final_concentration",
-            "return_key": "Final TDS",
-            "units": "g/L",
-        },
-        {
-            "filekey": "total_cycle_time",
-            "return_key": "Total cycle time",
-            "units": "min",
-        },
-        {
-            "filekey": "costing.LCOW",
-            "return_key": "LCOW",
-        },
-        {
-            "filekey": "costing.specific_energy_consumption[0]",
-            "return_key": "SEC",
-        },
-        {
-            "filekey": f"blocks[0].process.fs.RO.area",
-            "return_key": "RO area",
-        },
-        {
-            "filekey": f"blocks[0].process.fs.RO.length",
-            "return_key": "RO length",
-        },
-        {
-            "filekey": f"blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
-            "return_key": "Recycle flow",
-            "units": "L/s",
-        },
-        # {
-        #     "filekey": f"blocks[0].process.fs.RO.area",
-        #     "return_key": "Flushing efficiency",
-        # },
-    ]
-    time_periods = range(300)
+    for i in range(24):
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
+            "RO recovery",
+            "%",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_out[0.0].flow_vol_phase[Liq]",
+            "Dead volume outflow volume",
+            "L/min",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_in[0.0].flow_vol_phase[Liq]",
+            "Dead volume inflow volume",
+            "L/min",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_out[0.0].flow_mass_phase_comp[Liq,NaCl]",
+            ("Dead mass outflow mass", "NaCl"),
+            "kg/s",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_in[0.0].flow_mass_phase_comp[Liq,NaCl]",
+            ("Dead mass inflow mass", "NaCl"),
+            "kg/s",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_out[0.0].flow_mass_phase_comp[Liq,H2O]",
+            ("Dead mass outflow mass", "H2O"),
+            "kg/s",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_in[0.0].flow_mass_phase_comp[Liq,H2O]",
+            ("Dead mass inflow mass", "H2O"),
+            "kg/s",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.delta_state.conc_mass_phase_comp[Liq,NaCl]",
+            "Dead volume delta concentration",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.delta_state.mass_phase_comp[0.0,Liq,NaCl]",
+            ("Dead volume delta mass phase", "NaCl"),
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.delta_state.mass_phase_comp[0.0,Liq,H2O]",
+            ("Dead volume delta mass phase", "H2O"),
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.mass_phase_comp[0.0,Liq,NaCl]",
+            ("Dead volume mass phase", "NaCl"),
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.mass_phase_comp[0.0,Liq,H2O]",
+            ("Dead volume mass phase", "H2O"),
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_out[0.0].conc_mass_phase_comp[Liq,NaCl]",
+            "Dead volume outlet concentration",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_in[0.0].conc_mass_phase_comp[Liq,NaCl]",
+            "Dead volume inlet concentration",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.volume[0.0,Liq]",
+            "Dead volume volume",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.delta_state.volume[0.0,Liq]",
+            "Dead volume delta volume",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.accumulation_time[0.0]",
+            "Dead volume accumulation time",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_out[0.0].dens_mass_phase[Liq]",
+            "Dead volume outlet density",
+            directory=i,
+        )
+        dm.register_data_key(
+            f"blocks[{i}].process.fs.dead_volume.dead_volume.properties_in[0.0].dens_mass_phase[Liq]",
+            "Dead volume inlet density",
+            directory=i,
+        )
+    dm.register_data_key("overall_recovery", "Water recovery", "%")
+    dm.load_data()
+    dm.display()
+    # # Plot recovery vs. time for different flushing efficiencies
+    ek = dm.get_expression_keys()
+    for e in ek:
+        if e != "Water recovery":
+            get_sequence(
+                dm,
+                dir="",
+                key=e,
+                time_periods=list(range(24)),
+                new_dir="overall_recovery_sequence",
+                index=16,
+            )
+    dm.select_data("overall_recovery_sequence")
+    dm.display()
+    dms = dm.get_selected_data()
 
-    for t in time_periods:
-        import_keys.append(
-            {
-                "filekey": f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
-                "return_key": (t, "RO feed TDS"),
-            }
-        )
-        import_keys.append(
-            {
-                "filekey": f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,1.0].conc_mass_phase_comp[Liq,NaCl]",
-                "return_key": (t, "RO retentate TDS"),
-            }
-        )
-        import_keys.append(
-            {
-                "filekey": f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,0.0].pressure",
-                "return_key": (t, "RO pressure"),
-            }
-        )
-        import_keys.append(
-            {
-                "filekey": f"blocks[{t}].process.fs.flushing.flushing_efficiency",
-                "return_key": "Flushing efficiency",
-            }
-        )
-        import_keys.append(
-            {
-                "filekey": f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
-                "return_key": "RO SP recovery",
-            }
-        )
-        # import_keys.append(
-        #     {
-        #         "filekey": f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,0.0].pressure",
-        #         "return_key": (t, "Recycle TDS"),
-        #     }
-        # )
+    dms.display()
+    dks = dms.get_expression_keys()
+    dks.print_mapping()
+    dms.register_expression(
+        dks.Dead_volume_mass_phase_H2O + dks.Dead_volume_mass_phase_NaCl,
+        "Dead volume mass",
+        assign_units="kg",
+    )
+    dms.register_expression(
+        dks.Dead_volume_delta_mass_phase_H2O + dks.Dead_volume_delta_mass_phase_NaCl,
+        "Dead volume delta mass",
+        assign_units="kg",
+    )
+    dms.register_expression(
+        dks.Dead_mass_outflow_mass_H2O + dks.Dead_mass_outflow_mass_NaCl,
+        "Dead mass outflow",
+        assign_units="kg/s",
+    )
+    dms.register_expression(
+        dks.Dead_mass_inflow_mass_H2O + dks.Dead_mass_inflow_mass_NaCl,
+        "Dead mass inflow",
+        assign_units="kg/s",
+    )
+    dms.register_expression(
+        (dks.Dead_mass_inflow_mass_NaCl - dks.Dead_mass_outflow_mass_NaCl)
+        * dks.Dead_volume_accumulation_time
+        + dks.Dead_volume_delta_mass_phase_NaCl,
+        "Dead mass phase calc NaCl",
+        assign_units="kg/s",
+    )
+    dms.register_expression(
+        (-dks.Dead_mass_inflow_mass_H2O + dks.Dead_mass_outflow_mass_H2O)
+        * dks.Dead_volume_accumulation_time
+        + dks.Dead_volume_delta_mass_phase_H2O,
+        "Dead mass phase calc inv H2O",
+        assign_units="kg/s",
+    )
+    print(dms._registered_key_import_status)
+    dms.evaluate_expressions()
+    dks = dms.get_expression_keys()
+    # dms.register_expression(
+    #     (dks.Dead_mass_phase_calc_H2O + dks.Dead_mass_phase_calc_NaCl),
+    #     "Calc mass",
+    #     assign_units="kg",
+    # )
+    dms.register_expression(
+        (dks.Dead_volume_mass / dks.Dead_volume_outlet_density),
+        "Calc outlet vol",
+        assign_units="L",
+    )
+    dms.register_expression(
+        (dks.Dead_volume_mass / dks.Dead_volume_inlet_density),
+        "Calc inlet vol",
+        assign_units="L",
+    )
+    dms.register_expression(
+        (dks.Dead_mass_inflow - dks.Dead_mass_outflow),
+        "mass delta",
+        assign_units="L",
+    )
+    dms.register_expression(
+        (dks.Dead_mass_inflow_mass_NaCl - dks.Dead_mass_outflow_mass_NaCl)
+        * dks.Dead_volume_accumulation_time,
+        "accumulated nacl",
+        assign_units="kg",
+    )
+    dms.register_expression(
+        (dks.Dead_mass_inflow_mass_H2O - dks.Dead_mass_outflow_mass_H2O)
+        * dks.Dead_volume_accumulation_time,
+        "accumulated h2o",
+        assign_units="kg",
+    )
+    dms.register_expression(
+        (dks.Dead_mass_inflow - dks.Dead_mass_outflow)
+        * dks.Dead_volume_accumulation_time,
+        "overall accumulated mass",
+    )
 
-    data_manager.load_data(import_keys, exact_keys=True)
-    data_manager.display()
-    line_plots_options = {
-        "True": {"color": "#de2d26", "label": "With Hold Up"},
-        "False": {"color": "#3182bd", "label": "No Hold Up"},
-    }
-    fig = figureGenerator()
+    dms.register_expression(
+        (dks.Dead_volume_delta_mass - dks.Dead_volume_mass),
+        "Change in dead volume mass",
+        assign_units="kg",
+    )
+    dms.evaluate_expressions()
+
+    dks = dms.get_expression_keys()
+    dms.register_expression(
+        (dks.accumulated_h2o - dks.accumulated_h2o) * dks.Dead_volume_accumulation_time,
+        "accumulated mass",
+        assign_units="kg",
+    )
+    dms.register_expression(
+        (dks.Calc_inlet_vol - dks.Calc_outlet_vol)
+        / dks.Dead_volume_accumulation_time
+        * dks.Dead_volume_outlet_density,
+        "mass outlet delta",
+        assign_units="kg/s",
+    )
+    dms.register_expression(
+        (dks.Calc_inlet_vol - dks.Calc_outlet_vol)
+        / dks.Dead_volume_accumulation_time
+        * dks.Dead_volume_inlet_density,
+        "mass inlet delta",
+        assign_units="kg/s",
+    )
+    dms.display()
+    dks2 = dms.get_expression_keys()
+    dks2.print_mapping()
+    print(dms["overall_recovery_sequence", "time_periods"].data.size)
+    print(dms["overall_recovery_sequence", e].data.size)
+
+    dms.evaluate_expressions()
+    print(dms["overall_recovery_sequence", "Dead volume accumulation time"].data)
+    fig = FigureGenerator()
     fig.init_figure()
-    for lp in line_plots_options:
-        fig.plot_line(
-            data_manager[("use_hold_up", lp), "Water recovery"].data,
-            data_manager[("use_hold_up", lp), "LCOW"].data,
-            color=line_plots_options[lp]["color"],
-            label=line_plots_options[lp]["label"],
-        )
+    fig.plot_line(
+        xdata=dms["overall_recovery_sequence", "time_periods"].data,
+        ydata=dms["overall_recovery_sequence", "Dead volume accumulation time"].data,
+    )
     fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="LCOW ($\$$/m$^3$)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 0.2, 0.4, 0.6, 0.8, 1],
+        xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+        ylabel="Accumulation time (seconds)",
+    )
+    fig.save_fig(name="figs/acc time.png")
+    fig = FigureGenerator()
+    fig.init_figure()
+    fig.plot_line(
+        xdata=dms["overall_recovery_sequence", "time_periods"].data,
+        ydata=dms["overall_recovery_sequence", "RO recovery"].data,
+    )
+    fig.set_axis(
+        xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+        ylabel="RO single pass recovery",
+    )
+    fig.save_fig(name="figs/RO_recovery.png")
+    fig = FigureGenerator()
+    fig.init_figure()
+    fig.plot_line(
+        xdata=dms["overall_recovery_sequence", "time_periods"].data,
+        ydata=dms["overall_recovery_sequence", "Dead mass outflow"].data,
+        label="outflow mass",
+    )
+    fig.plot_line(
+        xdata=dms["overall_recovery_sequence", "time_periods"].data,
+        ydata=dms["overall_recovery_sequence", "Dead mass inflow"].data,
+        label="inflow mass",
     )
 
+    fig.set_axis(
+        xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+        ylabel="Dead volume mass flows",
+    )
     fig.add_legend()
 
-    fig.save(file_name="BGW lcow", save_location="figs")
-    # fig = figureGenerator()
-    # fig.init_figure()
-    # for lp in line_plots_options:
-    #     fig.plot_line(
-    #         data_manager[("use_hold_up", lp), "Water recovery"].data,
-    #         data_manager[("use_hold_up", lp), "SEC"].data,
-    #         color=line_plots_options[lp]["color"],
-    #     )
-    # fig.set_axis(
-    #     xlabel="Water recovery (%)",
-    #     ylabel="SEC (kWh/m$^3$)",
-    #     xticks=[50, 60, 70, 80, 90],
-    #     yticks=[0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3],
-    # )
-    # fig.show()
-    fig.save(file_name="BGW lcow", save_location="figs")
-    fig = figureGenerator()
+    fig.save_fig(name="figs/mass flows into dead volume.png")
+    fig = FigureGenerator()
     fig.init_figure()
-    for lp in line_plots_options:
-        fig.plot_line(
-            data_manager[("use_hold_up", lp), "Water recovery"].data,
-            data_manager[("use_hold_up", lp), "Recycle flow"].data,
-            color=line_plots_options[lp]["color"],
-            label=line_plots_options[lp]["label"],
-        )
-    fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="Recycle flow rate (L/min)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 50, 100, 150, 200],
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "accumulated mass"].data,
+    #     label="sum((in_j - out_j) * accumulation time)",
+    # )
+    fig.plot_line(
+        xdata=dms["overall_recovery_sequence", "time_periods"].data,
+        ydata=dms["overall_recovery_sequence", "Change in dead volume mass"].data,
+        label="Change in dead volume mass (delta_mass - mass)",
     )
-    fig.add_legend()
-    # fig.show()
-    fig.save(file_name="BGW Recycle", save_location="figs")
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "overall accumulated mass"].data,
+    #     label="Overall accumulated mass ((sum(in_j) - sum(out_j)) * accumulation time)",
+    # )
 
-    fig = figureGenerator()
-    fig.init_figure()
-    for lp in line_plots_options:
-        fig.plot_line(
-            data_manager[("use_hold_up", lp), "Water recovery"].data,
-            data_manager[("use_hold_up", lp), "RO area"].data,
-            color=line_plots_options[lp]["color"],
-            label=line_plots_options[lp]["label"],
-        )
     fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="Area (m$^2$)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 50, 100, 150, 200, 250, 300],
+        xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+        ylabel="Dead volume accumulated mass",
     )
-    # fig.show()
-    fig.add_legend()
-    fig.save(file_name="BGW Area", save_location="figs")
-    fig = figureGenerator()
-    fig.init_figure()
-    for lp in line_plots_options:
-        fig.plot_line(
-            data_manager[("use_hold_up", lp), "Water recovery"].data,
-            data_manager[("use_hold_up", lp), "RO length"].data,
-            color=line_plots_options[lp]["color"],
-            label=line_plots_options[lp]["label"],
-        )
-    fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="Length (m)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 2, 4, 6, 8, 10, 12],
-    )
-    # fig.show()
-    fig.add_legend()
-    fig.save(file_name="BGW Length", save_location="figs")
-    fig = figureGenerator()
-    fig.init_figure()
-    # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
-    #     "l/hr"
-    # )
-    for lp in line_plots_options:
-        data_manager[("use_hold_up", lp), "Recycle flow"].to_units("L/min")
-        fig.plot_line(
-            data_manager[("use_hold_up", lp), "Water recovery"].data,
-            data_manager[("use_hold_up", lp), "Total cycle time"].data,
-            color=line_plots_options[lp]["color"],
-            label=line_plots_options[lp]["label"],
-        )
-    fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="Total cycle time (min)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 10, 20, 30, 40, 50, 60],
-    )
-    # fig.show()
-    fig.add_legend(location="upper right")
-    fig.save(file_name="BGW Total cycle time", save_location="figs")
-    fig = figureGenerator()
-    fig.init_figure()
-    # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
-    #     "l/hr"
-    # )
-    for lp in line_plots_options:
-        fig.plot_line(
-            data_manager[("use_hold_up", lp), "Water recovery"].data,
-            data_manager[("use_hold_up", lp), "Flushing efficiency"].data * 100,
-            color=line_plots_options[lp]["color"],
-            label=line_plots_options[lp]["label"],
-        )
-    fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="Flushing efficiency (%)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 25, 50, 75, 100],
-    )
-    # fig.show()
-    fig.add_legend(location="upper right")
-    fig.save(file_name="BGW Flushing efficiency", save_location="figs")
-    fig = figureGenerator()
-    fig.init_figure()
-    # data_manager["ccro_sweep_brackish_recovery/overall_recovery", "Area flow"].to_units(
-    #     "l/hr"
-    # )
-    for lp in line_plots_options:
-        fig.plot_line(
-            data_manager[("use_hold_up", lp), "Water recovery"].data,
-            data_manager[("use_hold_up", lp), "RO SP recovery"].data * 100,
-            color=line_plots_options[lp]["color"],
-            label=line_plots_options[lp]["label"],
-        )
-    fig.set_axis(
-        xlabel="Water recovery (%)",
-        ylabel="RO SP recovery (%)",
-        xticks=[50, 60, 70, 80, 90],
-        yticks=[0, 25, 50, 75, 100],
-    )
-    # fig.show()
-    fig.add_legend(location="upper right")
-    fig.save(file_name="BGW SP recovery", save_location="figs")
+
+    fig.save_fig(name="figs/acc dead volume.png")
     fig.show()
-    # d = get_sequence(
-    #     data_manager,
-    #     "ccro_sweep_brackish_recovery/overall_recovery",
-    #     "RO feed TDS",
-    #     time_periods,
-    # )
-
-    # fig = figureGenerator()
+    # fig = FigureGenerator()
     # fig.init_figure()
-    # map_object = fig.gen_colormap(num_samples=14)
-    # print(
-    #     data_manager[
-    #         "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-    #     ].data
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Calc mass"].data,
+    #     label="Calculated mass",
     # )
-    # # assert False
-    # for i, tds in enumerate(
-    #     data_manager[
-    #         "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-    #     ].data
-    # ):
-    #     if (
-    #         i
-    #         != len(
-    #             data_manager[
-    #                 "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-    #             ].data
-    #         )
-    #         - 1
-    #     ):
-    #         fig.plot_line(
-    #             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    #             d[i],
-    #             color=map_object(i / 14),
-    #             label=f"{int(round(tds, 0))} %",
-    #             marker="o",
-    #         )
-    # fig.add_legend()
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume mass"].data,
+    #     label="Dead volume mass",
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume delta mass"].data,
+    #     label="Dead volume delta mass",
+    # )
     # fig.set_axis(
-    #     xlabel="Time period (#)",
-    #     ylabel="RO Feed TDS (g/L)",
-    #     xticks=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    #     yticks=[0, 20, 40, 60, 80, 100],
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="Dead volume mass",
     # )
-    # # fig.show()
-    # fig.save(file_name="BGW feed tds", save_location="figs")
-
-    # d = get_sequence(
-    #     data_manager,
-    #     "ccro_sweep_brackish_recovery/overall_recovery",
-    #     "RO retentate TDS",
-    #     time_periods,
-    # )
-
-    # fig = figureGenerator()
+    # fig.add_legend()
+    # fig = FigureGenerator()
     # fig.init_figure()
-    # map_object = fig.gen_colormap(num_samples=14)
-    # for i, tds in enumerate(
-    #     data_manager[
-    #         "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-    #     ].data
-    # ):
-    #     if (
-    #         i
-    #         != len(
-    #             data_manager[
-    #                 "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-    #             ].data
-    #         )
-    #         - 1
-    #     ):
-    #         fig.plot_line(
-    #             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    #             d[i],
-    #             color=map_object(i / 14),
-    #             label=f"{int(round(tds, 0))} %",
-    #             marker="o",
-    #         )
-    # fig.add_legend()
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume inlet density"].data,
+    #     label="inlet density",
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume outlet density"].data,
+    #     label="outlet density",
+    # )
+
     # fig.set_axis(
-    #     xlabel="Time period (#)",
-    #     ylabel="RO Retentate TDS (g/L)",
-    #     xticks=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    #     yticks=[0, 20, 40, 60, 80, 100],
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="Dead volume density",
     # )
-    # # fig.show()
-    # fig.save(file_name="BGW retentate tds", save_location="figs")
+    # fig.add_legend()
 
-    # d = get_sequence(
-    #     data_manager,
-    #     "ccro_sweep_brackish_recovery/overall_recovery",
-    #     "RO pressure",
-    #     time_periods,
-    # )
-
-    # fig = figureGenerator()
+    # fig = FigureGenerator()
     # fig.init_figure()
-    # map_object = fig.gen_colormap(num_samples=14)
-    # for i, tds in enumerate(
-    #     data_manager[
-    #         "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-    #     ].data
-    # ):
-    #     if (
-    #         i
-    #         != len(
-    #             data_manager[
-    #                 "ccro_sweep_brackish_recovery/overall_recovery", "Water recovery"
-    #             ].data
-    #         )
-    #         - 1
-    #     ):
-    #         fig.plot_line(
-    #             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    #             d[i] / 1e5,
-    #             color=map_object(i / 14),
-    #             label=f"{int(round(tds, 0))} %",
-    #             marker="o",
-    #         )
-    # fig.add_legend()
-    # fig.set_axis(
-    #     xlabel="Time period (#)",
-    #     ylabel="RO pressure (bar)",
-    #     xticks=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    #     yticks=[0, 20, 40, 60, 80, 100],
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Calc inlet vol"].data,
+    #     label="inlet volume",
     # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Calc outlet vol"].data,
+    #     label="outlet volume",
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume volume"].data,
+    #     label="actual volume",
+    # )
+    # fig.set_axis(
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="Calculated volume",
+    # )
+    # fig.add_legend()
+
+    # fig = FigureGenerator()
+    # fig.init_figure()
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "mass delta"].data,
+    #     label="mass delta",
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "mass outlet delta"].data,
+    #     label="mass outlet delta",
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "mass inlet delta"].data,
+    #     label="mass inlet delta",
+    # )
+    # fig.set_axis(
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="Calculated volume",
+    # )
+    # fig.add_legend()
     # fig.show()
-    # fig.save(file_name="BGW pressure", save_location="figs")
+    # fig = FigureGenerator()
+    # fig.init_figure()
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead mass inflow"].data,
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead mass outflow"].data,
+    # )
+    # fig.set_axis(
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="dead mass flow",
+    # )
+    # fig = FigureGenerator()
+    # fig.init_figure()
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume accumulation time"].data,
+    # )
+    # fig.set_axis(
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="dead accumulation time",
+    # )
+    # fig.init_figure()
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume delta volume"].data,
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", "Dead volume volume"].data,
+    # )
+    # fig.set_axis(
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="dead volume",
+    # )
+    # fig = FigureGenerator()
+    # fig.init_figure()
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", ("Dead mass inflow mass", "NaCl")].data,
+    # )
+    # fig.plot_line(
+    #     xdata=dms["overall_recovery_sequence", "time_periods"].data,
+    #     ydata=dms["overall_recovery_sequence", ("Dead mass inflow mass", "H2O")].data,
+    # )
+    # fig.set_axis(
+    #     xlabel=dms["overall_recovery_sequence", "time_periods"].data_label,
+    #     ylabel="dead mass flow",
+    # )
+    fig.show()
+    # lp = line_plotter()
+    # lp.plot(
+    #     x=dm.get_column("time_hr"),
+    #     y=dm.get_column("recovery"),
+    #     group_by=dm.get_column("flushing_efficiency"),
+    #     xlabel="Time (hr)",
+    #     ylabel="Recovery",
+    #     title="Recovery vs. Time for Different Flushing Efficiencies",
+    #     legend_title="Flushing Efficiency",
+    # )
