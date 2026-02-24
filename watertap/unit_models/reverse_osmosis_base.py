@@ -59,6 +59,28 @@ def _add_has_full_reporting(config_obj):
     )
 
 
+def _add_custom_feed_side_mass_transfer_term(config_obj):
+    config_obj.declare(
+        "custom_mass_transfer_term",
+        ConfigValue(
+            default=None,
+            description="Custom mass transfer term to add to feed side mass balance",
+            doc="""Custom mass transfer term to add to feed side mass balance.""",
+        ),
+    )
+
+
+def _add_delay_build(config_obj):
+    config_obj.declare(
+        "delay_build",
+        ConfigValue(
+            default=False,
+            description="Custom mass transfer term to add to feed side mass balance",
+            doc="""Custom mass transfer term to add to feed side mass balance.""",
+        ),
+    )
+
+
 class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
     """
     Reverse Osmosis base class
@@ -89,13 +111,22 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             )
 
         validate_membrane_config_args(self)
+        if self.config.delay_build == False:
+            self._build_feed_side_state_blocks()
+            self._build_feed_side_transport_balances()
+            self._build_permeate_side_state_blocks()
+            self._build_mixed_permeate_state_blocks()
+            self._build_connected_system()
 
+    def _build_feed_side_state_blocks(self):
         self._add_feed_side_membrane_channel_and_geometry()
-
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
 
+    def _build_feed_side_transport_balances(self, custom_mass_transfer_term=None):
         self.feed_side.add_material_balances(
-            balance_type=self.config.material_balance_type, has_mass_transfer=True
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=True,
+            custom_mass_term=custom_mass_transfer_term,
         )
 
         self.feed_side.add_momentum_balances(
@@ -125,6 +156,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         add_object_reference(self, "first_element", self.feed_side.first_element)
         add_object_reference(self, "nfe", self.feed_side.nfe)
 
+    def _build_permeate_side_state_blocks(self):
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["defined_state"] = False  # these blocks are not inlets or outlets
@@ -134,11 +166,18 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             doc="Material properties of permeate along permeate channel",
             **tmp_dict,
         )
+
+    def _build_mixed_permeate_state_blocks(self):
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["defined_state"] = False  # these blocks are not inlets or outlets
         self.mixed_permeate = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module",
             **tmp_dict,
         )
+
+    def _build_connected_system(self):
 
         # Add Ports
         self.add_inlet_port(name="inlet", block=self.feed_side)

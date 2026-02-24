@@ -1,100 +1,4 @@
 {
-   "disposal.properties[0].flow_vol_phase[Liq]": {
-      "units": [
-         "m**3/sec",
-         "liter/min"
-      ],
-      "col_name": "disposal_flow_vol",
-      "plot_label": "Disposal Flow (L/min)"
-   },
-   "disposal.properties[0].conc_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/m**3",
-         "gram/liter"
-      ],
-      "col_name": "disposal_conc",
-      "plot_label": "Disposal Conc. (g/L)"
-   },
-   "disposal.properties[0].flow_mass_phase_comp[Liq,H2O]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "disposal_mass_flow_water",
-      "plot_label": "Disposal Mass Flow Water (kg/s)"
-   },
-   "disposal.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "disposal_mass_flow_salt",
-      "plot_label": "Disposal Mass Flow Salt (kg/s)"
-   },
-   "product.properties[0].flow_vol_phase[Liq]": {
-      "units": [
-         "m**3/sec",
-         "liter/min"
-      ],
-      "col_name": "product_flow_vol",
-      "plot_label": "Product Flow (L/min)"
-   },
-   "product.properties[0].conc_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/m**3",
-         "gram/liter"
-      ],
-      "col_name": "product_conc",
-      "plot_label": "Product Conc. (g/L)"
-   },
-   "product.properties[0].flow_mass_phase_comp[Liq,H2O]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "product_mass_flow_water",
-      "plot_label": "Product Mass Flow Water (kg/s)"
-   },
-   "product.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "product_mass_flow_salt",
-      "plot_label": "Product Mass Flow Salt (kg/s)"
-   },
-   "recirc.properties[0].flow_vol_phase[Liq]": {
-      "units": [
-         "m**3/sec",
-         "liter/min"
-      ],
-      "col_name": "recirc_flow_vol",
-      "plot_label": "Recirc. Flow (L/min)"
-   },
-   "recirc.properties[0].conc_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/m**3",
-         "gram/liter"
-      ],
-      "col_name": "recirc_conc",
-      "plot_label": "Recirc. Conc. (g/L)"
-   },
-   "recirc.properties[0].flow_mass_phase_comp[Liq,H2O]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "recirc_mass_flow_water",
-      "plot_label": "Recirc. Mass Flow Water (kg/s)"
-   },
-   "recirc.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "recirc_mass_flow_salt",
-      "plot_label": "Recirc. Mass Flow Salt (kg/s)"
-   },
    "feed.properties[0].flow_vol_phase[Liq]": {
       "units": [
          "m**3/sec",
@@ -110,22 +14,6 @@
       ],
       "col_name": "feed_conc",
       "plot_label": "Feed Conc. (g/L)"
-   },
-   "feed.properties[0].flow_mass_phase_comp[Liq,H2O]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "feed_mass_flow_water",
-      "plot_label": "Feed Mass Flow Water (kg/s)"
-   },
-   "feed.properties[0].flow_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "feed_mass_flow_salt",
-      "plot_label": "Feed Mass Flow Salt (kg/s)"
    },
    "P1.control_volume.properties_in[0].pressure": {
       "units": [
@@ -151,37 +39,13 @@
       "col_name": "p1_flow_vol_out",
       "plot_label": "Pump 1 Flow Outlet (L/min)"
    },
-   "P1.control_volume.properties_out[0].flow_mass_phase_comp[Liq,H2O]": {
+   "P1.control_volume.work[0]": {
       "units": [
-         "kg/s",
-         "kg/s"
+         "watt",
+         "kilowatt"
       ],
-      "col_name": "p1_mass_flow_water_out",
-      "plot_label": "Pump 1 Mass Flow Water Out (kg/s)"
-   },
-   "P1.control_volume.properties_out[0].flow_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "p1_mass_flow_salt_out",
-      "plot_label": "Pump 1 Mass Flow Salt Out (kg/s)"
-   },
-   "P2.control_volume.properties_out[0].flow_mass_phase_comp[Liq,H2O]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "p2_mass_flow_water_out",
-      "plot_label": "Pump 2 Mass Flow Water Out (kg/s)"
-   },
-   "P2.control_volume.properties_out[0].flow_mass_phase_comp[Liq,NaCl]": {
-      "units": [
-         "kg/s",
-         "kg/s"
-      ],
-      "col_name": "p2_mass_flow_salt_out",
-      "plot_label": "Pump 2 Mass Flow Salt Out (kg/s)"
+      "col_name": "p1_work",
+      "plot_label": "Pump 1 Power (kW)"
    },
    "P2.control_volume.properties_in[0].pressure": {
       "units": [
@@ -207,13 +71,21 @@
       "col_name": "p2_flow_vol_out",
       "plot_label": "Pump 2 Flow Outlet (L/min)"
    },
+   "P2.control_volume.work[0]": {
+      "units": [
+         "watt",
+         "kilowatt"
+      ],
+      "col_name": "p2_work",
+      "plot_label": "Pump 2 Power (kW)"
+   },
    "M1.inlet_1_state[0].flow_vol_phase[Liq]": {
       "units": [
          "m**3/sec",
          "liter/min"
       ],
       "col_name": "mixer_flow_vol_in_1",
-      "plot_label": "Mixer Flow Outlet (L/min)"
+      "plot_label": "Mixer Flow Inlet 1 (L/min)"
    },
    "M1.inlet_1_state[0].conc_mass_phase_comp[Liq,NaCl]": {
       "units": [
@@ -228,8 +100,8 @@
          "m**3/sec",
          "liter/min"
       ],
-      "col_name": "mixer_flow_vol_in_1",
-      "plot_label": "Mixer Flow Outlet (L/min)"
+      "col_name": "mixer_flow_vol_in_2",
+      "plot_label": "Mixer Flow Inlet 2 (L/min)"
    },
    "M1.inlet_2_state[0].conc_mass_phase_comp[Liq,NaCl]": {
       "units": [
@@ -253,15 +125,15 @@
          "gram/liter"
       ],
       "col_name": "mixer_conc_out",
-      "plot_label": "Mixer Conc. Inlet 2 (g/L)"
+      "plot_label": "Mixer Conc. Outlet (g/L)"
    },
    "M1.mixed_state[0].pressure": {
       "units": [
          "Pa",
          "psi"
       ],
-      "col_name": "mixer_conc_out",
-      "plot_label": "Mixer Conc. Inlet 2 (g/L)"
+      "col_name": "mixer_pressure_out",
+      "plot_label": "Mixer Pressure Outlet (psi)"
    },
    "RO.feed_side.properties_in[0].flow_vol_phase[Liq]": {
       "units": [
@@ -318,5 +190,205 @@
       ],
       "col_name": "recovery",
       "plot_label": "RO Recovery"
+   },
+   "RO.feed_side.properties[0,1.0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "gram/liter"
+      ],
+      "col_name": "brine_conc",
+      "plot_label": "RO Brine Conc. (g/L)"
+   },
+   "dead_volume.volume[0,Liq]": {
+      "units": [
+         "m**3",
+         "m**3"
+      ],
+      "col_name": "dead_volume",
+      "plot_label": "Dead Volume Volume"
+   },
+   "dead_volume.dead_volume.mass_frac_phase_comp[0,Liq,H2O]": {
+      "units": [
+         "dimensionless",
+         "dimensionless"
+      ],
+      "col_name": "dead_volume_mass_frac_water",
+      "plot_label": "Dead Volume Mass Fraction Water"
+   },
+   "dead_volume.dead_volume.mass_frac_phase_comp[0,Liq,NaCl]": {
+      "units": [
+         "dimensionless",
+         "dimensionless"
+      ],
+      "col_name": "dead_volume_mass_frac_salt",
+      "plot_label": "Dead Volume Mass Fraction NaCl"
+   },
+   "dead_volume.dead_volume.mass_phase_comp[0,Liq,H2O]": {
+      "units": [
+         "kg",
+         "kg"
+      ],
+      "col_name": "dead_volume_mass_water",
+      "plot_label": "Dead Volume Mass Water"
+   },
+   "dead_volume.dead_volume.mass_phase_comp[0,Liq,NaCl]": {
+      "units": [
+         "kg",
+         "kg"
+      ],
+      "col_name": "dead_volume_mass_salt",
+      "plot_label": "Dead Volume Mass NaCl"
+   },
+   "dead_volume.dead_volume.properties_in[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "dead_volume_cv_in_flow_mass_water",
+      "plot_label": "Dead Volume CV Mass Flow Water In"
+   },
+   "dead_volume.dead_volume.properties_in[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "dead_volume_cv_in_flow_mass_salt",
+      "plot_label": "Dead Volume CV Mass Flow Salt In"
+   },
+   "dead_volume.dead_volume.properties_in[0].pressure": {
+      "units": [
+         "Pa",
+         "psi"
+      ],
+      "col_name": "dead_volume_cv_in_pressure",
+      "plot_label": "Dead Volume CV Pressure In"
+   },
+   "dead_volume.dead_volume.properties_out[0].flow_mass_phase_comp[Liq,H2O]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "dead_volume_cv_out_flow_mass_water",
+      "plot_label": "Dead Volume CV Mass Flow Water Out"
+   },
+   "dead_volume.dead_volume.properties_out[0].flow_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/s",
+         "kg/s"
+      ],
+      "col_name": "dead_volume_cv_out_flow_mass_salt",
+      "plot_label": "Dead Volume CV Mass Flow Salt Out"
+   },
+   "dead_volume.dead_volume.properties_out[0].pressure": {
+      "units": [
+         "Pa",
+         "psi"
+      ],
+      "col_name": "dead_volume_cv_out_pressure",
+      "plot_label": "Dead Volume CV Pressure Out"
+   },
+   "dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp[Liq,H2O]": {
+      "units": [
+         "dimensionless",
+         "dimensionless"
+      ],
+      "col_name": "dead_volume_cv_out_mass_frac_water",
+      "plot_label": "Dead Volume CV Mass Frac Water Out"
+   },
+   "dead_volume.dead_volume.properties_out[0].mass_frac_phase_comp[Liq,NaCl]": {
+      "units": [
+         "dimensionless",
+         "dimensionless"
+      ],
+      "col_name": "dead_volume_cv_out_mass_frac_salt",
+      "plot_label": "Dead Volume CV Mass Frac Salt Out"
+   },
+   "dead_volume.dead_volume.properties_out[0].dens_mass_phase[Liq]": {
+      "units": [
+         "kg/m**3",
+         "g/L"
+      ],
+      "col_name": "dead_volume_cv_out_density",
+      "plot_label": "Dead Volume CV Density Out"
+   },
+   "dead_volume.delta_state.mass_phase_comp[0,Liq,H2O]": {
+      "units": [
+         "kg",
+         "kg"
+      ],
+      "col_name": "dead_volume_delta_mass_water",
+      "plot_label": "Dead Volume $\\Delta$ Mass Water"
+   },
+   "dead_volume.delta_state.mass_phase_comp[0,Liq,NaCl]": {
+      "units": [
+         "kg",
+         "kg"
+      ],
+      "col_name": "dead_volume_delta_mass_salt",
+      "plot_label": "Dead Volume $\\Delta$ Mass Salt"
+   },
+   "dead_volume.delta_state.volume": {
+      "units": [
+         "m**3",
+         "m**3"
+      ],
+      "col_name": "dead_volume_delta_volume",
+      "plot_label": "Dead Volume $\\Delta$ Volume"
+   },
+   "dead_volume.delta_state.mass_frac_phase_comp[0,Liq,H2O]": {
+      "units": [
+         "dimensionless",
+         "dimensionless"
+      ],
+      "col_name": "dead_volume_delta_mass_frac_water",
+      "plot_label": "Dead Volume $\\Delta$ Mass Frac Water"
+   },
+   "dead_volume.delta_state.mass_frac_phase_comp[0,Liq,NaCl]": {
+      "units": [
+         "dimensionless",
+         "dimensionless"
+      ],
+      "col_name": "dead_volume_delta_mass_frac_salt",
+      "plot_label": "Dead Volume $\\Delta$ Mass Frac Salt"
+   },
+   "dead_volume.delta_state.dens_mass_phase[0,Liq]": {
+      "units": [
+         "kg/m**3",
+         "g/L"
+      ],
+      "col_name": "dead_volume_delta_density",
+      "plot_label": "Dead Volume $\\Delta$ Density"
+   },
+   "dead_volume.dead_volume.properties_in[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "dead_volume_cv_in_flow_vol",
+      "plot_label": "Dead Volume CV Flow Vol In"
+   },
+   "dead_volume.dead_volume.properties_out[0].flow_vol_phase[Liq]": {
+      "units": [
+         "m**3/sec",
+         "liter/min"
+      ],
+      "col_name": "dead_volume_cv_out_flow_vol",
+      "plot_label": "Dead Volume CV Flow Vol Out"
+   },
+   "dead_volume.dead_volume.properties_in[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "g/L"
+      ],
+      "col_name": "dead_volume_cv_in_conc",
+      "plot_label": "Dead Volume CV Conc In"
+   },
+   "dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp[Liq,NaCl]": {
+      "units": [
+         "kg/m**3",
+         "g/L"
+      ],
+      "col_name": "dead_volume_cv_out_conc",
+      "plot_label": "Dead Volume CV Conc Out"
    }
 }

@@ -24,16 +24,17 @@ from watertap.unit_models.reverse_osmosis_1D import (
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.property_models import NaCl_T_dep_prop_pack as props
 from watertap.core.solvers import get_solver
+import yaml
 
 solver = get_solver()
-
-#  Spec sheet, data for BW30-4040: https://www.lenntech.com/Data-sheets/DuPont-FilmTec-BW30-4040-L.pdf
+membrane_name = "BW30-4040"
+#  Spec sheet, data for BW30-4040: https://www.wlenntech.com/Data-sheets/DuPont-FilmTec-BW30-4040-L.pdf
 
 # Permeate flow and salt rejection based on the following test conditions:
-# feed pressure = 225 psi
+# feed pressure = 225 psig
 # feed water concentration = 2000 mg/L
-# salt rejection = 99.5% 
-# water recovery = 15% 
+# salt rejection = 99.5%
+# water recovery = 15%
 # membrane area = 37.2 m2
 # perm flow = 9.1 m3/d
 
@@ -41,14 +42,16 @@ rho = 997.0 * pyunits.kg / pyunits.m**3
 
 feed_conc = 2 * pyunits.g / pyunits.liter
 recovery = 0.15
-pressure = 225 * pyunits.psi
-perm_vol_flow = 9.1 * pyunits.m**3 / pyunits.day
+pressure = (
+    225 + 14.7
+) * pyunits.psi  # + 1 * pyunits.bar  # this is PSIG but we need PSIA
+perm_vol_flow = 9.1 * pyunits.m**3 / pyunits.day * 0.6
 salt_rej = 0.995
-temperature = 25 
+temperature = 25
 
 mem_length = (1.016 - 2 * 0.0267) * pyunits.m
-mem_area = 7.2 * pyunits.m**2
-pressure_loss = -15 * pyunits.psi
+mem_area = 7.9 * pyunits.m**2
+pressure_loss = -15 * pyunits.psi  # This is maximum allowable - not actual delta P
 
 perm_mass_flow = pyunits.convert(rho * perm_vol_flow, to_units=pyunits.kg / pyunits.s)
 
@@ -60,26 +63,32 @@ feed_mass_flow_salt = value(
     pyunits.convert(feed_vol_flow * feed_conc, to_units=pyunits.kg / pyunits.s)
 )
 
-spacer_thickness = 34 # mil
-channel_height = spacer_thickness * 2.54e-5 # mil to m
+spacer_thickness = 34  # mil
+channel_height = spacer_thickness * 2.54e-5  # mil to m
+channel_porosity = 0.85  # assumed
 
-def solve(m):
+
+def solve(m, tee=False):
     # ---solving---
     solver = get_solver()
 
     print("\n--------- SOLVING ---------\n")
-    results = solver.solve(m)
+    results = solver.solve(m, tee=tee)
 
     if check_optimal_termination(results):
         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
-        print(f"water_perm = {m.fs.RO.A_comp[0,'H2O']()} m/s/Pa")
-        print(f"salt_perm = {m.fs.RO.B_comp[0,'NaCl']()} m/s")
+        print(
+            f"water_perm = {m.fs.RO.A_comp[0,'H2O']()} m/s/Pa {m.fs.RO.A_comp[0,'H2O']()*(3600*1000*1e5)} LMH/Bar"
+        )
+        print(
+            f"salt_perm = {m.fs.RO.B_comp[0,'NaCl']()} m/s {m.fs.RO.B_comp[0,'NaCl']()*(3600*1000)} LMH"
+        )
         print(f"porosity = {m.fs.RO.feed_side.spacer_porosity()}")
         print(f"channel_height = {m.fs.RO.feed_side.channel_height()}")
         print("\n")
 
         return results
-    
+
     assert False
 
 
@@ -123,8 +132,7 @@ def estimate_params(
     m.fs.RO.area.fix(mem_area)
     m.fs.RO.A_comp.fix(water_perm)
     m.fs.RO.B_comp.fix(salt_perm)
-    m.fs.RO.feed_side.spacer_porosity.fix(porosity)
-    m.fs.RO.feed_side.spacer_porosity.setlb(0.65)
+    m.fs.RO.feed_side.spacer_porosity.fix(channel_porosity)
 
     print("DOF = ", degrees_of_freedom(m))
     print("RO DOF = ", degrees_of_freedom(m.fs.RO))
@@ -141,57 +149,35 @@ def estimate_params(
     iscale.calculate_scaling_factors(m)
 
     m.fs.RO.initialize()
-    results = solve(m)
+    results = solve(m, tee=True)
 
     # Unfix A variable
-    print("unfix A, fix perm flow...")
+    print("Boxe solved, no finding unknown A, B")
     m.fs.RO.A_comp.unfix()
-
-    # Fix the permeate flow
-    m.fs.RO.mixed_permeate[0.0].flow_mass_phase_comp["Liq", "H2O"].fix(perm_mass_flow)
-
-    print("DOF = ", degrees_of_freedom(m))
-
-    results = solve(m)
-
-    # Unfix B variable
-    print("unfix B, fix rejection...")
     m.fs.RO.B_comp.unfix()
-
-    # Fix the salt rejection
     m.fs.RO.rejection_phase_comp[0, "Liq", "NaCl"].fix(salt_rej)
+    m.fs.RO.recovery_vol_phase[0.0, "Liq"].fix(recovery)
+    # Fix the permeate flow
+    # m.fs.RO.mixed_permeate[0.0].flow_mass_phase_comp["Liq", "H2O"].fix(perm_mass_flow)
 
     print("DOF = ", degrees_of_freedom(m))
 
-    results = solve(m)
-
-    # Unfix the permeate flow rate and concentration
-    m.fs.RO.mixed_permeate[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-    m.fs.RO.rejection_phase_comp[0, "Liq", "NaCl"].unfix()
-
-    # Fix the new A & B values. This will fix them at the solved values from the previous steps
-    m.fs.RO.A_comp.fix()
-    m.fs.RO.B_comp.fix()
-
-    # Fix the new flow rate
-    m.fs.RO.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(feed_mass_flow_water)
-    # Fix the pressure drop
-    m.fs.RO.deltaP.fix(pressure_loss)
-
-    # Unfix the spacer porosity
-    print("unfix spacer porosity...")
-    m.fs.RO.feed_side.spacer_porosity.unfix()
-
-    print("DOF = ", degrees_of_freedom(m))
-    # m.fs.RO.feed_side.channel_height.unfix()
-    # print("\n")
-    # print("DOF = ", degrees_of_freedom(m))
-
-    results = solve(m)
+    results = solve(m, tee=True)
 
     water_perm = m.fs.RO.A_comp[0, "H2O"]()
     salt_perm = m.fs.RO.B_comp[0, "NaCl"]()
     porosity = m.fs.RO.feed_side.spacer_porosity()
+    membrane_design = {
+        "A": m.fs.RO.A_comp[0, "H2O"].value,
+        "B": m.fs.RO.B_comp[0, "NaCl"].value,
+        "Area": m.fs.RO.area.value,
+        "Length": m.fs.RO.length.value,
+        "Porosity": m.fs.RO.feed_side.spacer_porosity.value,
+        "Channel_height": m.fs.RO.feed_side.channel_height.value,
+    }
+
+    with open(f"{membrane_name}.yaml", "w") as outfile:
+        yaml.dump(membrane_design, outfile, default_flow_style=False, sort_keys=False)
 
     return water_perm, salt_perm, porosity
 
@@ -212,35 +198,7 @@ if __name__ == "__main__":
     sp.append(salt_perm)
     por.append(porosity)
     num.append(n)
-    n += 1
 
-    num_iter = 5
-
-    while n != num_iter:
-
-        water_perm, salt_perm, porosity = estimate_params(
-            water_perm=water_perm, salt_perm=salt_perm, porosity=porosity
-        )
-        wp.append(water_perm)
-        sp.append(salt_perm)
-        por.append(porosity)
-        num.append(n)
-        # print(n, water_perm, salt_perm, porosity)
-        n += 1
-
-    _, ax = plt.subplots()
-    ax.scatter(num, wp, marker="o", color="r")
-    ax.set_title("water perm")
-    ax.set_xlabel("iteration")
-
-    _, ax = plt.subplots()
-    ax.scatter(num, sp, marker="o", color="g")
-    ax.set_title("salt perm")
-    ax.set_xlabel("iteration")
-
-    _, ax = plt.subplots()
-    ax.scatter(num, por, marker="o", color="k")
-    ax.set_title("porosity")
-    ax.set_xlabel("iteration")
-
-    plt.show()
+    water_perm, salt_perm, porosity = estimate_params(
+        water_perm=water_perm, salt_perm=salt_perm, porosity=porosity
+    )

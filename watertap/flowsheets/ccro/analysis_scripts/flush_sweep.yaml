@@ -1,0 +1,21 @@
+val_sweep:
+  build_defaults:
+    use_hold_up: True
+    
+  build_loop:
+    add_flushing:
+      - True
+      - False
+    build_loop:
+      time_steps: 
+        - 5
+        - 10
+        - 20
+        - 50
+      sweep_param_loop:
+        dummy_var_sweep:
+          type: LinearSample
+          param: dummy_var
+          lower_limit: 1
+          upper_limit: 1
+          num_samples: 1

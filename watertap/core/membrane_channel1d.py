@@ -91,6 +91,16 @@ CONFIG_Template.declare(
 
 @declare_process_block_class("MembraneChannel1DBlock")
 class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
+    CONFIG = ControlVolume1DBlockData.CONFIG()
+    CONFIG.declare(
+        "custom_mass_transfer_term",
+        ConfigValue(
+            default=None,
+            description="Custom mass transfer term for phase component balances",
+            doc="""Custom mass transfer term to use in phase component balances. """,
+        ),
+    )
+
     def _skip_element(self, x):
         if self.config.transformation_scheme != "FORWARD":
             return x == self.length_domain.first()
@@ -154,7 +164,14 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         Returns:
             None
         """
-        super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
+        super().add_state_blocks(
+            has_phase_equilibrium=has_phase_equilibrium,
+        )
+        # self.add_phase_component_balances(
+        #     has_phase_equilibrium=has_phase_equilibrium,
+        #     custom_mass_term=self.config.custom_mass_transfer_term,
+        # )
+
         self._add_interface_stateblock(has_phase_equilibrium)
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):

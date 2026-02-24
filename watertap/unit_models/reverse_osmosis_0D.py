@@ -30,6 +30,8 @@ from watertap.core.membrane_channel0d import CONFIG_Template
 from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
+    _add_custom_feed_side_mass_transfer_term,
+    _add_delay_build,
 )
 
 __author__ = "Tim Bartholomew, Adam Atia, Bernard Knueven"
@@ -47,6 +49,8 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
     CONFIG = CONFIG_Template()
 
     _add_has_full_reporting(CONFIG)
+    _add_custom_feed_side_mass_transfer_term(CONFIG)
+    _add_delay_build(CONFIG)
 
     def _add_feed_side_membrane_channel_and_geometry(self):
         # Build membrane channel control volume

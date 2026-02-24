@@ -810,8 +810,8 @@ class StoichiometricReactorData(UnitModelBlockData):
                     iscale.set_scaling_factor(self.flow_mass_reagent[r], sf)
                 if iscale.get_scaling_factor(self.flow_vol_reagent[r]) is None:
                     sf = iscale.get_scaling_factor(self.flow_mass_reagent[r])
-                    print(sf, self.density_reagent[r].value)
-                    sf = sf / self.density_reagent[r].value
+                    mass = 1 / sf
+                    sf = 1 / (mass / self.density_reagent[r].value)
                     iscale.set_scaling_factor(self.flow_vol_reagent[r], sf)
             for (t, j), v in self.dissolution_reaction_generation_comp.items():
                 if iscale.get_scaling_factor(v) is None:
