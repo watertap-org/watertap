@@ -60,7 +60,11 @@ def main():
     m = build()
     set_operating_conditions(m)
     initialize_system(m)
-    solve_dynamic(m)
+    try:
+        solve_dynamic(m)
+    except RuntimeError:
+        print('SOLVE FAILED')
+        return m
     return m
 
 def scale_system(m):

@@ -333,13 +333,15 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         """
-
+        from idaes.core.util.model_statistics import degrees_of_freedom
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="control_volume")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="control_volume")
+        init_log.info_high(f"MembraneChannel0D Initialization, BEFORE get_state_args. DOF = {degrees_of_freedom(self.parent_block())}")
 
         # TODO: this function needs to be changed for use on the permeate side
         state_args = self._get_state_args(initialize_guess, state_args)
+        init_log.info_high(f"MembraneChannel0D Initialization, AFTER get_state_args. DOF = {degrees_of_freedom(self.parent_block())}")
 
         # intialize self.properties
         state_args_properties_in = state_args["feed_side"]
@@ -355,6 +357,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             solver=solver,
             hold_state=True,
         )
+        init_log.info_high(f"MembraneChannel0D Initialization, AFTER properties_in initialize. DOF = {degrees_of_freedom(self.parent_block())}")
 
         self.properties_out.initialize(
             state_args=state_args_properties_out,
@@ -362,6 +365,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             optarg=optarg,
             solver=solver,
         )
+        init_log.info_high(f"MembraneChannel0D Initialization, AFTER properties_out initialize. DOF = {degrees_of_freedom(self.parent_block())}")
 
         state_args_interface = self._get_state_args_interface(
             initialize_guess, state_args_properties_in, state_args_properties_out
@@ -372,6 +376,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             solver=solver,
             state_args=state_args_interface,
         )
+        init_log.info_high(f"MembraneChannel0D Initialization, AFTER properties_interface initialize. DOF = {degrees_of_freedom(self.parent_block())}")
 
         init_log.info("Initialization Complete")
 
