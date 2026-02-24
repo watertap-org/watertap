@@ -13,6 +13,7 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core import EnergyBalanceType
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import (
     Mixer,
@@ -30,7 +31,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
 from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
-from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
+# from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -117,7 +118,7 @@ def build_model(
 
     m.fs.feed = Feed(property_package=m.fs.properties)
 
-    m.fs.P1 = Pump(property_package=m.fs.properties)
+    m.fs.P1 = Pump(property_package=m.fs.properties, energy_balance_type=EnergyBalanceType.none)
     m.fs.RO = ReverseOsmosis1D(
         property_package=m.fs.properties,
         has_pressure_change=True,
