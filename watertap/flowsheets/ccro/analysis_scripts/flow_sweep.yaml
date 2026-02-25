@@ -1,0 +1,79 @@
+# study_BGW_map:
+#   build_defaults:
+#     feed_tds: 5
+#     fixed_setup: False
+#     time_steps: 40
+#     n_flushing_points: 10
+#   build_loop:
+#     sweep_param_loop:
+#       recycle_map:
+#         recovery:
+#           type: LinearSample
+#           param: overall_recovery
+#           lower_limit: 0.5
+#           upper_limit: 0.9
+#           num_samples: 11
+#         recycle_flow_rate:
+#           type: LinearSample
+#           param: blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]
+#           lower_limit: 0.001
+#           upper_limit: 0.01
+#           num_samples: 10
+
+# study_SW_map:
+#   build_defaults:
+#     feed_tds: 35
+#     fixed_setup: False
+#     time_steps: 40
+#     n_flushing_points: 10
+#   build_loop:
+#     sweep_param_loop:
+#       recycle_map:
+#         recovery:
+#           type: LinearSample
+#           param: overall_recovery
+#           lower_limit: 0.4
+#           upper_limit: 0.7
+#           num_samples: 11
+#         recycle_flow_rate:
+#           type: LinearSample
+#           param: blocks[0].process.fs.P2.control_volume.properties_out[0].flow_vol_phase[Liq]
+#           lower_limit: 0.001
+#           upper_limit: 0.01
+#           num_samples: 10
+study_BGW_mesh_study_optimization_lcow:
+  build_defaults:
+    feed_tds: 5
+    fixed_setup: False
+    time_steps: 40
+    n_flushing_points: 10
+  build_loop:
+    time_steps:
+      - 20
+      - 40
+    sweep_param_loop:
+      recovery:
+        type: LinearSample
+        param: overall_recovery
+        lower_limit: 0.5
+        upper_limit: 0.9
+        num_samples: 21  
+
+study_SW_mesh_study_optimization_lcow:
+  build_defaults:
+    feed_tds: 35
+    fixed_setup: False
+    time_steps: 40
+    n_flushing_points: 10
+  build_loop:
+    time_steps:
+      - 20
+      - 40
+    sweep_param_loop:
+      recovery:
+        type: LinearSample
+        param: overall_recovery
+        lower_limit: 0.4
+        upper_limit: 0.7
+        num_samples: 16
+

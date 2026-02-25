@@ -6,6 +6,139 @@ from watertap.flowsheets.ccro.multiperiod.model_state_tool import ModelState
 from idaes.core import UnitModelCostingBlock
 
 
+def print_table(data, title=None, index_header="Index", precision=6, min_col_width=10):
+    """
+    Print a formatted table from a dictionary.
+
+    Supports three input shapes:
+
+    1. **Multi-row** ``{block_index: {key1: val1, key2: val2}, ...}``
+       → horizontal table with one column per unique key and one row per block.
+
+    2. **Single block_index** ``{"label": {key1: val1, key2: val2}}``
+       → vertical two-column table (key | value), one row per key.
+
+    3. **Flat dict** ``{key1: val1, key2: val2}``
+       → vertical two-column table (key | value), one row per key.
+
+    Args:
+        data: dictionary (see above).
+        title: optional string printed as a centered title above the table.
+        index_header: header label for the leftmost column (default "Index").
+              Used as the index column header in multi-row mode, or as the
+              left-column header ("Metric" / "Parameter" etc.) in vertical mode.
+        precision: number of decimal places for float values (default 6).
+        min_col_width: minimum column width (default 10).
+
+    Example::
+
+        # Multi-row
+        data = {
+            1: {"Flow (L/min)": 3.14, "Pressure (Pa)": 101325},
+            2: {"Flow (L/min)": 2.72, "Pressure (Pa)": 202650},
+        }
+        print_table(data, title="Results")
+
+        # Flat / single-block  →  vertical layout
+        print_table({"Recovery": 0.85, "LCOW": 1.23}, title="Summary")
+    """
+    if not data:
+        print("(no data)")
+        return
+
+    # Format cell values
+    def _fmt(val):
+        if val is None:
+            return ""
+        if isinstance(val, float):
+            return f"{val:.{precision}f}"
+        return str(val)
+
+    # ── Detect whether we should use vertical (key-value) layout ────
+    # Case 1: flat dict – none of the values are dicts
+    is_flat = all(not isinstance(v, dict) for v in data.values())
+    # Case 2: single-entry nested dict
+    is_single_block = (
+        not is_flat and len(data) == 1 and isinstance(next(iter(data.values())), dict)
+    )
+
+    if is_flat or is_single_block:
+        # Normalise to a single {key: value} mapping
+        if is_single_block:
+            kv = next(iter(data.values()))
+            value_header = str(next(iter(data.keys())))
+        else:
+            kv = data
+            value_header = "Value"
+
+        key_width = max(min_col_width, len(index_header), *(len(str(k)) for k in kv))
+        val_width = max(
+            min_col_width, len(value_header), *(len(_fmt(v)) for v in kv.values())
+        )
+        total_width = key_width + val_width + 7  # "| " + " | " + " |"
+        sep = "-" * total_width
+
+        if title:
+            padding = max(0, (total_width - len(title)) // 2 - 1)
+            print(f"\n{'=' * padding} {title} {'=' * padding}")
+
+        print(sep)
+        print(f"| {index_header:<{key_width}s} | {value_header:<{val_width}s} |")
+        print(sep)
+        for key, val in kv.items():
+            print(f"| {str(key):<{key_width}s} | {_fmt(val):<{val_width}s} |")
+        print(sep)
+        return
+
+    # ── Multi-row horizontal table ──────────────────────────────────
+    # Collect all unique column keys preserving first-seen order
+    columns = []
+    seen = set()
+    for row_vals in data.values():
+        if isinstance(row_vals, dict):
+            for key in row_vals:
+                if key not in seen:
+                    columns.append(key)
+                    seen.add(key)
+
+    # Determine column widths (max of header length and all cell lengths)
+    idx_width = max(min_col_width, len(index_header), *(len(str(k)) for k in data))
+    col_widths = {}
+    for col in columns:
+        max_val_len = max(
+            (len(_fmt(data[row].get(col))) for row in data),
+            default=0,
+        )
+        col_widths[col] = max(min_col_width, len(col), max_val_len)
+
+    # Build separator line
+    total_width = idx_width + sum(col_widths[c] for c in columns) + len(columns) * 3 + 4
+    sep = "-" * total_width
+
+    # Print title
+    if title:
+        padding = max(0, (total_width - len(title)) // 2 - 1)
+        print(f"\n{'=' * padding} {title} {'=' * padding}")
+
+    # Print header
+    print(sep)
+    header = f"| {index_header:<{idx_width}s} |"
+    for col in columns:
+        header += f" {col:<{col_widths[col]}s} |"
+    print(header)
+    print(sep)
+
+    # Print rows
+    for idx, row_vals in data.items():
+        row = f"| {str(idx):<{idx_width}s} |"
+        for col in columns:
+            val = _fmt(row_vals.get(col))
+            row += f" {val:<{col_widths[col]}s} |"
+        print(row)
+
+    print(sep)
+
+
 def copy_time_period_links(m_old, m_new, vars_to_copy=None):
     """
     Copy linking variables between time periods.

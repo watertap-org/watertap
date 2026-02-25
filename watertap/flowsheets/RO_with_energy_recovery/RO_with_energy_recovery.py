@@ -492,7 +492,6 @@ def optimize_set_up(m):
     else:
         # no additional optimization needed for pump_as_turbine configuration
         pass
-
     # RO
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)

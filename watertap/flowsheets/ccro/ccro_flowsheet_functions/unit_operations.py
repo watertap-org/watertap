@@ -459,9 +459,10 @@ def build_flushing_unit_only(mp, start_period=1, end_period=None):
 
     @mp.Constraint()
     def flushing_concentration_constraint(m):
-        return (
-            m_start.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"]
-            == mp.flushing.flushing_feed_concentration
+        return m_start.fs.M1.mixed_state[0].conc_mass_phase_comp[
+            "Liq", "NaCl"
+        ] == mp.flushing.flushing_feed_concentration * (
+            1 - m_start.fs.RO.recovery_vol_phase[0.0, "Liq"]
         )
 
     iscale.constraint_scaling_transform(mp.pre_flushing_conc_constraint, 1)

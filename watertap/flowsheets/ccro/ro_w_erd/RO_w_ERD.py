@@ -13,6 +13,7 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core import EnergyBalanceType
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import (
     Mixer,
@@ -30,7 +31,8 @@ import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
 from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
-from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
+
+# from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -117,7 +119,9 @@ def build_model(
 
     m.fs.feed = Feed(property_package=m.fs.properties)
 
-    m.fs.P1 = Pump(property_package=m.fs.properties)
+    m.fs.P1 = Pump(
+        property_package=m.fs.properties  # , energy_balance_type=EnergyBalanceType.none
+    )
     m.fs.RO = ReverseOsmosis1D(
         property_package=m.fs.properties,
         has_pressure_change=True,
@@ -214,6 +218,7 @@ def set_operating_conditions(m):
     )
     print(f"Estimated operating pressure: {operating_pressure*1e-5:.2f} bar")
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
+    m.fs.P1.efficiency_pump.fix(0.8)
     # m.fs.P1.control_volume.properties_out[0].pressure.setub(100*pyunits.bar)
 
     ###################################
@@ -237,30 +242,11 @@ def set_operating_conditions(m):
 
 
 def init_model(m):
-
-    m.fs.RO.feed_side.properties[0, :].flow_mass_phase_comp["Liq", "H2O"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    )
-    m.fs.RO.feed_side.properties[0, :].flow_mass_phase_comp["Liq", "NaCl"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-    )
-    m.fs.RO.feed_side.properties[0, :].temperature = value(
-        m.fs.feed.properties[0].temperature
-    )
-    m.fs.RO.feed_side.properties[0, :].pressure = value(
-        m.fs.P1.control_volume.properties_out[0].pressure
-    )
-    m.fs.RO.initialize()
-    m.fs.RO.area.unfix()
-    m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(m.water_recovery)
-    m.fs.RO.initialize()
-
     m.fs.feed.initialize()
     propagate_state(m.fs.feed_to_P1)
 
     m.fs.P1.initialize()
     propagate_state(m.fs.P1_to_RO)
-
     m.fs.RO.initialize()
     propagate_state(m.fs.RO_to_ERD)
 
@@ -292,8 +278,6 @@ if __name__ == "__main__":
     scale_model(m)
     set_operating_conditions(m)
     init_model(m)
-
-    # m.fs.RO.area.fix()
     print(f"Degrees of freedom: {degrees_of_freedom(m)}")
     assert degrees_of_freedom(m) == 0
     results = solver.solve(m)
