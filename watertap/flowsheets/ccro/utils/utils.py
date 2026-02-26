@@ -256,3 +256,110 @@ def calculate_operating_pressure(
     assert_optimal_termination(results)
 
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
+
+
+def report_pump(blk, w=30):
+    title = "Pump Report"
+    side = int(((3 * w) - len(title)) / 2) - 1
+    header = "=" * side + f" {title} " + "=" * side
+    print(f"\n{header}\n")
+    print(f'{"Parameter":<{w}s}{"Value":<{w}s}{"Units":<{w}s}')
+    print(f"{'-' * (3 * w)}")
+
+    deltaP = blk.pump.deltaP[0]
+    work = blk.pump.work_mechanical[0]
+
+    print(
+        f'{f"Pressure Change (bar)":<{w}s}{value(pyunits.convert(deltaP,to_units=pyunits.bar)):<{w}.3f}{"bar"}'
+    )
+    print(
+        f'{f"Power (kW)":<{w}s}{value(pyunits.convert(work, to_units=pyunits.kW)):<{w}.3f}{"kW"}'
+    )
+    print(f'{f"Efficiency (-)":<{w}s}{value(blk.pump.efficiency_pump[0]):<{w}.3f}{"-"}')
+
+
+def report_ro(blk, w=30):
+    title = "RO Report"
+    side = int(((3 * w) - len(title)) / 2) - 1
+    header = "=" * side + f" {title} " + "=" * side
+    print(f"\n{header}\n")
+    print(f'{"Parameter":<{w}s}{"Value":<{w}s}{"Units":<{w}s}')
+    print(f"{'-' * (3 * w)}")
+
+    print(
+        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"]):<{w}.3f}{"m3/s"}'
+    )
+    print(
+        f'{f"Inlet Conc.":<{w}s}{value(pyunits.convert(blk.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{"mg/L"}'
+    )
+    print(
+        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"]):<{w}.3f}{"m3/s"}'
+    )
+    print(
+        f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"]):<{w}.3f}{"m3/s"}'
+    )
+    print(
+        f'{f"Recovery":<{w}s}{value(blk.RO.recovery_vol_phase[0, "Liq"])*100:<{w}.3f}{"%"}'
+    )
+    print(
+        f'{f"Rejection":<{w}s}{value(blk.RO.rejection_phase_comp[0, "Liq", "NaCl"])*100:<{w}.3f}{"%"}'
+    )
+    print(
+        f'{f"Perm Conc":<{w}s}{value(pyunits.convert(blk.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{f"mg/L"}'
+    )
+    print(
+        f'{f"Brine Conc":<{w}s}{value(pyunits.convert(blk.RO.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{f"mg/L"}'
+    )
+    print(
+        f'{f"∆P":<{w}s}{value(pyunits.convert(blk.RO.deltaP[0], to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
+    )
+    print(
+        f'{f"Membrane Area":<{w}s}{value(blk.RO.area):<{w}.3f}{f"{pyunits.get_units(blk.RO.area)}"}'
+    )
+    print(
+        f'{f"Membrane Width":<{w}s}{value(blk.RO.width):<{w}.3f}{f"{pyunits.get_units(blk.RO.width)}"}'
+    )
+    print(
+        f'{f"Membrane Length":<{w}s}{value(blk.RO.length):<{w}.3f}{f"{pyunits.get_units(blk.RO.length)}"}'
+    )
+    print(
+        f'{f"Perm Backpressure":<{w}s}{value(pyunits.convert(blk.RO.mixed_permeate[0].pressure, to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
+    )
+
+
+def report_costing(blk, w=30):
+    title = "Costing Report"
+    side = int(((3 * w) - len(title)) / 2) - 1
+    header = "=" * side + f" {title} " + "=" * side
+    print(f"\n{header}\n")
+    print(f'{"Parameter":<{w}s}{"Value":<{w}s}{"Units":<{w}s}')
+    print(f"{'-' * (3 * w)}")
+    print(
+        f'{f"Levelized Cost of Water":<{w}s}{value(blk.LCOW):<{w}.3f}{f"${pyunits.get_units(blk.LCOW)}"}'
+    )
+    print(
+        f'{f"Specific Energy Consumption":<{w}s}{value(blk.SEC):<{w}.3f}{f"{pyunits.get_units(blk.SEC)}"}'
+    )
+
+
+def report_n_stage_system(m, w=30):
+
+    title = f"N-Stage System Report (N={len(m.fs.stage)})"
+    side = int(((3 * w) - len(title)) / 2) - 1
+    header = "=" * side + f" {title} " + "=" * side
+    print(f"\n{header}\n")
+
+    print(f"System Recovery: {value(m.fs.system_recovery)*100:.2f}%")
+
+    for n, stage in m.fs.stage.items():
+
+        title = f"STAGE {n}"
+        side = int(((3 * w) - len(title)) / 2) - 1
+        header = "(" * side + f" {title} " + ")" * side
+        print(f"\n{header}\n")
+        if stage.add_pump:
+            report_pump(stage, w=w)
+        report_ro(stage, w=w)
+
+    if hasattr(m.fs, "costing"):
+        report_costing(m.fs.costing, w=w)
