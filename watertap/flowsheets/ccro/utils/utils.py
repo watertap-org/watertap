@@ -1,9 +1,12 @@
 from pyomo.environ import (
+    ConcreteModel,
     value,
+    assert_optimal_termination,
     units as pyunits,
 )
 from watertap.flowsheets.ccro.multiperiod.model_state_tool import ModelState
 from idaes.core import UnitModelCostingBlock
+from idaes.core.util.initialization import solve_indexed_blocks
 
 
 def print_table(data, title=None, index_header="Index", precision=6, min_col_width=10):
@@ -223,3 +226,33 @@ def set_pump_operating_pressure(unit, osmotic_pressure, configuration_options):
         unit.control_volume.properties_out[0].pressure.fix(
             configuration_options["p1_pressure_start"]
         )
+
+
+def calculate_operating_pressure(
+    feed_state_block=None,
+    over_pressure=0.15,
+    water_recovery=0.5,
+    NaCl_passage=0.01,
+    solver=None,
+):
+    t = ConcreteModel()
+    prop = feed_state_block.config.parameters
+    t.brine = prop.build_state_block([0])
+
+    t.brine[0].flow_mass_phase_comp["Liq", "H2O"].fix(
+        value(feed_state_block.flow_mass_phase_comp["Liq", "H2O"])
+        * (1 - water_recovery)
+    )
+    t.brine[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
+        value(feed_state_block.flow_mass_phase_comp["Liq", "NaCl"]) * (1 - NaCl_passage)
+    )
+    t.brine[0].pressure.fix(
+        101325
+    )  # valid when osmotic pressure is independent of hydraulic pressure
+    t.brine[0].temperature.fix(value(feed_state_block.temperature))
+
+    t.brine[0].pressure_osm_phase
+    results = solve_indexed_blocks(solver, [t.brine])
+    assert_optimal_termination(results)
+
+    return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
