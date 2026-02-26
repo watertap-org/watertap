@@ -4,6 +4,7 @@ from pyomo.environ import (
     value,
     Constraint,
     Objective,
+    Expression,
     Param,
     TransformationFactory,
     assert_optimal_termination,
@@ -48,20 +49,47 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.model_diagnostics.infeasible import *
-from watertap.flowsheets.ccro.utils.utils import calculate_operating_pressure
+from watertap.flowsheets.ccro.utils.utils import (
+    calculate_operating_pressure,
+    report_pump,
+    report_ro,
+    report_costing,
+    report_n_stage_system,
+)
 
 solver = get_solver()
 
 
-def build_model(
+def add_costing(m):
+
+    m.fs.costing = WaterTAPCosting()
+
+    for n, stage in m.fs.stage.items():
+        if stage.add_pump:
+            stage.pump.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=m.fs.costing
+            )
+        stage.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.costing.cost_process()
+
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol_phase["Liq"])
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.product.properties[0].flow_vol_phase["Liq"], name="SEC"
+    )
+
+
+def build_stage(
     blk,
     m=None,
-    add_booster=False,
+    add_pump=False,
 ):
     if m is None:
         m = blk.model()
 
-    blk.add_booster = add_booster
+    blk.add_pump = add_pump
     blk.feed = StateJunction(property_package=m.fs.properties)
     blk.RO = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -79,7 +107,7 @@ def build_model(
     blk.product = StateJunction(property_package=m.fs.properties)
     blk.disposal = StateJunction(property_package=m.fs.properties)
 
-    if add_booster:
+    if add_pump:
         blk.pump = Pump(property_package=m.fs.properties)
         blk.feed_to_pump = Arc(source=blk.feed.outlet, destination=blk.pump.inlet)
         blk.pump_to_RO = Arc(source=blk.pump.outlet, destination=blk.RO.inlet)
@@ -88,6 +116,11 @@ def build_model(
 
     blk.RO_to_disposal = Arc(source=blk.RO.retentate, destination=blk.disposal.inlet)
     blk.RO_to_product = Arc(source=blk.RO.permeate, destination=blk.product.inlet)
+
+    blk.recovery = Expression(
+        expr=blk.product.properties[0].flow_vol_phase["Liq"]
+        / blk.feed.properties[0].flow_vol_phase["Liq"]
+    )
 
     TransformationFactory("network.expand_arcs").apply_to(blk)
 
@@ -99,7 +132,7 @@ def set_stage_op_conditions(blk, m=None):
     if m is None:
         m = blk.model()
 
-    if blk.add_booster:
+    if blk.add_pump:
         operating_pressure = calculate_operating_pressure(
             feed_state_block=m.fs.feed.properties[0],
             over_pressure=m.over_pressure,
@@ -120,12 +153,12 @@ def set_stage_op_conditions(blk, m=None):
     blk.RO.feed_side.spacer_porosity.fix(0.85)
     blk.RO.permeate.pressure[0].fix(101325)
     blk.RO.width.fix(5)
-    blk.RO.area.fix(60)
+    blk.RO.area.fix(30)
 
 
 def scale_stage(blk, m=None):
 
-    if blk.add_booster:
+    if blk.add_pump:
         iscale.set_scaling_factor(blk.pump.control_volume.work, 1e-3)
         iscale.set_scaling_factor(
             blk.pump.control_volume.properties_out[0].flow_vol_phase["Liq"], 1
@@ -158,7 +191,7 @@ def init_stage(blk, m=None):
 
     blk.feed.initialize()
 
-    if blk.add_booster:
+    if blk.add_pump:
         propagate_state(blk.feed_to_pump)
         blk.pump.initialize()
         propagate_state(blk.pump_to_RO)
@@ -166,11 +199,7 @@ def init_stage(blk, m=None):
         propagate_state(blk.feed_to_RO)
 
     blk.RO.initialize()
-    # propagate_state(blk.RO_to_ERD)
     propagate_state(blk.RO_to_disposal)
-
-    # blk.ERD.initialize()
-    # propagate_state(blk.ERD_to_disposal)
 
     blk.disposal.initialize()
 
@@ -180,14 +209,15 @@ def init_stage(blk, m=None):
     print(f"Degrees of {blk.name}: {degrees_of_freedom(blk)}")
 
 
-if __name__ == "__main__":
-
-    n_stages = 2
-
-    flow_vol = 1e-3
-    salt_mass_frac = 35e-3
-    water_recovery = 0.5
-    over_pressure = 0.5
+def run_n_stage_system(
+    n_stages=3,
+    flow_vol=1e-3,
+    salt_mass_frac=35e-3,
+    water_recovery=0.5,
+    over_pressure=0.5,
+    perm_conc=0.25,
+    pump_dict={1: True},  # first stage always has booster
+):
 
     m = ConcreteModel()
     m.flow_vol = flow_vol
@@ -204,10 +234,7 @@ if __name__ == "__main__":
     m.fs.feed = Feed(property_package=m.fs.properties)
 
     for n, stage in m.fs.stage.items():
-        if n == m.fs.stages_set.first():
-            build_model(stage, m=m, add_booster=True)
-        else:
-            build_model(stage, m=m)
+        build_stage(stage, m=m, add_pump=pump_dict.get(n, False))
 
     m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
 
@@ -234,7 +261,7 @@ if __name__ == "__main__":
     )
 
     m.fs.perm_conc = Constraint(
-        expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"] <= 0.25
+        expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"] <= perm_conc
     )
 
     ### CONNECTIONS
@@ -242,30 +269,35 @@ if __name__ == "__main__":
         source=m.fs.feed.outlet, destination=m.fs.stage[1].feed.inlet
     )
 
-    m.fs.stage1_to_stage2 = Arc(
-        source=m.fs.stage[1].disposal.outlet, destination=m.fs.stage[2].feed.inlet
-    )
-    m.fs.product1_to_mixer = Arc(
-        source=m.fs.stage[1].product.outlet, destination=m.fs.product_mixer.stage1
-    )
+    for n, stage in m.fs.stage.items():
+        if not n == m.fs.stages_set.last():
+            # connect this stage to the next stage
+            a = Arc(
+                source=stage.disposal.outlet, destination=m.fs.stage[n + 1].feed.inlet
+            )
+            m.fs.add_component(f"stage{n}_to_stage{n+1}", a)
+        # connect this stage permeate to the mixer
+        a = Arc(
+            source=stage.product.outlet,
+            destination=m.fs.product_mixer.find_component(f"stage{n}"),
+        )
+        m.fs.add_component(f"stage{n}_product_to_mixer", a)
+        if n == m.fs.stages_set.last():
+            # connect this stage disposal to the ERD
+            a = Arc(source=stage.disposal.outlet, destination=m.fs.ERD.inlet)
+            m.fs.add_component(f"stage{n}_to_ERD", a)
 
-    m.fs.stage2_to_ERD = Arc(
-        source=m.fs.stage[2].disposal.outlet, destination=m.fs.ERD.inlet
-    )
     m.fs.ERD_to_disposal = Arc(source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet)
-
-    m.fs.product2_to_mixer = Arc(
-        source=m.fs.stage[2].product.outlet, destination=m.fs.product_mixer.stage2
-    )
 
     m.fs.product_mixer_to_product = Arc(
         source=m.fs.product_mixer.outlet, destination=m.fs.product.inlet
     )
 
+    add_costing(m)
+
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     #### SCALING
-    print(f"dof after build = {degrees_of_freedom(m)}")
 
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1000 * flow_vol, index=("Liq", "H2O")
@@ -276,8 +308,9 @@ if __name__ == "__main__":
         index=("Liq", "NaCl"),
     )
 
-    scale_stage(m.fs.stage[1], m=m)
-    scale_stage(m.fs.stage[2], m=m)
+    for n, stage in m.fs.stage.items():
+        scale_stage(stage, m=m)
+
     iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
     iscale.calculate_scaling_factors(m)
 
@@ -293,8 +326,8 @@ if __name__ == "__main__":
         hold_state=True,
     )
 
-    set_stage_op_conditions(m.fs.stage[1], m=m)
-    set_stage_op_conditions(m.fs.stage[2], m=m)
+    for n, stage in m.fs.stage.items():
+        set_stage_op_conditions(stage, m=m)
 
     m.fs.ERD.efficiency_pump.fix(0.95)
     m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
@@ -308,38 +341,75 @@ if __name__ == "__main__":
     m.fs.feed.initialize()
     propagate_state(m.fs.feed_to_stage1)
 
-    init_stage(m.fs.stage[1], m=m)
-    m.fs.stage[1].RO.area.unfix()
+    for n, stage in m.fs.stage.items():
+        init_stage(stage, m=m)
+        stage.RO.area.unfix()
+        a = m.fs.find_component(f"stage{n}_product_to_mixer")
+        propagate_state(a)
+        if not n == m.fs.stages_set.last():
+            a = m.fs.find_component(f"stage{n}_to_stage{n+1}")
+            propagate_state(a)
+        if n == m.fs.stages_set.last():
+            a = m.fs.find_component(f"stage{n}_to_ERD")
+            propagate_state(a)
 
-    propagate_state(m.fs.stage1_to_stage2)
-    m.fs.stage[2].RO.area.unfix()
-
-    init_stage(m.fs.stage[2], m=m)
-
-    propagate_state(m.fs.stage2_to_ERD)
     m.fs.ERD.initialize()
 
     propagate_state(m.fs.ERD_to_disposal)
     m.fs.disposal.initialize()
 
-    propagate_state(m.fs.product1_to_mixer)
-    propagate_state(m.fs.product2_to_mixer)
     m.fs.product_mixer.initialize()
 
     propagate_state(m.fs.product_mixer_to_product)
     m.fs.product.initialize()
 
     ### SOLVE
+    m.fs.obj = Objective(expr=m.fs.costing.LCOW, sense="minimize")
     m.fs.system_recovery.unfix()
-    m.fs.obj = Objective(expr=m.fs.system_recovery, sense="maximize")
+
+    for n, stage in m.fs.stage.items():
+        if stage.add_pump:
+            stage.pump.control_volume.properties_out[0].pressure.unfix()
+
     print(f"dof = {degrees_of_freedom(m)}")
 
-    results = solver.solve(m, tee=True)
+    results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
     m.fs.system_recovery.fix()
-    m.fs.stage[1].RO.area.fix()
 
-    assert_degrees_of_freedom(m, 0)
-    results = solver.solve(m, tee=True)
+    for n, stage in m.fs.stage.items():
+        if not n == m.fs.stages_set.last():
+            if stage.add_pump:
+                stage.pump.control_volume.properties_out[0].pressure.fix()
+            stage.RO.area.fix()
+
+    assert degrees_of_freedom(m) == 0
+    print(f"dof = {degrees_of_freedom(m)}")
+    results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
+
+    return m
+
+
+if __name__ == "__main__":
+
+    m = run_n_stage_system(n_stages=3, pump_dict={1: True, 2: True, 3: False})
+    report_n_stage_system(m)
+
+    # import matplotlib.pyplot as plt
+
+    # n_stages = [2, 3, 4, 5]
+    # lcow = []
+
+    # for n in n_stages:
+    #     m = run_n_stage_system(n_stages=n)
+    #     report_n_stage_system(m)
+    #     lcow.append(value(m.fs.costing.LCOW))
+
+    # plt.plot(n_stages, lcow, marker="o")
+    # plt.xlabel("Number of RO stages")
+    # plt.ylabel("LCOW [$/m3]")
+    # plt.title("LCOW vs. Number of RO stages")
+    # plt.grid()
+    # plt.show()
