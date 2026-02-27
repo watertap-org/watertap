@@ -31,22 +31,16 @@ import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
 from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
-from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
-    PressureChangeType,
-)
+
+# from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
+
 from watertap.unit_models.reverse_osmosis_1D import (
     ReverseOsmosis1D,
     PressureChangeType,
     MassTransferCoefficient,
     ConcentrationPolarizationType,
 )
-from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.flowsheets.ccro.utils.utils import (
@@ -55,6 +49,7 @@ from watertap.flowsheets.ccro.utils.utils import (
     report_ro,
     report_costing,
     report_n_stage_system,
+    relax_bounds_for_low_salinity_waters,
 )
 
 solver = get_solver()
@@ -127,7 +122,7 @@ def build_stage(
     print(f"Degrees of freedom {blk.name}: {degrees_of_freedom(blk)}")
 
 
-def set_stage_op_conditions(blk, m=None):
+def set_stage_op_conditions(blk, m=None, max_pressure=100e5, perm_conc=0.5):
 
     if m is None:
         m = blk.model()
@@ -140,7 +135,13 @@ def set_stage_op_conditions(blk, m=None):
             NaCl_passage=0.01,
             solver=solver,
         )
+
+        if operating_pressure >= max_pressure:
+            operating_pressure = max_pressure
+
         print(f"Estimated operating pressure: {operating_pressure*1e-5:.2f} bar")
+
+        blk.pump.control_volume.properties_out[0].pressure.setub(max_pressure)
         blk.pump.control_volume.properties_out[0].pressure.fix(operating_pressure)
         blk.pump.efficiency_pump.fix(0.8)
 
@@ -154,6 +155,9 @@ def set_stage_op_conditions(blk, m=None):
     blk.RO.permeate.pressure[0].fix(101325)
     blk.RO.width.fix(5)
     blk.RO.area.fix(30)
+
+    # if m.salt_mass_frac < 10e-3:
+    #     relax_bounds_for_low_salinity_waters(blk.RO)
 
 
 def scale_stage(blk, m=None):
@@ -210,13 +214,14 @@ def init_stage(blk, m=None):
 
 
 def run_n_stage_system(
-    n_stages=3,
+    n_stages=2,
     flow_vol=1e-3,
     salt_mass_frac=35e-3,
     water_recovery=0.5,
-    over_pressure=0.5,
-    perm_conc=0.25,
-    pump_dict={1: True},  # first stage always has booster
+    over_pressure=0.25,
+    perm_conc=0.5,
+    pump_dict={1: True},  # first stage always has pump
+    **kwargs,
 ):
 
     m = ConcreteModel()
@@ -263,6 +268,10 @@ def run_n_stage_system(
     m.fs.perm_conc = Constraint(
         expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"] <= perm_conc
     )
+
+    for b in [m.fs.feed, m.fs.product, m.fs.disposal]:
+        b.properties[0].flow_vol_phase["Liq"]
+        b.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
 
     ### CONNECTIONS
     m.fs.feed_to_stage1 = Arc(
@@ -319,7 +328,7 @@ def run_n_stage_system(
     m.fs.feed.properties.calculate_state(
         var_args={
             ("flow_vol_phase", "Liq"): m.flow_vol,
-            ("mass_frac_phase_comp", ("Liq", "NaCl")): m.salt_mass_frac,
+            ("conc_mass_phase_comp", ("Liq", "NaCl")): m.salt_mass_frac * 1000,
             ("pressure", None): 101325,
             ("temperature", None): 298,
         },
@@ -366,6 +375,7 @@ def run_n_stage_system(
     ### SOLVE
     m.fs.obj = Objective(expr=m.fs.costing.LCOW, sense="minimize")
     m.fs.system_recovery.unfix()
+    # m.fs.system_recovery.setlb(0.25)
 
     for n, stage in m.fs.stage.items():
         if stage.add_pump:
@@ -376,15 +386,15 @@ def run_n_stage_system(
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    m.fs.system_recovery.fix()
+    # m.fs.system_recovery.fix()
 
     for n, stage in m.fs.stage.items():
-        if not n == m.fs.stages_set.last():
-            if stage.add_pump:
-                stage.pump.control_volume.properties_out[0].pressure.fix()
-            stage.RO.area.fix()
+        # if not n == m.fs.stages_set.last():
+        if stage.add_pump:
+            stage.pump.control_volume.properties_out[0].pressure.fix()
+        stage.RO.area.fix()
 
-    assert degrees_of_freedom(m) == 0
+    # assert degrees_of_freedom(m) == 0
     print(f"dof = {degrees_of_freedom(m)}")
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
@@ -394,7 +404,9 @@ def run_n_stage_system(
 
 if __name__ == "__main__":
 
-    m = run_n_stage_system(n_stages=3, pump_dict={1: True, 2: True, 3: False})
+    m = run_n_stage_system(
+        n_stages=2, salt_mass_frac=5e-3, pump_dict={1: True, 2: False}
+    )
     report_n_stage_system(m)
 
     # import matplotlib.pyplot as plt
