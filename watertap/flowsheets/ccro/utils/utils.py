@@ -287,16 +287,16 @@ def report_ro(blk, w=30):
     print(f"{'-' * (3 * w)}")
 
     print(
-        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"]):<{w}.3f}{"m3/s"}'
+        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"]):<{w}.4f}{"m3/s"}'
     )
     print(
         f'{f"Inlet Conc.":<{w}s}{value(pyunits.convert(blk.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{"mg/L"}'
     )
     print(
-        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"]):<{w}.3f}{"m3/s"}'
+        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"]):<{w}.4f}{"m3/s"}'
     )
     print(
-        f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"]):<{w}.3f}{"m3/s"}'
+        f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"]):<{w}.6f}{"m3/s"}'
     )
     print(
         f'{f"Recovery":<{w}s}{value(blk.RO.recovery_vol_phase[0, "Liq"])*100:<{w}.3f}{"%"}'
@@ -348,8 +348,13 @@ def report_n_stage_system(m, w=30):
     side = int(((3 * w) - len(title)) / 2) - 1
     header = "=" * side + f" {title} " + "=" * side
     print(f"\n{header}\n")
-
-    print(f"System Recovery: {value(m.fs.system_recovery)*100:.2f}%")
+    perm_conc = value(m.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"])
+    feed_conc = value(m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"])
+    brine_conc = value(m.fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"])
+    print(f'{f"System Recovery":<{w}s}{value(m.fs.system_recovery)*100:<{w}.3f}{"%"}')
+    print(f'{f"Feed Conc":<{w}s}{feed_conc:<{w}.3f}{"g/L"}')
+    print(f'{f"Perm Conc":<{w}s}{perm_conc:<{w}.3f}{"g/L"}')
+    print(f'{f"Brine Conc":<{w}s}{brine_conc:<{w}.3f}{"g/L"}')
 
     for n, stage in m.fs.stage.items():
 
@@ -363,3 +368,33 @@ def report_n_stage_system(m, w=30):
 
     if hasattr(m.fs, "costing"):
         report_costing(m.fs.costing, w=w)
+
+
+def relax_bounds_for_low_salinity_waters(blk):
+    blk.feed_side.cp_modulus.setub(5)
+    for e in blk.feed_side.K:
+        blk.feed_side.K[e].setub(0.01)
+        # blk.feed_side.K[e].setlb(1e-7)
+
+    for e in blk.feed_side.cp_modulus:
+        blk.feed_side.cp_modulus[e].setlb(1e-5)
+
+    for e in blk.recovery_mass_phase_comp:
+        if e[-1] == "NaCl":
+            blk.recovery_mass_phase_comp[e].setlb(1e-9)
+            blk.recovery_mass_phase_comp[e].setub(1e-1)
+
+    for e in blk.flux_mass_phase_comp:
+        if e[-1] == "NaCl":
+            blk.flux_mass_phase_comp[e].setlb(1e-9)
+            blk.flux_mass_phase_comp[e].setub(1e-1)
+
+    for e in blk.recovery_mass_phase_comp:
+        if e[-1] == "H2O":
+            blk.recovery_mass_phase_comp[e].setlb(1e-4)
+            blk.recovery_mass_phase_comp[e].setub(0.999)
+
+    for e in blk.flux_mass_phase_comp:
+        if e[-1] == "H2O":
+            blk.flux_mass_phase_comp[e].setlb(1e-5)
+            blk.flux_mass_phase_comp[e].setub(0.999)
