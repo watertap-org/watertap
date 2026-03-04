@@ -122,7 +122,7 @@ def build_stage(
     print(f"Degrees of freedom {blk.name}: {degrees_of_freedom(blk)}")
 
 
-def set_stage_op_conditions(blk, m=None, max_pressure=200e5, perm_conc=0.5):
+def set_stage_op_conditions(blk, m=None, max_pressure=200e5, ro_op_dict={}):
 
     if m is None:
         m = blk.model()
@@ -155,6 +155,13 @@ def set_stage_op_conditions(blk, m=None, max_pressure=200e5, perm_conc=0.5):
     blk.RO.permeate.pressure[0].fix(101325)
     blk.RO.width.fix(5)
     blk.RO.area.fix(30)
+
+    for p, val in ro_op_dict.items():
+        v = blk.RO.find_component(p)
+        if v is not None:
+            v.fix(val)
+        else:
+            print(f"Component {p} not found in RO block")
 
     # if m.salt_mass_frac < 10e-3:
     #     relax_bounds_for_low_salinity_waters(blk.RO)
@@ -335,8 +342,10 @@ def run_n_stage_system(
         hold_state=True,
     )
 
+    ro_op_dict = kwargs.get("ro_op_dict", {})
+
     for n, stage in m.fs.stage.items():
-        set_stage_op_conditions(stage, m=m)
+        set_stage_op_conditions(stage, m=m, ro_op_dict=ro_op_dict)
 
     m.fs.ERD.efficiency_pump.fix(0.95)
     m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
