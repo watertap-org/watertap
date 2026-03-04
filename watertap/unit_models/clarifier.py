@@ -13,6 +13,7 @@
 Clarifier unit model for BSM2 and plant-wide wastewater treatment modeling.
 This unit inherits from the IDAES separator unit.
 """
+
 from pyomo.environ import (
     Constraint,
     Var,

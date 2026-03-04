@@ -26,7 +26,6 @@ from watertap.unit_models import BoronRemoval
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 from watertap.core.solvers import get_solver
 
-
 __author__ = "Austin Ladshaw"
 
 solver = get_solver()

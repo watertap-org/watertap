@@ -45,7 +45,6 @@ from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-
 # Import Watertap cores
 from watertap.core.util.initialization import check_solve, check_dof
 from watertap.core import ControlVolume1DBlock, InitializationMixin

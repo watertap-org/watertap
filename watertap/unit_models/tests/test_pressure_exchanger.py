@@ -50,7 +50,6 @@ from watertap.unit_models import (
 from watertap.property_models import SeawaterParameterBlock, MCASParameterBlock
 from watertap.core.solvers import get_solver
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()

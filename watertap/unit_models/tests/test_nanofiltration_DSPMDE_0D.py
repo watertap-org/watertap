@@ -63,7 +63,6 @@ from watertap.unit_models.nanofiltration_DSPMDE_0D import (
 from watertap.core.util.initialization import check_dof
 from watertap.core.solvers import get_solver
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
