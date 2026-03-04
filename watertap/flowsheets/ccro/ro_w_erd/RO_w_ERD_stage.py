@@ -122,7 +122,7 @@ def build_stage(
     print(f"Degrees of freedom {blk.name}: {degrees_of_freedom(blk)}")
 
 
-def set_stage_op_conditions(blk, m=None, max_pressure=100e5, perm_conc=0.5):
+def set_stage_op_conditions(blk, m=None, max_pressure=200e5, perm_conc=0.5):
 
     if m is None:
         m = blk.model()
