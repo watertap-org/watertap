@@ -383,7 +383,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.energy_recovery_device.pressure_exchanger_cost,
+        obj=fs.costing.energy_recovery_device.unit_cost,
         name="ERD pressure exchanger cost",
         ui_units=pyunits.USD_2018 / (pyunits.meter**3 / pyunits.hours),
         display_units="$/m3/hr",
