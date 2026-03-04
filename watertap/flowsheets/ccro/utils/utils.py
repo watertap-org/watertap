@@ -287,13 +287,13 @@ def report_ro(blk, w=30):
     print(f"{'-' * (3 * w)}")
 
     print(
-        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"]):<{w}.4f}{"m3/s"}'
+        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"]):<{w}.6f}{"m3/s"}'
     )
     print(
         f'{f"Inlet Conc.":<{w}s}{value(pyunits.convert(blk.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{"mg/L"}'
     )
     print(
-        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"]):<{w}.4f}{"m3/s"}'
+        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"]):<{w}.6f}{"m3/s"}'
     )
     print(
         f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"]):<{w}.6f}{"m3/s"}'
@@ -313,6 +313,21 @@ def report_ro(blk, w=30):
     print(
         f'{f"∆P":<{w}s}{value(pyunits.convert(blk.RO.deltaP[0], to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
     )
+    acomp = blk.RO.A_comp[0, "H2O"]
+    print(
+        f'{f"Water Perm (A)":<{w}s}{value(pyunits.convert(acomp, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar)):<{w}.3f}{f"LMH/bar"}'
+    )
+    print(
+        f'{f"Water Perm (A)":<{w}s}{value(acomp):<{w}.3e}{f"m/s/Pa"}'
+    )
+    bcomp = blk.RO.B_comp[0, "NaCl"]
+    print(
+        f'{f"Salt Perm (B)":<{w}s}{value(pyunits.convert(bcomp, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour)):<{w}.3f}{f"LMH"}'
+    )
+    print(
+        f'{f"Salt Perm (B)":<{w}s}{value(bcomp):<{w}.3e}{f"m/s"}'
+    )
+    
     print(
         f'{f"Membrane Area":<{w}s}{value(blk.RO.area):<{w}.3f}{f"{pyunits.get_units(blk.RO.area)}"}'
     )
