@@ -10,8 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-This module contains functions to be used with WaterTAP
-ReverseOsmosis0D or ReverseOsmosis1D unit models.
+This module contains utilities to be used with WaterTAP unit models.
 """
 
 from pyomo.environ import (
@@ -28,9 +27,6 @@ from watertap.property_models.NaCl_T_dep_prop_pack import (
 )
 from watertap.core import MembraneChannel0DBlock, MembraneChannel1DBlock
 from watertap.core.solvers import get_solver
-
-
-__all__ = ["calculate_operating_pressure"]
 
 
 def calculate_operating_pressure(
@@ -114,3 +110,4 @@ def calculate_operating_pressure(
     op_pressure = value(tmp.feed[0].pressure_osm_phase["Liq"]) * over_pressure_factor
 
     return op_pressure
+
