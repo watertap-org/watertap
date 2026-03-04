@@ -632,7 +632,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        init_log.info_high(f"RO Initialization, BEFORE feed_side.initialize with hold_state=True. DOF = {degrees_of_freedom(self)}")
+        init_log.info_high(
+            f"RO Initialization, BEFORE feed_side.initialize with hold_state=True. DOF = {degrees_of_freedom(self)}"
+        )
 
         source_flags = self.feed_side.initialize(
             state_args=state_args,
@@ -642,7 +644,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             initialize_guess=initialize_guess,
         )
 
-        init_log.info_high(f"Initialization Step 1a (feed side) Complete. DOF = {degrees_of_freedom(self)}")
+        init_log.info_high(
+            f"Initialization Step 1a (feed side) Complete. DOF = {degrees_of_freedom(self)}"
+        )
 
         state_args_permeate = self._get_state_args_permeate(
             initialize_guess, state_args
