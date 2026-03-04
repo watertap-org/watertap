@@ -9,31 +9,22 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-"""
-This module contains a zero-order representation of an aeration basin unit
-operation.
-"""
-
-from idaes.core import declare_process_block_class
-
-from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
-
-# Some more information about this module
-__author__ = "Adam Atia"
-
-
-@declare_process_block_class("AerationBasinZO")
-class AerationBasinZOData(ZeroOrderBaseData):
+class FrozenPipes(Exception):
     """
-    Zero-Order model for an aeration basin unit operation.
+    Custom exception for WaterTAP developer errors.
+
+    Raised when there's an issue that indicates a problem with the model
+    implementation or configuration, rather than user input.
+
+    Parameters
+    ----------
+    message : str
+        Error message describing the issue
     """
 
-    CONFIG = ZeroOrderBaseData.CONFIG()
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
-    def build(self):
-        super().build()
-
-        self._tech_type = "aeration_basin"
-
-        build_sido(self)
-        constant_intensity(self)
+    def __str__(self):
+        return f"FrozenPipes: {self.message}"
