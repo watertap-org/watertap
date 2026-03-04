@@ -33,7 +33,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import BrineConcentratorZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -46,7 +46,7 @@ class TestBrineConcentratorZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds"])
 
         m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=m.db)
 
@@ -156,7 +156,7 @@ class Testbrine_concentratorZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds", "foo"])
 
         m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=m.db)
 
@@ -280,7 +280,7 @@ class Testbrine_concentratorZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds"])
 
         m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=db)
 
@@ -303,7 +303,7 @@ class Testbrine_concentratorZOsubtype:
 def test_no_tds_in_solute_list_error():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["foo"])
+    m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,
@@ -325,7 +325,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tds"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tds"])
 
     m.fs.costing = ZeroOrderCosting()
 

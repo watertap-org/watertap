@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import WaterPumpingStationZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -47,7 +47,7 @@ class TestWaterPumpingStationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
         m.fs.unit = WaterPumpingStationZO(property_package=m.fs.params, database=m.db)
 
@@ -127,7 +127,7 @@ class TestWaterPumpingStationZO_without_fix_pump_power_config:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
         m.fs.unit = WaterPumpingStationZO(
             property_package=m.fs.params, database=m.db, fix_pump_power=False
@@ -214,7 +214,7 @@ class TestPumpZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
         m.fs.unit = WaterPumpingStationZO(property_package=m.fs.params, database=db)
 
@@ -246,7 +246,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["foo"])
+    m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
     m.fs.costing = ZeroOrderCosting()
 

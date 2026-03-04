@@ -11,7 +11,6 @@
 #################################################################################
 
 import pytest
-import watertap.property_models.unit_specific.NDMA_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -20,13 +19,14 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyRegressionTest,
     PropertyCalculateStateTest,
 )
+from watertap.property_models import NDMAParameterBlock
 
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 class TestNDMAroperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
-        self.prop_pack = props.NDMAParameterBlock
+        self.prop_pack = NDMAParameterBlock
         self.param_args = {}
         self.prop_args = {}
         self.has_density_terms = False
@@ -34,7 +34,7 @@ class TestNDMAroperty_idaes(PropertyTestHarness_idaes):
 
 class TestNDMAProperty(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = props.NDMAParameterBlock
+        self.prop_pack = NDMAParameterBlock
         self.param_args = {}
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
@@ -64,7 +64,7 @@ class TestNDMAProperty(PropertyTestHarness):
 @pytest.mark.component
 class TestNDMAPropertySolution_1(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.NDMAParameterBlock
+        self.prop_pack = NDMAParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -98,7 +98,7 @@ class TestNDMAPropertySolution_1(PropertyRegressionTest):
 @pytest.mark.component
 class TestNDMACalculateState_1(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.NDMAParameterBlock
+        self.prop_pack = NDMAParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"

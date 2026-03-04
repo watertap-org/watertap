@@ -15,18 +15,19 @@ from pyomo.environ import (
     Var,
     value,
 )
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Product, Feed
-from pyomo.util.check_units import assert_units_consistent
-import watertap.property_models.NaCl_prop_pack as props
-from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
-    OsmoticallyAssistedReverseOsmosis0D,
-)
 
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.property_models import NaClParameterBlock
+from watertap.unit_models import (
+    ReverseOsmosis0D,
+    OsmoticallyAssistedReverseOsmosis0D,
+    Pump,
+    EnergyRecoveryDevice,
+)
 from watertap.flowsheets.oaro.oaro import (
     main,
     build,
@@ -35,6 +36,7 @@ from watertap.flowsheets.oaro.oaro import (
     solve,
     ERDtype,
 )
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -53,7 +55,7 @@ class TestOAROwithTurbine:
         # model set up
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties, props.NaClParameterBlock)
+        assert isinstance(m.fs.properties, NaClParameterBlock)
 
         # unit models
         fs = m.fs

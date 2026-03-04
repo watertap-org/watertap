@@ -14,21 +14,18 @@ CSTR unit model for BSM2 and plant-wide wastewater treatment modeling.
 This unit inherits from the IDAES CSTR unit.
 """
 
-# Import IDAES cores
-from idaes.core import (
-    declare_process_block_class,
-)
-from idaes.models.unit_models.cstr import CSTRData as CSTRIDAESData
-
-import idaes.logger as idaeslog
-from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
-
 from pyomo.environ import (
     Constraint,
     NonNegativeReals,
     Var,
     units as pyunits,
 )
+
+# Import IDAES cores
+from idaes.core import declare_process_block_class
+from idaes.models.unit_models.cstr import CSTRData as CSTRIDAESData
+import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 from watertap.costing.unit_models.cstr import cost_cstr
 

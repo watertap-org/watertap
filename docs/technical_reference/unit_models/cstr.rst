@@ -5,7 +5,7 @@ Continuously Stirred Tank Reactor
 
 .. code-block:: python
 
-   from watertap.unit_models.cstr import CSTR
+   from watertap.unit_models import CSTR
 
 .. index::
    pair: watertap.unit_models.cstr;cstr
