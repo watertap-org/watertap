@@ -12,6 +12,7 @@
 """
 Tests for zero-order struvite classifier model
 """
+
 import pytest
 import os
 

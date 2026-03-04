@@ -559,6 +559,11 @@ class TestStoichiometricReactor:
         )
 
     @pytest.mark.unit
+    def test_report(self, basic_unit_mass):
+        m = basic_unit_mass
+        m.fs.unit.report()
+
+    @pytest.mark.unit
     def test_dissolution(self, dissolution_reactor):
         m = dissolution_reactor
         calculate_scaling_factors(m)
@@ -605,6 +610,11 @@ class TestStoichiometricReactor:
         )
 
     @pytest.mark.unit
+    def test_dissolution_report(self, dissolution_reactor):
+        m = dissolution_reactor
+        m.fs.unit.report()
+
+    @pytest.mark.unit
     def test_precipitation(self, precipitation_reactor):
         m = precipitation_reactor
         calculate_scaling_factors(m)
@@ -627,6 +637,11 @@ class TestStoichiometricReactor:
                 "Liq", "Mg_2+"
             ]
         )
+
+    @pytest.mark.unit
+    def test_precipitation_report(self, precipitation_reactor):
+        m = precipitation_reactor
+        m.fs.unit.report()
 
     @pytest.mark.unit
     def test_failed_build(self):

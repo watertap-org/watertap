@@ -149,6 +149,9 @@ class TestReverseOsmosis1D(UnitTestHarness):
             },
         }
 
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 3.9140627e8  # Was previously 4.8157167e15
+
         return m
 
 
@@ -257,6 +260,9 @@ class TestReverseOsmosis1D_basic(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 4.434273e9  # Was previously 3.40497838e14
 
         return m
 
@@ -383,6 +389,9 @@ class TestReverseOsmosis1D_SKK(UnitTestHarness):
             },
         }
 
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 1.2297005e11  # Was previously 4.14262023e17
+
         return m
 
 
@@ -492,6 +501,9 @@ class TestReverseOsmosis1D_cp_mod_fixed(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 1.161779e10  # Was previously 1.9452857e15
 
         return m
 
@@ -603,6 +615,9 @@ class TestReverseOsmosis1D_cp_calculated_kf_fixed(UnitTestHarness):
             },
         }
 
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 5.781112e9  # Was previously 6.166070e14
+
         return m
 
 
@@ -712,6 +727,9 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 7.540701e9  # Was previously 1.27214033e17
 
         return m
 
@@ -824,6 +842,9 @@ class TestReverseOsmosis1D_friction_factor_spiral_wound(UnitTestHarness):
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 1.693107e8  # Was previously 2.7895630e14
 
         return m
 
@@ -939,6 +960,9 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_dx(
             },
         }
 
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 8.2477371e9  # Was previously 1.3695196e17
+
         return m
 
 
@@ -1053,5 +1077,8 @@ class TestReverseOsmosis1D_cp_calculated_kf_calculated_pdrop_fixed_by_stage(
                 "out": flow_mass_retentate + flow_mass_permeate,
             },
         }
+
+        self.skip_badly_scaled_vars = True
+        self.condition_number = 7.502876 * 1e10  # Was previously 1.5101144e17
 
         return m

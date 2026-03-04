@@ -19,6 +19,7 @@ Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 
 """
+
 import pytest
 from pyomo.environ import (
     ConcreteModel,

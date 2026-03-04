@@ -9,9 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-"""
-
-"""
+""" """
 
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Andrew Lee"

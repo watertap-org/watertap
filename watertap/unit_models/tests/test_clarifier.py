@@ -12,6 +12,7 @@
 """
 Tests for clarifier.
 """
+
 __author__ = "Chenyu Wang"
 import pytest
 from pyomo.environ import (

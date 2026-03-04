@@ -26,7 +26,6 @@ from watertap.costing.unit_models.heat_exchanger import (
 )
 from watertap.core.solvers import get_solver
 
-
 _log = idaeslog.getLogger(__name__)
 
 

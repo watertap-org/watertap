@@ -44,7 +44,6 @@ from watertap.costing.unit_models.nanofiltration import cost_nanofiltration
 from watertap.core.solvers import get_solver
 from watertap.custom_exceptions import FrozenPipes
 
-
 _log = idaeslog.getLogger(__name__)
 
 

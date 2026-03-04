@@ -51,7 +51,6 @@ from watertap.property_models import NaClParameterBlock
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 from watertap.core.solvers import get_solver
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()

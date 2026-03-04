@@ -12,6 +12,7 @@
 """
 Tests for dewatering unit example.
 """
+
 from io import StringIO
 import pytest
 
@@ -66,7 +67,6 @@ from watertap.costing.unit_models.dewatering import (
     DewateringType,
 )
 from watertap.core.solvers import get_solver
-
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 

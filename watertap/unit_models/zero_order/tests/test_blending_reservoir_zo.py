@@ -12,6 +12,7 @@
 """
 Tests for zero-order blending reservoir model
 """
+
 import pytest
 
 from pyomo.environ import (

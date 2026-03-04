@@ -12,6 +12,7 @@
 """
 Tests for zero-order dissolved air flotation model
 """
+
 import pytest
 
 

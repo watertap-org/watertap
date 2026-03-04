@@ -12,6 +12,7 @@
 """
 Tests for general zero-order costing methods
 """
+
 import pytest
 
 from pyomo.environ import (

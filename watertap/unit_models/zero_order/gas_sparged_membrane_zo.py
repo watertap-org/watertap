@@ -12,6 +12,7 @@
 """
 This module contains a zero-order representation of a gas-sparged membrane unit.
 """
+
 from types import MethodType
 from idaes.core import declare_process_block_class
 

@@ -12,6 +12,7 @@
 """
 Tests for zero-order municipal drinking model.
 """
+
 import pytest
 
 

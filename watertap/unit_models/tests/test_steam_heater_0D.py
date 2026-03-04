@@ -24,7 +24,6 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 )
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
-
 solver = get_solver()
 
 

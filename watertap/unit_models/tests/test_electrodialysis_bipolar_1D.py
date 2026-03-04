@@ -41,7 +41,6 @@ from watertap.unit_models.electrodialysis_bipolar_1D import (
 )
 from watertap.core.solvers import get_solver
 
-
 __author__ = "Johnson Dhanasekaran"
 
 solver = get_solver()

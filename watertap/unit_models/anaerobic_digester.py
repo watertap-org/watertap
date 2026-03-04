@@ -42,7 +42,6 @@ from pyomo.environ import (
     NonNegativeReals,
 )
 
-
 # Import IDAES cores
 from idaes.core import (
     ControlVolume0DBlock,

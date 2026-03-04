@@ -35,7 +35,6 @@ from watertap.core.solvers import get_solver
 from watertap.costing import WaterTAPCosting
 from watertap.property_models import MCASParameterBlock
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 

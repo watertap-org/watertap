@@ -14,7 +14,6 @@ This module contains a zero-order representation of a cartridge filtration unit
 operation.
 """
 
-
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 

@@ -11,10 +11,10 @@
 #################################################################################
 """
 This property package computes a multi-component aqueous solution that can
-contain ionic and/or neutral solute species. It supports basic calculation 
-of component quantities and some physical, chemical and electrical properties. 
+contain ionic and/or neutral solute species. It supports basic calculation
+of component quantities and some physical, chemical and electrical properties.
 
-This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally 
+This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally
 designed for use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
 nanofiltration.
 """
@@ -1390,6 +1390,28 @@ class MCASStateBlockData(StateBlockData):
             doc="State pressure",
         )
 
+        if self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+            self.flow_mass_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.5,
+                bounds=(0, None),
+                units=pyunits.kg / pyunits.s,
+                doc="Component Mass flowrate",
+            )
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+            self.flow_mol_phase_comp = Var(
+                self.params.phase_list,
+                self.params.component_list,
+                initialize=0.1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.mol / pyunits.s,
+                doc="Component molar flow rate",
+            )
+        else:
+            raise ConfigurationError()
+
     # -----------------------------------------------------------------------------
     # Property Methods
     # Material flow state variables generated via on-demand props
@@ -1407,8 +1429,8 @@ class MCASStateBlockData(StateBlockData):
 
             def rule_flow_mol_phase_comp(b, p, j):
                 return (
-                    b.flow_mass_phase_comp[p, j]
-                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
+                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
+                    == b.flow_mol_phase_comp[p, j]
                 )
 
             self.eq_flow_mol_phase_comp = Constraint(
@@ -1441,15 +1463,9 @@ class MCASStateBlockData(StateBlockData):
             )
 
     def _flow_mass_comp(self):
-        add_object_reference(
-            self,
-            "flow_mass_comp",
-            {
-                j: self.flow_mass_phase_comp[p, j]
-                for j in self.params.component_list
-                for p in self.params.phase_list
-            },
-        )
+        @self.Expression(self.params.component_list)
+        def flow_mass_comp(b, j):
+            return b.flow_mass_phase_comp["Liq", j]
 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
@@ -1835,15 +1851,11 @@ class MCASStateBlockData(StateBlockData):
                 == ElectricalMobilityCalculation.none
             ):
                 if (p, j) not in self.params.config.elec_mobility_data.keys():
-                    raise ConfigurationError(
-                        """ 
+                    raise ConfigurationError(""" 
                         Missing the "elec_mobility_data" configuration to build the elec_mobility_phase_comp 
                         and/or its derived variables for {} in {}. 
                         Provide this configuration or use ElectricalMobilityCalculation.EinsteinRelation.
-                        """.format(
-                            j, self.name
-                        )
-                    )
+                        """.format(j, self.name))
                 else:
                     return (
                         b.elec_mobility_phase_comp[p, j]
@@ -1865,14 +1877,10 @@ class MCASStateBlockData(StateBlockData):
                     )
                 else:
                     if (p, j) in self.params.config.elec_mobility_data.keys():
-                        _log.warning(
-                            """
+                        _log.warning("""
                             The provided elec_mobility_data of {} will be overwritten 
                             by the calculated data for {} because the EinsteinRelation 
-                            method is selected.""".format(
-                                j, self.name
-                            )
-                        )
+                            method is selected.""".format(j, self.name))
 
                     return b.elec_mobility_phase_comp[p, j] == b.diffus_phase_comp[
                         p, j
@@ -2085,13 +2093,11 @@ class MCASStateBlockData(StateBlockData):
                     )
                 else:
                     if len(self.params.ion_set) > 2:
-                        _log.warning(
-                            """ 
+                        _log.warning(""" 
                             Caution should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
                             Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
                             the phase equivalent conductivity using the "EquivalentConductivityCalculation.ElectricalMobility" method 
-                            is recommended."""
-                        )
+                            is recommended.""")
                     return (
                         b.equiv_conductivity_phase[p]
                         == self.params.config.equiv_conductivity_phase_data[p]
@@ -2780,6 +2786,22 @@ class MCASStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(
                             self.flow_mol_phase_comp["Liq", j], sf
                         )
+
+        if self.is_property_constructed("flow_mol_comp"):
+            for j in self.flow_mol_comp:
+                iscale.set_scaling_factor(
+                    self.flow_mol_comp[j],
+                    # Don't provide a default since this should always be set
+                    iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]),
+                )
+
+        if self.is_property_constructed("flow_mass_comp"):
+            for j in self.flow_mass_comp:
+                iscale.set_scaling_factor(
+                    self.flow_mass_comp[j],
+                    # Don't provide a default since this should always be set
+                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j]),
+                )
 
         # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value

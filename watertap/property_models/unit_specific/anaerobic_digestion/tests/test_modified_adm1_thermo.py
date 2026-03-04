@@ -35,7 +35,6 @@ from watertap.property_models import (
 )
 from watertap.core.solvers import get_solver
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()

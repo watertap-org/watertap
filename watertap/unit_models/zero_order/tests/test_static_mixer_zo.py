@@ -12,6 +12,7 @@
 """
 Tests for zero-order static mixer model.
 """
+
 import pytest
 
 

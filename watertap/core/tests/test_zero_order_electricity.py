@@ -12,6 +12,7 @@
 """
 Tests for general zero-order property package
 """
+
 import pytest
 
 from types import MethodType

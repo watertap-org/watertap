@@ -46,7 +46,6 @@ from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import 
 )
 from watertap.core.solvers import get_solver
 
-
 solver = get_solver()
 
 
@@ -302,9 +301,7 @@ class TestROwithPX:
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---system metrics---
+        assert captured.out == """---system metrics---
 Feed: 1.02 kg/s, 35000 ppm
 Product: 0.493 kg/s, 240 ppm
 Volumetric recovery: 49.5%
@@ -312,7 +309,6 @@ Water recovery: 50.0%
 Energy Consumption: 2.8 kWh/m3
 Levelized cost of water: 0.44 $/m3
 """
-        )
 
     @pytest.mark.component
     def test_display_design(self, system_frame, capsys):
@@ -321,9 +317,7 @@ Levelized cost of water: 0.44 $/m3
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---decision variables---
+        assert captured.out == """---decision variables---
 Operating pressure 74.9 bar
 Membrane area 54.3 m2
 ---design variables---
@@ -336,7 +330,6 @@ Pump 2
 outlet pressure: 74.9 bar
 power 0.38 kW
 """
-        )
 
     @pytest.mark.component
     def test_display_state(self, system_frame, capsys):
@@ -345,9 +338,7 @@ power 0.38 kW
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---state---
+        assert captured.out == """---state---
 Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
 Split 1   : 0.505 kg/s, 35000 ppm, 1.0 bar
 P1 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
@@ -359,7 +350,6 @@ RO perm   : 0.493 kg/s, 240 ppm, 1.0 bar
 RO reten  : 0.528 kg/s, 67424 ppm, 72.4 bar
 PXR brine out: 0.528 kg/s, 67424 ppm, 1.0 bar
 """
-        )
 
     @pytest.mark.component
     def test_optimization(self, system_frame):
@@ -600,9 +590,7 @@ class TestROnoERD:
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---system metrics---
+        assert captured.out == """---system metrics---
 Feed: 1.02 kg/s, 35000 ppm
 Product: 0.493 kg/s, 240 ppm
 Volumetric recovery: 49.5%
@@ -610,7 +598,6 @@ Water recovery: 50.0%
 Energy Consumption: 5.2 kWh/m3
 Levelized cost of water: 0.74 $/m3
 """
-        )
 
     @pytest.mark.component
     def test_display_design(self, system_frame, capsys):
@@ -619,9 +606,7 @@ Levelized cost of water: 0.74 $/m3
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---decision variables---
+        assert captured.out == """---decision variables---
 Operating pressure 74.9 bar
 Membrane area 54.3 m2
 ---design variables---
@@ -629,7 +614,6 @@ Pump 1
 outlet pressure: 74.9 bar
 power 9.24 kW
 """
-        )
 
     @pytest.mark.component
     def test_display_state(self, system_frame, capsys):
@@ -638,15 +622,12 @@ power 9.24 kW
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---state---
+        assert captured.out == """---state---
 Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
 P1 out    : 1.021 kg/s, 35000 ppm, 74.9 bar
 RO perm   : 0.493 kg/s, 240 ppm, 1.0 bar
 RO reten  : 0.528 kg/s, 67424 ppm, 72.4 bar
 """
-        )
 
     @pytest.mark.component
     def test_optimization(self, system_frame):

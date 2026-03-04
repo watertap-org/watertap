@@ -12,6 +12,7 @@
 """
 Tests for general zero-order base class
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, Var, units as pyunits

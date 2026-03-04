@@ -12,6 +12,7 @@
 """
 Tests for zero-order surface discharge model
 """
+
 import pytest
 
 
