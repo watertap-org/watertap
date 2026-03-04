@@ -1,104 +1,83 @@
+import os
+from datetime import datetime
 
-import pandas as pd
-from pyomo.environ import units as pyunits
-from parameter_sweep import (
-    LinearSample,
-    parameter_sweep,
-)
+from pyomo.environ import check_optimal_termination, units as pyunits
+
+from idaes.core.util.model_statistics import degrees_of_freedom
+
+from parameter_sweep.loop_tool.loop_tool import loopTool, get_working_dir
+
 import watertap.flowsheets.ccro.ro_w_erd.RO_w_ERD_stage as ro
+from watertap.flowsheets.ccro.utils.utils import report_n_stage_system
+from watertap.core.util.model_diagnostics.infeasible import *
+from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
 
-solver = get_solver()
+
+here = os.path.dirname(os.path.abspath(__file__))
 
 
-def build_and_solve(n_stages=2, salt_mass_frac=35e-3, **kwargs):
+def solve_ro_w_erd(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
 
-    m = ro.run_n_stage_system(
-        n_stages=n_stages, salt_mass_frac=salt_mass_frac, **kwargs
-    )
-
+    if solver is None:
+        solver = get_solver()
+    # m.fs.system_recovery.unfix()
+    # m.fs.system_recovery.fix(0.5)
     for n, stage in m.fs.stage.items():
+        stage.RO.area.unfix()
         if stage.add_pump:
             stage.pump.control_volume.properties_out[0].pressure.unfix()
-        stage.RO.area.unfix()
 
-    m.fs.system_recovery.unfix()
+    print("\n--------- SOLVING ---------\n")
+    print(f"Degrees of Freedom: {degrees_of_freedom(m)}")
 
-    return m
+    results = solver.solve(m, tee=tee, options={"max_iter": max_iter})
+
+    if check_optimal_termination(results):
+        print("\n--------- OPTIMAL SOLVE!!! ---------\n")
+        return results
+    print_close_to_bounds(m)
+    if raise_on_failure:
+        print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
+
+        print("\n--------- CLOSE TO BOUNDS ---------\n")
+        print_close_to_bounds(m)
+
+        print("\n--------- INFEASIBLE BOUNDS ---------\n")
+        print_infeasible_bounds(m)
+
+        print("\n--------- INFEASIBLE CONSTRAINTS ---------\n")
+        print_infeasible_constraints(m)
+
+    return results
 
 
-def build_sweep_params(m, num_samples=20):
+def main():
 
-    sweep_params = dict()
-    sweep_params["system_recovery"] = LinearSample(
-        m.fs.system_recovery, 0.25, 0.75, num_samples
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M")
+    save_file = "ro_w_erd"
+
+    loopTool(
+        f"{here}/salinity_recovery_sweep.yaml",
+        build_function=ro.run_n_stage_system,
+        optimize_function=solve_ro_w_erd,
+        save_name=save_file,
+        saving_dir=here,
+        number_of_subprocesses=1,
+        num_loop_workers=8,
     )
 
-    return sweep_params
+    # m = ro.run_n_stage_system(
+    #     flow_vol=1e-3,
+    #     salt_mass_frac=35e-3,
+    #     water_recovery=0.5,
+    #     pump_dict={1: True, 2: False},
+    # )
 
+    # results = solve_ro_w_erd(m)
 
-def build_outputs(m):
-
-    outputs = dict()
-    outputs["feed_conc"] = m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
-    outputs["perm_conc"] = m.fs.product.properties[0].conc_mass_phase_comp[
-        "Liq", "NaCl"
-    ]
-    outputs["brine_conc"] = m.fs.disposal.properties[0].conc_mass_phase_comp[
-        "Liq", "NaCl"
-    ]
-    outputs["system_recovery"] = m.fs.system_recovery
-    outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["SEC"] = m.fs.costing.SEC
-
-    for n, stage in m.fs.stage.items():
-        outputs[f"stage_{n}_inlet_flow"] = stage.feed.properties[0].flow_vol_phase[
-            "Liq"
-        ]
-        outputs[f"stage_{n}_inlet_conc"] = stage.feed.properties[
-            0
-        ].conc_mass_phase_comp["Liq", "NaCl"]
-        outputs[f"stage_{n}_permeate_flow"] = stage.product.properties[
-            0
-        ].flow_vol_phase["Liq"]
-        outputs[f"stage_{n}_permeate_conc"] = stage.product.properties[
-            0
-        ].conc_mass_phase_comp["Liq", "NaCl"]
-        outputs[f"stage_{n}_brine_flow"] = stage.disposal.properties[0].flow_vol_phase[
-            "Liq"
-        ]
-        outputs[f"stage_{n}_brine_conc"] = stage.disposal.properties[
-            0
-        ].conc_mass_phase_comp["Liq", "NaCl"]
-        outputs[f"stage_{n}_recovery"] = stage.recovery
-
-        if stage.add_pump:
-            outputs[f"stage_{n}_pressure"] = stage.pump.control_volume.properties_out[
-                0
-            ].pressure
-        outputs[f"stage_{n}_area"] = stage.RO.area
-
-    outputs["erd_power"] = m.fs.ERD.work_mechanical[0]
-
-    return outputs
+    # report_n_stage_system(m)
 
 
 if __name__ == "__main__":
-
-
-    salt_fracs = [5e-3, 10e-3, 20e-3, 35e-3, 50e-3, 60e-3, 70e-3]
-    df = pd.DataFrame()
-    for s in salt_fracs:
-        x = int(s * 1000)
-        save_file = f"tds_{x}.csv"
-
-        results_array, results_dict = parameter_sweep(
-            build_model=build_and_solve,
-            build_model_kwargs={"n_stages": 2, "salt_mass_frac": s},
-            build_sweep_params=build_sweep_params,
-            build_outputs=build_outputs,
-            csv_results_file_name=save_file,
-        )
-        df = pd.concat([df, pd.read_csv(save_file)], ignore_index=True)
-
-    df.to_csv("salt_mass_frac_sweep.csv", index=False)
+    main()
