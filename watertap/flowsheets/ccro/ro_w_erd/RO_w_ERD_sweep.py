@@ -16,41 +16,16 @@ from watertap.core.solvers import get_solver
 
 here = os.path.dirname(os.path.abspath(__file__))
 
+def optimize_for_recovery(m, **kwargs):
 
-def solve_ro_w_erd(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
-
-    if solver is None:
-        solver = get_solver()
-    # m.fs.system_recovery.unfix()
-    # m.fs.system_recovery.fix(0.5)
     for n, stage in m.fs.stage.items():
         stage.RO.area.unfix()
         if stage.add_pump:
             stage.pump.control_volume.properties_out[0].pressure.unfix()
 
-    print("\n--------- SOLVING ---------\n")
-    print(f"Degrees of Freedom: {degrees_of_freedom(m)}")
-
-    results = solver.solve(m, tee=tee, options={"max_iter": max_iter})
-
-    if check_optimal_termination(results):
-        print("\n--------- OPTIMAL SOLVE!!! ---------\n")
-        return results
-    print_close_to_bounds(m)
-    if raise_on_failure:
-        print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
-
-        print("\n--------- CLOSE TO BOUNDS ---------\n")
-        print_close_to_bounds(m)
-
-        print("\n--------- INFEASIBLE BOUNDS ---------\n")
-        print_infeasible_bounds(m)
-
-        print("\n--------- INFEASIBLE CONSTRAINTS ---------\n")
-        print_infeasible_constraints(m)
+    results = ro.solve_ro_w_erd(m, **kwargs)
 
     return results
-
 
 def main():
 
@@ -60,7 +35,7 @@ def main():
     loopTool(
         f"{here}/salinity_recovery_sweep.yaml",
         build_function=ro.run_n_stage_system,
-        optimize_function=solve_ro_w_erd,
+        optimize_function=optimize_for_recovery,
         save_name=save_file,
         saving_dir=here,
         number_of_subprocesses=1,
@@ -74,7 +49,7 @@ def main():
     #     pump_dict={1: True, 2: False},
     # )
 
-    # results = solve_ro_w_erd(m)
+    # results = optimize_for_recovery(m)
 
     # report_n_stage_system(m)
 

@@ -1,3 +1,4 @@
+## FULL SALINITY RECOVERY SWEEP
 two_stage_1_pump_salinity_recovery_sweep:
   build_defaults:
     n_stages: 2
@@ -52,21 +53,116 @@ two_stage_2_pump_salinity_recovery_sweep:
         upper_limit: 0.9
         num_samples: 11
 
-# study_SW_mesh_study_optimization_lcow:
+# ## SEAWATER
+# SW_two_stage_1_pump_salinity_recovery_sweep:
 #   build_defaults:
-#     feed_tds: 35
-#     fixed_setup: False
-#     time_steps: 40
-#     n_flushing_points: 10
+#     n_stages: 2
+#     flow_vol: 0.001
+#     salt_mass_frac: 0.035
+#     water_recovery: 0.5
+#     perm_conc: 0.5
+#     pump_dict: {1: True, 2: False}
 #   build_loop:
-#     time_steps:
-#       - 20
-#       - 40
+#     salt_mass_frac:
+#       - 0.005
+#       - 0.015
+#       - 0.025
+#       - 0.035
+#       - 0.045
+#       - 0.055
+#       - 0.065
+#       - 0.075
+#       # - 0.1
 #     sweep_param_loop:
 #       recovery:
 #         type: LinearSample
-#         param: overall_recovery
-#         lower_limit: 0.4
-#         upper_limit: 0.7
-#         num_samples: 16
+#         param: fs.system_recovery
+#         lower_limit: 0.2
+#         upper_limit: 0.9
+#         num_samples: 11
+
+# SW_two_stage_2_pump_salinity_recovery_sweep:
+#   build_defaults:
+#     n_stages: 2
+#     flow_vol: 0.001
+#     salt_mass_frac: 0.035
+#     water_recovery: 0.5
+#     perm_conc: 0.5
+#     pump_dict: {1: True, 2: True}
+#   build_loop:
+#     salt_mass_frac:
+#       - 0.005
+#       - 0.015
+#       - 0.025
+#       - 0.035
+#       - 0.045
+#       - 0.055
+#       - 0.065
+#       - 0.075
+#       # - 0.1
+#     sweep_param_loop:
+#       recovery:
+#         type: LinearSample
+#         param: fs.system_recovery
+#         lower_limit: 0.2
+#         upper_limit: 0.9
+#         num_samples: 11
+
+
+# ### BRACKISH WATER
+# BW_two_stage_1_pump_salinity_recovery_sweep:
+#   build_defaults:
+#     n_stages: 2
+#     flow_vol: 0.001
+#     salt_mass_frac: 0.035
+#     water_recovery: 0.5
+#     perm_conc: 0.5
+#     pump_dict: {1: True, 2: False}
+#   build_loop:
+#     salt_mass_frac:
+#       - 0.005
+#       - 0.015
+#       - 0.025
+#       - 0.035
+#       - 0.045
+#       - 0.055
+#       - 0.065
+#       - 0.075
+#       # - 0.1
+#     sweep_param_loop:
+#       recovery:
+#         type: LinearSample
+#         param: fs.system_recovery
+#         lower_limit: 0.2
+#         upper_limit: 0.9
+#         num_samples: 11
+
+# BW_two_stage_2_pump_salinity_recovery_sweep:
+#   build_defaults:
+#     n_stages: 2
+#     flow_vol: 0.001
+#     salt_mass_frac: 0.035
+#     water_recovery: 0.5
+#     perm_conc: 0.5
+#     pump_dict: {1: True, 2: True}
+#   build_loop:
+#     salt_mass_frac:
+#       - 0.005
+#       - 0.015
+#       - 0.025
+#       - 0.035
+#       - 0.045
+#       - 0.055
+#       - 0.065
+#       - 0.075
+#       # - 0.1
+#     sweep_param_loop:
+#       recovery:
+#         type: LinearSample
+#         param: fs.system_recovery
+#         lower_limit: 0.2
+#         upper_limit: 0.9
+#         num_samples: 11
+
+
 
