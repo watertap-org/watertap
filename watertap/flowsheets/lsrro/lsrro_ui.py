@@ -599,8 +599,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="System metrics",
     )
-    if len(fs.NonFinalStages) > 1:
-        total_area = sum(fs.ROUnits[i].area for i in fs.NonFinalStages)
+    if len(fs.Stages) > 1:
+        total_area = sum(fs.ROUnits[i].area for i in fs.Stages)
         exports.add(
             obj=total_area,
             name="Total membrane area",
