@@ -599,18 +599,19 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="System metrics",
     )
-    total_area = sum(fs.ROUnits[i].area for i in fs.NonFinalStages)
-    exports.add(
-        obj=total_area,
-        name="Total membrane area",
-        ui_units=pyunits.m**2,
-        display_units="m^2",
-        rounding=2,
-        description="Total membrane area",
-        is_input=False,
-        is_output=True,
-        output_category="System metrics",
-    )
+    if len(fs.NonFinalStages) > 1:
+        total_area = sum(fs.ROUnits[i].area for i in fs.NonFinalStages)
+        exports.add(
+            obj=total_area,
+            name="Total membrane area",
+            ui_units=pyunits.m**2,
+            display_units="m^2",
+            rounding=2,
+            description="Total membrane area",
+            is_input=False,
+            is_output=True,
+            output_category="System metrics",
+        )
     exports.add(
         obj=fs.annual_feed,
         name="Annual feed flow",
