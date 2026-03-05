@@ -1,3 +1,5 @@
+import os
+# import pandas as pd
 from pyomo.environ import (
     check_optimal_termination,
     value,
@@ -28,6 +30,8 @@ from watertap.flowsheets.ccro.ccro_flowsheet_functions import (
 )
 import watertap.flowsheets.ccro.utils.ipoptv2 as ipt2
 
+
+here = os.path.dirname(os.path.abspath(__file__))
 
 def create_ccro_multiperiod(
     n_time_points=5,
@@ -725,6 +729,9 @@ def print_results_table(mp, w=15):
         period_data[t] = row
 
     # ── Print the period table ──────────────────────────────────────
+    
+    # period_data_df = pd.DataFrame.from_dict(period_data, orient="index")
+    # period_data_df.to_csv(f"{here}/period_data.csv")
     print_table(period_data, title="CCRO MULTIPERIOD RESULTS", index_header="Period")
 
     # ── Summary metrics ─────────────────────────────────────────────
@@ -781,8 +788,11 @@ def print_results_table(mp, w=15):
     summary["RO Inlet Velocity"] = first_blk.fs.RO.feed_side.velocity[0, 0].value
     if mp.find_component("costing"):
         summary["LCOW ($/m3)"] = value(mp.costing.LCOW)
+        summary["SEC (kWh/m3)"] = value(mp.costing.SEC)
 
     print_table({"Value": summary}, title="SUMMARY", index_header="Metric")
+    # summary_df = pd.DataFrame.from_dict(summary, orient="index")
+    # summary_df.to_csv(f"{here}/summary_data.csv")
 
     # ── Per-block RO / pump detail ──────────────────────────────────
     detail_data = {}
@@ -857,6 +867,8 @@ def print_results_table(mp, w=15):
 
     if detail_data:
         print_table(detail_data, title="BLOCK DETAILS", index_header="Block")
+        # detail_data_df = pd.DataFrame.from_dict(detail_data, orient="index")
+        # detail_data_df.to_csv(f"{here}/detail_data.csv")
 
 
 def validation_configs():

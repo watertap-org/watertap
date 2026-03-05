@@ -19,6 +19,7 @@ def build(
     cc_config["A_comp"] = A_comp * (pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar)
     cc_config["B_comp"] = B_comp * (pyunits.liter / pyunits.m**2 / pyunits.hour)
     cc_config["raw_feed_conc"] = feed_tds * pyunits.g / pyunits.L
+    
     mp = CCRO.create_ccro_multiperiod(
         n_time_points=time_steps,
         n_flushing_points=n_flushing_points,
@@ -71,21 +72,22 @@ def solve_model(mp, **kwargs):
 
 
 if __name__ == "__main__":
+
     mp_bw = build(feed_tds=5, A_comp=5, B_comp=0.5)
     mp_bw.overall_recovery.fix(0.95)
     results = solve_model(mp_bw)
+    CCRO.print_results_table(mp_bw)
 
-    mp_sw = build(feed_tds=35, A_comp=1.5, B_comp=0.1)
-    mp_sw.overall_recovery.fix(0.5)
-    results = solve_model(mp_sw)
+    # mp_sw = build(feed_tds=35, A_comp=1.5, B_comp=0.1)
+    # mp_sw.overall_recovery.fix(0.5)
+    # results = solve_model(mp_sw)
 
     # mp_pw = build(feed_tds=55)
     # mp_pw.overall_recovery.fix(0.5)
     # results = solve_model(mp_pw)
 
     
-    CCRO.print_results_table(mp_bw)
-    CCRO.print_results_table(mp_sw)
+    # CCRO.print_results_table(mp_sw)
     # CCRO.print_results_table(mp_pw)
     # for r in [0.55, 0.56, 0.57, 0.58, 0.59, 0.6]:
     #     mp.overall_recovery.fix(r)

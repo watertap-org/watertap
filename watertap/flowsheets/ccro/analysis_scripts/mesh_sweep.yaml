@@ -1,0 +1,25 @@
+BW_mesh_study:
+  build_defaults:
+    feed_tds: 5
+    fixed_setup: False
+    use_hold_up: True
+    time_steps: 20
+    n_flushing_points: 5
+    A_comp: 5
+    B_comp: 0.5
+  build_loop:
+    time_steps:
+      - 5
+      - 10
+      - 15
+      - 20
+      - 30
+      - 40
+      - 50
+    sweep_param_loop:
+      recovery:
+        type: LinearSample
+        param: overall_recovery
+        lower_limit: 0.85
+        upper_limit: 0.95
+        num_samples: 3  
