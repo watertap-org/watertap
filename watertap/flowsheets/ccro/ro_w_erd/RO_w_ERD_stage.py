@@ -28,12 +28,8 @@ from idaes.models.unit_models import (
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
-from idaes.core.util.misc import StrEnum
 
 from watertap.property_models.NaCl_T_dep_prop_pack import NaClParameterBlock
-
-# from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 
 from watertap.unit_models.reverse_osmosis_1D import (
     ReverseOsmosis1D,
@@ -476,9 +472,6 @@ def solve_model(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
 
 if __name__ == "__main__":
 
-    from watertap.flowsheets.ccro.utils.utils import (
-        relax_bounds_for_low_salinity_waters,
-    )
 
     sw_ro_op_dict = {
         "A_comp": 1.5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
@@ -493,34 +486,34 @@ if __name__ == "__main__":
         salt_mass_frac=5e-3,
         water_recovery=0.8,
         over_pressure=0.3,
-        pump_dict={1: True, 2: True},
+        pump_dict={1: True, 2: False},
         # ro_op_dict=sw_ro_op_dict,
         ro_op_dict=bw_ro_op_dict,
     )
-    # m_bw.fs.obj.deactivate()
+
     for n, stage in m_bw.fs.stage.items():
         relax_bounds_for_low_salinity_waters(stage.RO)
 
-    m_bw = fix_ro_recovery(m_bw, 0.95)
+    m_bw = fix_ro_recovery(m_bw, 0.9)
     results = solve_model(m_bw)
     report_n_stage_system(m_bw)
 
     # #### #### #### #### #### #### #### ###
     # SW
 
-    # m_sw = run_n_stage_system(
-    #     n_stages=2, salt_mass_frac=35e-3, pump_dict={1: True, 2: False}, ro_op_dict=sw_ro_op_dict
-    # )
-    # m_sw = fix_ro_recovery(m_sw, 0.6)
-    # results = solve_ro_w_erd(m_sw)
-    # report_n_stage_system(m_sw)
+    m_sw = run_n_stage_system(
+        n_stages=2, salt_mass_frac=35e-3, pump_dict={1: True, 2: False}, ro_op_dict=sw_ro_op_dict
+    )
+    m_sw = fix_ro_recovery(m_sw, 0.6)
+    results = solve_model(m_sw)
+    report_n_stage_system(m_sw)
 
-    # #### #### #### #### #### #### #### ###
+    #### #### #### #### #### #### #### ###
     # PW
 
-    # m_pw = run_n_stage_system(
-    #     n_stages=4, salt_mass_frac=75e-3, pump_dict={1: True, 3: True}, ro_op_dict=sw_ro_op_dict
-    # )
-    # m_pw = fix_ro_recovery(m_pw, 0.6)
-    # results = solve_ro_w_erd(m_pw)
-    # report_n_stage_system(m_pw)
+    m_pw = run_n_stage_system(
+        n_stages=4, salt_mass_frac=75e-3, pump_dict={1: True, 3: True}, ro_op_dict=sw_ro_op_dict
+    )
+    m_pw = fix_ro_recovery(m_pw, 0.5)
+    results = solve_model(m_pw)
+    report_n_stage_system(m_pw)
