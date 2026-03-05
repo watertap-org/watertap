@@ -287,28 +287,28 @@ def report_ro(blk, w=30):
     print(f"{'-' * (3 * w)}")
 
     print(
-        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"]):<{w}.6f}{"m3/s"}'
+        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"])*1000:<{w}.6f}{"L/s"}'
     )
     print(
-        f'{f"Inlet Conc.":<{w}s}{value(pyunits.convert(blk.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{"mg/L"}'
+        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"])*1000:<{w}.6f}{"L/s"}'
     )
     print(
-        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"]):<{w}.6f}{"m3/s"}'
+        f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"])*1000:<{w}.6f}{"L/s"}'
     )
     print(
-        f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"]):<{w}.6f}{"m3/s"}'
+        f'{f"Recovery":<{w}s}{value(blk.recovery)*100:<{w}.3f}{"%"}'
     )
     print(
-        f'{f"Recovery":<{w}s}{value(blk.RO.recovery_vol_phase[0, "Liq"])*100:<{w}.3f}{"%"}'
+        f'{f"Inlet Conc.":<{w}s}{value(blk.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
+    )
+    print(
+        f'{f"Perm Conc":<{w}s}{value(blk.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
+    )
+    print(
+        f'{f"Brine Conc":<{w}s}{value(blk.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
     )
     print(
         f'{f"Rejection":<{w}s}{value(blk.RO.rejection_phase_comp[0, "Liq", "NaCl"])*100:<{w}.3f}{"%"}'
-    )
-    print(
-        f'{f"Perm Conc":<{w}s}{value(pyunits.convert(blk.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{f"mg/L"}'
-    )
-    print(
-        f'{f"Brine Conc":<{w}s}{value(pyunits.convert(blk.RO.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"], to_units=pyunits.mg / pyunits.liter)):<{w}.3f}{f"mg/L"}'
     )
     print(
         f'{f"∆P":<{w}s}{value(pyunits.convert(blk.RO.deltaP[0], to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
@@ -337,6 +337,21 @@ def report_ro(blk, w=30):
     print(
         f'{f"Membrane Length":<{w}s}{value(blk.RO.length):<{w}.3f}{f"{pyunits.get_units(blk.RO.length)}"}'
     )
+    print(
+        f'{f"Crossflow Velocity":<{w}s}{value(blk.RO.feed_side.velocity[0, 0])*100:<{w}.3f}{f"cm/s"}'
+    )
+    # for (_, i, _), x in blk.RO.feed_side.cp_modulus.items():
+    #     # print(i, x)
+    #     print(
+    #         f'{f"CP Modulus @ {i}":<{w}s}{value(x):<{w}.3f}{"-"}'
+    #     )
+    # for (_, i, _, c), x in blk.RO.flux_mass_phase_comp.items():
+    #     # print(i, x)
+    #     if c != "H2O":
+    #         continue
+    #     print(
+    #         f'{f"Flux {c} @ {i}":<{w}s}{value(x):<{w}.3f}{"-"}'
+    #     )
     print(
         f'{f"Perm Backpressure":<{w}s}{value(pyunits.convert(blk.RO.mixed_permeate[0].pressure, to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
     )
@@ -386,10 +401,16 @@ def report_n_stage_system(m, w=30):
 
 
 def relax_bounds_for_low_salinity_waters(blk):
-    blk.feed_side.cp_modulus.setub(5)
+    blk.feed_side.cp_modulus.setub(15)
+    blk.feed_side.velocity[0, 0].setub(0.3)
+    blk.feed_side.velocity[0, 0].setlb(0.05)
+    # blk.feed_side.cp_modulus.setub(5)
     for e in blk.feed_side.K:
         blk.feed_side.K[e].setub(0.01)
         # blk.feed_side.K[e].setlb(1e-7)
+
+    for e in blk.feed_side.friction_factor_darcy:
+        blk.feed_side.friction_factor_darcy[e].setub(200)
 
     for e in blk.feed_side.cp_modulus:
         blk.feed_side.cp_modulus[e].setlb(1e-5)
