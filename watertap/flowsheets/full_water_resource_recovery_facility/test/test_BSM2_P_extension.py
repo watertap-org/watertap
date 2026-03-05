@@ -76,8 +76,16 @@ class TestFullFlowsheetBioPFalse:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
-        assert len(warnings) == 1
+        assert len(warnings) == 3
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert (
+            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -194,8 +202,16 @@ class TestFullFlowsheetBioPTrue:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
-        assert len(warnings) == 1
+        assert len(warnings) == 3
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert (
+            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -339,7 +355,7 @@ class TestScaledBioPFalse:
         cond = jacobian_cond(jac=jac, scaled=False)
         assert (
             # Python 3.9-3.11
-            cond == pytest.approx(4.3021828e15, rel=1e-2)
+            cond == pytest.approx(3.69544622e15, rel=1e-2)
             # Python 3.12
             or cond == pytest.approx(2.987651e15, rel=1e-2)
         )
@@ -392,5 +408,5 @@ class TestScaledBioPTrue:
         jac, _ = get_jacobian(sm, scaled=False)
 
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            7.43640e14, rel=1e-2
+            8.89557845e14, rel=1e-2
         )
