@@ -120,6 +120,21 @@ def build_stage(
         / blk.feed.properties[0].flow_vol_phase["Liq"]
     )
 
+    blk.flux = Var(
+        initialize=25,
+        bounds=(0.5, 60),
+        units=pyunits.liter / pyunits.m**2 / pyunits.hour,
+        doc="Stage flux",
+    )
+
+    blk.flux_constr = Constraint(
+        expr=blk.flux
+        == pyunits.convert(
+            blk.product.properties[0].flow_vol_phase["Liq"] / blk.RO.area,
+            to_units=pyunits.liter / pyunits.m**2 / pyunits.hour,
+        )
+    )
+
     TransformationFactory("network.expand_arcs").apply_to(blk)
 
     print(f"Degrees of freedom {blk.name}: {degrees_of_freedom(blk)}")
@@ -138,7 +153,8 @@ def set_stage_op_conditions(blk, m=None, max_pressure=200e5, ro_op_dict={}):
             NaCl_passage=0.01,
             solver=solver,
         )
-
+        # print(f"Estimated operating pressure: {operating_pressure*1e-5:.2f} bar")
+        # assert False
         if operating_pressure >= max_pressure:
             operating_pressure = max_pressure
 
@@ -383,8 +399,7 @@ def run_n_stage_system(
 
     ### SOLVE
     m.fs.obj = Objective(expr=m.fs.costing.LCOW, sense="minimize")
-    # print(f"dof = {degrees_of_freedom(m)}")
-    
+
     # m.fs.system_recovery.fix(water_recovery)
     # m.fs.system_recovery.unfix()
 
@@ -401,13 +416,11 @@ def run_n_stage_system(
     # m.fs.system_recovery.fix()
     # Fix area and pressure, optimize recovery
     for n, stage in m.fs.stage.items():
-        # if n != m.fs.stages_set.last():
         if stage.add_pump:
             stage.pump.control_volume.properties_out[0].pressure.fix()
         stage.RO.area.fix()
         stage.RO.width.fix()
 
-    # assert degrees_of_freedom(m) == 0
     print(f"FINAL dof = {degrees_of_freedom(m)}")
     results = solve_model(m, tee=True)
     assert_optimal_termination(results)
@@ -463,7 +476,9 @@ def solve_model(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
 
 if __name__ == "__main__":
 
-    from watertap.flowsheets.ccro.utils.utils import relax_bounds_for_low_salinity_waters
+    from watertap.flowsheets.ccro.utils.utils import (
+        relax_bounds_for_low_salinity_waters,
+    )
 
     sw_ro_op_dict = {
         "A_comp": 1.5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
@@ -477,8 +492,8 @@ if __name__ == "__main__":
         n_stages=2,
         salt_mass_frac=5e-3,
         water_recovery=0.8,
-        over_pressure=0.15,
-        pump_dict={1: True, 2: False},
+        over_pressure=0.3,
+        pump_dict={1: True, 2: True},
         # ro_op_dict=sw_ro_op_dict,
         ro_op_dict=bw_ro_op_dict,
     )
