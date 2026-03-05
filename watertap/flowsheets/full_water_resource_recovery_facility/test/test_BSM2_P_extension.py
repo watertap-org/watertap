@@ -76,16 +76,8 @@ class TestFullFlowsheetBioPFalse:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
-        assert len(warnings) == 3
+        assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
-        assert (
-            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
-        assert (
-            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -202,16 +194,8 @@ class TestFullFlowsheetBioPTrue:
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
-        assert len(warnings) == 3
+        assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
-        assert (
-            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
-        assert (
-            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
