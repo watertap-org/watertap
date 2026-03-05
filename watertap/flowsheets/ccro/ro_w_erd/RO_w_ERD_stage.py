@@ -15,7 +15,7 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
+from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import (
     Mixer,
     Separator,
@@ -86,7 +86,9 @@ def build_stage(
         m = blk.model()
 
     blk.add_pump = add_pump
+
     blk.feed = StateJunction(property_package=m.fs.properties)
+
     blk.RO = ReverseOsmosis1D(
         property_package=m.fs.properties,
         has_pressure_change=True,
@@ -162,10 +164,8 @@ def set_stage_op_conditions(blk, m=None, max_pressure=200e5, ro_op_dict={}):
         if v is not None:
             v.fix(val)
         else:
-            print(f"Component {p} not found in RO block")
-
-    # if m.salt_mass_frac < 10e-3:
-    #     relax_bounds_for_low_salinity_waters(blk.RO)
+            msg = f"Component {p} not found in RO unit model"
+            raise ValueError(msg)
 
 
 def scale_stage(blk, m=None):
@@ -190,8 +190,8 @@ def scale_stage(blk, m=None):
         )
 
     for b in [blk.feed, blk.product, blk.disposal]:
-        b.properties[0].flow_vol_phase["Liq"]
-        b.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+        b.properties[0].flow_vol_phase
+        b.properties[0].conc_mass_phase_comp
 
     iscale.calculate_scaling_factors(blk)
 
@@ -361,9 +361,10 @@ def run_n_stage_system(
     for n, stage in m.fs.stage.items():
         init_stage(stage, m=m)
         stage.RO.area.unfix()
+        stage.RO.width.unfix()
         a = m.fs.find_component(f"stage{n}_product_to_mixer")
         propagate_state(a)
-        if not n == m.fs.stages_set.last():
+        if n != m.fs.stages_set.last():
             a = m.fs.find_component(f"stage{n}_to_stage{n+1}")
             propagate_state(a)
         if n == m.fs.stages_set.last():
@@ -382,7 +383,7 @@ def run_n_stage_system(
 
     ### SOLVE
     m.fs.obj = Objective(expr=m.fs.costing.LCOW, sense="minimize")
-    print(f"dof = {degrees_of_freedom(m)}")
+    # print(f"dof = {degrees_of_freedom(m)}")
     
     # m.fs.system_recovery.fix(water_recovery)
     # m.fs.system_recovery.unfix()
@@ -392,9 +393,9 @@ def run_n_stage_system(
         if stage.add_pump:
             stage.pump.control_volume.properties_out[0].pressure.unfix()
 
-    print(f"dof = {degrees_of_freedom(m)}")
+    print(f"dof before solve = {degrees_of_freedom(m)}")
 
-    results = solver.solve(m, tee=False)
+    results = solve_model(m, tee=False)
     assert_optimal_termination(results)
 
     # m.fs.system_recovery.fix()
@@ -404,10 +405,11 @@ def run_n_stage_system(
         if stage.add_pump:
             stage.pump.control_volume.properties_out[0].pressure.fix()
         stage.RO.area.fix()
+        stage.RO.width.fix()
 
     # assert degrees_of_freedom(m) == 0
-    print(f"dof = {degrees_of_freedom(m)}")
-    results = solver.solve(m, tee=False)
+    print(f"FINAL dof = {degrees_of_freedom(m)}")
+    results = solve_model(m, tee=True)
     assert_optimal_termination(results)
 
     return m
@@ -425,7 +427,7 @@ def fix_ro_recovery(m, recovery):
     return m
 
 
-def solve_ro_w_erd(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
+def solve_model(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
 
     if solver is None:
         solver = get_solver()
@@ -443,7 +445,7 @@ def solve_ro_w_erd(m, solver=None, max_iter=3000, tee=True, raise_on_failure=Tru
     if check_optimal_termination(results):
         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
         return results
-    print_close_to_bounds(m)
+    # print_close_to_bounds(m)
     if raise_on_failure:
         print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
 
@@ -460,6 +462,8 @@ def solve_ro_w_erd(m, solver=None, max_iter=3000, tee=True, raise_on_failure=Tru
 
 
 if __name__ == "__main__":
+
+    from watertap.flowsheets.ccro.utils.utils import relax_bounds_for_low_salinity_waters
 
     sw_ro_op_dict = {
         "A_comp": 1.5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
@@ -479,29 +483,29 @@ if __name__ == "__main__":
         ro_op_dict=bw_ro_op_dict,
     )
     # m_bw.fs.obj.deactivate()
-    # for n, stage in m_bw.fs.stage.items():
-    #     relax_bounds_for_low_salinity_waters(stage.RO)
+    for n, stage in m_bw.fs.stage.items():
+        relax_bounds_for_low_salinity_waters(stage.RO)
 
-    m_bw = fix_ro_recovery(m_bw, 0.84)
-    results = solve_ro_w_erd(m_bw)
+    m_bw = fix_ro_recovery(m_bw, 0.95)
+    results = solve_model(m_bw)
     report_n_stage_system(m_bw)
 
     # #### #### #### #### #### #### #### ###
     # SW
 
-    m_sw = run_n_stage_system(
-        n_stages=2, salt_mass_frac=35e-3, pump_dict={1: True, 2: False}, ro_op_dict=sw_ro_op_dict
-    )
-    m_sw = fix_ro_recovery(m_sw, 0.6)
-    results = solve_ro_w_erd(m_sw)
-    report_n_stage_system(m_sw)
+    # m_sw = run_n_stage_system(
+    #     n_stages=2, salt_mass_frac=35e-3, pump_dict={1: True, 2: False}, ro_op_dict=sw_ro_op_dict
+    # )
+    # m_sw = fix_ro_recovery(m_sw, 0.6)
+    # results = solve_ro_w_erd(m_sw)
+    # report_n_stage_system(m_sw)
 
-    #### #### #### #### #### #### #### ###
-    PW
+    # #### #### #### #### #### #### #### ###
+    # PW
 
-    m_pw = run_n_stage_system(
-        n_stages=4, salt_mass_frac=75e-3, pump_dict={1: True, 3: True}, ro_op_dict=sw_ro_op_dict
-    )
-    m_pw = fix_ro_recovery(m_pw, 0.6)
-    results = solve_ro_w_erd(m_pw)
-    report_n_stage_system(m_pw)
+    # m_pw = run_n_stage_system(
+    #     n_stages=4, salt_mass_frac=75e-3, pump_dict={1: True, 3: True}, ro_op_dict=sw_ro_op_dict
+    # )
+    # m_pw = fix_ro_recovery(m_pw, 0.6)
+    # results = solve_ro_w_erd(m_pw)
+    # report_n_stage_system(m_pw)
