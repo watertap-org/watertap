@@ -266,11 +266,19 @@ def report_pump(blk, w=30):
     print(f'{"Parameter":<{w}s}{"Value":<{w}s}{"Units":<{w}s}')
     print(f"{'-' * (3 * w)}")
 
+    pin = blk.pump.control_volume.properties_in[0].pressure
     deltaP = blk.pump.deltaP[0]
+    pout = blk.pump.control_volume.properties_out[0].pressure
     work = blk.pump.work_mechanical[0]
 
     print(
+        f'{f"Inlet Pressure (bar)":<{w}s}{value(pyunits.convert(pin,to_units=pyunits.bar)):<{w}.3f}{"bar"}'
+    )
+    print(
         f'{f"Pressure Change (bar)":<{w}s}{value(pyunits.convert(deltaP,to_units=pyunits.bar)):<{w}.3f}{"bar"}'
+    )
+    print(
+        f'{f"Outlet Pressure (bar)":<{w}s}{value(pyunits.convert(pout,to_units=pyunits.bar)):<{w}.3f}{"bar"}'
     )
     print(
         f'{f"Power (kW)":<{w}s}{value(pyunits.convert(work, to_units=pyunits.kW)):<{w}.3f}{"kW"}'
@@ -287,25 +295,26 @@ def report_ro(blk, w=30):
     print(f"{'-' * (3 * w)}")
 
     print(
-        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"])*1000:<{w}.6f}{"L/s"}'
+        f'{f"Inlet Pressure":<{w}s}{value(pyunits.convert(blk.RO.feed_side.properties[0, 0].pressure, to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
     )
     print(
-        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"])*1000:<{w}.6f}{"L/s"}'
+        f'{f"Inlet Flow":<{w}s}{value(blk.feed.properties[0].flow_vol_phase["Liq"])*1000:<{w}.3f}{"L/s"}'
     )
     print(
-        f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"])*1000:<{w}.6f}{"L/s"}'
+        f'{f"Brine Flow":<{w}s}{value(blk.disposal.properties[0].flow_vol_phase["Liq"])*1000:<{w}.3f}{"L/s"}'
     )
     print(
-        f'{f"Recovery":<{w}s}{value(blk.recovery)*100:<{w}.3f}{"%"}'
+        f'{f"Product Flow":<{w}s}{value(blk.product.properties[0].flow_vol_phase["Liq"])*1000:<{w}.3f}{"L/s"}'
     )
+    print(f'{f"Recovery":<{w}s}{value(blk.recovery)*100:<{w}.3f}{"%"}')
     print(
         f'{f"Inlet Conc.":<{w}s}{value(blk.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
     )
     print(
-        f'{f"Perm Conc":<{w}s}{value(blk.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
+        f'{f"Perm Conc.":<{w}s}{value(blk.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
     )
     print(
-        f'{f"Brine Conc":<{w}s}{value(blk.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
+        f'{f"Brine Conc.":<{w}s}{value(blk.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"]):<{w}.3f}{"g/L"}'
     )
     print(
         f'{f"Rejection":<{w}s}{value(blk.RO.rejection_phase_comp[0, "Liq", "NaCl"])*100:<{w}.3f}{"%"}'
@@ -317,17 +326,14 @@ def report_ro(blk, w=30):
     print(
         f'{f"Water Perm (A)":<{w}s}{value(pyunits.convert(acomp, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar)):<{w}.3f}{f"LMH/bar"}'
     )
-    print(
-        f'{f"Water Perm (A)":<{w}s}{value(acomp):<{w}.3e}{f"m/s/Pa"}'
-    )
+    print(f'{f"Water Perm (A)":<{w}s}{value(acomp):<{w}.3e}{f"m/s/Pa"}')
     bcomp = blk.RO.B_comp[0, "NaCl"]
     print(
         f'{f"Salt Perm (B)":<{w}s}{value(pyunits.convert(bcomp, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour)):<{w}.3f}{f"LMH"}'
     )
-    print(
-        f'{f"Salt Perm (B)":<{w}s}{value(bcomp):<{w}.3e}{f"m/s"}'
-    )
-    
+    print(f'{f"Salt Perm (B)":<{w}s}{value(bcomp):<{w}.3e}{f"m/s"}')
+    print(f'{f"Total Flux":<{w}s}{value(blk.flux):<{w}.3f}{f"LMH"}')
+
     print(
         f'{f"Membrane Area":<{w}s}{value(blk.RO.area):<{w}.3f}{f"{pyunits.get_units(blk.RO.area)}"}'
     )
@@ -338,7 +344,10 @@ def report_ro(blk, w=30):
         f'{f"Membrane Length":<{w}s}{value(blk.RO.length):<{w}.3f}{f"{pyunits.get_units(blk.RO.length)}"}'
     )
     print(
-        f'{f"Crossflow Velocity":<{w}s}{value(blk.RO.feed_side.velocity[0, 0])*100:<{w}.3f}{f"cm/s"}'
+        f'{f"Inlet Crossflow Vel.":<{w}s}{value(blk.RO.feed_side.velocity[0, 0])*100:<{w}.3f}{f"cm/s"}'
+    )
+    print(
+        f'{f"Outlet Crossflow Vel.":<{w}s}{value(blk.RO.feed_side.velocity[0, 1])*100:<{w}.3f}{f"cm/s"}'
     )
     # for (_, i, _), x in blk.RO.feed_side.cp_modulus.items():
     #     # print(i, x)
@@ -401,36 +410,38 @@ def report_n_stage_system(m, w=30):
 
 
 def relax_bounds_for_low_salinity_waters(blk):
-    blk.feed_side.cp_modulus.setub(15)
-    blk.feed_side.velocity[0, 0].setub(0.3)
-    blk.feed_side.velocity[0, 0].setlb(0.05)
-    # blk.feed_side.cp_modulus.setub(5)
-    for e in blk.feed_side.K:
-        blk.feed_side.K[e].setub(0.01)
-        # blk.feed_side.K[e].setlb(1e-7)
 
-    for e in blk.feed_side.friction_factor_darcy:
-        blk.feed_side.friction_factor_darcy[e].setub(200)
+    # blk.feed_side.velocity[0, 0].setub(0.3)
+    # blk.feed_side.velocity[0, 0].setlb(0.05)
 
-    for e in blk.feed_side.cp_modulus:
-        blk.feed_side.cp_modulus[e].setlb(1e-5)
+    for x in list(blk.length_domain):
+        blk.feed_side.velocity[0, x].setub(0.25)
+        blk.feed_side.velocity[0, x].setlb(0.01)
 
-    for e in blk.recovery_mass_phase_comp:
-        if e[-1] == "NaCl":
-            blk.recovery_mass_phase_comp[e].setlb(1e-9)
-            blk.recovery_mass_phase_comp[e].setub(1e-1)
+    for i, v in blk.feed_side.K.items():
+        v.setub(0.01)
 
-    for e in blk.flux_mass_phase_comp:
-        if e[-1] == "NaCl":
-            blk.flux_mass_phase_comp[e].setlb(1e-9)
-            blk.flux_mass_phase_comp[e].setub(1e-1)
+    for i, v in blk.feed_side.friction_factor_darcy.items():
+        v.setub(200)
 
-    for e in blk.recovery_mass_phase_comp:
-        if e[-1] == "H2O":
-            blk.recovery_mass_phase_comp[e].setlb(1e-4)
-            blk.recovery_mass_phase_comp[e].setub(0.999)
+    for i, v in blk.feed_side.cp_modulus.items():
+        v.setlb(1e-5)
+        v.setub(15)
 
-    for e in blk.flux_mass_phase_comp:
-        if e[-1] == "H2O":
-            blk.flux_mass_phase_comp[e].setlb(1e-5)
-            blk.flux_mass_phase_comp[e].setub(0.999)
+    for (x, p, c), v in blk.recovery_mass_phase_comp.items():
+        if c == "NaCl":
+            v.setlb(1e-9)
+            v.setub(1e-1)
+
+    for (t, x, p, c), v in blk.flux_mass_phase_comp.items():
+        if c == "NaCl":
+            v.setlb(1e-9)
+            v.setub(1e-1)
+        if c == "H2O":
+            v.setlb(1e-5)
+            v.setub(0.999)
+
+    for (x, p, c), v in blk.recovery_mass_phase_comp.items():
+        if c == "H2O":
+            v.setlb(1e-4)
+            v.setub(0.999)
