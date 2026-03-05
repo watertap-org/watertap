@@ -12,20 +12,34 @@ from watertap.flowsheets.ccro.utils.utils import report_n_stage_system
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
-
+from watertap.flowsheets.ccro.utils.utils import (
+    calculate_operating_pressure,
+    report_pump,
+    report_ro,
+    report_costing,
+    report_n_stage_system,
+    relax_bounds_for_low_salinity_waters,
+)
 
 here = os.path.dirname(os.path.abspath(__file__))
 
+
 def optimize_for_recovery(m, **kwargs):
+
+    if m.salt_mass_frac < 15e-3:
+        for n, stage in m.fs.stage.items():
+            relax_bounds_for_low_salinity_waters(stage.RO)
 
     for n, stage in m.fs.stage.items():
         stage.RO.area.unfix()
+        stage.RO.width.unfix()
         if stage.add_pump:
             stage.pump.control_volume.properties_out[0].pressure.unfix()
 
-    results = ro.solve_ro_w_erd(m, **kwargs)
+    results = ro.solve_model(m, **kwargs)
 
     return results
+
 
 def main():
 
@@ -39,6 +53,7 @@ def main():
         save_name=save_file,
         saving_dir=here,
         number_of_subprocesses=1,
+        h5_backup=False, 
         num_loop_workers=8,
     )
 

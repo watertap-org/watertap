@@ -441,11 +441,6 @@ def solve_model(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
     if solver is None:
         solver = get_solver()
 
-    # for n, stage in m.fs.stage.items():
-    #     stage.RO.area.unfix()
-    #     if stage.add_pump:
-    #         stage.pump.control_volume.properties_out[0].pressure.unfix()
-
     print("\n--------- SOLVING ---------\n")
     print(f"Degrees of Freedom: {degrees_of_freedom(m)}")
 
@@ -454,7 +449,7 @@ def solve_model(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
     if check_optimal_termination(results):
         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
         return results
-    # print_close_to_bounds(m)
+    
     if raise_on_failure:
         print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
 
@@ -472,7 +467,6 @@ def solve_model(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
 
 if __name__ == "__main__":
 
-
     sw_ro_op_dict = {
         "A_comp": 1.5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
         "B_comp": 0.1 * pyunits.liter / pyunits.m**2 / pyunits.hour,
@@ -481,11 +475,15 @@ if __name__ == "__main__":
         "A_comp": 5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
         "B_comp": 0.5 * pyunits.liter / pyunits.m**2 / pyunits.hour,
     }
+
+    # #### #### #### #### #### #### #### ###
+    # BW
+
     m_bw = run_n_stage_system(
         n_stages=2,
         salt_mass_frac=5e-3,
         water_recovery=0.8,
-        over_pressure=0.3,
+        over_pressure=0.15,
         pump_dict={1: True, 2: False},
         # ro_op_dict=sw_ro_op_dict,
         ro_op_dict=bw_ro_op_dict,
@@ -502,7 +500,11 @@ if __name__ == "__main__":
     # SW
 
     m_sw = run_n_stage_system(
-        n_stages=2, salt_mass_frac=35e-3, pump_dict={1: True, 2: False}, ro_op_dict=sw_ro_op_dict
+        n_stages=2,
+        salt_mass_frac=35e-3,
+        water_recovery=0.5,
+        pump_dict={1: True, 2: False},
+        ro_op_dict=sw_ro_op_dict,
     )
     m_sw = fix_ro_recovery(m_sw, 0.6)
     results = solve_model(m_sw)
@@ -512,7 +514,11 @@ if __name__ == "__main__":
     # PW
 
     m_pw = run_n_stage_system(
-        n_stages=4, salt_mass_frac=75e-3, pump_dict={1: True, 3: True}, ro_op_dict=sw_ro_op_dict
+        n_stages=2,
+        salt_mass_frac=75e-3,
+        water_recovery=0.5,
+        pump_dict={1: True, 2: False},
+        ro_op_dict=sw_ro_op_dict,
     )
     m_pw = fix_ro_recovery(m_pw, 0.5)
     results = solve_model(m_pw)
