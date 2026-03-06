@@ -166,7 +166,7 @@ def set_stage_op_conditions(blk, m=None, max_pressure=200e5, ro_op_dict={}):
     blk.RO.A_comp.fix(4.2e-12)
     blk.RO.B_comp.fix(3.5e-8)
     blk.RO.feed_side.channel_height.fix(1e-3)
-    blk.RO.feed_side.spacer_porosity.fix(0.85)
+    blk.RO.feed_side.spacer_porosity.fix(0.9)
     blk.RO.permeate.pressure[0].fix(101325)
     blk.RO.width.fix(5)
     blk.RO.area.fix(30)
