@@ -1,20 +1,118 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools >= 64", "setuptools_scm >= 8"]
+
+[project]
+name = "watertap"
+description = "WaterTAP modeling library"
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [{ name = "NAWI team" }]
+license = { text = "BSD" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3 :: Only",
+]
+keywords = [
+    "water systems",
+    "chemical engineering",
+    "process modeling",
+    "filtration",
+    "desalination",
+    "nawi",
+]
+version = "1.6.dev0"
+
+dependencies = [
+    # primary requirements for unit and property models
+    # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
+    # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
+    "idaes-pse>=2.10.0",
+    "pyomo>=6.6.1",
+    "watertap-solvers",
+    "pyyaml",            # watertap.core.wt_database
+    # for parameter_sweep
+    "parameter-sweep @ git+https://github.com/watertap-org/parameter-sweep",
+    "numpy",
+    "pint<0.25",
+]
+
+[project.urls]
+Homepage = "https://github.com/watertap-org/watertap"
+
+
+[project.optional-dependencies]
+testing = [
+    "pytest",
+    "pandas",
+    # treebeardtech/nbmake#121
+    "nbmake != 1.5.1",
+    "nbconvert",
+    "idaes-flowsheet-processor >=0.1.dev4",
+]
+notebooks = ["jupyter", "ipykernel"]
+oli_api = [
+    "requests",
+    "cryptography", # for encrypting OLI credentials
+]
+
+all = ["watertap[testing,notebooks,oli_api]"]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["watertap*"]
+
+
 [tool.pylint.main]
-py-version = "3.8"
+py-version = "3.10"
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.yaml", "*.yml", "*.csv", "*.png"]
+
+"watertap.tools.oli_api.tests" = ["test.dbs"]
+
+[project.entry-points."watertap.flowsheets"]
+nf = "watertap.flowsheets.nf_dspmde.nf_ui"
+bsm2 = "watertap.flowsheets.full_water_resource_recovery_facility.BSM2_ui"
+bsm2_P_extension = "watertap.flowsheets.full_water_resource_recovery_facility.BSM2_P_extension_ui"
+dye_desalination = "watertap.flowsheets.dye_desalination.dye_desalination_ui"
+mvc = "watertap.flowsheets.mvc.mvc_single_stage_ui"
+RO = "watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery_ui"
+OARO = "watertap.flowsheets.oaro.oaro_multi_ui"
+GAC = "watertap.flowsheets.gac.gac_ui"
+ED_conc_recirc = "watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc_ui"
+LSRRO = "watertap.flowsheets.lsrro.lsrro_ui"
+"generic desal train" = "watertap.flowsheets.generic_desalination_train.generic_train_ui"
+
 
 [tool.pylint."messages control"]
 disable = [
-    "W", # all warnings
-    "C", # all conventions
-    "R", # all refactor
-    "invalid-unary-operand-type", # Pyomo -(Var) or -(Expression)
+    "W",                            # all warnings
+    "C",                            # all conventions
+    "R",                            # all refactor
+    "invalid-unary-operand-type",   # Pyomo -(Var) or -(Expression)
     "unsupported-binary-operation", # Pyomo Set union |
-    "no-member", # Pyomo / IDAES metaprogramming, a few other places
-    "no-name-in-module", # IDAES metaprogramming
-    "undefined-variable", # IDAES metaprogramming, a few other places
+    "no-member",                    # Pyomo / IDAES metaprogramming, a few other places
+    "no-name-in-module",            # IDAES metaprogramming
+    "undefined-variable",           # IDAES metaprogramming, a few other places
 ]
 # see https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html
 # for a list of all messages
-enable = [
-    "unnecessary-pass",
-    "unused-import",
-]
+enable = ["unnecessary-pass", "unused-import"]
