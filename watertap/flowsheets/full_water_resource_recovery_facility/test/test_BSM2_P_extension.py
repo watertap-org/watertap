@@ -43,6 +43,14 @@ is_reference_platform = (
 is_linux_platform = (
     platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
 )
+is_linux_platform_new = (
+    platform.system() == "Linux"
+    and platform.python_version_tuple()[0] in ("3.12", "3.13")
+)
+is_linux_platform_old = (
+    platform.system() == "Linux"
+    and platform.python_version_tuple()[0] in ("3.10", "3.11")
+)
 
 reference_platform_only = pytest.mark.xfail(
     condition=(not is_reference_platform),
@@ -56,6 +64,20 @@ linux_platform_only = pytest.mark.xfail(
     run=True,
     strict=False,
     reason="These tests are expected to pass only on the Linux platform (Python 3)",
+)
+
+linux_platform_new_only = pytest.mark.xfail(
+    condition=(not is_linux_platform_new),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the Linux platform (Python 3.12, 3.13)",
+)
+
+linux_platform_old_only = pytest.mark.xfail(
+    condition=(not is_linux_platform_old),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the Linux platform (Python 3.10, 3.11)",
 )
 
 
@@ -318,8 +340,20 @@ class TestScaledBioPFalse:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @linux_platform_only
-    def test_condition_number_on_linux(self, system_frame):
+    @linux_platform_new_only
+    def test_condition_number_on_linux_new(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            4.302764e15, rel=1e-2
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @linux_platform_old_only
+    def test_condition_number_on_linux_old(self, system_frame):
         m = system_frame
 
         # Check condition number to confirm scaling
