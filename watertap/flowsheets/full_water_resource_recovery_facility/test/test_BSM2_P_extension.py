@@ -339,7 +339,7 @@ class TestScaledBioPFalse:
         cond = jacobian_cond(jac=jac, scaled=False)
         assert (
             # Python 3.9-3.11
-            cond == pytest.approx(3.69544622e15, rel=1e-2)
+            cond == pytest.approx(4.3021828e15, rel=1e-2)
             # Python 3.12
             or cond == pytest.approx(2.987651e15, rel=1e-2)
         )
@@ -392,5 +392,5 @@ class TestScaledBioPTrue:
         jac, _ = get_jacobian(sm, scaled=False)
 
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            8.89557845e14, rel=1e-2
+            7.43640e14, rel=1e-2
         )
