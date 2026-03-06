@@ -5,6 +5,7 @@ from pyomo.environ import (
     value,
     assert_optimal_termination,
     Objective,
+    Expression,
     units as pyunits,
 )
 import idaes.core.util.scaling as iscale
@@ -91,7 +92,7 @@ def create_ccro_multiperiod(
     if mp.flushing_points > 1:
         unit_operations.build_flushing_unit_only(mp, start_period=mp.time_points)
         unit_operations.build_conduit(mp)
-
+    tot_utilization_expr = 0
     if include_costing:
         mp.costing = WaterTAPCosting()
         for t, m in enumerate(mp.get_active_process_blocks(), 1):
@@ -106,7 +107,9 @@ def create_ccro_multiperiod(
                 ) / mp.total_cycle_time
             elif m.fs.operation_mode == "flushing":
                 utilization_ratio = m.fs.flushing.flushing_time / mp.total_cycle_time
+            tot_utilization_expr += utilization_ratio
             if t == 1:
+                print(f"t = {t}, P1 + P2 electricity, RO CAPEX")
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P1,
@@ -129,8 +132,16 @@ def create_ccro_multiperiod(
                     utilization_factor=utilization_ratio,
                 )
             elif (
-                t == n_time_points - 1
+                t == n_time_points
             ):  # Last operating pressure - assume its highest !
+                print(f"t = {t}, P1 + P2 electricity, P1 + P2 CAPEX")
+                cc_utils.register_costed_unit(
+                    mp,
+                    m.fs.P1,
+                    register_electricity_cost=True,
+                    register_capital_cost=True,
+                    utilization_factor=utilization_ratio,
+                )
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P2,
@@ -139,40 +150,35 @@ def create_ccro_multiperiod(
                     utilization_factor=utilization_ratio,
                     # costing_method_arguments={"pump_type": "low_pressure"},
                 )
+            # Last time period is flushing
+            elif t > n_time_points:
+                print(f"t = {t}, P1 + P2 electricity")
                 cc_utils.register_costed_unit(
                     mp,
                     m.fs.P1,
-                    register_electricity_cost=True,
-                    register_capital_cost=True,
-                    utilization_factor=utilization_ratio,
-                )
-            # Last time period is flushing
-            elif t >= n_time_points:
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P2,
                     register_electricity_cost=True,
                     register_capital_cost=False,
                     utilization_factor=utilization_ratio,
                 )
                 cc_utils.register_costed_unit(
                     mp,
-                    m.fs.P1,
+                    m.fs.P2,
                     register_electricity_cost=True,
                     register_capital_cost=False,
                     utilization_factor=utilization_ratio,
                 )
             else:
+                print(f"t = {t}, P1 + P2 electricity")
                 cc_utils.register_costed_unit(
                     mp,
-                    m.fs.P2,
+                    m.fs.P1,
                     register_electricity_cost=True,
                     register_capital_cost=False,
                     utilization_factor=utilization_ratio,
                 )
                 cc_utils.register_costed_unit(
                     mp,
-                    m.fs.P1,
+                    m.fs.P2,
                     register_electricity_cost=True,
                     register_capital_cost=False,
                     utilization_factor=utilization_ratio,
@@ -184,6 +190,8 @@ def create_ccro_multiperiod(
                 register_electricity_cost=False,
                 register_capital_cost=True,
             )
+        mp.total_utilization = Expression(expr=tot_utilization_expr)
+    # assert False
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
 
         # Last time period is flushing
