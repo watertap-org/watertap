@@ -162,7 +162,21 @@ def create_ccro_multiperiod(
                     register_capital_cost=False,
                     utilization_factor=utilization_ratio,
                 )
-
+            else:
+                cc_utils.register_costed_unit(
+                    mp,
+                    m.fs.P2,
+                    register_electricity_cost=True,
+                    register_capital_cost=False,
+                    utilization_factor=utilization_ratio,
+                )
+                cc_utils.register_costed_unit(
+                    mp,
+                    m.fs.P1,
+                    register_electricity_cost=True,
+                    register_capital_cost=False,
+                    utilization_factor=utilization_ratio,
+                )
         if mp.flushing_points > 1:
             cc_utils.register_costed_unit(
                 mp,
