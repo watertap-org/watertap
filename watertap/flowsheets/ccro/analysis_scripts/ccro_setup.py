@@ -40,7 +40,7 @@ def build(
             overall_water_recovery=0.5,
             max_cycle_time_hr=5,
             recycle_flow_bounds=(1, 50),
-            use_ro_with_hold_up=True,
+            # use_ro_with_hold_up=True,
         )
         # CCRO.fix_optimization_dofs(
         #     mp,
@@ -52,7 +52,7 @@ def build(
         #     flushing_efficiency=0.8,
         # )
 
-    CCRO.print_results_table(mp)
+    # CCRO.print_results_table(mp)
     blks = list(mp.get_active_process_blocks())
     mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!
     first_block = blks[0]
@@ -73,16 +73,28 @@ def solve_model(mp, **kwargs):
 
 if __name__ == "__main__":
 
-    mp_bw = build(feed_tds=5, A_comp=5, B_comp=0.5)
-    mp_bw.overall_recovery.fix(0.95)
+    # mp = build(feed_tds=35, A_comp=1.5, B_comp=0.1)
+    # mp.overall_recovery.fix(0.5)
+    # results = solve_model(mp)
+    # mp.costing.aggregate_flow_electricity.pprint()
+    # print(mp.total_utilization())
+    # mp.total_utilization.display()
+
+    mp_bw = build(time_steps=20, feed_tds=5, A_comp=5, B_comp=0.5)
+    mp_bw.overall_recovery.fix(0.75)
     results = solve_model(mp_bw)
     CCRO.print_results_table(mp_bw)
+    mp_bw.cycle_time_ratio.display()
+    mp_bw.total_cycle_time.display()
+    # mp_bw.total_flushing_time.display()
+    mp_bw.total_filtration_time.display()
+
 
     # mp_sw = build(feed_tds=35, A_comp=1.5, B_comp=0.1)
     # mp_sw.overall_recovery.fix(0.5)
     # results = solve_model(mp_sw)
 
-    # mp_pw = build(feed_tds=55)
+    # mp_pw = build(feed_tds=75, A_comp=1.5, B_comp=0.1)
     # mp_pw.overall_recovery.fix(0.5)
     # results = solve_model(mp_pw)
 

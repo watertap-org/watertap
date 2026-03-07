@@ -8,14 +8,13 @@ BW_recovery_sweep:
     n_flushing_points: 5
     fixed_setup: False
     use_hold_up: True
-  build_loop:
-    sweep_param_loop:
-      recovery:
-        type: LinearSample
-        param: overall_recovery
-        lower_limit: 0.75
-        upper_limit: 0.95
-        num_samples: 11
+  sweep_param_loop:
+    recovery:
+      type: LinearSample
+      param: overall_recovery
+      lower_limit: 0.75
+      upper_limit: 0.95
+      num_samples: 11
 
 SW_recovery_sweep:
   build_defaults:
@@ -26,11 +25,10 @@ SW_recovery_sweep:
     n_flushing_points: 5
     fixed_setup: False
     use_hold_up: True
-  build_loop:
-    sweep_param_loop:
-      recovery:
-        type: LinearSample
-        param: overall_recovery
-        lower_limit: 0.40
-        upper_limit: 0.60
-        num_samples: 11
+  sweep_param_loop:
+    recovery:
+      type: LinearSample
+      param: overall_recovery
+      lower_limit: 0.40
+      upper_limit: 0.60
+      num_samples: 11
