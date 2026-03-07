@@ -368,7 +368,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             if m.fs.operation_mode == "filtration":
                 times.append(m.fs.dead_volume.accumulation_time[0])
         return b.total_filtration_time == sum(times)
-    
+
     # @mp.Constraint(doc="Total flushing time constraint")
     # def total_flushing_time_constraint(b):
     #     times = []
@@ -377,7 +377,18 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
     #             times.append(m.fs.flushing.flushing_time)
     #         elif m.fs.operation_mode == "flushing_with_filtration":
     #             times.append(mp.flushing.flushing_time / mp.flushing_points)
-        # return b.total_flushing_time == sum(times)
+    # return b.total_flushing_time == sum(times)
+    @mp.Expression(mp.TIME, doc="Operation time for each time period")
+    def operation_time_points(b, t):
+        times = []
+        for m in blks[: t + 1]:
+            if m.fs.operation_mode == "filtration":
+                times.append(m.fs.dead_volume.accumulation_time[0])
+            elif m.fs.operation_mode == "flushing":
+                times.append(m.fs.flushing.flushing_time)
+            elif m.fs.operation_mode == "flushing_with_filtration":
+                times.append(mp.flushing.flushing_time / mp.flushing_points)
+        return sum(times)
 
     @mp.Constraint(doc="Total cycle time constraint")
     def total_cycle_time_constraint(b):

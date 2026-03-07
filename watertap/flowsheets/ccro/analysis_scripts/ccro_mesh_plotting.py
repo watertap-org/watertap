@@ -9,18 +9,18 @@ from psPlotKit.data_plotter.fig_generator import FigureGenerator
 here = os.path.dirname(os.path.abspath(__file__))
 
 
-def ccro_mesh_plotting():
+def ccro_mesh_plotting(water_type="BW"):
     # sweep_file = f"{here}/output/ccro_flow_sweep_analysisType_study_BGW_mesh_study_optimization_lcow.h5"
-    sweep_file = f"{here}/output/ccro_bw_mesh_analysisType_BW_mesh_study.h5"
+    sweep_file = f"{here}/output/ccro_bw_mesh_analysisType_{water_type}_mesh_study.h5"
     dm = PsDataManager(sweep_file)
 
-    # for t in range(40):
-    #     dm.register_data_key(
-    #         f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
-    #         f"RO recovery",
-    #         "%",
-    #         # directory=t,
-    #     )
+    for t in range(40):
+        dm.register_data_key(
+            f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
+            f"{t} RO recovery",
+            "%",
+            # directory=t,
+        )
 
     dm.register_data_key("costing.LCOW", "LCOW")
     dm.register_data_key("costing.SEC", "SEC")
@@ -47,32 +47,31 @@ def ccro_mesh_plotting():
                 yticks.append(d[-1])
         # if key == yvar:
         #     print("yticks", dm[d, yvar].data)
-    print(input_maps)
-    fig_init = dict(width=3.25, height=3.25, nrows=1, ncols=1, save_data=True)
-
+    print(zdata)
     fig = FigureGenerator(save_data=True)
-    fig.init_figure(**fig_init)
+    fig.init_figure()
 
     fig.plot_map(
         xdata=np.array(xticks),
         ydata=np.array(yticks),
         zdata=np.array(zdata),
-        ax_idx=0,
         fix_nans=False,
     )
 
     fig.set_axis_ticklabels(
         xlabel=xvar,
         ylabel=yvar,
-        ax_idx=0,
         xticklabels=np.unique(np.array(xticks)),
         yticklabels=np.unique(np.array(yticks)),
     )
-    fig.show()
 
     fig_save = sweep_file.replace(".h5", f"_{zvar}.png")
     fig.save_fig(name=fig_save)
 
+    fig.show()
+
 
 if __name__ == "__main__":
-    ccro_mesh_plotting()
+    ccro_mesh_plotting("SW")
+
+    ccro_mesh_plotting("BW")

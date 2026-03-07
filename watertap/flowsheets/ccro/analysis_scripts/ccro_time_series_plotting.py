@@ -4,8 +4,9 @@ from psPlotKit.data_manager.ps_data_manager import PsDataManager
 import numpy as np
 from psPlotKit.data_plotter.ps_line_plotter import LinePlotter
 from psPlotKit.data_plotter.fig_generator import FigureGenerator
+
 if __name__ == "__main__":
-    sweep_file = "/Users/ksitterl/Documents/Python/watertap/watertap/watertap/flowsheets/ccro/analysis_scripts/output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5"
+    sweep_file = "output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5"
     dm = PsDataManager(sweep_file)
     n_filt_time_steps = 20
     n_flush_time_steps = 5
@@ -25,7 +26,9 @@ if __name__ == "__main__":
     dm.register_data_key("avg_product_flow_rate", "Average Product Flow Rate", "L/s")
     dm.register_data_key("cycle_time_ratio", "Cycle Time Ratio", "%")
     dm.register_data_key("overall_recovery", "Water Recovery", "%")
-    dm.register_data_key("costing.aggregate_flow_electricity", "Total Power Required", "kW")
+    dm.register_data_key(
+        "costing.aggregate_flow_electricity", "Total Power Required", "kW"
+    )
     dm.register_data_key(
         "costing.aggregate_flow_costs[electricity]", "Total Electricity Cost"
     )
@@ -37,7 +40,6 @@ if __name__ == "__main__":
     dm.register_data_key("costing.wacc", "WACC")
     dm.register_data_key("costing.wacc", "WACC")
 
-
     units = ["Conduit", "Pump", "ReverseOsmosis1DwithHoldUp"]
     unit_names = ["Conduit", "Pump", "RO"]
     for u, n in zip(units, unit_names):
@@ -46,6 +48,12 @@ if __name__ == "__main__":
         )
 
     for t in range(n_time_periods):
+
+        dm.register_data_key(
+            f"operation_time_points[{t}]",
+            (t, "Operation Time Points"),
+            assign_units="s",
+        )
         dm.register_data_key(
             f"blocks[{t}].process.fs.dead_volume.accumulation_time[0.0]",
             (
@@ -121,40 +129,23 @@ if __name__ == "__main__":
         )
 
     dm.load_data()
-
-    filt_t_sequence = list()
-    for t in time_periods:
-        filt_t_sequence.append(dm[(t, "Accumulation Time")].data)
-    filt_t_sequence = [list(s) for s in zip(*filt_t_sequence)]
-
-    flushing_t_sequence = list()
-    for t in time_periods:
-        flushing_t_sequence.append(dm[(t, "Flushing Time")].data)
-    flushing_t_sequence = [list(s) for s in zip(*flushing_t_sequence)]
-
+    t_sequence = list()
     y_sequence = list()
     yvar = "Recycle Rate"
-    yvar = "Pump 1 Pressure"
+    # yvar = "Pump 1 Pressure"
+    tvar = "Operation Time Points"
     for t in time_periods:
+        t_sequence.append(dm[(t, tvar)].data)
         y_sequence.append(dm[(t, yvar)].data)
     y_sequence = [list(group) for group in zip(*y_sequence)]
-
-
+    # t_sequence.append(dm[(t, tvar)].data)
+    t_sequence = [list(group) for group in zip(*t_sequence)]
     fig = FigureGenerator()
     fig.init_figure()
+    for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
 
-    # cycle_time_sequence = list()
-    for s, r, dt, ft in zip(
-        y_sequence, dm[xvar].data, filt_t_sequence, flushing_t_sequence
-    ):
-        filt_dt = dt[0]
-        flush_dt = ft[0] / n_flush_time_steps
-        cts_filt = [filt_dt * _t for _t in range(n_filt_time_steps)]
-        cts_flush = [(flush_dt * _t) + cts_filt[-1] for _t in range(n_flush_time_steps)]
-        cts = cts_filt + cts_flush
-        # cycle_time_sequence.append(cts)
         _r = f"{int(r)}%"
-        fig.plot_line(xdata=cts, ydata=s, label=_r)
+        fig.plot_line(xdata=t, ydata=s, label=_r)
 
     fig.set_axis_ticklabels(
         xlabel="Cycle Time (s)",

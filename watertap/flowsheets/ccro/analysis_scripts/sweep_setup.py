@@ -34,16 +34,16 @@ def main():
     #     number_of_subprocesses=1,
     #     num_loop_workers=1,
     # )
-    # loopTool(
-    #     get_working_dir() + "/mesh_sweep.yaml",
-    #     build_function=ccro.build,
-    #     optimize_function=ccro.solve_model,
-    #     save_name="ccro_bw_mesh",
-    #     saving_dir=get_working_dir(),
-    #     number_of_subprocesses=1,
-    #     num_loop_workers=1,
-    # )
-    
+    loopTool(
+        get_working_dir() + "/mesh_sweep.yaml",
+        build_function=ccro.build,
+        optimize_function=ccro.solve_model,
+        save_name="ccro_bw_mesh",
+        saving_dir=get_working_dir(),
+        number_of_subprocesses=1,
+        num_loop_workers=2,
+    )
+
     loopTool(
         get_working_dir() + "/recovery_sweep.yaml",
         build_function=ccro.build,
@@ -51,7 +51,7 @@ def main():
         save_name="ccro_recovery_sweep",
         saving_dir=get_working_dir(),
         number_of_subprocesses=1,
-        num_loop_workers=1,
+        num_loop_workers=2,
     )
 
 
