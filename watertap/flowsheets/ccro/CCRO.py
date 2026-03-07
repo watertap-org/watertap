@@ -95,6 +95,7 @@ def create_ccro_multiperiod(
     tot_utilization_expr = 0
     if include_costing:
         mp.costing = WaterTAPCosting()
+        mp.costing.base_currency = pyunits.USD_2023
         for t, m in enumerate(mp.get_active_process_blocks(), 1):
             # this will track fraction of power used over the cycle.
             if m.fs.operation_mode == "filtration":
@@ -469,7 +470,8 @@ def solve(
 def setup_optimization(
     mp,
     overall_water_recovery=0.5,
-    max_cycle_time_hr=1,
+    min_cycle_time_hr=0.25,
+    max_cycle_time_hr=1.5,
     recycle_flow_bounds=(0.1, 20),
     min_accumulation_time=1,
     min_flushing_time=10 * pyunits.seconds,
@@ -486,7 +488,7 @@ def setup_optimization(
     mp.equal_delta_dead_volume_constraint.activate()
     mp.ro_membrane_area_constraint.activate()
     mp.ro_membrane_length_constraint.activate()
-    mp.total_cycle_time.setlb(1 * pyunits.minute)
+    mp.total_cycle_time.setlb(min_cycle_time_hr * pyunits.hours)
     mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
     # mp.total_cycle_time.setlb(0.98 * max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
