@@ -111,6 +111,15 @@ def add_multiperiod_variables(mp, cc_configuration=None):
         doc="Total cycle time including flushing",
     )
 
+    # mp.total_flushing_time = Var(
+    #     initialize=3600,
+    #     domain=NonNegativeReals,
+    #     bounds=(10, None),
+    #     units=pyunits.s,
+    #     doc="Total flushing time",
+
+    # )
+
     mp.cycle_time_ratio = Var(
         initialize=1,
         domain=NonNegativeReals,
@@ -359,6 +368,16 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             if m.fs.operation_mode == "filtration":
                 times.append(m.fs.dead_volume.accumulation_time[0])
         return b.total_filtration_time == sum(times)
+    
+    # @mp.Constraint(doc="Total flushing time constraint")
+    # def total_flushing_time_constraint(b):
+    #     times = []
+    #     for m in blks:
+    #         if m.fs.operation_mode == "flushing":
+    #             times.append(m.fs.flushing.flushing_time)
+    #         elif m.fs.operation_mode == "flushing_with_filtration":
+    #             times.append(mp.flushing.flushing_time / mp.flushing_points)
+        # return b.total_flushing_time == sum(times)
 
     @mp.Constraint(doc="Total cycle time constraint")
     def total_cycle_time_constraint(b):
@@ -368,6 +387,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                 times.append(m.fs.flushing.flushing_time)
             elif m.fs.operation_mode == "flushing_with_filtration":
                 times.append(mp.flushing.flushing_time / mp.flushing_points)
+        # return b.total_cycle_time == b.total_filtration_time + b.total_flushing_time
         return b.total_cycle_time == b.total_filtration_time + sum(times)
 
     @mp.Constraint(doc="Cycle time ratio constraint")
