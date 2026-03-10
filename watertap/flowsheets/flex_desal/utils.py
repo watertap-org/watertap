@@ -75,6 +75,7 @@ def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
             for skid in m.period[p].reverse_osmosis.set_ro_skids:
                 ro_skid = m.period[p].reverse_osmosis.ro_skid[skid]
                 recovery_var = pm_to_gm[ro_skid.recovery]
+                # pylint: disable = possibly-used-before-assignment
                 gm.addConstr(
                     (
                         pm_to_gm[ro_skid.energy_intensity]
