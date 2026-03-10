@@ -135,14 +135,14 @@ def add_multiperiod_variables(mp, cc_configuration=None):
     )
 
     mp.filtration_ramp_rate = Var(
-        mp.filtration_set,
+        # mp.filtration_set,
         initialize=0.25,
         bounds=(0.01, 1),
         units=pyunits.bar / pyunits.min,
         doc="Pressure ramp rate during filtration steps",
     )
 
-    iscale.set_scaling_factor(mp.filtration_ramp_rate, 10)
+    iscale.set_scaling_factor(mp.filtration_ramp_rate, 1)
 
     # mp.flushing_ramp_rate = Var(mp.flushing_set,
     #     initialize=-1,
@@ -419,35 +419,57 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             elif m.fs.operation_mode == "flushing_with_filtration":
                 times.append(mp.flushing.flushing_time / mp.flushing_points)
         return sum(times)
+    
+    @mp.Expression()
+    def dp(b):
+        m0 = blks[b.filtration_set.first()]
+        mf = blks[b.filtration_set.last()]
+        return pyunits.convert(
+            mf.fs.P1.control_volume.properties_out[0].pressure
+            - m0.fs.P1.control_volume.properties_out[0].pressure,
+            to_units=pyunits.bar,
+        )
 
-    @mp.Constraint(mp.filtration_set, doc="Filtration ramp rate constraint")
+    @mp.Constraint(doc="Filtration ramp rate constraint")
     def filtration_ramp_rate_constraint(b, t):
-        if t == b.filtration_set.first():
-            m = blks[t]
-            p_now = b.blocks[0].process.fs.P1.control_volume.properties_out[0].pressure
-            p_last = (
-                b.blocks[mp.TIME.last()]
-                .process.fs.P1.control_volume.properties_out[0]
-                .pressure
-            )
-            dp = pyunits.convert(p_now - p_last, to_units=pyunits.bar)
-            dt = pyunits.convert(b.operation_time_points[t], to_units=pyunits.min)
-            return b.filtration_ramp_rate[t] == dp / dt
-        else:
-            p_now = b.blocks[t].process.fs.P1.control_volume.properties_out[0].pressure
-            p_last = (
-                b.blocks[t - 1].process.fs.P1.control_volume.properties_out[0].pressure
-            )
-            dp = pyunits.convert(p_now - p_last, to_units=pyunits.bar)
-            dt = pyunits.convert(
-                b.operation_time_points[t] - b.operation_time_points[t - 1],
-                to_units=pyunits.min,
-            )
-            return b.filtration_ramp_rate[t] == dp / dt
+        m0 = blks[b.filtration_set.first()]
+        mf = blks[b.filtration_set.last()]
+        # dp = pyunits.convert(
+        #     mf.fs.P1.control_volume.properties_out[0].pressure
+        #     - m0.fs.P1.control_volume.properties_out[0].pressure,
+        #     to_units=pyunits.bar,
+        # )
+        dt = pyunits.convert(
+            b.operation_time_points[b.filtration_set.last()],
+            to_units=pyunits.minute,
+        )
+        return b.filtration_ramp_rate == b.dp / dt
+    #     p_now = b.blocks[t].process.fs.P1.control_volume.properties_out[0].pressure
+    #     if t == b.filtration_set.first():
+    #         p_prev = (
+    #             b.blocks[mp.TIME.last()]
+    #             .process.fs.P1.control_volume.properties_out[0]
+    #             .pressure
+    #         )
+    #         dp = pyunits.convert(p_now - p_prev, to_units=pyunits.bar)
+    #         dt = pyunits.convert(b.operation_time_points[t], to_units=pyunits.min)
+    #         return b.filtration_ramp_rate[t] == dp / dt
+    #     else:
+    #         # p_now = b.blocks[t].process.fs.P1.control_volume.properties_out[0].pressure
+    #         p_prev = (
+    #             b.blocks[t - 1].process.fs.P1.control_volume.properties_out[0].pressure
+    #         )
+    #         dp = pyunits.convert(p_now - p_prev, to_units=pyunits.bar)
+    #         dt = pyunits.convert(
+    #             b.operation_time_points[t] - b.operation_time_points[t - 1],
+    #             to_units=pyunits.min,
+    #         )
+    #         return b.filtration_ramp_rate[t] == dp / dt
 
-    for t, c in mp.filtration_ramp_rate_constraint.items():
-        iscale.constraint_scaling_transform(c, 10)
-        calculate_variable_from_constraint(mp.filtration_ramp_rate[t], c)
+    # for t, c in mp.filtration_ramp_rate_constraint.items():
+    #     iscale.constraint_scaling_transform(c, 0.1)
+    #     calculate_variable_from_constraint(mp.filtration_ramp_rate[t], c)
+
     mp.filtration_ramp_rate_constraint.deactivate()
 
     @mp.Expression(mp.TIME)
@@ -463,7 +485,6 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             dt = pyunits.convert(b.operation_time_points[t], to_units=pyunits.minute)
             return dp / dt
         else:
-            # P1 pressure for current time
             p_now = b.blocks[t].process.fs.P1.control_volume.properties_out[0].pressure
             p_last = (
                 b.blocks[t - 1].process.fs.P1.control_volume.properties_out[0].pressure

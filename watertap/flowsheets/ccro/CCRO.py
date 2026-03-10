@@ -6,6 +6,8 @@ from pyomo.environ import (
     assert_optimal_termination,
     Objective,
     Expression,
+    Set,
+    RangeSet,
     units as pyunits,
 )
 import idaes.core.util.scaling as iscale
@@ -35,7 +37,7 @@ import watertap.flowsheets.ccro.utils.ipoptv2 as ipt2
 here = os.path.dirname(os.path.abspath(__file__))
 
 def create_ccro_multiperiod(
-    n_time_points=5,
+    n_time_points=5, # filtration time points
     n_flushing_points=5,
     include_costing=True,
     cc_configuration=None,
@@ -63,6 +65,10 @@ def create_ccro_multiperiod(
 
     mp.time_points = n_time_points
     mp.flushing_points = n_flushing_points
+    mp.filtration_points = n_time_points
+    mp.total_points = n_time_points + n_flushing_points
+    mp.filtration_set = Set(initialize=range(n_time_points))
+    mp.flushing_set = Set(initialize=range(mp.filtration_set.last() + 1, mp.total_points))
     mp.include_costing = include_costing
     operation_mode_list = []
     for n in range(n_time_points):
@@ -313,11 +319,13 @@ def create_ccro_multiperiod(
         if m.fs.find_component("RO") is not None:
             print(
                 m.name,
-                "outle TDS:",
+                "outlet TDS:",
                 m.fs.RO.feed_side.properties[0, 1]
                 .conc_mass_phase_comp["Liq", "NaCl"]
                 .value,
             )
+    print(f"~~~MULTI-PERIOD MODEL BUILT ~~~")
+    print(f"~~~{mp.time_points} FILTRATION POINTS AND {mp.flushing_points} FLUSHING POINTS~~~~")
     print("Multi-period DOF:", degrees_of_freedom(mp))
     return mp
 
@@ -424,7 +432,7 @@ def solve(
     tee=True,
     raise_on_failure=True,
     use_ipoptv2=False,
-    max_iter=3000,
+    max_iter=1000,
 ):
     # ---solving---
     if solver is None and use_ipoptv2 == False:
@@ -470,7 +478,7 @@ def solve(
 def setup_optimization(
     mp,
     overall_water_recovery=0.5,
-    min_cycle_time_hr=0.25,
+    min_cycle_time_hr=10/60,
     max_cycle_time_hr=1.5,
     recycle_flow_bounds=(0.1, 20),
     min_accumulation_time=1,
@@ -488,9 +496,10 @@ def setup_optimization(
     mp.equal_delta_dead_volume_constraint.activate()
     mp.ro_membrane_area_constraint.activate()
     mp.ro_membrane_length_constraint.activate()
+    mp.filtration_ramp_rate_constraint.activate()
+    # mp.filtration_ramp_rate.fix(0.1)
     mp.total_cycle_time.setlb(min_cycle_time_hr * pyunits.hours)
     mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
-    # mp.total_cycle_time.setlb(0.98 * max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
     print("DOF for optimization:", degrees_of_freedom(mp))
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
@@ -837,12 +846,12 @@ def print_results_table(mp, w=15):
             )
         if m.fs.find_component("RO") is not None:
             row["RO TDS in (kg/m3)"] = (
-                m.fs.RO.feed_side.properties[0, 0.1]
+                m.fs.RO.feed_side.properties[0, m.fs.RO.difference_elements.first()]
                 .conc_mass_phase_comp["Liq", "NaCl"]
                 .value
             )
             row["RO TDS out (kg/m3)"] = (
-                m.fs.RO.feed_side.properties[0, 1]
+                m.fs.RO.feed_side.properties[0, m.fs.RO.difference_elements.last()]
                 .conc_mass_phase_comp["Liq", "NaCl"]
                 .value
             )

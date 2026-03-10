@@ -71,6 +71,22 @@ if __name__ == "__main__":
             # "kW",
         )
         dm.register_data_key(
+            f"blocks[{t}].process.fs.P1.control_volume.deltaP[0.0]",
+            (
+                t,
+                "Pump 1 dP",
+            ),
+            "bar",
+        )
+        dm.register_data_key(
+            f"blocks[{t}].process.fs.P2.control_volume.deltaP[0.0]",
+            (
+                t,
+                "Pump 2 dP",
+            ),
+            "bar",
+        )
+        dm.register_data_key(
             f"blocks[{t}].process.fs.P1.control_volume.work[0.0]",
             (
                 t,
@@ -127,12 +143,23 @@ if __name__ == "__main__":
             ),
             "m^2",
         )
+        dm.register_data_key(
+            f"ramp_rate[{t}]",
+            (
+                t,
+                "Ramp Rate",
+            ),
+            # conversion_factor=14.5037737730, assign_units="psi/min",
+            # "psi/min",
+        )
 
     dm.load_data()
     t_sequence = list()
     y_sequence = list()
-    yvar = "Recycle Rate"
+    # yvar = "Recycle Rate"
     # yvar = "Pump 1 Pressure"
+    yvar = "Ramp Rate"
+    # yvar = "Pump 2 dP"
     tvar = "Operation Time Points"
     for t in time_periods:
         t_sequence.append(dm[(t, tvar)].data)
@@ -142,6 +169,39 @@ if __name__ == "__main__":
     t_sequence = [list(group) for group in zip(*t_sequence)]
     fig = FigureGenerator()
     fig.init_figure()
+    
+    for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
+
+        _r = f"{int(r)}%"
+        fig.plot_line(xdata=t, ydata=s, label=_r)
+
+    fig.set_axis_ticklabels(
+        xlabel="Cycle Time (s)",
+        ylabel=yvar + " (bar/min)",
+        ax_idx=0,
+    )
+    fig.add_legend()
+    # fig.show()
+
+    fig_save = sweep_file.replace(".h5", f"_{yvar}.png")
+    fig.save_fig(name=fig_save)
+
+    t_sequence = list()
+    y_sequence = list()
+    # yvar = "Recycle Rate"
+    yvar = "Pump 1 Pressure"
+    # yvar = "Ramp Rate"
+    # yvar = "Pump 2 dP"
+    tvar = "Operation Time Points"
+    for t in time_periods:
+        t_sequence.append(dm[(t, tvar)].data)
+        y_sequence.append(dm[(t, yvar)].data)
+    y_sequence = [list(group) for group in zip(*y_sequence)]
+    # t_sequence.append(dm[(t, tvar)].data)
+    t_sequence = [list(group) for group in zip(*t_sequence)]
+    fig = FigureGenerator()
+    fig.init_figure()
+    
     for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
 
         _r = f"{int(r)}%"
@@ -153,7 +213,7 @@ if __name__ == "__main__":
         ax_idx=0,
     )
     fig.add_legend()
-    fig.show()
+    # fig.show()
 
     fig_save = sweep_file.replace(".h5", f"_{yvar}.png")
     fig.save_fig(name=fig_save)
