@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Laboratory of the Rockies, and National Energy Technology
+# National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -19,11 +19,12 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     check_optimal_termination,
+    assert_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 
 import pyomo.environ as pyo
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, MaterialFlowBasis
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
@@ -38,6 +39,8 @@ from idaes.models.unit_models.heat_exchanger import (
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 
+# from idaes.core.util import DiagnosticsToolbox
+
 from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
@@ -45,26 +48,23 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-    MaterialFlowBasis,
-)
+import watertap.property_models.multicomp_aq_sol_prop_pack as props_mcas
 from watertap.costing import WaterTAPCosting
 import math
-import idaes.logger as idaeslog
-
-_log = idaeslog.getLogger(__name__)
 
 
 def main():
     # build, set operating conditions, initialize for simulation
     m = build()
-    calculate_scaling_factors(m)
-
     set_operating_conditions(m)
     add_Q_ext(m, time_point=m.fs.config.time)
+    # dt = DiagnosticsToolbox(m)
+    # dt.report_structural_issues()
+    # dt.assert_no_structural_warnings()
     initialize_system(m)
-
+    # dt.report_structural_issues()
+    # dt.display_underconstrained_set()
+    # dt.display_potential_evaluation_errors()
     # rescale costs after initialization because scaling depends on flow rates
     scale_costs(m)
     fix_outlet_pressures(m)  # outlet pressure are initially unfixed for initialization
@@ -78,17 +78,15 @@ def main():
     solver = get_solver()
     results = solve(m, solver=solver, tee=True)
     print("Termination condition: ", results.solver.termination_condition)
-    if check_optimal_termination(results):
-        display_metrics(m)
-        display_design(m)
-    else:
-        print("First solve did not terminate optimally.")
+    assert_optimal_termination(results)
+    display_metrics(m)
+    display_design(m)
 
     print("\n***---Second solve - optimization results---***")
     m.fs.Q_ext[0].fix(0)  # no longer want external heating in evaporator
     del m.fs.objective
     set_up_optimization(m)
-    results = solve(m, solver=solver, tee=True)
+    results = solve(m, solver=solver, tee=False)
     print("Termination condition: ", results.solver.termination_condition)
     display_metrics(m)
     display_design(m)
@@ -96,36 +94,34 @@ def main():
     return m, results
 
 
-def build(feed_properties=None):
+def build():
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     # Properties
-    if feed_properties is None or feed_properties == "seawater":
-        m.fs.properties_feed = props_sw.SeawaterParameterBlock()
-    elif feed_properties == "MCAS":
-        m.fs.properties_feed = MCASParameterBlock(
-            solute_list=["TDS"],
-            mw_data={"TDS": 31.4038218e-3},
-            diffusivity_data={("Liq", "TDS"): 1.61e-9},
-            material_flow_basis=MaterialFlowBasis.mass,
-            density_calculation="seawater",
-        )
-    else:
-        # TODO: this is temporary until we make MVC compatible with NaCL prop model AND convert flowsheets to classes, so we don't need to pass in an arg like this. Instead, the property_package for the feed would be defined by the config of the MVC model class.
-        raise ValueError(
-            "MVC flowsheet supports seawater or MCAS property packages only."
-        )
+    m.fs.properties_feed = props_sw.SeawaterParameterBlock()
     m.fs.properties_vapor = props_w.WaterParameterBlock()
 
-    # Unit models
-    m.fs.feed = Feed(property_package=m.fs.properties_feed)
+    m.fs.properties_mcas = props_mcas.MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23e-3, "Cl_-": 35e-3},
+        # diffusivity_data={
+        #     ("Liq", "Na_+"): 1.33e-09,
+        #     ("Liq", "Cl_-"): 2.03e-09,
+        # },
+        charge={"Na_+": 1, "Cl_-": -1},
+        material_flow_basis=MaterialFlowBasis.mass,
+    )
 
-    m.fs.pump_feed = Pump(property_package=m.fs.properties_feed)
+    # Unit models
+    m.fs.feed = Feed(property_package=m.fs.properties_mcas)
+    # m.fs.feed = Feed(property_package=m.fs.properties_feed)
+
+    m.fs.pump_feed = Pump(property_package=m.fs.properties_mcas)
 
     m.fs.separator_feed = Separator(
-        property_package=m.fs.properties_feed,
+        property_package=m.fs.properties_mcas,
         outlet_list=["hx_distillate_cold", "hx_brine_cold"],
         split_basis=SplittingType.totalFlow,
     )
@@ -133,8 +129,8 @@ def build(feed_properties=None):
     m.fs.hx_distillate = HeatExchanger(
         hot_side_name="hot",
         cold_side_name="cold",
-        hot={"property_package": m.fs.properties_feed, "has_pressure_change": True},
-        cold={"property_package": m.fs.properties_feed, "has_pressure_change": True},
+        hot={"property_package": m.fs.properties_mcas, "has_pressure_change": True},
+        cold={"property_package": m.fs.properties_mcas, "has_pressure_change": True},
         delta_temperature_callback=delta_temperature_chen_callback,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
@@ -146,8 +142,8 @@ def build(feed_properties=None):
     m.fs.hx_brine = HeatExchanger(
         hot_side_name="hot",
         cold_side_name="cold",
-        hot={"property_package": m.fs.properties_feed, "has_pressure_change": True},
-        cold={"property_package": m.fs.properties_feed, "has_pressure_change": True},
+        hot={"property_package": m.fs.properties_mcas, "has_pressure_change": True},
+        cold={"property_package": m.fs.properties_mcas, "has_pressure_change": True},
         delta_temperature_callback=delta_temperature_chen_callback,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
@@ -157,14 +153,14 @@ def build(feed_properties=None):
     m.fs.hx_brine.area.setlb(10)
 
     m.fs.mixer_feed = Mixer(
-        property_package=m.fs.properties_feed,
+        property_package=m.fs.properties_mcas,
         momentum_mixing_type=MomentumMixingType.equality,
         inlet_list=["hx_distillate_cold", "hx_brine_cold"],
     )
     m.fs.mixer_feed.pressure_equality_constraints[0, 2].deactivate()
 
     m.fs.evaporator = Evaporator(
-        property_package_feed=m.fs.properties_feed,
+        property_package_feed=m.fs.properties_mcas,
         property_package_vapor=m.fs.properties_vapor,
     )
 
@@ -174,7 +170,7 @@ def build(feed_properties=None):
 
     m.fs.tb_distillate = Translator(
         inlet_property_package=m.fs.properties_vapor,
-        outlet_property_package=m.fs.properties_feed,
+        outlet_property_package=m.fs.properties_mcas,
     )
 
     # Translator block to convert distillate exiting condenser from water to seawater prop pack
@@ -193,13 +189,12 @@ def build(feed_properties=None):
     def eq_pressure(blk):
         return blk.properties_in[0].pressure == blk.properties_out[0].pressure
 
-    m.fs.pump_brine = Pump(property_package=m.fs.properties_feed)
+    m.fs.pump_brine = Pump(property_package=m.fs.properties_mcas)
 
-    m.fs.pump_distillate = Pump(property_package=m.fs.properties_feed)
+    m.fs.pump_distillate = Pump(property_package=m.fs.properties_mcas)
+    m.fs.distillate = Product(property_package=m.fs.properties_mcas)
 
-    m.fs.distillate = Product(property_package=m.fs.properties_feed)
-
-    m.fs.brine = Product(property_package=m.fs.properties_feed)
+    m.fs.brine = Product(property_package=m.fs.properties_mcas)
 
     # Connections and connect condenser and evaporator
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump_feed.inlet)
@@ -255,7 +250,11 @@ def build(feed_properties=None):
         == m.fs.recovery[0]
         * (
             m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-            + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+            + sum(
+                m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j]
+                for j in m.fs.properties_mcas.solute_set
+            )
+            # + m.fs.pump_feed.control_volume.properties_in[0].flow_mass_phase_comp["Liq","TDS"]
         )
     )
 
@@ -265,12 +264,15 @@ def build(feed_properties=None):
         == m.fs.recovery[0]
     )
 
-    return m
-
-
-def calculate_scaling_factors(m):
     # Scaling
     # properties
+    m.fs.properties_mcas.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    )
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.properties_mcas.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", j)
+        )
     m.fs.properties_feed.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
     )
@@ -318,21 +320,37 @@ def calculate_scaling_factors(m):
     )
 
     # evaporator
-    # m.fs.evaporator.area.setub(None)
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.U, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_out, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.lmtd, 1e-1)
-    iscale.constraint_scaling_transform(m.fs.evaporator.eq_evaporator_heat[0], 1e-3)
+
     # compressor
     iscale.set_scaling_factor(m.fs.compressor.control_volume.work, 1e-6)
 
     # condenser
     iscale.set_scaling_factor(m.fs.condenser.control_volume.heat, 1e-6)
 
+    # Scaling for MCAS feed and translator variables
+    for j in m.fs.properties_mcas.solute_set:
+        iscale.set_scaling_factor(
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j], 1e2
+        )
+        iscale.set_scaling_factor(
+            m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j], 1e2
+        )
+    iscale.set_scaling_factor(
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "H2O"], 1
+    )
+
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
+
+    return m
 
 
 def add_Q_ext(m, time_point=None):
@@ -384,9 +402,156 @@ def add_costing(m):
     m.fs.costing.base_currency = pyo.units.USD_2020
 
 
+def set_electroneutral_ion_fractions(m, tds=0.1):
+    """
+    Set ion mass fractions to achieve target TDS and electroneutrality for any ionic composition.
+
+    Algorithm:
+      1. Separate ions into cations (charge > 0) and anions (charge < 0)
+      2. Distribute TDS equally among all ions initially
+      3. Compute molar equivalents: eq_i = (mass_i / MW_i) * abs(charge_i)
+      4. Scale anion masses so sum(eq_cations) = sum(eq_anions)
+      5. Renormalize to exact TDS target
+
+    Args:
+        m: Pyomo model with MCAS property package
+        tds: Target total dissolved solids mass fraction (default=0.1)
+
+    Returns:
+        dict: Ion mass fractions {ion_name: mass_fraction}
+    """
+    from watertap.core.util.chemistry import get_charge, get_molar_mass_quantity
+
+    solute_set = m.fs.properties_mcas.solute_set
+
+    # Get MW and charge for each solute
+    ion_data = {}
+    for j in solute_set:
+        mw = value(get_molar_mass_quantity(j))
+        charge = get_charge(j)
+        ion_data[j] = {"mw": mw, "charge": charge}
+        print(f"{j}: MW = {mw:.6f} kg/mol, charge = {charge}")
+
+    # Separate cations and anions
+    cations = {j: d for j, d in ion_data.items() if d["charge"] > 0}
+    anions = {j: d for j, d in ion_data.items() if d["charge"] < 0}
+
+    if not cations or not anions:
+        raise ValueError("Need both cations and anions for electroneutrality.")
+
+    # Initial equal distribution
+    n_ions = len(solute_set)
+    initial_mass_frac = tds / n_ions
+
+    # Compute initial molar equivalents
+    eq_cations = sum(
+        (initial_mass_frac / d["mw"]) * d["charge"] for d in cations.values()
+    )
+    eq_anions = sum(
+        (initial_mass_frac / d["mw"]) * abs(d["charge"]) for d in anions.values()
+    )
+
+    # Scale anions to match cations
+    scale_anion = eq_cations / eq_anions
+
+    # Provisional assignment
+    ion_mass_fracs = {}
+    for j in solute_set:
+        mass_frac = initial_mass_frac
+        if j in anions:
+            mass_frac = initial_mass_frac * scale_anion
+        ion_mass_fracs[j] = mass_frac
+
+    # Renormalize to exact TDS
+    total_assigned = sum(ion_mass_fracs.values())
+    renorm = tds / total_assigned if total_assigned != 0 else 1.0
+
+    for j in ion_mass_fracs:
+        ion_mass_fracs[j] *= renorm
+
+    # Verify electroneutrality
+    eq_cations_final = sum(
+        (ion_mass_fracs[j] / ion_data[j]["mw"]) * ion_data[j]["charge"] for j in cations
+    )
+    eq_anions_final = sum(
+        (ion_mass_fracs[j] / ion_data[j]["mw"]) * abs(ion_data[j]["charge"])
+        for j in anions
+    )
+
+    print(f"\nElectroneutral ion mass fractions (TDS = {tds}):")
+    for j, mf in ion_mass_fracs.items():
+        print(f"  {j}: {mf:.6f}")
+    print(f"Total TDS: {sum(ion_mass_fracs.values()):.6f}")
+    print(f"Cation equivalents: {eq_cations_final:.6f}")
+    print(f"Anion equivalents: {eq_anions_final:.6f}")
+    print(f"Electroneutrality check: {abs(eq_cations_final - eq_anions_final) < 1e-10}")
+
+    # After initial renorm, explicitly enforce electroneutrality by adjusting one anion, then renormalize to preserve TDS
+    adjust_ion = "Cl_-"
+    if adjust_ion not in anions:
+        adjust_ion = next(iter(anions), None)
+
+    if adjust_ion is not None:
+        # current charge imbalance (positive -> need more anion equivalents)
+        charge_imbalance = eq_cations_final - eq_anions_final
+        if abs(charge_imbalance) > 1e-12:
+            ion_mass_fracs[adjust_ion] += (
+                charge_imbalance
+                * ion_data[adjust_ion]["mw"]
+                / abs(ion_data[adjust_ion]["charge"])
+            )
+            # keep masses non-negative
+            ion_mass_fracs[adjust_ion] = max(ion_mass_fracs[adjust_ion], 0.0)
+
+            # renormalize to exact TDS while preserving electroneutrality (scaling keeps ratios balanced)
+            total_mass = sum(ion_mass_fracs.values())
+            if total_mass > 0:
+                scale = tds / total_mass
+                for j in ion_mass_fracs:
+                    ion_mass_fracs[j] *= scale
+
+    # Fix mass fractions in model
+    for j, mf in ion_mass_fracs.items():
+        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j].fix(mf)
+
+    # Touch molar concentration to check electroneutrality
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.feed.properties[0].conc_mol_phase_comp["Liq", j]
+
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j].fix()
+
+    m.fs.feed.properties[0].assert_electroneutrality(
+        tee=True,
+        tol=1e-6,
+        solve=False,
+        # defined_state=True,
+        # adjust_by_ion="Cl_-",
+    )
+
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j].unfix()
+
+    return ion_mass_fracs
+
+
 def set_operating_conditions(m):
     # Feed inlet
-    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].fix(0.1)
+    # m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].fix(0.1)
+
+    set_electroneutral_ion_fractions(m, tds=1e-1)
+
+    # Optional: verify TDS and electroneutrality on the feed block
+    solutes = list(m.fs.feed.properties[0].params.solute_set)
+    tds = sum(m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j] for j in solutes)
+    charge_sum = sum(
+        m.fs.feed.properties[0].charge_comp[j]
+        * m.fs.feed.properties[0].conc_mol_phase_comp["Liq", j]
+        for j in m.fs.feed.properties[0].params.ion_set
+    )
+    print(f"Feed TDS set to: {value(tds):.6f} (should be 0.1)")
+    print(f"Feed charge balance: {value(charge_sum):.3e} (≈0 means electroneutral)")
+
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40)
     # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(4)
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)
@@ -432,7 +597,9 @@ def set_operating_conditions(m):
     m.fs.pump_distillate.control_volume.deltaP[0].fix(4e4)
 
     # Fix 0 TDS
-    m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"].fix(1e-5)
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", j].fix(1e-5)
+    # m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp["Liq", "TDS"].fix(1e-5)
 
     # Costing
     m.fs.costing.TIC.fix(2)
@@ -455,29 +622,100 @@ def initialize_system(m, solver=None):
     optarg = solver.options
 
     # Touch feed mass fraction property
-    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+    # m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+    for j in m.fs.properties_mcas.solute_set:
+        print(
+            f'Feed Mass fraction {j}: {m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j].value}'
+        )
+    print(
+        f'Feed Mass water flowrate: {m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].value}'
+    )
+    # print(f'Mass fraction TDS: {m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].value}')
+    # print(f'Mass flowrate TDS: {m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].value}')
+
+    # Touch molar concentration to check electroneutrality
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.feed.properties[0].conc_mol_phase_comp["Liq", j]
+
     solver.solve(m.fs.feed)
+
+    # for j in m.fs.properties_mcas.solute_set:
+    #     print(f'Feed mass flowrate {j} after solve: {m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j].value}')
+
+    # for j in m.fs.properties_mcas.solute_set:
+    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j].fix()
+
+    # m.fs.feed.properties[0].assert_electroneutrality(
+    #     tee=True,
+    #     tol=1e-6,
+    #     solve=False,
+    #     # defined_state=True,
+    #     # adjust_by_ion="Cl_-",
+    # )
+
+    # for j in m.fs.properties_mcas.solute_set:
+    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j].unfix()
+
+    # print(
+    #     f'Sum of charges in feed stream: {value(sum(m.fs.feed.properties[0].charge_comp[j] * m.fs.feed.properties[0].conc_mol_phase_comp["Liq", j] for j in m.fs.properties_mcas.ion_set))} eq 0 means electroneutral'
+    # )
+    # assert (
+    #     value(
+    #         sum(
+    #             m.fs.feed.properties[0].charge_comp[j]
+    #             * m.fs.feed.properties[0].conc_mol_phase_comp["Liq", j]
+    #             for j in m.fs.feed.properties[0].params.ion_set
+    #         )
+    #     )
+    #     <= 1e-8
+    # ), "Feed stream is not electroneutral!"
+
+    print(
+        f'Feed Mass water flowrate: {m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].value}'
+    )
+
+    # print(f'Mass fraction TDS: {m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].value}')
+    # print(f'Mass flowrate TDS: {m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].value}')
 
     # Propagate vapor flow rate based on given recovery
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp[
         "Vap", "H2O"
     ] = m.fs.recovery[0] * (
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-        + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+        + sum(
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j]
+            for j in m.fs.properties_mcas.solute_set
+        )
+        # + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
     )
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Liq", "H2O"] = 0
 
     # Propagate brine salinity and flow rate
-    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"] = (
-        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
-        / (1 - m.fs.recovery[0])
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", j] = (
+            m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j]
+            / (1 - m.fs.recovery[0])
+        )
+    # m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"] = (
+    #     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+    #     / (1 - m.fs.recovery[0])
+    # )
+    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "H2O"] = 1 - sum(
+        m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", j]
+        for j in m.fs.properties_mcas.solute_set
     )
-    m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "H2O"] = (
-        1 - m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value
-    )
-    m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"] = (
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
-    )
+    # m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "H2O"] = (
+    #     1 - m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value
+    # )
+
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", j] = (
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j]
+        )
+    # m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"] = (
+    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
+    # )
+
     m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"] = (
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
         - m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
@@ -490,14 +728,20 @@ def initialize_system(m, solver=None):
     # initialize separator
     propagate_state(m.fs.s02)
     # Touch property for initialization
-    m.fs.separator_feed.mixed_state[0].mass_frac_phase_comp["Liq", "TDS"]
+    # m.fs.separator_feed.mixed_state[0].mass_frac_phase_comp["Liq", "TDS"]
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.separator_feed.mixed_state[0].mass_frac_phase_comp["Liq", j]
     m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].fix(
         m.fs.recovery[0].value
     )
     m.fs.separator_feed.mixed_state.initialize(optarg=optarg, solver="ipopt-watertap")
     # Touch properties for initialization
-    m.fs.separator_feed.hx_brine_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
-    m.fs.separator_feed.hx_distillate_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.separator_feed.hx_brine_cold_state[0].mass_frac_phase_comp["Liq", j]
+        m.fs.separator_feed.hx_distillate_cold_state[0].mass_frac_phase_comp["Liq", j]
+
+    # m.fs.separator_feed.hx_brine_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
+    # m.fs.separator_feed.hx_distillate_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
     m.fs.separator_feed.initialize(optarg=optarg, solver="ipopt-watertap")
     m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].unfix()
 
@@ -509,14 +753,15 @@ def initialize_system(m, solver=None):
     m.fs.hx_distillate.cold_outlet.pressure[0] = m.fs.evaporator.inlet_feed.pressure[
         0
     ].value
-    m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] = (
+    m.fs.hx_distillate.hot.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = (
         m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value
     )
-    m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0, "Liq", "TDS"] = 1e-4
-    m.fs.hx_distillate.hot_inlet.temperature[0] = (
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.hx_distillate.hot.properties_in[0].flow_mass_phase_comp["Liq", j] = 1e-4
+    m.fs.hx_distillate.hot.properties_in[0].temperature = (
         m.fs.evaporator.outlet_brine.temperature[0].value
     )
-    m.fs.hx_distillate.hot_inlet.pressure[0] = 101325
+    m.fs.hx_distillate.hot.properties_in[0].pressure = 101325
     m.fs.hx_distillate.initialize(solver="ipopt-watertap")
 
     # initialize brine heat exchanger
@@ -525,16 +770,17 @@ def initialize_system(m, solver=None):
         0
     ].value
     m.fs.hx_brine.cold_outlet.pressure[0] = m.fs.evaporator.inlet_feed.pressure[0].value
-    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] = (
+    m.fs.hx_brine.hot.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = (
         m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "H2O"]
     )
-    m.fs.hx_brine.hot_inlet.flow_mass_phase_comp[0, "Liq", "TDS"] = (
-        m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", "TDS"]
+    for j in m.fs.properties_mcas.solute_set:
+        m.fs.hx_brine.hot.properties_in[0].flow_mass_phase_comp["Liq", j] = (
+            m.fs.evaporator.properties_brine[0].flow_mass_phase_comp["Liq", j]
+        )
+    m.fs.hx_brine.hot.properties_in[0].temperature = (
+        m.fs.evaporator.outlet_brine.temperature[0].value
     )
-    m.fs.hx_brine.hot_inlet.temperature[0] = m.fs.evaporator.outlet_brine.temperature[
-        0
-    ].value
-    m.fs.hx_brine.hot_inlet.pressure[0] = 101325
+    m.fs.hx_brine.hot.properties_in[0].pressure = 101325
     m.fs.hx_brine.initialize(solver="ipopt-watertap")
 
     # initialize mixer
@@ -547,11 +793,31 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s07)
     m.fs.Q_ext[0].fix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix()
-
-    # fixes and unfixes those values
-    m.fs.evaporator.initialize(
-        delta_temperature_in=60, solver="ipopt-watertap", outlvl=idaeslog.DEBUG
-    )
+    try:
+        # fixes and unfixes those values
+        m.fs.evaporator.initialize(delta_temperature_in=60, solver="ipopt-watertap")
+    except Exception as e:
+        print("Evaporator initialization failed.")
+        print(
+            "Evaporator inlet_feed.temperature[0]:",
+            m.fs.evaporator.inlet_feed.temperature[0].value,
+        )
+        print(
+            "Evaporator outlet_brine.temperature[0]:",
+            m.fs.evaporator.outlet_brine.temperature[0].value,
+        )
+        print("Evaporator U:", m.fs.evaporator.U.value)
+        print(
+            "Evaporator area:",
+            m.fs.evaporator.area.value if hasattr(m.fs.evaporator, "area") else "N/A",
+        )
+        print("Q_ext[0]:", m.fs.Q_ext[0].value)
+        print(
+            "Properties_vapor[0].flow_mass_phase_comp['Vap', 'H2O']:",
+            m.fs.evaporator.properties_vapor[0]
+            .flow_mass_phase_comp["Vap", "H2O"]
+            .value,
+        )
 
     m.fs.Q_ext[0].unfix()
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].unfix()
@@ -570,6 +836,9 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s10)
     m.fs.pump_brine.initialize(optarg=optarg, solver="ipopt-watertap")
 
+    # initialize brine translator
+    propagate_state(m.fs.s12)
+
     # initialize distillate pump
     propagate_state(m.fs.s13)  # to translator block
     propagate_state(m.fs.s14)  # from translator block to pump
@@ -582,7 +851,6 @@ def initialize_system(m, solver=None):
     m.fs.pump_distillate.initialize(optarg=optarg, solver="ipopt-watertap")
 
     # propagate brine state
-    propagate_state(m.fs.s12)
     propagate_state(m.fs.s16)
 
     seq = SequentialDecomposition(tear_solver="cbc")
@@ -620,7 +888,7 @@ def initialize_system(m, solver=None):
 
     m.fs.costing.initialize()
 
-    solver.solve(m, tee=True)
+    solver.solve(m, tee=False)
 
     print("Initialization done")
 
@@ -640,7 +908,7 @@ def fix_outlet_pressures(m):
 
 
 def calculate_cost_sf(cost):
-    sf = 10 * 10 ** -(math.log10(abs(cost.value)))
+    sf = 10 ** -(math.log10(abs(cost.value)))
     iscale.set_scaling_factor(cost, sf)
 
 
@@ -665,17 +933,17 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
     if solver is None:
         solver = get_solver()
 
+    # Configure IPOPT solver options
+    solver.options["hessian_approximation"] = "limited-memory"
+    # solver.options["max_iter"] = 3000
+    # solver.options["acceptable_tol"] = 1e-8
+
     results = solver.solve(model, tee=tee)
     if check_optimal_termination(results):
         return results
     msg = (
         "The current configuration is infeasible. Please adjust the decision variables."
     )
-    if raise_on_failure:
-        raise RuntimeError(msg)
-    else:
-        print(msg)
-        return results
 
 
 def set_up_optimization(m):
@@ -696,23 +964,63 @@ def display_metrics(m):
         "Feed flow rate:                           %.2f kg/s"
         % (
             m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].value
-            + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].value
+            + sum(
+                m.fs.feed.properties[0].flow_mass_phase_comp["Liq", j].value
+                for j in m.fs.properties_mcas.solute_set
+            )
+            # + m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].value
         )
     )
     print(
         "Feed salinity:                            %.2f g/kg"
-        % (m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3)
-    )
-    print(
-        "Brine salinity:                           %.2f g/kg"
+        # % (m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3)
         % (
-            m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value
+            sum(
+                m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j].value
+                for j in m.fs.properties_mcas.solute_set
+            )
             * 1e3
         )
     )
+
+    # Print individual ion concentrations in feed (ppm)
+    print("\nFeed ion concentrations (ppm):")
+    for j in m.fs.properties_mcas.solute_set:
+        ppm_value = m.fs.feed.properties[0].mass_frac_phase_comp["Liq", j].value * 1e6
+        print(f"  {j}:                                    %.2f ppm" % ppm_value)
+
+    # Print individual ion concentrations in brine (ppm)
+    print("\nBrine ion concentrations (ppm):")
+    # for j in m.fs.properties_mcas.solute_set:
+    #     ppm_value = m.fs.brine.properties[0].mass_frac_phase_comp["Liq", j].value * 1e6
+    #     print(f"  {j}:                                    %.2f ppm" % ppm_value)
+    #     print("\nBrine ion concentrations (ppm):")
+    for j in m.fs.properties_mcas.solute_set:
+        ppm_value = (
+            m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", j].value
+            * 1e6
+        )
+        print(f"  {j}:                                    %.2f ppm" % ppm_value)
+
+    print(
+        "Brine salinity:                           %.2f g/kg"
+        % (
+            sum(
+                m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", j].value
+                for j in m.fs.properties_mcas.solute_set
+            )
+            # m.fs.evaporator.properties_brine[0].mass_frac_phase_comp["Liq", "TDS"].value
+            * 1e3
+        )
+    )
+
     print(
         "Product flow rate:                        %.2f kg/s"
         % m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value
+    )
+    print(
+        "Brine flow rate:                         %.2f kg/s"
+        % m.fs.brine.properties[0].flow_mass_phase_comp["Liq", "H2O"].value
     )
     print(
         "Recovery:                                 %.2f %%"
