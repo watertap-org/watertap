@@ -34,7 +34,7 @@ class CCROConfiguration(dict):
             # Total dead volume is module_area*dead_volume_to_area_ratio + module_area*dead_volume_to_area_ratio*pipe_to_module_ratio
         )
         self.update(self.default_config)
-        self.display()
+        # self.display()
 
     def display(self):
         """Display current configuration."""

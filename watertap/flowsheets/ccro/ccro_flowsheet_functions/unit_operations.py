@@ -45,7 +45,7 @@ from watertap.unit_models.pseudo_steady_state.conduit import Conduit
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
-def build_ro_systems(use_ro_with_hold_up=True):
+def build_ro_systems(use_ro_with_hold_up=True, finite_elements=5):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.operation_mode = "filtration"
@@ -57,15 +57,6 @@ def build_ro_systems(use_ro_with_hold_up=True):
 
     # Dead volume is included in both operation_modes
     m.fs.dead_volume = DeadVolume0D(property_package=m.fs.properties)
-
-    # Touch relevant parameters
-    m.fs.raw_feed.properties[0].flow_vol_phase
-    m.fs.raw_feed.properties[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase
-    m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_in[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_out[0].conc_mass_phase_comp
-    m.fs.dead_volume.dead_volume.properties_in[0].flow_vol_phase
 
     # Feed pump
     m.fs.P1 = Pump(property_package=m.fs.properties)
@@ -87,7 +78,7 @@ def build_ro_systems(use_ro_with_hold_up=True):
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
-            finite_elements=10,
+            finite_elements=finite_elements,
             module_type="spiral_wound",
             has_full_reporting=True,
         )
@@ -100,7 +91,7 @@ def build_ro_systems(use_ro_with_hold_up=True):
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
-            finite_elements=10,
+            finite_elements=finite_elements,
             module_type="spiral_wound",
             has_full_reporting=True,
         )
@@ -172,7 +163,7 @@ def copy_inlet_state_for_mixer(m):
         obj.value = m.fs.M1.inlet_1.flow_mass_phase_comp[idx].value
 
 
-def build_flushing_with_RO(use_ro_with_hold_up=True):
+def build_flushing_with_RO(use_ro_with_hold_up=True, finite_elements=5):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.operation_mode = "flushing_with_filtration"
@@ -216,7 +207,7 @@ def build_flushing_with_RO(use_ro_with_hold_up=True):
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
-            finite_elements=10,
+            finite_elements=finite_elements,
             module_type="spiral_wound",
             has_full_reporting=True,
         )
@@ -229,7 +220,7 @@ def build_flushing_with_RO(use_ro_with_hold_up=True):
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
-            finite_elements=10,
+            finite_elements=finite_elements,
             module_type="spiral_wound",
             has_full_reporting=True,
         )
