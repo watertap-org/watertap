@@ -22,6 +22,10 @@ if gurobipy_available:
     from gurobipy import nlfunc
 
 
+# NOTE: This function is needed until Pyomo's Gurobi writer can handle
+# general nonlinear constraints. Once Pyomo supports this feature, this
+# function can be removed from the codebase. Since this function is
+# needed temporarily, tests are not added for this function.
 def get_gurobi_solver_model(m, mip_gap=0.01, time_limit=3600, tee=True):
     """
     Returns a Pyomo SolverFactory object that is compatible with Gurobi.

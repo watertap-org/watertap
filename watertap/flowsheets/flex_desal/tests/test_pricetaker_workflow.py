@@ -211,29 +211,32 @@ class TestPriceTakerWorkflow:
         m, price_data = system_frame
         utils.update_recovery_bounds(m, lb=0.4, ub=0.5)
 
+    # NOTE: get_baseline_model function uses Pyomo's clone method
+    # For some reason, the clone method is taking too long to create
+    # a copy of the model. So, ignoring this test for now.
     # @pytest.mark.unit
     # def test_get_baseline_model(self, system_frame):
     #     m, price_data = system_frame
     #     utils.get_baseline_model(m)
 
-    # @pytest.mark.component
-    # @pytest.mark.xfail
-    # # This test will fail if the user does not have a Gurobi license
-    # def test_gurobi_solve(self, system_frame):
-    #     m, price_data = system_frame
-    #
-    #     solver = pyo.SolverFactory("gurobi")
-    #     solver.options["MIPGap"] = 0.03
-    #     solver.solve(m)
-    #
-    # @pytest.mark.component
-    # @pytest.mark.xfail
-    # # This test will fail if the user does not have a Gurobi license
-    # def test_gurobi_util_solve(self, system_frame):
-    #     m, price_data = system_frame
-    #
-    #     solver = utils.get_gurobi_solver_model(m)
-    #     solver.solve(m)
+    @pytest.mark.component
+    @pytest.mark.xfail
+    # This test will fail if the user does not have a Gurobi license
+    def test_gurobi_solve(self, system_frame):
+        m, price_data = system_frame
+
+        solver = pyo.SolverFactory("gurobi")
+        solver.options["MIPGap"] = 0.03
+        solver.solve(m)
+
+    @pytest.mark.component
+    @pytest.mark.xfail
+    # This test will fail if the user does not have a Gurobi license
+    def test_gurobi_util_solve(self, system_frame):
+        m, price_data = system_frame
+
+        solver = utils.get_gurobi_solver_model(m)
+        solver.solve(m)
 
     # @pytest.mark.component
     # # Took 6 hours to solve locally
@@ -255,3 +258,98 @@ class TestPriceTakerWorkflow:
     #     assert pyo.value(m.total_electricity_cost) == pytest.approx(
     #         70392.17371, rel=1e-3
     #     )
+
+
+@pytest.mark.unit
+def test_onsite_solar_and_battery():
+    price_data_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "sbce_pricesignal.csv",
+    )
+    price_data = pd.read_csv(price_data_path)
+    price_data["Energy Rate"] = (
+        price_data["electric_energy_0_2022-07-05_2022-07-14_0"]
+        + price_data["electric_energy_1_2022-07-05_2022-07-14_0"]
+        + price_data["electric_energy_2_2022-07-05_2022-07-14_0"]
+        + price_data["electric_energy_3_2022-07-05_2022-07-14_0"]
+    )
+    price_data["Fixed Demand Rate"] = price_data[
+        "electric_demand_maximum_2022-07-05_2022-07-14_0"
+    ]
+    price_data["Var Demand Rate"] = price_data[
+        "electric_demand_peak-summer_2022-07-05_2022-07-14_0"
+    ]
+    price_data["Emissions Intensity"] = 0
+    price_data["Customer Cost"] = price_data[
+        "electric_customer_0_2022-07-05_2022-07-14_0"
+    ]
+
+    m = PriceTakerModel()
+
+    m.params = FlexDesalParams(
+        start_date="2022-07-05 00:00:00",
+        end_date="2022-07-15 00:00:00",
+        annual_production_AF=3125,  # acrft/yr
+        include_onsite_solar=True,
+        onsite_capacity=100,
+        include_battery=True,
+    )
+    m.params.intake.nominal_flowrate = 1063.5  # m3/hr
+    m.params.ro.update(
+        {
+            "startup_delay": 8,  # hours
+            "minimum_downtime": 4,  # hours
+            "nominal_flowrate": 337.670,  # m3/hr
+            "surrogate_type": "quadratic_surrogate",
+            "surrogate_a": 11.509,
+            "surrogate_b": -10.269,
+            "surrogate_c": 5.627,
+            "surrogate_d": 0,
+            "minimum_recovery": 0.4,
+            "nominal_recovery": 0.465,
+            "maximum_recovery": 0.52,
+            "allow_variable_recovery": False,
+        }
+    )
+
+    # Append LMP data to the model
+    m.append_lmp_data(lmp_data=price_data["Energy Rate"])
+
+    m.build_multiperiod_model(
+        flowsheet_func=fs.build_desal_flowsheet,
+        flowsheet_options={"params": m.params},
+    )
+
+    # Update the time-varying parameters other than the LMP, such as
+    # demand costs and emissions intensity. LMP value is updated by default
+    onsite_solar_capacity_factors = [0, 0.25, 0.5, 0.75, 1]
+    m.update_operation_params(
+        {
+            "fixed_demand_rate": price_data["Fixed Demand Rate"],
+            "variable_demand_rate": price_data["Var Demand Rate"],
+            "emissions_intensity": price_data["Emissions Intensity"],
+            "customer_cost": price_data["Customer Cost"],
+            "power_generation.capacity_factor": [
+                onsite_solar_capacity_factors[i % 5] for i in range(len(price_data))
+            ],
+        }
+    )
+
+    counter = 0
+    for blk in m.period.values():
+        assert hasattr(blk, "power_generation")
+        assert pyo.value(blk.power_generation.capacity_factor) == pytest.approx(
+            onsite_solar_capacity_factors[counter % 5]
+        )
+        assert hasattr(blk, "battery")
+
+        counter += 1
+
+    assert hasattr(m, "variable_linking_constraints_1")
+    assert str(m.variable_linking_constraints_1[1, 2].expr) == (
+        "period[1,1].battery.final_holdup  ==  period[1,2].battery.initial_holdup"
+    )
+    assert str(m.variable_linking_constraints_1[1, 3].expr) == (
+        "period[1,2].battery.final_holdup  ==  period[1,3].battery.initial_holdup"
+    )

@@ -11,11 +11,11 @@
 #################################################################################
 
 """
-This module contains the functions needed for the construction of flexible
+This module contains functions needed for the construction of flexible
 desalination flowsheet
 """
 
-from idaes.apps.grid_integration import OperationModel
+from idaes.apps.grid_integration import OperationModel, StorageModel
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -27,17 +27,20 @@ from pyomo.environ import (
 from watertap.flowsheets.flex_desal import params as um_params
 from watertap.flowsheets.flex_desal import unit_models as um
 
+pyunits.load_definitions_from_strings(["USD = [currency]"])
+
 
 def add_operational_cost_expressions(blk, params: um_params.FlexDesalParams):
     """
     Adds cost expressions to the flowsheet
     """
+    time_interval = params.timestep_hours * pyunits.h
     # Water revenue
     blk.water_revenue = Expression(
         expr=(
             params.product_water_price
             * blk.posttreatment.product_flowrate
-            * params.timestep_hours
+            * time_interval
         ),
         doc="Revenue generated from product water",
     )
@@ -45,21 +48,25 @@ def add_operational_cost_expressions(blk, params: um_params.FlexDesalParams):
     # Customer cost
     blk.customer_cost = Param(
         initialize=0,
+        units=pyunits.USD,
         mutable=True,
         doc="Fixed customer cost",
     )
 
     # Demand response revenue
     blk.demand_response_price = Param(
-        initialize=0, mutable=True, doc="Demand-response prices"
+        initialize=0,
+        units=pyunits.USD / pyunits.kWh,
+        mutable=True,
+        doc="Demand-response prices",
     )
     blk.baseline_power = Param(
-        initialize=100, mutable=True, doc="Baseline power requirement"
+        initialize=100, units=pyunits.kW, mutable=True, doc="Baseline power requirement"
     )
     blk.demand_response_revenue = Expression(
         expr=blk.demand_response_price
         * (blk.baseline_power - blk.power_from_grid)
-        * params.timestep_hours,
+        * time_interval,
         doc="Revenue generated from demand response",
     )
 
@@ -67,13 +74,15 @@ def add_operational_cost_expressions(blk, params: um_params.FlexDesalParams):
     blk.emissions_intensity = Param(
         initialize=0, mutable=True, units=pyunits.kg / pyunits.kWh
     )
+    blk.total_emissions = Expression(
+        expr=blk.emissions_intensity * blk.power_from_grid * time_interval,
+        doc="Amount of CO2 released [in kg]",
+    )
     blk.emissions_cost = Expression(
         expr=(
-            blk.emissions_intensity
-            * blk.power_from_grid
-            * params.timestep_hours
-            * params.emissions_cost
-            / 907.185  # Conversion factor: $/ton to $/kg
+            blk.total_emissions
+            * (params.emissions_cost / 907.185)  # Conversion factor: $/ton to $/kg
+            * (pyunits.USD / pyunits.kg)
         ),
         doc="Cost associated with carbon emissions",
     )
@@ -81,22 +90,25 @@ def add_operational_cost_expressions(blk, params: um_params.FlexDesalParams):
     # Cost of energy
     blk.LMP = Param(
         initialize=0,
+        units=pyunits.USD / pyunits.kWh,
         mutable=True,
         doc="Locational marginal price of electricity [$/kWh]",
     )
     blk.energy_cost = Expression(
-        expr=blk.LMP * blk.power_from_grid * params.timestep_hours,
+        expr=blk.LMP * blk.power_from_grid * time_interval,
         doc="Cost of electricity purchased from the grid",
     )
 
     # Demand cost parameters
     blk.fixed_demand_rate = Param(
         initialize=0,
+        units=pyunits.USD / pyunits.kW,
         mutable=True,
         doc="Constant demand tariff",
     )
     blk.variable_demand_rate = Param(
         initialize=0,
+        units=pyunits.USD / pyunits.kW,
         mutable=True,
         doc="Variable demand tariff",
     )
@@ -121,6 +133,7 @@ def build_desal_flowsheet(blk, params: um_params.FlexDesalParams):
     )
     blk.bypass_pretreatment_flow = Var(
         within=NonNegativeReals,
+        units=pyunits.m**3 / pyunits.h,
         doc="Flowrate bypassed to brine discharge due to pretreatment shutdown",
     )
     blk.pretreatment = OperationModel(
@@ -193,8 +206,17 @@ def build_desal_flowsheet(blk, params: um_params.FlexDesalParams):
         blk.net_power_consumption += -blk.power_generation.power_utilized
 
     if params.include_battery:
-        blk.battery = OperationModel()
-        blk.net_power_consumption += blk.battery.power_charge - blk.battery.discharge
+        blk.battery = StorageModel(
+            time_interval=params.timestep_hours,
+            charge_efficiency=params.battery.efficiency,
+            max_charge_rate=params.battery.power_capacity,
+            max_discharge_rate=params.battery.power_capacity,
+            max_holdup=params.battery.energy_capacity * params.battery.maximum_soc,
+            min_holdup=params.battery.energy_capacity * params.battery.minimum_soc,
+        )
+        blk.net_power_consumption += (
+            blk.battery.charge_rate - blk.battery.discharge_rate
+        )
 
     # Power purchased from the grid
     blk.power_from_grid = Var(
@@ -238,14 +260,17 @@ def add_demand_and_fixed_costs(m):
     params: um_params.FlexDesalParams = m.params
     m.fixed_demand_cost = Var(
         within=NonNegativeReals,
-        doc="Total fixed demand charge value for the entire horizon",
+        units=pyunits.USD,
+        doc="Total fixed demand charge value for the entire time horizon",
     )
     m.variable_demand_cost = Var(
         within=NonNegativeReals,
+        units=pyunits.USD,
         doc="Total variable demand charge value for the entire time horizon",
     )
     m.fixed_monthly_cost = Var(
         within=NonNegativeReals,
+        units=pyunits.USD,
         doc="Total customer cost for the entire time horizon",
     )
 

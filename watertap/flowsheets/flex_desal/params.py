@@ -167,7 +167,7 @@ class ROParams(UnitParams):
     def get_optimum_energy_intensity(self, recovery_lb, recovery_ub):
         """
         Returns the optimum energy intensity if it exists inside the
-        interval. Returns None is the optimum is at the bounds.
+        interval. Returns None if the optimum is at the bounds.
         """
         # Optimum exists inside the interval, and it is unique.
         coeffs = self.surrogate_coeffs
@@ -245,7 +245,7 @@ class Battery:
 
 @dataclass
 class FlexDesalParams:
-    """Parameters for fleible desalination"""
+    """Parameters for flexible desalination"""
 
     start_date: str = "2022-07-05 00:00:00"
     end_date: str = "2022-07-06 00:00:00"

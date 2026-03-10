@@ -289,7 +289,7 @@ def brine_discharge_operation_model(blk, params: um_params.FlexDesalParams):
     blk.feed_flowrate = Var(within=NonNegativeReals, units=pyunits.m**3 / pyunits.hr)
     blk.power_consumption = Var(within=NonNegativeReals, units=pyunits.kW)
 
-    # the brine sump only consumes power if the RO is off,
+    # The brine pump only consumes power if the RO is off,
     # otherwise brine is pushed out by the leftover RO pressure
     blk.calculate_power_consumption = Constraint(
         expr=blk.power_consumption
