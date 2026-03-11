@@ -219,7 +219,7 @@ class FlushingData(UnitModelBlockData):
             initialize=0.05,
             units=pyunits.dimensionless,
             bounds=(0, 1),
-            doc="Flushing efficiency of the system",
+            doc="Minimum flushing efficiency of the system",
         )
         self.minimum_flushing_efficiency.fix()
         self.flushing_time = Var(

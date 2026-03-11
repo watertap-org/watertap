@@ -432,7 +432,7 @@ def solve(
     tee=True,
     raise_on_failure=True,
     use_ipoptv2=False,
-    max_iter=1000,
+    max_iter=3000,
 ):
     # ---solving---
     if solver is None and use_ipoptv2 == False:
@@ -497,7 +497,6 @@ def setup_optimization(
     mp.ro_membrane_area_constraint.activate()
     mp.ro_membrane_length_constraint.activate()
     mp.filtration_ramp_rate_constraint.activate()
-    # mp.filtration_ramp_rate.fix(0.1)
     mp.total_cycle_time.setlb(min_cycle_time_hr * pyunits.hours)
     mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
