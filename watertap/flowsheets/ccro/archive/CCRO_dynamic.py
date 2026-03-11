@@ -7,7 +7,11 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util import DiagnosticsToolbox
-from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, constraint_scaling_transform
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    set_scaling_factor,
+    constraint_scaling_transform,
+)
 from watertap.core.solvers import get_solver
 from pyomo.network import Arc
 
@@ -52,10 +56,11 @@ from watertap.unit_models.pressure_changer import Pump
 
 import watertap.property_models.NaCl_prop_pack as props
 
+
 def main():
     # set up solver
     solver = get_solver()
- 
+
     # build, set, and initialize
     m = build()
     set_operating_conditions(m)
@@ -63,18 +68,17 @@ def main():
     try:
         solve_dynamic(m)
     except RuntimeError:
-        print('SOLVE FAILED')
+        print("SOLVE FAILED")
         return m
     return m
+
 
 def scale_system(m):
     """
     Scale steady-state model.
     """
 
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-    )
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
@@ -96,11 +100,12 @@ def scale_system(m):
 
     calculate_scaling_factors(m)
 
+
 def build():
     # flowsheet set up
     m = ConcreteModel()
     num_time_points = 2
-    time_set = np.linspace(0, 30.0, num_time_points+1)
+    time_set = np.linspace(0, 30.0, num_time_points + 1)
     m.fs = FlowsheetBlock(
         dynamic=True,
         time_set=list(time_set),
@@ -144,9 +149,7 @@ def build():
     m.fs.RO_permeate_to_product = Arc(
         source=m.fs.RO.permeate, destination=m.fs.product.inlet
     )
-    m.fs.RO_retentate_to_P2 = Arc(
-        source=m.fs.RO.retentate, destination=m.fs.P2.inlet
-    )
+    m.fs.RO_retentate_to_P2 = Arc(source=m.fs.RO.retentate, destination=m.fs.P2.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -159,10 +162,11 @@ def build():
     scale_system(m)
     return m
 
+
 def set_operating_conditions(
     m,
-    flow_vol=2.2e-5, # m3/s and 1.8 L/min is 3e-5 m3/s
-    salt_mass_conc=3.4, # g/L
+    flow_vol=2.2e-5,  # m3/s and 1.8 L/min is 3e-5 m3/s
+    salt_mass_conc=3.4,  # g/L
     solver=None,
 ):
 
@@ -187,29 +191,33 @@ def set_operating_conditions(
     )
     # m.fs.feed.properties.display()
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P1.efficiency_pump.fix(0.8)  # pump efficiency [-] No need to index because all times by default
-    m.fs.P2.efficiency_pump.fix(0.8)  # pump efficiency [-] No need to index because all times by default
+    m.fs.P1.efficiency_pump.fix(
+        0.8
+    )  # pump efficiency [-] No need to index because all times by default
+    m.fs.P2.efficiency_pump.fix(
+        0.8
+    )  # pump efficiency [-] No need to index because all times by default
     num_time_points = 2
-    time_set = np.linspace(0, 30.0, num_time_points+1)
+    time_set = np.linspace(0, 30.0, num_time_points + 1)
     # m.fs.P1.control_volume.properties_out[0].pressure.fix(170 * 6895)
     # m.fs.P2.control_volume.properties_out[0].pressure.fix(170 * 6895)
-    for i in range(len(time_set+1)):
+    for i in range(len(time_set + 1)):
         m.fs.P1.control_volume.properties_out[time_set[i]].pressure.fix(
-            (170 + 30.0/num_time_points * 1/50 * i) * 6895
+            (170 + 30.0 / num_time_points * 1 / 50 * i) * 6895
         )  # feed pressure (Pa)
         m.fs.P2.control_volume.properties_out[time_set[i]].pressure.fix(
-            (170 + 30.0/num_time_points * 1/50 * i) * 6895
+            (170 + 30.0 / num_time_points * 1 / 50 * i) * 6895
         )  # feed pressure (Pa)
     m.fs.P1.control_volume.material_accumulation[:, :, :].value = 0
     m.fs.P1.control_volume.energy_accumulation[:, :].value = 0
-    m.fs.P1.control_volume.material_accumulation[0, :, :].fix(0) # 2 DoF
+    m.fs.P1.control_volume.material_accumulation[0, :, :].fix(0)  # 2 DoF
     # m.fs.P1_constraint_1 = Constraint(expr=m.fs.P1.control_volume.material_accumulation[0, "Liq", "H2O"] == 0)
     # m.fs.P1_constraint_2 = Constraint(expr=m.fs.P1.control_volume.material_accumulation[0, "Liq", "NaCl"] == 0)
     # m.fs.P1.control_volume.energy_accumulation[0, :].fix(1e-5) # 2 DoF
     m.fs.P1.control_volume.volume.fix(1e-5)
     m.fs.P2.control_volume.material_accumulation[:, :, :].value = 0
     m.fs.P2.control_volume.energy_accumulation[:, :].value = 0
-    m.fs.P2.control_volume.material_accumulation[0, :, :].fix(0) # 2 DoF
+    m.fs.P2.control_volume.material_accumulation[0, :, :].fix(0)  # 2 DoF
     # m.fs.P2_constraint_1 = Constraint(expr=m.fs.P2.control_volume.material_accumulation[0, "Liq", "H2O"] == 0)
     # m.fs.P2_constraint_2 = Constraint(expr=m.fs.P2.control_volume.material_accumulation[0, "Liq", "NaCl"] == 0)
     # m.fs.P2.control_volume.volume.fix(1e-5)
@@ -229,7 +237,7 @@ def set_operating_conditions(
     print("DOF PUMP 2 =", degrees_of_freedom(m.fs.P2))
     print("DOF MIXER =", degrees_of_freedom(m.fs.M1))
     print("DOF RO =", degrees_of_freedom(m.fs.RO))
-    m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0) # 2 DoF
+    m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)  # 2 DoF
     # m.fs.RO_constraint_1 = Constraint(expr=m.fs.RO.feed_side.material_accumulation[0, "Liq", "H2O"] == 0)
     # m.fs.RO_constraint_2 = Constraint(expr=m.fs.RO.feed_side.material_accumulation[0, "Liq", "NaCl"] == 0)
     # m.fs.RO.recovery_vol_phase[:, "Liq"].fix(0.034)
@@ -253,32 +261,59 @@ def set_operating_conditions(
     # scaling
     # set default property values
 
-    print('Scaling flow_vol: ', flow_vol, 'salt_mass_conc: ', salt_mass_conc, )
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e5 * flow_vol, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e-4 / flow_vol / salt_mass_conc, index=("Liq", "NaCl"))
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e5 * flow_vol, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e-4 / flow_vol / salt_mass_conc, index=("Liq", "NaCl"))
+    print(
+        "Scaling flow_vol: ",
+        flow_vol,
+        "salt_mass_conc: ",
+        salt_mass_conc,
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e5 * flow_vol, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e-4 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e5 * flow_vol, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e-4 / flow_vol / salt_mass_conc, index=("Liq", "NaCl")
+    )
 
     # set scaling factors
     iscale.set_scaling_factor(m.fs.RO.area, 1)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e1)
+    iscale.set_scaling_factor(
+        m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e1
+    )
     # m.fs.RO.feed_side.properties_in[0].display()
-    iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3)
+    iscale.set_scaling_factor(
+        m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"], 1e3
+    )
     iscale.set_scaling_factor(m.fs.RO.permeate.pressure, 1e-5)
-    iscale.set_scaling_factor(m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e5)
-    iscale.set_scaling_factor(m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e5)
+    iscale.set_scaling_factor(
+        m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"], 1e5
+    )
     # iscale.set_scaling_factor(m.fs.P1.work_fluid[0], 1e2)
     iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "H2O"], 1e2)
     iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e7)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "H2O"], 1e2)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e7)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.material_holdup_calculation[0, "Liq", "H2O"], 1e2)
+    iscale.set_scaling_factor(
+        m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "H2O"], 1e2
+    )
+    iscale.set_scaling_factor(
+        m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e7
+    )
+    iscale.set_scaling_factor(
+        m.fs.RO.feed_side.material_holdup_calculation[0, "Liq", "H2O"], 1e2
+    )
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
     # check degrees of freedom
-    
+
     if degrees_of_freedom(m) != 0:
         raise RuntimeError(
             "The set_operating_conditions function resulted in {} "
@@ -287,6 +322,7 @@ def set_operating_conditions(
             "simulation.".format(degrees_of_freedom(m))
         )
 
+
 def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
@@ -294,6 +330,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if check_termination:
         assert_optimal_termination(results)
     return results
+
 
 def solve_dynamic(m):
     # m.fs.RO.feed_side.mass_transfer_term.display()
@@ -357,8 +394,8 @@ def solve_dynamic(m):
     for result in results.results:
         assert_optimal_termination(result)
     print(
-    "Flux H2O: ",
-    value(m.fs.RO.flux_mass_phase_comp_avg[:, "Liq", "H2O"]),
+        "Flux H2O: ",
+        value(m.fs.RO.flux_mass_phase_comp_avg[:, "Liq", "H2O"]),
     )
     print(
         "Flux NaCl: ",
@@ -371,10 +408,7 @@ def solve_dynamic(m):
 
     results_dict = {
         "time": np.array(traj.time),
-        "pressure.in": 1/6895
-        * np.array(
-            traj.vecs[str(m.fs.RO.inlet.pressure[tf])]
-        ),
+        "pressure.in": 1 / 6895 * np.array(traj.vecs[str(m.fs.RO.inlet.pressure[tf])]),
         "feed.out.vol": 60000
         * np.array(  # L/min
             traj.vecs[str(m.fs.RO.feed_side.properties_out[tf].flow_vol_phase["Liq"])]
@@ -384,12 +418,8 @@ def solve_dynamic(m):
             traj.vecs[str(m.fs.RO.feed_side.properties_in[tf].flow_vol_phase["Liq"])]
         ),
         "mixed_permeate.vol": 60000
-        * np.array(  #
-            traj.vecs[str(m.fs.RO.mixed_permeate[tf].flow_vol_phase["Liq"])]
-        ),
-        "recovery": np.array(  #
-            traj.vecs[str(m.fs.RO.recovery_vol_phase[tf, "Liq"])]
-        ),
+        * np.array(traj.vecs[str(m.fs.RO.mixed_permeate[tf].flow_vol_phase["Liq"])]),  #
+        "recovery": np.array(traj.vecs[str(m.fs.RO.recovery_vol_phase[tf, "Liq"])]),  #
         "feed.in.mass.NaCl": np.array(  # kg/s
             traj.vecs[
                 str(
@@ -429,18 +459,18 @@ def solve_dynamic(m):
         "feed.prop_int.0.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
-                    m.fs.RO.feed_side.properties_interface[
-                        tf, 0
-                    ].conc_mass_phase_comp["Liq", "NaCl"]
+                    m.fs.RO.feed_side.properties_interface[tf, 0].conc_mass_phase_comp[
+                        "Liq", "NaCl"
+                    ]
                 )
             ]
         ),
         "feed.prop_int.1.conc.NaCl": np.array(  # kg/m3
             traj.vecs[
                 str(
-                    m.fs.RO.feed_side.properties_interface[
-                        tf, 1
-                    ].conc_mass_phase_comp["Liq", "NaCl"]
+                    m.fs.RO.feed_side.properties_interface[tf, 1].conc_mass_phase_comp[
+                        "Liq", "NaCl"
+                    ]
                 )
             ]
         ),
@@ -457,9 +487,7 @@ def solve_dynamic(m):
         "flux_mass_phase_comp.H2O": 3600
         * 0.5  # LMH
         * (
-            np.array(
-                traj.vecs[str(m.fs.RO.flux_mass_phase_comp[tf, 0, "Liq", "H2O"])]
-            )
+            np.array(traj.vecs[str(m.fs.RO.flux_mass_phase_comp[tf, 0, "Liq", "H2O"])])
             + np.array(
                 traj.vecs[str(m.fs.RO.flux_mass_phase_comp[tf, 1, "Liq", "H2O"])]
             )
@@ -474,48 +502,49 @@ def solve_dynamic(m):
     fig = plt.figure(figsize=(16, 9))
     plt.subplot(4, 2, 1)
     # plt.plot(df['Runtime (s)'], df['Reject Concentration (g/L)'], '-', label='Data')
-    plt.plot(time, results_dict["feed.out.conc.NaCl"], '--', label='Model')
+    plt.plot(time, results_dict["feed.out.conc.NaCl"], "--", label="Model")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Reject Concentration (g/L)", fontsize=9)
     plt.legend(loc=0, fontsize=9)
     plt.subplot(4, 2, 2)
     # plt.plot(df['Runtime (s)'], df['Permeate Concentration (g/L)'], '-', label='Data')
-    plt.plot(time, results_dict["mixed_permeate.conc.NaCl"], '--', label='Model')
+    plt.plot(time, results_dict["mixed_permeate.conc.NaCl"], "--", label="Model")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Permeate Concentration (g/L)", fontsize=9)
     plt.subplot(4, 2, 3)
     # plt.plot(df['Runtime (s)'], df['Reject Flow (L/min)'], '-', label='Data')
-    plt.plot(time, results_dict["feed.out.vol"], '--', label='Model')
+    plt.plot(time, results_dict["feed.out.vol"], "--", label="Model")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Reject Flow (L/min)", fontsize=9)
     plt.subplot(4, 2, 4)
     # plt.plot(df['Runtime (s)'], df['Feed Flow, True (L/min)'], '-', label='Data')
-    plt.plot(time, results_dict["feed.in.vol"], '--', label='Model')
+    plt.plot(time, results_dict["feed.in.vol"], "--", label="Model")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Feed Flow (L/min)", fontsize=9)
     plt.subplot(4, 2, 5)
     # plt.plot(df['Runtime (s)'], df['Permeate Flow (L/min)'], '-', label='Data')
-    plt.plot(time, results_dict["mixed_permeate.vol"], '--', label='Model')
+    plt.plot(time, results_dict["mixed_permeate.vol"], "--", label="Model")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Permeate Flow (L/min)", fontsize=9)
     plt.subplot(4, 2, 6)
     # plt.plot(df['Runtime (s)'], df['Water Flux (LMH)'], '-', label='Data')
-    plt.plot(time, results_dict["flux_mass_phase_comp.H2O"], '--', label='Model')
+    plt.plot(time, results_dict["flux_mass_phase_comp.H2O"], "--", label="Model")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Water Flux (LMH)", fontsize=9)
     plt.subplot(4, 2, 7)
     # plt.plot(df['Runtime (s)'], df['Feed Pressure (psi)'], '-', label='Data')
-    plt.plot(time, results_dict["pressure.in"], '--', label='Model')
+    plt.plot(time, results_dict["pressure.in"], "--", label="Model")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Feed Pressure (psi)", fontsize=9)
     plt.subplot(4, 2, 8)
-    plt.plot(time, results_dict["feed.in.conc.NaCl"], '--', label='Model feed in')
-    plt.plot(time, results_dict["feed.out.conc.NaCl"], '--', label='Model feed out')
+    plt.plot(time, results_dict["feed.in.conc.NaCl"], "--", label="Model feed in")
+    plt.plot(time, results_dict["feed.out.conc.NaCl"], "--", label="Model feed out")
     plt.xlabel("Runtime (s)", fontsize=9)
     plt.ylabel("Feed Concentration (g/L)", fontsize=9)
     plt.legend(loc=0, fontsize=9)
     plt.tight_layout()
     plt.show()
+
 
 def initialize_mixer(m):
     m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.833)
@@ -525,6 +554,7 @@ def initialize_mixer(m):
     m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"].set_value(3.4)
     m.fs.M1.inlet_2_state[0].pressure.set_value(170 * 6895)
     m.fs.M1.initialize()
+
 
 def initialize_system(m):
     """
@@ -537,7 +567,7 @@ def initialize_system(m):
     m.fs.P1.initialize()
 
     propagate_state(m.fs.P1_to_M1)
-    
+
     initialize_mixer(m)
     m.fs.M1.report()
 
@@ -549,19 +579,26 @@ def initialize_system(m):
     # m.fs.RO.feed_side.properties_out[0].pressure.unfix() # Comment out doesn't affect DoF
     # m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"].unfix() # Comment out doesn't affect DoF
 
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e3, index=("Liq", "NaCl"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
+    )
 
     # dt.report_structural_issues()
     # print('Underconstrained')
     # dt.display_underconstrained_set()
     # print('Overconstrained')
     # dt.display_overconstrained_set()
-    print('Numerical')
+    print("Numerical")
     # dt.display_constraints_with_extreme_jacobians()
     # dt.report_numerical_issues()
     # dt.display_constraints_with_large_residuals()
     # dt.display_near_parallel_variables()
-    optarg = {"tol": 1e-6, "constr_viol_tol": 1e-8,"linear_solver": "ma27", "max_iter": 500}
+    optarg = {
+        "tol": 1e-6,
+        "constr_viol_tol": 1e-8,
+        "linear_solver": "ma27",
+        "max_iter": 500,
+    }
     m.fs.RO.report()
     # source_flags = m.fs.RO.feed_side.initialize()
     # print('Flag')
@@ -569,7 +606,7 @@ def initialize_system(m):
     # m.fs.RO.permeate_side.initialize()
     # m.fs.RO.mixed_permeate.initialize()
     m.fs.RO.initialize(optarg=optarg, outlvl=10)
-    print('RO succeeded')
+    print("RO succeeded")
     m.fs.RO.report()
     # print('m.fs.RO.recovery_vol_phase["Liq"]: ', m.fs.RO.recovery_vol_phase[0, "Liq"].value)
 
@@ -595,12 +632,14 @@ def initialize_system(m):
     # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
     print("DOF after initialization =", degrees_of_freedom(m))
 
-    print('Check all units here')
+    print("Check all units here")
     m.fs.feed.report()
     m.fs.P1.report()
     m.fs.P2.report()
     m.fs.M1.report()
     m.fs.RO.report()
     m.fs.product.report()
+
+
 if __name__ == "__main__":
     m = main()

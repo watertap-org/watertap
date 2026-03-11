@@ -143,7 +143,6 @@ def add_multiperiod_variables(mp, cc_configuration=None):
 
     iscale.set_scaling_factor(mp.filtration_ramp_rate, 1)
 
-
     # mp.flushing_ramp_rate = Var(mp.flushing_set,
     #     initialize=-1,
     #     bounds=(None, 0),
@@ -552,7 +551,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             elif m.fs.operation_mode == "flushing":
                 total_feed.append(m.fs.dead_volume.volume[0, "Liq"])
         return b.total_feed == sum(total_feed)
-    
+
     @mp.Expression(doc="Avg feed water flow rate over all time periods")
     def avg_feed_flow_rate(mp):
         blks = mp.get_active_process_blocks()
@@ -570,6 +569,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             mp.total_feed / sum(total_operating_time),
             to_units=pyunits.m**3 / pyunits.s,
         )
+
     # Overall water recovery
     @mp.Constraint(doc="Overall water recovery for system")
     def overall_water_recovery_constraint(b):

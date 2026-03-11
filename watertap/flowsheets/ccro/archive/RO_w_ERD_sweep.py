@@ -1,4 +1,3 @@
-
 import pandas as pd
 from pyomo.environ import units as pyunits
 from parameter_sweep import (
@@ -84,7 +83,6 @@ def build_outputs(m):
 
 
 if __name__ == "__main__":
-
 
     salt_fracs = [5e-3, 10e-3, 20e-3, 35e-3, 50e-3, 60e-3, 70e-3]
     df = pd.DataFrame()

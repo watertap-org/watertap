@@ -24,7 +24,11 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.initialization import propagate_state
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, constraint_scaling_transform
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    set_scaling_factor,
+    constraint_scaling_transform,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Product, Feed, StateJunction, Separator
 from idaes.models.unit_models.mixer import (
@@ -60,33 +64,30 @@ import numpy as np
 from idaes.core.solvers import petsc
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.models_extra.power_generation.unit_models import WaterPipe, WaterTank 
+from idaes.models_extra.power_generation.unit_models import WaterPipe, WaterTank
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 atmospheric_pressure = 101325 * pyunits.Pa
 
-_log = idaeslog.getLogger(__name__)   
+_log = idaeslog.getLogger(__name__)
+
 
 def build_system(has_pipes=True):
     """
     Build steady-state model
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=True,
-                          time_set=list(np.linspace(0, 20, 2)),
-                          time_units=pyunits.s)
+    m.fs = FlowsheetBlock(
+        dynamic=True, time_set=list(np.linspace(0, 20, 2)), time_units=pyunits.s
+    )
     m.fs.properties = NaClParameterBlock()
 
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.product = Product(property_package=m.fs.properties)
 
-    m.fs.P1 = Pump(property_package=m.fs.properties,
-                   dynamic=False,
-                   has_holdup=False)
-    m.fs.P2 = Pump(property_package=m.fs.properties,
-                   dynamic=False,
-                   has_holdup=False)
+    m.fs.P1 = Pump(property_package=m.fs.properties, dynamic=False, has_holdup=False)
+    m.fs.P2 = Pump(property_package=m.fs.properties, dynamic=False, has_holdup=False)
 
     m.fs.M1 = Mixer(
         property_package=m.fs.properties,
@@ -114,24 +115,25 @@ def build_system(has_pipes=True):
     m.fs.P2_to_M1 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.inlet_2)
 
     if has_pipes:
-        m.fs.RO_inlet_pipe = WaterPipe(property_package=m.fs.properties, 
-                                       dynamic=True, 
-                                       has_holdup=True, 
-                                       #TODO: change hard-coded True for has_pressure_change in IDAES
-                                       has_pressure_change=True,
-                                    #    energy_balance_type=EnergyBalanceType.none
-                                       )
+        m.fs.RO_inlet_pipe = WaterPipe(
+            property_package=m.fs.properties,
+            dynamic=True,
+            has_holdup=True,
+            # TODO: change hard-coded True for has_pressure_change in IDAES
+            has_pressure_change=True,
+            #    energy_balance_type=EnergyBalanceType.none
+        )
         m.fs.M1_to_RO = Arc(source=m.fs.M1.outlet, destination=m.fs.RO_inlet_pipe.inlet)
-        m.fs.pipe_to_RO = Arc(source=m.fs.RO_inlet_pipe.outlet, destination=m.fs.RO.inlet)
+        m.fs.pipe_to_RO = Arc(
+            source=m.fs.RO_inlet_pipe.outlet, destination=m.fs.RO.inlet
+        )
     else:
         m.fs.M1_to_RO = Arc(source=m.fs.M1.outlet, destination=m.fs.RO.inlet)
 
     m.fs.RO_permeate_to_product = Arc(
         source=m.fs.RO.permeate, destination=m.fs.product.inlet
     )
-    m.fs.RO_retentate_to_P2 = Arc(
-        source=m.fs.RO.retentate, destination=m.fs.P2.inlet
-    )
+    m.fs.RO_retentate_to_P2 = Arc(source=m.fs.RO.retentate, destination=m.fs.P2.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     if m.fs.config.dynamic:
@@ -149,7 +151,7 @@ def build_system(has_pipes=True):
     #     m.fs.M1.inlet_2_state[t].conc_mass_phase_comp
     #     m.fs.M1.mixed_state[t].flow_vol_phase
     #     m.fs.M1.mixed_state[t].conc_mass_phase_comp
-        
+
     #     m.fs.P1.control_volume.properties_in[t].conc_mass_phase_comp
     #     m.fs.P2.control_volume.properties_in[t].conc_mass_phase_comp
     #     m.fs.P1.control_volume.properties_out[t].conc_mass_phase_comp
@@ -164,6 +166,7 @@ def build_system(has_pipes=True):
 
     return m
 
+
 def scale_system(m):
     """
     Scale steady-state model.
@@ -175,10 +178,14 @@ def scale_system(m):
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
     )
-    if hasattr(m.fs.RO.feed_side, 'volume'):
-        calculate_variable_from_constraint(m.fs.RO.feed_side.volume[0], m.fs.RO.feed_side.eq_volume[0])
+    if hasattr(m.fs.RO.feed_side, "volume"):
+        calculate_variable_from_constraint(
+            m.fs.RO.feed_side.volume[0], m.fs.RO.feed_side.eq_volume[0]
+        )
         for t in m.fs._time:
-            set_scaling_factor(m.fs.RO.feed_side.volume[t], 10/value(m.fs.RO.feed_side.volume[0]))
+            set_scaling_factor(
+                m.fs.RO.feed_side.volume[t], 10 / value(m.fs.RO.feed_side.volume[0])
+            )
     # set_scaling_factor(m.fs.RO.permeate_side[0,0].flow_mass_phase_comp["Liq", "NaCl"], 1e6)
     # set_scaling_factor(m.fs.RO.permeate_side[0,1].flow_mass_phase_comp["Liq", "NaCl"], 1e4)
     # set_scaling_factor(m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"], 1e6)
@@ -203,6 +210,7 @@ def scale_system(m):
 
     calculate_scaling_factors(m)
 
+
 def set_operating_conditions(m):
     """
     Set operating conditions as initial conditions.
@@ -215,11 +223,9 @@ def set_operating_conditions(m):
     """
     Feed block operating conditions
     """
-    feed_temp = 25 +273.15
-    conc_mass_tds = 3.4 * pyunits.kg/pyunits.m**3       
-    flow_vol = 2.92 * pyunits.L/pyunits.min
-
-
+    feed_temp = 25 + 273.15
+    conc_mass_tds = 3.4 * pyunits.kg / pyunits.m**3
+    flow_vol = 2.92 * pyunits.L / pyunits.min
 
     m.fs.feed.properties[:].pressure.fix(atmospheric_pressure)
     m.fs.feed.properties[:].temperature.fix(feed_temp)
@@ -231,14 +237,12 @@ def set_operating_conditions(m):
         },
         hold_state=True,
     )
-    
-    
 
     """
     Pump 1 operating conditions
     """
-    p1_eff = 0.8    
-    p1_pressure_start = 306 * pyunits.psi#306 * pyunits.psi
+    p1_eff = 0.8
+    p1_pressure_start = 306 * pyunits.psi  # 306 * pyunits.psi
 
     m.fs.P1.efficiency_pump.fix(p1_eff)
     m.fs.P1.control_volume.properties_out[0].pressure = p1_pressure_start
@@ -281,20 +285,19 @@ def set_operating_conditions(m):
     """
     Qp = value(m.fs.feed.properties[0].flow_vol)
     R = 0.05
-    Qf= Qp/R
+    Qf = Qp / R
     m.fs.M1.mixed_state[:].temperature.fix(feed_temp)
-
 
     m.fs.M1.inlet_2_state[0].flow_mass_phase_comp.fix(1e-8)
     m.fs.M1.inlet_2_state[0].temperature.fix(feed_temp)
     m.fs.M1.inlet_2_state[0].pressure.fix(atmospheric_pressure)
 
-    m.fs.M1.pressure_equality_constraints[0,2].deactivate()
-    m.fs.P2_to_M1_expanded.flow_mass_phase_comp_equality[0,:,:].deactivate()
+    m.fs.M1.pressure_equality_constraints[0, 2].deactivate()
+    m.fs.P2_to_M1_expanded.flow_mass_phase_comp_equality[0, :, :].deactivate()
     m.fs.P2_to_M1_expanded.pressure_equality[0].deactivate()
     m.fs.P2_to_M1_expanded.temperature_equality[0].deactivate()
 
-    m.fs.RO_retentate_to_P2_expanded.flow_mass_phase_comp_equality[0,:,:].deactivate()
+    m.fs.RO_retentate_to_P2_expanded.flow_mass_phase_comp_equality[0, :, :].deactivate()
     m.fs.RO_retentate_to_P2_expanded.pressure_equality[0].deactivate()
     m.fs.RO_retentate_to_P2_expanded.temperature_equality[0].deactivate()
     # m.fs.P2.deactivate()
@@ -308,8 +311,10 @@ def set_operating_conditions(m):
     """
     if hasattr(m.fs, "RO_inlet_pipe"):
         # for pipe
-        m.fs.RO_inlet_pipe.diameter.fix(pyunits.convert(12*pyunits.inches, to_units=pyunits.m))
-        m.fs.RO_inlet_pipe.length.fix(3*pyunits.m)
+        m.fs.RO_inlet_pipe.diameter.fix(
+            pyunits.convert(12 * pyunits.inches, to_units=pyunits.m)
+        )
+        m.fs.RO_inlet_pipe.length.fix(3 * pyunits.m)
         m.fs.RO_inlet_pipe.number_of_pipes.fix(1)
         m.fs.RO_inlet_pipe.elevation_change.fix(0)
         m.fs.RO_inlet_pipe.fcorrection_dp.fix(1)
@@ -317,23 +322,22 @@ def set_operating_conditions(m):
         # m.fs.RO_inlet_pipe.initialize()
         # m.fs.RO_inlet_pipe.control_volume.material_accumulation[0,'Liq','NaCl'].unfix()
         # m.fs.RO_inlet_pipe.control_volume.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"].fix(3.39)
-        
+
         # for tank
         # m.fs.RO_inlet_pipe.tank_cross_sect_area.fix(1.14)  # tank cross sectional area
         # m.fs.RO_inlet_pipe.tank_level[:].fix(0.6)  # tank level
-        # m.fs.RO_inlet_pipe.heat_duty[:].fix(0.0) 
-
+        # m.fs.RO_inlet_pipe.heat_duty[:].fix(0.0)
 
     """
     RO operating conditions
     """
 
-    A_comp= 4.422e-12
-    B_comp=5.613e-8
-    membrane_area=7.2 
-    membrane_length=0.9626
-    channel_height=0.0008636
-    spacer_porosity=0.7081
+    A_comp = 4.422e-12
+    B_comp = 5.613e-8
+    membrane_area = 7.2
+    membrane_length = 0.9626
+    channel_height = 0.0008636
+    spacer_porosity = 0.7081
     m.fs.RO.permeate.pressure[:].fix(atmospheric_pressure)
     m.fs.RO.A_comp.fix(A_comp)
     m.fs.RO.B_comp.fix(B_comp)
@@ -352,11 +356,11 @@ def set_operating_conditions(m):
     # # for i,t in enumerate(m.fs._time):
     # #     if i==1:
     # #         pass
-    # #     else: 
+    # #     else:
     # #         m.fs.RO.recovery_vol_phase[t, "Liq"].fix(0.06)
     # m.fs.RO.feed_side.material_accumulation[:, :, :].value = 0
     # m.fs.RO.feed_side.material_accumulation[0, :, :].fix(0)
-    
+
     # # @m.fs.RO.Constraint(m.fs.time)
     # # def eq_permflow_equals_feedflow(b, t):
     # #     if not t:
@@ -364,7 +368,7 @@ def set_operating_conditions(m):
 
     # #     else:
     # #         return b.mixed_permeate[t].flow_vol_phase["Liq"] == m.fs.feed.properties[t].flow_vol_phase["Liq"]
-    
+
     # # for i,t in enumerate(m.fs._time):
     # #     if not t:
     # #         m.fs.RO_retentate_to_P2_expanded.flow_mass_phase_comp_equality[t, "Liq", "H2O"].deactivate()
@@ -384,7 +388,7 @@ def set_operating_conditions(m):
     # #         m.fs.P2.control_volume.properties_in[t].conc_mass_phase_comp["Liq", "NaCl"].fix(0)
     # #         solve(m.fs.P2.control_volume.properties_in[t])
 
-    # #     # else: 
+    # #     # else:
 
     # #     #     pass
     # # for i,t in enumerate(m.fs._time):
@@ -392,11 +396,9 @@ def set_operating_conditions(m):
     # #         m.fs.P2.control_volume.properties_in[t].flow_mass_phase_comp["Liq", "H2O"].unfix()
     # #         m.fs.P2.control_volume.properties_in[t].flow_mass_phase_comp["Liq", "NaCl"].unfix()
 
-
     # # Try setting upper bound for feed flow into RO unit via pump 2 flow capacity
     # m.fs.P2.control_volume.properties_out[:].flow_vol_phase.setub(17* pyunits.m**3/pyunits.hour)
     # # m.fs.P2.control_volume.properties_out[:].flow_vol_phase.setlb(0.8*17* pyunits.m**3/pyunits.hour)
-
 
     # m.fs.RO.mixed_permeate[:].mass_frac_phase_comp['Liq', 'NaCl'].setub(1000e-6)
     m.fs.RO.recovery_mass_phase_comp.setlb(None)
@@ -416,8 +418,9 @@ def set_operating_conditions(m):
 
     assert_no_degrees_of_freedom(m)
 
+
 def initialize_system(m):
-    
+
     m.fs.feed.initialize()
 
     propagate_state(m.fs.feed_to_P1)
@@ -434,72 +437,86 @@ def initialize_system(m):
     # propagate_state(source=m.fs.P2.inlet, destination=m.fs.RO.retentate)
 
     master_initialize_with_recirculation(m, count=1)
-    
+
+
 def master_initialize_with_recirculation(m, count=1):
-    solved = 0 
+    solved = 0
     counter = 0
     while not solved:
         # try:
 
-        initialize_with_recirculation(m, count=counter+1)
+        initialize_with_recirculation(m, count=counter + 1)
         _log.info(f"ATTEMPT TO SOLVE AFTER COUNT={counter+1} of {count} ")
-        # interval_initializer(m) 
+        # interval_initializer(m)
 
         try:
-            res= solve(m, tee=True)
+            res = solve(m, tee=True)
         except:
             res = None
         # except:
         #     pass
         counter = counter + 1
         if counter == count:
-            break 
+            break
         try:
             if check_optimal_termination(res):
                 solved = 1
         except UnboundLocalError:
-            _log.warning(f"Failed to solve at step {counter}. No results object returned.")
+            _log.warning(
+                f"Failed to solve at step {counter}. No results object returned."
+            )
         m.fs.report()
         m.fs.RO.report()
 
+
 def initialize_with_recirculation(m, count):
     m.fs.M1.mixed_state[:].temperature.unfix()
-    Qf = value(m.fs.M1.mixed_state[0].flow_vol_phase['Liq'])
-    m.fs.M1.mixed_state[:].flow_vol_phase['Liq'].unfix()
+    Qf = value(m.fs.M1.mixed_state[0].flow_vol_phase["Liq"])
+    m.fs.M1.mixed_state[:].flow_vol_phase["Liq"].unfix()
 
     m.fs.M1.initialize(outlvl=idaeslog.DEBUG)
-    m.fs.M1.pressure_equality_constraints[0,2].deactivate()
-    m.fs.M1.mixed_state[:].temperature.fix(25 +273.15)
-    m.fs.M1.mixed_state[:].flow_vol_phase['Liq'].fix(Qf)
-    
-    # mixer to RO 
+    m.fs.M1.pressure_equality_constraints[0, 2].deactivate()
+    m.fs.M1.mixed_state[:].temperature.fix(25 + 273.15)
+    m.fs.M1.mixed_state[:].flow_vol_phase["Liq"].fix(Qf)
+
+    # mixer to RO
     propagate_state(m.fs.M1_to_RO)
 
     if hasattr(m.fs, "RO_inlet_pipe"):
         propagate_state(m.fs.pipe_to_RO)
 
     try:
-        _log.info(f"INITIALIZING RO ON COUNT {count}; DOF = {degrees_of_freedom(m.fs.RO)}")
+        _log.info(
+            f"INITIALIZING RO ON COUNT {count}; DOF = {degrees_of_freedom(m.fs.RO)}"
+        )
 
         m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
         _log.info(f"FINISHED INITIALIZING RO ON COUNT {count}")
     except InitializationError:
-        _log.warning((f"RO Initialization failed during initialize_with_recirculation on COUNT {count}"))
+        _log.warning(
+            (
+                f"RO Initialization failed during initialize_with_recirculation on COUNT {count}"
+            )
+        )
         # raise InitializationError(f"RO Initialization failed during initialize_with_recirculation on COUNT {count}")
     #     pass
 
     # RO brine to P2
-    propagate_state(m.fs.RO_permeate_to_product) 
+    propagate_state(m.fs.RO_permeate_to_product)
     propagate_state(m.fs.RO_retentate_to_P2)
     # P2 initialize
     if m.fs.P2.active:
-            
+
         try:
             _log.info("REINITIALIZING P2 at end of initialize_with_recirculation")
             m.fs.P2.initialize(outlvl=idaeslog.DEBUG)
         except InitializationError:
-            _log.warning("P2 Initialization failed during initialize_with_recirculation")
-            raise InitializationError(f"P2 Initialization failed during initialize_with_recirculation at count {count}")
+            _log.warning(
+                "P2 Initialization failed during initialize_with_recirculation"
+            )
+            raise InitializationError(
+                f"P2 Initialization failed during initialize_with_recirculation at count {count}"
+            )
             # pass
 
 
@@ -556,8 +573,9 @@ def print_results(m):
     print(m.fs.M1.report())
     print(m.fs.RO.report())
 
+
 if __name__ == "__main__":
-    my_solver = 'petsc'
+    my_solver = "petsc"
     # initial_conditions = {
     #     "feed_flow": 2.92,
     #     "feed_conc": 3.4,
@@ -579,40 +597,37 @@ if __name__ == "__main__":
     scale_system(m)
     # autoscaler = AutoScaler()
     # autoscaler.scale_model(m,descend_into=True)
-    
- 
+
     initialize_system(m)
- 
+
     # interval_initializer(m)
     m.fs.report()
     m.fs.RO.report()
 
     # assert False
-    if hasattr(m.fs.RO.feed_side, 'N_Re'):
+    if hasattr(m.fs.RO.feed_side, "N_Re"):
         m.fs.RO.feed_side.N_Re.setlb(None)
-    
+
     # initialize_by_time_element(m.fs, m.fs.time, solver=get_solver(my_solver), outlvl=idaeslog.DEBUG)
 
     if my_solver == "petsc":
         results = petsc.petsc_dae_by_time_element(
-        m,
-        time=m.fs.time,
-        # ts_options={"-pc_type": "svd",}
-
+            m,
+            time=m.fs.time,
+            # ts_options={"-pc_type": "svd",}
         )
         for result in results.results:
             assert_optimal_termination(result)
     else:
-        solver =get_solver()
+        solver = get_solver()
 
         # solver.options["max_iter"] = 2
         solver.options["halt_on_ampl_error"] = "yes"
 
-        res = solver.solve(m,tee=True,
-                        symbolic_solver_labels=True, 
-                        export_defined_variables=False
-                        )
-    
+        res = solver.solve(
+            m, tee=True, symbolic_solver_labels=True, export_defined_variables=False
+        )
+
         # assert_optimal_termination(res)
         # dt.compute_infeasibility_explanation()
         # ccro.mp_df

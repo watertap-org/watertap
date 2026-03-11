@@ -449,7 +449,7 @@ def solve_model(m, solver=None, max_iter=3000, tee=True, raise_on_failure=True):
     if check_optimal_termination(results):
         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
         return results
-    
+
     if raise_on_failure:
         print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
 

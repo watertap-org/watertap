@@ -78,6 +78,7 @@ def build(
     # )
     return mp
 
+
 def build_for_flush_eff(overall_recovery=0.5, **kwargs):
 
     mp = build(**kwargs)
@@ -85,7 +86,6 @@ def build_for_flush_eff(overall_recovery=0.5, **kwargs):
     solve_model(mp)
 
     return mp
-    
 
 
 def solve_model(mp, **kwargs):
@@ -95,17 +95,21 @@ def solve_model(mp, **kwargs):
 
 
 if __name__ == "__main__":
-    
+
     # mp = build(feed_tds=35, A_comp=1.5, B_comp=0.1)
     # mp.overall_recovery.fix(0.5)
     # results = solve_model(mp)
     # mp.flushing.flushing_efficiency.fix(0.4)
     # results = solve_model(mp)
 
-    mp = build_for_flush_eff(overall_recovery=0.5, feed_tds=35, A_comp=1.5, B_comp=0.1, flushing_efficiency=0.6)
+    mp = build_for_flush_eff(
+        overall_recovery=0.5,
+        feed_tds=35,
+        A_comp=1.5,
+        B_comp=0.1,
+        flushing_efficiency=0.6,
+    )
     mp.flushing.flushing_efficiency.display()
     # for x in [0.25, 0.4, 0.5, 0.6, 0.75, 0.9]:
     #     mp.flushing.flushing_efficiency.fix(x)
     #     results = solve_model(mp)
-
-

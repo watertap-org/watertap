@@ -23,7 +23,11 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.initialization import propagate_state
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, constraint_scaling_transform
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    set_scaling_factor,
+    constraint_scaling_transform,
+)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Product, Feed
 from idaes.models.unit_models.mixer import (
@@ -60,8 +64,8 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 
 atmospheric_pressure = 101325 * pyunits.Pa
 
-class CCRO:
 
+class CCRO:
     """
     CCRO multiperiod model for validation and comparison against dynamic version.
 
@@ -78,13 +82,13 @@ class CCRO:
         self,
         feed_conc=None,  # feed concentration is constant
         feed_flow=None,  # feed flow rate is constant
-        reject_conc_start=None, # L/min
-        reject_flow=None, # L/min
+        reject_conc_start=None,  # L/min
+        reject_flow=None,  # L/min
         water_recovery=None,
         n_time_points=3,
-        temperature_start=None, # degC
-        p1_pressure_start=None, # psi
-        p2_pressure_start=None, # psi
+        temperature_start=None,  # degC
+        p1_pressure_start=None,  # psi
+        p2_pressure_start=None,  # psi
         p1_eff=0.8,
         p2_eff=0.8,
         rho=1000,
@@ -279,7 +283,6 @@ class CCRO:
         m.fs.M1.mixed_state[0].flow_vol_phase
         m.fs.M1.mixed_state[0].conc_mass_phase_comp
 
-
         return m
 
     def scale_system(self, m=None):
@@ -304,16 +307,24 @@ class CCRO:
         # set_scaling_factor(m.fs.feed_flow_mass_water, 1e1)
         # set_scaling_factor(m.fs.feed_salinity, 1)
 
-        constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0,0.0,'NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0,1.0,'NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,0.0,'Liq','NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,1.0,'Liq','NaCl'], 1e7)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,0.0,'Liq','H2O'], 1e4)
-        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0,1.0,'Liq','H2O'], 1e4)
-        constraint_scaling_transform(m.fs.RO.eq_recovery_mass_phase_comp[0.0,'NaCl'], 1e4)
-        constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,0.0,'NaCl'], 1e5)
-        constraint_scaling_transform(m.fs.RO.eq_mass_frac_permeate[0.0,1.0,'NaCl'], 1e5)
-        constraint_scaling_transform(m.fs.RO.eq_permeate_production[0.0,'Liq','NaCl'], 1e4)
+        constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0, 0.0, "NaCl"], 1e7)
+        constraint_scaling_transform(m.fs.RO.feed_side.eq_K[0.0, 1.0, "NaCl"], 1e7)
+        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0, 0.0, "Liq", "NaCl"], 1e7)
+        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0, 1.0, "Liq", "NaCl"], 1e7)
+        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0, 0.0, "Liq", "H2O"], 1e4)
+        constraint_scaling_transform(m.fs.RO.eq_flux_mass[0.0, 1.0, "Liq", "H2O"], 1e4)
+        constraint_scaling_transform(
+            m.fs.RO.eq_recovery_mass_phase_comp[0.0, "NaCl"], 1e4
+        )
+        constraint_scaling_transform(
+            m.fs.RO.eq_mass_frac_permeate[0.0, 0.0, "NaCl"], 1e5
+        )
+        constraint_scaling_transform(
+            m.fs.RO.eq_mass_frac_permeate[0.0, 1.0, "NaCl"], 1e5
+        )
+        constraint_scaling_transform(
+            m.fs.RO.eq_permeate_production[0.0, "Liq", "NaCl"], 1e4
+        )
         # constraint_scaling_transform(m.fs.M1.material_mixing_equations[0.0,'H2O'], 1e4)
         # constraint_scaling_transform(m.fs.M1.material_mixing_equations[0.0,'NaCl'], 1e2)
         # constraint_scaling_transform(m.fs.M1.enthalpy_mixing_equations[0.0], 1e4)
@@ -364,7 +375,7 @@ class CCRO:
 
         m.fs.P1.efficiency_pump.fix(self.p1_eff)
         m.fs.P1.control_volume.properties_out[0].pressure.fix(self.p1_pressure_start)
-        
+
         """
         Pump 2 operating conditions
         """
@@ -411,11 +422,13 @@ class CCRO:
 
     def initialize_mixer(self, m=None, guess=False):
         m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75465)
-        m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0029261)
+        m.fs.M1.inlet_2_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(
+            0.0029261
+        )
         m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.80332)
         m.fs.M1.mixed_state[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030916)
         m.fs.M1.mixed_state[0].conc_mass_phase_comp["Liq", "NaCl"].set_value(4.0)
-        m.fs.M1.inlet_2_state[0].pressure.set_value(2.1098e+06)
+        m.fs.M1.inlet_2_state[0].pressure.set_value(2.1098e06)
         m.fs.M1.initialize()
 
     def do_forward_initialization_pass(self, m=None, pass_num=1):
@@ -424,15 +437,15 @@ class CCRO:
         """
         if m is None:
             m = self.m
-        
+
         m.fs.feed.initialize()
 
         propagate_state(m.fs.feed_to_P1)
         m.fs.P1.initialize()
 
         propagate_state(m.fs.P1_to_M1)
-       
-        print(f'M1 {pass_num+1}th initialization')
+
+        print(f"M1 {pass_num+1}th initialization")
         m.fs.M1.report()
         if pass_num > 0:
             m.fs.M1.initialize()
@@ -441,8 +454,8 @@ class CCRO:
         m.fs.M1.report()
 
         propagate_state(m.fs.M1_to_RO)
-        
-        print(f'RO {pass_num+1}th initialization')
+
+        print(f"RO {pass_num+1}th initialization")
         m.fs.RO.feed_side.properties_in[0].pressure_osm_phase
         m.fs.RO.feed_side.properties_in[0].temperature = value(
             m.fs.feed.properties[0].temperature
@@ -450,8 +463,12 @@ class CCRO:
         m.fs.RO.feed_side.properties_in[0].pressure = value(
             m.fs.P1.control_volume.properties_out[0].pressure
         )
-        m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].set_value(0.75253)
-        m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].set_value(0.0030899)
+        m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp[
+            "Liq", "H2O"
+        ].set_value(0.75253)
+        m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp[
+            "Liq", "NaCl"
+        ].set_value(0.0030899)
         m.fs.RO.feed_side.properties_out[0].pressure.set_value(1976757.5687263503)
         m.fs.RO.report()
         m.fs.RO.initialize()
@@ -467,7 +484,7 @@ class CCRO:
         m.fs.P2.report()
 
         propagate_state(m.fs.P2_to_M1)
-    
+
     def initialize(self, m=None):
         # initialize unit by unit
         for idx, init_pass in enumerate(range(4)):
@@ -488,7 +505,7 @@ class CCRO:
     def initialize_system(self, m=None):
         if m is None:
             m = self.m
-        
+
         m.fs.feed.initialize()
 
         propagate_state(m.fs.feed_to_P1)
@@ -497,19 +514,19 @@ class CCRO:
         propagate_state(m.fs.P1_to_M1)
 
         self.master_initialize_with_recirculation(m, count=3)
-        
+
     def master_initialize_with_recirculation(self, m, count):
-        solved = 0 
+        solved = 0
         counter = 0
         while not solved:
             try:
                 self.initialize_with_recirculation(m)
-                res= self.solve(m, tee=True)
+                res = self.solve(m, tee=True)
             except:
                 pass
             counter = counter + 1
             if counter == count:
-                break 
+                break
             if check_optimal_termination(res):
                 solved = 1
 
@@ -518,8 +535,8 @@ class CCRO:
             m = self.m
         propagate_state(m.fs.P2_to_M1)
         m.fs.M1.initialize()
-        
-        # mixer to RO 
+
+        # mixer to RO
         propagate_state(m.fs.M1_to_RO)
 
         try:
@@ -528,11 +545,10 @@ class CCRO:
             pass
 
         # RO brine to P2
-        propagate_state(m.fs.RO_permeate_to_product) 
+        propagate_state(m.fs.RO_permeate_to_product)
         propagate_state(m.fs.RO_retentate_to_P2)
         # P2 initialize
         m.fs.P2.initialize()
-
 
     # def fix_dof_and_initialize(self, m=None):
     #     """
@@ -562,7 +578,6 @@ class CCRO:
     #     optarg = {"tol": 1e-5, "linear_solver": "ma27", "max_iter": 1000}
     #     solver.options = optarg
     #     results = solver.solve(model, tee=tee)
-        
 
     #     if check_optimal_termination(results):
     #         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
@@ -586,9 +601,9 @@ class CCRO:
     #         # debug(model, solver=solver, automate_rescale=False, resolve=False)
     #         # check_jac(model)
     #         # assert False
-        
+
     #     return results
-    
+
     def print_results(self, m=None):
         print("\n\n")
         print(
@@ -624,7 +639,9 @@ class CCRO:
             f"PUMP 2 PRESSURE: {value(pyunits.convert(self.m.fs.P2.control_volume.properties_out[0.0].pressure, to_units=pyunits.bar)):<5.2f}"
         )
         print("\n")
-        print(f'RO FEED: {value(self.m.fs.RO.inlet.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}')
+        print(
+            f'RO FEED: {value(self.m.fs.RO.inlet.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}'
+        )
         print(
             f'RO PRODUCT: {value(self.m.fs.RO.permeate.flow_mass_phase_comp[0,"Liq", "H2O"]):<5.2f}'
         )
@@ -634,6 +651,7 @@ class CCRO:
         print("\n\n")
         print(self.m.fs.M1.report())
         print(self.m.fs.RO.report())
+
 
 if __name__ == "__main__":
 
@@ -657,8 +675,8 @@ if __name__ == "__main__":
     ccro.set_operating_conditions()
     ccro.scale_system()
     ccro.initialize_system()
-    res = ccro.solve(ccro.m,tee=True)
-    
+    res = ccro.solve(ccro.m, tee=True)
+
     # assert_optimal_termination(res)
     # dt.compute_infeasibility_explanation()
     # ccro.mp_df

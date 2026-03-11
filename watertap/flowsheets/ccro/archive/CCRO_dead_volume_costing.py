@@ -636,8 +636,7 @@ class CCRO:
                 to_units=pyunits.m**3 / pyunits.s,
             )
         )
-        mp.eq_system_recovery = Constraint(
-            expr=mp.system_recovery==mp.recovery)
+        mp.eq_system_recovery = Constraint(expr=mp.system_recovery == mp.recovery)
 
     def copy_state_prop_time_period_links(self, m_old, m_new):
         self.copy_state(m_old, m_new)
@@ -863,4 +862,3 @@ if __name__ == "__main__":
 
     ccro.costing.LCOW.display()
     ccro.costing.SEC.display()
-

@@ -169,7 +169,7 @@ if __name__ == "__main__":
     t_sequence = [list(group) for group in zip(*t_sequence)]
     fig = FigureGenerator()
     fig.init_figure()
-    
+
     for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
 
         _r = f"{int(r)}%"
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     t_sequence = [list(group) for group in zip(*t_sequence)]
     fig = FigureGenerator()
     fig.init_figure()
-    
+
     for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
 
         _r = f"{int(r)}%"

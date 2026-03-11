@@ -1,4 +1,5 @@
 import os
+
 # import pandas as pd
 from pyomo.environ import (
     check_optimal_termination,
@@ -36,8 +37,9 @@ import watertap.flowsheets.ccro.utils.ipoptv2 as ipt2
 
 here = os.path.dirname(os.path.abspath(__file__))
 
+
 def create_ccro_multiperiod(
-    n_time_points=5, # filtration time points
+    n_time_points=5,  # filtration time points
     n_flushing_points=5,
     include_costing=True,
     cc_configuration=None,
@@ -68,7 +70,9 @@ def create_ccro_multiperiod(
     mp.filtration_points = n_time_points
     mp.total_points = n_time_points + n_flushing_points
     mp.filtration_set = Set(initialize=range(n_time_points))
-    mp.flushing_set = Set(initialize=range(mp.filtration_set.last() + 1, mp.total_points))
+    mp.flushing_set = Set(
+        initialize=range(mp.filtration_set.last() + 1, mp.total_points)
+    )
     mp.include_costing = include_costing
     operation_mode_list = []
     for n in range(n_time_points):
@@ -138,9 +142,7 @@ def create_ccro_multiperiod(
                     register_capital_cost=True,
                     utilization_factor=utilization_ratio,
                 )
-            elif (
-                t == n_time_points
-            ):  # Last operating pressure - assume its highest !
+            elif t == n_time_points:  # Last operating pressure - assume its highest !
                 print(f"t = {t}, P1 + P2 electricity, P1 + P2 CAPEX")
                 cc_utils.register_costed_unit(
                     mp,
@@ -325,7 +327,9 @@ def create_ccro_multiperiod(
                 .value,
             )
     print(f"~~~MULTI-PERIOD MODEL BUILT ~~~")
-    print(f"~~~{mp.time_points} FILTRATION POINTS AND {mp.flushing_points} FLUSHING POINTS~~~~")
+    print(
+        f"~~~{mp.time_points} FILTRATION POINTS AND {mp.flushing_points} FLUSHING POINTS~~~~"
+    )
     print("Multi-period DOF:", degrees_of_freedom(mp))
     return mp
 
@@ -478,7 +482,7 @@ def solve(
 def setup_optimization(
     mp,
     overall_water_recovery=0.5,
-    min_cycle_time_hr=10/60,
+    min_cycle_time_hr=10 / 60,
     max_cycle_time_hr=1.5,
     recycle_flow_bounds=(0.1, 20),
     min_accumulation_time=1,
@@ -761,7 +765,7 @@ def print_results_table(mp, w=15):
         period_data[t] = row
 
     # ── Print the period table ──────────────────────────────────────
-    
+
     # period_data_df = pd.DataFrame.from_dict(period_data, orient="index")
     # period_data_df.to_csv(f"{here}/period_data.csv")
     print_table(period_data, title="CCRO MULTIPERIOD RESULTS", index_header="Period")
