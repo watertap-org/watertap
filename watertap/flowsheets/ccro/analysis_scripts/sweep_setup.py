@@ -54,6 +54,16 @@ def main():
         num_loop_workers=1,
     )
 
+    loopTool(
+        get_working_dir() + "/flush_eff_sweep.yaml",
+        build_function=ccro.build_for_flush_eff,
+        optimize_function=ccro.solve_model,
+        save_name="ccro_flush_eff_sweep",
+        saving_dir=get_working_dir(),
+        number_of_subprocesses=1,
+        num_loop_workers=1,
+    )
+
 
 if __name__ == "__main__":
     main()

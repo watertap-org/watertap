@@ -1,6 +1,7 @@
 
 BW_flushing_eff_sweep:
   build_defaults:
+    overall_recovery: 0.95
     feed_tds: 5
     A_comp: 5
     B_comp: 0.5
@@ -18,6 +19,7 @@ BW_flushing_eff_sweep:
 
 SW_flushing_eff_sweep:
   build_defaults:
+    overall_recovery: 0.5
     feed_tds: 35
     A_comp: 1.5
     B_comp: 0.1

@@ -4,7 +4,7 @@ BW_recovery_sweep:
     feed_tds: 5
     A_comp: 5
     B_comp: 0.5
-    time_steps: 20
+    time_steps: 10
     n_flushing_points: 5
     fixed_setup: False
     use_hold_up: True
@@ -21,7 +21,7 @@ SW_recovery_sweep:
     feed_tds: 35
     A_comp: 1.5
     B_comp: 0.1
-    time_steps: 20
+    time_steps: 10
     n_flushing_points: 5
     fixed_setup: False
     use_hold_up: True
