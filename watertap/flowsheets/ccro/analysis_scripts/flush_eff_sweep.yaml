@@ -1,5 +1,42 @@
 
-BW_flushing_eff_sweep:
+# BW_flushing_eff_sweep:
+#   build_defaults:
+#     overall_recovery: 0.95
+#     feed_tds: 5
+#     A_comp: 5
+#     B_comp: 0.5
+#     time_steps: 10
+#     n_flushing_points: 5
+#     fixed_setup: False
+#     use_hold_up: True
+#   sweep_param_loop:
+#     flushing_efficiency:
+#       type: LinearSample
+#       param: flushing.flushing_efficiency
+#       lower_limit: 0.1
+#       upper_limit: 0.5
+#       num_samples: 11
+
+# SW_flushing_eff_sweep:
+#   build_defaults:
+#     overall_recovery: 0.5
+#     feed_tds: 35
+#     A_comp: 1.5
+#     B_comp: 0.1
+#     time_steps: 10
+#     n_flushing_points: 5
+#     fixed_setup: False
+#     use_hold_up: True
+#   sweep_param_loop:
+#     flushing_efficiency:
+#       type: LinearSample
+#       param: flushing.flushing_efficiency
+#       lower_limit: 0.1
+#       upper_limit: 0.5
+#       num_samples: 11
+  
+
+BW_flushing_eff_and_recovery_sweep:
   build_defaults:
     overall_recovery: 0.95
     feed_tds: 5
@@ -9,15 +46,22 @@ BW_flushing_eff_sweep:
     n_flushing_points: 5
     fixed_setup: False
     use_hold_up: True
-  sweep_param_loop:
-    recovery:
-      type: LinearSample
-      param: flushing.flushing_efficiency
-      lower_limit: 0.1
-      upper_limit: 0.5
-      num_samples: 11
+  build_loop:
+    overall_recovery:
+    - 0.85
+    - 0.975
+    - 0.90
+    - 0.925
+    - 0.95
+    sweep_param_loop:
+      flushing_efficiency:
+        type: LinearSample
+        param: flushing.flushing_efficiency
+        lower_limit: 0.2
+        upper_limit: 0.9
+        num_samples: 11
 
-SW_flushing_eff_sweep:
+SW_flushing_eff_and_recovery_sweep:
   build_defaults:
     overall_recovery: 0.5
     feed_tds: 35
@@ -27,10 +71,17 @@ SW_flushing_eff_sweep:
     n_flushing_points: 5
     fixed_setup: False
     use_hold_up: True
-  sweep_param_loop:
-    flushing_efficiency:
-      type: LinearSample
-      param: flushing.flushing_efficiency
-      lower_limit: 0.1
-      upper_limit: 0.5
-      num_samples: 11
+  build_loop:
+    overall_recovery:
+    - 0.40
+    - 0.45
+    - 0.50
+    - 0.55
+    - 0.60
+    sweep_param_loop:
+      flushing_efficiency:
+        type: LinearSample
+        param: flushing.flushing_efficiency
+        lower_limit: 0.2
+        upper_limit: 0.9
+        num_samples: 11
