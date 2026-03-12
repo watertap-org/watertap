@@ -21,14 +21,9 @@ from pyomo.environ import (
     Suffix,
     TransformationFactory,
 )
-
+import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.models.unit_models.separator import SplittingType
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
-from watertap.core.solvers import get_solver
 
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 from watertap.unit_models import Clarifier, ClarifierScaler
@@ -495,8 +490,8 @@ class TestClarifierScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             2.955746851e9, rel=1e-3
         )
 
@@ -561,8 +556,8 @@ class TestClarifierScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             2729.85, rel=1e-3
         )
 

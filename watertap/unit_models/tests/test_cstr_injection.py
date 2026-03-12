@@ -26,10 +26,6 @@ from pyomo.environ import (
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
 from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
@@ -698,8 +694,8 @@ class TestCSTR_InjectionScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             1.0843930927394e13, rel=1e-3
         )
 
@@ -755,8 +751,8 @@ class TestCSTR_InjectionScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             1.1526931e7, rel=1e-3
         )
 

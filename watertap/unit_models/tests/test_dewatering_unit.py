@@ -27,10 +27,6 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from idaes.models.unit_models.separator import SplittingType
 from idaes.core.util.model_statistics import (
@@ -1079,8 +1075,8 @@ class TestThickenerScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             3.41143918e5, rel=1e-3
         )
 
@@ -1141,8 +1137,8 @@ class TestThickenerScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             53957.5009, rel=1e-3
         )
 

@@ -30,11 +30,6 @@ from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
-from idaes.core.scaling.scaler_profiling import ScalingProfiler
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     SingleControlVolumeUnitInitializer,
@@ -633,8 +628,8 @@ class TestCSTRScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             6.1277317e13, rel=1e-3
         )
 
@@ -684,8 +679,8 @@ class TestCSTRScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             1.65862e5, rel=1e-3
         )
 
