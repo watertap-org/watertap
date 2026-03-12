@@ -571,7 +571,7 @@ def setup_optimization(
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
         mp.flushing.flushing_efficiency.setub(0.95)
-        mp.flushing.flushing_efficiency.setlb(0.25)
+        mp.flushing.flushing_efficiency.setlb(0.1)
         mp.flushing.flushing_time.setlb(min_flushing_time)
     if mp.find_component("conduit") is not None:
         mp.conduit.volume.unfix()
@@ -779,6 +779,7 @@ def print_results_table(mp, w=15):
     else:
         flushing_block = mp.get_active_process_blocks()[-1].fs.flushing
 
+    summary["Overall recovery"] = mp.overall_recovery.value
     summary["Mean residence time (s)"] = flushing_block.mean_residence_time.value
     summary["Flushing time (s)"] = flushing_block.flushing_time.value
     summary["Flushing efficiency"] = flushing_block.flushing_efficiency.value
@@ -791,9 +792,14 @@ def print_results_table(mp, w=15):
     summary["Post-flushing conc (kg/m3)"] = (
         flushing_block.post_flushing_concentration.value
     )
+    summary["Recycle loop concentration (kg/m3)"] = (
+        mp.recycle_loop_concentration.value
+    )
+    summary["Ramp Rate (bar/min)"] = mp.filtration_ramp_rate.value
     summary["Overall recovery"] = mp.overall_recovery.value
-    summary["Total feed (m3)"] = mp.total_feed.value
-    summary["Total permeate (m3)"] = mp.total_permeate.value
+    summary["Total feed (m3)"] = mp.total_feed_vol.value
+    summary["Total permeate (m3)"] = mp.total_permeate_vol.value
+    summary["Final permeate conc (g/L)"] = mp.permeate_concentration.value
     summary["Density at start of cycle"] = (
         mp.get_active_process_blocks()[0]
         .fs.dead_volume.dead_volume.properties_out[0]
