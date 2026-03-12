@@ -18,7 +18,7 @@ The WaterTAP development team is composed of researchers from:
 
 * National Energy Technology Laboratory
 * Lawrence Berkeley National Laboratory
-* National Renewable Energy Laboratory
+* National Laboratory of the Rockies
 * Oak Ridge National Laboratory
 * SLAC National Accelerator Laboratory
 * Stanford University
