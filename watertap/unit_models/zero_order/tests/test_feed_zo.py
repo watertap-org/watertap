@@ -25,7 +25,7 @@ from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.zero_order import FeedZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 
 solver = get_solver()
 
@@ -37,7 +37,7 @@ class TestFeedZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(database=m.db)
+        m.fs.params = ZOParameterBlock(database=m.db)
 
         m.fs.unit = FeedZO(property_package=m.fs.params)
 
@@ -145,7 +145,7 @@ def test_initialize():
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(database=m.db)
+    m.fs.params = ZOParameterBlock(database=m.db)
 
     m.fs.unit = FeedZO(property_package=m.fs.params)
 

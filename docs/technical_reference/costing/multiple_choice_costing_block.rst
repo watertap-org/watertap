@@ -31,7 +31,8 @@ The code below demonstrates its use on a reverse osmosis unit model.
     import pyomo.environ as pyo
     from idaes.core import FlowsheetBlock
 
-    import watertap.property_models.NaCl_prop_pack as props
+    from watertap.property_models import NaClParameterBlock
+    
     from watertap.unit_models.reverse_osmosis_0D import (
         ReverseOsmosis0D,
         ConcentrationPolarizationType,
@@ -46,7 +47,7 @@ The code below demonstrates its use on a reverse osmosis unit model.
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     m.fs.RO = ReverseOsmosis0D(

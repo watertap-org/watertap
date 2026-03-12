@@ -2,6 +2,9 @@
 
 ASM1 Property Package
 =====================
+.. code-block:: python
+
+   from watertap.property_models import ASM1ParameterBlock
 
 This package implements property relationships for the treatment of wastewater using an activated sludge biological reactor as provided in `Henze, M. et al. (1987) <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
 

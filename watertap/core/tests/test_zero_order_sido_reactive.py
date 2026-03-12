@@ -17,7 +17,7 @@ import pytest
 import os
 from types import MethodType
 
-from idaes.core import declare_process_block_class, FlowsheetBlock
+from idaes.core import declare_process_block_class, FlowsheetBlock, MaterialFlowBasis
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from watertap.core.solvers import get_solver
@@ -37,13 +37,12 @@ from pyomo.util.check_units import assert_units_consistent
 
 from watertap.core import (
     Database,
-    WaterParameterBlock,
-    WaterStateBlock,
     ZeroOrderBaseData,
 )
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
+from watertap.property_models import (
     MCASParameterBlock,
-    MaterialFlowBasis,
+    ZOParameterBlock,
+    ZOStateBlock,
 )
 from watertap.core.zero_order_sido_reactive import (
     build_sido_reactive,
@@ -76,7 +75,7 @@ class TestSIDOR:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.unit = DerivedSIDOR(property_package=m.fs.water_props, database=m.db)
 
@@ -111,9 +110,9 @@ class TestSIDOR:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert isinstance(model.fs.unit.properties_in, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_treated, WaterStateBlock)
-        assert isinstance(model.fs.unit.properties_byproduct, WaterStateBlock)
+        assert isinstance(model.fs.unit.properties_in, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_treated, ZOStateBlock)
+        assert isinstance(model.fs.unit.properties_byproduct, ZOStateBlock)
 
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.treated, Port)
@@ -313,7 +312,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             KeyError,
@@ -334,7 +333,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             KeyError,
@@ -357,7 +356,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             KeyError,
@@ -381,7 +380,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             ValueError,
@@ -406,7 +405,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             KeyError,
@@ -431,7 +430,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             RuntimeError,
@@ -457,7 +456,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             RuntimeError,
@@ -486,7 +485,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             KeyError,
@@ -512,7 +511,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             KeyError,
@@ -541,7 +540,7 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         with pytest.raises(
             KeyError,

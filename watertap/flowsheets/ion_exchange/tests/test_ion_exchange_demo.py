@@ -23,17 +23,17 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Feed, Product
-from watertap.unit_models.ion_exchange_0D import (
+
+from watertap.unit_models import (
     IonExchange0D,
     IonExchangeType,
     RegenerantChem,
     IsothermType,
 )
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-
+from watertap.property_models import MCASParameterBlock
+from watertap.core.solvers import get_solver
 import watertap.flowsheets.ion_exchange.ion_exchange_demo as ixf
 
 import math

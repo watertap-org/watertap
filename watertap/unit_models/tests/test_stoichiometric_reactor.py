@@ -11,36 +11,32 @@
 #################################################################################
 
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     check_optimal_termination,
     units as pyunits,
 )
-
 from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from watertap.core.solvers import get_solver
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-)
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-)
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.testing import initialization_tester
 
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
+from watertap.property_models import (
     MCASParameterBlock,
     ActivityCoefficientModel,
     DensityCalculation,
     MaterialFlowBasis,
 )
-
 from watertap.unit_models.stoichiometric_reactor import StoichiometricReactor
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 __author__ = "Timothy Bartholomew, Alexander Dudchenko"
 

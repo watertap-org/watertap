@@ -35,7 +35,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import IonExchangeZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -48,7 +48,7 @@ class TestIonExchangeZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds", "foo"])
 
         m.fs.unit = IonExchangeZO(property_package=m.fs.params, database=m.db)
 
@@ -162,7 +162,7 @@ class TestIonExchangeZO_clinoptilolite:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["ammonium_as_nitrogen", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["ammonium_as_nitrogen", "foo"])
 
         m.fs.unit = IonExchangeZO(
             property_package=m.fs.params,
@@ -281,7 +281,7 @@ class TestIXZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds"])
 
         m.fs.unit = IonExchangeZO(property_package=m.fs.params, database=db)
 
@@ -310,7 +310,7 @@ def test_costing_wt3(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
+    m.fs.params = ZOParameterBlock(
         solute_list=["sulfur", "toc", "tds", "ammonium_as_nitrogen"]
     )
 
@@ -361,7 +361,7 @@ def test_costing_clinoptilolite():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["ammonium_as_nitrogen"])
+    m.fs.params = ZOParameterBlock(solute_list=["ammonium_as_nitrogen"])
 
     m.fs.costing = ZeroOrderCosting()
 
@@ -392,7 +392,7 @@ def test_costing_clinoptilolite():
 def test_clinoptilolite_no_ammonium_in_solute_list_error():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["foo"])
+    m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,

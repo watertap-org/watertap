@@ -10,12 +10,13 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from watertap.core.solvers import get_solver
 from parameter_sweep import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
     parameter_sweep,
+    get_sweep_params_from_yaml,
+    set_defaults_from_yaml,
 )
 
 from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
@@ -24,11 +25,7 @@ from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import 
     initialize_system,
     optimize,
 )
-
-from parameter_sweep import (
-    get_sweep_params_from_yaml,
-    set_defaults_from_yaml,
-)
+from watertap.core.solvers import get_solver
 
 
 def get_sweep_params(m, num_samples, use_LHS=False):

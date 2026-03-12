@@ -26,16 +26,16 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
+
 from watertap.costing.unit_models.steam_ejector import (
     cost_steam_ejector,
 )
-
 from watertap.core import InitializationMixin
+from watertap.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
 

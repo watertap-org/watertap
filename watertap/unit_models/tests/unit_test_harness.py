@@ -15,14 +15,16 @@ import abc
 
 from pyomo.environ import Block, assert_optimal_termination, ComponentMap, value
 from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 import idaes.core.util.scaling as iscale
 from idaes.core.scaling.util import jacobian_cond
 import idaes.logger as idaeslog
+
+from watertap.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

@@ -9,6 +9,9 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import pytest
+import numpy as np
+
 from pyomo.environ import (
     ConcreteModel,
     units as pyunits,
@@ -16,8 +19,8 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.network import Port
-from idaes.core.solvers import petsc
 
+from idaes.core.solvers import petsc
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -31,27 +34,22 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
 )
 import idaes.core.util.scaling as iscale
+
 from watertap.core import (
     MembraneChannel0DBlock,
     FrictionFactor,
     ModuleType,
 )
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
+from watertap.unit_models import ReverseOsmosis0D
+from watertap.unit_models.reverse_osmosis_1D import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.core.solvers import get_solver
 from watertap.unit_models.reverse_osmosis_base import TransportModel
-
-import watertap.property_models.NaCl_prop_pack as props
-
+from watertap.property_models import NaClParameterBlock
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-import pytest
-
-from idaes.core.solvers import petsc
-import numpy as np
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -64,7 +62,7 @@ solver = get_solver()
 def test_default_config_and_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
     assert len(m.fs.unit.config) == 15
@@ -134,7 +132,7 @@ def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
@@ -247,7 +245,7 @@ def build_SKK():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
@@ -361,7 +359,7 @@ def build_kf_fixed():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
@@ -485,7 +483,7 @@ def build_kf_calculated():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
@@ -613,7 +611,7 @@ def build_p_drop_calculation():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
@@ -741,7 +739,7 @@ def build_p_drop_calculation_fixed_per_unit_length():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
@@ -869,7 +867,7 @@ def build_friction_factor_spiral_wound():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.properties,
@@ -1006,7 +1004,7 @@ def test_RO_dynamic_instantiation():
         time_units=pyunits.s,
     )
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = ReverseOsmosis0D(
         dynamic=True,

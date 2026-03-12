@@ -18,11 +18,8 @@ from pyomo.common.config import In
 from pyomo.environ import Constraint
 
 # Import IDAES cores
-from idaes.core import (
-    declare_process_block_class,
-)
+from idaes.core import declare_process_block_class
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
-
 
 from watertap.unit_models.cstr_injection import (
     CSTR_InjectionData,

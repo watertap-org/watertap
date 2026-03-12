@@ -12,6 +12,7 @@
 
 import os
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     Var,
@@ -20,22 +21,19 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core import FlowsheetBlock
+
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.exceptions import ConfigurationError
-from watertap.property_models.water_prop_pack import WaterParameterBlock
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.surrogate.surrogate_block import SurrogateBlock
+from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
+
+from watertap.property_models import (
+    WaterParameterBlock,
     MCASParameterBlock,
     MaterialFlowBasis,
 )
-from idaes.core.util.model_statistics import degrees_of_freedom
-
-from idaes.core.surrogate.surrogate_block import SurrogateBlock
-from idaes.core.surrogate.pysmo_surrogate import (
-    PysmoSurrogate,
-)
-from watertap.unit_models.surrogate_crystallizer import SurrogateCrystallizer
-
-from idaes.core import UnitModelCostingBlock
+from watertap.unit_models import SurrogateCrystallizer
 from watertap.costing import WaterTAPCosting
 from watertap.core.solvers import get_solver
 

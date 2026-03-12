@@ -42,7 +42,7 @@ from watertap.unit_models.zero_order.electrocoagulation_zo import (
     OverpotentialCalculation,
 )
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -55,7 +55,7 @@ class TestECZO_AL:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "tds",
                 "tss",
@@ -239,7 +239,7 @@ class TestECZO_FE:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "tds",
                 "tss",
@@ -431,7 +431,7 @@ class TestECZO_OverpotentialCalculation:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "tds",
                 "tss",

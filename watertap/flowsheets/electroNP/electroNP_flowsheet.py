@@ -19,40 +19,33 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.network import Arc
+
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from watertap.core.solvers import get_solver
-import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
-from watertap.unit_models.anaerobic_digester import AD
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
-    ModifiedADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
-    ADM1_vaporParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
-    ModifiedADM1ReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
-    ModifiedASM2dReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
-)
-from watertap.unit_models.translators.translator_adm1_asm2d import (
-    Translator_ADM1_ASM2D,
-)
-from watertap.unit_models.electroNP_ZO import ElectroNPZO
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
 from idaes.core.util.initialization import propagate_state
+import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+
+from watertap.unit_models import AD, ElectroNPZO
+from watertap.unit_models.translators.translator_adm1_asm2d import (
+    Translator_ADM1_ASM2D,
+)
+from watertap.property_models import (
+    ModifiedADM1ParameterBlock,
+    ADM1_vaporParameterBlock,
+    ModifiedADM1ReactionParameterBlock,
+    ModifiedASM2dReactionParameterBlock,
+    ModifiedASM2dParameterBlock,
+)
 from watertap.core.util.initialization import check_solve
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
