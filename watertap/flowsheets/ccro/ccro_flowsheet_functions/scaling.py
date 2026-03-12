@@ -62,19 +62,21 @@ def scale_multiperiod_model(mp):
     blks = list(mp.get_active_process_blocks())
     b0 = blks[mp.TIME.first()]
     flow_vol = b0.fs.raw_feed.properties[0].flow_vol_phase["Liq"].value
-    iscale.set_scaling_factor(mp.total_feed, 1 / (flow_vol * 3600))
+    perm_conc = b0.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"].value
+    iscale.set_scaling_factor(mp.permeate_concentration, 1 / perm_conc)
+    iscale.set_scaling_factor(mp.total_feed_vol, 1 / (flow_vol * 3600))
     iscale.constraint_scaling_transform(
-        mp.total_permeate_constraint, 1 / (flow_vol * 3600)
+        mp.total_permeate_vol_constraint, 1 / (flow_vol * 3600)
     )
-    iscale.set_scaling_factor(mp.total_permeate, 1 / (flow_vol * 3600))
-    iscale.constraint_scaling_transform(mp.total_feed_constraint, 1 / (flow_vol * 3600))
+    iscale.set_scaling_factor(mp.total_permeate_vol, 1 / (flow_vol * 3600))
+    iscale.constraint_scaling_transform(mp.total_feed_vol_constraint, 1 / (flow_vol * 3600))
 
     iscale.set_scaling_factor(mp.avg_product_flow_rate, 1 / (flow_vol))
     iscale.constraint_scaling_transform(mp.eq_avg_product_flow_rate, 1 / (flow_vol))
 
     iscale.constraint_scaling_transform(mp.total_filtration_time_constraint, 1e-3)
     iscale.constraint_scaling_transform(mp.total_cycle_time_constraint, 1e-3)
-    iscale.constraint_scaling_transform(mp.final_concentration_constraint, 1e-1)
+    iscale.constraint_scaling_transform(mp.recycle_loop_concentration_constraint, 1e-1)
     iscale.constraint_scaling_transform(mp.global_dead_volume_constraint, 1e2)
     for c in mp.equal_recycle_rate.values():
         iscale.constraint_scaling_transform(c, 1e2)
