@@ -7,8 +7,10 @@ from psPlotKit.data_plotter.fig_generator import FigureGenerator
 
 if __name__ == "__main__":
     sweep_file = "output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5"
+    # sweep_file = "output/ccro_flush_eff_sweep_var_recovery_analysisType_SW_flushing_efficiency_sweep.h5"
+    sweep_file = "output/ccro_flush_eff_sweep_var_recovery_analysisType_SW_flushing_eff_sweep_var_recovery.h5"
     dm = PsDataManager(sweep_file)
-    n_filt_time_steps = 20
+    n_filt_time_steps = 10
     n_flush_time_steps = 5
     n_time_periods = n_filt_time_steps + n_flush_time_steps
 
@@ -16,6 +18,7 @@ if __name__ == "__main__":
     t0 = 0
     tf = n_time_periods - 1
     xvar = "Water Recovery"
+    xvar = "Flushing Efficiency"
     yvar = "LCOW"
     yvar = "Total Filtration Time"
     dm.register_data_key("costing.LCOW", "LCOW")
@@ -25,6 +28,7 @@ if __name__ == "__main__":
     dm.register_data_key("total_flush_volume", "Total Flushing Volume")
     dm.register_data_key("avg_product_flow_rate", "Average Product Flow Rate", "L/s")
     dm.register_data_key("cycle_time_ratio", "Cycle Time Ratio", "%")
+    dm.register_data_key("flushing.flushing_efficiency", "Flushing Efficiency")
     dm.register_data_key("overall_recovery", "Water Recovery", "%")
     dm.register_data_key(
         "costing.aggregate_flow_electricity", "Total Power Required", "kW"
@@ -47,12 +51,14 @@ if __name__ == "__main__":
             f"costing.LCOW_aggregate_direct_capex[{u}]", f"{n} Direct CAPEX"
         )
 
-    for t in range(n_time_periods):
+    for t in range(n_flush_time_steps):
+        print(t)
 
         dm.register_data_key(
             f"operation_time_points[{t}]",
             (t, "Operation Time Points"),
-            assign_units="s",
+            conversion_factor=1 / 60,
+            assign_units="min",
         )
         dm.register_data_key(
             f"blocks[{t}].process.fs.dead_volume.accumulation_time[0.0]",
@@ -154,38 +160,8 @@ if __name__ == "__main__":
         )
 
     dm.load_data()
-    t_sequence = list()
-    y_sequence = list()
-    # yvar = "Recycle Rate"
-    # yvar = "Pump 1 Pressure"
-    yvar = "Ramp Rate"
-    # yvar = "Pump 2 dP"
-    tvar = "Operation Time Points"
-    for t in time_periods:
-        t_sequence.append(dm[(t, tvar)].data)
-        y_sequence.append(dm[(t, yvar)].data)
-    y_sequence = [list(group) for group in zip(*y_sequence)]
-    # t_sequence.append(dm[(t, tvar)].data)
-    t_sequence = [list(group) for group in zip(*t_sequence)]
-    fig = FigureGenerator()
-    fig.init_figure()
-
-    for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
-
-        _r = f"{int(r)}%"
-        fig.plot_line(xdata=t, ydata=s, label=_r)
-
-    fig.set_axis_ticklabels(
-        xlabel="Cycle Time (s)",
-        ylabel=yvar + " (bar/min)",
-        ax_idx=0,
-    )
-    fig.add_legend()
-    # fig.show()
-
-    fig_save = sweep_file.replace(".h5", f"_{yvar}.png")
-    fig.save_fig(name=fig_save)
-
+    dm.display()
+    
     t_sequence = list()
     y_sequence = list()
     # yvar = "Recycle Rate"
@@ -193,27 +169,68 @@ if __name__ == "__main__":
     # yvar = "Ramp Rate"
     # yvar = "Pump 2 dP"
     tvar = "Operation Time Points"
+    recovery = 0.5
     for t in time_periods:
-        t_sequence.append(dm[(t, tvar)].data)
-        y_sequence.append(dm[(t, yvar)].data)
+        t_sequence.append(dm[(("overall_recovery", recovery), (t, tvar))].data)
+        y_sequence.append(dm[(("overall_recovery", recovery), (t, yvar))].data)
+        # print(dm[(("overall_recovery", 0.6), (t, tvar))].data)
+    #     t_sequence.append(dm[(t, tvar)].data)
+    #     y_sequence.append(dm[(t, yvar)].data)
+
     y_sequence = [list(group) for group in zip(*y_sequence)]
     # t_sequence.append(dm[(t, tvar)].data)
     t_sequence = [list(group) for group in zip(*t_sequence)]
+    print(t_sequence)
+
     fig = FigureGenerator()
     fig.init_figure()
+    # # print(dm[xvar].data)
 
-    for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
+
+    for t, s, r in zip(t_sequence, y_sequence, dm[(("overall_recovery", recovery), xvar)].data):
 
         _r = f"{int(r)}%"
-        fig.plot_line(xdata=t, ydata=s, label=_r)
+        fig.plot_line(xdata=t, ydata=s, label=r)
 
     fig.set_axis_ticklabels(
-        xlabel="Cycle Time (s)",
+        xlabel="Cycle Time (min)",
         ylabel=yvar,
         ax_idx=0,
     )
     fig.add_legend()
-    # fig.show()
+    fig.show()
 
     fig_save = sweep_file.replace(".h5", f"_{yvar}.png")
     fig.save_fig(name=fig_save)
+
+    # t_sequence = list()
+    # y_sequence = list()
+    # # yvar = "Recycle Rate"
+    # yvar = "Pump 1 Pressure"
+    # # yvar = "Ramp Rate"
+    # # yvar = "Pump 2 dP"
+    # tvar = "Operation Time Points"
+    # for t in time_periods:
+    #     t_sequence.append(dm[(t, tvar)].data)
+    #     y_sequence.append(dm[(t, yvar)].data)
+    # y_sequence = [list(group) for group in zip(*y_sequence)]
+    # # t_sequence.append(dm[(t, tvar)].data)
+    # t_sequence = [list(group) for group in zip(*t_sequence)]
+    # fig = FigureGenerator()
+    # fig.init_figure()
+
+    # for t, s, r in zip(t_sequence, y_sequence, dm[xvar].data):
+
+    #     _r = f"{int(r)}%"
+    #     fig.plot_line(xdata=t, ydata=s, label=_r)
+
+    # fig.set_axis_ticklabels(
+    #     xlabel="Cycle Time (s)",
+    #     ylabel=yvar,
+    #     ax_idx=0,
+    # )
+    # fig.add_legend()
+    # # fig.show()
+
+    # fig_save = sweep_file.replace(".h5", f"_{yvar}.png")
+    # fig.save_fig(name=fig_save)

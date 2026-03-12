@@ -110,6 +110,7 @@ if __name__ == "__main__":
         flushing_efficiency=0.6,
     )
     mp.flushing.flushing_efficiency.display()
+    mp.permeate_concentration.display()
     # for x in [0.25, 0.4, 0.5, 0.6, 0.75, 0.9]:
     #     mp.flushing.flushing_efficiency.fix(x)
     #     results = solve_model(mp)
