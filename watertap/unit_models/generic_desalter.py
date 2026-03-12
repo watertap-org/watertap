@@ -220,7 +220,7 @@ class GenericDesalterData(UnitModelBlockData):
             doc="Material properties in feed",
             defined_state=True,
             has_phase_equilibrium=False,
-            **self.config.property_package_args
+            **self.config.property_package_args,
         )
         self.product_properties[0].define_state_vars()
         self.add_inlet_port(
