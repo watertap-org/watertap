@@ -55,24 +55,29 @@ def scale_filtration_system(m):
 
 def scale_multiperiod_model(mp):
 
-    iscale.set_scaling_factor(mp.dead_volume_to_area_ratio, 1e2)
-    iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
-    iscale.set_scaling_factor(mp.total_cycle_time, 1e-3)
-    iscale.set_scaling_factor(mp.total_filtration_time, 1e-3)
     blks = list(mp.get_active_process_blocks())
     b0 = blks[mp.TIME.first()]
     flow_vol = b0.fs.raw_feed.properties[0].flow_vol_phase["Liq"].value
     perm_conc = b0.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"].value
-    iscale.set_scaling_factor(mp.permeate_concentration, 1 / perm_conc)
-    iscale.set_scaling_factor(mp.total_feed_vol, 1 / (flow_vol * 3600))
-    iscale.constraint_scaling_transform(
-        mp.total_permeate_vol_constraint, 1 / (flow_vol * 3600)
-    )
-    iscale.set_scaling_factor(mp.total_permeate_vol, 1 / (flow_vol * 3600))
-    iscale.constraint_scaling_transform(mp.total_feed_vol_constraint, 1 / (flow_vol * 3600))
 
-    iscale.set_scaling_factor(mp.avg_product_flow_rate, 1 / (flow_vol))
-    iscale.constraint_scaling_transform(mp.eq_avg_product_flow_rate, 1 / (flow_vol))
+    ### VARIABLES ###
+    iscale.set_scaling_factor(mp.dead_volume_to_area_ratio, 1e2)
+    iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
+    iscale.set_scaling_factor(mp.total_cycle_time, 1e-3)
+    iscale.set_scaling_factor(mp.total_filtration_time, 1e-3)
+    iscale.set_scaling_factor(mp.filtration_ramp_rate, 1)
+    iscale.set_scaling_factor(mp.permeate_concentration, 10)
+    iscale.set_scaling_factor(mp.total_feed_vol, 1 / (flow_vol * 3600))
+    iscale.set_scaling_factor(mp.total_permeate_vol, 10)
+    iscale.set_scaling_factor(mp.total_permeate_salt, 10)
+    iscale.set_scaling_factor(mp.avg_product_flow_rate, 1 / flow_vol)
+    
+    ### CONSTRAINTS ###
+    iscale.constraint_scaling_transform(mp.total_feed_vol_constraint, 1 / (flow_vol * 3600))
+    iscale.constraint_scaling_transform(mp.eq_avg_product_flow_rate, 1 / flow_vol)
+    iscale.constraint_scaling_transform(mp.total_permeate_vol_constraint, 0.1)
+    iscale.constraint_scaling_transform(mp.total_permeate_salt_constraint, 0.1)
+    iscale.constraint_scaling_transform(mp.permeate_concentration_constraint, 0.1)
 
     iscale.constraint_scaling_transform(mp.total_filtration_time_constraint, 1e-3)
     iscale.constraint_scaling_transform(mp.total_cycle_time_constraint, 1e-3)

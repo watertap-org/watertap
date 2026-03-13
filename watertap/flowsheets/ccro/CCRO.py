@@ -504,6 +504,7 @@ def setup_optimization(
     mp.total_cycle_time.setlb(min_cycle_time_hr * pyunits.hours)
     mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
+    # mp.max_permeate_concentration_constraint.activate()
     print("DOF for optimization:", degrees_of_freedom(mp))
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
         if m.fs.find_component("RO") is not None:
