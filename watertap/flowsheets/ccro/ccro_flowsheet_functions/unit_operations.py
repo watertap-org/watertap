@@ -129,7 +129,10 @@ def build_ro_systems(use_ro_with_hold_up=True, finite_elements=5):
     return m
 
 
-def intialize_ro_systems(m):
+def intialize_ro_systems(m, **kwargs):
+
+    use_interval_initializer = kwargs.get("use_interval_initializer", True)
+
     propagate_state(m.fs.raw_feed_to_P1)
 
     # m.fs.P2.outlet.pressure[0].fix(m.fs.P1.outlet.pressure[0].value)
@@ -141,7 +144,7 @@ def intialize_ro_systems(m):
     m.fs.M1.initialize()
 
     propagate_state(m.fs.M1_to_RO)
-    m.fs.RO.initialize()
+    m.fs.RO.initialize(use_interval_initializer=use_interval_initializer)
 
     propagate_state(m.fs.RO_permeate_to_product)
     propagate_state(m.fs.RO_retentate_to_dead_volume)
@@ -283,7 +286,10 @@ def build_flushing_with_RO(use_ro_with_hold_up=True, finite_elements=5):
     return m
 
 
-def initialize_flushing_with_RO(m):
+def initialize_flushing_with_RO(m, **kwargs):
+
+    use_interval_initializer = kwargs.get("use_interval_initializer", True)
+
     propagate_state(m.fs.raw_feed_to_P1)
 
     propagate_state(m.fs.conduit_feed_to_P2)
@@ -299,7 +305,7 @@ def initialize_flushing_with_RO(m):
     m.fs.M1.initialize()
 
     propagate_state(m.fs.M1_to_RO)
-    m.fs.RO.initialize()
+    m.fs.RO.initialize(use_interval_initializer=use_interval_initializer)
     m.fs.conduit_feed.properties[0].pressure = m.fs.RO.retentate.pressure[0].value
     m.fs.conduit_feed.properties[0].pressure.unfix()
     propagate_state(m.fs.RO_permeate_to_product)

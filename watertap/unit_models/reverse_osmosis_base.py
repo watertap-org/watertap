@@ -603,6 +603,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        use_interval_initializer=True,
     ):
         """
         General wrapper for RO initialization routines
@@ -676,7 +677,11 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         #     )
 
         # pre-solve using interval arithmetic
-        interval_initializer(self)
+        if use_interval_initializer:
+            init_log.info("Starting unit initialization WITH interval arithmetic pre-solve...")
+            interval_initializer(self)
+        else:
+            init_log.info("Starting unit initialization WITHOUT interval arithmetic pre-solve...")
 
         # Create solver
         opt = get_solver(solver, optarg)

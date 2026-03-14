@@ -575,7 +575,7 @@ def deactivate_mp_constraints(mp):
     mp.equal_delta_dead_volume_constraint.deactivate()
     mp.equal_recycle_rate.deactivate()
     mp.global_dead_volume_constraint.deactivate()
-    
+
     if b0.fs.ro_model_with_hold_up:
         mp.global_ro_volume_constraint.deactivate()
         mp.equal_ro_volume_constraint.deactivate()
