@@ -68,6 +68,7 @@ def ccro_mesh_plotting(water_type="BW"):
 
     fig.show()
 
+
 def ccro_line_plotting(
     n_filt_time_steps=10,
     n_flush_time_steps=5,
@@ -79,8 +80,8 @@ def ccro_line_plotting(
         "height": 4,
     },
     linedict={},
-    title=None,):
-
+    title=None,
+):
 
     sweep_file = f"{here}/output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5"
     if n_time_steps is None:
@@ -129,13 +130,12 @@ def ccro_line_plotting(
     # for d in dm.keys():
     #     print(d, dm[d].data)
     # for d, key in dm.keys():
-        # if key == zdict["label"]:
-        #     z = list()
-        #     for da in dm[d, key].data:
-        #         z.append(float(da))
-        #         print(d, key, da)
-            # ydata.append(z)
-
+    # if key == zdict["label"]:
+    #     z = list()
+    #     for da in dm[d, key].data:
+    #         z.append(float(da))
+    #         print(d, key, da)
+    # ydata.append(z)
 
 
 def ccro_map_plotting(
@@ -248,8 +248,8 @@ if __name__ == "__main__":
         "var": "costing.SEC",
         "label": "SEC",
     }
-# f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
-# f"blocks[{t}].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
+    # f"blocks[{t}].process.fs.RO.recovery_vol_phase[0.0,Liq]",
+    # f"blocks[{t}].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
     zdict = {
         "var": "blocks[0].process.fs.RO.area",
         "label": "RO Area",
@@ -276,9 +276,9 @@ if __name__ == "__main__":
         "units": "min",
     }
 
-        # auto_sig_0_1=2,
-        # auto_sig_1_10=1,
-        # auto_sig_10_inf=0,
+    # auto_sig_0_1=2,
+    # auto_sig_1_10=1,
+    # auto_sig_10_inf=0,
     mapdict = {"textfontsize": 8, "auto_sig_1_10": 2}
 
     fig_init = {
@@ -291,7 +291,6 @@ if __name__ == "__main__":
     # ccro_map_plotting(zdict=zdict, xdict=xdict, ydict=ydict, mapdict=mapdict, fig_init=fig_init, title=title)
 
     ########################################################
-
 
     xdict = {
         "var": "overall_recovery",
@@ -339,8 +338,9 @@ if __name__ == "__main__":
         "color": "blue",
     }
 
-
-    ccro_line_plotting(xdict=xdict, ydict=ydict, fig_init=fig_init, title=title, linedict=linedict)
+    ccro_line_plotting(
+        xdict=xdict, ydict=ydict, fig_init=fig_init, title=title, linedict=linedict
+    )
 
     # ccro_mesh_plotting("SW")
 

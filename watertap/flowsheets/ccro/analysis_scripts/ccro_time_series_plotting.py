@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     dm.load_data()
     dm.display()
-    
+
     t_sequence = list()
     y_sequence = list()
     # yvar = "Recycle Rate"
@@ -186,8 +186,9 @@ if __name__ == "__main__":
     fig.init_figure()
     # # print(dm[xvar].data)
 
-
-    for t, s, r in zip(t_sequence, y_sequence, dm[(("overall_recovery", recovery), xvar)].data):
+    for t, s, r in zip(
+        t_sequence, y_sequence, dm[(("overall_recovery", recovery), xvar)].data
+    ):
 
         _r = f"{int(r)}%"
         fig.plot_line(xdata=t, ydata=s, label=r)
