@@ -15,7 +15,7 @@ def build(
     fixed_setup=False,
     A_comp=1.5,  # LMH/bar; default for SWRO
     B_comp=0.1,  # LMH; default for SWRO
-    min_cycle_time_hr=10 / 60,  # 10 minutes
+    min_cycle_time_hr=1 / 60,  # 10 minutes
     max_cycle_time_hr=1,  # 1 hour
     cross_flow=2,
     osmotic_overpressure=2,
@@ -23,8 +23,15 @@ def build(
     overall_water_recovery=0.5,
     accumulation_time=5,
     flushing_efficiency=0.25,
+    use_interval_initializer=True,
     **kwargs,
 ):
+
+    if feed_tds <= 10:
+        # Use brackish water RO parameters if salinity <=10 g/L
+        A_comp = 5
+        B_comp = 0.5
+
     cc_config = CCROConfiguration()
     cc_config["A_comp"] = A_comp * (
         pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar
@@ -41,6 +48,7 @@ def build(
         include_costing=True,
         use_ro_with_hold_up=use_hold_up,
         cc_configuration=cc_config,
+        use_interval_initializer=use_interval_initializer,
     )
     if not fixed_setup:
         CCRO.setup_optimization(
@@ -150,7 +158,37 @@ def solve_model(mp, **kwargs):
 
 if __name__ == "__main__":
 
-    mp = build(feed_tds=35, A_comp=1.5, B_comp=0.1, osmotic_overpressure=2)
+    # mp = build(
+    #     feed_tds=35,
+    #     A_comp=1.5,
+    #     B_comp=0.1,
+    #     osmotic_overpressure=2,
+    #     overall_water_recovery=0.4,
+    # )
+
+    mp = build(
+        feed_tds=75,
+        A_comp=1.5,
+        B_comp=0.1,
+        osmotic_overpressure=3,
+        overall_water_recovery=0.4,
+        use_interval_initializer=False,
+    )
+    mp.operation_time_points.display()
+    mp.total_filtration_time.display()
+    mp.total_flushing_time.display()
+    mp.total_cycle_time.display()
+    mp.ramp_rate.display()
+    mp.costing.LCOW.display()
+    mp.costing.SEC.display()
+    mp.total_permeate_vol.display()
+    mp.total_permeate_salt.display()
+    mp.permeate_concentration.display()
+    mp.total_flush_volume.display()
+    mp.avg_product_flow_rate.display()
+    mp.total_feed_vol.display()
+    mp.avg_feed_flow_rate.display()
+
     # mp.blocks[9].process.fs.RO.display()
     # mp.blocks[9].process.fs.P1.display()
     # mp.blocks[9].process.fs.P2.display()

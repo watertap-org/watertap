@@ -107,6 +107,7 @@ def scale_flushing_system(m=None):
 
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-1)
+    # iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
     overscale_ro(m.fs.RO, m.fs.properties)
 
     iscale.set_scaling_factor(m.fs.dead_volume.dead_volume.mass_frac_phase_comp, 1)
