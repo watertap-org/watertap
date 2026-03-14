@@ -1,6 +1,96 @@
 import idaes.core.util.scaling as iscale
 
 
+def overscale_ro(ro, props):
+    h2o_scale = props._default_scaling_factors["flow_mass_phase_comp", ("Liq", "H2O")]
+    NaCl_scale = props._default_scaling_factors["flow_mass_phase_comp", ("Liq", "NaCl")]
+    scales = {"H2O": h2o_scale, "NaCl": NaCl_scale}
+
+    iscale.set_scaling_factor(ro.area, 1e-2)
+    iscale.constraint_scaling_transform(ro.eq_area, 1 / 100)
+    iscale.set_scaling_factor(ro.width, 1)
+    iscale.set_scaling_factor(ro.length, 1)
+    stage = ro
+    for e in stage.feed_side.velocity:
+        iscale.set_scaling_factor(stage.feed_side.velocity[e], 1)
+
+    iscale.constraint_scaling_transform(stage.eq_area, 1 / 10)
+
+    for temp_stream in [
+        stage.eq_permeate_isothermal,
+        stage.feed_side.eq_equal_temp_interface,
+        stage.feed_side.eq_feed_isothermal,
+        stage.eq_permeate_outlet_isothermal,
+    ]:
+        for e in temp_stream:
+            iscale.constraint_scaling_transform(temp_stream[e], 1e-2)
+    for pressure_stream in [
+        stage.eq_permeate_outlet_isobaric,
+        stage.feed_side.eq_equal_pressure_interface,
+    ]:
+        for e in pressure_stream:
+            iscale.constraint_scaling_transform(pressure_stream[e], 1e-5)
+    for e in stage.eq_pressure_drop:
+        iscale.constraint_scaling_transform(stage.eq_pressure_drop[e], 1e-4)
+    for e in stage.feed_side.eq_K:
+        iscale.constraint_scaling_transform(stage.feed_side.eq_K[e], 1e4)
+
+    for e in stage.feed_side.eq_N_Sh_comp:
+        iscale.constraint_scaling_transform(stage.feed_side.eq_N_Sh_comp[e], 1e-2)
+    for e in stage.feed_side.eq_N_Re:
+        iscale.constraint_scaling_transform(stage.feed_side.eq_N_Re[e], 1e2)
+
+    for e in stage.feed_side.eq_friction_factor:
+        iscale.constraint_scaling_transform(stage.feed_side.eq_friction_factor[e], 1e-2)
+    for e in stage.feed_side.eq_dP_dx:
+        iscale.constraint_scaling_transform(stage.feed_side.eq_dP_dx[e], 1e-3)
+
+    for e in stage.feed_side.eq_equal_flow_vol_interface:
+        iscale.constraint_scaling_transform(
+            stage.feed_side.eq_equal_flow_vol_interface[e], 1e1
+        )
+
+    for e in stage.eq_mass_transfer_term:
+        sf = scales[e[-1]]
+        iscale.constraint_scaling_transform(stage.eq_mass_transfer_term[e], sf * 10)
+    for e in stage.feed_side.mass_transfer_term:
+        sf = scales[e[-1]]
+        iscale.set_scaling_factor(stage.feed_side.mass_transfer_term[e], sf * 10)
+    for e in stage.eq_mass_flux_equal_mass_transfer:
+        sf = scales[e[-1]]
+        iscale.constraint_scaling_transform(
+            stage.eq_mass_flux_equal_mass_transfer[e], sf
+        )
+    for e in stage.eq_connect_mass_transfer:
+        if e[-1] == "H2O":
+            sf = sf * 10
+        if e[-1] == "NaCl":
+            sf = sf * 100
+        sf = scales[e[-1]]
+        iscale.constraint_scaling_transform(stage.eq_connect_mass_transfer[e], sf)
+    for e in stage.eq_recovery_mass_phase_comp:
+        sf = scales[e[-1]]
+        if e[-1] == "H2O":
+            sf = sf * 10
+        if e[-1] == "NaCl":
+            sf = sf * 100
+        iscale.set_scaling_factor(stage.eq_recovery_mass_phase_comp[e], sf)
+    for e in stage.eq_permeate_production:
+        sf = scales[e[-1]]
+        if e[-1] == "H2O":
+            sf = sf * 10
+        if e[-1] == "NaCl":
+            sf = sf * 100
+        iscale.constraint_scaling_transform(stage.eq_permeate_production[e], sf)
+    for e in stage.eq_flux_mass:
+        sf = scales[e[-1]]
+        if e[-1] == "H2O":
+            sf = sf * 10
+        if e[-1] == "NaCl":
+            sf = sf * 100
+        iscale.constraint_scaling_transform(stage.eq_flux_mass[e], sf)
+
+
 def scale_flushing_system(m=None):
     """
     Scale flushing model configuration
@@ -17,6 +107,7 @@ def scale_flushing_system(m=None):
 
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-1)
+    overscale_ro(m.fs.RO, m.fs.properties)
 
     iscale.set_scaling_factor(m.fs.dead_volume.dead_volume.mass_frac_phase_comp, 1)
     iscale.set_scaling_factor(m.fs.dead_volume.delta_state.mass_frac_phase_comp, 1)
@@ -24,7 +115,6 @@ def scale_flushing_system(m=None):
     iscale.constraint_scaling_transform(m.fs.pre_flushing_conc_constraint, 1)
     iscale.set_scaling_factor(m.fs.flushing.pre_flushing_concentration, 1)
     iscale.set_scaling_factor(m.fs.flushing.post_flushing_concentration, 1)
-
     iscale.calculate_scaling_factors(m)
 
 
@@ -45,7 +135,7 @@ def scale_filtration_system(m):
 
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-1)
-    iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
+    overscale_ro(m.fs.RO, m.fs.properties)
 
     iscale.set_scaling_factor(m.fs.dead_volume.dead_volume.mass_frac_phase_comp, 1)
     iscale.set_scaling_factor(m.fs.dead_volume.delta_state.mass_frac_phase_comp, 1)
@@ -71,9 +161,11 @@ def scale_multiperiod_model(mp):
     iscale.set_scaling_factor(mp.total_permeate_vol, 10)
     iscale.set_scaling_factor(mp.total_permeate_salt, 10)
     iscale.set_scaling_factor(mp.avg_product_flow_rate, 1 / flow_vol)
-    
+
     ### CONSTRAINTS ###
-    iscale.constraint_scaling_transform(mp.total_feed_vol_constraint, 1 / (flow_vol * 3600))
+    iscale.constraint_scaling_transform(
+        mp.total_feed_vol_constraint, 1 / (flow_vol * 3600)
+    )
     iscale.constraint_scaling_transform(mp.eq_avg_product_flow_rate, 1 / flow_vol)
     iscale.constraint_scaling_transform(mp.total_permeate_vol_constraint, 0.1)
     iscale.constraint_scaling_transform(mp.total_permeate_salt_constraint, 0.1)

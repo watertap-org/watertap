@@ -4,6 +4,8 @@ from watertap.flowsheets.ccro.utils.cc_configuration import CCROConfiguration
 from pyomo.environ import units as pyunits
 from idaes.core.util.model_statistics import degrees_of_freedom
 
+import idaes.core.util.scaling as iscale
+
 
 def build(
     time_steps=10,
@@ -71,12 +73,64 @@ def build(
     mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!
     first_block = blks[0]
     first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
+    # mp.cost_objective.deactivate()
+    # mp.cost_product_objective.activate()
     solve_model(mp)
+    mp.max_permeate_concentration_constraint.activate()
+    solve_model(mp)
+    # mp.cost_objective.activate()
+    # mp.cost_product_objective.deactivate()
     first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
     # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
     #     cross_flow * pyunits.L / pyunits.s
     # )
     return mp
+
+
+def check_jac(m, print_extreme_jacobian_values=True):
+    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(m, min_scale=1e-8)
+    try:
+        cond_number = iscale.jacobian_cond(m, jac=jac_scaled) / 1e10
+        print("--------------------------")
+        print("COND NUMBER:", cond_number)
+    except:
+        print("Cond number failed")
+        cond_number = None
+    if print_extreme_jacobian_values:
+        print("--------------------------")
+        print("Extreme Jacobian entries:")
+        extreme_entries = iscale.extreme_jacobian_entries(
+            m, jac=jac_scaled, nlp=nlp, zero=1e-20, large=100
+        )
+        for val, var, con in extreme_entries:
+            print(val, var.name, con.name)
+        print("--------------------------")
+        print("Extreme Jacobian columns:")
+        extreme_cols = iscale.extreme_jacobian_columns(
+            m, jac=jac_scaled, nlp=nlp, small=1e-3
+        )
+        for val, var in extreme_cols:
+            print(val, var.name)
+        print("------------------------")
+        print("Extreme Jacobian rows:")
+        extreme_rows = iscale.extreme_jacobian_rows(
+            m, jac=jac_scaled, nlp=nlp, small=1e-3
+        )
+        for val, con in extreme_rows:
+            print(val, con.name)
+
+    for i in iscale.list_unscaled_variables(m):
+        print("Var with no scale:", i)
+    for i in iscale.list_unscaled_constraints(m):
+        print("Constraint with no scale:", i)
+    for var, scale in iscale.badly_scaled_var_generator(m):
+        print(
+            "Badly scaled variable:",
+            var.name,
+            var.value,
+            iscale.get_scaling_factor(var),
+        )
+    return cond_number
 
 
 def build_for_flush_eff(overall_recovery=0.5, **kwargs):
@@ -97,12 +151,14 @@ def solve_model(mp, **kwargs):
 if __name__ == "__main__":
 
     mp = build(feed_tds=35, A_comp=1.5, B_comp=0.1, osmotic_overpressure=2)
-    mp.blocks[0].process.fs.RO.mixed_permeate.display()
-    mp.total_permeate_vol.display()
-    mp.total_permeate_salt.display()
-    mp.permeate_concentration.display()
-    mp.total_cycle_time.display()
-    
+    # mp.blocks[9].process.fs.RO.display()
+    # mp.blocks[9].process.fs.P1.display()
+    # mp.blocks[9].process.fs.P2.display()
+    # mp.total_permeate_vol.display()
+    # mp.total_permeate_salt.display()
+    # mp.permeate_concentration.display()
+    # mp.total_cycle_time.display()
+    # check_jac(mp)
     # mp.overall_recovery.fix(0.5)
     # results = solve_model(mp)
     # mp.flushing.flushing_efficiency.fix(0.4)

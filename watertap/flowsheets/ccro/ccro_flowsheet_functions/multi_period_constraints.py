@@ -71,7 +71,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
     mp.total_permeate_vol = Var(
         initialize=0.5,
         domain=NonNegativeReals,
-        bounds=(0, 10),
+        bounds=(0, None),
         units=pyunits.m**3,
         doc="Total permeate volume produced over all time periods",
     )
@@ -79,7 +79,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
     mp.total_permeate_salt = Var(
         initialize=1,
         domain=NonNegativeReals,
-        bounds=(0, 20),
+        bounds=(0, None),
         units=pyunits.kg,
         doc="Total permeate salt produced over all time periods",
     )
@@ -88,7 +88,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
         initialize=0.5,
         domain=NonNegativeReals,
         # bounds=(0, perm_conc_ub),
-        # bounds=(0, 2), 
+        # bounds=(0, 2),
         units=pyunits.g / pyunits.liter,
         doc="Concentration of salt in the permeate",
     )
@@ -154,7 +154,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
     mp.filtration_ramp_rate = Var(
         # mp.filtration_set,
         initialize=0.25,
-        bounds=(0.01, 1),
+        bounds=(0.01, 50),
         units=pyunits.bar / pyunits.min,
         doc="Pressure ramp rate during filtration steps",
     )
@@ -526,7 +526,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
     @mp.Constraint(doc="Upper bound on permeate concentration")
     def max_permeate_concentration_constraint(b):
         return b.permeate_concentration <= 0.5
-    
+
     mp.max_permeate_concentration_constraint.deactivate()
 
     # total_flush_volume

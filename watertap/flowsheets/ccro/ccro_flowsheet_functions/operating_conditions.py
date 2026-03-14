@@ -116,7 +116,7 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
             m.fs.RO.feed_side.velocity[0, 0].fix(0.15)
         m.fs.RO.feed_side.channel_height.fix(cc_configuration["channel_height"])
         m.fs.RO.feed_side.spacer_porosity.fix(cc_configuration["spacer_porosity"])
-
+        m.fs.RO.mixed_permeate[0].conc_mass_phase_comp[...]
         m.fs.RO.permeate.pressure[0].fix(101325 * pyunits.Pa)
 
         m.fs.RO.feed_side.friction_factor_darcy.setub(200)
@@ -247,7 +247,7 @@ def set_operating_conditions(m, cc_configuration=None, **kwargs):
         )
         # Pump 2 operating conditions
         m.fs.P2.efficiency_pump.fix(cc_configuration["p2_eff"])
-
+        m.fs.RO.mixed_permeate[0].conc_mass_phase_comp[...]
         # Set RO configuration parameters
         m.fs.RO.A_comp.fix(cc_configuration["A_comp"])
         m.fs.RO.B_comp.fix(cc_configuration["B_comp"])

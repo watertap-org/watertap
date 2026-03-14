@@ -506,11 +506,12 @@ def setup_optimization(
     mp.equal_recycle_rate.activate()
     # mp.max_permeate_concentration_constraint.activate()
     print("DOF for optimization:", degrees_of_freedom(mp))
+    mp.permeate_quality = []
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
         if m.fs.find_component("RO") is not None:
             m.fs.RO.length.unfix()
             m.fs.RO.width.unfix()
-            m.fs.RO.length.setlb(0.1 * pyunits.meter)
+            m.fs.RO.length.setlb(1 * pyunits.meter)
             m.fs.RO.width.setlb(0.1 * pyunits.meter)
             m.fs.RO.area.setlb(50 * pyunits.meter**2)
             m.fs.RO.area.unfix()
@@ -518,8 +519,11 @@ def setup_optimization(
                 0.001 * pyunits.kg / pyunits.m**2 / pyunits.hr
             )
             m.fs.RO.feed_side.velocity[0, 0].setub(0.3)
-            m.fs.RO.feed_side.velocity[0, 0].setlb(0.05)
+            m.fs.RO.feed_side.velocity[0, 0].setlb(0.1)
             m.fs.RO.feed_side.velocity[0, 0].unfix()
+            mp.permeate_quality.append(
+                m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"]
+            )
             if m.fs.ro_model_with_hold_up:
                 for i in m.fs.RO.difference_elements:
                     m.fs.RO.feed_side.volume.unfix()
@@ -527,7 +531,7 @@ def setup_optimization(
                     m.fs.RO.feed_side.accumulation_time.setlb(
                         min_accumulation_time * pyunits.seconds
                     )
-                    # should be redundunt
+                    # should be redundant
                     m.fs.RO.feed_side.delta_state.node_mass_frac_phase_comp[
                         0, i, "Liq", "NaCl"
                     ].unfix()
@@ -579,7 +583,22 @@ def setup_optimization(
     if mp.include_costing:
         mp.cost_objective = Objective(expr=mp.costing.LCOW)
 
+        mp.cost_product_objective = Objective(
+            expr=sum((prm - 0.5) ** 2 for prm in mp.permeate_quality)
+        )
+        mp.cost_product_objective.deactivate()
+
     print("DOF for optimization:", degrees_of_freedom(mp))
+
+
+def activate_permeate_quality(mp):
+    for pq in mp.permeate_quality:
+        pq.setub(0.5)
+
+
+def deactivate_permeate_quality(mp):
+    for pq in mp.permeate_quality:
+        pq.setub(None)
 
 
 def fix_optimization_dofs(
@@ -793,9 +812,7 @@ def print_results_table(mp, w=15):
     summary["Post-flushing conc (kg/m3)"] = (
         flushing_block.post_flushing_concentration.value
     )
-    summary["Recycle loop concentration (kg/m3)"] = (
-        mp.recycle_loop_concentration.value
-    )
+    summary["Recycle loop concentration (kg/m3)"] = mp.recycle_loop_concentration.value
     summary["Ramp Rate (bar/min)"] = mp.filtration_ramp_rate.value
     summary["Overall recovery"] = mp.overall_recovery.value
     summary["Total feed (m3)"] = mp.total_feed_vol.value
@@ -877,6 +894,13 @@ def print_results_table(mp, w=15):
                     to_units=pyunits.L,
                 )
             )
+            row["RO Flux (LMH)"] = value(
+                m.fs.RO.flux_mass_phase_comp_avg[0.0, "Liq", "H2O"] * 3600
+            )
+            row["Permeate NaCl"] = value(
+                m.fs.RO.mixed_permeate[0].conc_mass_phase_comp["Liq", "NaCl"]
+            )
+            row["Rejection"] = value(m.fs.RO.rejection_phase_comp[0.0, "Liq", "NaCl"])
             row["RO acc time"] = value(m.fs.RO.feed_side.accumulation_time[0])
         if m.fs.find_component("dead_volume") is not None:
             row["Dead Vol In (L/min)"] = value(
@@ -885,26 +909,26 @@ def print_results_table(mp, w=15):
                     to_units=pyunits.L / pyunits.min,
                 )
             )
-            row["Dead Vol Out (L/min)"] = value(
-                pyunits.convert(
-                    m.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase[
-                        "Liq"
-                    ],
-                    to_units=pyunits.L / pyunits.min,
-                )
-            )
-            row["Dead volume"] = value(
-                pyunits.convert(
-                    m.fs.dead_volume.volume[0, "Liq"],
-                    to_units=pyunits.L,
-                )
-            )
-            row["Delta volume"] = value(
-                pyunits.convert(
-                    m.fs.dead_volume.delta_state.volume[0, "Liq"],
-                    to_units=pyunits.L,
-                )
-            )
+            # row["Dead Vol Out (L/min)"] = value(
+            #     pyunits.convert(
+            #         m.fs.dead_volume.dead_volume.properties_out[0].flow_vol_phase[
+            #             "Liq"
+            #         ],
+            #         to_units=pyunits.L / pyunits.min,
+            #     )
+            # )
+            # row["Dead volume"] = value(
+            #     pyunits.convert(
+            #         m.fs.dead_volume.volume[0, "Liq"],
+            #         to_units=pyunits.L,
+            #     )
+            # )
+            # row["Delta volume"] = value(
+            #     pyunits.convert(
+            #         m.fs.dead_volume.delta_state.volume[0, "Liq"],
+            #         to_units=pyunits.L,
+            #     )
+            # )
         if row:
             detail_data[m.name] = row
 
