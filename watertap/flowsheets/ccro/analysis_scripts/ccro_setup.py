@@ -15,7 +15,7 @@ def build(
     fixed_setup=False,
     A_comp=1.5,  # LMH/bar; default for SWRO
     B_comp=0.1,  # LMH; default for SWRO
-    min_cycle_time_hr=1 / 60,  # 10 minutes
+    min_cycle_time_hr=10 / 60,  # 10 minutes
     max_cycle_time_hr=1,  # 1 hour
     cross_flow=2,
     osmotic_overpressure=2,
@@ -50,22 +50,22 @@ def build(
         cc_configuration=cc_config,
         use_interval_initializer=use_interval_initializer,
     )
-    if not fixed_setup:
-        CCRO.setup_optimization(
-            mp,
-            overall_water_recovery=overall_water_recovery,
-            min_cycle_time_hr=min_cycle_time_hr,
-            max_cycle_time_hr=max_cycle_time_hr,
-            recycle_flow_bounds=recycle_flow_bounds,
-        )
-    else:
-        CCRO.setup_optimization(
-            mp,
-            overall_water_recovery=0.5,
-            max_cycle_time_hr=5,
-            recycle_flow_bounds=(1, 50),
-            # use_ro_with_hold_up=True,
-        )
+    # if not fixed_setup:
+    CCRO.setup_optimization(
+        mp,
+        overall_water_recovery=overall_water_recovery,
+        min_cycle_time_hr=min_cycle_time_hr,
+        max_cycle_time_hr=max_cycle_time_hr,
+        recycle_flow_bounds=recycle_flow_bounds,
+    )
+    # else:
+    #     CCRO.setup_optimization(
+    #         mp,
+    #         overall_water_recovery=0.5,
+    #         max_cycle_time_hr=5,
+    #         recycle_flow_bounds=(1, 50),
+    #         # use_ro_with_hold_up=True,
+    #     )
         # CCRO.fix_optimization_dofs(
         #     mp,
         #     overal_water_recovery=0.5,
@@ -170,48 +170,10 @@ if __name__ == "__main__":
         feed_tds=75,
         A_comp=1.5,
         B_comp=0.1,
+        time_steps=20,
+        n_flushing_points=5,
         osmotic_overpressure=3,
-        overall_water_recovery=0.4,
+        overall_water_recovery=0.2,
         use_interval_initializer=False,
     )
-    mp.operation_time_points.display()
-    mp.total_filtration_time.display()
-    mp.total_flushing_time.display()
-    mp.total_cycle_time.display()
     mp.ramp_rate.display()
-    mp.costing.LCOW.display()
-    mp.costing.SEC.display()
-    mp.total_permeate_vol.display()
-    mp.total_permeate_salt.display()
-    mp.permeate_concentration.display()
-    mp.total_flush_volume.display()
-    mp.avg_product_flow_rate.display()
-    mp.total_feed_vol.display()
-    mp.avg_feed_flow_rate.display()
-
-    # mp.blocks[9].process.fs.RO.display()
-    # mp.blocks[9].process.fs.P1.display()
-    # mp.blocks[9].process.fs.P2.display()
-    # mp.total_permeate_vol.display()
-    # mp.total_permeate_salt.display()
-    # mp.permeate_concentration.display()
-    # mp.total_cycle_time.display()
-    # check_jac(mp)
-    # mp.overall_recovery.fix(0.5)
-    # results = solve_model(mp)
-    # mp.flushing.flushing_efficiency.fix(0.4)
-    # results = solve_model(mp)
-
-    # mp = build_for_flush_eff(
-    #     overall_recovery=0.5,
-    #     feed_tds=35,
-    #     A_comp=1.5,
-    #     B_comp=0.1,
-    #     flushing_efficiency=0.6,
-    # )
-    # mp.flushing.flushing_efficiency.display()
-    # mp.max_permeate_concentration_constraint.activate()
-    # results = solve_model(mp)
-    # for x in [0.25, 0.4, 0.5, 0.6, 0.75, 0.9]:
-    #     mp.flushing.flushing_efficiency.fix(x)
-    #     results = solve_model(mp)

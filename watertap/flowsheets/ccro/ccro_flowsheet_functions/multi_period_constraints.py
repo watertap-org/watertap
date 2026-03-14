@@ -18,6 +18,17 @@ def add_multiperiod_variables(mp, cc_configuration=None):
     """
     Add variables to the multiperiod model.
     """
+
+    # For recording in model results
+    mp.n_total_points = Var()
+    mp.n_total_points.fix(mp.total_points)
+
+    mp.n_filtration_points = Var()
+    mp.n_filtration_points.fix(mp.filtration_points)
+
+    mp.n_flushing_points = Var()
+    mp.n_flushing_points.fix(mp.flushing_points)
+    
     mp.dead_volume_to_area_ratio = Var(
         initialize=1,
         domain=NonNegativeReals,
