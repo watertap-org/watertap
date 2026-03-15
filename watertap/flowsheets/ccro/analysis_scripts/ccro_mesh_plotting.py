@@ -70,6 +70,7 @@ def ccro_mesh_plotting(water_type="BW"):
 
 
 def ccro_line_plotting(
+        water="SW",
     n_filt_time_steps=10,
     n_flush_time_steps=5,
     n_time_steps=None,
@@ -83,20 +84,20 @@ def ccro_line_plotting(
     title=None,
 ):
 
-    sweep_file = f"{here}/output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5"
+    sweep_file = f"{here}/output/ccro_recovery_sweep_analysisType_{water}_recovery_sweep.h5"
     if n_time_steps is None:
 
         n_time_steps = n_filt_time_steps + n_flush_time_steps
 
-    if "units" not in ydict.keys():
-        ydict["units"] = None
+    # if "units" not in ydict.keys():
+    #     ydict["units"] = None
 
-    cycle_time = list(range(n_time_steps))
+    # cycle_time = list(range(n_time_steps))
 
     dm = PsDataManager(sweep_file)
 
-    dm.register_data_key(f"{xdict['var']}", xdict["label"], xdict["units"])
-    dm.register_data_key(f"{ydict['var']}", ydict["label"], ydict["units"])
+    dm.register_data_key(f"{xdict['var']}", xdict["label"], xdict.get("units", None))
+    dm.register_data_key(f"{ydict['var']}", ydict["label"], ydict.get("units", None))
 
     dm.load_data()
     dm.display()
@@ -123,6 +124,9 @@ def ccro_line_plotting(
         ylabel=ydict["label"],
         ax_idx=0,
     )
+    if title is not None:
+        ax = fig.get_axis(0)
+        ax.set_title(title)
 
     fig_save = sweep_file.replace(".h5", f"_LINE_{ydict['label']}.png")
     fig.save_fig(name=fig_save)
@@ -292,55 +296,110 @@ if __name__ == "__main__":
 
     ########################################################
 
+    sw_ticks = [40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60]
+    bw_ticks = [75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95]
+    pw_ticks = [20, 23.5, 27, 30.5, 34, 37.5, 41, 44.5, 48, 51.5, 55]
+    tick_dict = {
+        "SW": sw_ticks,
+        "BW": bw_ticks,
+        "PW": pw_ticks,
+    }
     xdict = {
         "var": "overall_recovery",
-        "ticks": [40, 45, 50, 55, 60],
+        # "ticks": [40, 45, 50, 55, 60],
+        "ticks": [40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60],  # SW
         "label": "Water Recovery (%)",
         "units": "%",
     }
+    ydicts = list()
     ydict = {
         "var": "flushing.flushing_efficiency",
-        "ticks": [20, 27, 34, 41, 48, 55, 62, 69, 76, 83, 90],
         "label": "Flushing Efficiency (%)",
         "units": "%",
     }
+    ydicts.append(ydict)
+    ydict = {
+        "var": "blocks[0].process.fs.RO.flux_mass_phase_comp_avg[0.0,Liq,H2O]",
+        "label": "RO Flux",
+        # "units": "kg/m^2/s",
+    }
+    ydicts.append(ydict)
+    ydict = {
+        "var": "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]",
+        "label": "Single Pass Recovery (%)",
+        "units": "%",
+    }
+    ydicts.append(ydict)
+    ydict = {
+        "var": "blocks[0].process.fs.RO.area",
+        "label": "Membrane Area",
+        "units": "m^2",
+    }
+    ydicts.append(ydict)
     ydict = {
         "var": "blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
         "label": "Recycle Rate",
         "units": "L/s",
     }
+    ydicts.append(ydict)
     ydict = {
         "var": "filtration_ramp_rate",
         "label": "Filtration Ramp Rate",
         "units": "bar/min",
     }
+    ydicts.append(ydict)
     ydict = {
         "var": "costing.LCOW",
         "label": "LCOW",
     }
+    ydicts.append(ydict)
     ydict = {
         "var": "costing.SEC",
         "label": "SEC",
     }
+    ydicts.append(ydict)
     ydict = {
         "var": "total_cycle_time",
         "label": "Total Cycle Time",
         "units": "min",
     }
+    ydicts.append(ydict)
     ydict = {
-        "var": "final_concentration",
+        "var": "permeate_concentration",
         "label": "Permeate Concentration",
         "units": "mg/L",
     }
+    ydicts.append(ydict)
 
     linedict = {
         "marker": "o",
         "color": "blue",
     }
 
-    ccro_line_plotting(
-        xdict=xdict, ydict=ydict, fig_init=fig_init, title=title, linedict=linedict
-    )
+    import itertools
+
+    colors = itertools.cycle(["blue", "black", "red"])
+
+    for w in ["SW", "BW", "PW"]:
+        # title = f"{w} CCRO\nRecovery Sweep"
+        # ydict = ydicts[0]
+        color = next(colors)
+        linedict["color"] = color
+        xdict["ticks"] = tick_dict[w]
+        for yd in ydicts:
+            if yd.get("units", None) is not None:
+                title = f"{w} CCRO\n{yd['label']} ({yd['units']}) vs Recovery"
+            else:
+                title = f"{w} CCRO\n{yd['label']} vs Recovery"
+
+            ccro_line_plotting(
+                water=w,
+                xdict=xdict,
+                ydict=yd,
+                fig_init=fig_init,
+                title=title,
+                linedict=linedict,
+            )
 
     # ccro_mesh_plotting("SW")
 
