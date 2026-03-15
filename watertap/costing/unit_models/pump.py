@@ -18,6 +18,7 @@ from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
 )
+import idaes.core.util.scaling as iscale
 
 
 class PumpType(StrEnum):
@@ -145,3 +146,54 @@ def cost_low_pressure_pump(blk, cost_electricity_flow=True):
         )
         # set lower bound back to its original value that was assigned to lb
         blk.unit_model.work_mechanical.setlb(lb)
+
+
+# def build_pump_cost_param_block(blk):
+
+#     blk.cost = pyo.Var(
+#         initialize=700,
+#         bounds=(0, None),
+#         doc="Pump cost",
+#         units=pyo.units.USD_2018 / pyo.units.kilowatt,
+#     )
+#     blk.cost.fix()
+
+# @register_costing_parameter_block(
+#     build_rule=build_pump_cost_param_block,
+#     parameter_block_name="pump",
+# )
+
+
+# def cost_pump(blk, **kwargs):
+
+#     make_capital_cost_var(blk)
+#     blk.costing_package.add_cost_factor(blk, "TIC")
+#     blk.pump_cost = pyo.Var(
+#         initialize=700,
+#         bounds=(0, None),
+#         doc="Pump cost",
+#         units=pyo.units.USD_2018 / pyo.units.kilowatt,
+#     )
+
+#     blk.pump_cost_constraint = pyo.Constraint(
+#         expr=blk.pump_cost
+#         == pyo.Expr_if(
+#             blk.unit_model.control_volume.properties_out[0].pressure < 85e5,
+#             blk.costing_package.pump.cost,
+#             blk.costing_package.pump.cost * 1000,
+#         ))
+
+#     iscale.set_scaling_factor(blk.pump_cost, 1e-6)
+#     iscale.constraint_scaling_transform(blk.pump_cost_constraint, 0.01)
+
+
+#     blk.capital_cost_constraint = pyo.Constraint(
+#         expr=blk.capital_cost
+#         == blk.cost_factor
+#         * pyo.units.convert(
+#             blk.pump_cost * blk.unit_model.work_mechanical[0],
+#             to_units=blk.costing_package.base_currency,
+#         )
+#     )
+
+#     blk.costing_package.cost_flow(blk.unit_model.work_mechanical[0], "electricity")

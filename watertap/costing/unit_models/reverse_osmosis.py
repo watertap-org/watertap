@@ -13,7 +13,12 @@
 import pyomo.environ as pyo
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
-from ..util import cost_membrane, register_costing_parameter_block
+from ..util import (
+    make_capital_cost_var,
+    make_fixed_operating_cost_var,
+    cost_membrane,
+    register_costing_parameter_block,
+)
 
 
 class ROType(StrEnum):
@@ -79,3 +84,70 @@ def cost_high_pressure_reverse_osmosis(blk):
         blk.costing_package.reverse_osmosis.high_pressure_membrane_cost,
         blk.costing_package.reverse_osmosis.factor_membrane_replacement,
     )
+
+
+# def build_reverse_osmosis_cost_param_block(blk):
+
+#     blk.membrane_cost = pyo.Var(
+#         initialize=30,
+#         doc="Membrane cost",
+#         units=pyo.units.USD_2018 / (pyo.units.meter**2),
+#     )
+#     blk.high_pressure_membrane_cost = pyo.Var(
+#         initialize=75,
+#         doc="High pressure membrane cost",
+#         units=pyo.units.USD_2018 / (pyo.units.meter**2),
+#     )
+#     blk.membrane_cost.fix()
+
+
+# @register_costing_parameter_block(
+#     build_rule=build_reverse_osmosis_cost_param_block,
+#     parameter_block_name="reverse_osmosis",
+# )
+# def cost_reverse_osmosis(blk, ro_type=ROType.standard):
+
+#     make_capital_cost_var(blk)
+#     blk.costing_package.add_cost_factor(blk, "TIC")
+#     make_fixed_operating_cost_var(blk)
+#     # blk.membrane_cost = pyo.Expression(expr=membrane_cost)
+#     # blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
+#     blk.factor_membrane_replacement = pyo.Var(
+#         initialize=0.2,
+#         doc="Membrane replacement factor [fraction of membrane replaced/year]",
+#         units=pyo.units.year**-1,
+#     )
+#     blk.factor_membrane_replacement.fix(0.2)
+
+#     blk.membrane_cost = pyo.Var(
+#         initialize=75,
+#         doc="Membrane cost",
+#         units=pyo.units.USD_2018 / (pyo.units.meter**2),
+#     )
+
+#     blk.membrane_cost_constraint = pyo.Constraint(
+#         expr=blk.membrane_cost
+#         == pyo.Expr_if(
+#             blk.unit_model.area < 100,
+#             blk.costing_package.reverse_osmosis.membrane_cost * 1000,
+#             blk.costing_package.reverse_osmosis.membrane_cost,
+#             # blk.costing_package.reverse_osmosis.membrane_cost,
+#             # blk.costing_package.reverse_osmosis.high_pressure_membrane_cost,
+#         )
+#     )
+#     blk.capital_cost_constraint = pyo.Constraint(
+#         expr=blk.capital_cost
+#         == blk.cost_factor
+#         * pyo.units.convert(
+#             blk.membrane_cost * blk.unit_model.area,
+#             to_units=blk.costing_package.base_currency,
+#         )
+#     )
+#     blk.fixed_operating_cost_constraint = pyo.Constraint(
+#         expr=blk.fixed_operating_cost
+#         == pyo.units.convert(
+#             blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area,
+#             to_units=blk.costing_package.base_currency
+#             / blk.costing_package.base_period,
+#         )
+#     )
