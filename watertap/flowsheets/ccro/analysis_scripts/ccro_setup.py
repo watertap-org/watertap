@@ -32,6 +32,15 @@ def build(
         A_comp = 5
         B_comp = 0.5
 
+    if feed_tds > 70:
+        use_interval_initializer = False
+
+    if feed_tds >= 50:
+        min_cycle_time_hr = 5 / 60  # 5 minutes
+
+    if feed_tds >= 75:
+        min_cycle_time_hr = 1 / 60  # 1 minute
+
     cc_config = CCROConfiguration()
     cc_config["A_comp"] = A_comp * (
         pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar
@@ -167,13 +176,13 @@ if __name__ == "__main__":
     # )
 
     mp = build(
-        feed_tds=75,
+        feed_tds=95,
         A_comp=1.5,
         B_comp=0.1,
         time_steps=20,
         n_flushing_points=5,
         osmotic_overpressure=3,
         overall_water_recovery=0.2,
-        use_interval_initializer=False,
+        use_interval_initializer=True,
     )
     mp.ramp_rate.display()
