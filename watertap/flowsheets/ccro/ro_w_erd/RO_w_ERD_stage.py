@@ -151,6 +151,8 @@ def set_stage_op_conditions(blk, m=None, max_pressure=300e5, ro_op_dict={}):
     if m is None:
         m = blk.model()
 
+    stage_num = blk.index()
+
     if blk.add_pump:
         operating_pressure = calculate_operating_pressure(
             feed_state_block=m.fs.feed.properties[0],
@@ -163,6 +165,15 @@ def set_stage_op_conditions(blk, m=None, max_pressure=300e5, ro_op_dict={}):
         # assert False
         if operating_pressure >= max_pressure:
             operating_pressure = max_pressure
+
+        if stage_num > 1 and m.fs.stage[stage_num - 1].add_pump:
+            last_pump = m.fs.stage[stage_num - 1].pump
+            c = Constraint(
+                expr=blk.pump.control_volume.properties_out[0].pressure
+                - last_pump.control_volume.properties_out[0].pressure
+                >= 1 * pyunits.bar
+            )
+            blk.add_component(f"pressure_increase_constr_stage{stage_num}", c)
 
         print(f"Estimated operating pressure: {operating_pressure*1e-5:.2f} bar")
 
@@ -542,7 +553,7 @@ if __name__ == "__main__":
         n_stages=2,
         salt_mass_frac=35e-3,
         water_recovery=0.5,
-        pump_dict={1: True, 2: False},
+        pump_dict={1: True, 2: True},
         ro_op_dict=sw_ro_op_dict,
     )
     m_sw = fix_ro_recovery(m_sw, 0.6)
