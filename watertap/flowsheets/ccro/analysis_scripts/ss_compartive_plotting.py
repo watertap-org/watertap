@@ -43,25 +43,13 @@ def getssdata():
             f"fs.stage[{stage}].RO.area",
             (f"RO {stage}", "RO area"),
         )
-    dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
 
     dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
     dm_ss.register_data_key("fs.costing.LCOW", "LCOW")
     dm_ss.register_data_key("fs.costing.SEC", "SEC")
+
     dm_ss.load_data()
     dm_ss.display()
-    # dm_ss.reduce_data(
-    #     stack_keys=("Brackish water", "system_design"),
-    #     data_key="LCOW",
-    #     reduction_type="min",
-    #     directory=("Brackish water", "optimal_design"),
-    # )
-    # # dm_ss.reduce_data(
-    # #     stack_keys=("Seawater", "system_design"),
-    # #     data_key="LCOW",
-    # #     reduction_type="min",
-    # #     directory=("Seawater", "optimal_design"),
-    # # )
 
     dm_ss.display()
     return dm_ss
