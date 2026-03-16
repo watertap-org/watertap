@@ -216,9 +216,7 @@ def cost_ccro(blk, feed_pump=None, mp=None):
         expr=blk.capital_cost_recirculation_pump
         == pyo.units.convert(
             blk.costing_package.ccro.pump_cost
-            * pyo.units.convert(
-                recirc_pump_work, to_units=pyo.units.watt
-            ),
+            * pyo.units.convert(recirc_pump_work, to_units=pyo.units.watt),
             to_units=blk.costing_package.base_currency,
         )
     )

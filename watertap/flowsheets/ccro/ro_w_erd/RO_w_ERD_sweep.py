@@ -44,16 +44,16 @@ def optimize_for_recovery(m, **kwargs):
 def main():
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M")
-    save_file = "ro_w_erd"
+    save_file = "RO_w_ERD"
 
     loopTool(
-        f"{here}/salinity_recovery_sweep.yaml",
+        f"{here}/recovery_sweep.yaml",
         build_function=ro.run_n_stage_system,
         optimize_function=optimize_for_recovery,
         save_name=save_file,
         saving_dir=here,
         number_of_subprocesses=1,
-        h5_backup=False,
+        # h5_backup=False,
         num_loop_workers=8,
     )
 
