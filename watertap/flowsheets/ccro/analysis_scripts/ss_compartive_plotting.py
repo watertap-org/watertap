@@ -10,28 +10,16 @@ def getssdata():
 
     dm_ss = PsDataManager()
     dm_ss.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_BW_1_stage_1_pump_recovery_sweep.h5",
-        directory=("Brackish water", "system_design", "1 stage 1 pump"),
+        f"output_steady_state\RO_w_ERD_analysisType_BW_sweep.h5",
+        directory="Brackish water",
     )
     dm_ss.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_BW_2_stage_1_pump_recovery_sweep.h5",
-        directory=("Brackish water", "system_design", "2 stage 1 pump"),
+        f"output_steady_state\RO_w_ERD_analysisType_PW_sweep.h5",
+        directory="Produced water",
     )
     dm_ss.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_BW_2_stage_2_pump_recovery_sweep.h5",
-        directory=("Brackish water", "system_design", "2 stage 2 pump"),
-    )
-    dm_ss.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_SW_2_stage_2_pump_recovery_sweep.h5",
-        directory=("Seawater", "system_design", "2 stage 2 pump"),
-    )
-    dm_ss.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_PW_2_stage_1_pump_recovery_sweep.h5",
-        directory=("Produced water", "system_design", "2 stage 1 pump"),
-    )
-    dm_ss.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_PW_2_stage_2_pump_recovery_sweep.h5",
-        directory=("Produced water", "system_design", "2 stage 2 pump"),
+        f"output_steady_state\RO_w_ERD_analysisType_SW_sweep.h5",
+        directory="Seawater",
     )
     for stage in [1, 2]:
         dm_ss.register_data_key(
@@ -43,15 +31,57 @@ def getssdata():
             f"fs.stage[{stage}].RO.area",
             (f"RO {stage}", "RO area"),
         )
+        dm_ss.register_data_key(
+            f"fs.stage[{stage}].pump.control_volume.work[0.0]",
+            (f"RO {stage}", "pump work"),
+            "kW",
+        )
+        dm_ss.register_data_key(
+            f"fs.stage[{stage}].pump.control_volume.work[0.0]",
+            (f"RO {stage}", "pump work"),
+            "kW",
+        )
+    dm_ss.register_data_key("fs.ERD.control_volume.work[0.0]", "ERD work", "kW")
+    dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
 
     dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
     dm_ss.register_data_key("fs.costing.LCOW", "LCOW")
     dm_ss.register_data_key("fs.costing.SEC", "SEC")
 
+    dm_ss.register_data_key(
+        "fs.product.properties[0.0].flow_vol_phase[Liq]",
+        "Average product flow rate",
+        "L/hr",
+    )
+    dm_ss.register_data_key(
+        "fs.product.properties[0.0].flow_vol_phase[Liq]",
+        "Average product flow rate",
+        "L/hr",
+    )
     dm_ss.load_data()
     dm_ss.display()
+    # dm_ss.display()
+    # dm_ss.reduce_data(
+    #     stack_keys=("Produced water", "stage_sim_cases"),
+    #     data_key="LCOW",
+    #     reduction_type="min",
+    #     directory=("Produced water", "optimal_design"),
+    # )
 
-    dm_ss.display()
+    # dm_ss.display()
+    # dm_ss.reduce_data(
+    #     stack_keys=("Brackish water", "stage_sim_cases"),
+    #     data_key="LCOW",
+    #     reduction_type="min",
+    #     directory=("Brackish water", "optimal_design"),
+    # )
+    # dm_ss.reduce_data(
+    #     stack_keys="stage_sim_cases",
+    #     data_key="LCOW",
+    #     reduction_type="min",
+    #     directory="optimal_design",
+    # )
+
     return dm_ss
 
 
@@ -71,11 +101,8 @@ if __name__ == "__main__":
             for c, opts in water_cases.items():
                 for d, dopt in design_cases.items():
                     if (
-                        (
-                            c,
-                            "system_design",
-                            d,
-                        ),
+                        c,
+                        ("stage_sim_cases", d.replace(" ", "_")),
                         data,
                     ) in dm:
                         opts_combined = opts.copy()
@@ -83,8 +110,12 @@ if __name__ == "__main__":
                         opts_combined.marker = dopt.marker
                         opts_combined.label = None
                         fig.plot_line(
-                            dm[(c, "system_design", d), "Water recovery"],
-                            dm[(c, "system_design", d), data],
+                            dm[
+                                c,
+                                ("stage_sim_cases", d.replace(" ", "_")),
+                                "Water recovery",
+                            ],
+                            dm[c, ("stage_sim_cases", d.replace(" ", "_")), data],
                             **opts_combined,
                         )
                     else:
