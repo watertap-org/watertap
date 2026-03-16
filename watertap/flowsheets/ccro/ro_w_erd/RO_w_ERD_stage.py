@@ -52,16 +52,26 @@ from watertap.flowsheets.ccro.utils.utils import (
 solver = get_solver()
 
 
-def add_costing(m):
+def add_costing(m, hpro_costing=False):
+
+    if hpro_costing:
+        cma_pump = {"pump_type": "high_pressure"}
+        cma_ro = {"ro_type": "high_pressure"}
+
+    else:
+        cma_pump = {"pump_type": "low_pressure"}
+        cma_ro = {"ro_type": "standard"}
 
     m.fs.costing = WaterTAPCosting()
 
     for n, stage in m.fs.stage.items():
         if stage.add_pump:
             stage.pump.costing = UnitModelCostingBlock(
-                flowsheet_costing_block=m.fs.costing
+                flowsheet_costing_block=m.fs.costing, costing_method_arguments=cma_pump
             )
-        stage.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        stage.RO.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing, costing_method_arguments=cma_ro
+        )
 
     m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
@@ -136,7 +146,7 @@ def build_stage(
     print(f"Degrees of freedom {blk.name}: {degrees_of_freedom(blk)}")
 
 
-def set_stage_op_conditions(blk, m=None, max_pressure=200e5, ro_op_dict={}):
+def set_stage_op_conditions(blk, m=None, max_pressure=300e5, ro_op_dict={}):
 
     if m is None:
         m = blk.model()
@@ -170,6 +180,7 @@ def set_stage_op_conditions(blk, m=None, max_pressure=200e5, ro_op_dict={}):
     blk.RO.permeate.pressure[0].fix(101325)
     blk.RO.width.fix(5)
     blk.RO.area.fix(30)
+    blk.RO.length.setlb(1)
 
     for p, val in ro_op_dict.items():
         v = blk.RO.find_component(p)
@@ -233,6 +244,21 @@ def init_stage(blk, m=None):
     print(f"Degrees of {blk.name}: {degrees_of_freedom(blk)}")
 
 
+def set_stage_bounds(blk, m=None):
+
+    if m is None:
+        m = blk.model()
+
+    blk.RO.length.setlb(1 * pyunits.meter)
+    blk.RO.width.setlb(0.1 * pyunits.meter)
+    # blk.RO.area.setlb(50 * pyunits.meter**2)
+    blk.RO.flux_mass_phase_comp[0.0, 1.0, "Liq", "H2O"].setlb(
+        0.001 * pyunits.kg / pyunits.m**2 / pyunits.hr
+    )
+    blk.RO.feed_side.velocity[0, 0].setub(0.3)
+    blk.RO.feed_side.velocity[0, 0].setlb(0.1)
+
+
 def run_n_stage_system(
     n_stages=2,
     flow_vol=1e-3,
@@ -241,6 +267,7 @@ def run_n_stage_system(
     over_pressure=0.25,
     perm_conc=0.5,
     pump_dict={1: True},  # first stage always has pump
+    hpro_costing=False,
     **kwargs,
 ):
 
@@ -260,6 +287,7 @@ def run_n_stage_system(
 
     for n, stage in m.fs.stage.items():
         build_stage(stage, m=m, add_pump=pump_dict.get(n, False))
+        # set_stage_bounds(stage, m=m)
 
     m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
 
@@ -267,7 +295,7 @@ def run_n_stage_system(
     m.fs.product_mixer = Mixer(
         property_package=m.fs.properties,
         momentum_mixing_type=MomentumMixingType.minimize,
-        inlet_list=[f"stage{i}" for i in range(1, n_stages + 1)],
+        inlet_list=[f"stage{i}" for i in m.fs.stages_set],
     )
 
     m.fs.disposal = Product(property_package=m.fs.properties)
@@ -322,7 +350,7 @@ def run_n_stage_system(
         source=m.fs.product_mixer.outlet, destination=m.fs.product.inlet
     )
 
-    add_costing(m)
+    add_costing(m, hpro_costing=hpro_costing)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -355,7 +383,18 @@ def run_n_stage_system(
         hold_state=True,
     )
 
-    ro_op_dict = kwargs.get("ro_op_dict", {})
+    # ro_op_dict = kwargs.get("ro_op_dict", {})
+
+    if salt_mass_frac <= 10e-3:
+        ro_op_dict = {
+            "A_comp": 5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
+            "B_comp": 0.5 * pyunits.liter / pyunits.m**2 / pyunits.hour,
+        }
+    else:
+        ro_op_dict = {
+            "A_comp": 1.5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
+            "B_comp": 0.1 * pyunits.liter / pyunits.m**2 / pyunits.hour,
+        }
 
     for n, stage in m.fs.stage.items():
         set_stage_op_conditions(stage, m=m, ro_op_dict=ro_op_dict)
@@ -406,7 +445,7 @@ def run_n_stage_system(
 
     print(f"dof before solve = {degrees_of_freedom(m)}")
 
-    results = solve_model(m, tee=False)
+    results = solve_model(m, tee=True)
     assert_optimal_termination(results)
 
     # m.fs.system_recovery.fix()
@@ -479,27 +518,27 @@ if __name__ == "__main__":
     # #### #### #### #### #### #### #### ###
     # BW
 
-    m_bw = run_n_stage_system(
-        n_stages=2,
-        salt_mass_frac=5e-3,
-        water_recovery=0.8,
-        over_pressure=0.15,
-        pump_dict={1: True, 2: False},
-        # ro_op_dict=sw_ro_op_dict,
-        ro_op_dict=bw_ro_op_dict,
-    )
+    # m_bw = run_n_stage_system(
+    #     n_stages=2,
+    #     salt_mass_frac=5e-3,
+    #     water_recovery=0.8,
+    #     over_pressure=0.15,
+    #     pump_dict={1: True, 2: False},
+    #     # ro_op_dict=sw_ro_op_dict,
+    #     ro_op_dict=bw_ro_op_dict,
+    # )
 
-    for n, stage in m_bw.fs.stage.items():
-        relax_bounds_for_low_salinity_waters(stage.RO)
+    # for n, stage in m_bw.fs.stage.items():
+    #     relax_bounds_for_low_salinity_waters(stage.RO)
 
-    m_bw = fix_ro_recovery(m_bw, 0.9)
-    results = solve_model(m_bw)
-    report_n_stage_system(m_bw)
+    # m_bw = fix_ro_recovery(m_bw, 0.9)
+    # results = solve_model(m_bw)
+    # report_n_stage_system(m_bw)
 
-    # #### #### #### #### #### #### #### ###
-    # SW
+    # # #### #### #### #### #### #### #### ###
+    # # SW
 
-    m_sw = run_n_stage_system(
+    m = m_sw = run_n_stage_system(
         n_stages=2,
         salt_mass_frac=35e-3,
         water_recovery=0.5,
@@ -513,13 +552,14 @@ if __name__ == "__main__":
     #### #### #### #### #### #### #### ###
     # PW
 
-    m_pw = run_n_stage_system(
-        n_stages=2,
-        salt_mass_frac=75e-3,
-        water_recovery=0.5,
-        pump_dict={1: True, 2: False},
-        ro_op_dict=sw_ro_op_dict,
-    )
-    m_pw = fix_ro_recovery(m_pw, 0.5)
-    results = solve_model(m_pw)
-    report_n_stage_system(m_pw)
+    # m_pw = run_n_stage_system(
+    #     n_stages=1,
+    #     salt_mass_frac=75e-3,
+    #     water_recovery=0.55,
+    #     pump_dict={1: True, 2: False},
+    #     ro_op_dict=sw_ro_op_dict,
+    #     hpro_costing=True,
+    # )
+    # m_pw = fix_ro_recovery(m_pw, 0.5)
+    # results = solve_model(m_pw)
+    # report_n_stage_system(m_pw)
