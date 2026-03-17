@@ -108,8 +108,9 @@ def create_ccro_multiperiod(
     if include_costing:
 
         tot_utilization_expr = 0
+        p1_power = 0
+        p2_power = 0
         mp.costing = WaterTAPCosting()
-        mp.costing.base_currency = pyunits.USD_2023
         for t, m in enumerate(mp.get_active_process_blocks(), 1):
             # this will track fraction of power used over the cycle.
             if m.fs.operation_mode == "filtration":
@@ -122,81 +123,50 @@ def create_ccro_multiperiod(
                 ) / mp.total_cycle_time
             elif m.fs.operation_mode == "flushing":
                 utilization_ratio = m.fs.flushing.flushing_time / mp.total_cycle_time
-            tot_utilization_expr += utilization_ratio
-
-            if t == 1:
-                print(f"t = {t}, P1 + P2 electricity, RO CAPEX")
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P1,
-                    register_electricity_cost=True,
-                    register_capital_cost=False,
-                    utilization_factor=utilization_ratio,
-                )
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P2,
-                    register_electricity_cost=True,
-                    register_capital_cost=False,
-                    utilization_factor=utilization_ratio,
-                )
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.RO,
-                    register_electricity_cost=False,
-                    register_capital_cost=True,
-                    utilization_factor=utilization_ratio,
-                )
-            elif t == n_time_points:  # Last operating pressure - assume its highest !
-                print(f"t = {t}, P1 + P2 electricity, P1 + P2 CAPEX")
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P1,
-                    register_electricity_cost=True,
-                    register_capital_cost=True,
-                    utilization_factor=utilization_ratio,
-                )
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P2,
-                    register_electricity_cost=True,
-                    register_capital_cost=True,
-                    utilization_factor=utilization_ratio,
-                    # costing_method_arguments={"pump_type": "low_pressure"},
-                )
-            # Last time period is flushing
-            elif t > n_time_points:
-                print(f"t = {t}, P1 + P2 electricity")
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P1,
-                    register_electricity_cost=True,
-                    register_capital_cost=False,
-                    utilization_factor=utilization_ratio,
-                )
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P2,
-                    register_electricity_cost=True,
-                    register_capital_cost=False,
-                    utilization_factor=utilization_ratio,
-                )
-            else:
-                print(f"t = {t}, P1 + P2 electricity")
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P1,
-                    register_electricity_cost=True,
-                    register_capital_cost=False,
-                    utilization_factor=utilization_ratio,
-                )
-                cc_utils.register_costed_unit(
-                    mp,
-                    m.fs.P2,
-                    register_electricity_cost=True,
-                    register_capital_cost=False,
-                    utilization_factor=utilization_ratio,
-                )
+            tot_utilization_expr += utilization_ratio * pyunits.W / pyunits.W
+            p1_power += pyunits.convert(
+                m.fs.P1.work_mechanical[0.0]
+                * utilization_ratio
+                * pyunits.kW
+                / pyunits.kW,
+                to_units=pyunits.kW,
+            )
+            p2_power += pyunits.convert(
+                m.fs.P2.work_mechanical[0.0]
+                * utilization_ratio
+                * pyunits.kW
+                / pyunits.kW,
+                to_units=pyunits.kW,
+            )
+        zero_block = mp.get_active_process_blocks()[
+            0
+        ]  # just need a block to add the expression to, since it will be used in the costing of each pump
+        max_power_block = mp.get_active_process_blocks()[
+            n_time_points - 1  # indexded from 0
+        ]  # block with maximum power
+        print(zero_block.name, max_power_block.name)
+        cc_utils.register_costed_unit(
+            mp,
+            max_power_block.fs.P1,
+            register_capital_cost=True,
+            register_electricity_cost=True,
+            power_expression=p1_power,
+            costing_method_arguments={"cost_electricity_flow": False},
+        )
+        cc_utils.register_costed_unit(
+            mp,
+            max_power_block.fs.P2,
+            register_capital_cost=True,
+            register_electricity_cost=True,
+            power_expression=p2_power,
+            costing_method_arguments={"cost_electricity_flow": False},
+        )
+        cc_utils.register_costed_unit(
+            mp,
+            zero_block.fs.RO,
+            register_electricity_cost=False,  # there is none anyway
+            register_capital_cost=True,
+        )
         if mp.flushing_points > 1:
             cc_utils.register_costed_unit(
                 mp,
@@ -310,7 +280,12 @@ def create_ccro_multiperiod(
             cc_utils.copy_state(old_m, m)
             cc_utils.copy_time_period_links(old_m, m, base_links)
         print(f"Period {t} DOF:", degrees_of_freedom(m))
-        assert degrees_of_freedom(m) == 0
+        if t != n_time_points:
+            assert degrees_of_freedom(m) == 0
+        else:
+            assert (
+                degrees_of_freedom(m) == mp.total_points * 2
+            )  # numpt of pumps * periods as their power exits on other time blocks
 
         results = solve(model=m, tee=True)
         print_close_to_bounds(m)

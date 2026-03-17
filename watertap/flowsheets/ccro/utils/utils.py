@@ -1,12 +1,15 @@
 from pyomo.environ import (
     ConcreteModel,
     value,
+    Var,
     assert_optimal_termination,
     units as pyunits,
 )
 from watertap.flowsheets.ccro.multiperiod.model_state_tool import ModelState
 from idaes.core import UnitModelCostingBlock
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import Constraint, solve_indexed_blocks
+
+import idaes.core.util.scaling as iscale
 
 
 def print_table(data, title=None, index_header="Index", precision=6, min_col_width=10):
@@ -176,11 +179,13 @@ def register_costed_unit(
     mp,
     unit,
     costing_method_arguments={},
-    register_electricity_cost=True,
+    register_electricity_cost=False,
     register_capital_cost=True,
     utilization_factor=1.0,
+    power_expression=None,
 ):
-    if register_electricity_cost:
+    if register_electricity_cost and power_expression is None:
+        print("Registered electricity cost for ", unit.name)
         lb = unit.work_mechanical[0.0].lb
         # set lower bound to 0 to avoid negative defined flow warning when lb is not >= 0
         unit.work_mechanical.setlb(0)
@@ -196,12 +201,27 @@ def register_costed_unit(
         # set lower bound back to its original value that was assigned to lb
         unit.work_mechanical.setlb(lb)
     if register_capital_cost:
+        print("Registered capital cost for ", unit.name)
         unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mp.costing,
             costing_method_arguments=costing_method_arguments,
         )
+    if register_electricity_cost and power_expression is not None:
+        print(f"Registered power expression for {unit.name}")
+        unit.total_power = Var(initialize=0, units=pyunits.kW)
+        iscale.set_scaling_factor(unit.total_power, 1)
+        unit.total_power_eq = Constraint(
+            expr=unit.total_power
+            == pyunits.convert(power_expression, to_units=pyunits.kW)
+        )
 
-        # assert False
+        iscale.constraint_scaling_transform(unit.total_power_eq, 1)
+        # assert False        mp.costing.cost_flow(
+        mp.costing.cost_flow(
+            pyunits.convert(unit.total_power, to_units=pyunits.kW),
+            "electricity",
+        )
+        # set lower bound back to its original value that was assigned to lb
 
 
 def set_pump_operating_pressure(unit, osmotic_pressure, configuration_options):

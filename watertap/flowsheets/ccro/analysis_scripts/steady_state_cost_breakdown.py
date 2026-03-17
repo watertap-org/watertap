@@ -6,16 +6,16 @@ if __name__ == "__main__":
     water_case = "BW"
     dm = PsDataManager()
     dm.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_{water_case}_1_stage_1_pump_recovery_sweep.h5",
-        directory=("system_design", "1 stage 1 pump"),
+        f"output_steady_state\RO_w_ERD_analysisType_BW_sweep.h5",
+        directory="Brackish water",
     )
     dm.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_{water_case}_2_stage_1_pump_recovery_sweep.h5",
-        directory=("system_design", "2 stage 1 pump"),
+        f"output_steady_state\RO_w_ERD_analysisType_PW_sweep.h5",
+        directory="Produced water",
     )
     dm.register_data_file(
-        f"output_steady_state\RO_w_ERD_analysisType_{water_case}_2_stage_2_pump_recovery_sweep.h5",
-        directory=("system_design", "2 stage 2 pump"),
+        f"output_steady_state\RO_w_ERD_analysisType_SW_sweep.h5",
+        directory="Seawater",
     )
     # this is confusing for users
     # the groups specifies desired unit operation, that includes single or multiple untis, flows and so forth
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     )
     dm.display()
     dm.reduce_data(
-        stack_keys="system_design",
+        stack_keys="stage_sim_cases",
         data_key="LCOW",
         reduction_type="min",
         directory="optimal_design",
