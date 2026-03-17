@@ -8,7 +8,7 @@ PW_sweep:
     perm_conc: 0.5
     pump_dict: {1: True, 2: False}
   build_loop:
-    stage_cases:
+    stage_sim_cases:
       1_stage_1_pump:
         n_stages: 1
         pump_dict: {1: True}
@@ -35,7 +35,7 @@ SW_sweep:
     perm_conc: 0.5
     pump_dict: {1: True, 2: False}
   build_loop:
-    stage_cases:
+    stage_sim_cases:
       1_stage_1_pump:
         n_stages: 1
         pump_dict: {1: True}
@@ -62,7 +62,7 @@ BW_sweep:
     perm_conc: 0.5
     pump_dict: {1: True, 2: False}
   build_loop:
-    stage_cases:
+    stage_sim_cases:
       1_stage_1_pump:
         n_stages: 1
         pump_dict: {1: True}
