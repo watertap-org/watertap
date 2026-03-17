@@ -216,8 +216,7 @@ class TestFullFlowsheet:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    @pytest.mark.xfail(
-        reason="This test is volitile due to BSM2 performance")
+    @pytest.mark.xfail(reason="This test is volitile due to BSM2 performance")
     @reference_platform_only
     def test_optimization_windows(self, optimized_system_frame):
         m = optimized_system_frame
