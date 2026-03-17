@@ -208,14 +208,14 @@ def register_costed_unit(
         )
     if register_electricity_cost and power_expression is not None:
         print(f"Registered power expression for {unit.name}")
-        unit.total_power = Var(initialize=0, units=pyunits.kW)
-        iscale.set_scaling_factor(unit.total_power, 1)
+        unit.total_power = Var(initialize=0, bounds=(0, None), units=pyunits.kW)
+        iscale.set_scaling_factor(unit.total_power, 1e-3)
         unit.total_power_eq = Constraint(
             expr=unit.total_power
             == pyunits.convert(power_expression, to_units=pyunits.kW)
         )
 
-        iscale.constraint_scaling_transform(unit.total_power_eq, 1)
+        iscale.constraint_scaling_transform(unit.total_power_eq, 1e-3)
         # assert False        mp.costing.cost_flow(
         mp.costing.cost_flow(
             pyunits.convert(unit.total_power, to_units=pyunits.kW),

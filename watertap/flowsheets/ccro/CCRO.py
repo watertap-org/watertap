@@ -159,7 +159,10 @@ def create_ccro_multiperiod(
             register_capital_cost=True,
             register_electricity_cost=True,
             power_expression=p2_power,
-            costing_method_arguments={"cost_electricity_flow": False},
+            costing_method_arguments={
+                "cost_electricity_flow": False,
+                "pump_type": "low_pressure",
+            },
         )
         cc_utils.register_costed_unit(
             mp,
@@ -575,10 +578,10 @@ def setup_optimization(
     if mp.include_costing:
         mp.cost_objective = Objective(expr=mp.costing.LCOW)
 
-        mp.cost_product_objective = Objective(
+        mp.product_objective = Objective(
             expr=sum((prm - 0.5) ** 2 for prm in mp.permeate_quality)
         )
-        mp.cost_product_objective.deactivate()
+        mp.product_objective.deactivate()
 
     print("DOF for optimization:", degrees_of_freedom(mp))
 
@@ -643,7 +646,7 @@ def fix_optimization_dofs(
         blkfs.fs.flushing.flushing_efficiency.fix(flushing_efficiency)
     else:
         blkfs.fs.flushing.flushing_efficiency.unfix()
-        blkfs.fs.flushing.flushing_efficiency.setub(0.95)
+        blkfs.fs.flushing.flushing_efficiency.setub(0.99)
         blkfs.fs.flushing.flushing_efficiency.setlb(0.001)
     if add_initial_pressure_objective:
         mp.min_initial_pressure = Objective(

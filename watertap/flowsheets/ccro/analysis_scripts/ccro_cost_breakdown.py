@@ -34,6 +34,7 @@ if __name__ == "__main__":
     dm.register_data_key("filtration_ramp_rate", "Filtration ramp rate", "bar/min")
     dm.register_data_key("total_cycle_time", "Total cycle time", "min")
 
+    dm.register_data_key("overall_recovery", "Water recovery", "%")
     dm.load_data()
 
     fs_keys = dm.get_expression_keys()
@@ -77,51 +78,21 @@ if __name__ == "__main__":
 
     cm = PsCostingManager(dm, package, [RO, feed_pump, recycle_pump, conduit])
     cm.build()
-    # # dm.display()
+    # dm.display()
     # # assert False
-    # for water_case in water_cases:
-    #     dm.select_data(water_case)
-    #     wr = dm.get_selected_data()
-    #     print(water_case)
-    #     print("RO")
-    #     wr[water_case, ("costing", "RO", "total_capital_cost")].display()
-
-    #     wr[water_case, ("costing", "RO", "total_operating_cost")].display()
-    #     wr[water_case, ("costing", "RO", "LCOW")].display()
-    #     print("Feed pump")
-    #     wr[water_case, ("costing", "Feed pump", "total_capital_cost")].display()
-
-    #     wr[water_case, ("costing", "Feed pump", "total_operating_cost")].display()
-    #     wr[water_case, ("costing", "Feed pump", "LCOW")].display()
-    #     print("Recycle pump")
-    #     wr[water_case, ("costing", "Recycle pump", "total_capital_cost")].display()
-
-    #     wr[water_case, ("costing", "Recycle pump", "total_operating_cost")].display()
-    #     wr[water_case, ("costing", "Recycle pump", "LCOW")].display()
-    #     print("Conduit")
-    #     wr[water_case, ("costing", "Conduit", "total_capital_cost")].display()
-
-    #     wr[water_case, ("costing", "Conduit", "total_operating_cost")].display()
-    #     wr[water_case, ("costing", "Conduit", "LCOW")].display()
-    #     print("calc LCOW")
-    #     wr[water_case, ("costing", "total", "total_capital_cost")].display()
-
-    #     wr[water_case, ("costing", "total", "total_operating_cost")].display()
-    #     wr[water_case, ("costing", "total", "LCOW")].display()
-    #     wr[water_case, ("costing", "aggregate_flow_cost")].display()
-    #     print("actual lcow")
-    #     wr[water_case, "LCOW"].display()
-    #     assert False
-    # cost_plotter = BreakDownPlotter(wr)
-    # cost_plotter.define_area_groups(
-    #     {"RO": {}, "Feed pump": {}, "Recycle pump": {}, "Conduit": {}}
-    # )
-    # cost_plotter.plotbreakdown(
-    #     xdata="Water recovery",
-    #     ydata=["costing", "LCOW"],
-    #     axis_options={
-    #         "yticks": [0, 0.5, 1.0, 1.5, 2.0],
-    #         "xticks": "auto",
-    #     },
-    #     generate_figure=False,
-    # )
+    for water_case in ["Brackish water", "Produced water"]:
+        dm.select_data(water_case)
+        wr = dm.get_selected_data()
+        cost_plotter = BreakDownPlotter(wr)
+        cost_plotter.define_area_groups(
+            {"RO": {}, "Feed pump": {}, "Recycle pump": {}, "Conduit": {}}
+        )
+        cost_plotter.plotbreakdown(
+            xdata="Water recovery",
+            ydata=["costing", "LCOW"],
+            axis_options={
+                "ylabel": "LCOW ($\$$/m$^3$)",
+                "xlabel": "Water recovery (%)",
+            },
+            generate_figure=True,
+        )

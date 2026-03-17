@@ -19,7 +19,7 @@ def build(
     max_cycle_time_hr=1,  # 1 hour
     cross_flow=2,
     osmotic_overpressure=2,
-    recycle_flow_bounds=(1, 50),
+    recycle_flow_bounds=(1, 100),
     overall_water_recovery=0.5,
     accumulation_time=5,
     flushing_efficiency=0.25,
@@ -75,15 +75,15 @@ def build(
     #         recycle_flow_bounds=(1, 50),
     #         # use_ro_with_hold_up=True,
     #     )
-        # CCRO.fix_optimization_dofs(
-        #     mp,
-        #     overal_water_recovery=0.5,
-        #     add_water_recovery_objective=True,
-        #     membrane_area=200 * pyunits.meter**2,
-        #     membrane_length=1 * pyunits.meter,
-        #     recycle_rate=10 * pyunits.L / pyunits.s,
-        #     flushing_efficiency=0.8,
-        # )
+    # CCRO.fix_optimization_dofs(
+    #     mp,
+    #     overal_water_recovery=0.5,
+    #     add_water_recovery_objective=True,
+    #     membrane_area=200 * pyunits.meter**2,
+    #     membrane_length=1 * pyunits.meter,
+    #     recycle_rate=10 * pyunits.L / pyunits.s,
+    #     flushing_efficiency=0.8,
+    # )
 
     # CCRO.print_results_table(mp)
     blks = list(mp.get_active_process_blocks())
@@ -93,14 +93,20 @@ def build(
     # mp.cost_objective.deactivate()
     # mp.cost_product_objective.activate()
     solve_model(mp)
-    mp.max_permeate_concentration_constraint.activate()
+
+    mp.ramp_rate.display()
+
+    # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
+    # mp.max_permeate_concentration_constraint.activate()
+    mp.permeate_concentration.setub(0.5)
+
     solve_model(mp)
-    # mp.cost_objective.activate()
-    # mp.cost_product_objective.deactivate()
+
     first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
-    # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix(
-    #     cross_flow * pyunits.L / pyunits.s
-    # )
+    print(
+        "CCRO initalized, solving for optimal design point now with all constraints active and DOF free"
+    )
+
     return mp
 
 
@@ -176,13 +182,17 @@ if __name__ == "__main__":
     # )
 
     mp = build(
-        feed_tds=95,
+        feed_tds=35,
         A_comp=1.5,
         B_comp=0.1,
+        overall_water_recovery=0.45,
         time_steps=20,
         n_flushing_points=5,
-        osmotic_overpressure=3,
-        overall_water_recovery=0.2,
+        # osmotic_overpressure=3,
+        # overall_water_recovery=0.2,
         use_interval_initializer=True,
+        min_cycle_time_hr=0.16667,
     )
+    mp.overall_recovery.fix(0.45)
+    solve_model(mp)
     mp.ramp_rate.display()
