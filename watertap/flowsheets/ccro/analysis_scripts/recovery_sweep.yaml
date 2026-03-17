@@ -1,43 +1,43 @@
-# PW_recovery_sweep:
-#   build_defaults:
-#     feed_tds: 75
-#     A_comp: 1.5
-#     B_comp: 0.1
-#     overall_water_recovery: 0.25
-#     time_steps: 20
-#     n_flushing_points: 5
-#     osmotic_overpressure: 3
-#     fixed_setup: False
-#     use_hold_up: True
-#     use_interval_initializer: False
-#     min_cycle_time_hr: 0.016667 # 1 minute
-#   sweep_param_loop:
-#     recovery:
-#       type: LinearSample
-#       param: overall_recovery
-#       lower_limit: 0.20
-#       upper_limit: 0.55
-#       num_samples: 11
+PW_recovery_sweep:
+  build_defaults:
+    feed_tds: 75
+    A_comp: 1.5
+    B_comp: 0.1
+    overall_water_recovery: 0.25
+    time_steps: 20
+    n_flushing_points: 5
+    osmotic_overpressure: 3
+    fixed_setup: False
+    use_hold_up: True
+    use_interval_initializer: False
+    min_cycle_time_hr: 0.016667 # 1 minute
+  sweep_param_loop:
+    recovery:
+      type: LinearSample
+      param: overall_recovery
+      lower_limit: 0.20
+      upper_limit: 0.55
+      num_samples: 11
 
-# BW_recovery_sweep:
-#   build_defaults:
-#     feed_tds: 5
-#     A_comp: 5
-#     B_comp: 0.5
-#     overall_water_recovery: 0.5
-#     time_steps: 20
-#     n_flushing_points: 5
-#     fixed_setup: False
-#     use_hold_up: True
-#     use_interval_initializer: True
-#     min_cycle_time_hr: 0.16667 # 10 minutes
-#   sweep_param_loop:
-#     recovery:
-#       type: LinearSample
-#       param: overall_recovery
-#       lower_limit: 0.75
-#       upper_limit: 0.95
-#       num_samples: 11
+BW_recovery_sweep:
+  build_defaults:
+    feed_tds: 5
+    A_comp: 5
+    B_comp: 0.5
+    overall_water_recovery: 0.5
+    time_steps: 20
+    n_flushing_points: 5
+    fixed_setup: False
+    use_hold_up: True
+    use_interval_initializer: True
+    min_cycle_time_hr: 0.16667 # 10 minutes
+  sweep_param_loop:
+    recovery:
+      type: LinearSample
+      param: overall_recovery
+      lower_limit: 0.75
+      upper_limit: 0.95
+      num_samples: 11
 
 SW_recovery_sweep:
   build_defaults:

@@ -564,13 +564,13 @@ def setup_optimization(
             )
         elif m.fs.operation_mode == "flushing":
             m.fs.flushing.flushing_efficiency.unfix()
-            m.fs.flushing.flushing_efficiency.setub(0.95)
+            m.fs.flushing.flushing_efficiency.setub(0.99)
             m.fs.flushing.flushing_efficiency.setlb(0.1)
 
             m.fs.flushing.flushing_time.setlb(min_flushing_time)
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
-        mp.flushing.flushing_efficiency.setub(0.95)
+        mp.flushing.flushing_efficiency.setub(0.99)
         mp.flushing.flushing_efficiency.setlb(0.1)
         mp.flushing.flushing_time.setlb(min_flushing_time)
     if mp.find_component("conduit") is not None:
