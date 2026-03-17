@@ -87,40 +87,50 @@ if __name__ == "__main__":
     }
     for water_case, axis_options in cases.items():
         dm.select_data(water_case)
-        wr = dm.get_selected_data()
-        wr.display()
-        cost_plotter = BreakDownPlotter(
-            wr,
-            save_folder="figs",
-            save_name=f"cost_breakdown_{water_case}",
-            show_fig=True,
-        )
-
-        cost_plotter.define_area_groups(
-            [
-                # {"ERD": {"label": None, "color": "#f0dcd3"}},
-                {"Pumps & ERD": {"label": None, "color": "#1f78b4"}},
-                {"RO": {"label": None, "color": "#a6cee3"}},
-            ]
-        )
-        cost_plotter.define_hatch_groups(
-            {
-                "LCOW_opex": {"label": "OPEX", "hatch": "", "color": "none"},
-                "LCOW_capex": {"label": "CAPEX", "hatch": "\\\\", "color": "none"},
-            }
-        )
-        cost_plotter.plotbreakdown(
-            xdata="Water recovery",
-            ydata="costing",
-            axis_options=axis_options,
-            legend_loc="upper left",
-            generate_figure=True,
-        )
-        # cost_plotter.fig.plot_line(
-        #     dm["optimal_design", "Water recovery"],
-        #     dm["optimal_design", "LCOW"],
-        #     label="Optimal design",
-        #     color="red",
-        #     linestyle="--",
-        # )
-        # cost_plotter.generate_figure()
+        wr_water = dm.get_selected_data()
+        for erd in ["True", "False"]:
+            wr_water.select_data(("add_erd", erd))
+            wr = wr_water.get_selected_data()
+            wr.display()
+            cost_plotter = BreakDownPlotter(
+                wr,
+                save_folder="figs",
+                save_name=f"steady_state_cost_breakdown_{water_case}_ERD_{erd}",
+                show_fig=True,
+            )
+            if erd == "True":
+                areas = [
+                    # {"ERD": {"label": None, "color": "#f0dcd3"}},
+                    {"Pumps & ERD": {"label": "Pumps & ERD", "color": "#1f78b4"}},
+                    {"RO": {"label": "RO", "color": "#a6cee3"}},
+                ]
+            else:
+                areas = [
+                    # {"ERD": {"label": None, "color": "#f0dcd3"}},
+                    {"Pumps & ERD": {"label": "Pumps", "color": "#1f78b4"}},
+                    {"RO": {"label": "RO", "color": "#a6cee3"}},
+                ]
+            cost_plotter.define_area_groups(areas)
+            cost_plotter.define_hatch_groups(
+                {
+                    "LCOW_opex": {"label": "OPEX", "hatch": "", "color": "none"},
+                    "LCOW_capex": {"label": "CAPEX", "hatch": "\\\\", "color": "none"},
+                }
+            )
+            labels = {"ylabel": "LCOW ($\$$/m$^3$)", "xlabel": "Water recovery (%)"}
+            labels.update(axis_options)
+            cost_plotter.plotbreakdown(
+                xdata="Water recovery",
+                ydata="costing",
+                axis_options=labels,
+                legend_loc="upper left",
+                generate_figure=True,
+            )
+            # cost_plotter.fig.plot_line(
+            #     dm["optimal_design", "Water recovery"],
+            #     dm["optimal_design", "LCOW"],
+            #     label="Optimal design",
+            #     color="red",
+            #     linestyle="--",
+            # )
+            # cost_plotter.generate_figure()
