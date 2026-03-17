@@ -89,15 +89,15 @@ if __name__ == "__main__":
     dm_ss = getssdata()
     dm = PsDataManager()
     dm.register_data_file(
-        "output_13/ccro_recovery_sweep_analysisType_BW_recovery_sweep.h5",
+        "output/ccro_recovery_sweep_analysisType_BW_recovery_sweep.h5",
         directory="Brackish water",
     )
     dm.register_data_file(
-        "output_13/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5",
+        "output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5",
         directory="Seawater",
     )
     dm.register_data_file(
-        "output_13/ccro_recovery_sweep_analysisType_PW_recovery_sweep.h5",
+        "output/ccro_recovery_sweep_analysisType_PW_recovery_sweep.h5",
         directory="Produced water",
     )
 

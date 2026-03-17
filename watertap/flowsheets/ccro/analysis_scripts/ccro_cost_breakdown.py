@@ -20,10 +20,10 @@ if __name__ == "__main__":
         "output/ccro_recovery_sweep_analysisType_BW_recovery_sweep.h5",
         directory="Brackish water",
     )
-    # dm.register_data_file(
-    #     "output_13/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5",
-    #     directory="Seawater",
-    # )
+    dm.register_data_file(
+        "output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5",
+        directory="Seawater",
+    )
     dm.register_data_file(
         "output/ccro_recovery_sweep_analysisType_PW_recovery_sweep.h5",
         directory="Produced water",
@@ -80,19 +80,38 @@ if __name__ == "__main__":
     cm.build()
     # dm.display()
     # # assert False
-    for water_case in ["Brackish water", "Produced water"]:
+    cases = {
+        "Brackish water": {
+            "xticks": [75, 80, 85, 90, 95],
+            "yticks": [0, 0.1, 0.2, 0.3, 0.4],
+        },
+        "Seawater": {
+            "xticks": [45, 50, 55, 60],
+            "yticks": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7],
+        },
+        "Produced water": {
+            "xticks": [20, 30, 40, 50, 55],
+            "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0],
+        },
+    }
+    for water_case, axis_options in cases.items():
         dm.select_data(water_case)
         wr = dm.get_selected_data()
-        cost_plotter = BreakDownPlotter(wr)
+        cost_plotter = BreakDownPlotter(
+            wr, save_folder="figs", save_name=f"cost_breakdown_{water_case}"
+        )
         cost_plotter.define_area_groups(
             {"RO": {}, "Feed pump": {}, "Recycle pump": {}, "Conduit": {}}
         )
+        cost_plotter.define_hatch_groups(
+            {
+                "LCOW_opex": {"label": "OPEX", "hatch": "", "color": "none"},
+                "LCOW_capex": {"label": "CAPEX", "hatch": "\\\\", "color": "none"},
+            }
+        )
         cost_plotter.plotbreakdown(
             xdata="Water recovery",
-            ydata=["costing", "LCOW"],
-            axis_options={
-                "ylabel": "LCOW ($\$$/m$^3$)",
-                "xlabel": "Water recovery (%)",
-            },
+            ydata="costing",
+            axis_options=axis_options,
             generate_figure=True,
         )
