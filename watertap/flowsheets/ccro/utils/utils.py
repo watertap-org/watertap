@@ -320,7 +320,7 @@ def report_ro(blk, w=30):
         f'{f"Rejection":<{w}s}{value(blk.RO.rejection_phase_comp[0, "Liq", "NaCl"])*100:<{w}.3f}{"%"}'
     )
     print(
-        f'{f"∆P":<{w}s}{value(pyunits.convert(blk.RO.deltaP[0], to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
+        f'{f"deltaP":<{w}s}{value(pyunits.convert(blk.RO.deltaP[0], to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
     )
     acomp = blk.RO.A_comp[0, "H2O"]
     print(

@@ -72,8 +72,8 @@ def add_costing(m, hpro_costing=False):
         stage.RO.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing, costing_method_arguments=cma_ro
         )
-
-    m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    if m.fs.find_component("ERD") is not None:
+        m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
 
@@ -279,9 +279,11 @@ def run_n_stage_system(
     perm_conc=0.5,
     pump_dict={1: True},  # first stage always has pump
     hpro_costing=False,
+    add_erd=True,
     **kwargs,
 ):
-
+    print(n_stages, pump_dict)
+    print(f"Running {n_stages} stage system with {sum(pump_dict.values())} pumps")
     m = ConcreteModel()
     m.flow_vol = flow_vol
     m.salt_mass_frac = salt_mass_frac
@@ -299,8 +301,8 @@ def run_n_stage_system(
     for n, stage in m.fs.stage.items():
         build_stage(stage, m=m, add_pump=pump_dict.get(n, False))
         # set_stage_bounds(stage, m=m)
-
-    m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
+    if add_erd:
+        m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
 
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.product_mixer = Mixer(
@@ -350,13 +352,18 @@ def run_n_stage_system(
             destination=m.fs.product_mixer.find_component(f"stage{n}"),
         )
         m.fs.add_component(f"stage{n}_product_to_mixer", a)
-        if n == m.fs.stages_set.last():
+        if n == m.fs.stages_set.last() and add_erd:
             # connect this stage disposal to the ERD
             a = Arc(source=stage.disposal.outlet, destination=m.fs.ERD.inlet)
             m.fs.add_component(f"stage{n}_to_ERD", a)
 
-    m.fs.ERD_to_disposal = Arc(source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet)
-
+    if add_erd:
+        m.fs.ERD_to_disposal = Arc(
+            source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet
+        )
+    else:
+        a = Arc(source=stage.disposal.outlet, destination=m.fs.disposal.inlet)
+        m.fs.add_component(f"stage{n}_to_disposal", a)
     m.fs.product_mixer_to_product = Arc(
         source=m.fs.product_mixer.outlet, destination=m.fs.product.inlet
     )
@@ -378,8 +385,8 @@ def run_n_stage_system(
 
     for n, stage in m.fs.stage.items():
         scale_stage(stage, m=m)
-
-    iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
+    if m.fs.find_component("ERD") is not None:
+        iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
     iscale.calculate_scaling_factors(m)
 
     #### SET OPERATING CONDITIONS
@@ -409,9 +416,9 @@ def run_n_stage_system(
 
     for n, stage in m.fs.stage.items():
         set_stage_op_conditions(stage, m=m, ro_op_dict=ro_op_dict)
-
-    m.fs.ERD.efficiency_pump.fix(0.95)
-    m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
+    if add_erd:
+        m.fs.ERD.efficiency_pump.fix(0.95)
+        m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
 
     #### INITIALIZE
 
@@ -429,13 +436,15 @@ def run_n_stage_system(
         if n != m.fs.stages_set.last():
             a = m.fs.find_component(f"stage{n}_to_stage{n+1}")
             propagate_state(a)
-        if n == m.fs.stages_set.last():
+        if n == m.fs.stages_set.last() and add_erd:
             a = m.fs.find_component(f"stage{n}_to_ERD")
             propagate_state(a)
-
-    m.fs.ERD.initialize()
-
-    propagate_state(m.fs.ERD_to_disposal)
+        elif n == m.fs.stages_set.last():
+            a = m.fs.find_component(f"stage{n}_to_disposal")
+            propagate_state(a)
+    if add_erd:
+        m.fs.ERD.initialize()
+        propagate_state(m.fs.ERD_to_disposal)
     m.fs.disposal.initialize()
 
     m.fs.product_mixer.initialize()
@@ -555,6 +564,7 @@ if __name__ == "__main__":
         water_recovery=0.5,
         pump_dict={1: True, 2: True},
         ro_op_dict=sw_ro_op_dict,
+        add_erd=True,
     )
     m_sw = fix_ro_recovery(m_sw, 0.6)
     results = solve_model(m_sw)
