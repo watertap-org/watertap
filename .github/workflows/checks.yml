@@ -71,7 +71,7 @@ jobs:
           pylint watertap
 
   tests:
-    name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
+    name: Tests (conda env:${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     needs: [code-formatting]
     strategy:
@@ -99,20 +99,12 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v3
       with:
-        activate-environment: watertap-dev
-        python-version: ${{ matrix.python-version }}
         miniforge-version: latest
+        environment-file: environment.yml
     - name: Install dependencies
       run: |
-        echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip setuptools wheel pandoc
-        echo '::endgroup::'
-        echo '::group::Output of "pip install" commands'
-        pip install -r requirements-dev.txt
-        echo '::endgroup::'
-        echo '::group::Output of "conda install -c conda-forge cyipopt" command'
-        conda install -c conda-forge cyipopt
-        echo '::endgroup::'
+        echo 'install python =${{ matrix.python-version }}'
+          conda install python=${{ matrix.python-version }} --quiet --yes
         echo '::group::Display installed packages'
         conda list
         pip list
@@ -170,8 +162,8 @@ jobs:
           # see codecov/codecov-action#1487
           version: v0.6.0
 
-  user-mode-pytest:
-    name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
+  library-mode-pytest:
+    name: pytest (library mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     needs: [code-formatting]
     strategy:
