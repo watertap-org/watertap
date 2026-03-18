@@ -28,7 +28,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
 
     mp.n_flushing_points = Var()
     mp.n_flushing_points.fix(mp.flushing_points)
-    
+
     mp.dead_volume_to_area_ratio = Var(
         initialize=1,
         domain=NonNegativeReals,

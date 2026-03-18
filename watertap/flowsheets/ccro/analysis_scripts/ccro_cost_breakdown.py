@@ -98,10 +98,12 @@ if __name__ == "__main__":
         dm.select_data(water_case)
         wr = dm.get_selected_data()
         cost_plotter = BreakDownPlotter(
-            wr, save_folder="figs", save_name=f"ccro_cost_breakdown_{water_case}"
+            wr,
+            save_folder="ccro_cost_breakdown_figs",
+            save_name=f"ccro_cost_breakdown_{water_case}",
         )
         cost_plotter.define_area_groups(
-            {"RO": {}, "Feed pump": {}, "Recycle pump": {}, "Conduit": {}}
+            {"Feed pump": {}, "Recycle pump": {}, "RO": {}, "Conduit": {}}
         )
         labels = {"ylabel": "LCOW ($\$$/m$^3$)", "xlabel": "Water recovery (%)"}
         labels.update(axis_options)
@@ -116,4 +118,5 @@ if __name__ == "__main__":
             ydata="costing",
             axis_options=labels,
             generate_figure=True,
+            fig_options={"width": 2, "height": 2},
         )

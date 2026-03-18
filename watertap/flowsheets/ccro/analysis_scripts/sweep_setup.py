@@ -53,7 +53,7 @@ def main():
         save_name="ccro_recovery_sweep",
         saving_dir=here,
         number_of_subprocesses=1,
-        num_loop_workers=1,
+        num_loop_workers=3,
     )
 
     # loopTool(

@@ -88,13 +88,15 @@ if __name__ == "__main__":
     for water_case, axis_options in cases.items():
         dm.select_data(water_case)
         wr_water = dm.get_selected_data()
-        for erd in ["True", "False"]:
-            wr_water.select_data(("add_erd", erd))
+        for erd in ["False"]:
+            wr_water.select_data(
+                [("add_erd", erd), ("stage_sim_cases", "1_stage_1_pump")]
+            )
             wr = wr_water.get_selected_data()
             wr.display()
             cost_plotter = BreakDownPlotter(
                 wr,
-                save_folder="figs",
+                save_folder="steady_state_break_down_figs",
                 save_name=f"steady_state_cost_breakdown_{water_case}_ERD_{erd}",
                 show_fig=True,
             )
@@ -125,6 +127,7 @@ if __name__ == "__main__":
                 axis_options=labels,
                 legend_loc="upper left",
                 generate_figure=True,
+                fig_options={"width": 2, "height": 2},
             )
             # cost_plotter.fig.plot_line(
             #     dm["optimal_design", "Water recovery"],

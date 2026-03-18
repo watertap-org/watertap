@@ -235,34 +235,6 @@ if __name__ == "__main__":
 
                     erd_included = True
                     other_d_plotted = True
-                # elif d in ["Average product flow rate"]:
-                #     ccro_flux = (
-                #         dm[c, "Average product flow rate"].data
-                #         / dm[c, "Membrane area"].data
-                #     )
-                #     dm.add_data(c, "CCRO flux", ccro_flux, units="m^2/L/hr")
-                #     fig.plot_line(dm[c, "Water recovery"], dm[c, "CCRO flux"], **opts)
-
-                #     area_data = dm_ss["optimal_design", c, ("RO 1", "RO area")]
-                #     if ("optimal_design", c, ("RO 2", "RO area")) in dm_ss:
-                #         area_data_2 = dm_ss["optimal_design", c, ("RO 2", "RO area")]
-                #         area_data_2.data[area_data_2.data == 0] = area_data.data[
-                #             area_data_2.data == 0
-                #         ]
-                #         area_data = area_data_2.data + area_data.data
-                #     ro_product_flow = dm_ss[
-                #         "optimal_design", c, "Average product flow rate"
-                #     ].data
-                #     ro_flux = ro_product_flow / area_data.data
-                #     dm.add_data(c, "RO flux", ro_flux, units="m^2/L/hr")
-                #     fig.plot_line(
-                #         dm[c, "Water recovery"],
-                #         dm[c, "RO flux"],
-                #         color=opts.color,
-                #         marker="d",
-                #         ls="--",
-                #     )
-                #     other_d_plotted = True
                 else:
                     fig.plot_line(dm[c, "Water recovery"], dm[c, d], **opts)
                 if d == "LCOW" or d == "SEC":

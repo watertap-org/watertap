@@ -48,6 +48,7 @@ from watertap.flowsheets.ccro.utils.utils import (
     report_n_stage_system,
     relax_bounds_for_low_salinity_waters,
 )
+from watertap.flowsheets.ccro.ccro_flowsheet_functions.scaling import overscale_ro
 
 solver = get_solver()
 
@@ -128,7 +129,7 @@ def build_stage(
 
     blk.flux = Var(
         initialize=25,
-        bounds=(0.5, 60),
+        bounds=(0.5, 50),
         units=pyunits.liter / pyunits.m**2 / pyunits.hour,
         doc="Stage flux",
     )
@@ -183,7 +184,14 @@ def set_stage_op_conditions(blk, m=None, max_pressure=300e5, ro_op_dict={}):
 
     ###################################
     # RO
-
+    for phase in blk.RO.flux_mass_phase_comp:
+        if "H2O" in phase:
+            blk.RO.flux_mass_phase_comp[phase].setlb(
+                0 * pyunits.kg / (pyunits.m**2 * pyunits.hr)
+            )
+            blk.RO.flux_mass_phase_comp[phase].setub(
+                200 * pyunits.kg / (pyunits.m**2 * pyunits.hr)
+            )
     blk.RO.A_comp.fix(4.2e-12)
     blk.RO.B_comp.fix(3.5e-8)
     blk.RO.feed_side.channel_height.fix(1e-3)
@@ -193,6 +201,10 @@ def set_stage_op_conditions(blk, m=None, max_pressure=300e5, ro_op_dict={}):
     blk.RO.area.fix(30)
     blk.RO.length.setlb(1)
 
+    blk.RO.feed_side.velocity[0, 0].setub(0.3)
+    blk.RO.feed_side.velocity[0, 0].setlb(0.1)
+    blk.RO.feed_side.cp_modulus.setub(20)
+    blk.RO.feed_side.friction_factor_darcy.setub(20)
     for p, val in ro_op_dict.items():
         v = blk.RO.find_component(p)
         if v is not None:
@@ -203,7 +215,7 @@ def set_stage_op_conditions(blk, m=None, max_pressure=300e5, ro_op_dict={}):
 
 
 def scale_stage(blk, m=None):
-
+    overscale_ro(blk.RO, m.fs.properties, full_scaling=True)
     if blk.add_pump:
         iscale.set_scaling_factor(blk.pump.control_volume.work, 1e-3)
         iscale.set_scaling_factor(
@@ -211,23 +223,21 @@ def scale_stage(blk, m=None):
         )
         iscale.set_scaling_factor(blk.pump.work_fluid[0], 1)
 
-    iscale.set_scaling_factor(blk.RO.area, 1e-2)
-    iscale.set_scaling_factor(blk.RO.width, 1e-2)
-    iscale.set_scaling_factor(blk.RO.feed_side.area, 1e2)
+    # iscale.set_scaling_factor(blk.RO.area, 1e-2)
+    # iscale.set_scaling_factor(blk.RO.width, 1e-2)
+    # iscale.set_scaling_factor(blk.RO.feed_side.area, 1e2)
 
-    for e in blk.RO.feed_side.difference_elements:
-        iscale.set_scaling_factor(
-            blk.RO.mass_transfer_phase_comp[0, e, "Liq", "NaCl"], 1e4
-        )
-        iscale.set_scaling_factor(
-            blk.RO.feed_side.mass_transfer_term[0, e, "Liq", "NaCl"], 1e4
-        )
+    # for e in blk.RO.feed_side.difference_elements:
+    #     iscale.set_scaling_factor(
+    #         blk.RO.mass_transfer_phase_comp[0, e, "Liq", "NaCl"], 1e4
+    #     )
+    #     iscale.set_scaling_factor(
+    #         blk.RO.feed_side.mass_transfer_term[0, e, "Liq", "NaCl"], 1e4
+    #     )
 
-    for b in [blk.feed, blk.product, blk.disposal]:
-        b.properties[0].flow_vol_phase
-        b.properties[0].conc_mass_phase_comp
-
-    iscale.calculate_scaling_factors(blk)
+    # for b in [blk.feed, blk.product, blk.disposal]:
+    #     b.properties[0].flow_vol_phase
+    #     b.properties[0].conc_mass_phase_comp
 
 
 def init_stage(blk, m=None):
@@ -559,16 +569,23 @@ if __name__ == "__main__":
     # # SW
 
     m = m_sw = run_n_stage_system(
-        n_stages=2,
-        salt_mass_frac=35e-3,
+        n_stages=1,
+        salt_mass_frac=5e-3,
         water_recovery=0.5,
         pump_dict={1: True, 2: True},
         ro_op_dict=sw_ro_op_dict,
-        add_erd=True,
+        add_erd=False,
     )
     m_sw = fix_ro_recovery(m_sw, 0.6)
+
     results = solve_model(m_sw)
+
     report_n_stage_system(m_sw)
+    for r in [0.7, 0.8, 0.9, 0.92, 0.93, 0.94, 0.95]:
+        m.fs.system_recovery.fix(r)
+
+        results = solve_model(m_sw)
+        report_n_stage_system(m_sw)
 
     #### #### #### #### #### #### #### ###
     # PW

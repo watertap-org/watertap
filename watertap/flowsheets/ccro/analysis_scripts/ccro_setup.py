@@ -35,11 +35,11 @@ def build(
     if feed_tds > 70:
         use_interval_initializer = False
 
-    if feed_tds >= 50:
-        min_cycle_time_hr = 5 / 60  # 5 minutes
+    # if feed_tds >= 50:
+    #     min_cycle_time_hr = 5 / 60  # 5 minutes
 
-    if feed_tds >= 75:
-        min_cycle_time_hr = 1 / 60  # 1 minute
+    # if feed_tds >= 75:
+    #     min_cycle_time_hr = 1 / 60  # 1 minute
 
     cc_config = CCROConfiguration()
     cc_config["A_comp"] = A_comp * (
@@ -95,7 +95,7 @@ def build(
     solve_model(mp)
 
     mp.ramp_rate.display()
-
+    mp.cycle_time_ratio.setlb(0.8)
     # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
     # mp.max_permeate_concentration_constraint.activate()
     mp.permeate_concentration.setub(0.5)
@@ -182,10 +182,10 @@ if __name__ == "__main__":
     # )
 
     mp = build(
-        feed_tds=35,
+        feed_tds=75,
         A_comp=1.5,
         B_comp=0.1,
-        overall_water_recovery=0.45,
+        overall_water_recovery=0.25,
         time_steps=20,
         n_flushing_points=5,
         # osmotic_overpressure=3,
@@ -193,6 +193,6 @@ if __name__ == "__main__":
         use_interval_initializer=True,
         min_cycle_time_hr=0.16667,
     )
-    mp.overall_recovery.fix(0.45)
+    mp.overall_recovery.fix(0.25)
     solve_model(mp)
     mp.ramp_rate.display()

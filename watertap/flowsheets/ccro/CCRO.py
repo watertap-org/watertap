@@ -874,7 +874,7 @@ def print_results_table(mp, w=15):
     # ── Summary metrics ─────────────────────────────────────────────
     summary = {}
     summary["Total cycle time (s)"] = mp.total_cycle_time.value
-
+    summary["Cycle time ratio"] = mp.cycle_time_ratio.value
     if mp.flushing_points > 1:
         flushing_block = mp.flushing
     else:

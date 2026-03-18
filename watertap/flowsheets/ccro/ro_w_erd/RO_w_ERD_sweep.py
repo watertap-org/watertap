@@ -54,7 +54,7 @@ def main():
         saving_dir=here,
         number_of_subprocesses=1,
         # h5_backup=False,
-        num_loop_workers=15,
+        num_loop_workers=10,
     )
 
     # m = ro.run_n_stage_system(

@@ -5,12 +5,34 @@ import numpy as np
 from psPlotKit.data_plotter.ps_line_plotter import LinePlotter
 from psPlotKit.data_plotter.fig_generator import FigureGenerator
 
+
+def get_sequence(data_manager, dir, key, time_periods):
+    sequence = []
+    for t in time_periods:
+        if isinstance(dir, str):
+            dir = (dir,)
+        if (*dir, (t, key)) in data_manager:
+            sequence.append(data_manager[(*dir, (t, key))].data)
+    sequence = np.array(sequence)
+    return sequence.T
+
+
 if __name__ == "__main__":
-    sweep_file = "output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5"
-    # sweep_file = "output/ccro_flush_eff_sweep_var_recovery_analysisType_SW_flushing_efficiency_sweep.h5"
-    sweep_file = "output/ccro_flush_eff_sweep_var_recovery_analysisType_SW_flushing_eff_sweep_var_recovery.h5"
-    dm = PsDataManager(sweep_file)
-    n_filt_time_steps = 10
+    dm = PsDataManager()
+    dm.register_data_file(
+        "output/ccro_recovery_sweep_analysisType_BW_recovery_sweep.h5",
+        directory="Brackish water",
+    )
+    dm.register_data_file(
+        "output/ccro_recovery_sweep_analysisType_SW_recovery_sweep.h5",
+        directory="Seawater",
+    )
+    dm.register_data_file(
+        "output/ccro_recovery_sweep_analysisType_PW_recovery_sweep.h5",
+        directory="Produced water",
+    )
+
+    n_filt_time_steps = 20
     n_flush_time_steps = 5
     n_time_periods = n_filt_time_steps + n_flush_time_steps
 
@@ -21,8 +43,6 @@ if __name__ == "__main__":
     xvar = "Flushing Efficiency"
     yvar = "LCOW"
     yvar = "Total Filtration Time"
-    dm.register_data_key("costing.LCOW", "LCOW")
-    dm.register_data_key("costing.SEC", "SEC")
     dm.register_data_key("total_cycle_time", "Total Cycle Time", "s")
     dm.register_data_key("total_filtration_time", "Total Filtration Time")
     dm.register_data_key("total_flush_volume", "Total Flushing Volume")
@@ -51,7 +71,7 @@ if __name__ == "__main__":
             f"costing.LCOW_aggregate_direct_capex[{u}]", f"{n} Direct CAPEX"
         )
 
-    for t in range(n_flush_time_steps):
+    for t in time_periods:
         print(t)
 
         dm.register_data_key(
@@ -75,22 +95,6 @@ if __name__ == "__main__":
                 "Flushing Time",
             ),
             # "kW",
-        )
-        dm.register_data_key(
-            f"blocks[{t}].process.fs.P1.control_volume.deltaP[0.0]",
-            (
-                t,
-                "Pump 1 dP",
-            ),
-            "bar",
-        )
-        dm.register_data_key(
-            f"blocks[{t}].process.fs.P2.control_volume.deltaP[0.0]",
-            (
-                t,
-                "Pump 2 dP",
-            ),
-            "bar",
         )
         dm.register_data_key(
             f"blocks[{t}].process.fs.P1.control_volume.work[0.0]",
@@ -142,12 +146,20 @@ if __name__ == "__main__":
             "%",
         )
         dm.register_data_key(
-            f"blocks[{t}].process.fs.RO.area",
+            f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,1.0].conc_mass_phase_comp[Liq,NaCl]",
             (
                 t,
-                "RO area",
+                "RO outlet TDS",
             ),
-            "m^2",
+            "g/L",
+        )
+        dm.register_data_key(
+            f"blocks[{t}].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+            (
+                t,
+                "RO inlet TDS",
+            ),
+            "g/L",
         )
         dm.register_data_key(
             f"ramp_rate[{t}]",
@@ -155,55 +167,112 @@ if __name__ == "__main__":
                 t,
                 "Ramp Rate",
             ),
-            # conversion_factor=14.5037737730, assign_units="psi/min",
-            # "psi/min",
         )
 
     dm.load_data()
     dm.display()
-
-    t_sequence = list()
-    y_sequence = list()
-    # yvar = "Recycle Rate"
-    yvar = "Pump 1 Pressure"
-    # yvar = "Ramp Rate"
-    # yvar = "Pump 2 dP"
-    tvar = "Operation Time Points"
-    recovery = 0.5
-    for t in time_periods:
-        t_sequence.append(dm[(("overall_recovery", recovery), (t, tvar))].data)
-        y_sequence.append(dm[(("overall_recovery", recovery), (t, yvar))].data)
-        # print(dm[(("overall_recovery", 0.6), (t, tvar))].data)
-    #     t_sequence.append(dm[(t, tvar)].data)
-    #     y_sequence.append(dm[(t, yvar)].data)
-
-    y_sequence = [list(group) for group in zip(*y_sequence)]
-    # t_sequence.append(dm[(t, tvar)].data)
-    t_sequence = [list(group) for group in zip(*t_sequence)]
-    print(t_sequence)
-
-    fig = FigureGenerator()
-    fig.init_figure()
-    # # print(dm[xvar].data)
-
-    for t, s, r in zip(
-        t_sequence, y_sequence, dm[(("overall_recovery", recovery), xvar)].data
-    ):
-
-        _r = f"{int(r)}%"
-        fig.plot_line(xdata=t, ydata=s, label=r)
-
-    fig.set_axis_ticklabels(
-        xlabel="Cycle Time (min)",
-        ylabel=yvar,
-        ax_idx=0,
-    )
-    fig.add_legend()
-    fig.show()
-
-    fig_save = sweep_file.replace(".h5", f"_{yvar}.png")
-    fig.save_fig(name=fig_save)
-
+    cases = {
+        "Brackish water": {
+            "recoveries": [75, 85, 95],
+            "xticks": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "yticks_pressure": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+            "yticks_flux": [0, 10, 20, 30, 40, 50, 60],
+            "yticks_tds": [0, 20, 40, 60, 80, 100],
+        },
+        "Seawater": {
+            "recoveries": [45, 51, 60],
+            "xticks": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "yticks_pressure": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+            "yticks_flux": [0, 10, 20, 30, 40, 50],
+            "yticks_tds": [0, 20, 40, 60, 80, 100],
+        },
+        "Produced water": {
+            "recoveries": [20, 40, 55],
+            "xticks": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            "yticks_pressure": [0, 25, 50, 75, 100, 125, 150, 175, 200],
+            "yticks_flux": [0, 10, 20, 30, 40, 50],
+            "yticks_tds": [0, 50, 100, 150],
+        },
+    }
+    for case, opts in cases.items():
+        fig = FigureGenerator()
+        fig.init_figure()
+        for r in opts["recoveries"]:
+            time = get_sequence(dm, case, "Operation Time Points", time_periods)
+            pressure = get_sequence(dm, case, "Pump 1 Pressure", time_periods)
+            print(
+                r,
+                dm[(case, "Water Recovery")].data,
+            )
+            idx = np.where(abs(dm[(case, "Water Recovery")].data - float(r)) <= 1e-8)[
+                0
+            ][0]
+            # print(
+            #     len(time[idx]),
+            #     len(pressure[idx]),
+            #     r,
+            #     dm[(case, "Water Recovery")].data,
+            #     idx,
+            # )
+            time = [0] + list(time[idx])
+            pressure = [pressure[idx][-1]] + list(pressure[idx])
+            fig.plot_line(
+                xdata=time, ydata=pressure, label=f"Recovery of {r}%", marker="o"
+            )
+        fig.set_axis(
+            xlabel="Cycle Time (min)",
+            ylabel="Pressure (bar)",
+            xticks=opts["xticks"],
+            yticks=opts["yticks_pressure"],
+        )
+        fig.add_legend()
+        fig.save("ccro_time_series_figs", f"{case}_pressure_time_series.png")
+        fig = FigureGenerator()
+        fig.init_figure()
+        for i, r in enumerate(opts["recoveries"]):
+            time = get_sequence(dm, case, "Operation Time Points", time_periods)
+            tds_inlet = get_sequence(dm, case, "RO inlet TDS", time_periods)
+            tds_outlet = get_sequence(dm, case, "RO outlet TDS", time_periods)
+            print(
+                r,
+                dm[(case, "Water Recovery")].data,
+            )
+            idx = np.where(abs(dm[(case, "Water Recovery")].data - float(r)) <= 1e-8)[
+                0
+            ][0]
+            # print(
+            #     len(time[idx]),
+            #     len(pressure[idx]),
+            #     r,
+            #     dm[(case, "Water Recovery")].data,
+            #     idx,
+            # )
+            time = [0] + list(time[idx])
+            tds_inlet = [tds_inlet[idx][-1]] + list(tds_inlet[idx])
+            tds_outlet = [tds_outlet[idx][-1]] + list(tds_outlet[idx])
+            fig.plot_line(
+                xdata=time,
+                ydata=tds_inlet,
+                color=i,
+                marker="o",
+            )
+            fig.plot_line(
+                xdata=time,
+                ydata=tds_outlet,
+                color=i,
+                marker="d",
+            )
+            fig.plot_line([], [], label=f"Recovery of {r}% ", marker="o", color=i)
+        fig.plot_line([], [], label=f"Inlet", marker="o", color="black")
+        fig.plot_line([], [], label=f"Outlet", marker="d", color="black")
+        fig.set_axis(
+            xlabel="Cycle Time (min)",
+            ylabel="RO tds (g/L)",
+            xticks=opts["xticks"],
+            yticks=opts["yticks_tds"],
+        )
+        fig.add_legend()
+        fig.save("ccro_time_series_figs", f"{case}_tds_time_series.png")
     # t_sequence = list()
     # y_sequence = list()
     # # yvar = "Recycle Rate"

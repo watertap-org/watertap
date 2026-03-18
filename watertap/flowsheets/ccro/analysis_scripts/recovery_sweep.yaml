@@ -17,7 +17,7 @@ PW_recovery_sweep:
       param: overall_recovery
       lower_limit: 0.20
       upper_limit: 0.55
-      num_samples: 11
+      num_samples: 36
 
 BW_recovery_sweep:
   build_defaults:
@@ -37,7 +37,7 @@ BW_recovery_sweep:
       param: overall_recovery
       lower_limit: 0.75
       upper_limit: 0.95
-      num_samples: 11
+      num_samples: 21
 
 SW_recovery_sweep:
   build_defaults:
@@ -57,7 +57,7 @@ SW_recovery_sweep:
       param: overall_recovery
       lower_limit: 0.45
       upper_limit: 0.60
-      num_samples: 11
+      num_samples: 16
 
 
 # salinity_and_recovery_sweep:

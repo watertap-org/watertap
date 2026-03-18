@@ -28,7 +28,7 @@ PW_sweep:
           param: fs.system_recovery
           lower_limit: 0.2
           upper_limit: 0.55
-          num_samples: 11
+          num_samples: 36
 
 SW_sweep:
   build_defaults:
@@ -57,9 +57,9 @@ SW_sweep:
         recovery:
           type: LinearSample
           param: fs.system_recovery
-          lower_limit: 0.4
+          lower_limit: 0.45
           upper_limit: 0.6
-          num_samples: 11
+          num_samples: 16
 
 BW_sweep:
   build_defaults:
@@ -90,7 +90,7 @@ BW_sweep:
           param: fs.system_recovery
           lower_limit: 0.75
           upper_limit: 0.95
-          num_samples: 11
+          num_samples: 21
 ############################
 
 # BW_1_stage_1_pump_recovery_sweep:
