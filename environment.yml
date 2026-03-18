@@ -55,7 +55,7 @@ dependencies:
 
     # watertap ecosystem dependencies
     - watertap-solvers==24.12.9
-    - parameter-sweep @ git+https://github.com/watertap-org/parameter-sweep.git
+    - parameter-sweep==0.1.0+g54e62c4ba
     - reaktoro-pse @ git+https://github.com/watertap-org/reaktoro-pse.git  # update to release when available
 
     # editable install
