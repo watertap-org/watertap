@@ -49,14 +49,14 @@ dependencies:
   - pip
 
   - pip:
-    # watertap specific dependencies
+    # watertap project dependencies
     - pyomo==6.10.0
     - idaes-pse>=2.11.0rc0
 
-    # --- WaterTAP ecosystem ---
+    # watertap ecosystem dependencies
     - watertap-solvers==24.12.9
     - parameter-sweep @ git+https://github.com/watertap-org/parameter-sweep.git
     - reaktoro-pse @ git+https://github.com/watertap-org/reaktoro-pse.git  # update to release when available
 
-    # --- This package (editable install) ---
+    # editable install
     - -e .
