@@ -13,7 +13,6 @@
 Air-water equilibrium property package
 """
 
-
 import itertools
 from enum import Enum, auto
 
