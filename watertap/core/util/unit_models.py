@@ -110,4 +110,3 @@ def calculate_operating_pressure(
     op_pressure = value(tmp.feed[0].pressure_osm_phase["Liq"]) * over_pressure_factor
 
     return op_pressure
-
