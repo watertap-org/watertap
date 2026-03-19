@@ -194,7 +194,9 @@ Equations
 Class Documentation
 -------------------
 
-* :mod:`watertap.unit_models.reverse_osmosis_0D`
+.. automodule:: watertap.unit_models.reverse_osmosis_0D
+    :members:
+    :noindex:
 
 References
 ----------

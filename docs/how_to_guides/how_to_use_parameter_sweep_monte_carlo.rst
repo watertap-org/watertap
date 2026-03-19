@@ -1,5 +1,4 @@
 How to do Monte Carlo testing with Parameter Sweep
-==================================================
 
 Overview
 --------
@@ -80,10 +79,17 @@ Once the model has been setup, we specify the variables to randomly sample using
 
     def build_sweep_params(model, num_samples=1):
         sweep_params = dict()
-        sweep_params['Spacer_porosity'] = UniformSample(model.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples)
-        sweep_params['A_comp'] = NormalSample(model.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples)
-        sweep_params['B_comp'] = NormalSample(model.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples)
+        sweep_params["Spacer_porosity"] = UniformSample(
+            model.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples
+        )
+        sweep_params["A_comp"] = NormalSample(
+            model.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples
+        )
+        sweep_params["B_comp"] = NormalSample(
+            model.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples
+        )
         return sweep_params
+
 
 where the ``spacer_porosity`` attribute will be randomly selected from a uniform distribution of values in the range :math:`[0.95, 0.99]` and model values ``A_comp`` and ``B_comp`` will be drawn from normal distributions centered at :math:`4.0\times10^{-12}` and :math:`3.5\times10^{-8}` with standard deviations of :math:`12-14\%`, respectively.  For this example, we'll extract flowsheet outputs associated with cost, the levelized cost of water (LCOW) and energy consumption (EC), defined via another dictionary
 
@@ -101,7 +107,7 @@ With the generating functions defined and suitably initialized, we can call the 
 .. testcode::
 
     # Define the local results directory, num_samples, and seed (if desired)
-    debugging_data_dir = 'local_results'
+    debugging_data_dir = "local_results"
     num_samples = 25
     seed = None
 

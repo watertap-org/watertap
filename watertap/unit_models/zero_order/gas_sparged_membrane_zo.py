@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -12,6 +12,7 @@
 """
 This module contains a zero-order representation of a gas-sparged membrane unit.
 """
+
 from types import MethodType
 from idaes.core import declare_process_block_class
 
@@ -83,12 +84,12 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self.properties_treated = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of treated water",
-            **tmp_dict_2
+            **tmp_dict_2,
         )
         self.properties_byproduct = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of byproduct stream",
-            **tmp_dict_2
+            **tmp_dict_2,
         )
 
         # Create Ports

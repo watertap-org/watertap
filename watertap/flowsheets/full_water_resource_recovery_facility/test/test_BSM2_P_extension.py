@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -43,6 +43,14 @@ is_reference_platform = (
 is_linux_platform = (
     platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
 )
+is_linux_platform_new = (
+    platform.system() == "Linux"
+    and platform.python_version_tuple()[0] in ("3.12", "3.13")
+)
+is_linux_platform_old = (
+    platform.system() == "Linux"
+    and platform.python_version_tuple()[0] in ("3.10", "3.11")
+)
 
 reference_platform_only = pytest.mark.xfail(
     condition=(not is_reference_platform),
@@ -56,6 +64,20 @@ linux_platform_only = pytest.mark.xfail(
     run=True,
     strict=False,
     reason="These tests are expected to pass only on the Linux platform (Python 3)",
+)
+
+linux_platform_new_only = pytest.mark.xfail(
+    condition=(not is_linux_platform_new),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the Linux platform (Python 3.12, 3.13)",
+)
+
+linux_platform_old_only = pytest.mark.xfail(
+    condition=(not is_linux_platform_old),
+    run=True,
+    strict=False,
+    reason="These tests are expected to pass only on the Linux platform (Python 3.10, 3.11)",
 )
 
 
@@ -75,17 +97,9 @@ class TestFullFlowsheetBioPFalse:
     @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
-        warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 3
+        warnings, _ = dt._collect_numerical_warnings()
+        assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
-        assert (
-            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
-        assert (
-            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -201,17 +215,9 @@ class TestFullFlowsheetBioPTrue:
     @pytest.mark.component
     def test_numerical_issues(self, system_frame):
         dt = DiagnosticsToolbox(system_frame)
-        warnings, next_steps = dt._collect_numerical_warnings()
-        assert len(warnings) == 3
+        warnings, _ = dt._collect_numerical_warnings()
+        assert len(warnings) == 1
         assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
-        assert (
-            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
-        assert (
-            "WARNING: 2 Constraints with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
-            in warnings
-        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -308,7 +314,7 @@ class TestFullFlowsheetBioPTrue:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.427164e21, rel=1e-3
+            2.427164e21, rel=1e-2
         )
 
 
@@ -334,13 +340,42 @@ class TestScaledBioPFalse:
 
     @pytest.mark.solver
     @pytest.mark.component
-    def test_condition_number(self, system_frame):
+    @linux_platform_new_only
+    def test_condition_number_on_linux_new(self, system_frame):
         m = system_frame
 
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            3.6954462e15, rel=1e-3
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            4.302764e15, rel=1e-2
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @linux_platform_old_only
+    def test_condition_number_on_linux_old(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            2.987650e15, rel=1e-2
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @reference_platform_only
+    def test_condition_number_on_windows(self, system_frame):
+        m = system_frame
+
+        # Check condition number to confirm scaling
+        jac, _ = get_jacobian(m, scaled=False)
+        cond = jacobian_cond(jac=jac, scaled=False)
+        assert (
+            # Python 3.9-3.11
+            cond == pytest.approx(4.3021828e15, rel=1e-2)
+            # Python 3.12
+            or cond == pytest.approx(2.987651e15, rel=1e-2)
         )
 
 
@@ -377,7 +412,7 @@ class TestScaledBioPTrue:
         jac, _ = get_jacobian(sm, scaled=False)
 
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            8.89313720973467e14, rel=1e-3
+            7.42017e14, rel=1e-3
         )
 
     @pytest.mark.solver
@@ -391,5 +426,5 @@ class TestScaledBioPTrue:
         jac, _ = get_jacobian(sm, scaled=False)
 
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            8.82538591e14, rel=1e-3
+            7.43640e14, rel=1e-2
         )

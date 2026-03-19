@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -564,6 +564,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        initialization_degrees_of_freedom=0,
     ):
         """
         General wrapper for RO initialization routines
@@ -588,6 +589,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
+            initialization_degrees_of_freedom : (int) degrees of freedom at start of initialization
         Returns:
             None
         """
@@ -624,10 +626,10 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
 
         init_log.info_high("Initialization Step 1b (permeate side) Complete")
 
-        if degrees_of_freedom(self) != 0:
+        if degrees_of_freedom(self) != initialization_degrees_of_freedom:
             # TODO: should we have a separate error for DoF?
             raise Exception(
-                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"{self.name} degrees of freedom were not {initialization_degrees_of_freedom} at the beginning "
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
@@ -874,6 +876,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                         )
                     )
                     iscale.set_scaling_factor(v, sf)
+                    iscale.constraint_scaling_transform(
+                        self.eq_flux_mass[t, x, p, j], sf
+                    )
                 elif comp.is_solute():  # scaling based on solute flux equation
                     sf = iscale.get_scaling_factor(
                         self.B_comp[t, j]
@@ -881,6 +886,23 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                         self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]
                     )
                     iscale.set_scaling_factor(v, sf)
+                    iscale.constraint_scaling_transform(
+                        self.eq_flux_mass[t, x, p, j], sf
+                    )
+
+        for (t, j), condata in self.eq_recovery_mass_phase_comp.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].flow_mass_phase_comp["Liq", j], default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, x), condata in self.eq_permeate_outlet_isobaric.items():
+            sf1 = iscale.get_scaling_factor(self.mixed_permeate[t].pressure, default=1)
+            sf2 = iscale.get_scaling_factor(
+                self.permeate_side[t, x].pressure, default=1
+            )
+            sf = min(sf1, sf2)
+            iscale.constraint_scaling_transform(condata, sf)
 
     @property
     def default_costing_method(self):
