@@ -96,7 +96,7 @@ def test_against_paper_analysis(csv_file, row_index):
             A_value=5 / 3.6e11,
             B_max=None,
             number_of_RO_finite_elements=10,
-            quick_start=True
+            quick_start=True,
         )
     except ValueError:
         results = None
