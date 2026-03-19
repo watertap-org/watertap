@@ -42,7 +42,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.tools.unit_models import calculate_operating_pressure
+from watertap.core.util import calculate_operating_pressure
 from watertap.costing import WaterTAPCosting
 
 _logger = logging.getLogger(__name__)
