@@ -32,7 +32,6 @@ from watertap.core.solvers import get_solver
 
 import math
 
-
 solver = get_solver()
 
 
@@ -147,6 +146,9 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
     # Add specific energy consumption variable to costing block
     m.fs.costing.add_specific_energy_consumption(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
+    m.fs.costing.add_flow_component_breakdown(
+        "NaCl", "regenerant_usage", m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
 
     # Arcs are used to "connect" Ports on unit process models to Ports on other unit process models
@@ -313,6 +315,10 @@ def display_results(m):
     print(
         f'{"Specific Energy Consumption":<40s}{f"{m.fs.costing.specific_energy_consumption():<39,.5f}"}{"kWh/m3":<40s}'
     )
+    regen_usage = m.fs.costing.regenerant_usage_component["fs.ion_exchange"]
+    print(
+        f'{f"Specific {ix.config.regenerant} Consumption":<40s}{f"{regen_usage():<39,.5f}"}{"kg/m3":<40s}'
+    )
     print(
         f'{f"Annual Regenerant cost ({ix.config.regenerant})":<40s}{f"${m.fs.costing.aggregate_flow_costs[ix.config.regenerant]():<39,.2f}"}{"$/yr":<40s}'
     )
@@ -345,3 +351,5 @@ def display_results(m):
 
 if __name__ == "__main__":
     m = main()
+    m.fs.costing.regenerant_usage_component.display()
+    print(pyunits.get_units(m.fs.costing.regenerant_usage_component["fs.ion_exchange"]))
