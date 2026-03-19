@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Thickener unit model for BSM2 and plant-wide wastewater treatment modeling. 
+Thickener unit model for BSM2 and plant-wide wastewater treatment modeling.
 This unit inherits from the IDAES separator unit.
 
 Model based on
@@ -22,6 +22,7 @@ Benchmark Simulation Model no. 2 (BSM2)
 
 Modifications made to TSS formulation based on ASM type.
 """
+
 from enum import Enum, auto
 
 # Import IDAES cores

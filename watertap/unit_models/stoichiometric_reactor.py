@@ -783,24 +783,30 @@ class StoichiometricReactorData(UnitModelBlockData):
         var_dict = {}
         expr_dict = {}
 
-        for r in self.reagent_list:
-            var_dict["Reagent dose - " + r] = self.reagent_dose[r]
-            var_dict["Reagent flow - " + r] = self.flow_mass_reagent[r]
+        if len(self.config.reagent.keys()):
+            for r in self.reagent_list:
+                var_dict["Reagent dose - " + r] = self.reagent_dose[r]
+                var_dict["Reagent flow - " + r] = self.flow_mass_reagent[r]
 
-        for p in self.precipitate_list:
-            var_dict["Precipitate flow - " + p] = self.flow_mass_precipitate[p]
-            var_dict["Precipitate conc - " + p] = self.conc_mass_precipitate[p]
+        if len(self.config.precipitate.keys()):
+            for p in self.precipitate_list:
+                var_dict["Precipitate flow - " + p] = self.flow_mass_precipitate[p]
+                var_dict["Precipitate conc - " + p] = self.conc_mass_precipitate[p]
 
         return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
+        outputs = {
+            "Inlet": self.inlet,
+            "Outlet": self.outlet,
+        }
+        if self.has_precipitation_reaction:
+            outputs["Precipitation reactor outlet"] = self.precipitation_reactor_outlet
+            outputs["Waste"] = self.waste
+            if self.has_dissolution_reaction:
+                outputs["Dissolution reactor outlet"] = self.dissolution_reactor_outlet
         return create_stream_table_dataframe(
-            {
-                "Inlet": self.inlet,
-                "Reactor outlet": self.reactor_outlet,
-                "Outlet": self.outlet,
-                "Waste": self.waste,
-            },
+            outputs,
             time_point=time_point,
         )
 

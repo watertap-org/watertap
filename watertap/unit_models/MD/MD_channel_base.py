@@ -10,11 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-""""
+""" "
 Base constraints and methods for membrane distillation channel
 __author__ = "Elmira Shamlou"
 
 """
+
 from copy import deepcopy
 from enum import Enum, auto
 from pyomo.environ import (

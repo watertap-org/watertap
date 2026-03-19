@@ -12,6 +12,7 @@
 """
 Tests for zero-order UV model
 """
+
 import pytest
 
 

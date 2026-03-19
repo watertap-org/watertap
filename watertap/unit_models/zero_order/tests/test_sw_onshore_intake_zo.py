@@ -12,6 +12,7 @@
 """
 Tests for zero-order seawater onshore intake model.
 """
+
 import pytest
 
 

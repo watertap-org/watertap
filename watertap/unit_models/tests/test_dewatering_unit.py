@@ -12,6 +12,7 @@
 """
 Tests for dewatering unit example.
 """
+
 from io import StringIO
 import pytest
 from pyomo.environ import (
@@ -81,7 +82,6 @@ from watertap.costing.unit_models.dewatering import (
     DewateringType,
 )
 from idaes.core import UnitModelCostingBlock
-
 
 __author__ = "Alejandro Garciadiego, Adam Atia"
 

@@ -12,6 +12,7 @@
 """
 Tests for zero-order backwash solids handling model
 """
+
 import pytest
 
 from pyomo.environ import (

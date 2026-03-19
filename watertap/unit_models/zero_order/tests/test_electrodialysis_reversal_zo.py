@@ -12,6 +12,7 @@
 """
 Tests for zero-order electrodialysis reversal model
 """
+
 import pytest
 
 

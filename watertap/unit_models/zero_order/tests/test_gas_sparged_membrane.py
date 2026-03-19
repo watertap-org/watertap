@@ -12,6 +12,7 @@
 """
 Tests for zero-order gas-sparged membrane unit
 """
+
 import pytest
 
 from types import MethodType

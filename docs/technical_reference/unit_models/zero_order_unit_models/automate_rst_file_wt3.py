@@ -29,7 +29,6 @@ import os
 from glob import glob
 from pathlib import Path
 
-
 sidor_db_path = os.path.dirname(os.path.abspath(__file__))
 
 
