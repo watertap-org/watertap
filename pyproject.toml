@@ -70,7 +70,11 @@ oli_api = [
     "cryptography", # for encrypting OLI credentials
 ]
 
-all = ["watertap[testing,notebooks,oli_api]"]
+reaktoro = [
+    "reaktoro-pse @ git+https://github.com/watertap-org/reaktoro-pse",
+]
+
+all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
 
 [tool.setuptools]
 zip-safe = false
