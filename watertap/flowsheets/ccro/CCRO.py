@@ -499,7 +499,7 @@ def setup_optimization(
     mp.total_cycle_time.setlb(min_cycle_time_hr * pyunits.hours)
     mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
-    # mp.max_permeate_concentration_constraint.activate()
+    mp.max_permeate_concentration_constraint.activate()
     print("DOF for optimization:", degrees_of_freedom(mp))
     mp.permeate_quality = []
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
@@ -599,7 +599,7 @@ def deactivate_permeate_quality(mp):
 def fix_optimization_dofs(
     mp,
     accumulation_time=None,
-    overal_water_recovery=None,
+    overall_water_recovery=None,
     add_water_recovery_objective=False,
     add_initial_pressure_objective=False,
     membrane_area=None,
@@ -632,16 +632,16 @@ def fix_optimization_dofs(
     mp.overall_recovery.unfix()
     if add_water_recovery_objective:
         mp.min_water_recovery = Objective(
-            expr=(mp.overall_recovery * 100 - overal_water_recovery * 100) ** 2
+            expr=(mp.overall_recovery * 100 - overall_water_recovery * 100) ** 2
         )
         mp.min_water_recovery.pprint()
         mp.overall_recovery.unfix()
-        mp.overall_recovery.setlb(overal_water_recovery + 0.1)
-        mp.overall_recovery.setlb(overal_water_recovery - 0.1)
+        mp.overall_recovery.setlb(overall_water_recovery + 0.1)
+        mp.overall_recovery.setlb(overall_water_recovery - 0.1)
         if mp.find_component("cost_objective") is not None:
             mp.cost_objective.deactivate()
-    elif overal_water_recovery is not None:
-        mp.overall_recovery.fix(overal_water_recovery)
+    elif overall_water_recovery is not None:
+        mp.overall_recovery.fix(overall_water_recovery)
     if flushing_efficiency is not None:
         blkfs.fs.flushing.flushing_efficiency.fix(flushing_efficiency)
     else:
