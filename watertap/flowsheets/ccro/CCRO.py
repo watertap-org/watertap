@@ -431,7 +431,8 @@ def solve(
     tee=True,
     raise_on_failure=True,
     use_ipoptv2=False,
-    max_iter=3000,
+    # max_iter=3000,
+    max_iter=1200,
 ):
     # ---solving---
     if solver is None and use_ipoptv2 == False:
@@ -893,6 +894,9 @@ def print_results_table(mp, w=15):
     summary["Post-flushing conc (kg/m3)"] = (
         flushing_block.post_flushing_concentration.value
     )
+    summary["Recycle Flowrate (L/s)"] = value(pyunits.convert(
+        mp.recycle_rate, to_units=pyunits.L / pyunits.s
+    ))
     summary["Recycle loop concentration (kg/m3)"] = mp.recycle_loop_concentration.value
     summary["Ramp Rate (bar/min)"] = mp.filtration_ramp_rate.value
     summary["Overall recovery"] = mp.overall_recovery.value
