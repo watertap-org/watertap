@@ -80,6 +80,13 @@ def add_multiperiod_variables(mp, cc_configuration=None):
         doc="Total feed volume produced over all time periods",
     )
 
+    mp.total_feed_salt = Var(
+        initialize=0.5,
+        domain=NonNegativeReals,
+        units=pyunits.kg,
+        doc="Total mass of salt in feed over all time periods",
+    )
+
     mp.total_permeate_vol = Var(
         initialize=0.5,
         domain=NonNegativeReals,
@@ -101,6 +108,14 @@ def add_multiperiod_variables(mp, cc_configuration=None):
         domain=NonNegativeReals,
         units=pyunits.g / pyunits.liter,
         doc="Concentration of salt in the permeate",
+    )
+
+    mp.overall_rejection = Var(
+        initialize=0.99,
+        domain=NonNegativeReals,
+        bounds=(0.9, 1),
+        units=pyunits.dimensionless,
+        doc="Overall salt rejection over all time periods",
     )
 
     mp.avg_product_flow_rate = Var(
@@ -399,6 +414,13 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
             - m0.fs.P1.control_volume.properties_out[0].pressure
         )
 
+    @mp.Expression(mp.TIME, doc="RO flux across operating periods")
+    def ro_flux(b, t):
+        return pyunits.convert(
+            blks[t].fs.product.properties[0].flow_vol_phase["Liq"] / blks[t].fs.RO.area,
+            to_units=pyunits.liter / pyunits.m**2 / pyunits.hour,
+        )
+
     @mp.Constraint(doc="Filtration ramp rate constraint")
     def filtration_ramp_rate_constraint(b, t):
         return b.filtration_ramp_rate == pyunits.convert(
@@ -500,6 +522,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                 brine_vol.append(
                     m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"] * dt_flush
                 )
+            # TODO: is this correct for "flushing" mode?
             # elif m.fs.operation_mode == "flushing":
             #     brine_vol.append(m.fs.dead_volume.volume[0, "Liq"])
         return sum(brine_vol)
@@ -536,6 +559,30 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                 )
         return b.total_permeate_salt == sum(total_permeate_salt)
 
+    # Total feed salt mass
+    @mp.Constraint(doc="Total mass of salt in feed over all time periods")
+    def total_feed_salt_constraint(b):
+        total_feed_salt = []
+        for m in blks:
+            if m.fs.operation_mode == "filtration":
+                total_feed_salt.append(
+                    m.fs.raw_feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+                    * dt_filt
+                )
+            elif m.fs.operation_mode == "flushing_with_filtration":
+                total_feed_salt.append(
+                    m.fs.raw_feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+                    * dt_flush
+                )
+                total_feed_salt.append(
+                    m.fs.conduit_feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+                    * dt_flush
+                )
+            elif m.fs.operation_mode == "flushing":
+                total_feed_salt.append(m.fs.dead_volume.volume[0, "Liq"])
+        return b.total_feed_salt == sum(total_feed_salt)
+        # return sum(total_feed_salt)
+
     @mp.Constraint(doc="Permeate concentration constraint")
     def permeate_concentration_constraint(b):
         return b.permeate_concentration == pyunits.convert(
@@ -546,6 +593,14 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
     @mp.Constraint(doc="Upper bound on permeate concentration")
     def max_permeate_concentration_constraint(b):
         return b.permeate_concentration <= 0.5
+
+    @mp.Constraint(doc="Overall salt rejection constraint")
+    def overall_rejection_constraint(b):
+        return b.overall_rejection == 1 - (b.total_permeate_salt / b.total_feed_salt)
+    
+    @mp.Constraint(doc="Lower bound on overall salt rejection")
+    def min_overall_rejection_constraint(b):
+        return b.overall_rejection >= 0.99
 
     @mp.Constraint(doc="Total flush volume over all time periods")
     def total_flush_volume_constraint(b):
@@ -632,6 +687,7 @@ def deactivate_mp_constraints(mp):
 
     mp.filtration_ramp_rate_constraint.deactivate()
     mp.max_permeate_concentration_constraint.deactivate()
+    mp.min_overall_rejection_constraint.deactivate()
 
 
 def fix_overall_water_recovery(mp, overall_water_recovery):
