@@ -478,10 +478,12 @@ def setup_optimization(
     mp,
     overall_water_recovery=0.5,
     min_cycle_time_hr=10 / 60,
-    max_cycle_time_hr=1.5,
+    max_cycle_time_hr=1,
     recycle_flow_bounds=(0.1, 20),
     min_accumulation_time=1,
-    min_flushing_time=10 * pyunits.seconds,
+    min_flushing_time=10,
+    use_perm_conc_target=False,
+    use_rejection_target=True,
 ):
     """
     Setup the multiperiod model for optimization.
@@ -499,7 +501,11 @@ def setup_optimization(
     mp.total_cycle_time.setlb(min_cycle_time_hr * pyunits.hours)
     mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
-    mp.max_permeate_concentration_constraint.activate()
+    if use_perm_conc_target:
+        mp.max_permeate_concentration_constraint.activate()
+    # possible to have both
+    if use_rejection_target:
+        mp.min_overall_rejection_constraint.activate()
     print("DOF for optimization:", degrees_of_freedom(mp))
     mp.permeate_quality = []
     for t, m in enumerate(mp.get_active_process_blocks(), 1):
@@ -566,13 +572,12 @@ def setup_optimization(
             m.fs.flushing.flushing_efficiency.unfix()
             m.fs.flushing.flushing_efficiency.setub(0.99)
             m.fs.flushing.flushing_efficiency.setlb(0.1)
-
-            m.fs.flushing.flushing_time.setlb(min_flushing_time)
+            m.fs.flushing.flushing_time.setlb(min_flushing_time * pyunits.seconds)
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
         mp.flushing.flushing_efficiency.setub(0.99)
         mp.flushing.flushing_efficiency.setlb(0.1)
-        mp.flushing.flushing_time.setlb(min_flushing_time)
+        mp.flushing.flushing_time.setlb(min_flushing_time * pyunits.seconds)
     if mp.find_component("conduit") is not None:
         mp.conduit.volume.unfix()
     if mp.include_costing:
@@ -905,7 +910,7 @@ def print_results_table(
     summary["Recycle Flowrate (L/s)"] = value(
         pyunits.convert(mp.recycle_flowrate, to_units=pyunits.L / pyunits.s)
     )
-    summary["Recycle loop concentration (g/L)"] = mp.recycle_loop_concentration.value
+    summary["Recycle Loop Conc (g/L)"] = mp.recycle_loop_concentration.value
     summary["Ramp Rate (bar/min)"] = mp.filtration_ramp_rate.value
     summary["Total feed (m3)"] = mp.total_feed_vol.value
     summary["Total permeate (m3)"] = mp.total_permeate_vol.value
@@ -924,6 +929,9 @@ def print_results_table(
 
     summary["Dead Volume"] = b0.fs.dead_volume.volume[0, "Liq"].value
     summary["Membrane Area"] = b0.fs.RO.area.value
+    flux_lmh = value(pyunits.convert(b0.fs.product.properties[0].flow_vol_phase["Liq"] / b0.fs.RO.area, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour))
+    summary["RO Single Pass Recovery (%)"] = b0.fs.RO.recovery_vol_phase[0.0, "Liq"].value * 100
+    summary["RO Flux (LMH)"] = flux_lmh
     if mp.find_component("total_flush_volume") is not None:
         summary["Total Flush Volume"] = mp.total_flush_volume.value
     summary["Membrane Length"] = b0.fs.RO.length.value

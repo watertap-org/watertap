@@ -27,6 +27,8 @@ class CCROConfiguration(dict):
             spacer_porosity=0.9 * pyunits.dimensionless,
             dead_volume="base_on_dead_volume_to_area_ratio",  # m3
             accumulation_time=5 * pyunits.second,
+            max_permeate_concentration=0.5 * pyunits.g / pyunits.liter,
+            min_overall_rejection=0.9 * pyunits.dimensionless,
             dead_volume_to_area_ratio=value(1.2 * 0.001 * pyunits.meter * 0.9)
             * pyunits.m,
             pipe_to_module_ratio=0.2

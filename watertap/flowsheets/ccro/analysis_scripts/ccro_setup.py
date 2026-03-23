@@ -1,4 +1,4 @@
-from pyomo.environ import value
+from pyomo.environ import value, assert_optimal_termination
 from watertap.flowsheets.ccro import CCRO
 
 from watertap.flowsheets.ccro.utils.cc_configuration import CCROConfiguration
@@ -13,7 +13,6 @@ def build(
     n_flushing_points=5,
     use_hold_up=True,
     feed_tds=5,
-    fixed_setup=False,
     A_comp=1.5,  # LMH/bar; default for SWRO
     B_comp=0.1,  # LMH; default for SWRO
     min_cycle_time_hr=10 / 60,  # 10 minutes
@@ -24,10 +23,14 @@ def build(
     overall_water_recovery=0.5,
     accumulation_time=5,
     flushing_efficiency=0.25,
+    min_flushing_time=10,
     use_interval_initializer=True,
     recycle_flowrate=10,  # default in cc_config is 10
     cycle_time_ratio_bounds=(0.8, 0.99),
     permeate_concentration_bounds=(0.001, 0.5),
+    use_perm_conc_target=False,
+    rejection_bounds=(0.9, 1),
+    use_rejection_target=True,
     **kwargs,
 ):
 
@@ -42,8 +45,8 @@ def build(
     # if feed_tds >= 50:
     #     min_cycle_time_hr = 5 / 60  # 5 minutes
 
-    # if feed_tds >= 75:
-    #     min_cycle_time_hr = 1 / 60  # 1 minute
+    if feed_tds >= 50:
+        min_cycle_time_hr = 1 / 60  # 1 minute
 
     cc_config = CCROConfiguration()
     cc_config["A_comp"] = A_comp * (
@@ -59,6 +62,11 @@ def build(
     if recycle_flow_bounds[0] > value(cc_config["recycle_flowrate"]):
         cc_config["recycle_flowrate"] = recycle_flow_bounds[0] * pyunits.L / pyunits.s
 
+    cc_config["max_permeate_concentration"] = permeate_concentration_bounds[1] * (
+        pyunits.g / pyunits.L
+    )
+    cc_config["min_overall_rejection"] = rejection_bounds[0] * pyunits.dimensionless
+
     mp = CCRO.create_ccro_multiperiod(
         n_time_points=time_steps,
         n_flushing_points=n_flushing_points,
@@ -66,7 +74,9 @@ def build(
         use_ro_with_hold_up=use_hold_up,
         cc_configuration=cc_config,
         use_interval_initializer=use_interval_initializer,
+
     )
+
     # if not fixed_setup:
     CCRO.setup_optimization(
         mp,
@@ -74,6 +84,9 @@ def build(
         min_cycle_time_hr=min_cycle_time_hr,
         max_cycle_time_hr=max_cycle_time_hr,
         recycle_flow_bounds=recycle_flow_bounds,
+        min_flushing_time=min_flushing_time,
+        use_perm_conc_target=use_perm_conc_target,
+        use_rejection_target=use_rejection_target,
     )
 
     mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!
@@ -87,8 +100,8 @@ def build(
 
     solve_model(mp)
 
-    mp.permeate_concentration.setub(permeate_concentration_bounds[1])
-    mp.permeate_concentration.setlb(permeate_concentration_bounds[0])
+    # mp.permeate_concentration.setub(permeate_concentration_bounds[1])
+    # mp.permeate_concentration.setlb(permeate_concentration_bounds[0])
     mp.recycle_flowrate.unfix()
 
     print(
@@ -110,6 +123,7 @@ def build_with_fixed_recovery(recovery=0.5, **kwargs):
 
 def solve_model(mp, **kwargs):
     results = CCRO.solve(mp)
+    assert_optimal_termination(results)
     CCRO.print_results_table(mp)
     return results
 
@@ -117,10 +131,27 @@ def solve_model(mp, **kwargs):
 if __name__ == "__main__":
 
     mp = build_with_fixed_recovery(
-        feed_tds=35,
-        osmotic_overpressure=2,
+        feed_tds=15,
+        osmotic_overpressure=2.5,
         overall_water_recovery=0.5,
         recovery=0.5,
-        # recycle_flow_bounds=(5, 100),
-        # recycle_flowrate=10,
+        recycle_flowrate=10,
+        use_perm_conc_target=True,
+        use_rejection_target=True,
     )
+
+    # for x in [5, 15, 25, 35, 45, 55, 65, 75]:
+
+    #     mp = build_with_fixed_recovery(
+    #         feed_tds=x,
+    #         osmotic_overpressure=2.5,
+    #         overall_water_recovery=0.5,
+    #         recovery=0.5,
+    #         recycle_flowrate=10,
+    #         use_perm_conc_target=True,
+    #         use_rejection_target=True,
+    #     )
+
+    #     mp.ro_flux.display()
+    #     mp.overall_rejection.display()
+    #     mp.permeate_concentration.display()

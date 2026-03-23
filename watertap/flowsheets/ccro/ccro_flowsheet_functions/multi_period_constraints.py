@@ -592,7 +592,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
 
     @mp.Constraint(doc="Upper bound on permeate concentration")
     def max_permeate_concentration_constraint(b):
-        return b.permeate_concentration <= 0.5
+        return b.permeate_concentration <= cc_configuration["max_permeate_concentration"]
 
     @mp.Constraint(doc="Overall salt rejection constraint")
     def overall_rejection_constraint(b):
@@ -600,7 +600,7 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
     
     @mp.Constraint(doc="Lower bound on overall salt rejection")
     def min_overall_rejection_constraint(b):
-        return b.overall_rejection >= 0.99
+        return b.overall_rejection >= cc_configuration["min_overall_rejection"]
 
     @mp.Constraint(doc="Total flush volume over all time periods")
     def total_flush_volume_constraint(b):
