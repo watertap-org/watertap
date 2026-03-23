@@ -98,51 +98,6 @@ def build(
     return mp
 
 
-def check_jac(m, print_extreme_jacobian_values=True):
-    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(m, min_scale=1e-8)
-    try:
-        cond_number = iscale.jacobian_cond(m, jac=jac_scaled) / 1e10
-        print("--------------------------")
-        print("COND NUMBER:", cond_number)
-    except:
-        print("Cond number failed")
-        cond_number = None
-    if print_extreme_jacobian_values:
-        print("--------------------------")
-        print("Extreme Jacobian entries:")
-        extreme_entries = iscale.extreme_jacobian_entries(
-            m, jac=jac_scaled, nlp=nlp, zero=1e-20, large=100
-        )
-        for val, var, con in extreme_entries:
-            print(val, var.name, con.name)
-        print("--------------------------")
-        print("Extreme Jacobian columns:")
-        extreme_cols = iscale.extreme_jacobian_columns(
-            m, jac=jac_scaled, nlp=nlp, small=1e-3
-        )
-        for val, var in extreme_cols:
-            print(val, var.name)
-        print("------------------------")
-        print("Extreme Jacobian rows:")
-        extreme_rows = iscale.extreme_jacobian_rows(
-            m, jac=jac_scaled, nlp=nlp, small=1e-3
-        )
-        for val, con in extreme_rows:
-            print(val, con.name)
-
-    for i in iscale.list_unscaled_variables(m):
-        print("Var with no scale:", i)
-    for i in iscale.list_unscaled_constraints(m):
-        print("Constraint with no scale:", i)
-    for var, scale in iscale.badly_scaled_var_generator(m):
-        print(
-            "Badly scaled variable:",
-            var.name,
-            var.value,
-            iscale.get_scaling_factor(var),
-        )
-    return cond_number
-
 
 def build_with_fixed_recovery(recovery=0.5, **kwargs):
 
