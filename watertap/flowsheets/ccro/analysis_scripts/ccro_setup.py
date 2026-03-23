@@ -1,3 +1,4 @@
+from pyomo.environ import value
 from watertap.flowsheets.ccro import CCRO
 
 from watertap.flowsheets.ccro.utils.cc_configuration import CCROConfiguration
@@ -24,6 +25,9 @@ def build(
     accumulation_time=5,
     flushing_efficiency=0.25,
     use_interval_initializer=True,
+    recycle_flowrate=10,  # default in cc_config is 10
+    cycle_time_ratio_bounds=(0.8, 0.99),
+    permeate_concentration_bounds=(0.001, 0.5),
     **kwargs,
 ):
 
@@ -50,6 +54,10 @@ def build(
     cc_config["osmotic_overpressure"] = osmotic_overpressure * pyunits.dimensionless
     cc_config["accumulation_time"] = accumulation_time * pyunits.second
     cc_config["flushing_efficiency"] = flushing_efficiency * pyunits.dimensionless
+    cc_config["recycle_flowrate"] = recycle_flowrate * pyunits.L / pyunits.s
+
+    if recycle_flow_bounds[0] > value(cc_config["recycle_flowrate"]):
+        cc_config["recycle_flowrate"] = recycle_flow_bounds[0] * pyunits.L / pyunits.s
 
     mp = CCRO.create_ccro_multiperiod(
         n_time_points=time_steps,
@@ -67,42 +75,22 @@ def build(
         max_cycle_time_hr=max_cycle_time_hr,
         recycle_flow_bounds=recycle_flow_bounds,
     )
-    # else:
-    #     CCRO.setup_optimization(
-    #         mp,
-    #         overall_water_recovery=0.5,
-    #         max_cycle_time_hr=5,
-    #         recycle_flow_bounds=(1, 50),
-    #         # use_ro_with_hold_up=True,
-    #     )
-    # CCRO.fix_optimization_dofs(
-    #     mp,
-    #     overal_water_recovery=0.5,
-    #     add_water_recovery_objective=True,
-    #     membrane_area=200 * pyunits.meter**2,
-    #     membrane_length=1 * pyunits.meter,
-    #     recycle_rate=10 * pyunits.L / pyunits.s,
-    #     flushing_efficiency=0.8,
-    # )
 
-    # CCRO.print_results_table(mp)
-    blks = list(mp.get_active_process_blocks())
     mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!
-    first_block = blks[0]
-    first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
+    mp.recycle_flowrate.fix()
     # mp.cost_objective.deactivate()
     # mp.cost_product_objective.activate()
     solve_model(mp)
 
-    mp.ramp_rate.display()
-    mp.cycle_time_ratio.setlb(0.8)
-    # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
-    # mp.max_permeate_concentration_constraint.activate()
-    mp.permeate_concentration.setub(0.5)
+    mp.cycle_time_ratio.setlb(cycle_time_ratio_bounds[0])
+    mp.cycle_time_ratio.setub(cycle_time_ratio_bounds[1])
 
     solve_model(mp)
 
-    first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
+    mp.permeate_concentration.setub(permeate_concentration_bounds[1])
+    mp.permeate_concentration.setlb(permeate_concentration_bounds[0])
+    mp.recycle_flowrate.unfix()
+
     print(
         "CCRO initalized, solving for optimal design point now with all constraints active and DOF free"
     )
@@ -156,10 +144,10 @@ def check_jac(m, print_extreme_jacobian_values=True):
     return cond_number
 
 
-def build_for_flush_eff(overall_recovery=0.5, **kwargs):
+def build_with_fixed_recovery(recovery=0.5, **kwargs):
 
     mp = build(**kwargs)
-    mp.overall_recovery.fix(overall_recovery)
+    mp.overall_recovery.fix(recovery)
     solve_model(mp)
 
     return mp
@@ -173,26 +161,11 @@ def solve_model(mp, **kwargs):
 
 if __name__ == "__main__":
 
-    # mp = build(
-    #     feed_tds=35,
-    #     A_comp=1.5,
-    #     B_comp=0.1,
-    #     osmotic_overpressure=2,
-    #     overall_water_recovery=0.4,
-    # )
-
-    mp = build(
-        feed_tds=75,
-        A_comp=1.5,
-        B_comp=0.1,
-        overall_water_recovery=0.25,
-        time_steps=20,
-        n_flushing_points=5,
-        # osmotic_overpressure=3,
-        # overall_water_recovery=0.2,
-        use_interval_initializer=True,
-        min_cycle_time_hr=0.16667,
+    mp = build_with_fixed_recovery(
+        feed_tds=35,
+        osmotic_overpressure=2,
+        overall_water_recovery=0.5,
+        recovery=0.5,
+        # recycle_flow_bounds=(5, 100),
+        # recycle_flowrate=10,
     )
-    mp.overall_recovery.fix(0.25)
-    solve_model(mp)
-    mp.ramp_rate.display()
