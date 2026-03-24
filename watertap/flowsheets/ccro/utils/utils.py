@@ -201,7 +201,7 @@ def register_costed_unit(
         # set lower bound back to its original value that was assigned to lb
         unit.work_mechanical.setlb(lb)
     if register_capital_cost:
-        print("Registered capital cost for ", unit.name)
+        print("Registered capital cost for ", unit.name, costing_method_arguments)
         unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=mp.costing,
             costing_method_arguments=costing_method_arguments,

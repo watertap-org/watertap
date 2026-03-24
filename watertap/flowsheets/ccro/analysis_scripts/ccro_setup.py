@@ -25,12 +25,7 @@ def build(
     flushing_efficiency=0.25,
     min_flushing_time=10,
     use_interval_initializer=True,
-    recycle_flowrate=10,  # default in cc_config is 10
-    cycle_time_ratio_bounds=(0.8, 0.99),
-    permeate_concentration_bounds=(0.001, 0.5),
-    use_perm_conc_target=False,
-    rejection_bounds=(0.9, 1),
-    use_rejection_target=True,
+    high_pressure_membrane_cost=False,
     **kwargs,
 ):
 
@@ -74,7 +69,7 @@ def build(
         use_ro_with_hold_up=use_hold_up,
         cc_configuration=cc_config,
         use_interval_initializer=use_interval_initializer,
-
+        high_pressure_membrane_cost=high_pressure_membrane_cost,
     )
 
     # if not fixed_setup:
@@ -109,7 +104,6 @@ def build(
     )
 
     return mp
-
 
 
 def build_with_fixed_recovery(recovery=0.5, **kwargs):

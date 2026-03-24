@@ -47,6 +47,18 @@ def getssdata():
             (f"RO {stage}", "pump work"),
             "kW",
         )
+        dm_ss.register_data_key(
+            f"fs.stage[{stage}].pump.costing.capital_cost",
+            (f"Pump {stage}", "capex"),
+            assign_units="MUSD",
+            conversion_factor=1e-6,
+        )
+        dm_ss.register_data_key(
+            f"fs.stage[{stage}].RO.costing.capital_cost",
+            (f"RO {stage}", "capex"),
+            assign_units="MUSD",
+            conversion_factor=1e-6,
+        )
     dm_ss.register_data_key("fs.ERD.control_volume.work[0.0]", "ERD work", "kW")
     dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
 
@@ -134,7 +146,30 @@ if __name__ == "__main__":
     )
 
     dm.register_data_key("costing.LCOW", "LCOW", assign_units="USD/m^3")
-
+    dm.register_data_key(
+        f"blocks[19].process.fs.P1.costing.capital_cost",
+        (f"Feed pump", "capex"),
+        assign_units="MUSD",
+        conversion_factor=1e-6,
+    )
+    dm.register_data_key(
+        f"blocks[19].process.fs.P2.costing.capital_cost",
+        (f"Recycle pump", "capex"),
+        assign_units="MUSD",
+        conversion_factor=1e-6,
+    )
+    dm.register_data_key(
+        f"blocks[19].process.fs.P2.costing.capital_cost",
+        (f"Recycle pump", "capex"),
+        assign_units="MUSD",
+        conversion_factor=1e-6,
+    )
+    dm.register_data_key(
+        f"blocks[0].process.fs.RO.costing.capital_cost",
+        (f"RO {stage}", "capex"),
+        assign_units="MUSD",
+        conversion_factor=1e-6,
+    )
     dm.register_data_key(
         "costing.total_capital_cost",
         "capex",
@@ -218,11 +253,11 @@ if __name__ == "__main__":
         },
     }
     system = FigureGenerator.get_plot_options_manager()
-    system.add("CCRO", marker="d", zorder=10, color="#33a02c")
+    system.add("CCRO", marker="d")
 
-    system.add("1 stage RO", color="#a6cee3")
-    system.add("1 stage RO with ERD", color="#3b9dd1")
-    system.add("2 stage RO with ERD", color="#1f78b4")
+    system.add("1 stage RO")
+    system.add("1 stage RO with ERD")
+    system.add("2 stage RO with ERD")
     for case, case_opts in cases.items():
         fig = FigureGenerator().init_figure()
         fig.plot_line(dm[case, "Water recovery"], dm[case, "LCOW"], **system["CCRO"])

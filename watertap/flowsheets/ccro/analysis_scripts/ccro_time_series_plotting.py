@@ -173,7 +173,7 @@ if __name__ == "__main__":
     dm.display()
     cases = {
         "Brackish water": {
-            "recoveries": [75, 85, 95],
+            "recoveries": [95],  # [75, 85, 95],
             "xticks": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             "yticks_pressure": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
             "yticks_flux": [0, 10, 20, 30, 40, 50, 60],
@@ -182,9 +182,9 @@ if __name__ == "__main__":
         "Seawater": {
             "recoveries": [45, 51, 60],
             "xticks": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "yticks_pressure": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+            "yticks_pressure": [0, 20, 40, 60, 80, 100, 120],
             "yticks_flux": [0, 10, 20, 30, 40, 50],
-            "yticks_tds": [0, 20, 40, 60, 80, 100],
+            "yticks_tds": [0, 20, 40, 60, 80, 100, 120],
         },
         "Produced water": {
             "recoveries": [20, 40, 55],
@@ -207,17 +207,22 @@ if __name__ == "__main__":
             idx = np.where(abs(dm[(case, "Water Recovery")].data - float(r)) <= 1e-8)[
                 0
             ][0]
-            # print(
-            #     len(time[idx]),
-            #     len(pressure[idx]),
-            #     r,
-            #     dm[(case, "Water Recovery")].data,
-            #     idx,
-            # )
             time = [0] + list(time[idx])
             pressure = [pressure[idx][-1]] + list(pressure[idx])
             fig.plot_line(
-                xdata=time, ydata=pressure, label=f"Recovery of {r}%", marker="o"
+                xdata=time[:21],
+                ydata=pressure[:21],
+                label=f"Standard operation",  # f"Recovery of {r}%",
+                marker="o",
+                color="black",
+                zorder=10,
+            )
+            fig.plot_line(
+                xdata=time[20:],
+                ydata=pressure[20:],
+                label=f"Flushing operation",  # f"Recovery of {r}%",
+                marker="o",
+                color="blue",
             )
         fig.set_axis(
             xlabel="Cycle Time (min)",
@@ -250,29 +255,38 @@ if __name__ == "__main__":
             time = [0] + list(time[idx])
             tds_inlet = [tds_inlet[idx][-1]] + list(tds_inlet[idx])
             tds_outlet = [tds_outlet[idx][-1]] + list(tds_outlet[idx])
+            # fig.plot_line(
+            #     xdata=time,
+            #     ydata=tds_inlet,
+            #     color=i,
+            #     marker="o",
+            # )
             fig.plot_line(
-                xdata=time,
-                ydata=tds_inlet,
-                color=i,
+                xdata=time[:21],
+                ydata=tds_outlet[:21],
+                color="black",
+                marker="o",
+                label="Standard operation",  # f"Recovery of {r}%",
+                zorder=10,
+            )
+            fig.plot_line(
+                xdata=time[20:],
+                ydata=tds_outlet[20:],
+                label=f"Flushing operation",  # f"Recovery of {r}%",
+                color="blue",
                 marker="o",
             )
-            fig.plot_line(
-                xdata=time,
-                ydata=tds_outlet,
-                color=i,
-                marker="d",
-            )
-            fig.plot_line([], [], label=f"Recovery of {r}% ", marker="o", color=i)
-        fig.plot_line([], [], label=f"Inlet", marker="o", color="black")
-        fig.plot_line([], [], label=f"Outlet", marker="d", color="black")
+            # fig.plot_line([], [], label=f"Recovery of {r}% ", marker="o", color=i)
+        # fig.plot_line([], [], label=f"Inlet", marker="o", color="black")
+        # fig.plot_line([], [], label=f"Outlet", marker="d", color="black")
         fig.set_axis(
             xlabel="Cycle Time (min)",
-            ylabel="RO tds (g/L)",
+            ylabel="RO outlet TDS (g/L)",
             xticks=opts["xticks"],
             yticks=opts["yticks_tds"],
         )
         fig.add_legend()
-        fig.save("ccro_time_series_figs", f"{case}_tds_time_series.png")
+        fig.save("ccro_time_series_figs", f"{case}_tds_time_series")
     # t_sequence = list()
     # y_sequence = list()
     # # yvar = "Recycle Rate"
