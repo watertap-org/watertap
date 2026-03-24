@@ -1,3 +1,4 @@
+from pyomo.environ import value, assert_optimal_termination
 from watertap.flowsheets.ccro import CCRO
 
 from watertap.flowsheets.ccro.utils.cc_configuration import CCROConfiguration
@@ -12,7 +13,6 @@ def build(
     n_flushing_points=5,
     use_hold_up=True,
     feed_tds=5,
-    fixed_setup=False,
     A_comp=1.5,  # LMH/bar; default for SWRO
     B_comp=0.1,  # LMH; default for SWRO
     min_cycle_time_hr=10 / 60,  # 10 minutes
@@ -23,6 +23,7 @@ def build(
     overall_water_recovery=0.5,
     accumulation_time=5,
     flushing_efficiency=0.25,
+    min_flushing_time=10,
     use_interval_initializer=True,
     high_pressure_membrane_cost=False,
     **kwargs,
@@ -39,8 +40,8 @@ def build(
     # if feed_tds >= 50:
     #     min_cycle_time_hr = 5 / 60  # 5 minutes
 
-    # if feed_tds >= 75:
-    #     min_cycle_time_hr = 1 / 60  # 1 minute
+    if feed_tds >= 50:
+        min_cycle_time_hr = 1 / 60  # 1 minute
 
     cc_config = CCROConfiguration()
     cc_config["A_comp"] = A_comp * (
@@ -51,6 +52,15 @@ def build(
     cc_config["osmotic_overpressure"] = osmotic_overpressure * pyunits.dimensionless
     cc_config["accumulation_time"] = accumulation_time * pyunits.second
     cc_config["flushing_efficiency"] = flushing_efficiency * pyunits.dimensionless
+    cc_config["recycle_flowrate"] = recycle_flowrate * pyunits.L / pyunits.s
+
+    if recycle_flow_bounds[0] > value(cc_config["recycle_flowrate"]):
+        cc_config["recycle_flowrate"] = recycle_flow_bounds[0] * pyunits.L / pyunits.s
+
+    cc_config["max_permeate_concentration"] = permeate_concentration_bounds[1] * (
+        pyunits.g / pyunits.L
+    )
+    cc_config["min_overall_rejection"] = rejection_bounds[0] * pyunits.dimensionless
 
     mp = CCRO.create_ccro_multiperiod(
         n_time_points=time_steps,
@@ -61,6 +71,7 @@ def build(
         use_interval_initializer=use_interval_initializer,
         high_pressure_membrane_cost=high_pressure_membrane_cost,
     )
+
     # if not fixed_setup:
     CCRO.setup_optimization(
         mp,
@@ -68,43 +79,26 @@ def build(
         min_cycle_time_hr=min_cycle_time_hr,
         max_cycle_time_hr=max_cycle_time_hr,
         recycle_flow_bounds=recycle_flow_bounds,
+        min_flushing_time=min_flushing_time,
+        use_perm_conc_target=use_perm_conc_target,
+        use_rejection_target=use_rejection_target,
     )
-    # else:
-    #     CCRO.setup_optimization(
-    #         mp,
-    #         overall_water_recovery=0.5,
-    #         max_cycle_time_hr=5,
-    #         recycle_flow_bounds=(1, 50),
-    #         # use_ro_with_hold_up=True,
-    #     )
-    # CCRO.fix_optimization_dofs(
-    #     mp,
-    #     overal_water_recovery=0.5,
-    #     add_water_recovery_objective=True,
-    #     membrane_area=200 * pyunits.meter**2,
-    #     membrane_length=1 * pyunits.meter,
-    #     recycle_rate=10 * pyunits.L / pyunits.s,
-    #     flushing_efficiency=0.8,
-    # )
 
-    # CCRO.print_results_table(mp)
-    blks = list(mp.get_active_process_blocks())
     mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!
-    first_block = blks[0]
-    first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].fix()
+    mp.recycle_flowrate.fix()
     # mp.cost_objective.deactivate()
     # mp.cost_product_objective.activate()
     solve_model(mp)
 
-    mp.ramp_rate.display()
-    mp.cycle_time_ratio.setlb(0.8)
-    # first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
-    # mp.max_permeate_concentration_constraint.activate()
-    mp.permeate_concentration.setub(0.5)
+    mp.cycle_time_ratio.setlb(cycle_time_ratio_bounds[0])
+    mp.cycle_time_ratio.setub(cycle_time_ratio_bounds[1])
 
     solve_model(mp)
 
-    first_block.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
+    # mp.permeate_concentration.setub(permeate_concentration_bounds[1])
+    # mp.permeate_concentration.setlb(permeate_concentration_bounds[0])
+    mp.recycle_flowrate.unfix()
+
     print(
         "CCRO initalized, solving for optimal design point now with all constraints active and DOF free"
     )
@@ -112,56 +106,10 @@ def build(
     return mp
 
 
-def check_jac(m, print_extreme_jacobian_values=True):
-    jac, jac_scaled, nlp = iscale.constraint_autoscale_large_jac(m, min_scale=1e-8)
-    try:
-        cond_number = iscale.jacobian_cond(m, jac=jac_scaled) / 1e10
-        print("--------------------------")
-        print("COND NUMBER:", cond_number)
-    except:
-        print("Cond number failed")
-        cond_number = None
-    if print_extreme_jacobian_values:
-        print("--------------------------")
-        print("Extreme Jacobian entries:")
-        extreme_entries = iscale.extreme_jacobian_entries(
-            m, jac=jac_scaled, nlp=nlp, zero=1e-20, large=100
-        )
-        for val, var, con in extreme_entries:
-            print(val, var.name, con.name)
-        print("--------------------------")
-        print("Extreme Jacobian columns:")
-        extreme_cols = iscale.extreme_jacobian_columns(
-            m, jac=jac_scaled, nlp=nlp, small=1e-3
-        )
-        for val, var in extreme_cols:
-            print(val, var.name)
-        print("------------------------")
-        print("Extreme Jacobian rows:")
-        extreme_rows = iscale.extreme_jacobian_rows(
-            m, jac=jac_scaled, nlp=nlp, small=1e-3
-        )
-        for val, con in extreme_rows:
-            print(val, con.name)
-
-    for i in iscale.list_unscaled_variables(m):
-        print("Var with no scale:", i)
-    for i in iscale.list_unscaled_constraints(m):
-        print("Constraint with no scale:", i)
-    for var, scale in iscale.badly_scaled_var_generator(m):
-        print(
-            "Badly scaled variable:",
-            var.name,
-            var.value,
-            iscale.get_scaling_factor(var),
-        )
-    return cond_number
-
-
-def build_for_flush_eff(overall_recovery=0.5, **kwargs):
+def build_with_fixed_recovery(recovery=0.5, **kwargs):
 
     mp = build(**kwargs)
-    mp.overall_recovery.fix(overall_recovery)
+    mp.overall_recovery.fix(recovery)
     solve_model(mp)
 
     return mp
@@ -169,32 +117,35 @@ def build_for_flush_eff(overall_recovery=0.5, **kwargs):
 
 def solve_model(mp, **kwargs):
     results = CCRO.solve(mp)
+    assert_optimal_termination(results)
     CCRO.print_results_table(mp)
     return results
 
 
 if __name__ == "__main__":
 
-    # mp = build(
-    #     feed_tds=35,
-    #     A_comp=1.5,
-    #     B_comp=0.1,
-    #     osmotic_overpressure=2,
-    #     overall_water_recovery=0.4,
-    # )
-
-    mp = build(
-        feed_tds=75,
-        A_comp=1.5,
-        B_comp=0.1,
-        overall_water_recovery=0.25,
-        time_steps=20,
-        n_flushing_points=5,
-        # osmotic_overpressure=3,
-        # overall_water_recovery=0.2,
-        use_interval_initializer=True,
-        min_cycle_time_hr=0.16667,
+    mp = build_with_fixed_recovery(
+        feed_tds=15,
+        osmotic_overpressure=2.5,
+        overall_water_recovery=0.5,
+        recovery=0.5,
+        recycle_flowrate=10,
+        use_perm_conc_target=True,
+        use_rejection_target=True,
     )
-    mp.overall_recovery.fix(0.25)
-    solve_model(mp)
-    mp.ramp_rate.display()
+
+    # for x in [5, 15, 25, 35, 45, 55, 65, 75]:
+
+    #     mp = build_with_fixed_recovery(
+    #         feed_tds=x,
+    #         osmotic_overpressure=2.5,
+    #         overall_water_recovery=0.5,
+    #         recovery=0.5,
+    #         recycle_flowrate=10,
+    #         use_perm_conc_target=True,
+    #         use_rejection_target=True,
+    #     )
+
+    #     mp.ro_flux.display()
+    #     mp.overall_rejection.display()
+    #     mp.permeate_concentration.display()
