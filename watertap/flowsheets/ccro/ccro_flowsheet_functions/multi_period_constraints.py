@@ -130,7 +130,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
         domain=NonNegativeReals,
         bounds=(10, None),
         units=pyunits.s,
-        doc="Total cycle time including flushing",
+        doc="Total cycle time including filtration + flushing",
     )
 
     mp.cycle_time_ratio = Var(

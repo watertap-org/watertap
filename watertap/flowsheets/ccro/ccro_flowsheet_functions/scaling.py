@@ -159,6 +159,7 @@ def scale_multiperiod_model(mp):
     iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
     iscale.set_scaling_factor(mp.total_cycle_time, 1e-3)
     iscale.set_scaling_factor(mp.total_filtration_time, 1e-3)
+    iscale.set_scaling_factor(mp.cycle_time_ratio, 1)
     iscale.set_scaling_factor(mp.filtration_ramp_rate, 1)
     iscale.set_scaling_factor(mp.permeate_concentration, 1)
     iscale.set_scaling_factor(mp.total_feed_vol, 1 / (flow_vol * 3600))
@@ -178,8 +179,9 @@ def scale_multiperiod_model(mp):
     iscale.constraint_scaling_transform(mp.total_permeate_salt_constraint, 1)
     iscale.constraint_scaling_transform(mp.permeate_concentration_constraint, 1)
     iscale.constraint_scaling_transform(mp.overall_rejection_constraint, 1)
+    iscale.constraint_scaling_transform(mp.cycle_time_ratio_constraint, 1)
 
-    iscale.constraint_scaling_transform(mp.max_permeate_concentration_constraint, 1)
+    iscale.constraint_scaling_transform(mp.max_permeate_concentration_constraint, 0.1)
     iscale.constraint_scaling_transform(mp.total_filtration_time_constraint, 1e-3)
     iscale.constraint_scaling_transform(mp.total_cycle_time_constraint, 1e-3)
     iscale.constraint_scaling_transform(mp.recycle_loop_concentration_constraint, 1)
