@@ -24,6 +24,7 @@ def build(
     accumulation_time=5,
     flushing_efficiency=0.25,
     use_interval_initializer=True,
+    high_pressure_membrane_cost=False,
     **kwargs,
 ):
 
@@ -58,6 +59,7 @@ def build(
         use_ro_with_hold_up=use_hold_up,
         cc_configuration=cc_config,
         use_interval_initializer=use_interval_initializer,
+        high_pressure_membrane_cost=high_pressure_membrane_cost,
     )
     # if not fixed_setup:
     CCRO.setup_optimization(

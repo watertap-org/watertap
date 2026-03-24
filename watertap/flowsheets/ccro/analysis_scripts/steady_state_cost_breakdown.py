@@ -129,11 +129,48 @@ if __name__ == "__main__":
                 generate_figure=True,
                 fig_options={"width": 2, "height": 2},
             )
-            # cost_plotter.fig.plot_line(
-            #     dm["optimal_design", "Water recovery"],
-            #     dm["optimal_design", "LCOW"],
-            #     label="Optimal design",
-            #     color="red",
-            #     linestyle="--",
-            # )
-            # cost_plotter.generate_figure()
+            cost_plotter = BreakDownPlotter(
+                wr,
+                save_folder="steady_state_break_down_figs",
+                save_name=f"abs_steady_state_cost_breakdown_{water_case}",
+            )
+            if erd == "True":
+                areas = [
+                    # {"ERD": {"label": None, "color": "#f0dcd3"}},
+                    {"Pumps & ERD": {"label": "Pumps & ERD", "color": "#1f78b4"}},
+                    {"RO": {"label": "RO", "color": "#a6cee3"}},
+                ]
+            else:
+                areas = [
+                    # {"ERD": {"label": None, "color": "#f0dcd3"}},
+                    {"Pumps & ERD": {"label": "Pumps", "color": "#1f78b4"}},
+                    {"RO": {"label": "RO", "color": "#a6cee3"}},
+                ]
+            cost_plotter.define_area_groups(areas)
+            labels = {
+                "ylabel": "Total operating cost (MUSD/year)",
+                "xlabel": "Water recovery (%)",
+            }
+            labels.update(axis_options)
+            labels["yticks"] = [0, 1e4, 2e4, 3e4, 4e4, 5e4]
+            cost_plotter.define_hatch_groups(
+                {
+                    "total_operating_cost": {
+                        "label": "OPEX",
+                        "hatch": "",
+                        "color": "none",
+                    },
+                    "total_capital_cost": {
+                        "label": "CAPEX",
+                        "hatch": "\\\\",
+                        "color": "none",
+                    },
+                }
+            )
+            cost_plotter.plotbreakdown(
+                xdata="Water recovery",
+                ydata="costing",
+                axis_options=labels,
+                generate_figure=True,
+                fig_options={"width": 2, "height": 2},
+            )

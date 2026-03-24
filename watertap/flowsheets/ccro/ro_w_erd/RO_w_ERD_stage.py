@@ -55,12 +55,11 @@ solver = get_solver()
 
 def add_costing(m, hpro_costing=False):
 
+    cma_pump = {"pump_type": "high_pressure"}
     if hpro_costing:
-        cma_pump = {"pump_type": "high_pressure"}
         cma_ro = {"ro_type": "high_pressure"}
 
     else:
-        cma_pump = {"pump_type": "low_pressure"}
         cma_ro = {"ro_type": "standard"}
 
     m.fs.costing = WaterTAPCosting()

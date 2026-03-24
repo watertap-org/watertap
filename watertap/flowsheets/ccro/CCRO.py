@@ -45,6 +45,7 @@ def create_ccro_multiperiod(
     cc_configuration=None,
     use_ro_with_hold_up=False,
     use_interval_initializer=True,
+    high_pressure_membrane_cost=False,
 ):
     """
     Create multiperiod model for CCRO system
@@ -164,11 +165,16 @@ def create_ccro_multiperiod(
                 "pump_type": "low_pressure",
             },
         )
+        if high_pressure_membrane_cost:
+            costing_method_arguments = {"ro_type": "high_pressure"}
+        else:
+            costing_method_arguments = {"ro_type": "standard"}
         cc_utils.register_costed_unit(
             mp,
             zero_block.fs.RO,
             register_electricity_cost=False,  # there is none anyway
             register_capital_cost=True,
+            costing_method_arguments=costing_method_arguments,
         )
         if mp.flushing_points > 1:
             cc_utils.register_costed_unit(

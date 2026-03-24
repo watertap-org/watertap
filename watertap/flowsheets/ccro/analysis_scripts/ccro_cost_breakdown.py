@@ -120,3 +120,35 @@ if __name__ == "__main__":
             generate_figure=True,
             fig_options={"width": 2, "height": 2},
         )
+
+        cost_plotter = BreakDownPlotter(
+            wr,
+            save_folder="ccro_cost_breakdown_figs",
+            save_name=f"abs_ccro_cost_breakdown_{water_case}",
+        )
+        cost_plotter.define_area_groups(
+            {"Feed pump": {}, "Recycle pump": {}, "RO": {}, "Conduit": {}}
+        )
+        labels = {
+            "ylabel": "Total operating cost (MUSD/year)",
+            "xlabel": "Water recovery (%)",
+        }
+        labels.update(axis_options)
+        labels["yticks"] = [0, 2e4, 4e4, 6e4, 8e4, 1e5]
+        cost_plotter.define_hatch_groups(
+            {
+                "total_operating_cost": {"label": "OPEX", "hatch": "", "color": "none"},
+                "total_capital_cost": {
+                    "label": "CAPEX",
+                    "hatch": "\\\\",
+                    "color": "none",
+                },
+            }
+        )
+        cost_plotter.plotbreakdown(
+            xdata="Water recovery",
+            ydata="costing",
+            axis_options=labels,
+            generate_figure=True,
+            fig_options={"width": 2, "height": 2},
+        )
