@@ -482,11 +482,12 @@ def solve(
 def setup_optimization(
     mp,
     overall_water_recovery=0.5,
-    min_cycle_time_hr=10 / 60,
-    max_cycle_time_hr=1,
-    recycle_flow_bounds=(0.1, 20),
+    total_cycle_time_lb=10,
+    total_cycle_time_ub=60,
+    recycle_flowrate_lb=1,
+    recycle_flowrate_ub=100,
     min_accumulation_time=1,
-    min_flushing_time=10,
+    flushing_time_lb=10,
     use_perm_conc_target=False,
     use_rejection_target=True,
 ):
@@ -494,6 +495,9 @@ def setup_optimization(
     Setup the multiperiod model for optimization.
     """
     ccro_mp_constraints.fix_overall_water_recovery(mp, overall_water_recovery)
+    mp.total_cycle_time.setlb(total_cycle_time_lb * pyunits.minutes)
+    mp.total_cycle_time.setub(total_cycle_time_ub * pyunits.minutes)
+
     mp.global_dead_volume_constraint.activate()
     if mp.find_component("global_ro_volume_constraint") is not None:
         mp.global_ro_volume_constraint.activate()
@@ -503,8 +507,6 @@ def setup_optimization(
     mp.ro_membrane_area_constraint.activate()
     mp.ro_membrane_length_constraint.activate()
     mp.filtration_ramp_rate_constraint.activate()
-    mp.total_cycle_time.setlb(min_cycle_time_hr * pyunits.hours)
-    mp.total_cycle_time.setub(max_cycle_time_hr * pyunits.hours)
     mp.equal_recycle_rate.activate()
     if use_perm_conc_target:
         mp.max_permeate_concentration_constraint.activate()
@@ -553,36 +555,36 @@ def setup_optimization(
         if m.fs.operation_mode == "filtration":
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
-                recycle_flow_bounds[0] * pyunits.L / pyunits.s
+                recycle_flowrate_lb * pyunits.L / pyunits.s
             )
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-                recycle_flow_bounds[1] * pyunits.L / pyunits.s
+                recycle_flowrate_ub * pyunits.L / pyunits.s
             )
         elif m.fs.operation_mode == "flushing_with_filtration":
             m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].unfix()
             m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].setlb(
-                recycle_flow_bounds[0] * pyunits.L / pyunits.s
+                recycle_flowrate_lb * pyunits.L / pyunits.s
             )
             m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"].setub(
-                recycle_flow_bounds[1] * pyunits.L / pyunits.s
+                recycle_flowrate_ub * pyunits.L / pyunits.s
             )
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].unfix()
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setlb(
-                recycle_flow_bounds[0] * pyunits.L / pyunits.s
+                recycle_flowrate_lb * pyunits.L / pyunits.s
             )
             m.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"].setub(
-                recycle_flow_bounds[1] * pyunits.L / pyunits.s
+                recycle_flowrate_ub * pyunits.L / pyunits.s
             )
         elif m.fs.operation_mode == "flushing":
             m.fs.flushing.flushing_efficiency.unfix()
             m.fs.flushing.flushing_efficiency.setub(0.9999)
             m.fs.flushing.flushing_efficiency.setlb(0.1)
-            m.fs.flushing.flushing_time.setlb(min_flushing_time * pyunits.seconds)
+            m.fs.flushing.flushing_time.setlb(flushing_time_lb * pyunits.seconds)
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
         mp.flushing.flushing_efficiency.setub(0.9999)
         mp.flushing.flushing_efficiency.setlb(0.1)
-        mp.flushing.flushing_time.setlb(min_flushing_time * pyunits.seconds)
+        mp.flushing.flushing_time.setlb(flushing_time_lb * pyunits.seconds)
     if mp.find_component("conduit") is not None:
         mp.conduit.volume.unfix()
     if mp.include_costing:
@@ -1073,7 +1075,7 @@ if __name__ == "__main__":
     setup_optimization(
         mp,
         overall_water_recovery=0.5,
-        max_cycle_time_hr=2,
+        total_cycle_time_ub=2,
         recycle_flow_bounds=(2, 20),
     )
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox

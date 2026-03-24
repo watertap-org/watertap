@@ -10,7 +10,7 @@ PW_recovery_sweep:
     fixed_setup: False
     use_hold_up: True
     use_interval_initializer: False
-    min_cycle_time_hr: 0.016667 # 1 minute
+    total_cycle_time_lb: 1
     high_pressure_membrane_cost: True
   sweep_param_loop:
     recovery:
@@ -31,7 +31,7 @@ PW_recovery_sweep:
 #     fixed_setup: False
 #     use_hold_up: True
 #     use_interval_initializer: True
-#     min_cycle_time_hr: 0.16667 # 10 minutes
+#     total_cycle_time_lb: 10
 #   sweep_param_loop:
 #     recovery:
 #       type: LinearSample
@@ -51,7 +51,7 @@ PW_recovery_sweep:
 #     fixed_setup: False
 #     use_hold_up: True
 #     use_interval_initializer: True
-#     min_cycle_time_hr: 0.16667 # 10 minutes
+#     total_cycle_time_lb: 10
 #   sweep_param_loop:
 #     recovery:
 #       type: LinearSample

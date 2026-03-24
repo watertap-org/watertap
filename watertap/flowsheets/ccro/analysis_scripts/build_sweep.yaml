@@ -5,19 +5,18 @@ ramp_rate_ub_and_min_cycle_time_sweep:
     B_comp: 0.1
     time_steps: 10
     n_flushing_points: 5
-    min_cycle_time_hr: 0.16667
+    total_cycle_time_lb: 10
     osmotic_overpressure: 2
     ramp_rate_ub: 3
     fixed_setup: False
     use_hold_up: True
     overall_water_recovery: 0.5
   build_loop:
-    min_cycle_time_hr:
-      - 0.001667
-      - 0.01667
-      - 0.1667
-      - 0.33333
-      - 0.5
+    total_cycle_time_lb:
+      - 1
+      - 10
+      - 20
+      - 30
     ramp_rate_ub:
       - 2
       - 3
