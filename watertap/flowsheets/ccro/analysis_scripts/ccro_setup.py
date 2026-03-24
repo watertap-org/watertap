@@ -32,6 +32,8 @@ def build(
     cycle_time_ratio_ub=0.999999,
     permeate_concentration_lb=0.001, # g/L
     permeate_concentration_ub=0.5, # g/L
+    flushing_efficiency_lb=0.1,
+    flushing_efficiency_ub=0.9999,
     use_perm_conc_target=True, # activate max perm conc constraint
     rejection_lb=0.985,
     rejection_ub=1,
@@ -90,6 +92,8 @@ def build(
         flushing_time_lb=flushing_time_lb,
         use_perm_conc_target=use_perm_conc_target,
         use_rejection_target=use_rejection_target,
+        flushing_efficiency_lb=flushing_efficiency_lb,
+        flushing_efficiency_ub=flushing_efficiency_ub,
     )
 
     mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!

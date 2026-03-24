@@ -486,6 +486,8 @@ def setup_optimization(
     total_cycle_time_ub=60,
     recycle_flowrate_lb=1,
     recycle_flowrate_ub=100,
+    flushing_efficiency_lb=0.1,
+    flushing_efficiency_ub=0.9999,
     min_accumulation_time=1,
     flushing_time_lb=10,
     use_perm_conc_target=False,
@@ -577,13 +579,13 @@ def setup_optimization(
             )
         elif m.fs.operation_mode == "flushing":
             m.fs.flushing.flushing_efficiency.unfix()
-            m.fs.flushing.flushing_efficiency.setub(0.9999)
-            m.fs.flushing.flushing_efficiency.setlb(0.1)
+            m.fs.flushing.flushing_efficiency.setlb(flushing_efficiency_lb)
+            m.fs.flushing.flushing_efficiency.setub(flushing_efficiency_ub)
             m.fs.flushing.flushing_time.setlb(flushing_time_lb * pyunits.seconds)
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
-        mp.flushing.flushing_efficiency.setub(0.9999)
-        mp.flushing.flushing_efficiency.setlb(0.1)
+        mp.flushing.flushing_efficiency.setlb(flushing_efficiency_lb)
+        mp.flushing.flushing_efficiency.setub(flushing_efficiency_ub)
         mp.flushing.flushing_time.setlb(flushing_time_lb * pyunits.seconds)
     if mp.find_component("conduit") is not None:
         mp.conduit.volume.unfix()
