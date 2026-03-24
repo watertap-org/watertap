@@ -575,12 +575,12 @@ def setup_optimization(
             )
         elif m.fs.operation_mode == "flushing":
             m.fs.flushing.flushing_efficiency.unfix()
-            m.fs.flushing.flushing_efficiency.setub(0.99)
+            m.fs.flushing.flushing_efficiency.setub(0.9999)
             m.fs.flushing.flushing_efficiency.setlb(0.1)
             m.fs.flushing.flushing_time.setlb(min_flushing_time * pyunits.seconds)
     if mp.find_component("flushing") is not None:
         mp.flushing.flushing_efficiency.unfix()
-        mp.flushing.flushing_efficiency.setub(0.99)
+        mp.flushing.flushing_efficiency.setub(0.9999)
         mp.flushing.flushing_efficiency.setlb(0.1)
         mp.flushing.flushing_time.setlb(min_flushing_time * pyunits.seconds)
     if mp.find_component("conduit") is not None:
@@ -899,6 +899,8 @@ def print_results_table(
     # ── Summary metrics ─────────────────────────────────────────────
     summary = {}
     summary["Total cycle time (s)"] = mp.total_cycle_time.value
+    summary["Total filtration time (s)"] = value(mp.total_filtration_time)
+    summary["Total flushing time (s)"] = value(mp.total_flushing_time)
     summary["Cycle time ratio"] = mp.cycle_time_ratio.value
 
     summary["Overall recovery"] = mp.overall_recovery.value
