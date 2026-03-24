@@ -25,12 +25,18 @@ def build(
     flushing_efficiency=0.25,
     min_flushing_time=10,
     use_interval_initializer=True,
+    recycle_flowrate=10,  # default in cc_config is 10
+    cycle_time_ratio_bounds=(0.8, 0.99),
+    permeate_concentration_bounds=(0.001, 0.5),
+    use_perm_conc_target=True,
+    rejection_bounds=(0.9, 1),
+    use_rejection_target=False,
     high_pressure_membrane_cost=False,
     **kwargs,
 ):
 
-    if feed_tds <= 10:
-        # Use brackish water RO parameters if salinity <=10 g/L
+    if feed_tds <= 15:
+        # Use brackish water RO parameters if salinity <=15 g/L
         A_comp = 5
         B_comp = 0.5
 
@@ -72,7 +78,6 @@ def build(
         high_pressure_membrane_cost=high_pressure_membrane_cost,
     )
 
-    # if not fixed_setup:
     CCRO.setup_optimization(
         mp,
         overall_water_recovery=overall_water_recovery,
@@ -95,8 +100,8 @@ def build(
 
     solve_model(mp)
 
-    # mp.permeate_concentration.setub(permeate_concentration_bounds[1])
-    # mp.permeate_concentration.setlb(permeate_concentration_bounds[0])
+    mp.permeate_concentration.setlb(permeate_concentration_bounds[0])
+    mp.permeate_concentration.setub(permeate_concentration_bounds[1])
     mp.recycle_flowrate.unfix()
 
     print(
@@ -117,35 +122,31 @@ def build_with_fixed_recovery(recovery=0.5, **kwargs):
 
 def solve_model(mp, **kwargs):
     results = CCRO.solve(mp)
-    assert_optimal_termination(results)
     CCRO.print_results_table(mp)
     return results
 
 
+
 if __name__ == "__main__":
 
-    mp = build_with_fixed_recovery(
-        feed_tds=15,
-        osmotic_overpressure=2.5,
-        overall_water_recovery=0.5,
-        recovery=0.5,
-        recycle_flowrate=10,
-        use_perm_conc_target=True,
-        use_rejection_target=True,
-    )
-
-    # for x in [5, 15, 25, 35, 45, 55, 65, 75]:
-
-    #     mp = build_with_fixed_recovery(
-    #         feed_tds=x,
-    #         osmotic_overpressure=2.5,
-    #         overall_water_recovery=0.5,
-    #         recovery=0.5,
-    #         recycle_flowrate=10,
-    #         use_perm_conc_target=True,
-    #         use_rejection_target=True,
-    #     )
-
-    #     mp.ro_flux.display()
-    #     mp.overall_rejection.display()
-    #     mp.permeate_concentration.display()
+    base_case_kwargs = {
+    "BW": {
+        "feed_tds": 5,
+        "overall_water_recovery": 0.5,
+        "recovery": 0.9,
+    },
+    "SW": {
+        "feed_tds": 35,
+        "overall_water_recovery": 0.5,
+        "recovery": 0.5,
+    },
+    "PW": {
+        "feed_tds": 75,
+        "overall_water_recovery": 0.4,
+        "recovery": 0.4,
+        "high_pressure_membrane_cost": True,
+    },
+}
+    
+    kwargs = base_case_kwargs["SW"]
+    mp = build_with_fixed_recovery(**kwargs)

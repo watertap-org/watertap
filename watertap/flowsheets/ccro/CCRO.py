@@ -436,7 +436,6 @@ def solve(
     tee=True,
     raise_on_failure=True,
     use_ipoptv2=False,
-    # max_iter=3000,
     max_iter=1200,
 ):
     # ---solving---

@@ -80,13 +80,6 @@ def add_multiperiod_variables(mp, cc_configuration=None):
         doc="Total feed volume produced over all time periods",
     )
 
-    mp.total_feed_salt = Var(
-        initialize=0.5,
-        domain=NonNegativeReals,
-        units=pyunits.kg,
-        doc="Total mass of salt in feed over all time periods",
-    )
-
     mp.total_permeate_vol = Var(
         initialize=0.5,
         domain=NonNegativeReals,
@@ -113,7 +106,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
     mp.overall_rejection = Var(
         initialize=0.99,
         domain=NonNegativeReals,
-        bounds=(0.9, 1),
+        bounds=(0.9, 1.001),
         units=pyunits.dimensionless,
         doc="Overall salt rejection over all time periods",
     )
@@ -506,7 +499,9 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                     m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"] * dt_flush
                 )
             elif m.fs.operation_mode == "flushing":
-                feed_vol.append(m.fs.dead_volume.volume[0, "Liq"])
+                raise ValueError("Not sure if this is correct for flushing mode - need to confirm")
+                # TODO: is this correct for "flushing" mode?
+                # feed_vol.append(m.fs.dead_volume.volume[0, "Liq"])
         return sum(feed_vol)
 
     @mp.Expression(mp.TIME, doc="Cumulative brine volume")
@@ -522,9 +517,10 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                 brine_vol.append(
                     m.fs.conduit_feed.properties[0].flow_vol_phase["Liq"] * dt_flush
                 )
-            # TODO: is this correct for "flushing" mode?
-            # elif m.fs.operation_mode == "flushing":
-            #     brine_vol.append(m.fs.dead_volume.volume[0, "Liq"])
+            elif m.fs.operation_mode == "flushing":
+                raise ValueError("Not sure if this is correct for flushing mode - need to confirm")
+                # TODO: is this correct for "flushing" mode?
+                # brine_vol.append(m.fs.dead_volume.volume[0, "Liq"])
         return sum(brine_vol)
 
     # Total permeate water volume
@@ -560,8 +556,8 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
         return b.total_permeate_salt == sum(total_permeate_salt)
 
     # Total feed salt mass
-    @mp.Constraint(doc="Total mass of salt in feed over all time periods")
-    def total_feed_salt_constraint(b):
+    @mp.Expression(doc="Total mass of salt in feed over all time periods")
+    def total_feed_salt(b):
         total_feed_salt = []
         for m in blks:
             if m.fs.operation_mode == "filtration":
@@ -579,9 +575,10 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
                     * dt_flush
                 )
             elif m.fs.operation_mode == "flushing":
-                total_feed_salt.append(m.fs.dead_volume.volume[0, "Liq"])
-        return b.total_feed_salt == sum(total_feed_salt)
-        # return sum(total_feed_salt)
+                raise ValueError("Not sure if this is correct for flushing mode - need to confirm")
+                # TODO: check if below is correct
+                # total_feed_salt.append(m.fs.dead_volume.volume[0, "Liq"])
+        return sum(total_feed_salt)
 
     @mp.Constraint(doc="Permeate concentration constraint")
     def permeate_concentration_constraint(b):
@@ -623,7 +620,6 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
     @mp.Constraint(doc="Average product flow rate over all time periods")
     def eq_avg_product_flow_rate(mp):
         return mp.avg_product_flow_rate == pyunits.convert(
-            # mp.total_permeate_vol / sum(total_operating_time),
             mp.total_permeate_vol / mp.total_cycle_time,
             to_units=pyunits.m**3 / pyunits.s,
         )
