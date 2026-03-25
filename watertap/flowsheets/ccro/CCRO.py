@@ -902,12 +902,12 @@ def print_results_table(
 
     # ── Summary metrics ─────────────────────────────────────────────
     summary = {}
+    summary["Overall recovery"] = mp.overall_recovery.value
     summary["Total cycle time (s)"] = mp.total_cycle_time.value
     summary["Total filtration time (s)"] = value(mp.total_filtration_time)
     summary["Total flushing time (s)"] = value(mp.total_flushing_time)
     summary["Cycle time ratio"] = mp.cycle_time_ratio.value
 
-    summary["Overall recovery"] = mp.overall_recovery.value
     summary["Mean residence time (s)"] = flushing_block.mean_residence_time.value
     summary["Flushing time (s)"] = flushing_block.flushing_time.value
     summary["Flushing efficiency"] = flushing_block.flushing_efficiency.value
@@ -922,7 +922,8 @@ def print_results_table(
         pyunits.convert(mp.recycle_flowrate, to_units=pyunits.L / pyunits.s)
     )
     summary["Recycle Loop Conc (g/L)"] = mp.recycle_loop_concentration.value
-    summary["Ramp Rate (bar/min)"] = mp.filtration_ramp_rate.value
+    summary["P1 Ramp Rate (bar/min)"] = mp.filtration_ramp_rate.value
+    summary["P2 Ramp Rate (bar/min)"] = value(mp.filtration_ramp_rate_recycle)
     summary["Total feed (m3)"] = mp.total_feed_vol.value
     summary["Total permeate (m3)"] = mp.total_permeate_vol.value
     summary["Final permeate conc (g/L)"] = mp.permeate_concentration.value
@@ -939,12 +940,12 @@ def print_results_table(
         summary["RO Hold-up Volume"] = b0.fs.RO.feed_side.volume.value
 
     summary["Dead Volume"] = b0.fs.dead_volume.volume[0, "Liq"].value
-    summary["Membrane Area"] = b0.fs.RO.area.value
+    if mp.find_component("total_flush_volume") is not None:
+        summary["Total Flush Volume"] = mp.total_flush_volume.value
     flux_lmh = value(pyunits.convert(b0.fs.product.properties[0].flow_vol_phase["Liq"] / b0.fs.RO.area, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour))
     summary["RO Single Pass Recovery (%)"] = b0.fs.RO.recovery_vol_phase[0.0, "Liq"].value * 100
     summary["RO Flux (LMH)"] = flux_lmh
-    if mp.find_component("total_flush_volume") is not None:
-        summary["Total Flush Volume"] = mp.total_flush_volume.value
+    summary["Membrane Area"] = b0.fs.RO.area.value
     summary["Membrane Length"] = b0.fs.RO.length.value
     summary["Membrane Width"] = b0.fs.RO.width.value
     summary["RO Inlet Velocity"] = b0.fs.RO.feed_side.velocity[0, 0].value

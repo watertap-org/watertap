@@ -135,20 +135,26 @@ def solve_model(mp, **kwargs):
 if __name__ == "__main__":
 
     run_kwargs = {
-        "feed_tds": 35,
+        "feed_tds": 5,
+        "time_steps": 20,
         "overall_water_recovery": 0.5,
-        "recovery": 0.5,
-        "recycle_flow_bounds": (1, 100),
-        "total_cycle_time_lb": 10 / 60,
-        # "cycle_time_ratio_bounds": (0.5, 0.999999),
-        "cycle_time_ratio_lb": 0.5,
+        "recovery": 0.75,
+        "osmotic_overpressure": 2,
+        "total_cycle_time_lb": 10, # minutes
+        "total_cycle_time_ub": 60, # minutes
+        "cycle_time_ratio_lb": 0.8,
         "cycle_time_ratio_ub": 0.999999,
-        "use_perm_conc_target": False,
-        "use_rejection_target": True,
-        "flushing_time_lb": 60,
-        "total_cycle_time_ub": 2,
-        "rejection_bounds": (0.985, 1),
-        # "recycle_flowrate_lb": 10,
+        "flushing_time_lb": 10,
+        "rejection_lb": 0.985,
+        "rejection_ub": 1,
+        # "use_high_pressure_membrane_cost": True,
+        "use_high_pressure_membrane_cost": False,
+        "use_perm_conc_target": True,
+        # "use_perm_conc_target": False,
+        # "use_rejection_target": True,
+        "use_rejection_target": False,
     }
 
     mp = build_with_fixed_recovery(**run_kwargs)
+
+

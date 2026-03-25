@@ -157,18 +157,19 @@ def scale_multiperiod_model(mp):
     ### VARIABLES ###
     iscale.set_scaling_factor(mp.dead_volume_to_area_ratio, 1e2)
     iscale.set_scaling_factor(mp.dead_volume_to_area_multiplier, 1)
+    iscale.set_scaling_factor(mp.pipe_to_module_ratio, 1)
+    iscale.set_scaling_factor(mp.recycle_loop_concentration, 1)
+    iscale.set_scaling_factor(mp.total_feed_vol, 1 / (flow_vol * 3600))
+    iscale.set_scaling_factor(mp.total_permeate_vol, 1)
+    iscale.set_scaling_factor(mp.total_permeate_salt, 1)
+    iscale.set_scaling_factor(mp.permeate_concentration, 1)
+    iscale.set_scaling_factor(mp.overall_rejection, 1)
+    iscale.set_scaling_factor(mp.avg_product_flow_rate, 1 / flow_vol)
     iscale.set_scaling_factor(mp.total_cycle_time, 1e-3)
     iscale.set_scaling_factor(mp.total_filtration_time, 1e-3)
     iscale.set_scaling_factor(mp.cycle_time_ratio, 1)
     iscale.set_scaling_factor(mp.filtration_ramp_rate, 1)
-    iscale.set_scaling_factor(mp.permeate_concentration, 1)
-    iscale.set_scaling_factor(mp.total_feed_vol, 1 / (flow_vol * 3600))
-    iscale.set_scaling_factor(mp.total_permeate_vol, 1)
-    iscale.set_scaling_factor(mp.total_permeate_salt, 1)
     iscale.set_scaling_factor(mp.total_feed_salt, 1e-2)
-    iscale.set_scaling_factor(mp.overall_rejection, 1)
-    iscale.set_scaling_factor(mp.recycle_loop_concentration, 1)
-    iscale.set_scaling_factor(mp.avg_product_flow_rate, 1 / flow_vol)
 
     ### CONSTRAINTS ###
     iscale.constraint_scaling_transform(
@@ -179,13 +180,14 @@ def scale_multiperiod_model(mp):
     iscale.constraint_scaling_transform(mp.total_permeate_salt_constraint, 1)
     iscale.constraint_scaling_transform(mp.permeate_concentration_constraint, 1)
     iscale.constraint_scaling_transform(mp.overall_rejection_constraint, 1)
-    iscale.constraint_scaling_transform(mp.cycle_time_ratio_constraint, 1)
-
     iscale.constraint_scaling_transform(mp.max_permeate_concentration_constraint, 0.1)
+    iscale.constraint_scaling_transform(mp.min_overall_rejection_constraint, 1)
     iscale.constraint_scaling_transform(mp.total_filtration_time_constraint, 1e-3)
     iscale.constraint_scaling_transform(mp.total_cycle_time_constraint, 1e-3)
+    iscale.constraint_scaling_transform(mp.cycle_time_ratio_constraint, 1)
     iscale.constraint_scaling_transform(mp.recycle_loop_concentration_constraint, 1)
     iscale.constraint_scaling_transform(mp.global_dead_volume_constraint, 1e2)
+    
     for c in mp.equal_recycle_rate.values():
         iscale.constraint_scaling_transform(c, 1e2)
     for c in mp.equal_ro_volume_constraint.values():

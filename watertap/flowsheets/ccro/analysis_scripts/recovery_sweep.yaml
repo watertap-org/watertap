@@ -3,14 +3,17 @@ PW_recovery_sweep:
     feed_tds: 75
     A_comp: 1.5
     B_comp: 0.1
-    overall_water_recovery: 0.25
+    overall_water_recovery: 0.5
     time_steps: 20
     n_flushing_points: 5
     osmotic_overpressure: 3
-    fixed_setup: False
-    use_hold_up: True
     use_interval_initializer: False
     total_cycle_time_lb: 1
+    flushing_time_lb: 10
+    cycle_time_ratio_lb: 0.8
+    cycle_time_ratio_ub: 0.999999
+    use_perm_conc_target: True
+    use_rejection_target: False
     high_pressure_membrane_cost: True
   sweep_param_loop:
     recovery:
@@ -20,45 +23,53 @@ PW_recovery_sweep:
       upper_limit: 0.55
       num_samples: 36
 
-# BW_recovery_sweep:
-#   build_defaults:
-#     feed_tds: 5
-#     A_comp: 5
-#     B_comp: 0.5
-#     overall_water_recovery: 0.5
-#     time_steps: 20
-#     n_flushing_points: 5
-#     fixed_setup: False
-#     use_hold_up: True
-#     use_interval_initializer: True
-#     total_cycle_time_lb: 10
-#   sweep_param_loop:
-#     recovery:
-#       type: LinearSample
-#       param: overall_recovery
-#       lower_limit: 0.75
-#       upper_limit: 0.95
-#       num_samples: 21
+BW_recovery_sweep:
+  build_defaults:
+    feed_tds: 5
+    A_comp: 5
+    B_comp: 0.5
+    overall_water_recovery: 0.5
+    time_steps: 20
+    n_flushing_points: 5
+    osmotic_overpressure: 2
+    use_interval_initializer: True
+    total_cycle_time_lb: 10
+    flushing_time_lb: 10
+    cycle_time_ratio_lb: 0.8
+    cycle_time_ratio_ub: 0.999999
+    use_perm_conc_target: True
+    use_rejection_target: False
+  sweep_param_loop:
+    recovery:
+      type: LinearSample
+      param: overall_recovery
+      lower_limit: 0.75
+      upper_limit: 0.95
+      num_samples: 21
 
-# SW_recovery_sweep:
-#   build_defaults:
-#     feed_tds: 35
-#     A_comp: 1.5
-#     B_comp: 0.1
-#     overall_water_recovery: 0.5
-#     time_steps: 20
-#     n_flushing_points: 5
-#     fixed_setup: False
-#     use_hold_up: True
-#     use_interval_initializer: True
-#     total_cycle_time_lb: 10
-#   sweep_param_loop:
-#     recovery:
-#       type: LinearSample
-#       param: overall_recovery
-#       lower_limit: 0.45
-#       upper_limit: 0.60
-#       num_samples: 16
+SW_recovery_sweep:
+  build_defaults:
+    feed_tds: 35
+    A_comp: 1.5
+    B_comp: 0.1
+    overall_water_recovery: 0.5
+    time_steps: 20
+    n_flushing_points: 5
+    osmotic_overpressure: 2
+    use_interval_initializer: True
+    total_cycle_time_lb: 10
+    flushing_time_lb: 10
+    cycle_time_ratio_lb: 0.8
+    cycle_time_ratio_ub: 0.999999
+    use_perm_conc_target: True
+    use_rejection_target: False
+  sweep_param_loop:
+    recovery:
+      type: LinearSample
+      param: overall_recovery
+      lower_limit: 0.40
+      upper_limit: 0.60
+      num_samples: 21
 
 
 # salinity_and_recovery_sweep:
