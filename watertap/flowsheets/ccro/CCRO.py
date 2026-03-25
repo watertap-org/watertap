@@ -942,8 +942,15 @@ def print_results_table(
     summary["Dead Volume"] = b0.fs.dead_volume.volume[0, "Liq"].value
     if mp.find_component("total_flush_volume") is not None:
         summary["Total Flush Volume"] = mp.total_flush_volume.value
-    flux_lmh = value(pyunits.convert(b0.fs.product.properties[0].flow_vol_phase["Liq"] / b0.fs.RO.area, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour))
-    summary["RO Single Pass Recovery (%)"] = b0.fs.RO.recovery_vol_phase[0.0, "Liq"].value * 100
+    flux_lmh = value(
+        pyunits.convert(
+            b0.fs.product.properties[0].flow_vol_phase["Liq"] / b0.fs.RO.area,
+            to_units=pyunits.liter / pyunits.m**2 / pyunits.hour,
+        )
+    )
+    summary["RO Single Pass Recovery (%)"] = (
+        b0.fs.RO.recovery_vol_phase[0.0, "Liq"].value * 100
+    )
     summary["RO Flux (LMH)"] = flux_lmh
     summary["Membrane Area"] = b0.fs.RO.area.value
     summary["Membrane Length"] = b0.fs.RO.length.value

@@ -187,7 +187,7 @@ def scale_multiperiod_model(mp):
     iscale.constraint_scaling_transform(mp.cycle_time_ratio_constraint, 1)
     iscale.constraint_scaling_transform(mp.recycle_loop_concentration_constraint, 1)
     iscale.constraint_scaling_transform(mp.global_dead_volume_constraint, 1e2)
-    
+
     for c in mp.equal_recycle_rate.values():
         iscale.constraint_scaling_transform(c, 1e2)
     for c in mp.equal_ro_volume_constraint.values():

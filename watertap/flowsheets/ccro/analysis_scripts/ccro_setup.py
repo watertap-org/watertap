@@ -17,27 +17,27 @@ def build(
     feed_tds=5,
     A_comp=1.5,  # LMH/bar; default for SWRO
     B_comp=0.1,  # LMH; default for SWRO
-    total_cycle_time_lb=10, # minutes
-    total_cycle_time_ub=60, # minutes
+    total_cycle_time_lb=10,  # minutes
+    total_cycle_time_ub=60,  # minutes
     osmotic_overpressure=2,
     overall_water_recovery=0.5,
-    accumulation_time=5, # seconds
+    accumulation_time=5,  # seconds
     flushing_efficiency=0.25,
-    flushing_time_lb=10, # seconds
+    flushing_time_lb=10,  # seconds
     use_interval_initializer=True,
     recycle_flowrate=10,  # L/s; default in cc_config is 10
     recycle_flowrate_lb=1,  # L/s
     recycle_flowrate_ub=100,  # L/s
     cycle_time_ratio_lb=0.8,
     cycle_time_ratio_ub=0.999999,
-    permeate_concentration_lb=0.001, # g/L
-    permeate_concentration_ub=0.5, # g/L
+    permeate_concentration_lb=0.001,  # g/L
+    permeate_concentration_ub=0.5,  # g/L
     flushing_efficiency_lb=0.1,
     flushing_efficiency_ub=0.9999,
-    use_perm_conc_target=True, # activate max perm conc constraint
+    use_perm_conc_target=True,  # activate max perm conc constraint
     rejection_lb=0.985,
     rejection_ub=1,
-    use_rejection_target=False, # activate min rejection constraint
+    use_rejection_target=False,  # activate min rejection constraint
     high_pressure_membrane_cost=False,
     **kwargs,
 ):
@@ -51,7 +51,7 @@ def build(
         use_interval_initializer = False
 
     if feed_tds >= 50:
-        total_cycle_time_lb = 1 
+        total_cycle_time_lb = 1
 
     cc_config = CCROConfiguration()
     cc_config["A_comp"] = A_comp * (
@@ -131,7 +131,6 @@ def solve_model(mp, **kwargs):
     return results
 
 
-
 if __name__ == "__main__":
 
     run_kwargs = {
@@ -140,8 +139,8 @@ if __name__ == "__main__":
         "overall_water_recovery": 0.5,
         "recovery": 0.75,
         "osmotic_overpressure": 2,
-        "total_cycle_time_lb": 10, # minutes
-        "total_cycle_time_ub": 60, # minutes
+        "total_cycle_time_lb": 10,  # minutes
+        "total_cycle_time_ub": 60,  # minutes
         "cycle_time_ratio_lb": 0.8,
         "cycle_time_ratio_ub": 0.999999,
         "flushing_time_lb": 10,
@@ -156,5 +155,3 @@ if __name__ == "__main__":
     }
 
     mp = build_with_fixed_recovery(**run_kwargs)
-
-

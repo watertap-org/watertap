@@ -65,7 +65,6 @@ from watertap.costing import (
     ROType,
 )
 
-
 atmospheric_pressure = 101325 * pyunits.Pa
 solver = get_solver()
 

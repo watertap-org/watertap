@@ -21,7 +21,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from watertap.core.solvers import get_solver
 
-
 solver = get_solver()
 
 

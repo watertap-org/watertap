@@ -70,7 +70,7 @@ def ccro_mesh_plotting(water_type="BW"):
 
 
 def ccro_line_plotting(
-        water="SW",
+    water="SW",
     n_filt_time_steps=10,
     n_flush_time_steps=5,
     n_time_steps=None,
@@ -84,7 +84,9 @@ def ccro_line_plotting(
     title=None,
 ):
 
-    sweep_file = f"{here}/output/ccro_recovery_sweep_analysisType_{water}_recovery_sweep.h5"
+    sweep_file = (
+        f"{here}/output/ccro_recovery_sweep_analysisType_{water}_recovery_sweep.h5"
+    )
     if n_time_steps is None:
 
         n_time_steps = n_filt_time_steps + n_flush_time_steps
