@@ -5,7 +5,7 @@ from pyomo.environ import (
     assert_optimal_termination,
     units as pyunits,
 )
-from watertap.flowsheets.ccro.multiperiod.model_state_tool import ModelState
+from watertap.flowsheets.ccro.utils.model_state_tool import ModelState
 from idaes.core import UnitModelCostingBlock
 from idaes.core.util.initialization import Constraint, solve_indexed_blocks
 
