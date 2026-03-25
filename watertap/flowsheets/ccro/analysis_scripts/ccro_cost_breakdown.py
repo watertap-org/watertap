@@ -43,6 +43,7 @@ def plot_recycle_rate_cost_breakdown():
     dm.register_data_key("total_cycle_time", "Total cycle time", "min")
     dm.register_data_key("recycle_flowrate", "Recycle rate", "L/s")
     dm.register_data_key("filtration_ramp_rate", "Filtration ramp rate", "bar/min")
+    dm.register_data_key("blocks[0].process.fs.P2.control_volume.properties_out[0.0].pressure", "Recycle Pump Pressure", "bar")
 
     dm.register_data_key("overall_recovery", "Water recovery", "%")
     dm.load_data()
@@ -90,15 +91,15 @@ def plot_recycle_rate_cost_breakdown():
     cm.build()
     # dm.display()
     # # assert False
-    xticks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    xticks = [5, 10, 15, 20, 25, 30, 35]
     cases = {
         "Brackish water": {
             "xticks": xticks, 
-            "yticks": [0, 0.1, 0.2, 0.3, 0.4],
+            "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0,],
         },
         "Seawater": {
             "xticks": xticks,
-            "yticks": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7],
+            "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],
         },
         "Produced water": {
             "xticks": xticks,
@@ -133,45 +134,45 @@ def plot_recycle_rate_cost_breakdown():
         )
 
         fig = FigureGenerator().init_figure()  # width=2, height=2)
-        fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "SEC"])
+        fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Recycle Pump Pressure"])
         # break
         fig.set_axis(
             xlabel="Recycle rate (L/s)",
-            ylabel="SEC (kW/m$^3$)",
+            ylabel="Recycle Pump Pressure (bar)",
             color="red",
         )
         fig.show()
 
-        fig = FigureGenerator().init_figure()  # width=2, height=2)
-        fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Cycle time ratio"])
+        # fig = FigureGenerator().init_figure()  # width=2, height=2)
+        # fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Cycle time ratio"])
 
-        # break
-        fig.set_axis(
-            xlabel="Recycle rate (L/s)",
-            ylabel="Cycle Time Ratio (%)",
-            color="black",
-        )
-        fig.show()
+        # # break
+        # fig.set_axis(
+        #     xlabel="Recycle rate (L/s)",
+        #     ylabel="Cycle Time Ratio (%)",
+        #     color="black",
+        # )
+        # fig.show()
 
-        fig = FigureGenerator().init_figure()  # width=2, height=2)
-        fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Total cycle time"])
+        # fig = FigureGenerator().init_figure()  # width=2, height=2)
+        # fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Total cycle time"])
 
-        # break
-        fig.set_axis(
-            xlabel="Recycle rate (L/s)",
-            ylabel="Total Cycle Time (min)",
-            color="blue",
-        )
-        fig.show()
+        # # break
+        # fig.set_axis(
+        #     xlabel="Recycle rate (L/s)",
+        #     ylabel="Total Cycle Time (min)",
+        #     color="blue",
+        # )
+        # fig.show()
 
-        fig = FigureGenerator().init_figure()  # width=2, height=2)
-        fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Filtration ramp rate"])
-        fig.set_axis(
-            xlabel="Recycle rate (L/s)",
-            ylabel="Filtration Ramp Rate (bar/min)",
-            color="green",
-        )
-        fig.show()
+        # fig = FigureGenerator().init_figure()  # width=2, height=2)
+        # fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Filtration ramp rate"])
+        # fig.set_axis(
+        #     xlabel="Recycle rate (L/s)",
+        #     ylabel="Filtration Ramp Rate (bar/min)",
+        #     color="green",
+        # )
+        # fig.show()
 
 def plot_recovery_cost_breakdown():
     dm = PsDataManager()
