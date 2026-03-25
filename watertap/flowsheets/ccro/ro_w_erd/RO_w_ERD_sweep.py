@@ -8,10 +8,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from parameter_sweep.loop_tool.loop_tool import loopTool, get_working_dir
 
 import watertap.flowsheets.ccro.ro_w_erd.RO_w_ERD_stage as ro
-from watertap.flowsheets.ccro.utils.utils import report_n_stage_system
-from watertap.core.util.model_diagnostics.infeasible import *
-from watertap.core.util.initialization import *
-from watertap.core.solvers import get_solver
+# from watertap.flowsheets.ccro.utils.utils import report_n_stage_system
+# from watertap.core.util.model_diagnostics.infeasible import *
+# from watertap.core.util.initialization import *
+# from watertap.core.solvers import get_solver
 from watertap.flowsheets.ccro.utils.utils import (
     calculate_operating_pressure,
     report_pump,
@@ -22,6 +22,7 @@ from watertap.flowsheets.ccro.utils.utils import (
 )
 
 here = os.path.dirname(os.path.abspath(__file__))
+here = "/Users/ksitterl/Documents/Python/watertap/watertap/watertap/flowsheets/ccro/analysis_scripts"
 
 
 def optimize_for_recovery(m, **kwargs):
@@ -47,7 +48,8 @@ def main():
     save_file = "RO_w_ERD"
 
     loopTool(
-        f"{here}/RO_w_ERD_recovery_sweep.yaml",
+        # f"{here}/RO_w_ERD_recovery_sweep.yaml",
+        "/Users/ksitterl/Documents/Python/watertap/watertap/watertap/flowsheets/ccro/ro_w_erd/RO_w_ERD_recovery_sweep.yaml",
         build_function=ro.run_n_stage_system,
         optimize_function=optimize_for_recovery,
         save_name=save_file,
