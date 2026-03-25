@@ -56,7 +56,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.core.util.model_diagnostics.infeasible import *
 from watertap.core.util.initialization import *
 from watertap.core.solvers import get_solver
-from watertap.flowsheets.ccro.multiperiod.model_state_tool import ModelState
+from watertap.flowsheets.ccro.utils.model_state_tool import ModelState
 
 
 from watertap.unit_models.pseudo_steady_state.dead_volume_0D import DeadVolume0D
