@@ -46,7 +46,6 @@ dependencies = [
     "watertap-solvers",
     "pyyaml",            # watertap.core.wt_database
     # for parameter_sweep
-    "parameter-sweep @ git+https://github.com/watertap-org/parameter-sweep",
     "numpy",
     "pint<0.25",
 ]
@@ -72,6 +71,10 @@ oli_api = [
 
 reaktoro = [
     "reaktoro-pse @ git+https://github.com/watertap-org/reaktoro-pse",
+]
+
+parameter_sweep = [
+    "parameter_sweep @ git+https://github.com/watertap-org/parameter-sweep"
 ]
 
 all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
