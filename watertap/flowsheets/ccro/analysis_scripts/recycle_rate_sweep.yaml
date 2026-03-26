@@ -51,31 +51,31 @@ BW_recycle_rate_sweep:
 #       upper_limit: 0.035
 #       num_samples: 31
 
-PW_recycle_rate_sweep:
-  build_defaults:
-    feed_tds: 75
-    overall_water_recovery: 0.5 # recovery for build
-    recovery: 0.4 # analysis recovery
-    time_steps: 20
-    n_flushing_points: 5
-    osmotic_overpressure: 2
-    total_cycle_time_lb: 10
-    total_cycle_time_ub: 120
-    cycle_time_ratio_lb: 0.5
-    cycle_time_ratio_ub: 0.999999
-    recycle_flowrate_lb: 0.0005
-    use_perm_conc_target: False
-    use_rejection_target: True
-    flushing_time_lb: 30
-    rejection_lb: 0.985
-    rejection_ub: 1
-  sweep_param_loop:
-    recycle_rate:
-      type: LinearSample
-      param: recycle_flowrate
-      lower_limit: 0.005
-      upper_limit: 0.035
-      num_samples: 31
+# PW_recycle_rate_sweep:
+#   build_defaults:
+#     feed_tds: 75
+#     overall_water_recovery: 0.5 # recovery for build
+#     recovery: 0.4 # analysis recovery
+#     time_steps: 20
+#     n_flushing_points: 5
+#     osmotic_overpressure: 2
+#     total_cycle_time_lb: 10
+#     total_cycle_time_ub: 120
+#     cycle_time_ratio_lb: 0.5
+#     cycle_time_ratio_ub: 0.999999
+#     recycle_flowrate_lb: 0.0005
+#     use_perm_conc_target: False
+#     use_rejection_target: True
+#     flushing_time_lb: 30
+#     rejection_lb: 0.985
+#     rejection_ub: 1
+#   sweep_param_loop:
+#     recycle_rate:
+#       type: LinearSample
+#       param: recycle_flowrate
+#       lower_limit: 0.005
+#       upper_limit: 0.035
+#       num_samples: 31
 
 
 # # salinity_and_recycle_rate_sweep:
