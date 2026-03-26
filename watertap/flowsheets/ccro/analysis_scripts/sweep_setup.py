@@ -50,21 +50,21 @@ def main():
         here + "/recovery_sweep.yaml",
         build_function=ccro.build,
         optimize_function=ccro.solve_model,
-        save_name="ccro_recovery_sweep",
+        save_name="ccro",
         saving_dir=here,
         number_of_subprocesses=1,
         num_loop_workers=1,
     )
 
-    # loopTool(
-    #     here + "/recycle_rate_sweep.yaml",
-    #     build_function=ccro.build,
-    #     optimize_function=ccro.solve_model,
-    #     save_name="ccro_recycle_rate_sweep",
-    #     saving_dir=here,
-    #     number_of_subprocesses=1,
-    #     num_loop_workers=1,
-    # )
+    loopTool(
+        here + "/recycle_rate_sweep.yaml",
+        build_function=ccro.build,
+        optimize_function=ccro.solve_model,
+        save_name="ccro",
+        saving_dir=here,
+        number_of_subprocesses=1,
+        num_loop_workers=1,
+    )
 
     # loopTool(
     #     here + "/flush_eff_sweep.yaml",
