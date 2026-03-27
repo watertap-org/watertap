@@ -45,27 +45,27 @@ units = [
     "Stage 2",
 ]
 color_dict = dict(zip(units, line_colors))
-cases = {
-    "Brackish water": {
-        "xticks": [75, 80, 85, 90, 95],
-        "yticks": [0, 0.1, 0.2, 0.3, 0.4],
-    },
-    "Seawater": {
-        "xticks": [40, 45, 50, 55, 60],
-        "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
-    },
-    "Produced water": {
-        "xticks": [20, 30, 40, 50, 55],
-        "yticks": [
-            0,
-            0.5,
-            1.0,
-            1.5,
-            2.0,
-        ],
-    },
-}
-
+# cases = {
+#     "Brackish water": {
+#         "xticks": [75, 80, 85, 90, 95],
+#         "yticks": [0, 0.1, 0.2, 0.3, 0.4],
+#     },
+#     "Seawater": {
+#         "xticks": [40, 45, 50, 55, 60],
+#         "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
+#     },
+#     "Produced water": {
+#         "xticks": [20, 30, 40, 50, 55],
+#         "yticks": [
+#             0,
+#             0.5,
+#             1.0,
+#             1.5,
+#             2.0,
+#         ],
+#     },
+# }
+cases = ["Brackish water", "Seawater", "Produced water"]
 ylabel_dict = {
     "LCOW": "LCOW ($\$$/m$^3$)",
     "SEC": "SEC (kWh/m$^3$)",
@@ -149,9 +149,9 @@ xticks_dict = {
 
 
 def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
-    # dm_ccro = get_ccro_data()
+    # dm_ccro = gd.get_ccro_data()
 
-    # dm_ss = getssdata()
+    # dm_ss = gd.get_ss_data()
 
     fig = FigureGenerator()
     fig.init_figure(**init_figure)
@@ -175,11 +175,15 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
         }
     )
 
-    for i, (water_case, axis_options) in enumerate(cases.items()):
+    for i, water_case in enumerate(cases):
+
+        axis_options = {"xticks": xticks_dict[water_case]}
 
         axs = list()
 
-        ax_idx = (i, 0)
+        ######################################## CCRO
+
+        ax_idx = (i, 0)  # CCRO on left
         axs.append(bdp.fig.get_axis(ax_idx))
         axis_options["ax_idx"] = ax_idx
 
@@ -196,10 +200,13 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
             }
         )
         if i != len(cases) - 1:
-            labels = {"ylabel": "LCOW ($\$$/m$^3$)", "xlabel": ""}
+            axis_options["ylabel"] = ylabel_dict["LCOW"]
+            axis_options["yticks"] = yticks_dict[water_case]["LCOW"]
+            axis_options["xlabel"] = ""
         else:
-            labels = {"ylabel": "LCOW ($\$$/m$^3$)", "xlabel": "Water recovery (%)"}
-        axis_options.update(labels)
+            axis_options["ylabel"] = ylabel_dict["LCOW"]
+            axis_options["yticks"] = yticks_dict[water_case]["LCOW"]
+            axis_options["xlabel"] = "Water recovery (%)"
 
         bdp.plotbreakdown(
             xdata="Water recovery",
@@ -208,11 +215,9 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
             ax_idx=ax_idx,
         )
 
-        ########################################
         ######################################## STEADY STATE
-        ########################################
 
-        ax_idx = (i, 1)
+        ax_idx = (i, 1)  # steady state on right
         axs.append(bdp.fig.get_axis(ax_idx))
         axis_options["ax_idx"] = ax_idx
         axis_options["yticks"] = yticks_dict[water_case]["LCOW"]
@@ -242,10 +247,7 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
                 "Stage 2": {},
             }
         )
-        labels = {
-            "ylabel": "",
-        }
-        axis_options.update(labels)
+        axis_options["ylabel"] = ""
         axis_options["yticks"] = yticks_dict[water_case]["LCOW"]
 
         bdp.plotbreakdown(
@@ -264,10 +266,11 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
 
     fig.fig.tight_layout()
 
+    # add legend
+
     ax1 = fig.ax[2][0]
     ax2 = fig.ax[2][1]
 
-    # Collect handles and labels from both axes
     handles1, labels1 = ax1.get_legend_handles_labels()
     handles2, labels2 = ax2.get_legend_handles_labels()
 
@@ -282,7 +285,6 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
         fontsize=8,
         bbox_to_anchor=(0.54, 1.08),  # position at top center
     )
-    # import itertools
     # letters = itertools.cycle(["A", "B", "C", "D", "E", "F"])
     # for ax in fig.ax:
     #     for a in ax:
@@ -297,13 +299,8 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
     #             )
     ycol = "LCOW"
     fig.save_fig(name=f"{here}/figs/{ycol}_tile_plot_stack")
-    # fig.fig.savefig("tes")
-    fig.show()
 
-    # for ax in fig.ax:
-    #     # print(ax.get_ylims())
-    #     for a in ax:
-    #         print(a.get_ylim())
+    fig.show()
 
     return fig, bdp
 
@@ -448,7 +445,7 @@ if __name__ == "__main__":
 
     dm_ccro = gd.get_ccro_data()
 
-    dm_ss = gd.getssdata()
+    dm_ss = gd.get_ss_data()
     panel_3_by_2_stack(init_figure=init_figure)
 
     ccro_kwargs = {"marker": "o", "color": line_colors[1], "label": "CCRO"}
@@ -484,18 +481,18 @@ if __name__ == "__main__":
     #     ccro_kwargs=ccro_kwargs,
     #     ro_kwargs=ro_kwargs,
     # )
-    panel_3_by_2_line(
-        ycol="Permeate flow rate",
-        init_figure=init_figure,
-        ccro_kwargs=ccro_kwargs,
-        ro_kwargs=ro_kwargs,
-    )
-    panel_3_by_2_line(
-        ycol="Permeate volume",
-        init_figure=init_figure,
-        ccro_kwargs=ccro_kwargs,
-        ro_kwargs=ro_kwargs,
-    )
+    # panel_3_by_2_line(
+    #     ycol="Permeate flow rate",
+    #     init_figure=init_figure,
+    #     ccro_kwargs=ccro_kwargs,
+    #     ro_kwargs=ro_kwargs,
+    # )
+    # panel_3_by_2_line(
+    #     ycol="Permeate volume",
+    #     init_figure=init_figure,
+    #     ccro_kwargs=ccro_kwargs,
+    #     ro_kwargs=ro_kwargs,
+    # )
 
 #     ro_kwargs = {"marker": "o", "color": line_colors[4], "label": "Stage 1"}
 #     panel_3_by_2_line(
