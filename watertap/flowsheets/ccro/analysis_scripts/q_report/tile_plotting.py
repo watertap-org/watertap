@@ -16,11 +16,11 @@ from psPlotKit.data_manager.ps_costing import (
     PsCostingManager,
 )
 from psPlotKit.data_plotter.ps_break_down_plotter import BreakDownPlotter
+from watertap.flowsheets.ccro.analysis_scripts.q_report import get_data as gd
 
 here = os.path.dirname(os.path.abspath(__file__))
 par_dir = os.path.dirname(here)
 
-from matplotlib.patches import Patch
 
 line_colors = [
     "#a6cee3",
@@ -154,238 +154,6 @@ xticks_dict = {
     "Produced water": [20, 30, 40, 50, 55],
 }
 
-
-def getssdata():
-
-    dm_ss = PsDataManager()
-    dm_ss.register_data_file(
-        f"{par_dir}/output/RO_w_ERD_analysisType_BW_sweep.h5",
-        directory="Brackish water",
-    )
-    dm_ss.register_data_file(
-        f"{par_dir}/output/RO_w_ERD_analysisType_PW_sweep.h5",
-        directory="Produced water",
-    )
-    dm_ss.register_data_file(
-        f"{par_dir}/output/RO_w_ERD_analysisType_SW_sweep.h5",
-        directory="Seawater",
-    )
-    for stage in [1, 2]:
-        dm_ss.register_data_key(
-            f"fs.stage[{stage}].RO.flux_mass_phase_comp_avg[0.0,Liq,H2O]",
-            (f"RO {stage}", "Flux"),
-            assign_units="L/(m^2*hr)",
-            conversion_factor=3600,
-        )
-        dm_ss.register_data_key(
-            f"fs.stage[{stage}].pump.control_volume.properties_out[0.0].pressure",
-            (f"RO {stage}", "Pressure"),
-            "bar",
-        )
-        dm_ss.register_data_key(
-            f"fs.stage[{stage}].RO.area",
-            (f"RO {stage}", "Area"),
-        )
-        # dm_ss.register_data_key(
-        #     f"fs.stage[{stage}].pump.control_volume.work[0.0]",
-        #     (f"RO {stage}", "pump work"),
-        #     "kW",
-        # )
-        dm_ss.register_data_key(
-            f"fs.stage[{stage}].RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
-            (f"RO {stage}", "Inlet concentration"),
-            "g/L",
-        )
-        dm_ss.register_data_key(
-            f"fs.stage[{stage}].pump.control_volume.work[0.0]",
-            (f"RO {stage}", "Pump work"),
-            "kW",
-        )
-        dm_ss.register_data_key(
-            f"fs.stage[{stage}].pump.work_fluid[0.0]",
-            (f"RO {stage}", "Pump size"),
-            "kW",
-        )
-    # dm_ss.register_data_key("fs.ERD.control_volume.work[0.0]", "ERD work", "kW")
-    # dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
-
-    dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
-    dm_ss.register_data_key("fs.costing.LCOW", "LCOW")
-    dm_ss.register_data_key("fs.costing.SEC", "SEC")
-    dm_ss.register_data_key(
-        "fs.costing.total_capital_cost",
-        "CAPEX",
-        assign_units="kUSD",
-        conversion_factor=1e-3,
-    )
-    dm_ss.register_data_key(
-        "fs.costing.total_operating_cost",
-        "OPEX",
-        assign_units="kUSD/yr",
-        conversion_factor=1e-3,
-    )
-
-    dm_ss.register_data_key(
-        "fs.product.properties[0.0].flow_vol_phase[Liq]",
-        "Permeate flow rate",
-        "L/hr",
-    )
-    dm_ss.register_data_key(
-        "fs.product.properties[0.0].conc_mass_phase_comp[Liq,NaCl]",
-        "Permeate concentration",
-        "g/L",
-    )
-
-    dm_ss.load_data()
-    ek = dm_ss.get_expression_keys()
-    # for stage in [1, 2]:
-    #     dm_ss.register_expression(
-    #         ek[f"RO_{stage}_Pump_work"] / ek.Permeate_flow_rate,
-    #         (f"RO {stage}", "Specific pump work"),
-    #         assign_units="kW/(m^3/s)",
-    #         # conversion_factor=3600,
-    #     )
-        # dm_ss.register_expression(
-        #     ek.RO_2_Pump_size / ek.Permeate_flow_rate,
-        #     (f"RO {stage}", "Specific pump size"),
-        #     assign_units="kW/(m^3/s)",
-        #     # conversion_factor=3600,
-        # )
-    dm_ss.register_expression(
-        (ek.RO_1_Pump_work + ek.RO_2_Pump_work),
-        "Pump work",
-        assign_units="kW/(m^3/s)",
-    )
-    dm_ss.register_expression(
-        (ek.RO_1_Pump_work + ek.RO_2_Pump_work)/ ek.Permeate_flow_rate,
-        "Specific pump work",
-        assign_units="kW/(m^3/s)",
-    )
-    dm_ss.register_expression(
-        ek.RO_1_Area + ek.RO_2_Area,
-        "Area",
-        assign_units="m^2",
-    )
-    dm_ss.register_expression(
-        (ek.RO_1_Area + ek.RO_2_Area)/ ek.Permeate_flow_rate,
-        "Specific area",
-        assign_units="m^2/L/hr",
-    )
-    # dm_ss.register_expression(
-    #     ek.RO_1_pump_work / ek.Permeate_flow_rate,
-    #     "RO 1 Specific pump work",
-    #     "kW/(m^3/s)",
-    # )
-    # dm_ss.register_expression(
-    #     ek.RO_2_pump_work / ek.Permeate_flow_rate,
-    #     "RO 2 Specific pump work",
-    #     "kW/(m^3/s)",
-    # )
-    dm_ss.register_expression(ek.OPEX / ek.CAPEX, "OPEX/CAPEX Ratio")
-    dm_ss.evaluate_expressions()
-    dm_ss.display()
-
-    # dm_ss.reduce_data(
-    #     stack_keys=("Produced water", "stage_sim_cases"),
-    #     data_key="LCOW",
-    #     reduction_type="min",
-    #     directory=("Produced water", "optimal_design"),
-    # )
-
-    # dm_ss.display()
-    # dm_ss.reduce_data(
-    #     stack_keys=("Brackish water", "stage_sim_cases"),
-    #     data_key="LCOW",
-    #     reduction_type="min",
-    #     directory=("Brackish water", "optimal_design"),
-    # )
-    # dm_ss.reduce_data(
-    #     stack_keys="stage_sim_cases",
-    #     data_key="LCOW",
-    #     reduction_type="min",
-    #     directory="optimal_design",
-    # )
-
-    # dm_ss.display()
-
-    package_ss = WaterTapCostingPackage(
-        # costing_block="fs.costing", validation_key="fs.costing.LCOW"
-    )
-    # package_ss.add_flow_cost("electricity", "electricity_cost")
-    package_ss.register_product_flow()
-
-    # RO1 = PsCostingGroup("RO1")
-    # RO1.add_unit(
-    #     "RO",
-    #     capex_keys="capital_cost",
-    #     fixed_opex_keys="fixed_operating_cost",
-    # )
-    # # RO2 = PsCostingGroup("RO2")
-    # # RO2.add_unit(
-    # #     "RO",
-    # #     capex_keys="capital_cost",
-    # #     fixed_opex_keys="fixed_operating_cost",
-    # # )
-    # ERD = PsCostingGroup("ERD")
-    # ERD.add_unit(
-    #     "ERD",
-    #     capex_keys="capital_cost",
-    #     # fixed_opex_keys="fixed_operating_cost",
-    #     flow_keys={"electricity": ["control_volume.work"]},
-    # )
-    # pump = PsCostingGroup("pump")
-    # pump.add_unit(
-    #     "fs.stage[1].pump",
-    #     capex_keys="capital_cost",
-    #     # fixed_opex_keys="fixed_operating_cost",
-    #     flow_keys={"electricity": ["control_volume.work"]},
-    # )
-    RO1 = PsCostingGroup("Stage 1")
-    RO1.add_unit(
-        "stage[1].RO",
-        capex_keys="capital_cost",
-        fixed_opex_keys="fixed_operating_cost",
-    )
-    RO2 = PsCostingGroup("Stage 2")
-    RO2.add_unit(
-        "stage[2].RO",
-        capex_keys="capital_cost",
-        fixed_opex_keys="fixed_operating_cost",
-    )
-    pumps = PsCostingGroup("Pumps + ERD")
-    pumps.add_unit(
-        "pump",
-        capex_keys="capital_cost",
-        flow_keys={"electricity": "control_volume.work"},
-    )
-    # pump1 = PsCostingGroup("Pump 1")
-    # pump1.add_unit(
-    #     "stage[1].pump",
-    #     capex_keys="capital_cost",
-    #     flow_keys={"electricity": "control_volume.work"},
-    # )
-    # pump2 = PsCostingGroup("Pump 2")
-    # pump2.add_unit(
-    #     "stage[2].pump",
-    #     capex_keys="capital_cost",
-    #     flow_keys={"electricity": "control_volume.work"},
-    # )
-    # ERD = PsCostingGroup("ERD")
-    # ERD.add_unit(
-    pumps.add_unit(
-        "ERD",
-        capex_keys="capital_cost",
-        flow_keys={"electricity": "control_volume.work"},
-    )
-    cm_ss = PsCostingManager(
-        dm_ss,
-        package_ss,
-        # [RO1, RO2, pump1, pump2, ERD],
-        [RO1, RO2, pumps],
-    )
-    cm_ss.build()
-
-    return dm_ss
 
 
 def get_ccro_data():
@@ -851,9 +619,9 @@ if __name__ == "__main__":
         sharey=False,
     )
 
-    dm_ccro = get_ccro_data()
+    dm_ccro = gd.get_ccro_data()
 
-    dm_ss = getssdata()
+    dm_ss = gd.getssdata()
     panel_3_by_2_stack(init_figure=init_figure)
 
     ccro_kwargs = {"marker": "o", "color": line_colors[1], "label": "CCRO"}
