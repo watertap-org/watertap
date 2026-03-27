@@ -87,20 +87,13 @@ yticks_dict = {
         "LCOW": [0, 0.1, 0.2, 0.3, 0.4],
         "SEC": [0, 0.5, 1, 1.5, 2, 2.5, 3],
         "Permeate concentration": [0, 0.2, 0.4, 0.6],
-        "Flux": [
-            0,
-            15,
-            30,
-            45,
-            60,
-            75
-        ],
+        "Flux": [0, 15, 30, 45, 60, 75],
         "CAPEX": [0, 20, 40, 60],
         "OPEX": [0, 2, 4, 6, 8],
         "Pump work": [0, 2, 4, 6, 8, 10],
         "Pump size": [0, 2, 4, 6, 8, 10, 12],
-        "Area" :[0, 50, 100, 150],
-        "Pressure" :[0, 25, 50, 75, 100],
+        "Area": [0, 50, 100, 150],
+        "Pressure": [0, 25, 50, 75, 100],
         "Inlet concentration": [0, 10, 20, 30],
     },
     "Seawater": {
@@ -153,174 +146,6 @@ xticks_dict = {
     "Seawater": [40, 45, 50, 55, 60],
     "Produced water": [20, 30, 40, 50, 55],
 }
-
-
-
-def get_ccro_data():
-
-    dm = PsDataManager()
-
-    dm.register_data_file(
-        f"{par_dir}/output/ccro_analysisType_BW_recovery_sweep.h5",
-        directory="Brackish water",
-    )
-    dm.register_data_file(
-        f"{par_dir}/output/ccro_analysisType_SW_recovery_sweep.h5",
-        directory="Seawater",
-    )
-    dm.register_data_file(
-        f"{par_dir}/output/ccro_analysisType_PW_recovery_sweep.h5",
-        directory="Produced water",
-    )
-
-    # COSTING
-    dm.register_data_key("overall_recovery", "Water recovery", "%")
-    dm.register_data_key("costing.LCOW", "LCOW", assign_units="USD/m^3")
-    dm.register_data_key("costing.SEC", "SEC", assign_units="kWh/m^3")
-
-    dm.register_data_key(
-        "costing.total_capital_cost",
-        "CAPEX",
-        assign_units="kUSD",
-        conversion_factor=1e-3,
-    )
-    dm.register_data_key(
-        "costing.total_operating_cost",
-        "OPEX",
-        assign_units="kUSD/year",
-        conversion_factor=1e-3,
-    )
-    # SYSTEM
-
-    dm.register_data_key("flushing.flushing_efficiency", "Flushing efficiency", "%")
-    # dm.register_data_key("recycle_flowrate", "Recycle rate", "L/s")
-    dm.register_data_key(
-        "blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
-        "Recycle rate",
-        "L/s",
-    )
-    dm.register_data_key("avg_feed_flow_rate", "Average feed flow rate")
-    dm.register_data_key("avg_product_flow_rate", "Average product flow rate", "m^3/s")
-    # dm.register_data_key("avg_product_flow_rate", "Permeate flow rate", "m^3/s")
-    dm.register_data_key("filtration_ramp_rate", "Ramp rate", "bar/min")
-    dm.register_data_key("total_cycle_time", "Total cycle time", "min")
-    dm.register_data_key("overall_rejection", "Overall rejection", "%")
-    dm.register_data_key("cycle_time_ratio", "Cycle time ratio", "%")
-    dm.register_data_key("permeate_concentration", "Permeate concentration", "g/L")
-    # dm.register_data_key(
-    #     "blocks[0].process.fs.P2.control_volume.properties_out[0.0].pressure",
-    #     "Recycle Pump Pressure",
-    #     "bar",
-    # )
-
-    # RO
-    dm.register_data_key("blocks[0].process.fs.RO.area", "Area", "m^2")
-    dm.register_data_key(
-        "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]",
-        "Single Pass Recovery",
-        "%",
-    )
-
-    dm.register_data_key(
-        "blocks[19].process.fs.P1.control_volume.properties_out[0.0].pressure",
-        "Pressure",
-        "bar",
-    )
-    # dm.register_data_key(
-    #     "blocks[19].process.fs.P1.control_volume.pressure",
-    #     "Pressure",
-    #     "bar",
-    # )
-    dm.register_data_key(
-        "blocks[19].process.fs.P1.control_volume.work[0.0]",
-        "Pump size",
-        "kW",
-    )
-    dm.register_data_key(
-        "blocks[19].process.fs.P1.total_power",
-        "Pump work",
-        "kW",
-    )
-    dm.register_data_key(
-        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
-        "Inlet concentration",
-        "g/L",
-    )
-    dm.register_data_key(
-        f"blocks[19].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
-        "Final concentration",
-        "g/L",
-    )
-    # dm.register_data_key(
-    #     f"blocks[0].process.fs.product.properties[0.0].flow_vol_phase[Liq]",
-    #     "Permeate flow rate",
-    #     "m^3/s",
-    # )
-    dm.register_data_key(
-        f"total_permeate_vol",
-        "Permeate flow rate",
-        # "m^3/s",
-    )
-
-    dm.load_data()
-
-    fs = dm.get_expression_keys()
-    dm.register_expression(
-        fs.Pump_size / fs.Average_product_flow_rate, "Specific pump size", "kW/(m^3/s)"
-    )
-    dm.register_expression(
-        fs.Pump_work / fs.Average_product_flow_rate, "Specific pump work", "kW/(m^3/s)"
-    )
-    dm.register_expression(
-        fs.Average_product_flow_rate / fs.Area,
-        "Flux",
-        "L/(m^2*hr)",
-    )
-    dm.register_expression(
-        fs.Area/fs.Average_product_flow_rate,
-        "Specific area",
-        "m^2/(L/hr)",
-    )
-    dm.register_expression(fs.OPEX / fs.CAPEX, "OPEX/CAPEX Ratio")
-
-    dm.evaluate_expressions()
-
-    # lets create costing pacakage
-    package_ccro = WaterTapCostingPackage(
-        costing_block="costing", validation_key="costing.LCOW"
-    )
-    package_ccro.register_product_flow("avg_product_flow_rate")
-
-    # Lets create our groups
-    RO = PsCostingGroup("RO")
-    RO.add_unit(
-        "blocks[0].process.fs.RO",  # only adding "block[0] to specify wher capex is, normally acn just say "RO
-        capex_keys="capital_cost",
-        fixed_opex_keys="fixed_operating_cost",
-    )
-    feed_pump = PsCostingGroup("Feed pump")
-    feed_pump.add_unit(
-        "blocks[19].process.fs.P1",
-        capex_keys="capital_cost",
-        flow_keys={"electricity": "total_power"},
-    )
-    recycle_pump = PsCostingGroup("Recycle pump")
-    recycle_pump.add_unit(
-        "blocks[19].process.fs.P2",
-        capex_keys="capital_cost",
-        flow_keys={"electricity": "total_power"},
-    )
-    conduit = PsCostingGroup("Conduit")
-    conduit.add_unit(
-        "conduit",
-        capex_keys="capital_cost",
-    )
-
-    cm_recov = PsCostingManager(
-        dm, package_ccro, [RO, feed_pump, recycle_pump, conduit]
-    )
-    cm_recov.build()
-    return dm
 
 
 def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
@@ -469,7 +294,7 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
     #                 ha="center",
     #                 va="center",
     #                 transform=a.transAxes,
-    #             ) 
+    #             )
     ycol = "LCOW"
     fig.save_fig(name=f"{here}/figs/{ycol}_tile_plot_stack")
     # fig.fig.savefig("tes")
@@ -483,7 +308,9 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
     return fig, bdp
 
 
-def panel_3_by_2_line(ycol="SEC", init_figure={}, ccro_kwargs=dict(), ro_kwargs=dict(), row_leg=0):
+def panel_3_by_2_line(
+    ycol="SEC", init_figure={}, ccro_kwargs=dict(), ro_kwargs=dict(), row_leg=0
+):
 
     # dm_ccro = get_ccro_data()
 
@@ -670,7 +497,7 @@ if __name__ == "__main__":
         ro_kwargs=ro_kwargs,
     )
 
-#     ro_kwargs = {"marker": "o", "color": line_colors[4], "label": "Stage 1"}    
+#     ro_kwargs = {"marker": "o", "color": line_colors[4], "label": "Stage 1"}
 #     panel_3_by_2_line(
 #         ycol="Inlet concentration",
 #         init_figure=init_figure,

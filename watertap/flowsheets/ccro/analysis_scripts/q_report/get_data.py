@@ -1,4 +1,3 @@
-
 import os
 from psPlotKit.data_manager.ps_data_manager import PsDataManager
 from psPlotKit.data_manager.ps_costing import (
@@ -11,6 +10,7 @@ from psPlotKit.data_manager.costing_packages.watertap_costing import (
 
 here = os.path.dirname(os.path.abspath(__file__))
 par_dir = os.path.dirname(here)
+
 
 def get_ss_data():
 
@@ -102,19 +102,19 @@ def get_ss_data():
     #         assign_units="kW/(m^3/s)",
     #         # conversion_factor=3600,
     #     )
-        # dm.register_expression(
-        #     ek.RO_2_Pump_size / ek.Permeate_flow_rate,
-        #     (f"RO {stage}", "Specific pump size"),
-        #     assign_units="kW/(m^3/s)",
-        #     # conversion_factor=3600,
-        # )
+    # dm.register_expression(
+    #     ek.RO_2_Pump_size / ek.Permeate_flow_rate,
+    #     (f"RO {stage}", "Specific pump size"),
+    #     assign_units="kW/(m^3/s)",
+    #     # conversion_factor=3600,
+    # )
     dm.register_expression(
         (ek.RO_1_Pump_work + ek.RO_2_Pump_work),
         "Pump work",
         assign_units="kW/(m^3/s)",
     )
     dm.register_expression(
-        (ek.RO_1_Pump_work + ek.RO_2_Pump_work)/ ek.Permeate_flow_rate,
+        (ek.RO_1_Pump_work + ek.RO_2_Pump_work) / ek.Permeate_flow_rate,
         "Specific pump work",
         assign_units="kW/(m^3/s)",
     )
@@ -124,7 +124,7 @@ def get_ss_data():
         assign_units="m^2",
     )
     dm.register_expression(
-        (ek.RO_1_Area + ek.RO_2_Area)/ ek.Permeate_flow_rate,
+        (ek.RO_1_Area + ek.RO_2_Area) / ek.Permeate_flow_rate,
         "Specific area",
         assign_units="m^2/L/hr",
     )
@@ -326,7 +326,7 @@ def get_ccro_data():
         "L/(m^2*hr)",
     )
     dm.register_expression(
-        fs.Area/fs.Average_product_flow_rate,
+        fs.Area / fs.Average_product_flow_rate,
         "Specific area",
         "m^2/(L/hr)",
     )
