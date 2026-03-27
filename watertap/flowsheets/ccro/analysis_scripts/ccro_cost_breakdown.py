@@ -1,4 +1,4 @@
-import os 
+import os
 from psPlotKit.data_manager.ps_data_manager import PsDataManager
 import numpy as np
 from psPlotKit.data_plotter.ps_line_plotter import LinePlotter
@@ -14,7 +14,6 @@ from psPlotKit.data_manager.ps_costing import (
     PsCostingManager,
 )
 from psPlotKit.data_plotter.ps_break_down_plotter import BreakDownPlotter
-
 
 
 def plot_recycle_rate_cost_breakdown():
@@ -38,12 +37,16 @@ def plot_recycle_rate_cost_breakdown():
     dm.register_data_key("costing.SEC", "SEC", assign_units="kWh/m^3")
     dm.register_data_key("avg_feed_flow_rate", "Average feed flow rate")
     dm.register_data_key("avg_product_flow_rate", "Average product flow rate", "L/hr")
-    dm.register_data_key("avg_product_flow_rate", "Average product flow rate", "L/hr")
     dm.register_data_key("cycle_time_ratio", "Cycle time ratio", "%")
     dm.register_data_key("total_cycle_time", "Total cycle time", "min")
     dm.register_data_key("recycle_flowrate", "Recycle rate", "L/s")
     dm.register_data_key("filtration_ramp_rate", "Filtration ramp rate", "bar/min")
-    dm.register_data_key("blocks[0].process.fs.P2.control_volume.properties_out[0.0].pressure", "Recycle Pump Pressure", "bar")
+    dm.register_data_key("permeate_concentration", "Permeate concentration", "g/L")
+    dm.register_data_key(
+        "blocks[0].process.fs.P2.control_volume.properties_out[0.0].pressure",
+        "Recycle Pump Pressure",
+        "bar",
+    )
 
     dm.register_data_key("overall_recovery", "Water recovery", "%")
     dm.load_data()
@@ -94,8 +97,15 @@ def plot_recycle_rate_cost_breakdown():
     xticks = [5, 10, 15, 20, 25, 30, 35]
     cases = {
         "Brackish water": {
-            "xticks": xticks, 
-            "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0,],
+            "xticks": xticks,
+            "yticks": [
+                0,
+                0.2,
+                0.4,
+                0.6,
+                0.8,
+                1.0,
+            ],
         },
         "Seawater": {
             "xticks": xticks,
@@ -134,7 +144,20 @@ def plot_recycle_rate_cost_breakdown():
         )
 
         fig = FigureGenerator().init_figure()  # width=2, height=2)
-        fig.plot_line(dm[water_case, "Recycle rate"], dm[water_case, "Recycle Pump Pressure"])
+        fig.plot_line(
+            dm[water_case, "Recycle rate"], dm[water_case, "Permeate concentration"]
+        )
+        # break
+        fig.set_axis(
+            xlabel="Recycle rate (L/s)",
+            ylabel="Permeate Concentration (g/L)",
+            color="red",
+        )
+        fig.show()
+        fig = FigureGenerator().init_figure()  # width=2, height=2)
+        fig.plot_line(
+            dm[water_case, "Recycle rate"], dm[water_case, "Recycle Pump Pressure"]
+        )
         # break
         fig.set_axis(
             xlabel="Recycle rate (L/s)",
@@ -173,6 +196,7 @@ def plot_recycle_rate_cost_breakdown():
         #     color="green",
         # )
         # fig.show()
+
 
 def plot_recovery_cost_breakdown():
     dm = PsDataManager()
@@ -312,6 +336,7 @@ def plot_recovery_cost_breakdown():
             generate_figure=True,
             fig_options={"width": 2, "height": 2},
         )
+
 
 if __name__ == "__main__":
     plot_recycle_rate_cost_breakdown()

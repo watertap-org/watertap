@@ -1,6 +1,8 @@
+import itertools
 import pprint
 import os
 import numpy as np
+from collections import OrderedDict
 from psPlotKit.data_manager.ps_data_manager import PsDataManager
 from psPlotKit.data_plotter.ps_line_plotter import LinePlotter
 from psPlotKit.data_plotter.fig_generator import (
@@ -20,6 +22,139 @@ par_dir = os.path.dirname(here)
 
 from matplotlib.patches import Patch
 
+line_colors = [
+    "#a6cee3",
+    "#1f78b4",
+    "#b2df8a",
+    "#33a02c",
+    "#fb9a99",
+    "#e31a1c",
+    "#fdbf6f",
+    "#ff7f00",
+    "#cab2d6",
+    "#6a3d9a",
+    "#ffff99",
+]
+units = [
+    "Feed pump",
+    "Recycle pump",
+    "RO",
+    "Conduit",
+    "Pumps + ERD",
+    "Stage 1",
+    "Stage 2",
+]
+color_dict = dict(zip(units, line_colors))
+cases = {
+    "Brackish water": {
+        "xticks": [75, 80, 85, 90, 95],
+        "yticks": [0, 0.1, 0.2, 0.3, 0.4],
+    },
+    "Seawater": {
+        "xticks": [40, 45, 50, 55, 60],
+        "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
+    },
+    "Produced water": {
+        "xticks": [20, 30, 40, 50, 55],
+        "yticks": [
+            0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+        ],
+    },
+}
+
+ylabel_dict = {
+    "LCOW": "LCOW ($\$$/m$^3$)",
+    "SEC": "SEC (kWh/m$^3$)",
+    "Permeate concentration": "Perm conc (g/L)",
+    "Flux": "Flux (LMH)",
+    # "CAPEX": "CAPEX (\\$10$^3$)",
+    # "OPEX": "OPEX (\\$10$^3$ yr$^{-1}$)",
+    "CAPEX": "CAPEX (kUSD)",
+    "OPEX": "OPEX (kUSD/yr)",
+    "Area": "RO area (m$^2$)",
+    "Specific area": "Spec area (m$^2$/(L/hr))",
+    "Pressure": "RO Pressure (bar)",
+    "Pump work": "Pump Work (kW)",
+    "Pump size": "Pump Size (kW)",
+    "Inlet concentration": "Inlet concentration (g/L)",
+}
+yticks_dict = {
+    "Brackish water": {
+        "LCOW": [0, 0.1, 0.2, 0.3, 0.4],
+        "SEC": [0, 0.5, 1, 1.5, 2, 2.5, 3],
+        "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        "Flux": [
+            0,
+            15,
+            30,
+            45,
+            60,
+            75
+        ],
+        "CAPEX": [0, 20, 40, 60],
+        "OPEX": [0, 2, 4, 6, 8],
+        "Pump work": [0, 2, 4, 6, 8, 10],
+        "Pump size": [0, 2, 4, 6, 8, 10, 12],
+        "Area" :[0, 50, 100, 150],
+        "Pressure" :[0, 25, 50, 75, 100],
+        "Inlet concentration": [0, 10, 20, 30],
+    },
+    "Seawater": {
+        "LCOW": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
+        "SEC": [0, 1, 2, 3, 4],
+        "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        "Flux": [
+            0,
+            10,
+            20,
+            30,
+            40,
+        ],
+        "CAPEX": [0, 25, 50, 75, 100],
+        "OPEX": [0, 2, 4, 6, 8, 10],
+        "Pump work": [0, 2, 4, 6, 8, 10],
+        "Pump size": [0, 4, 8, 12, 16],
+        "Area": [0, 75, 150, 225, 300],
+        "Pressure": [0, 40, 80, 120],
+        "Inlet concentration": [0, 15, 30, 45, 60, 75],
+    },
+    "Produced water": {
+        "LCOW": [
+            0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+        ],
+        "SEC": [0, 2, 4, 6, 8],
+        "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        "Flux": [
+            0,
+            10,
+            20,
+            30,
+            40,
+        ],
+        "CAPEX": [0, 30, 60, 90, 120],
+        "OPEX": [0, 4, 8, 12, 16, 20],
+        "Pump work": [0, 4, 8, 12, 16, 20],
+        "Pump size": [0, 5, 10, 15, 20, 25],
+        "Area": [0, 40, 80, 120, 160],
+        "Pressure": [0, 50, 100, 150, 200],
+        "Inlet concentration": [0, 40, 80, 120, 160],
+    },
+}
+xticks_dict = {
+    "Brackish water": [75, 80, 85, 90, 95],
+    "Seawater": [40, 45, 50, 55, 60],
+    "Produced water": [20, 30, 40, 50, 55],
+}
+
+
 def getssdata():
 
     dm_ss = PsDataManager()
@@ -38,27 +173,37 @@ def getssdata():
     for stage in [1, 2]:
         dm_ss.register_data_key(
             f"fs.stage[{stage}].RO.flux_mass_phase_comp_avg[0.0,Liq,H2O]",
-            (f"RO {stage}", "RO flux"),
+            (f"RO {stage}", "Flux"),
             assign_units="L/(m^2*hr)",
             conversion_factor=3600,
         )
         dm_ss.register_data_key(
             f"fs.stage[{stage}].pump.control_volume.properties_out[0.0].pressure",
-            (f"RO {stage}", "feed pressure"),
+            (f"RO {stage}", "Pressure"),
             "bar",
         )
         dm_ss.register_data_key(
             f"fs.stage[{stage}].RO.area",
-            (f"RO {stage}", "RO area"),
+            (f"RO {stage}", "Area"),
+        )
+        # dm_ss.register_data_key(
+        #     f"fs.stage[{stage}].pump.control_volume.work[0.0]",
+        #     (f"RO {stage}", "pump work"),
+        #     "kW",
+        # )
+        dm_ss.register_data_key(
+            f"fs.stage[{stage}].RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+            (f"RO {stage}", "Inlet concentration"),
+            "g/L",
         )
         dm_ss.register_data_key(
             f"fs.stage[{stage}].pump.control_volume.work[0.0]",
-            (f"RO {stage}", "pump work"),
+            (f"RO {stage}", "Pump work"),
             "kW",
         )
         dm_ss.register_data_key(
-            f"fs.stage[{stage}].pump.control_volume.work[0.0]",
-            (f"RO {stage}", "pump work"),
+            f"fs.stage[{stage}].pump.work_fluid[0.0]",
+            (f"RO {stage}", "Pump size"),
             "kW",
         )
     # dm_ss.register_data_key("fs.ERD.control_volume.work[0.0]", "ERD work", "kW")
@@ -67,35 +212,79 @@ def getssdata():
     dm_ss.register_data_key("fs.system_recovery", "Water recovery", "%")
     dm_ss.register_data_key("fs.costing.LCOW", "LCOW")
     dm_ss.register_data_key("fs.costing.SEC", "SEC")
+    dm_ss.register_data_key(
+        "fs.costing.total_capital_cost",
+        "CAPEX",
+        assign_units="kUSD",
+        conversion_factor=1e-3,
+    )
+    dm_ss.register_data_key(
+        "fs.costing.total_operating_cost",
+        "OPEX",
+        assign_units="kUSD/yr",
+        conversion_factor=1e-3,
+    )
 
     dm_ss.register_data_key(
         "fs.product.properties[0.0].flow_vol_phase[Liq]",
-        "Average product flow rate",
+        "Permeate flow rate",
         "L/hr",
     )
     dm_ss.register_data_key(
-        "fs.product.properties[0.0].flow_vol_phase[Liq]",
-        "Average product flow rate",
-        "L/hr",
+        "fs.product.properties[0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Permeate concentration",
+        "g/L",
     )
 
-    dm_ss.register_data_key("fs.costing.total_capital_cost", "capex")
-    dm_ss.register_data_key("fs.costing.total_operating_cost", "opex")
     dm_ss.load_data()
     ek = dm_ss.get_expression_keys()
+    # for stage in [1, 2]:
+    #     dm_ss.register_expression(
+    #         ek[f"RO_{stage}_Pump_work"] / ek.Permeate_flow_rate,
+    #         (f"RO {stage}", "Specific pump work"),
+    #         assign_units="kW/(m^3/s)",
+    #         # conversion_factor=3600,
+    #     )
+        # dm_ss.register_expression(
+        #     ek.RO_2_Pump_size / ek.Permeate_flow_rate,
+        #     (f"RO {stage}", "Specific pump size"),
+        #     assign_units="kW/(m^3/s)",
+        #     # conversion_factor=3600,
+        # )
     dm_ss.register_expression(
-        ek.RO_1_pump_work / ek.Average_product_flow_rate,
-        "RO 1 specific pump work",
-        "kW/(m^3/s)",
+        (ek.RO_1_Pump_work + ek.RO_2_Pump_work),
+        "Pump work",
+        assign_units="kW/(m^3/s)",
     )
     dm_ss.register_expression(
-        ek.RO_2_pump_work / ek.Average_product_flow_rate,
-        "RO 2 specific pump work",
-        "kW/(m^3/s)",
+        (ek.RO_1_Pump_work + ek.RO_2_Pump_work)/ ek.Permeate_flow_rate,
+        "Specific pump work",
+        assign_units="kW/(m^3/s)",
     )
-    dm_ss.register_expression(ek.opex / ek.capex, "opex_capex_ratio")
+    dm_ss.register_expression(
+        ek.RO_1_Area + ek.RO_2_Area,
+        "Area",
+        assign_units="m^2",
+    )
+    dm_ss.register_expression(
+        (ek.RO_1_Area + ek.RO_2_Area)/ ek.Permeate_flow_rate,
+        "Specific area",
+        assign_units="m^2/L/hr",
+    )
+    # dm_ss.register_expression(
+    #     ek.RO_1_pump_work / ek.Permeate_flow_rate,
+    #     "RO 1 Specific pump work",
+    #     "kW/(m^3/s)",
+    # )
+    # dm_ss.register_expression(
+    #     ek.RO_2_pump_work / ek.Permeate_flow_rate,
+    #     "RO 2 Specific pump work",
+    #     "kW/(m^3/s)",
+    # )
+    dm_ss.register_expression(ek.OPEX / ek.CAPEX, "OPEX/CAPEX Ratio")
     dm_ss.evaluate_expressions()
     dm_ss.display()
+
     # dm_ss.reduce_data(
     #     stack_keys=("Produced water", "stage_sim_cases"),
     #     data_key="LCOW",
@@ -151,19 +340,19 @@ def getssdata():
     #     # fixed_opex_keys="fixed_operating_cost",
     #     flow_keys={"electricity": ["control_volume.work"]},
     # )
-    RO1 = PsCostingGroup("RO1")
+    RO1 = PsCostingGroup("Stage 1")
     RO1.add_unit(
         "stage[1].RO",
         capex_keys="capital_cost",
         fixed_opex_keys="fixed_operating_cost",
     )
-    RO2 = PsCostingGroup("RO2")
+    RO2 = PsCostingGroup("Stage 2")
     RO2.add_unit(
         "stage[2].RO",
         capex_keys="capital_cost",
         fixed_opex_keys="fixed_operating_cost",
     )
-    pumps = PsCostingGroup("Pumps")
+    pumps = PsCostingGroup("Pumps + ERD")
     pumps.add_unit(
         "pump",
         capex_keys="capital_cost",
@@ -199,7 +388,7 @@ def getssdata():
     return dm_ss
 
 
-def get_recovery_data():
+def get_ccro_data():
 
     dm = PsDataManager()
 
@@ -223,15 +412,15 @@ def get_recovery_data():
 
     dm.register_data_key(
         "costing.total_capital_cost",
-        "capex",
-        assign_units="MUSD",
-        conversion_factor=1e-6,
+        "CAPEX",
+        assign_units="kUSD",
+        conversion_factor=1e-3,
     )
     dm.register_data_key(
         "costing.total_operating_cost",
-        "opex",
-        assign_units="MUSD/year",
-        conversion_factor=1e-6,
+        "OPEX",
+        assign_units="kUSD/year",
+        conversion_factor=1e-3,
     )
     # SYSTEM
 
@@ -243,8 +432,9 @@ def get_recovery_data():
         "L/s",
     )
     dm.register_data_key("avg_feed_flow_rate", "Average feed flow rate")
-    dm.register_data_key("avg_product_flow_rate", "Average product flow rate", "L/hr")
-    dm.register_data_key("filtration_ramp_rate", "Filtration ramp rate", "bar/min")
+    dm.register_data_key("avg_product_flow_rate", "Average product flow rate", "m^3/s")
+    # dm.register_data_key("avg_product_flow_rate", "Permeate flow rate", "m^3/s")
+    dm.register_data_key("filtration_ramp_rate", "Ramp rate", "bar/min")
     dm.register_data_key("total_cycle_time", "Total cycle time", "min")
     dm.register_data_key("overall_rejection", "Overall rejection", "%")
     dm.register_data_key("cycle_time_ratio", "Cycle time ratio", "%")
@@ -256,14 +446,21 @@ def get_recovery_data():
     # )
 
     # RO
-    dm.register_data_key("blocks[0].process.fs.RO.area", "RO area", "m^2")
+    dm.register_data_key("blocks[0].process.fs.RO.area", "Area", "m^2")
     dm.register_data_key(
-        "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]", "RO recovery", "%"
+        "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]",
+        "Single Pass Recovery",
+        "%",
     )
-    dm.register_data_key("blocks[0].process.fs.RO.area", "Membrane area", "m^2")
+
+    dm.register_data_key(
+        "blocks[19].process.fs.P1.control_volume.properties_out[0.0].pressure",
+        "Pressure",
+        "bar",
+    )
     # dm.register_data_key(
-    #     "blocks[19].process.fs.P1.control_volume.properties_out[0.0].pressure",
-    #     "RO feed pressure",
+    #     "blocks[19].process.fs.P1.control_volume.pressure",
+    #     "Pressure",
     #     "bar",
     # )
     dm.register_data_key(
@@ -276,6 +473,26 @@ def get_recovery_data():
         "Pump work",
         "kW",
     )
+    dm.register_data_key(
+        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Inlet concentration",
+        "g/L",
+    )
+    dm.register_data_key(
+        f"blocks[19].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Final concentration",
+        "g/L",
+    )
+    # dm.register_data_key(
+    #     f"blocks[0].process.fs.product.properties[0.0].flow_vol_phase[Liq]",
+    #     "Permeate flow rate",
+    #     "m^3/s",
+    # )
+    dm.register_data_key(
+        f"total_permeate_vol",
+        "Permeate flow rate",
+        # "m^3/s",
+    )
 
     dm.load_data()
 
@@ -287,10 +504,17 @@ def get_recovery_data():
         fs.Pump_work / fs.Average_product_flow_rate, "Specific pump work", "kW/(m^3/s)"
     )
     dm.register_expression(
-        fs.Average_product_flow_rate / fs.RO_area,
-        "RO flux",
+        fs.Average_product_flow_rate / fs.Area,
+        "Flux",
         "L/(m^2*hr)",
     )
+    dm.register_expression(
+        fs.Area/fs.Average_product_flow_rate,
+        "Specific area",
+        "m^2/(L/hr)",
+    )
+    dm.register_expression(fs.OPEX / fs.CAPEX, "OPEX/CAPEX Ratio")
+
     dm.evaluate_expressions()
 
     # lets create costing pacakage
@@ -331,77 +555,10 @@ def get_recovery_data():
     return dm
 
 
-def panel_3_by_2(init_figure={}, leg_kwargs=dict()):
-    cases = {
-        "Brackish water": {
-            "xticks": [75, 80, 85, 90, 95],
-            # "yticks": [0, 0.1, 0.2, 0.3, 0.4],
-            # "yticks_lcow": [0, 0.1, 0.2, 0.3, 0.4],
-            # "yticks_sec": [0, 0.5, 1, 1.5, 2, 2.5, 3],
-            # "yticks_pressure": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
-            # "yticks_flux": [0, 10, 20, 30, 40, 50, 60],
-        },
-        "Seawater": {
-            "xticks": [45, 50, 55, 60],
-            # "yticks": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
-            # "yticks_lcow": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
-            # "yticks_sec": [0, 2, 4, 6, 8],
-            # "yticks_pressure": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
-            # "yticks_flux": [0, 10, 20, 30, 40, 50],
-        },
-        "Produced water": {
-            "xticks": [20, 30, 40, 50, 55],
-            # "yticks": [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5],
-            # "yticks_lcow": [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5],
-            # "yticks_sec": [0, 5, 10, 15, 20, 25],
-            # "yticks_pressure": [0, 25, 50, 75, 100, 125, 150, 175, 200],
-            # "yticks_flux": [0, 10, 20, 30, 40, 50],
-        },
-    }
+def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
+    # dm_ccro = get_ccro_data()
 
-    # water_cases = FigureGenerator.get_plot_options_manager()
-    # water_cases.add("Brackish water")
-    # water_cases.add("Seawater")
-    # water_cases.add("Produced water")
-
-    ########################################
-    ######################################## CCRO
-    ########################################
-    dm_recov = get_recovery_data()
-
-    ########################################
-    ######################################## STEADY STATE
-    ########################################
-
-    dm_ss = getssdata()
-
-    ########################################
-    ########################################
-    ########################################
-
-    line_colors = [
-        "#a6cee3",
-        "#1f78b4",
-        "#b2df8a",
-        "#33a02c",
-        "#fb9a99",
-        "#e31a1c",
-        "#fdbf6f",
-        "#ff7f00",
-        "#cab2d6",
-        "#6a3d9a",
-        "#ffff99",
-    ]
-    units = [
-        "Feed pump",
-        "Recycle pump",
-        "RO",
-        "Conduit",
-        "Pumps",
-        "RO1",
-        "RO2",
-    ]
-    color_dict = dict(zip(units, line_colors))
+    # dm_ss = getssdata()
 
     fig = FigureGenerator()
     fig.init_figure(**init_figure)
@@ -415,23 +572,26 @@ def panel_3_by_2(init_figure={}, leg_kwargs=dict()):
 
     bdp.define_hatch_groups(
         {
-            "LCOW_opex": {"label": "OPEX", "hatch": "", "color": "white", "alpha": 0.85},
+            "LCOW_opex": {
+                "label": "OPEX",
+                "hatch": "",
+                "color": "white",
+                "alpha": 0.85,
+            },
             "LCOW_capex": {"label": "CAPEX", "hatch": "\\\\", "color": "white"},
         }
     )
 
     for i, (water_case, axis_options) in enumerate(cases.items()):
 
-        ########################################
-        ######################################## CCRO
-        ########################################
         axs = list()
 
         ax_idx = (i, 0)
         axs.append(bdp.fig.get_axis(ax_idx))
         axis_options["ax_idx"] = ax_idx
-        dm_recov.select_data(water_case)
-        wr = dm_recov.get_selected_data()
+
+        dm_ccro.select_data(water_case)
+        wr = dm_ccro.get_selected_data()
         bdp.set_selected_data(wr)
 
         bdp.define_area_groups(
@@ -447,14 +607,13 @@ def panel_3_by_2(init_figure={}, leg_kwargs=dict()):
         else:
             labels = {"ylabel": "LCOW ($\$$/m$^3$)", "xlabel": "Water recovery (%)"}
         axis_options.update(labels)
-        # labels.update(init_figure)
+
         bdp.plotbreakdown(
             xdata="Water recovery",
             ydata="costing",
             axis_options=axis_options,
             ax_idx=ax_idx,
         )
-
 
         ########################################
         ######################################## STEADY STATE
@@ -463,8 +622,19 @@ def panel_3_by_2(init_figure={}, leg_kwargs=dict()):
         ax_idx = (i, 1)
         axs.append(bdp.fig.get_axis(ax_idx))
         axis_options["ax_idx"] = ax_idx
-        
-        ro_args = [("add_erd", "True"), ("stage_sim_cases", "2_stage_2_pump")]
+        axis_options["yticks"] = yticks_dict[water_case]["LCOW"]
+
+        if water_case == "Brackish water":
+            ro_config = "2_stage_1_pump"
+            add_erd = "False"
+        elif water_case == "Seawater":
+            ro_config = "2_stage_1_pump"
+            add_erd = "True"
+        elif water_case == "Produced water":
+            ro_config = "2_stage_2_pump"
+            add_erd = "True"
+
+        ro_args = [("add_erd", add_erd), ("stage_sim_cases", ro_config)]
         dm_ss.select_data(
             (water_case, *ro_args),
         )
@@ -474,13 +644,16 @@ def panel_3_by_2(init_figure={}, leg_kwargs=dict()):
 
         bdp.define_area_groups(
             {
-                "Pumps": {},
-                "RO1": {},
-                "RO2": {},
+                "Pumps + ERD": {},
+                "Stage 1": {},
+                "Stage 2": {},
             }
         )
-        labels = {"ylabel": "",}
+        labels = {
+            "ylabel": "",
+        }
         axis_options.update(labels)
+        axis_options["yticks"] = yticks_dict[water_case]["LCOW"]
 
         bdp.plotbreakdown(
             xdata="Water recovery",
@@ -491,7 +664,7 @@ def panel_3_by_2(init_figure={}, leg_kwargs=dict()):
 
         ys = [ax.get_ylim() for ax in axs]
         y_min = min([y[0] for y in ys])
-        y_max = max([y[1] for y in ys]) * 1.1
+        y_max = max([y[1] for y in ys]) * 1.05
 
         for ax in axs:
             ax.set_ylim(y_min, y_max)
@@ -501,36 +674,171 @@ def panel_3_by_2(init_figure={}, leg_kwargs=dict()):
     ax1 = fig.ax[2][0]
     ax2 = fig.ax[2][1]
 
-    from collections import OrderedDict
-
     # Collect handles and labels from both axes
     handles1, labels1 = ax1.get_legend_handles_labels()
     handles2, labels2 = ax2.get_legend_handles_labels()
-    
+
     combined = OrderedDict(zip(labels1 + labels2, handles1 + handles2))
-    combined = {k: v for k, v in combined.items() if k not in ["CAPEX", "OPEX"]} 
-    print( combined)
+    combined = {k: v for k, v in combined.items() if k not in ["CAPEX", "OPEX"]}
 
     fig.fig.legend(
         combined.values(),
         combined.keys(),
         loc="upper center",
-        ncol=4, 
+        ncol=4,
         fontsize=8,
-        bbox_to_anchor=(0.54, 1.08) # position at top center
+        bbox_to_anchor=(0.54, 1.08),  # position at top center
     )
-    fig.save_fig(name="test_tile_plot.png")
-    # fig.show()
+    # import itertools
+    # letters = itertools.cycle(["A", "B", "C", "D", "E", "F"])
+    # for ax in fig.ax:
+    #     for a in ax:
+    #         a.text(
+    #                 0.25,
+    #                 0.95,
+    #                 next(letters),
+    #                 fontsize=10,
+    #                 ha="center",
+    #                 va="center",
+    #                 transform=a.transAxes,
+    #             ) 
+    ycol = "LCOW"
+    fig.save_fig(name=f"{here}/figs/{ycol}_tile_plot_stack")
+    # fig.fig.savefig("tes")
+    fig.show()
 
+    # for ax in fig.ax:
+    #     # print(ax.get_ylims())
+    #     for a in ax:
+    #         print(a.get_ylim())
 
     return fig, bdp
+
+
+def panel_3_by_2_line(ycol="SEC", init_figure={}, ccro_kwargs=dict(), ro_kwargs=dict(), row_leg=0):
+
+    # dm_ccro = get_ccro_data()
+
+    # dm_ss = getssdata()
+
+    fig = FigureGenerator()
+    fig.init_figure(**init_figure)
+
+    for i, (water_case, axis_options) in enumerate(cases.items()):
+
+        axs = list()
+
+        ax_idx = (i, 0)
+        axs.append(fig.get_axis(ax_idx))
+
+        dm_ccro.select_data(water_case)
+
+        if i != len(cases) - 1:
+            labels = {"ylabel": ylabel_dict.get(ycol, ""), "xlabel": ""}
+        else:
+            labels = {
+                "ylabel": ylabel_dict.get(ycol, ""),
+                "xlabel": "Water recovery (%)",
+            }
+
+        fig.plot_line(
+            dm_ccro[water_case, "Water recovery"],
+            dm_ccro[water_case, ycol],
+            ax_idx=ax_idx,
+            **ccro_kwargs,
+        )
+
+        fig.set_axis(
+            xlabel=labels["xlabel"],
+            ylabel=labels["ylabel"],
+            xticks=xticks_dict[water_case],
+            yticks=yticks_dict[water_case].get(ycol, None),
+            ax_idx=ax_idx,
+        )
+
+        ax_idx = (i, 1)
+        axs.append(fig.get_axis(ax_idx))
+
+        if water_case == "Brackish water":
+            ro_config = "1_stage_1_pump"
+            add_erd = "False"
+        elif water_case == "Seawater":
+            ro_config = "2_stage_1_pump"
+            add_erd = "True"
+        elif water_case == "Produced water":
+            ro_config = "2_stage_2_pump"
+            add_erd = "True"
+
+        ro_args = [("add_erd", add_erd), ("stage_sim_cases", ro_config)]
+        dm_ss.select_data(
+            (water_case, *ro_args),
+        )
+
+        try:
+            fig.plot_line(
+                dm_ss[water_case, *ro_args, "Water recovery"],
+                dm_ss[water_case, *ro_args, ("RO 1", ycol)],
+                ax_idx=ax_idx,
+                **ro_kwargs,
+            )
+        except:
+            fig.plot_line(
+                dm_ss[water_case, *ro_args, "Water recovery"],
+                dm_ss[water_case, *ro_args, ycol],
+                ax_idx=ax_idx,
+                **ro_kwargs,
+            )
+        try:
+            fig.plot_line(
+                dm_ss[water_case, *ro_args, "Water recovery"],
+                dm_ss[water_case, *ro_args, ("RO 2", ycol)],
+                ax_idx=ax_idx,
+                marker=ro_kwargs["marker"],
+                color=line_colors[3],
+                label="Stage 2",
+            )
+        except:
+            pass
+
+        fig.set_axis(
+            xlabel=labels["xlabel"],
+            ylabel="",
+            xticks=xticks_dict[water_case],
+            yticks=yticks_dict[water_case].get(ycol, None),
+            ax_idx=ax_idx,
+        )
+
+    ax1 = fig.ax[0][0]
+    ax2 = fig.ax[0][1]
+    ax1.legend()
+    ax2.legend()
+
+    letters = itertools.cycle(["A", "B", "C", "D", "E", "F"])
+    for ax in fig.ax:
+        for a in ax:
+            a.grid(visible=True)
+            # a.text(
+            #         0.2,
+            #         0.9,
+            #         next(letters),
+            #         fontsize=10,
+            #         ha="center",
+            #         va="center",
+            #         transform=a.transAxes,
+            #     )
+    fig.fig.tight_layout()
+    fig.save_fig(name=f"{here}/figs/{ycol}_tile_plot_line")
+
+    fig.show()
+
+    return fig
 
 
 if __name__ == "__main__":
 
     nrows = 3
     ncols = 2
-    w = 2
+    w = 2.25
     width = ncols * w
     height = nrows * w
 
@@ -543,4 +851,85 @@ if __name__ == "__main__":
         sharey=False,
     )
 
-    panel_3_by_2(init_figure=init_figure)
+    dm_ccro = get_ccro_data()
+
+    dm_ss = getssdata()
+    panel_3_by_2_stack(init_figure=init_figure)
+
+    ccro_kwargs = {"marker": "o", "color": line_colors[1], "label": "CCRO"}
+    ro_kwargs = {"marker": "o", "color": line_colors[4], "label": "RO"}
+
+    # panel_3_by_2_line(
+    #     ycol="SEC",
+    #     init_figure=init_figure,
+    #     ccro_kwargs=ccro_kwargs,
+    #     ro_kwargs=ro_kwargs,
+    # )
+    # panel_3_by_2_line(
+    #     ycol="LCOW",
+    #     init_figure=init_figure,
+    #     ccro_kwargs=ccro_kwargs,
+    #     ro_kwargs=ro_kwargs,
+    # )
+    # panel_3_by_2_line(
+    #     ycol="CAPEX",
+    #     init_figure=init_figure,
+    #     ccro_kwargs=ccro_kwargs,
+    #     ro_kwargs=ro_kwargs,
+    # )
+    # panel_3_by_2_line(
+    #     ycol="OPEX",
+    #     init_figure=init_figure,
+    #     ccro_kwargs=ccro_kwargs,
+    #     ro_kwargs=ro_kwargs,
+    # )
+    # panel_3_by_2_line(
+    #     ycol="Permeate concentration",
+    #     init_figure=init_figure,
+    #     ccro_kwargs=ccro_kwargs,
+    #     ro_kwargs=ro_kwargs,
+    # )
+    panel_3_by_2_line(
+        ycol="Permeate flow rate",
+        init_figure=init_figure,
+        ccro_kwargs=ccro_kwargs,
+        ro_kwargs=ro_kwargs,
+    )
+    panel_3_by_2_line(
+        ycol="Permeate volume",
+        init_figure=init_figure,
+        ccro_kwargs=ccro_kwargs,
+        ro_kwargs=ro_kwargs,
+    )
+
+#     ro_kwargs = {"marker": "o", "color": line_colors[4], "label": "Stage 1"}    
+#     panel_3_by_2_line(
+#         ycol="Inlet concentration",
+#         init_figure=init_figure,
+#         ccro_kwargs=ccro_kwargs,
+#         ro_kwargs=ro_kwargs,
+#         row_leg=2
+#     )
+#     panel_3_by_2_line(
+#         ycol="Flux",
+#         init_figure=init_figure,
+#         ccro_kwargs=ccro_kwargs,
+#         ro_kwargs=ro_kwargs,
+#         row_leg=2
+#     )
+#     panel_3_by_2_line(
+#         ycol="Area",
+#         init_figure=init_figure,
+#         ccro_kwargs=ccro_kwargs,
+#         ro_kwargs=ro_kwargs,
+#         row_leg=2
+#     )
+#     panel_3_by_2_line(
+#         ycol="Pump work", init_figure=init_figure, ccro_kwargs=ccro_kwargs, ro_kwargs=ro_kwargs, row_leg=2
+# )
+#     panel_3_by_2_line(
+#         ycol="Pump size", init_figure=init_figure, ccro_kwargs=ccro_kwargs, ro_kwargs=ro_kwargs, row_leg=2
+# )
+#     panel_3_by_2_line(
+#         ycol="Pressure", init_figure=init_figure, ccro_kwargs=ccro_kwargs, ro_kwargs=ro_kwargs, row_leg=2
+# )
