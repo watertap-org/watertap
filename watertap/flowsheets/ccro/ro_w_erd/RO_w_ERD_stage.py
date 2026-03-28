@@ -307,9 +307,15 @@ def run_n_stage_system(
 
     m.fs.feed = Feed(property_package=m.fs.properties)
 
+    tot_area_expr = 0
+    tot_power_expr = 0
+
     for n, stage in m.fs.stage.items():
         build_stage(stage, m=m, add_pump=pump_dict.get(n, False))
-        # set_stage_bounds(stage, m=m)
+        tot_area_expr += stage.RO.area
+        tot_power_expr += stage.pump.work_mechanical[0] if stage.add_pump else 0
+
+    
     if add_erd:
         m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
 
@@ -338,6 +344,22 @@ def run_n_stage_system(
     m.fs.perm_conc = Constraint(
         expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"] <= perm_conc
     )
+
+    m.fs.total_area = Expression(expr=tot_area_expr, doc="Total membrane area in system")
+    m.fs.specific_area = Expression(
+        expr=m.fs.total_area / m.fs.product.properties[0].flow_vol_phase["Liq"],
+        doc="Specific area of system (membrane area per unit product flow rate)",
+    )
+
+    m.fs.system_flux = Expression(
+        expr=pyunits.convert(
+            m.fs.product.properties[0].flow_vol_phase["Liq"] / m.fs.total_area,
+            to_units=pyunits.liter / pyunits.m**2 / pyunits.hour,
+        ),
+        doc="System flux (based on total membrane area)",
+    )
+
+    m.fs.total_power = Expression(expr=pyunits.convert(tot_power_expr, to_units=pyunits.kW), doc="Total pumping power in system")
 
     for b in [m.fs.feed, m.fs.product, m.fs.disposal]:
         b.properties[0].flow_vol_phase["Liq"]

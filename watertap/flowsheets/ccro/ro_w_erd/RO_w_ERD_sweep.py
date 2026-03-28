@@ -48,8 +48,8 @@ def main():
     save_file = "RO_w_ERD"
 
     loopTool(
-        # f"{here}/RO_w_ERD_recovery_sweep.yaml",
-        "/Users/ksitterl/Documents/Python/watertap/watertap/watertap/flowsheets/ccro/ro_w_erd/RO_w_ERD_recovery_sweep.yaml",
+        f"{here}/RO_w_ERD_recovery_sweep.yaml",
+        # "/Users/ksitterl/Documents/Python/watertap/watertap/watertap/flowsheets/ccro/ro_w_erd/RO_w_ERD_recovery_sweep.yaml",
         build_function=ro.run_n_stage_system,
         optimize_function=optimize_for_recovery,
         save_name=save_file,

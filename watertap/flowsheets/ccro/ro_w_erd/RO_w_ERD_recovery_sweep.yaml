@@ -1,5 +1,5 @@
 
-PW_sweep:
+PW_recovery_sweep:
   build_defaults:
     n_stages: 2
     flow_vol: 0.001
@@ -31,7 +31,7 @@ PW_sweep:
           upper_limit: 0.55
           num_samples: 36
 
-SW_sweep:
+SW_recovery_sweep:
   build_defaults:
     n_stages: 2
     flow_vol: 0.001
@@ -62,7 +62,7 @@ SW_sweep:
           upper_limit: 0.6
           num_samples: 21
 
-BW_sweep:
+BW_recovery_sweep:
   build_defaults:
     n_stages: 2
     flow_vol: 0.001
