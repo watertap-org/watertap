@@ -76,11 +76,14 @@ ylabel_dict = {
     "CAPEX": "CAPEX (kUSD)",
     "OPEX": "OPEX (kUSD/yr)",
     "Area": "RO area (m$^2$)",
+    "Membrane Area": "RO area (m$^2$)",
     "Specific area": "Spec area (m$^2$/(L/hr))",
     "Pressure": "RO Pressure (bar)",
     "Pump work": "Pump Work (kW)",
     "Pump size": "Pump Size (kW)",
     "Inlet concentration": "Inlet concentration (g/L)",
+        ('costing', 'total', 'LCOW_opex'): "LCOW OPEX ($\$$/m$^3$)",
+        ('costing', 'total', 'LCOW_capex'): "LCOW CAPEX ($\$$/m$^3$)",
 }
 yticks_dict = {
     "Brackish water": {
@@ -93,8 +96,11 @@ yticks_dict = {
         "Pump work": [0, 2, 4, 6, 8, 10],
         "Pump size": [0, 2, 4, 6, 8, 10, 12],
         "Area": [0, 50, 100, 150],
+        "Membrane Area": [0, 50, 100, 150],
         "Pressure": [0, 25, 50, 75, 100],
         "Inlet concentration": [0, 10, 20, 30],
+        ('costing', 'total', 'LCOW_opex'): [0, 0.25, 0.5, 0.75, 1],
+        ('costing', 'total', 'LCOW_capex'): [0, 0.25, 0.5, 0.75, 1],
     },
     "Seawater": {
         "LCOW": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
@@ -112,8 +118,11 @@ yticks_dict = {
         "Pump work": [0, 2, 4, 6, 8, 10],
         "Pump size": [0, 4, 8, 12, 16],
         "Area": [0, 75, 150, 225, 300],
+        "Membrane Area": [0, 75, 150, 225, 300],
         "Pressure": [0, 40, 80, 120],
         "Inlet concentration": [0, 15, 30, 45, 60, 75],
+        ('costing', 'total', 'LCOW_opex'): [0, 0.25, 0.5, 0.75, 1],
+        ('costing', 'total', 'LCOW_capex'): [0, 0.25, 0.5, 0.75, 1],
     },
     "Produced water": {
         "LCOW": [
@@ -137,8 +146,11 @@ yticks_dict = {
         "Pump work": [0, 4, 8, 12, 16, 20],
         "Pump size": [0, 5, 10, 15, 20, 25],
         "Area": [0, 40, 80, 120, 160],
+        "Membrane Area": [0, 40, 80, 120, 160],
         "Pressure": [0, 50, 100, 150, 200],
         "Inlet concentration": [0, 40, 80, 120, 160],
+        ('costing', 'total', 'LCOW_opex'): [0, 0.25, 0.5, 0.75, 1],
+        ('costing', 'total', 'LCOW_capex'): [0, 0.25, 0.5, 0.75, 1],
     },
 }
 xticks_dict = {
@@ -185,7 +197,7 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
 
         ax_idx = (i, 0)  # CCRO on left
         axs.append(bdp.fig.get_axis(ax_idx))
-        axis_options["ax_idx"] = ax_idx
+        # axis_options["ax_idx"] = ax_idx
 
         dm_ccro.select_data(water_case)
         wr = dm_ccro.get_selected_data()
@@ -219,7 +231,7 @@ def panel_3_by_2_stack(init_figure={}, leg_kwargs=dict()):
 
         ax_idx = (i, 1)  # steady state on right
         axs.append(bdp.fig.get_axis(ax_idx))
-        axis_options["ax_idx"] = ax_idx
+        # axis_options["ax_idx"] = ax_idx
         axis_options["yticks"] = yticks_dict[water_case]["LCOW"]
 
         if water_case == "Brackish water":
@@ -316,7 +328,7 @@ def panel_3_by_2_line(
     fig = FigureGenerator()
     fig.init_figure(**init_figure)
 
-    for i, (water_case, axis_options) in enumerate(cases.items()):
+    for i, water_case in enumerate(cases):
 
         axs = list()
 
@@ -425,6 +437,100 @@ def panel_3_by_2_line(
 
     return fig
 
+def plot_single_compare(ycol="LCOW", init_figure={}):
+
+
+    fig = FigureGenerator()
+    fig.init_figure(**init_figure)
+
+    for i, water_case in enumerate(cases):
+
+        axs = list()
+
+        # ax_idx = (i, 0)
+        # axs.append(fig.get_axis(ax_idx))
+
+        dm_ccro.select_data(water_case)
+
+        if i != len(cases) - 1:
+            labels = {"ylabel": ylabel_dict.get(ycol, ""), "xlabel": ""}
+        else:
+            labels = {
+                "ylabel": ylabel_dict.get(ycol, ""),
+                "xlabel": "Water recovery (%)",
+            }
+
+        fig.plot_line(
+            dm_ccro[water_case, "Water recovery"],
+            dm_ccro[water_case, ycol],
+            # ax_idx=ax_idx,
+            **ccro_kwargs,
+        )
+
+        fig.set_axis(
+            xlabel=labels["xlabel"],
+            ylabel=labels["ylabel"],
+            xticks=xticks_dict[water_case],
+            yticks=yticks_dict[water_case].get(ycol, None),
+            # ax_idx=ax_idx,
+        )
+
+        # ax_idx = (i, 1)
+        # axs.append(fig.get_axis(ax_idx))
+
+        if water_case == "Brackish water":
+            ro_config = "1_stage_1_pump"
+            add_erd = "False"
+        elif water_case == "Seawater":
+            ro_config = "2_stage_1_pump"
+            add_erd = "True"
+        elif water_case == "Produced water":
+            ro_config = "2_stage_2_pump"
+            add_erd = "True"
+
+        ro_args = [("add_erd", add_erd), ("stage_sim_cases", ro_config)]
+        dm_ss.select_data(
+            (water_case, *ro_args),
+        )
+
+        try:
+            fig.plot_line(
+                dm_ss[water_case, *ro_args, "Water recovery"],
+                dm_ss[water_case, *ro_args, ("RO 1", ycol)],
+                # ax_idx=ax_idx,
+                **ro_kwargs,
+            )
+        except:
+            fig.plot_line(
+                dm_ss[water_case, *ro_args, "Water recovery"],
+                dm_ss[water_case, *ro_args, ycol],
+                # ax_idx=ax_idx,
+                **ro_kwargs,
+            )
+        try:
+            fig.plot_line(
+                dm_ss[water_case, *ro_args, "Water recovery"],
+                dm_ss[water_case, *ro_args, ("RO 2", ycol)],
+                # ax_idx=ax_idx,
+                marker=ro_kwargs["marker"],
+                color=line_colors[3],
+                label="Stage 2",
+            )
+        except:
+            pass
+
+        fig.set_axis(
+            xlabel=labels["xlabel"],
+            ylabel="",
+            xticks=xticks_dict[water_case],
+            yticks=yticks_dict[water_case].get(ycol, None),
+            # ax_idx=ax_idx,
+        )
+
+    # ax1 = fig.ax[0][0]
+    # ax2 = fig.ax[0][1]
+    # ax1.legend()
+    # ax2.legend()
 
 if __name__ == "__main__":
 
@@ -446,10 +552,12 @@ if __name__ == "__main__":
     dm_ccro = gd.get_ccro_data()
 
     dm_ss = gd.get_ss_data()
-    panel_3_by_2_stack(init_figure=init_figure)
+    # panel_3_by_2_stack(init_figure=init_figure)
 
     ccro_kwargs = {"marker": "o", "color": line_colors[1], "label": "CCRO"}
     ro_kwargs = {"marker": "o", "color": line_colors[4], "label": "RO"}
+
+    plot_single_compare(ycol="LCOW", init_figure={}, ccro_kwargs=ccro_kwargs, ro_kwargs=ro_kwargs)
 
     # panel_3_by_2_line(
     #     ycol="SEC",

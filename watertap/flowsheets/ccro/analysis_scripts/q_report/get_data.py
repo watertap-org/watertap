@@ -16,15 +16,15 @@ def get_ss_data():
 
     dm = PsDataManager()
     dm.register_data_file(
-        f"{par_dir}/output/RO_w_ERD_analysisType_BW_sweep.h5",
+        f"{par_dir}/output/RO_w_ERD_analysisType_BW_recovery_sweep.h5",
         directory="Brackish water",
     )
     dm.register_data_file(
-        f"{par_dir}/output/RO_w_ERD_analysisType_PW_sweep.h5",
+        f"{par_dir}/output/RO_w_ERD_analysisType_PW_recovery_sweep.h5",
         directory="Produced water",
     )
     dm.register_data_file(
-        f"{par_dir}/output/RO_w_ERD_analysisType_SW_sweep.h5",
+        f"{par_dir}/output/RO_w_ERD_analysisType_SW_recovery_sweep.h5",
         directory="Seawater",
     )
     for stage in [1, 2]:
@@ -92,9 +92,39 @@ def get_ss_data():
         "Permeate concentration",
         "g/L",
     )
+    dm.register_data_key(
+        "fs.total_area",
+        "Membrane Area",
+        assign_units="m^2",
+    )
+    dm.register_data_key(
+        "fs.specific_area",
+        "Specific area",
+        assign_units="m^2/m^3/s",
+    )
+    dm.register_data_key(
+        "fs.system_flux",
+        "Flux",
+        assign_units="L/(m^2*hr)",
+    )
+    dm.register_data_key(
+        "fs.total_power",
+        "Pump work",
+        assign_units="kW",
+    )
 
     dm.load_data()
     ek = dm.get_expression_keys()
+    dm.register_expression(
+        ek.CAPEX / ek.Permeate_flow_rate,
+        "Specific CAPEX",
+        assign_units="kUSD/(m^3/s)",
+    )
+    dm.register_expression(
+        ek.OPEX / ek.Permeate_flow_rate,
+        "Specific OPEX",
+        assign_units="kUSD/(m^3/s)",
+    )
     # for stage in [1, 2]:
     #     dm.register_expression(
     #         ek[f"RO_{stage}_Pump_work"] / ek.Permeate_flow_rate,
@@ -108,26 +138,26 @@ def get_ss_data():
     #     assign_units="kW/(m^3/s)",
     #     # conversion_factor=3600,
     # )
-    dm.register_expression(
-        (ek.RO_1_Pump_work + ek.RO_2_Pump_work),
-        "Pump work",
-        assign_units="kW/(m^3/s)",
-    )
+    # dm.register_expression(
+    #     (ek.RO_1_Pump_work + ek.RO_2_Pump_work),
+    #     "Pump work",
+    #     assign_units="kW",
+    # )
+    # dm.register_expression(
+    #     (ek.RO_1_Pump_work + ek.RO_2_Pump_work) / ek.Permeate_flow_rate,
+    #     "Specific pump work",
+    #     assign_units="kW/(m^3/s)",
+    # )
     dm.register_expression(
         (ek.RO_1_Pump_work + ek.RO_2_Pump_work) / ek.Permeate_flow_rate,
         "Specific pump work",
         assign_units="kW/(m^3/s)",
     )
-    dm.register_expression(
-        ek.RO_1_Area + ek.RO_2_Area,
-        "Area",
-        assign_units="m^2",
-    )
-    dm.register_expression(
-        (ek.RO_1_Area + ek.RO_2_Area) / ek.Permeate_flow_rate,
-        "Specific area",
-        assign_units="m^2/L/hr",
-    )
+    # dm.register_expression(
+    #     (ek.RO_1_Area + ek.RO_2_Area) / ek.Permeate_flow_rate,
+    #     "Specific area",
+    #     assign_units="m^2/L/hr",
+    # )
     # dm.register_expression(
     #     ek.RO_1_pump_work / ek.Permeate_flow_rate,
     #     "RO 1 Specific pump work",
@@ -205,7 +235,7 @@ def get_ss_data():
     return dm
 
 
-def get_ccro_data():
+def get_ccro_data(last_block=19):
 
     dm = PsDataManager()
 
@@ -256,6 +286,7 @@ def get_ccro_data():
     dm.register_data_key("overall_rejection", "Overall rejection", "%")
     dm.register_data_key("cycle_time_ratio", "Cycle time ratio", "%")
     dm.register_data_key("permeate_concentration", "Permeate concentration", "g/L")
+    dm.register_data_key("total_permeate_vol", "Total permeate volume", "m^3")
     # dm.register_data_key(
     #     "blocks[0].process.fs.P2.control_volume.properties_out[0.0].pressure",
     #     "Recycle Pump Pressure",
@@ -264,6 +295,8 @@ def get_ccro_data():
 
     # RO
     dm.register_data_key("blocks[0].process.fs.RO.area", "Area", "m^2")
+    dm.register_data_key("blocks[0].process.fs.RO.area", "Membrane Area", "m^2")
+    dm.register_data_key("blocks[0].process.fs.RO.area", "Total Area", "m^2")
     dm.register_data_key(
         "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]",
         "Single Pass Recovery",
@@ -271,66 +304,58 @@ def get_ccro_data():
     )
 
     dm.register_data_key(
-        "blocks[19].process.fs.P1.control_volume.properties_out[0.0].pressure",
-        "Pressure",
-        "bar",
-    )
-    # dm.register_data_key(
-    #     "blocks[19].process.fs.P1.control_volume.pressure",
-    #     "Pressure",
-    #     "bar",
-    # )
-    dm.register_data_key(
-        "blocks[19].process.fs.P1.control_volume.work[0.0]",
-        "Pump size",
-        "kW",
-    )
-    dm.register_data_key(
-        "blocks[19].process.fs.P1.total_power",
-        "Pump work",
-        "kW",
-    )
-    dm.register_data_key(
         f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
         "Inlet concentration",
         "g/L",
     )
     dm.register_data_key(
-        f"blocks[19].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
-        "Final concentration",
-        "g/L",
+        f"blocks[{last_block}].process.fs.P1.control_volume.properties_out[0.0].pressure",
+        "Pressure",
+        "bar",
     )
     # dm.register_data_key(
-    #     f"blocks[0].process.fs.product.properties[0.0].flow_vol_phase[Liq]",
-    #     "Permeate flow rate",
-    #     "m^3/s",
+    #     f"blocks[{last_block}].process.fs.P1.control_volume.pressure",
+    #     "Pressure",
+    #     "bar",
     # )
     dm.register_data_key(
-        f"total_permeate_vol",
-        "Permeate flow rate",
-        # "m^3/s",
+        f"blocks[{last_block}].process.fs.P1.control_volume.work[0.0]",
+        "Pump size",
+        "kW",
+    )
+    dm.register_data_key(
+        f"blocks[{last_block}].process.fs.P1.total_power",
+        "Pump work",
+        "kW",
+    )
+    dm.register_data_key(
+        f"blocks[{last_block}].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Final concentration",
+        "g/L",
     )
 
     dm.load_data()
 
-    fs = dm.get_expression_keys()
+    ek = dm.get_expression_keys()
     dm.register_expression(
-        fs.Pump_size / fs.Average_product_flow_rate, "Specific pump size", "kW/(m^3/s)"
+        ek.Pump_size / ek.Average_product_flow_rate, "Specific pump size", "kW/(m^3/s)"
     )
     dm.register_expression(
-        fs.Pump_work / fs.Average_product_flow_rate, "Specific pump work", "kW/(m^3/s)"
+        ek.Pump_work / ek.Average_product_flow_rate, "Specific pump work", "kW/(m^3/s)"
     )
     dm.register_expression(
-        fs.Average_product_flow_rate / fs.Area,
+        ek.Average_product_flow_rate / ek.Area,
         "Flux",
         "L/(m^2*hr)",
     )
     dm.register_expression(
-        fs.Area / fs.Average_product_flow_rate,
+        ek.Area / ek.Average_product_flow_rate,
         "Specific area",
         "m^2/(L/hr)",
     )
-    dm.register_expression(fs.OPEX / fs.CAPEX, "OPEX/CAPEX Ratio")
+    dm.register_expression(ek.OPEX / ek.CAPEX, "OPEX/CAPEX Ratio")
+    dm.register_expression(ek.OPEX / ek.Average_product_flow_rate, "Specific OPEX", "kUSD/(m^3/s)")
+    dm.register_expression(ek.CAPEX / ek.Average_product_flow_rate, "Specific CAPEX", "kUSD/(m^3/s)")
 
     dm.evaluate_expressions()
 
@@ -343,19 +368,19 @@ def get_ccro_data():
     # Lets create our groups
     RO = PsCostingGroup("RO")
     RO.add_unit(
-        "blocks[0].process.fs.RO",  # only adding "block[0] to specify wher capex is, normally acn just say "RO
+        f"blocks[0].process.fs.RO",  # only adding "block[0] to specify wher capex is, normally acn just say "RO
         capex_keys="capital_cost",
         fixed_opex_keys="fixed_operating_cost",
     )
     feed_pump = PsCostingGroup("Feed pump")
     feed_pump.add_unit(
-        "blocks[19].process.fs.P1",
+        f"blocks[{last_block}].process.fs.P1",
         capex_keys="capital_cost",
         flow_keys={"electricity": "total_power"},
     )
     recycle_pump = PsCostingGroup("Recycle pump")
     recycle_pump.add_unit(
-        "blocks[19].process.fs.P2",
+        f"blocks[{last_block}].process.fs.P2",
         capex_keys="capital_cost",
         flow_keys={"electricity": "total_power"},
     )
@@ -370,3 +395,10 @@ def get_ccro_data():
     )
     cm_recov.build()
     return dm
+
+if __name__ == "__main__":
+    dm = get_ss_data()
+    # dm = get_ccro_data()
+    # dm[('costing', 'total', 'LCOW_capex')].data
+    dm.display()
+    print(dm[('Brackish water', ('add_erd', 'False'), ('stage_sim_cases', '1_stage_1_pump'), ('costing', 'total', 'LCOW_opex'))].data)
