@@ -58,11 +58,11 @@ def get_ss_data():
             (f"RO {stage}", "Pump work"),
             "kW",
         )
-        dm.register_data_key(
-            f"fs.stage[{stage}].pump.work_fluid[0.0]",
-            (f"RO {stage}", "Pump size"),
-            "kW",
-        )
+        # dm.register_data_key(
+        #     f"fs.stage[{stage}].pump.work_fluid[0.0]",
+        #     (f"RO {stage}", "Pump size"),
+        #     "kW",
+        # )
     # dm.register_data_key("fs.ERD.control_volume.work[0.0]", "ERD work", "kW")
     # dm.register_data_key("fs.system_recovery", "Water recovery", "%")
 
@@ -72,13 +72,13 @@ def get_ss_data():
     dm.register_data_key(
         "fs.costing.total_capital_cost",
         "CAPEX",
-        assign_units="kUSD",
+        assign_units="USD",
         conversion_factor=1e-3,
     )
     dm.register_data_key(
         "fs.costing.total_operating_cost",
         "OPEX",
-        assign_units="kUSD/yr",
+        assign_units="USD/yr",
         conversion_factor=1e-3,
     )
 
@@ -118,12 +118,12 @@ def get_ss_data():
     dm.register_expression(
         ek.CAPEX / ek.Permeate_flow_rate,
         "Specific CAPEX",
-        assign_units="kUSD/(m^3/s)",
+        assign_units="USD/(m^3/s)",
     )
     dm.register_expression(
         ek.OPEX / ek.Permeate_flow_rate,
         "Specific OPEX",
-        assign_units="kUSD/(m^3/s)",
+        assign_units="USD/(m^3/s)",
     )
     # for stage in [1, 2]:
     #     dm.register_expression(
@@ -260,13 +260,13 @@ def get_ccro_data(last_block=19):
     dm.register_data_key(
         "costing.total_capital_cost",
         "CAPEX",
-        assign_units="kUSD",
+        assign_units="USD",
         conversion_factor=1e-3,
     )
     dm.register_data_key(
         "costing.total_operating_cost",
         "OPEX",
-        assign_units="kUSD/year",
+        assign_units="USD/year",
         conversion_factor=1e-3,
     )
     # SYSTEM
@@ -355,10 +355,10 @@ def get_ccro_data(last_block=19):
     )
     dm.register_expression(ek.OPEX / ek.CAPEX, "OPEX/CAPEX Ratio")
     dm.register_expression(
-        ek.OPEX / ek.Average_product_flow_rate, "Specific OPEX", "kUSD/(m^3/s)"
+        ek.OPEX / ek.Average_product_flow_rate, "Specific OPEX", "USD/m^3"
     )
     dm.register_expression(
-        ek.CAPEX / ek.Average_product_flow_rate, "Specific CAPEX", "kUSD/(m^3/s)"
+        ek.CAPEX / ek.Average_product_flow_rate, "Specific CAPEX", "USD/(m^3/s)"
     )
 
     dm.evaluate_expressions()
@@ -426,13 +426,13 @@ def get_ccro_SEC_data(last_block=19):
     dm.register_data_key(
         "costing.total_capital_cost",
         "CAPEX",
-        assign_units="kUSD",
+        assign_units="USD",
         conversion_factor=1e-3,
     )
     dm.register_data_key(
         "costing.total_operating_cost",
         "OPEX",
-        assign_units="kUSD/year",
+        assign_units="USD/year",
         conversion_factor=1e-3,
     )
     # SYSTEM
@@ -521,10 +521,10 @@ def get_ccro_SEC_data(last_block=19):
     )
     dm.register_expression(ek.OPEX / ek.CAPEX, "OPEX/CAPEX Ratio")
     dm.register_expression(
-        ek.OPEX / ek.Average_product_flow_rate, "Specific OPEX", "kUSD/(m^3/s)"
+        ek.OPEX / ek.Average_product_flow_rate, "Specific OPEX", "USD/m^3"
     )
     dm.register_expression(
-        ek.CAPEX / ek.Average_product_flow_rate, "Specific CAPEX", "kUSD/(m^3/s)"
+        ek.CAPEX / ek.Average_product_flow_rate, "Specific CAPEX", "USD/(m^3/s)"
     )
 
     dm.evaluate_expressions()
