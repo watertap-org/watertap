@@ -13,7 +13,6 @@
 This module contains utility functions for initialization of WaterTAP models.
 """
 
-
 __author__ = "Adam Atia, Ben Knueven"
 
 from pyomo.environ import check_optimal_termination, ComponentMap, Var

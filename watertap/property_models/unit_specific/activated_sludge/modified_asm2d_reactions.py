@@ -38,7 +38,6 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
-
 # Some more information about this module
 __author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
 

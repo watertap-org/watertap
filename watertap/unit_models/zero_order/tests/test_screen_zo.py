@@ -12,6 +12,7 @@
 """
 Tests for zero-order screen model
 """
+
 import pytest
 
 

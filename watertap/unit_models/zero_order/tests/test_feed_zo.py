@@ -12,6 +12,7 @@
 """
 Tests for zero-order feed block
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, value, Var

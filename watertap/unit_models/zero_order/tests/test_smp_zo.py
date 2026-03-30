@@ -12,6 +12,7 @@
 """
 Tests for zero-order smp model
 """
+
 import pytest
 
 

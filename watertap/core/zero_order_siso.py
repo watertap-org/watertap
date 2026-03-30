@@ -14,6 +14,7 @@ This module contains the methods for constructing the material balances for
 zero-order single-input/single-output (SISO) unit models (i.e. units with a single inlet and single
 outlet where composition changes, such as a generic bioreactor).
 """
+
 from types import MethodType
 
 import idaes.logger as idaeslog

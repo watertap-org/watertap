@@ -12,6 +12,7 @@
 """
 This module contains a utility function for the scaling of WaterTAP property model constraints.
 """
+
 import pyomo.environ as pyo
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog

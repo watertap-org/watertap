@@ -876,6 +876,9 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                         )
                     )
                     iscale.set_scaling_factor(v, sf)
+                    iscale.constraint_scaling_transform(
+                        self.eq_flux_mass[t, x, p, j], sf
+                    )
                 elif comp.is_solute():  # scaling based on solute flux equation
                     sf = iscale.get_scaling_factor(
                         self.B_comp[t, j]
@@ -883,6 +886,23 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                         self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]
                     )
                     iscale.set_scaling_factor(v, sf)
+                    iscale.constraint_scaling_transform(
+                        self.eq_flux_mass[t, x, p, j], sf
+                    )
+
+        for (t, j), condata in self.eq_recovery_mass_phase_comp.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].flow_mass_phase_comp["Liq", j], default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, x), condata in self.eq_permeate_outlet_isobaric.items():
+            sf1 = iscale.get_scaling_factor(self.mixed_permeate[t].pressure, default=1)
+            sf2 = iscale.get_scaling_factor(
+                self.permeate_side[t, x].pressure, default=1
+            )
+            sf = min(sf1, sf2)
+            iscale.constraint_scaling_transform(condata, sf)
 
     @property
     def default_costing_method(self):

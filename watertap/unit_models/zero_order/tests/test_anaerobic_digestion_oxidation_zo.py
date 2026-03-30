@@ -12,6 +12,7 @@
 """
 Tests for zero-order anaerobic digestion oxidation model
 """
+
 import pytest
 
 from pyomo.environ import (

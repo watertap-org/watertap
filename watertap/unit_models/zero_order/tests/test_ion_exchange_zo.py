@@ -12,6 +12,7 @@
 """
 Tests for zero-order Ion exchange model
 """
+
 import pytest
 
 

@@ -63,7 +63,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 _log = idaeslogger.getLogger(__name__)
 
 
