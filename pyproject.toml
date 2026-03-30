@@ -71,7 +71,7 @@ oli_api = [
 ]
 
 reaktoro = [
-    "reaktoro-pse @ git+https://github.com/watertap-org/reaktoro-pse",
+    "reaktoro-pse >= 0.3.0",
 ]
 
 all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
