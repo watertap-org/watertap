@@ -39,6 +39,7 @@ def build(
     rejection_ub=1,
     use_rejection_target=False,  # activate min rejection constraint
     high_pressure_membrane_cost=False,
+    objective="LCOW",
     **kwargs,
 ):
 
@@ -94,6 +95,7 @@ def build(
         use_rejection_target=use_rejection_target,
         flushing_efficiency_lb=flushing_efficiency_lb,
         flushing_efficiency_ub=flushing_efficiency_ub,
+        objective=objective,
     )
 
     mp.overall_recovery.fix()  # Unfixed with times fixed should get 1 DOF!
@@ -134,10 +136,10 @@ def solve_model(mp, **kwargs):
 if __name__ == "__main__":
 
     run_kwargs = {
-        "feed_tds": 5,
+        "feed_tds": 75,
         "time_steps": 20,
         "overall_water_recovery": 0.5,
-        "recovery": 0.75,
+        "recovery": 0.5,
         "osmotic_overpressure": 2,
         "total_cycle_time_lb": 10,  # minutes
         "total_cycle_time_ub": 60,  # minutes

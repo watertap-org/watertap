@@ -492,6 +492,7 @@ def setup_optimization(
     flushing_time_lb=10,
     use_perm_conc_target=False,
     use_rejection_target=True,
+    objective="LCOW",
 ):
     """
     Setup the multiperiod model for optimization.
@@ -590,7 +591,10 @@ def setup_optimization(
     if mp.find_component("conduit") is not None:
         mp.conduit.volume.unfix()
     if mp.include_costing:
-        mp.cost_objective = Objective(expr=mp.costing.LCOW)
+        if objective == "LCOW":
+            mp.cost_objective = Objective(expr=mp.costing.LCOW)
+        elif objective == "SEC":
+            mp.cost_objective = Objective(expr=mp.costing.SEC)
 
         mp.product_objective = Objective(
             expr=sum((prm - 0.5) ** 2 for prm in mp.permeate_quality)
