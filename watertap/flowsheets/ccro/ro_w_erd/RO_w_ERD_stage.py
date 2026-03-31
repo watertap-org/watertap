@@ -111,6 +111,10 @@ def build_stage(
     blk.product = StateJunction(property_package=m.fs.properties)
     blk.disposal = StateJunction(property_package=m.fs.properties)
 
+    for b in [blk.feed, blk.product, blk.disposal]:
+        b.properties[0].flow_vol_phase["Liq"]
+        b.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+
     if add_pump:
         blk.pump = Pump(property_package=m.fs.properties)
         blk.feed_to_pump = Arc(source=blk.feed.outlet, destination=blk.pump.inlet)
@@ -569,44 +573,44 @@ if __name__ == "__main__":
     # #### #### #### #### #### #### #### ###
     # BW
 
-    # m_bw = run_n_stage_system(
-    #     n_stages=2,
-    #     salt_mass_frac=5e-3,
-    #     water_recovery=0.8,
-    #     over_pressure=0.15,
-    #     pump_dict={1: True, 2: False},
-    #     # ro_op_dict=sw_ro_op_dict,
-    #     ro_op_dict=bw_ro_op_dict,
-    # )
+    m_bw = run_n_stage_system(
+        n_stages=2,
+        salt_mass_frac=5e-3,
+        water_recovery=0.5,
+        over_pressure=0.15,
+        pump_dict={1: True, 2: True},
+        # ro_op_dict=sw_ro_op_dict,
+        ro_op_dict=bw_ro_op_dict,
+    )
 
-    # for n, stage in m_bw.fs.stage.items():
-    #     relax_bounds_for_low_salinity_waters(stage.RO)
+    for n, stage in m_bw.fs.stage.items():
+        relax_bounds_for_low_salinity_waters(stage.RO)
 
-    # m_bw = fix_ro_recovery(m_bw, 0.9)
-    # results = solve_model(m_bw)
-    # report_n_stage_system(m_bw)
+    m_bw = fix_ro_recovery(m_bw, 0.95)
+    results = solve_model(m_bw)
+    report_n_stage_system(m_bw)
 
     # # #### #### #### #### #### #### #### ###
     # # SW
 
-    m = m_sw = run_n_stage_system(
-        n_stages=1,
-        salt_mass_frac=5e-3,
-        water_recovery=0.5,
-        pump_dict={1: True, 2: True},
-        ro_op_dict=sw_ro_op_dict,
-        add_erd=False,
-    )
-    m_sw = fix_ro_recovery(m_sw, 0.6)
+    # m = m_sw = run_n_stage_system(
+    #     n_stages=1,
+    #     salt_mass_frac=5e-3,
+    #     water_recovery=0.5,
+    #     pump_dict={1: True, 2: True},
+    #     ro_op_dict=sw_ro_op_dict,
+    #     add_erd=False,
+    # )
+    # m_sw = fix_ro_recovery(m_sw, 0.6)
 
-    results = solve_model(m_sw)
+    # results = solve_model(m_sw)
 
-    report_n_stage_system(m_sw)
-    for r in [0.7, 0.8, 0.9, 0.92, 0.93, 0.94, 0.95]:
-        m.fs.system_recovery.fix(r)
+    # report_n_stage_system(m_sw)
+    # for r in [0.7, 0.8, 0.9, 0.92, 0.93, 0.94, 0.95]:
+    #     m.fs.system_recovery.fix(r)
 
-        results = solve_model(m_sw)
-        report_n_stage_system(m_sw)
+    #     results = solve_model(m_sw)
+    #     report_n_stage_system(m_sw)
 
     #### #### #### #### #### #### #### ###
     # PW
