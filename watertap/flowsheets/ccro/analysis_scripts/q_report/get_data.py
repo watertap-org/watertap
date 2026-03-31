@@ -93,6 +93,11 @@ def get_ss_data():
         "g/L",
     )
     dm.register_data_key(
+        "fs.disposal.properties[0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Brine concentration",
+        "g/L",
+    )
+    dm.register_data_key(
         "fs.total_area",
         "Membrane Area",
         assign_units="m^2",
@@ -231,11 +236,25 @@ def get_ss_data():
         [RO1, RO2, pumps],
     )
     cm_ss.build()
+    dm.register_expression(
+        ek[("costing", "total", "LCOW_opex")] / ek[("costing", "total", "LCOW")],
+        "OPEX LCOW Fraction",
+    )
+    dm.register_expression(
+        ek[("costing", "total", "LCOW_capex")] / ek[("costing", "total", "LCOW")],
+        "CAPEX LCOW Fraction",
+    )
+    dm.register_expression(
+        1 / ek.Flux,
+        "Specific Membrane Area",
+    )
 
     return dm
 
 
-def get_ccro_data(last_block=19):
+def get_ccro_data(last_block=19, n_flushing_points=5):
+
+    last_filt_blk = int(last_block - n_flushing_points)
 
     dm = PsDataManager()
 
@@ -272,10 +291,26 @@ def get_ccro_data(last_block=19):
     # SYSTEM
 
     dm.register_data_key("flushing.flushing_efficiency", "Flushing efficiency", "%")
+    dm.register_data_key(
+        "recycle_loop_concentration", "Recycle loop concentration", "g/L"
+    )
+    dm.register_data_key(
+        "flushing.pre_flushing_concentration", "Pre Flushing Concentration", "g/L"
+    )
     # dm.register_data_key("recycle_flowrate", "Recycle rate", "L/s")
     dm.register_data_key(
         "blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
         "Recycle rate",
+        "L/s",
+    )
+    dm.register_data_key(
+        "blocks[0].process.fs.raw_feed.properties[0.0].pressure_osm_phase[Liq]",
+        "Feed osmotic pressure",
+        "bar",
+    )
+    dm.register_data_key(
+        "blocks[0].process.fs.raw_feed.properties[0.0].flow_vol_phase[Liq]",
+        "Feed flow rate",
         "L/s",
     )
     dm.register_data_key("avg_feed_flow_rate", "Average feed flow rate")
@@ -307,6 +342,21 @@ def get_ccro_data(last_block=19):
         f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
         "Inlet concentration",
         "g/L",
+    )
+    dm.register_data_key(
+        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Initial concentration",
+        "g/L",
+    )
+    dm.register_data_key(
+        f"blocks[0].process.fs.P1.control_volume.properties_out[0.0].pressure",
+        "Initial Pressure",
+        "bar",
+    )
+    dm.register_data_key(
+        f"blocks[{last_block}].process.fs.P1.control_volume.properties_out[0.0].pressure",
+        "Final Pressure",
+        "bar",
     )
     dm.register_data_key(
         f"blocks[{last_block}].process.fs.P1.control_volume.properties_out[0.0].pressure",
@@ -362,6 +412,11 @@ def get_ccro_data(last_block=19):
     )
 
     dm.evaluate_expressions()
+    ek = dm.get_expression_keys()
+    dm.register_expression(
+        ek.Recycle_rate / ek.Feed_flow_rate,
+        "Recycle ratio",
+    )
 
     # lets create costing pacakage
     package_ccro = WaterTapCostingPackage(
@@ -398,10 +453,24 @@ def get_ccro_data(last_block=19):
         dm, package_ccro, [RO, feed_pump, recycle_pump, conduit]
     )
     cm_recov.build()
+    dm.register_expression(
+        ek[("costing", "total", "LCOW_opex")] / ek[("costing", "total", "LCOW")],
+        "OPEX LCOW Fraction",
+    )
+    dm.register_expression(
+        ek[("costing", "total", "LCOW_capex")] / ek[("costing", "total", "LCOW")],
+        "CAPEX LCOW Fraction",
+    )
+    dm.register_expression(
+        1 / ek.Flux,
+        "Specific Membrane Area",
+    )
     return dm
 
 
-def get_ccro_SEC_data(last_block=19):
+def get_ccro_SEC_data(last_block=19, n_flushing_points=5):
+
+    last_filt_blk = int(last_block - n_flushing_points)
 
     dm = PsDataManager()
 
@@ -438,10 +507,26 @@ def get_ccro_SEC_data(last_block=19):
     # SYSTEM
 
     dm.register_data_key("flushing.flushing_efficiency", "Flushing efficiency", "%")
+    dm.register_data_key(
+        "recycle_loop_concentration", "Recycle loop concentration", "g/L"
+    )
+    dm.register_data_key(
+        "flushing.pre_flushing_concentration", "Pre Flushing Concentration", "g/L"
+    )
     # dm.register_data_key("recycle_flowrate", "Recycle rate", "L/s")
     dm.register_data_key(
         "blocks[0].process.fs.P2.control_volume.properties_out[0.0].flow_vol_phase[Liq]",
         "Recycle rate",
+        "L/s",
+    )
+    dm.register_data_key(
+        "blocks[0].process.fs.raw_feed.properties[0.0].pressure_osm_phase[Liq]",
+        "Feed osmotic pressure",
+        "bar",
+    )
+    dm.register_data_key(
+        "blocks[0].process.fs.raw_feed.properties[0.0].flow_vol_phase[Liq]",
+        "Feed flow rate",
         "L/s",
     )
     dm.register_data_key("avg_feed_flow_rate", "Average feed flow rate")
@@ -475,15 +560,26 @@ def get_ccro_SEC_data(last_block=19):
         "g/L",
     )
     dm.register_data_key(
-        f"blocks[{last_block}].process.fs.P1.control_volume.properties_out[0.0].pressure",
-        "Pressure",
+        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Initial concentration",
+        "g/L",
+    )
+    dm.register_data_key(
+        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        "Initial concentration",
+        "g/L",
+    )
+    dm.register_data_key(
+        f"blocks[0].process.fs.P1.control_volume.properties_out[0.0].pressure",
+        "Initial Pressure",
         "bar",
     )
-    # dm.register_data_key(
-    #     f"blocks[{last_block}].process.fs.P1.control_volume.pressure",
-    #     "Pressure",
-    #     "bar",
-    # )
+    dm.register_data_key(
+        f"blocks[{last_block}].process.fs.P1.control_volume.properties_out[0.0].pressure",
+        "Final Pressure",
+        "bar",
+    )
+
     dm.register_data_key(
         f"blocks[{last_block}].process.fs.P1.control_volume.work[0.0]",
         "Pump size",
@@ -503,6 +599,10 @@ def get_ccro_SEC_data(last_block=19):
     dm.load_data()
 
     ek = dm.get_expression_keys()
+    dm.register_expression(
+        ek.Recycle_rate / ek.Feed_flow_rate,
+        "Recycle ratio",
+    )
     dm.register_expression(
         ek.Pump_size / ek.Average_product_flow_rate, "Specific pump size", "kW/(m^3/s)"
     )
@@ -564,21 +664,49 @@ def get_ccro_SEC_data(last_block=19):
         dm, package_ccro, [RO, feed_pump, recycle_pump, conduit]
     )
     cm_recov.build()
+    dm.register_expression(
+        ek[("costing", "total", "LCOW_opex")] / ek[("costing", "total", "LCOW")],
+        "OPEX LCOW Fraction",
+    )
+    dm.register_expression(
+        ek[("costing", "total", "LCOW_capex")] / ek[("costing", "total", "LCOW")],
+        "CAPEX LCOW Fraction",
+    )
+    dm.register_expression(
+        1 / ek.Flux,
+        "Specific Membrane Area",
+    )
     return dm
 
 
 if __name__ == "__main__":
     dm = get_ss_data()
-    # dm = get_ccro_data()
+    dm = get_ccro_data()
+    dm = get_ccro_SEC_data()
     # dm[('costing', 'total', 'LCOW_capex')].data
-    dm.display()
-    print(
-        dm[
-            (
-                "Brackish water",
-                ("add_erd", "False"),
-                ("stage_sim_cases", "1_stage_1_pump"),
-                ("costing", "total", "LCOW_opex"),
-            )
-        ].data
-    )
+    # dm.display()
+    # ek = dm.get_expression_keys()
+    # dm.register_expression(
+    #     ek[("costing", "total", "LCOW_opex")]
+    #     / ek[("costing", "total", "LCOW")],
+    #     "OPEX LCOW Fraction",
+    # )
+    # dm.register_expression(
+    #     ek[("costing", "total", "LCOW_capex")]
+    #     / ek[("costing", "total", "LCOW")],
+    #     "CAPEX LCOW Fraction",
+    # )
+    # dm.evaluate_expressions()
+    # for k in ek:
+    #     print(k)
+    # print(dm["Seawater","OPEX LCOW Fraction"].data)
+    # print(
+    #     dm[
+    #         (
+    #             "Brackish water",
+    #             ("add_erd", "False"),
+    #             ("stage_sim_cases", "1_stage_1_pump"),
+    #             ("costing", "total", "LCOW_opex"),
+    #         )
+    #     ].data
+    # )
