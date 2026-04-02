@@ -930,6 +930,7 @@ def print_results_table(
     summary["P2 Ramp Rate (bar/min)"] = value(mp.filtration_ramp_rate_recycle)
     summary["Total feed (m3)"] = mp.total_feed_vol.value
     summary["Total permeate (m3)"] = mp.total_permeate_vol.value
+    summary["Rejection"] = mp.overall_rejection.value
     summary["Final permeate conc (g/L)"] = mp.permeate_concentration.value
     summary["Density at start of cycle"] = (
         b0.fs.dead_volume.dead_volume.properties_out[0].dens_mass_phase["Liq"].value

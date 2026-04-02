@@ -101,7 +101,7 @@ def add_multiperiod_variables(mp, cc_configuration=None):
     mp.overall_rejection = Var(
         initialize=0.99,
         domain=NonNegativeReals,
-        bounds=(0.9, 1.001),
+        bounds=(0.9, None),
         units=pyunits.dimensionless,
         doc="Overall salt rejection over all time periods",
     )
@@ -616,7 +616,11 @@ def add_multiperiod_constraints(mp, cc_configuration=None):
 
     @mp.Constraint(doc="Overall salt rejection constraint")
     def overall_rejection_constraint(b):
-        return b.overall_rejection == 1 - (b.total_permeate_salt / b.total_feed_salt)
+        # return b.overall_rejection == 1 - (b.total_permeate_salt / b.total_feed_salt)
+        return b.overall_rejection == 1 - (
+            b.permeate_concentration
+            / b0.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+        )
 
     @mp.Constraint(doc="Lower bound on overall salt rejection")
     def min_overall_rejection_constraint(b):
