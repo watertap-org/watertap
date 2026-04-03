@@ -51,8 +51,8 @@ def build(
     if feed_tds > 70:
         use_interval_initializer = False
 
-    if feed_tds >= 50:
-        total_cycle_time_lb = 1
+    # if feed_tds >= 50:
+    #     total_cycle_time_lb = 1
 
     cc_config = CCROConfiguration()
     cc_config["A_comp"] = A_comp * (
@@ -136,12 +136,12 @@ def solve_model(mp, **kwargs):
 if __name__ == "__main__":
 
     run_kwargs = {
-        "feed_tds": 5,
-        "time_steps": 20,
+        "feed_tds": 35,
+        "time_steps": 10,
         "overall_water_recovery": 0.5,
-        "recovery": 0.5,
+        "recovery": 0.4,
         "osmotic_overpressure": 2,
-        "total_cycle_time_lb": 1,  # minutes
+        "total_cycle_time_lb": 10,  # minutes
         "total_cycle_time_ub": 60,  # minutes
         "cycle_time_ratio_lb": 0.8,
         "cycle_time_ratio_ub": 0.999999,
@@ -150,10 +150,17 @@ if __name__ == "__main__":
         "rejection_ub": 1,
         # "use_high_pressure_membrane_cost": True,
         "use_high_pressure_membrane_cost": False,
-        # "use_perm_conc_target": True,
-        "use_perm_conc_target": False,
-        "use_rejection_target": True,
-        # "use_rejection_target": False,
+        "use_perm_conc_target": True,
+        # "use_perm_conc_target": False,
+        # "use_rejection_target": True,
+        "use_rejection_target": False,
     }
 
     mp = build_with_fixed_recovery(**run_kwargs)
+    mp.recycle_flowrate.fix(50e-3)
+    solve_model(mp)
+    # b0 = mp.get_active_process_blocks()[0]
+    # b0.fs.M1.inlet_1_state.display()
+    # b0.fs.M1.inlet_2_state.display()
+    # b0.fs.P1.control_volume.properties_out[0].pressure.display()
+    # b0.fs.P2.control_volume.properties_out[0].pressure.display()

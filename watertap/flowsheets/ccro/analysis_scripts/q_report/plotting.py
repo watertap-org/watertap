@@ -52,6 +52,9 @@ label_dict = {
     "Single Pass Recovery": "Single Pass Recovery (%)",
     "Recycle loop concentration": "Recycle Loop Concentration (g/L)",
     "Flushing efficiency": "Flushing Efficiency (%)",
+    "Membrane Width": "Membrane Width (m)",
+    "Membrane Length": "Membrane Length (m)",
+    "Inlet Velocity": "Inlet Velocity (cm/s)",
 }
 
 yticks_dict = {
@@ -59,6 +62,7 @@ yticks_dict = {
         "LCOW": [0, 0.1, 0.2, 0.3, 0.4],
         "SEC": [0, 0.5, 1, 1.5, 2, 2.5],
         "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        # "Permeate concentration": [0, 0.2, 0.4, 0.6, 0.8, 1],
         "Flux": [0, 15, 30, 45, 60, 75],
         "CAPEX": [0, 20, 40, 60],
         "OPEX": [0, 2, 4, 6, 8],
@@ -90,7 +94,8 @@ yticks_dict = {
         "LCOW": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
         # "SEC": [0, 1, 2, 3],
         "SEC": [0, 1, 2, 3, 4],
-        "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        # "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        "Permeate concentration": [0, 0.25, 0.5, 0.75, 1],
         "Flux": [
             0,
             10,
@@ -134,7 +139,8 @@ yticks_dict = {
             2.0,
         ],
         "SEC": [0, 2, 4, 6, 8],
-        "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        # "Permeate concentration": [0, 0.2, 0.4, 0.6],
+        "Permeate concentration": [0, 1, 2, 3, 4],
         "Flux": [
             0,
             10,
@@ -652,13 +658,17 @@ if __name__ == "__main__":
         # "LCOW",
         # "SEC",
         # "Flushing efficiency",
-        "Membrane Area",
+        # "Membrane Area",
         # "Flux",
+        "Membrane Length", 
+        "Membrane Width", 
+        "Inlet Velocity"
         # "Pump work",
-        "Ramp rate",
-        "Total cycle time"
-        # "Recycle ratio",
+        # # "Ramp rate",
+        # "Total cycle time",
+        # # "Recycle ratio",
         # "Cycle time ratio",
+        # "Permeate concentration"
         # "Recycle loop concentration",
         # "Initial concentration",
         # "Final concentration",

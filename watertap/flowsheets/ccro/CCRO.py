@@ -906,6 +906,7 @@ def print_results_table(
 
     # ── Summary metrics ─────────────────────────────────────────────
     summary = {}
+    summary["Feed salinity"] = b0.fs.raw_feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].value
     summary["Overall recovery"] = mp.overall_recovery.value
     summary["Total cycle time (s)"] = mp.total_cycle_time.value
     summary["Total filtration time (s)"] = value(mp.total_filtration_time)

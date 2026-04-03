@@ -332,6 +332,9 @@ def get_ccro_recov_data(last_block=19, n_flushing_points=5):
     dm.register_data_key("blocks[0].process.fs.RO.area", "Area", "m^2")
     dm.register_data_key("blocks[0].process.fs.RO.area", "Membrane Area", "m^2")
     dm.register_data_key("blocks[0].process.fs.RO.area", "Total Area", "m^2")
+    dm.register_data_key("blocks[0].process.fs.RO.length", "Membrane Length", "m")
+    dm.register_data_key("blocks[0].process.fs.RO.width", "Membrane Width", "m")
+    dm.register_data_key("blocks[0].process.fs.RO.feed_side.velocity[0.0,0.0]", "Inlet Velocity", "m/s")
     dm.register_data_key(
         "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]",
         "Single Pass Recovery",
@@ -548,6 +551,9 @@ def get_ccro_SEC_data(last_block=19, n_flushing_points=5):
     dm.register_data_key("blocks[0].process.fs.RO.area", "Area", "m^2")
     dm.register_data_key("blocks[0].process.fs.RO.area", "Membrane Area", "m^2")
     dm.register_data_key("blocks[0].process.fs.RO.area", "Total Area", "m^2")
+    dm.register_data_key("blocks[0].process.fs.RO.length", "Membrane Length", "m")
+    dm.register_data_key("blocks[0].process.fs.RO.width", "Membrane Width", "m")
+    dm.register_data_key("blocks[0].process.fs.RO.feed_side.velocity[0.0,0.0]", "Inlet Velocity", "m/s")
     dm.register_data_key(
         "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]",
         "Single Pass Recovery",
@@ -760,6 +766,9 @@ def get_ccro_rr_data(last_block=19, n_flushing_points=5):
     dm.register_data_key("blocks[0].process.fs.RO.area", "Area", "m^2")
     dm.register_data_key("blocks[0].process.fs.RO.area", "Membrane Area", "m^2")
     dm.register_data_key("blocks[0].process.fs.RO.area", "Total Area", "m^2")
+    dm.register_data_key("blocks[0].process.fs.RO.length", "Membrane Length", "m")
+    dm.register_data_key("blocks[0].process.fs.RO.width", "Membrane Width", "m")
+    dm.register_data_key("blocks[0].process.fs.RO.feed_side.velocity[0.0,0.0]", "Inlet Velocity", "cm/s")
     dm.register_data_key(
         "blocks[0].process.fs.RO.recovery_vol_phase[0.0,Liq]",
         "Single Pass Recovery",
