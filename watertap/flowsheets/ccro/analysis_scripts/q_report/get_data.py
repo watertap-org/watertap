@@ -555,20 +555,20 @@ def get_ccro_SEC_data(last_block=19, n_flushing_points=5):
     )
 
     dm.register_data_key(
-        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        f"blocks[{last_block + n_flushing_points}].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
         "Inlet concentration",
         "g/L",
     )
     dm.register_data_key(
-        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+        f"blocks[{last_block + n_flushing_points}].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
         "Initial concentration",
         "g/L",
     )
-    dm.register_data_key(
-        f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
-        "Initial concentration",
-        "g/L",
-    )
+    # dm.register_data_key(
+    #     f"blocks[0].process.fs.RO.feed_side.properties[0.0,0.0].conc_mass_phase_comp[Liq,NaCl]",
+    #     "Initial concentration",
+    #     "g/L",
+    # )
     dm.register_data_key(
         f"blocks[0].process.fs.P1.control_volume.properties_out[0.0].pressure",
         "Initial Pressure",

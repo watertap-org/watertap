@@ -84,6 +84,7 @@ yticks_dict = {
         "Final Pressure": [0, 25, 50, 75, 100],
         "Recycle loop concentration": [0, 30, 60, 90],
         "Flushing efficiency": [0, 25, 50, 75, 100],
+        "Total cycle time": [0, 5, 10, 15, 20]
     },
     "Seawater": {
         "LCOW": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
@@ -102,7 +103,8 @@ yticks_dict = {
         "Pump work": [0, 2, 4, 6, 8, 10],
         "Pump size": [0, 4, 8, 12, 16],
         "Area": [0, 75, 150, 225, 300],
-        "Membrane Area": [0, 75, 150, 225, 300],
+        # "Membrane Area": [0, 75, 150, 225, 300],
+        "Membrane Area": [0, 150, 300, 450],
         "Pressure": [0, 40, 80, 120],
         ("costing", "total", "LCOW_opex"): [0, 0.2, 0.4, 0.6],
         ("costing", "total", "LCOW_capex"): [0, 0.2, 0.4, 0.6],
@@ -121,6 +123,7 @@ yticks_dict = {
         "Final Pressure": [0, 40, 80, 120],
         "Recycle loop concentration": [0, 30, 60, 90, 120],
         "Flushing efficiency": [0, 25, 50, 75, 100],
+        "Total cycle time": [0, 5, 10, 15, 20]
     },
     "Produced water": {
         "LCOW": [
@@ -144,7 +147,8 @@ yticks_dict = {
         "Pump work": [0, 4, 8, 12, 16, 20],
         "Pump size": [0, 5, 10, 15, 20, 25],
         "Area": [0, 40, 80, 120, 160],
-        "Membrane Area": [0, 40, 80, 120, 160, 200],
+        # "Membrane Area": [0, 40, 80, 120, 160, 200],
+        "Membrane Area": [0, 200, 400, 600],
         "Pressure": [0, 50, 100, 150, 200],
         "Inlet concentration": [0, 40, 80, 120, 160],
         "Initial concentration": [0, 40, 80, 120, 160],
@@ -155,15 +159,23 @@ yticks_dict = {
         "CAPEX LCOW Fraction": [0, 0.15, 0.3, 0.45, 0.6],
         "Specific Membrane Area": [0, 0.02, 0.04, 0.06, 0.08, 0.1],
         "Single Pass Recovery": [0, 15, 30, 45, 60],
-        "Ramp rate": [0, 20, 40, 60],
+        # "Ramp rate": [0, 5, 10, 15, 20],
+        "Ramp rate": [0, 15, 30, 45, 60],
         "Recycle ratio": [0, 5, 10, 15, 20, 25],
         "Recycle rate": [0, 5, 10, 15, 20, 25],
         "Cycle time ratio": [0, 25, 50, 75, 100],
-        "Final concentration": [0, 40, 80, 120, 160],
+        "Final concentration": [0, 60, 120, 180, 240],
         "Final Pressure": [0, 50, 100, 150, 200],
         "Recycle loop concentration": [0, 40, 80, 120, 160, 200],
         "Flushing efficiency": [0, 25, 50, 75, 100],
+        "Total cycle time": [0, 5, 10, 15, 20]
     },
+}
+
+ss_ro_case = {
+    "Brackish water": {"add_erd": "False", "config": "2_stage_1_pump"},
+    "Seawater": {"add_erd": "True", "config": "2_stage_1_pump"},
+    "Produced water": {"add_erd": "True", "config": "2_stage_2_pump"},
 }
 
 
@@ -179,16 +191,24 @@ xticks_dict = {
     },
 }
 
-line_colors = [
-    # "#a6cee3",
+line_colors1 = [
     "#1f78b4",
-    # "#b2df8a",
+    "#a6cee3",
     "#33a02c",
-    # "#fb9a99",
+    "#b2df8a",
     "#e31a1c",
-    # "#fdbf6f",
+    "#fb9a99",
     "#ff7f00",
-    # "#cab2d6",
+    "#fdbf6f",
+    "#6a3d9a",
+    "#cab2d6",
+    "k",
+]
+line_colors2 = [
+    "#1f78b4",
+    "#33a02c",
+    "#e31a1c",
+    "#ff7f00",
     "#6a3d9a",
     "k",
 ]
@@ -202,7 +222,7 @@ units = [
     "Stage 2",
 ]
 
-color_dict = dict(zip(units, line_colors))
+color_dict = dict(zip(units, line_colors1))
 
 
 def panel_3_by_2_stack(fraction=False):
@@ -418,6 +438,7 @@ def plot_ccro_line(
         }
 
     fig.set_axis(**axis_options)
+    fig.get_axis(ax_idx).grid(visible=True, which="both", axis="both", linestyle="--", linewidth=0.5)
 
     # fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_CCRO")
 
@@ -426,8 +447,9 @@ def plot_ccro_line(
 
 def plot_ss_line(
     dm,
-    add_erd="False",
-    stage_sim_cases="2_stage_1_pump",
+    # add_erd="False",
+    # stage_sim_cases="2_stage_1_pump",
+    ro_args=None,
     fig=None,
     ax_idx=0,
     water_case="Brackish water",
@@ -453,10 +475,13 @@ def plot_ss_line(
     if leg_labels == []:
         leg_labels = [water_case]
 
-    ro_args = [("add_erd", add_erd), ("stage_sim_cases", stage_sim_cases)]
+    if ro_args is None:
+        ro_args = [
+            ("add_erd", ss_ro_case[water_case]["add_erd"]),
+            ("stage_sim_cases", ss_ro_case[water_case]["config"]),
+        ]
 
     if plot_by_stage:
-        # for stage in [1, 2]:
         fig.plot_line(
             dm[water_case, *ro_args, xcol],
             dm[water_case, *ro_args, ("RO 1", ycol)],
@@ -487,20 +512,103 @@ def plot_ss_line(
         }
 
     fig.set_axis(**axis_options)
-
-    # make_legend
+    fig.get_axis(ax_idx).grid(visible=True, which="both", axis="both", linestyle="--", linewidth=0.5)
 
     # fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_SS")
 
     return fig
 
 
+def plot_ccro_ss_line(
+    dm_ccro,
+    dm_ss,
+    fig=None,
+    ax_idx=0,
+    water_case="Brackish water",
+    xcol="Water recovery",
+    ycol="LCOW",
+    ro_args=None,
+    plot_by_stage=False,
+    plot_options={},
+    plot2_options={},
+    axis_options={},
+    leg_labels=[],
+):
 
-def make_legend(fig, ax_idx=0, labels=[], leg_kwargs={}):
-    ax = fig.get_axis(ax_idx)
-    lines = ax.lines
+    if fig is None:
+        init_figure = {
+            "width": 2,
+            "height": 2,
+            "nrows": 1,
+            "ncols": 1,
+        }
+
+        fig = FigureGenerator()
+        fig.init_figure(**init_figure)
+
+    if ro_args is None:
+        ro_args = [
+            ("add_erd", ss_ro_case[water_case]["add_erd"]),
+            ("stage_sim_cases", ss_ro_case[water_case]["config"]),
+        ]
+
+    fig = plot_ccro_line(
+        dm_ccro,
+        fig=fig,
+        water_case=water_case,
+        xcol=xcol,
+        ycol=ycol,
+        ax_idx=ax_idx,
+        plot_options=plot_options,
+        axis_options={},
+    )
+
+    plot_options["color"] = next(colors)
+
+    fig = plot_ss_line(
+        dm_ss,
+        fig=fig,
+        ro_args=ro_args,
+        water_case=water_case,
+        xcol=xcol,
+        ycol=ycol,
+        ax_idx=ax_idx,
+        plot_by_stage=plot_by_stage,
+        plot_options=plot_options,
+        plot2_options=plot2_options,
+        axis_options={},
+    )
+
+    if axis_options == {}:
+        axis_options = {
+            "xlabel": label_dict.get(xcol, None),
+            "ylabel": label_dict.get(ycol, None),
+            "xticks": xticks_dict[water_case].get(xcol, None),
+            "yticks": yticks_dict[water_case].get(ycol, None),
+            "ax_idx": ax_idx,
+        }
+
+    fig.set_axis(**axis_options)
+
+    if leg_labels:
+        make_legend(fig, ax_idx=ax_idx, labels=leg_labels)
+
+    # fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_CCRO_SS")
+
+    return fig
+
+
+def make_legend(fig, ax_idx=None, labels=[], leg_kwargs={}):
+    if ax_idx is None:
+        lines = list()
+        for ax in fig.ax:
+            lines.extend(ax.lines)
+        fig.fig.legend(lines, labels, frameon=False, **leg_kwargs)
+    else:
+        ax = fig.get_axis(ax_idx)
+        lines = ax.lines
     # print(*lines)
-    ax.legend([*lines], labels, frameon=False, **leg_kwargs)
+        ax.legend([*lines], labels, frameon=False, **leg_kwargs)
 
 
 if __name__ == "__main__":
@@ -510,54 +618,157 @@ if __name__ == "__main__":
     # dm_sec = gd.get_ccro_SEC_data()
     dm_rr = gd.get_ccro_rr_data()
 
-    colors = itertools.cycle(line_colors)
+    colors = itertools.cycle(line_colors1)
+
     plot_options = {
         "marker": "o",
-        "markersize": 5,
+        "markersize": 2.5,
         "linestyle": "-",
-        "color": next(colors),
-
-    }
-    # plot2_options = {
-    #     "marker": "o",
-    #     "markersize": 5,
-    #     "linestyle": "-",
-    #     "color": next(colors),
-
-    # }
-    xcol = "Water recovery"
-    ycol = "LCOW"
-    init_figure = {
-        "width": 2,
-        "height": 2,
-        "nrows": 1,
-        "ncols": 1,
+        # "color": next(colors),
     }
 
+    dim = 2
+    nrows = 1
+    ncol = 3
+    w = dim * ncol
+    h = dim * nrows
+
+    init_fig = {
+        "width": w,
+        "height": h,
+        "nrows": nrows,
+        "ncols": ncol,
+    }
     fig = FigureGenerator()
-    fig.init_figure(**init_figure)
-    for case in cases:
-        fig = plot_ss_line(dm_ss, water_case=case, fig=fig, xcol=xcol, ycol=ycol, plot_by_stage=False, plot_options=plot_options, )
-        plot_options["color"] = next(colors)
-        fig.show()
-    make_legend(fig, labels=cases)
-    fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_SS")
+    # fig.init_figure(**init_fig)
 
-    # ycol = "Flux"
-    # fig = plot_ss_line(dm_ss, xcol=xcol, ycol=ycol, plot_by_stage=True, plot_options=plot_options, plot2_options=plot2_options)
-    # make_legend(fig, labels=["Stage 1", "Stage 2"])
-    # fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_SS")
-    # plot_ss_line(dm_ss, plot_by_stage=False)
+    ycol = "LCOW"
+    xcol = "Recycle rate"
+    dm = dm_rr
 
-    # ycols = ["LCOW", "SEC", "Flushing efficiency", "Membrane Area", "Flux", "Pump work"]
+    ycols = [
+        # "OPEX LCOW Fraction",
+        # "Single Pass Recovery",
+        # "LCOW",
+        # "SEC",
+        # "Flushing efficiency",
+        "Membrane Area",
+        # "Flux",
+        # "Pump work",
+        "Ramp rate",
+        "Total cycle time"
+        # "Recycle ratio",
+        # "Cycle time ratio",
+        # "Recycle loop concentration",
+        # "Initial concentration",
+        # "Final concentration",
+        # "Final Pressure",
+    ]
+
+    for ycol in ycols:
+
+        # colors = itertools.cycle(line_colors1)
+        colors = itertools.cycle(line_colors2)
+        init_fig = {
+            "width": w,
+            "height": h,
+            "nrows": nrows,
+            "ncols": ncol,
+        }
+        fig = FigureGenerator()
+        fig.init_figure(**init_fig)
+
+        for i, water_case in enumerate(cases):
+            plot_options["color"] = next(colors)
+            # fig = plot_ccro_ss_line(
+            #     dm_recov,
+            #     dm_ss,
+            #     xcol=xcol,
+            #     ycol=ycol,
+            #     fig=fig,
+            #     water_case=water_case,
+            #     ax_idx=i,
+            #     plot_options=plot_options,
+            # )
+            fig = plot_ccro_line(
+                dm, 
+                xcol=xcol,
+                ycol=ycol,
+                fig=fig,
+                water_case=water_case,
+                ax_idx=i,
+                plot_options=plot_options,
+            )
+
+        # leg_labels = ["BW CCRO", "BW SS", "SW CCRO", "SW SS", "PW CCRO", "PW SS"]
+        leg_labels = ["BW CCRO", "SW CCRO",  "PW CCRO", ]
+
+        make_legend(
+            fig,
+            labels=leg_labels,
+            leg_kwargs={
+                "ncol": 3,
+                "fontsize": 10,
+                "loc": "upper center",
+                "bbox_to_anchor": (0.5, 1.13),
+            },
+        )
+
+        fig.fig.tight_layout()
+
+        fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_CCRO")
+        # fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_CCRO_SS")
+
+    fig.show()
+
+    # # colors = itertools.cycle(line_colors)
+
+    # # plot2_options = {
+    # #     "marker": "o",
+    # #     "markersize": 5,
+    # #     "linestyle": "-",
+    # #     "color": next(colors),
+
+    # # }
+    # xcol = "Water recovery"
+    # ycol = "LCOW"
+    # init_figure = {
+    #     "width": 6,
+    #     "height": 2,
+    #     "nrows": 1,
+    #     "ncols": 1,
+    # }
+
+    # fig = FigureGenerator()
+    # fig.init_figure(**init_figure)
+
+    # xcol = "Recycle rate"
+    # xcol = "Water recovery"
+    # ycols = [
+    #     # "LCOW",
+    #     # "SEC",
+    #     # "Flushing efficiency",
+    #     # "Membrane Area",
+    #     # "Flux",
+    #     # "Pump work",
+    #     "Ramp rate",
+    #     "Total cycle time"
+    #     # "Recycle ratio",
+    #     # "Cycle time ratio",
+    #     # "Recycle loop concentration",
+    #     # "Initial concentration",
+    #     # "Final concentration",
+    #     # "Final Pressure",
+    # ]
     # plot_options = {
     #     "marker": "o",
     #     "markersize": 5,
     #     "linestyle": "-",
+    #     # "color": next(colors),
     # }
-
-    # xcol = "Water recovery"
-    # dm = dm_rr
+    # # xcol = "Water recovery"
+    # # dm = dm_rr
+    # dm_dict = {"Water recovery": dm_recov, "Recycle rate": dm_rr}
 
     # for ycol in ycols:
     #     # for dm, xcol in [(dm_recov, "Water recovery"), (dm_rr, "Recycle rate")]:
@@ -565,11 +776,11 @@ if __name__ == "__main__":
     #     for i, case in enumerate(cases):
     #         color = next(colors)
     #         plot_options["color"] = color
-    #         print(ycol, case, color)
+    #         # print(ycol, case, color)
     #         if i == 0:
     #             fig = plot_ccro_line(
-    #                 dm,
-    #                 fig=None,
+    #                 dm_dict[xcol],
+    #                 fig=fig,
     #                 water_case=case,
     #                 xcol=xcol,
     #                 ycol=ycol,
@@ -577,13 +788,106 @@ if __name__ == "__main__":
     #             )
     #         else:
     #             fig = plot_ccro_line(
-    #                 dm,
+    #                 dm_dict[xcol],
     #                 fig=fig,
     #                 water_case=case,
     #                 xcol=xcol,
     #                 ycol=ycol,
     #                 plot_options=plot_options,
     #             )
+    #     # if ycol == "Membrane Area":
+    #     if ycol == "Ramp rate":
+    #         fig.set_axis(
+    #             xlabel=label_dict.get(xcol, None),
+    #             ylabel=label_dict.get(ycol, None),
+    #             # xticks=xticks_dict[case].get(xcol, None),
+    #             xticks=[0, 20, 40, 60, 80, 100],
+    #             # yticks=[0, 150, 300, 450, 600],
+    #             yticks=[0, 20, 40, 60],
+    #             # ax_idx=(1, 0),
+    #         )
+    #     make_legend(fig, labels=cases)
+    #     fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_CCRO")
 
-            # fig.show()
-        # break
+    #     xcol = "Recycle rate"
+    #     for xcol in ["Water recovery", "Recycle rate"]:
+    #         # ycol = "Initial concentration"
+    #         for ycol in ["Initial concentration", "Ramp rate"]:
+    #             init_figure = {
+    #                 "width": 6,
+    #                 "height": 2,
+    #                 "nrows": 1,
+    #                 "ncols": 3,
+    #             }
+    #             fig = FigureGenerator()
+    #             fig.init_figure(**init_figure)
+    #             colors = itertools.cycle(line_colors)
+    #             for i, (case, tds) in enumerate(zip(cases, [5, 35, 75])):
+
+    #                 plot_options = {
+    #                     "marker": "o",
+    #                     "markersize": 3,
+    #                     "linestyle": "-",
+    #                 }
+    #                 if ycol == "Initial concentration":
+    #                     plot_options["color"] = line_colors[0]
+    #                     # ax_idx = 0
+    #                     fig = plot_ccro_line(
+    #                         dm_dict[xcol],
+    #                         fig=fig,
+    #                         water_case=case,
+    #                         xcol=xcol,
+    #                         ycol=ycol,
+    #                         ax_idx=i,
+    #                         plot_options=plot_options,
+    #                     )
+    #                     plot_options["color"] = line_colors[1]
+    #                     fig.plot_line(
+    #                         dm_dict[xcol][case, xcol],
+    #                         dm_dict[xcol][case, "Final concentration"],
+    #                         ax_idx=i,
+    #                         **plot_options,
+    #                     )
+    #                     plot_options["color"] = "k"
+    #                     plot_options["marker"] = None
+    #                     plot_options["ls"] = ":"
+
+    #                     fig.plot_line(
+    #                         dm_dict[xcol][case, xcol],
+    #                         [tds for _ in dm_dict[xcol][case, xcol].data],
+    #                         ax_idx=i,
+    #                         **plot_options,
+    #                     )
+    #                     fig.set_axis(
+    #                         xlabel=label_dict.get(xcol, None),
+    #                         ylabel="Loop Conc (g/L)",
+    #                         xticks=xticks_dict[case].get(xcol, None),
+    #                         yticks=yticks_dict[case].get("Final concentration", None),
+    #                         ax_idx=i,
+    #                     )
+    #                 # ax_idx += 1
+
+    #                     make_legend(
+    #                         fig,
+    #                         ax_idx=0,
+    #                         labels=["Initial conc", "Final conc", "Feed TDS"],
+    #                     )
+    #                     fig.save_fig(name=f"{here}/figs/Loop_concentration_vs_{xcol}_line_plot_CCRO")
+    #                 else:
+    #                     plot_options["color"] = next(colors)
+    #                     # ax_idx = 0
+    #                     fig = plot_ccro_line(
+    #                         dm_dict[xcol],
+    #                         fig=fig,
+    #                         water_case=case,
+    #                         xcol=xcol,
+    #                         ycol=ycol,
+    #                         ax_idx=i,
+    #                         plot_options=plot_options,
+    #                     )
+    #                     # make_legend
+    #                     # fig.show()
+    #                     fig.save_fig(name=f"{here}/figs/{ycol}_vs_{xcol}_line_plot_CCRO")
+    #                     pass
+    #         # fig.fig.tight_layout()
+    #         # fig.show()
