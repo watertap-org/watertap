@@ -13,8 +13,17 @@
 import pytest
 
 from pyomo.environ import ConcreteModel, Param, Var, units
+from idaes.core import FlowsheetBlock
+from idaes.models.unit_models import (
+    Feed,
+    Product,
+)
 
-from watertap.core.util.misc import is_constant_up_to_units
+from watertap.core.util.misc import is_constant_up_to_units, list_ports
+from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
+from watertap.unit_models.reverse_osmosis_0D import (
+    ReverseOsmosis0D,
+)
 
 
 @pytest.mark.unit
@@ -89,3 +98,62 @@ def test_is_constant_up_to_units():
     assert not is_constant_up_to_units(
         (1 / m.mutable_param_units) * m.fixed_variable_units * 42.0 * units.m**2
     )
+
+
+@pytest.fixture
+def feed_unit():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = SeawaterParameterBlock()
+    m.fs.feed = Feed(property_package=m.fs.properties)
+    return m
+
+
+@pytest.mark.unit
+def test_feed_ports_summary(feed_unit, capsys):
+    list_ports(feed_unit.fs.feed)
+    captured = capsys.readouterr()
+    assert "The outlet port is fs.feed.outlet" in captured.out
+
+
+@pytest.mark.unit
+def test_ports_type_error(feed_unit, capsys):
+    with pytest.raises(
+        TypeError,
+        match="Expected a UnitModelBlockData instance, but got '_ScalarSeawaterParameterBlock'.",
+    ):
+        list_ports(feed_unit.fs.properties)
+
+
+@pytest.fixture
+def product_unit():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = SeawaterParameterBlock()
+    m.fs.product = Product(property_package=m.fs.properties)
+    return m
+
+
+@pytest.mark.unit
+def test_product_ports_summary(product_unit, capsys):
+    list_ports(product_unit.fs.product)
+    captured = capsys.readouterr()
+    assert "The inlet port is fs.product.inlet" in captured.out
+
+
+@pytest.fixture
+def ro_unit():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = SeawaterParameterBlock()
+    m.fs.ro = ReverseOsmosis0D(property_package=m.fs.properties)
+    return m
+
+
+@pytest.mark.unit
+def test_ro_ports_summary(ro_unit, capsys):
+    list_ports(ro_unit.fs.ro)
+    captured = capsys.readouterr()
+    assert "The inlet port is fs.ro.inlet" in captured.out
+    assert "The retentate port is fs.ro.retentate" in captured.out
+    assert "The permeate port is fs.ro.permeate" in captured.out

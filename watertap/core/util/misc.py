@@ -13,6 +13,9 @@
 from pyomo.environ import exp
 from pyomo.core.expr.visitor import identify_variables, identify_mutable_parameters
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.network import Port
+
+from idaes.core import UnitModelBlockData
 
 
 def is_constant_up_to_units(expr):
@@ -44,3 +47,26 @@ def smooth_heaviside(x, k):
     """
     function = 1 / (1 + exp(-k * x))
     return function
+
+
+def list_ports(unit):
+    """
+    Lists all the inlet and outlet ports on a unit model
+    Args:
+        unit : a unit model block (e.g., m.fs.ro)
+
+    Returns:
+        ports : dictionary mapping the port name to the port object
+    """
+    if not isinstance(unit, UnitModelBlockData):
+        raise TypeError(
+            f"Expected a UnitModelBlockData instance, but "
+            f"got {type(unit).__name__!r}."
+        )
+
+    ports = dict(unit.component_map(Port))
+
+    for name, port in ports.items():
+        print(f" The {name} port is {port}")
+
+    return ports
