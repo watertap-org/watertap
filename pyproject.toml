@@ -90,6 +90,9 @@ dev = [
     # docs
     "sphinx==7.1.*",
     "sphinx_rtd_theme",
+
+    # include all optional dependencies 
+    "watertap[testing,notebooks,oli_api,reaktoro]",
 ]
 
 all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
