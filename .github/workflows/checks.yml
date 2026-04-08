@@ -102,6 +102,8 @@ jobs:
         miniforge-version: latest
         environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
+    - name: Install pytest-xdist
+      run: pip install pytest-xdist
     - name: Display installed packages
       run: |
         echo '::group::Display installed packages'
@@ -155,6 +157,8 @@ jobs:
           miniforge-version: latest
           environment-file: environment.locked.yml
           # no python-version: env file owns it (python=3.12.13)
+      - name: Install pytest-xdist
+        run: pip install pytest-xdist
       - name: Display installed packages
         run: |
           echo '::group::Display installed packages'
@@ -245,7 +249,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::pip install'
-        pip install "watertap[reaktoro] @ ${_install_url}" pytest
+        pip install "watertap[reaktoro] @ ${_install_url}" pytest pytest-xdist
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -308,5 +312,7 @@ jobs:
         python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
         jupyter kernelspec list
     - name: Run pytest with nbmake
+      env:
+        PYTEST_ADDOPTS: "--color=yes -p no:xdist"
       run: |
         pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
