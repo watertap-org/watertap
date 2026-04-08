@@ -100,8 +100,11 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-version: latest
-        environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
+        activate-environment: watertap-reaktoro
+    - name: Populate conda environment
+      run: |
+        conda env update --name watertap-reaktoro --file environment.yml
     - name: Install pytest-xdist
       run: pip install pytest-xdist
     - name: Display installed packages
@@ -155,8 +158,10 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          environment-file: environment.locked.yml
-          # no python-version: env file owns it (python=3.12.13)
+          activate-environment: watertap-reaktoro 
+      - name: Populate conda environment from locked file
+        run: |
+          conda env update --name watertap-reaktoro --file environment.locked.yml
       - name: Install pytest-xdist
         run: pip install pytest-xdist
       - name: Display installed packages
