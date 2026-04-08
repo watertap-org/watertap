@@ -39,14 +39,13 @@ dependencies:
   - pip=26.0.1
   - setuptools=82.0.1
   - wheel=0.46.3
-  - python_abi=3.12
 
   # --- Linear algebra (conda for binary compatibility) ---
   - libblas=3.11.0
   - libcblas=3.11.0
   - liblapack=3.11.0
 
-  # --- Safe to pin cross-platform pure Python / stable C deps ---
+  # --- Stable cross-platform pure Python / C deps ---
   - asttokens=3.0.1
   - attrs=26.1.0
   - comm=0.2.3
@@ -71,7 +70,7 @@ dependencies:
   - nbformat=5.10.4
   - nest-asyncio=1.6.0
   - packaging=26.0
-  - pandoc              # unpinned — varies per platform
+  - pandoc              # unpinned — binary varies per platform
   - parso=0.8.6
   - platformdirs=4.9.4
   - plotly=6.6.0
@@ -165,8 +164,7 @@ dependencies:
     - webencodings==0.5.1
     - websocket-client==1.9.0
     - widgetsnbextension==4.0.15
-
-    # --- Jupyter ---
+# --- Jupyter ---
     - jupyter==1.1.1
     - jupyter-console==6.6.3
     - jupyter-events==0.12.0
@@ -192,12 +190,11 @@ dependencies:
     - parameter-sweep==0.2.0
     - watertap-solvers==24.12.9
 
-    # --- dev extras (pinned to match pyproject.toml [dev]) ---
+    # --- dev extras ---
     - black==26.3.1
     - pre-commit==4.5.1
     - cfgv==3.5.0
     - distlib==0.4.0
-    - filelock==3.25.2
     - identify==2.6.18
     - nodeenv==1.10.0
     - virtualenv==21.2.0
@@ -208,7 +205,6 @@ dependencies:
     - mccabe==0.7.0
     - mypy-extensions==1.1.0
     - pathspec==1.0.4
-    - tomlkit==0.14.0
 
     # --- testing extras ---
     - pytest==9.0.3
