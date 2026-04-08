@@ -35,7 +35,6 @@ jobs:
 
   code-formatting:
     name: Check code is formatted (Black)
-    # OS and/or Python version don't make a difference, so we choose ubuntu and 3.8 as defaults
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,10 +43,10 @@ jobs:
           python-version: '3.11'
       - name: Install Black
         # unlike the other jobs, we don't need to install WaterTAP and/or all the dev dependencies,
-        # but we still want to specify the Black version to use in requirements-dev.txt for local development
+        # but we still want to specify the Black version to use in pyproject.toml for local development
         # so we extract the relevant line and pass it to a simple `pip install`
         run: |
-          black_requirement="$(grep '^black==' requirements-dev.txt)"
+          black_requirement="$(grep 'black==' pyproject.toml | tr -d ' ",')"
           pip --no-cache-dir install "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
@@ -64,14 +63,15 @@ jobs:
           python-version: '3.11'
       - name: Install dev dependencies
         run: |
-          pip install -r requirements-dev.txt
+          pip install -e ".[dev]"
           pip list
       - name: Run pylint
         run: |
           pylint watertap
 
+  # flexible env file— tests across multiple python versions and platforms
   tests:
-    name: Tests (conda env:${{ matrix.os }})
+    name: Tests - flexible conda env:(${{ matrix.os }}/py${{ matrix.python-version }})
     runs-on: ${{ matrix.os-version }}
     needs: [code-formatting]
     strategy:
@@ -98,15 +98,14 @@ jobs:
             coverage: true
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up conda environment (flexible)
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-version: latest
-        environment-file: environment.yml
-    - name: Install dependencies
+        environment-file: environment.yml        # loose file
+        python-version: ${{ matrix.python-version }}
+    - name: Display installed packages
       run: |
-        echo 'install python =${{ matrix.python-version }}'
-          conda install python=${{ matrix.python-version }} --quiet --yes
         echo '::group::Display installed packages'
         conda list
         pip list
@@ -139,6 +138,46 @@ jobs:
       if: 'false'
       run: |
         make -C docs linkcheck -d
+    
+  # fixed env — single python version, validates reproducibility
+  tests-locked:
+    name: Tests - fixed conda env:(${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-22.04 # todo: see if ubuntu can be updated to latest
+          - os: win64
+            os-version: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up conda environment (locked)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          environment-file: environment.locked.yml  # locked file
+      - name: Display installed packages
+        run: |
+          echo '::group::Display installed packages'
+          conda list
+          pip list
+          pip show idaes-pse
+          echo '::endgroup::'
+          echo '::group::Output of "idaes get-extensions" command'
+          idaes get-extensions --extra petsc --verbose
+          echo '::endgroup::'
+      - name: Test with pytest
+        run: |
+          pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets
+      - name: Test documentation code
+        run: |
+          make -C docs doctest -d
 
   upload-coverage:
     name: Upload coverage report (Codecov)
@@ -201,7 +240,7 @@ jobs:
       env:
         _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
         _ref_to_install: ${{ github.event.pull_request.head.sha }}
-      run:
+      run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
     - name: Install watertap and testing dependencies
       run: |
@@ -240,19 +279,18 @@ jobs:
             os-version: windows-2022
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up conda environment
       uses: conda-incubator/setup-miniconda@v3
       with:
-        activate-environment: watertap-dev
+        miniforge-version: latest
+        environment-file: environment.yml        # loose, has jupyter/ipykernel via .[dev]
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+    - name: Install pandoc
+      # pandoc is not a pip package so still needs conda
       run: |
-        echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip setuptools wheel pandoc
-        echo '::endgroup::'
-        echo '::group::Output of "pip install" commands'
-        pip install -r requirements-dev.txt
-        echo '::endgroup::'
+        conda install --quiet --yes pandoc
+    - name: Display installed packages
+      run: |
         echo '::group::Display installed packages'
         conda list
         pip list
@@ -266,7 +304,6 @@ jobs:
         jupyter kernelspec list
         python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
         jupyter kernelspec list
-
     - name: Run pytest with nbmake
       run: |
         pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
