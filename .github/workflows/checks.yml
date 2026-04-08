@@ -58,20 +58,19 @@ jobs:
     needs: [code-formatting]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.11'
-      - name: Install dev dependencies
+          activate-environment: watertap-reaktoro
+          miniforge-version: latest
+      - name: Create conda environment
         run: |
-          pip install -e ".[dev]"
-          pip list
+          conda env update --name watertap-reaktoro --file environment.yml
       - name: Run pylint
         run: |
           pylint watertap
 
-  # flexible env file— tests across multiple python versions and platforms
   tests:
-    name: Tests - flexible conda env:(${{ matrix.os }}/py${{ matrix.python-version }})
+    name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     needs: [code-formatting]
     strategy:
@@ -85,7 +84,6 @@ jobs:
         os:
           - linux
           - win64
-          # - macos
         include:
           - os: linux
             os-version: ubuntu-22.04
@@ -102,7 +100,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-version: latest
-        environment-file: environment.yml        # loose file
+        environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
     - name: Display installed packages
       run: |
@@ -111,18 +109,19 @@ jobs:
         pip list
         pip show idaes-pse
         echo '::endgroup::'
-        echo '::group::Output of "idaes get-extensions" command'
+    - name: Fetch IDAES extensions
+      run: |
+        echo '::group::idaes get-extensions'
         idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
-    - name: Add coverage report pytest options
+    - name: Add coverage pytest options
       if: matrix.coverage
-      run:
-        |
+      run: |
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> $GITHUB_ENV
     - name: Test with pytest
       run: |
         pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets
-    - name: Upload coverage report as job artifact
+    - name: Upload coverage report
       if: matrix.coverage
       uses: actions/upload-artifact@v4
       with:
@@ -132,16 +131,9 @@ jobs:
     - name: Test documentation code
       run: |
         make -C docs doctest -d
-    # TODO: this should be moved to a dedicated job/workflow
-    # until then, we can leave this here as a reminder
-    - name: Test documentation links
-      if: 'false'
-      run: |
-        make -C docs linkcheck -d
-    
-  # fixed env — single python version, validates reproducibility
+
   tests-locked:
-    name: Tests - fixed conda env:(${{ matrix.os }})
+    name: Tests - locked conda env (${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     needs: [code-formatting]
     strategy:
@@ -152,7 +144,7 @@ jobs:
           - win64
         include:
           - os: linux
-            os-version: ubuntu-22.04 # todo: see if ubuntu can be updated to latest
+            os-version: ubuntu-22.04
           - os: win64
             os-version: windows-2022
     steps:
@@ -161,7 +153,8 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          environment-file: environment.locked.yml  # locked file
+          environment-file: environment.locked.yml
+          # no python-version: env file owns it (python=3.12.13)
       - name: Display installed packages
         run: |
           echo '::group::Display installed packages'
@@ -169,7 +162,9 @@ jobs:
           pip list
           pip show idaes-pse
           echo '::endgroup::'
-          echo '::group::Output of "idaes get-extensions" command'
+      - name: Fetch IDAES extensions
+        run: |
+          echo '::group::idaes get-extensions'
           idaes get-extensions --extra petsc --verbose
           echo '::endgroup::'
       - name: Test with pytest
@@ -184,7 +179,6 @@ jobs:
     needs: [tests]
     runs-on: ubuntu-latest
     steps:
-      # the checkout step is needed to have access to codecov.yml
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
@@ -224,11 +218,12 @@ jobs:
           - os: win64
             os-version: windows-2022
     steps:
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up conda with Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v3
       with:
         activate-environment: watertap
         python-version: ${{ matrix.python-version }}
+        miniforge-version: latest
     - name: Define install URL (default)
       env:
         _repo_full_name: watertap-org/watertap
@@ -242,17 +237,24 @@ jobs:
         _ref_to_install: ${{ github.event.pull_request.head.sha }}
       run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Install conda-only native deps
+      run: |
+        echo '::group::conda install native deps'
+        conda install --quiet --yes -c conda-forge cyipopt reaktoro autodiff chemicalfun optima phreeqc4rkt reaktplot thermofun
+        echo '::endgroup::'
     - name: Install watertap and testing dependencies
       run: |
-        echo '::group::Output of "pip install" commands'
-        pip install "watertap @ ${_install_url}" pytest
+        echo '::group::pip install'
+        pip install "watertap[reaktoro] @ ${_install_url}" pytest
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
         pip list
         pip show idaes-pse
         echo '::endgroup::'
-        echo '::group::Output of "idaes get-extensions" command'
+    - name: Fetch IDAES extensions
+      run: |
+        echo '::group::idaes get-extensions'
         idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
     - name: Run pytest
@@ -279,24 +281,25 @@ jobs:
             os-version: windows-2022
     steps:
     - uses: actions/checkout@v4
-    - name: Set up conda environment
+    - name: Set up conda with Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-version: latest
-        environment-file: environment.yml        # loose, has jupyter/ipykernel via .[dev]
+        activate-environment: watertap-reaktoro
         python-version: ${{ matrix.python-version }}
-    - name: Install pandoc
-      # pandoc is not a pip package so still needs conda
+        miniforge-version: latest
+    - name: Create conda environment
       run: |
-        conda install --quiet --yes pandoc
-    - name: Display installed packages
-      run: |
+        echo '::group::conda env update'
+        conda env update --name watertap-reaktoro --file environment.yml
+        echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
         pip list
         pip show idaes-pse
         echo '::endgroup::'
-        echo '::group::Output of "idaes get-extensions" command'
+    - name: Fetch IDAES extensions
+      run: |
+        echo '::group::idaes get-extensions'
         idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
     - name: Install Jupyter kernel
