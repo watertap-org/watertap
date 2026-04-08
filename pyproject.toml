@@ -89,6 +89,7 @@ dev = [
 
     # docs
     "sphinx==7.1.*",
+    "nbsphinx",
     "sphinx_rtd_theme",
 
     # include all optional dependencies 
