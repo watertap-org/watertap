@@ -15,25 +15,6 @@ dependencies:
   - reaktplot=0.4.1
   - thermofun=0.6.1
 
-  # --- IPOPT dependencies ---
-  - ampl-asl=1.0.0
-  - metis=5.1.0
-  - mumps-include=5.8.2
-  - mumps-seq=5.8.2
-
-  # --- C++ build dependencies ---
-  - catch2=3.14.0
-  - eigen=5.0.1
-  - fmt=12.1.0
-  - nlohmann_json=3.12.0
-  - pybind11=2.13.6
-  - pybind11-abi=4
-  - pybind11-global=2.13.6
-  - spdlog=1.17.0
-  - tsl_ordered_map=1.1.0
-  - yaml-cpp=0.8.0
-  - multipledispatch=0.6.0
-
   # --- Python + core scientific stack ---
   - python=3.12.13
   - pip=26.0.1
