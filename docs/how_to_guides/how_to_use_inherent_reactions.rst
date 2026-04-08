@@ -56,9 +56,6 @@ be declared as **inherent** and, thus, be a part of this configuration dictionar
     from idaes.models.properties.modular_properties.state_definitions import FTPx
     from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
-    # Importing the object for units from pyomo
-    from pyomo.environ import units as pyunits
-
     # Import the object/function for heat of reaction
     from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 

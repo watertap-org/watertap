@@ -23,8 +23,8 @@ from pyomo.environ import (
     units as pyunits,
     value,
 )
+
 from idaes.core import UnitModelBlockData
-from watertap.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.misc import add_object_reference
@@ -38,12 +38,12 @@ from watertap.core.membrane_channel_base import (
     TransportModel,
     ModuleType,
 )
-
 from watertap.core import InitializationMixin
 from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.osmotically_assisted_reverse_osmosis import (
     cost_osmotically_assisted_reverse_osmosis,
 )
+from watertap.core.solvers import get_solver
 
 
 def _add_has_full_reporting(config_obj):

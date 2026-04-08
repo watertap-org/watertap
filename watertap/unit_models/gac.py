@@ -48,6 +48,7 @@ from watertap.core.solvers import get_solver
 from watertap.core import ControlVolume0DBlock, InitializationMixin
 from watertap.core.util.initialization import interval_initializer
 from watertap.costing.unit_models.gac import cost_gac
+from watertap.core.solvers import get_solver
 
 __author__ = "Hunter Barber"
 

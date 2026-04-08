@@ -21,12 +21,12 @@ Example: Configure the RO model to account for concentration polarization and pr
     from idaes.core import FlowsheetBlock
 
     # Import NaCl property model
-    import watertap.property_models.NaCl_prop_pack as props
+    from watertap.property_models import NaClParameterBlock
 
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     # Add an RO unit to the flowsheet and specify configuration options to calculate effects of
     # concentration polarization and pressure drop.

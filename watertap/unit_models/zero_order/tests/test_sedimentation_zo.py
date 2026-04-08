@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import SedimentationZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -47,7 +47,7 @@ class TestSedimentationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss", "foo"])
 
         m.fs.unit = SedimentationZO(property_package=m.fs.params, database=m.db)
 
@@ -184,7 +184,7 @@ class TestSedimentationZO_phosphorus_capture_tss:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["tss"])
 
         m.fs.unit = SedimentationZO(
             property_package=m.fs.params,
@@ -318,7 +318,7 @@ class TestSedimentationZO_phosphorus_capture_phosphates:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["phosphates"])
+        m.fs.params = ZOParameterBlock(solute_list=["phosphates"])
 
         m.fs.unit = SedimentationZO(
             property_package=m.fs.params,
@@ -455,7 +455,7 @@ class TestSedimentationZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds", "tss"])
 
         m.fs.unit = SedimentationZO(property_package=m.fs.params, database=db)
 
@@ -486,7 +486,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
@@ -521,7 +521,7 @@ def test_costing_phosphorus_capture():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
@@ -557,7 +557,7 @@ def test_costing_phosphorus_capture():
 def test_phosphorus_capture_no_tss_or_phosphate_in_solute_list_error():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["foo"])
+    m.fs.params = ZOParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,
@@ -575,7 +575,7 @@ def test_phosphorus_capture_no_tss_or_phosphate_in_solute_list_error():
 def test_phosphorus_capture_phosphate_tss_in_solute_list_error():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["tss", "phosphates"])
+    m.fs.params = ZOParameterBlock(solute_list=["tss", "phosphates"])
 
     with pytest.raises(
         KeyError,

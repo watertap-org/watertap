@@ -5,7 +5,7 @@ Steam Jet Ejector
 
 .. code-block:: python
 
-   from watertap.unit_models.steam_ejector import SteamEjector
+   from watertap.unit_models import SteamEjector
 
 This Steam Jet Ejector unit model:
    * Simulates the performance of a steam jet ejector for thermal vapor compression.

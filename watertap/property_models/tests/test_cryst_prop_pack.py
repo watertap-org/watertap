@@ -10,11 +10,17 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-import watertap.property_models.unit_specific.cryst_prop_pack as props
+
 from pyomo.environ import ConcreteModel
+
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
+)
+
+from watertap.property_models import (
+    CrystallizerParameterBlock,
+    HeatOfCrystallizationModel,
 )
 from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
@@ -25,21 +31,21 @@ from watertap.property_models.tests.property_test_harness import (
 # -----------------------------------------------------------------------------
 
 
-class TestNaClProperty_idaes(PropertyTestHarness_idaes):
+class TestCrystProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
         self.prop_args = {}
         self.has_density_terms = False
 
 
-class TestDefaultNaClwaterProperty:
+class TestDefaultCrystWaterProperty:
 
     # Create block and stream for running default tests
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.NaClParameterBlock(
-        heat_of_crystallization_model=props.HeatOfCrystallizationModel.constant
+    m.fs.properties = CrystallizerParameterBlock(
+        heat_of_crystallization_model=HeatOfCrystallizationModel.constant
     )
     m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
@@ -152,10 +158,10 @@ class TestDefaultNaClwaterProperty:
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_1(PropertyRegressionTest):
+class TestCrystPropertySolution_1(PropertyRegressionTest):
     # Test pure liquid solution 1 - same solution as NaCl prop pack
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -196,10 +202,10 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_2(PropertyRegressionTest):
+class TestCrystPropertySolution_2(PropertyRegressionTest):
     # Test pure liquid solution 2 - same solution as NaCl prop pack
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -239,10 +245,10 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_3(PropertyRegressionTest):
+class TestCrystPropertySolution_3(PropertyRegressionTest):
     # Test pure liquid solution 3 - same solution as NaCl prop pack
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -284,11 +290,11 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
-class TestNaClPropertySolution_4(PropertyRegressionTest):
+class TestCrystPropertySolution_4(PropertyRegressionTest):
     # Test pure solid solution 1 - check solid properties
     def configure(self):
 
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -322,11 +328,11 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
-class TestNaClPropertySolution_5(PropertyRegressionTest):
+class TestCrystPropertySolution_5(PropertyRegressionTest):
     # Test pure vapor solution 1 - check vapor properties
     def configure(self):
 
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -358,10 +364,10 @@ class TestNaClPropertySolution_5(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_6(PropertyRegressionTest):
+class TestCrystPropertySolution_6(PropertyRegressionTest):
     # Test for S-L-V solution 1 with similar magnitude flowrates in all phases and high liquid salt. conc. - check all properties
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -419,10 +425,10 @@ class TestNaClPropertySolution_6(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_7(PropertyRegressionTest):
+class TestCrystPropertySolution_7(PropertyRegressionTest):
     # Test for S-L-V solution 2 with flowrates in all phases of same magnitude but low liquid salt. conc. - check all properties
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -480,7 +486,7 @@ class TestNaClPropertySolution_7(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_8(PropertyRegressionTest):
+class TestCrystPropertySolution_8(PropertyRegressionTest):
     # Test for S-L-V solution 3 with outlet data from Dutta et al. - proper crystallization system
     # # Dutta recorded properties for solids and liquids at crystallizer temperature:
     # # Solubility @ 55C: 0.27 kg/kg
@@ -491,7 +497,7 @@ class TestNaClPropertySolution_8(PropertyRegressionTest):
     # # Liquid density @ 20 C : 1185 kg/m3
 
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -550,7 +556,7 @@ class TestNaClPropertySolution_8(PropertyRegressionTest):
 
 
 @pytest.mark.component
-class TestNaClPropertySolution_9(PropertyRegressionTest):
+class TestCrystPropertySolution_9(PropertyRegressionTest):
     # Test for S-L-V solution 4 with outlet data from Dutta et al. - proper crystallization system
     # # Dutta recorded properties for solids and liquids at crystallizer temperature:
     # # Solubility @ 55C: 0.27 kg/kg
@@ -561,7 +567,7 @@ class TestNaClPropertySolution_9(PropertyRegressionTest):
     # # Liquid density @ 20 C : 1185 kg/m3
 
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -623,7 +629,7 @@ class TestNaClPropertySolution_9(PropertyRegressionTest):
 class TestNaClCalculateState_1(PropertyCalculateStateTest):
     # Test pure liquid solution with mass fractions
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -654,7 +660,7 @@ class TestNaClCalculateState_1(PropertyCalculateStateTest):
 class TestNaClCalculateState_2(PropertyCalculateStateTest):
     # Test pure liquid with mole fractions
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -684,7 +690,7 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
 class TestNaClCalculateState_3(PropertyCalculateStateTest):
     # Test pure liquid solution with pressure_sat defined instead of temperature
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -717,7 +723,7 @@ class TestNaClCalculateState_4(PropertyCalculateStateTest):
     # Test pure solid solution with mass fractions
     def configure(self):
 
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -747,7 +753,7 @@ class TestNaClCalculateState_4(PropertyCalculateStateTest):
 class TestNaClCalculateState_5(PropertyCalculateStateTest):
     # Test solid-liquid-vapor mixture solution with mass fractions
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {
@@ -777,7 +783,7 @@ class TestNaClCalculateState_5(PropertyCalculateStateTest):
 class TestNaClCalculateState_6(PropertyCalculateStateTest):
     # Test liquid-solid-vapor mixture with mole fractions
     def configure(self):
-        self.prop_pack = props.NaClParameterBlock
+        self.prop_pack = CrystallizerParameterBlock
         self.param_args = {}
 
         self.scaling_args = {

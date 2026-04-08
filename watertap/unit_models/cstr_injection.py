@@ -16,6 +16,8 @@ This is copied from the standard IDAES CSTR with the addition of mass transfer t
 NOTE: This is likely a temporary model until a more detailed model is available.
 """
 
+from enum import Enum, auto
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
@@ -43,10 +45,8 @@ from idaes.core.util.config import (
     is_reaction_parameter_block,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from enum import Enum, auto
 
 from watertap.core import InitializationMixin
-
 from watertap.costing.unit_models.cstr_injection import cost_cstr_injection
 
 __author__ = "Andrew Lee, Adam Atia, Vibhav Dabadghao"

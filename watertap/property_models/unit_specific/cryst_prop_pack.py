@@ -82,8 +82,8 @@ class HeatOfCrystallizationModel(Enum):
     temp_dependent = auto()  # Use temperature-dependent heat of crystallization
 
 
-@declare_process_block_class("NaClParameterBlock")
-class NaClParameterData(PhysicalParameterBlock):
+@declare_process_block_class("CrystallizerParameterBlock")
+class CrystallizerParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare(
@@ -109,7 +109,7 @@ class NaClParameterData(PhysicalParameterBlock):
 
     def build(self):
         super().build()
-        self._state_block_class = NaClStateBlock
+        self._state_block_class = CrystallizerStateBlock
 
         # Component
         self.H2O = Solvent(valid_phase_types=[PT.liquidPhase, PT.vaporPhase])
@@ -866,7 +866,7 @@ class NaClParameterData(PhysicalParameterBlock):
         )
 
 
-class _NaClStateBlock(StateBlock):
+class _CrystallizerStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -1110,11 +1110,13 @@ class _NaClStateBlock(StateBlock):
         return results
 
 
-@declare_process_block_class("NaClStateBlock", block_class=_NaClStateBlock)
-class NaClStateBlockData(StateBlockData):
+@declare_process_block_class(
+    "CrystallizerStateBlock", block_class=_CrystallizerStateBlock
+)
+class CrystallizerStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
-        super(NaClStateBlockData, self).build()
+        super(CrystallizerStateBlockData, self).build()
         self._make_state_vars()
 
     def _make_state_vars(self):
