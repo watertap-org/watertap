@@ -13,17 +13,8 @@
 import pytest
 
 from pyomo.environ import ConcreteModel, Param, Var, units
-from idaes.core import FlowsheetBlock
-from idaes.models.unit_models import (
-    Feed,
-    Product,
-)
 
-from watertap.core.util.misc import is_constant_up_to_units, list_ports
-from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
-)
+from watertap.core.util.misc import is_constant_up_to_units
 
 
 @pytest.mark.unit
