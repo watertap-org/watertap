@@ -44,6 +44,12 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "Oluwamayowa Amusat, Adam Atia"
 
 
+def _none_or_dict(val):
+    if val is None or isinstance(val, dict):
+        return val
+    raise ValueError("solids_mwts must be None or a dictionary")
+
+
 @declare_process_block_class("SurrogateCrystallizer")
 class SurrogateCrystallizerData(UnitModelBlockData):
     """
@@ -135,6 +141,16 @@ see property package for documentation.}""",
         ),
     )
 
+    CONFIG.declare(
+        "solids_mol_wts",
+        ConfigValue(
+            default=None,
+            domain=_none_or_dict,  # only None or dict allowed
+            description="Optional molecular weights for solids in Kg/mol",
+            doc="""Optional list of molecular weights for solids in Kg/mol. Units must be included in definition. If not provided, molecular weights of the solids will be assumed to be accurately computable from the ions.""",
+        ),
+    )
+
     def build(self):
 
         # Call UnitModel.build to setup dynamics
@@ -144,6 +160,12 @@ see property package for documentation.}""",
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.solids_list = Set(initialize=self.config.solids_ions_dict.keys())
+
+        # Check that the solids are the same
+        if self.config.solids_mol_wts:
+            assert set(self.config.solids_ions_dict.keys()) == set(
+                self.config.solids_mol_wts.keys()
+            )
 
         # Add ion in solid ratios as parameters
         dict1 = dict()
@@ -337,12 +359,19 @@ see property package for documentation.}""",
             if j == "H2O":
                 return Constraint.Skip
             else:
+                if b.config.solids_mol_wts:
+                    solid_mol_wt = b.config.solids_mol_wts
+                else:
+                    solid_mol_wt = {
+                        q: sum(
+                            b.mwc[q, j] * b.properties_in[0].params.mw_comp[j]
+                            for j in b.config.property_package.ion_set
+                        )
+                        for q in b.solids_list
+                    }
                 return b.flow_mass_sol_comp_true[j] == sum(
                     (b.mwc[q, j] * b.properties_in[0].params.mw_comp[j])
-                    / sum(
-                        b.mwc[q, j] * b.properties_in[0].params.mw_comp[j]
-                        for j in b.config.property_package.ion_set
-                    )
+                    / solid_mol_wt[q]
                     * b.flow_mass_sol_comp_apparent[q]
                     for q in b.solids_list
                 )
