@@ -11,9 +11,13 @@
 #################################################################################
 
 import pandas as pd
-from pyomo.network import Port
+from pyomo.network import Arc, Port
 from pyomo.environ import Block
 from idaes.core import UnitModelBlockData, FlowsheetBlockData
+
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 def list_ports(block):
@@ -31,8 +35,27 @@ def list_ports(block):
             f"got {type(block).__name__!r}."
         )
 
+    # Finds the flowsheet whether a flowsheet or unit model was passed
+    if isinstance(block, FlowsheetBlockData):
+        flowsheet = block
+    else:
+        flowsheet = block.parent_block()
+
+    port_to_arc = {}
+    for arc in flowsheet.component_objects(Arc):
+        # Assigns the destination to source ports
+        if arc.source.name not in port_to_arc:
+            port_to_arc[arc.source.name] = {"Source": [], "Destination": []}
+        port_to_arc[arc.source.name]["Destination"].append(arc.dest.name)
+
+        # Assigns the source to destination ports
+        if arc.dest.name not in port_to_arc:
+            port_to_arc[arc.dest.name] = {"Source": [], "Destination": []}
+        port_to_arc[arc.dest.name]["Source"].append(arc.source.name)
+
     rows = []
 
+    # If a flowsheet was passed, collect all unit models
     if isinstance(block, FlowsheetBlockData):
         units = [
             u
@@ -42,20 +65,27 @@ def list_ports(block):
     else:
         units = [block]
 
+    # For each unit, identify its name and all the port information
     for unit in units:
         ports = dict(unit.component_map(Port))
         for name, port in ports.items():
+            connected = port_to_arc.get(
+                port.name, {"Source": None, "Destination": None}
+            )
+            if not connected["Source"] and not connected["Destination"]:
+                _log.warning(f"Port {port.name} is not connected to any stream.")
             rows.append(
                 {
                     "Unit Model": type(unit).__name__.removeprefix("_Scalar"),
                     "Port Name": name,
                     "Port": port.name,
+                    "Source": connected["Source"] or None,
+                    "Destination": connected["Destination"] or None,
                 }
             )
 
+    # Display table
     df = pd.DataFrame(rows)
-
-    pd.set_option("display.max_rows", None)
     print(df.to_string(index=False))
 
     return df
