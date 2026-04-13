@@ -398,11 +398,11 @@ to further break down the cost components contributing to the LCOW:
 .. csv-table::
    :header: "Description", "Default Expression Name :sup:`1`", "Index", "Equation :sup:`2`"
 
-    "Direct capital expenditure by flowsheet component", "``LCOW_component_direct_capex``", "Unit model flowsheet name ", ":math:`\cfrac{f_{crf} C_{dir,i}}{f_{util} Q}`"
+    "Direct capital expenditure by flowsheet component", "``LCOW_component_direct_capex``", "Unit model flowsheet name :sup:`3` ", ":math:`\cfrac{f_{crf} C_{dir,i}}{f_{util} Q}`"
     "Indirect capital expenditure by flowsheet component", "``LCOW_component_indirect_capex``", "Unit model flowsheet name", ":math:`\cfrac{f_{crf} C_{indir,i}}{f_{util} Q}`"
     "Fixed operating expenditure by flowsheet component", "``LCOW_component_fixed_opex``", "Unit model flowsheet name", ":math:`\cfrac{f_{crf} C_{fop,i}}{f_{util} Q}`"
-    "Variable operating expenditure by flowsheet component", "``LCOW_component_variable_opex``", "Unit model flowsheet name *or* flow name", ":math:`\cfrac{f_{crf} C_{vop,i}}{f_{util} Q}`"
-    "Aggregate direct capital expenditure by unit type", "``LCOW_aggregate_direct_capex``", "Unit model class name", ":math:`\cfrac{f_{crf} \sum C_{dir,u}}{f_{util} Q}`"
+    "Variable operating expenditure by flowsheet component", "``LCOW_component_variable_opex``", "Unit model flowsheet name *or* flow name :sup:`4`", ":math:`\cfrac{f_{crf} C_{vop,i}}{f_{util} Q}`"
+    "Aggregate direct capital expenditure by unit type", "``LCOW_aggregate_direct_capex``", "Unit model class name :sup:`5`", ":math:`\cfrac{f_{crf} \sum C_{dir,u}}{f_{util} Q}`"
     "Aggregate indirect capital expenditure by unit type", "``LCOW_aggregate_indirect_capex``", "Unit model class name", ":math:`\cfrac{f_{crf} \sum C_{indir,u}}{f_{util} Q}`"
     "Aggregate fixed operating expenditure by unit type", "``LCOW_aggregate_fixed_opex``", "Unit model class name", ":math:`\cfrac{f_{crf} \sum C_{fop,u}}{f_{util} Q}`"
     "Aggregate variable operating expenditure by unit type", "``LCOW_aggregate_variable_opex``", "Unit model class name *or* flow name", ":math:`\cfrac{f_{crf} \sum C_{vop,u}}{f_{util} Q}`"
@@ -412,12 +412,17 @@ to further break down the cost components contributing to the LCOW:
 
     :sup:`2` The index :math:`i` refers to individual unit model instances on the flowsheet, while :math:`u` refers to unit model classes.
 
+    :sup:`3` The unit model flowsheet name is the name assigned to the unit model when it is added to the flowsheet (e.g., ``m.fs.unit1 = MyUnitModel()`` would have a flowsheet name of "fs.unit1").
+
+    :sup:`4` The flow name is the name used when registering the flow with the costing package (e.g., ``m.fs.costing.register_flow_type("electricity", electricity_cost)`` would have a flow name of "electricity").
+
+    :sup:`5` The unit model class name is the string representation of the class used to define the unit model (e.g., "ReverseOsmosis0D", "Pump").
+
 Note the difference between the "component" and "aggregate" expressions: the component expressions break down costs by individual unit model instances,
-while the aggregate expressions sum costs by unit model class (e.g., Mixer, Pump, ReverseOsmosis0D, etc.). So, if there are multiple pumps on the flowsheet, the individual contributions 
+while the aggregate expressions sum costs by unit model class. So, if there are multiple pumps on the flowsheet, the individual contributions 
 to LCOW from each pump would be available in the ``LCOW_component_*`` expressions, while the total contribution from all pumps would be available as ``LCOW_aggregate_*`` expressions.
-The ``LCOW_component_*`` expressions are indexed by the string representation of the unit model flowsheet name. This is the name that is assigned when the unit model
-is added to the flowsheet. For example, if you add a unit model as ``m.fs.unit1 = MyUnitModel()``, the name used as the index for the LCOW component expressions will be "fs.unit1".
-The indexes for the ``LCOW_aggregate_*`` expressions are the unit model class name, which is the string representation of the class used to define the unit model (e.g., "ReverseOsmosis0D", "Pump").
+The ``LCOW_component_*`` expressions are indexed by the string representation of the unit model flowsheet name.
+The indexes for the ``LCOW_aggregate_*`` expressions are the unit model class name.
 
 Importantly, both ``LCOW_component_variable_opex`` and ``LCOW_aggregate_variable_opex`` expressions are also indexed by flow name for registered flows.
 Energy (e.g., ``electricity``) and material (e.g., ``naocl``, ``caustic``) flows registered with the costing package will have their variable operating costs
