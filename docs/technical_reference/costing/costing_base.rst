@@ -412,7 +412,7 @@ to further break down the cost components contributing to the LCOW:
 
     :sup:`2` The index :math:`i` refers to individual unit model instances on the flowsheet, while :math:`u` refers to unit model classes.
 
-Note, the difference between the "component" and "aggregate" expressions: the component expressions break down costs by individual unit model instances,
+Note the difference between the "component" and "aggregate" expressions: the component expressions break down costs by individual unit model instances,
 while the aggregate expressions sum costs by unit model class (e.g., Mixer, Pump, ReverseOsmosis0D, etc.). So, if there are multiple pumps on the flowsheet, the individual contributions 
 to LCOW from each pump would be available in the ``LCOW_component_*`` expressions, while the total contribution from all pumps would be available as ``LCOW_aggregate_*`` expressions.
 The ``LCOW_component_*`` expressions are indexed by the string representation of the unit model flowsheet name. This is the name that is assigned when the unit model
