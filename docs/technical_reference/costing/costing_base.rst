@@ -361,7 +361,7 @@ The total variable operating cost is the sum of the total variable operating cos
 Aggregate Metrics
 ------------------
 
-Built in methods can be used to add expressions for common aggregate metrics used in technoeconomic analyses of water systems.
+Built-in methods can be used to add expressions for common aggregate metrics used in technoeconomic analyses of water systems.
 The following metrics can be added to the costing block by calling the respective method:
 
 .. csv-table::
