@@ -23,7 +23,6 @@ from watertap.flowsheets.generic_desalination_train.costing import (
 )
 import logging
 
-
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
 formatter = logging.Formatter(

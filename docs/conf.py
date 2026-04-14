@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "WaterTAP"
-copyright = "2020-2025, NAWI"
+copyright = "2020-2026, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags

@@ -12,6 +12,7 @@
 """
 Tests for WaterTAP database wrapper
 """
+
 import pytest
 import os
 

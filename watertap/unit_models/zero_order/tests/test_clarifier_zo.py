@@ -12,6 +12,7 @@
 """
 Tests for zero-order clarifier model
 """
+
 import pytest
 import os
 

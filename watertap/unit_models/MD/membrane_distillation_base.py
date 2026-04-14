@@ -43,7 +43,6 @@ from watertap.costing.unit_models.membrane_distillation import (
 )
 from watertap.core.util.initialization import interval_initializer
 
-
 __author__ = "Elmira Shamlou"
 
 

@@ -12,6 +12,7 @@
 """
 Tests for zero-order cloth media filtration model.
 """
+
 import pytest
 
 from pyomo.environ import (

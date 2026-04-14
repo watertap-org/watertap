@@ -17,7 +17,6 @@ from watertap.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD imp
     run_parameter_sweep,
 )
 
-
 _parameter_sweep_expected_warning = pytest.warns(
     UserWarning, match="No results .* to disk .*"
 )

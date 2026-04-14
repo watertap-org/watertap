@@ -18,6 +18,7 @@ Journal of Infrastructure Systems 19.4 (2013): 451-464.
 Benchmark Model for Wastewater Treatment Using an Activated Sludge Process.
 United States: N.p., 21 Jan, 2022. Web. doi: 10.7481/1844539.
 """
+
 import pyomo.environ as pyo
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum

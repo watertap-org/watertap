@@ -12,6 +12,7 @@
 """
 Tests for zero-order cooling supply model
 """
+
 import pytest
 
 

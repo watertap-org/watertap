@@ -29,7 +29,6 @@ import idaes.core.util.scaling as iscale
 import pytest
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
-
 solver = get_solver()
 
 

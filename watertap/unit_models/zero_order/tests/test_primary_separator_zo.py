@@ -12,6 +12,7 @@
 """
 Tests for zero-order primary separator model
 """
+
 import pytest
 
 

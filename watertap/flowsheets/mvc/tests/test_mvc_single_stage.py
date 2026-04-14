@@ -45,7 +45,6 @@ import watertap.property_models.water_prop_pack as props_water
 from watertap.unit_models.pressure_changer import Pump
 from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
 
-
 solver = get_solver()
 
 

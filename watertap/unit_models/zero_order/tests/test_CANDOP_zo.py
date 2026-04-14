@@ -12,6 +12,7 @@
 """
 Tests for zero-order CANDO+P model
 """
+
 import pytest
 
 from pyomo.environ import (

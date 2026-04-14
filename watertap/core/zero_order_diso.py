@@ -14,6 +14,7 @@ This module contains the methods for constructing the material balances for
 zero-order double-input/single-output (DISO) unit models (i.e. units with two inlets and single
 outlet where composition changes, such as a generic bioreactor).
 """
+
 from types import MethodType
 
 import idaes.logger as idaeslog

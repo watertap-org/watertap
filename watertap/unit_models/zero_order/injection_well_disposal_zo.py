@@ -10,9 +10,10 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-This module contains a zero-order representation of an injection well disposal 
+This module contains a zero-order representation of an injection well disposal
 unit operation.
 """
+
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData

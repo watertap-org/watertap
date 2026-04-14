@@ -12,6 +12,7 @@
 """
 Tests for zero-order bioreactor with simple reactions
 """
+
 import pytest
 import os
 
@@ -34,7 +35,6 @@ from watertap.unit_models.zero_order import MetabZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
-
 
 solver = get_solver()
 

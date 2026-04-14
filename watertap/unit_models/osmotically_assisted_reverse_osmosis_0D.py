@@ -31,7 +31,6 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_base import (
     _add_has_full_reporting,
 )
 
-
 __author__ = "Adam Atia, Chenyu Wang"
 
 
