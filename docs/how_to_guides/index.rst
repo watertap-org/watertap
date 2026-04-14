@@ -26,4 +26,5 @@ How To Guides
    how_to_use_ui_api
    how_to_use_unit_test_harness
    how_to_contribute_development
+   how_to_use_watertap_costing
    notebooks
