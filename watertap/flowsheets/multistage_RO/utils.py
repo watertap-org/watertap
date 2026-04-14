@@ -165,7 +165,7 @@ def report_costing(blk, w=30):
     print(f'{"Parameter":<{w}s}{"Value":<{w}s}{"Units":<{w}s}')
     print(f"{'-' * (3 * w)}")
     print(
-        f'{f"LCOW":<{w}s}{value(blk.LCOW):<{w}.3f}{f"${pyunits.get_units(blk.LCOW)}"}'
+        f'{f"LCOW":<{w}s}{value(blk.LCOW):<{w}.3f}{f"{pyunits.get_units(blk.LCOW)}"}'
     )
     print(
         f'{f"SEC":<{w}s}{value(blk.SEC):<{w}.3f}{f"{pyunits.get_units(blk.SEC)}"}'
@@ -266,7 +266,7 @@ def overscale_ro(ro, props, full_scaling=True):
     ]:
         for e in temp_stream:
             iscale.constraint_scaling_transform(temp_stream[e], 1e-2)
-            
+
     if full_scaling:
         for pressure_stream in [
             ro.eq_permeate_outlet_isobaric,
