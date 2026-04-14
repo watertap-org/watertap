@@ -96,6 +96,7 @@ default_ro_op_dict = {
     "B_comp": 0.1 * pyunits.liter / pyunits.m**2 / pyunits.hour,
 }
 
+
 @pytest.mark.parametrize("n_stages", n_stages)
 @pytest.mark.parametrize("add_erd", add_erd)
 @pytest.mark.parametrize("salinity", salinity)
