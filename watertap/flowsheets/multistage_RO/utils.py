@@ -5,10 +5,11 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
-from idaes.core.util.initialization import Constraint, solve_indexed_blocks
+
+from idaes.core.util.initialization import solve_indexed_blocks
 import idaes.core.util.scaling as iscale
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from watertap.core.solvers import get_solver
 
 from watertap.core.util.model_diagnostics.infeasible import (
     print_close_to_bounds,
@@ -164,12 +165,8 @@ def report_costing(blk, w=30):
     print(f"\n{header}\n")
     print(f'{"Parameter":<{w}s}{"Value":<{w}s}{"Units":<{w}s}')
     print(f"{'-' * (3 * w)}")
-    print(
-        f'{f"LCOW":<{w}s}{value(blk.LCOW):<{w}.3f}{f"{pyunits.get_units(blk.LCOW)}"}'
-    )
-    print(
-        f'{f"SEC":<{w}s}{value(blk.SEC):<{w}.3f}{f"{pyunits.get_units(blk.SEC)}"}'
-    )
+    print(f'{f"LCOW":<{w}s}{value(blk.LCOW):<{w}.3f}{f"{pyunits.get_units(blk.LCOW)}"}')
+    print(f'{f"SEC":<{w}s}{value(blk.SEC):<{w}.3f}{f"{pyunits.get_units(blk.SEC)}"}')
     print(
         f'{f"CAPEX":<{w}s}{value(blk.total_capital_cost):<{w}.3f}{f"{pyunits.get_units(blk.total_capital_cost)}"}'
     )
@@ -198,7 +195,7 @@ def report_n_stage_system(m, w=30):
         side = int(((3 * w) - len(title)) / 2) - 1
         header = "(" * side + f" {title} " + ")" * side
         print(f"\n{header}\n")
-        if stage.add_pump:
+        if stage.has_pump:
             report_pump(stage, w=w)
         report_ro(stage, w=w)
 
@@ -357,7 +354,7 @@ def solve(
     if check_optimal_termination(results):
         print("\n--------- OPTIMAL SOLVE!!! ---------\n")
         return results
-    # print_close_to_bounds(model)
+
     if raise_on_failure:
         print("\n--------- INFEASIBLE SOLVE!!! ---------\n")
 
