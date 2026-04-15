@@ -181,11 +181,11 @@ including the different build options for ``erd_type``:
    :header: "Description", "Value", "Units", "Flowsheet Model Name"
 
     **Influent Conditions**
-   "Volumetric flow rate", "7.05", ":math:`\text{MGD}`", "``m.fs.feed.flow_vol[0]``"
-   "TDS :sup:`1` concentration", "35", ":math:`\text{g/L}`", "``m.fs.feed.conc_mass_comp[0, "tds"]``"
-   "TSS :sup:`2` concentration", "0.03", ":math:`\text{g/L}`", "``m.fs.feed.conc_mass_comp[0, "tss"]``"
-   "Temperature", "298", ":math:`\text{K}`", "``m.fs.tb_prtrt_desal.properties_out[0].temperature``"
-   "Pressure", "100000", ":math:`\text{Pa}`", "``m.fs.tb_prtrt_desal.properties_out[0].pressure``"
+   "Volumetric flow rate", "7.05", ":math:`\text{MGD}`"
+   "TDS :sup:`1` concentration", "35", ":math:`\text{g/L}`"
+   "TSS :sup:`2` concentration", "0.03", ":math:`\text{g/L}`"
+   "Temperature", "298", ":math:`\text{K}`"
+   "Pressure", "100000", ":math:`\text{Pa}`"
 
    **Pre-Treatment**
    "Ferric chloride dose", "20", ":math:`\text{mg/L}`", "``m.fs.pretreatment.ferric_chloride_addition``"
