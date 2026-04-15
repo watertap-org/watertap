@@ -80,7 +80,7 @@ default_swro_op_dict = {
 def build_stage(
     stage,
     m=None,
-    add_pump=False,
+    has_pump=False,
 ):
     """
     Build a single stage
@@ -89,7 +89,7 @@ def build_stage(
     if m is None:
         m = stage.model()
 
-    stage.add_pump = add_pump
+    stage.has_pump = has_pump
 
     _logger.info(f"Building Stage {stage.index()}")
 
@@ -117,7 +117,7 @@ def build_stage(
         b.properties[0].flow_vol_phase["Liq"]
         b.properties[0].conc_mass_phase_comp["Liq", comp]
 
-    if add_pump:
+    if has_pump:
         stage.pump = Pump(property_package=m.fs.properties)
         stage.feed_to_pump = Arc(source=stage.feed.outlet, destination=stage.pump.inlet)
         stage.pump_to_RO = Arc(source=stage.pump.outlet, destination=stage.RO.inlet)
@@ -154,7 +154,7 @@ def build_stage(
     _logger.info(f"Stage {stage.index()} built with {degrees_of_freedom(stage)} DOF.")
 
 
-def set_stage_op_conditions(stage, m=None, max_pressure=100e5, ro_op_dict={}):
+def set_stage_op_conditions(stage, m=None, max_pressure=200e5, ro_op_dict={}):
     """
     Set operating conditions for a single stage
     """
@@ -164,7 +164,7 @@ def set_stage_op_conditions(stage, m=None, max_pressure=100e5, ro_op_dict={}):
 
     stage_num = stage.index()
 
-    if stage.add_pump:
+    if stage.has_pump:
 
         operating_pressure = calculate_operating_pressure(
             feed_state_block=m.fs.feed.properties[0],
@@ -177,7 +177,7 @@ def set_stage_op_conditions(stage, m=None, max_pressure=100e5, ro_op_dict={}):
         if operating_pressure >= max_pressure:
             operating_pressure = max_pressure
 
-        if stage_num > 1 and m.fs.stage[stage_num - 1].add_pump:
+        if stage_num > 1 and m.fs.stage[stage_num - 1].has_pump:
             last_pump = m.fs.stage[stage_num - 1].pump
             c = Constraint(
                 expr=stage.pump.control_volume.properties_out[0].pressure
@@ -223,7 +223,7 @@ def scale_stage(stage, m=None):
 
     overscale_ro(stage.RO, m.fs.properties, full_scaling=True)
 
-    if stage.add_pump:
+    if stage.has_pump:
         iscale.set_scaling_factor(stage.pump.control_volume.work, 1e-3)
         iscale.set_scaling_factor(
             stage.pump.control_volume.properties_out[0].flow_vol_phase["Liq"], 1
@@ -238,7 +238,7 @@ def init_stage(stage):
 
     stage.feed.initialize()
 
-    if stage.add_pump:
+    if stage.has_pump:
         propagate_state(stage.feed_to_pump)
         stage.pump.initialize()
         propagate_state(stage.pump_to_RO)
@@ -296,7 +296,7 @@ def build_costing(m, hpro_costing=False):
     m.fs.costing = WaterTAPCosting()
 
     for n, stage in m.fs.stage.items():
-        if stage.add_pump:
+        if stage.has_pump:
             stage.pump.costing = UnitModelCostingBlock(
                 flowsheet_costing_block=m.fs.costing, costing_method_arguments=cma_pump
             )
@@ -314,7 +314,7 @@ def build_costing(m, hpro_costing=False):
     )
 
 
-def run_n_stage_system(
+def build_n_stage_system(
     prop_pack="seawater",
     n_stages=2,
     flow_vol=1,  # L/s
@@ -328,6 +328,7 @@ def run_n_stage_system(
     add_erd=True,
     ro_op_dict={},
     add_costing=True,
+    *args,
     **kwargs,
 ):
 
@@ -368,9 +369,9 @@ def run_n_stage_system(
     tot_power_expr = 0
 
     for n, stage in m.fs.stage.items():
-        build_stage(stage, m=m, add_pump=pump_dict.get(n, False))
+        build_stage(stage, m=m, has_pump=pump_dict.get(n, False))
         tot_area_expr += stage.RO.area
-        tot_power_expr += stage.pump.work_mechanical[0] if stage.add_pump else 0
+        tot_power_expr += stage.pump.work_mechanical[0] if stage.has_pump else 0
 
     if add_erd:
         m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
@@ -519,6 +520,13 @@ def run_n_stage_system(
         m.fs.ERD.efficiency_pump.fix(0.95)
         m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
 
+    return m
+
+
+def initialize_n_stage_system(m, *args, **kwargs):
+
+    add_erd = kwargs.get("add_erd", True)
+
     #### INITIALIZE
 
     # print(f"DOF before initialization = {degrees_of_freedom(m)}")
@@ -558,7 +566,7 @@ def run_n_stage_system(
     for n, stage in m.fs.stage.items():
         stage.RO.area.unfix()
         stage.RO.width.unfix()
-        if stage.add_pump:
+        if stage.has_pump:
             stage.pump.control_volume.properties_out[0].pressure.unfix()
 
     # print(f"DOF before optimization = {degrees_of_freedom(m)}")
@@ -571,7 +579,7 @@ def run_n_stage_system(
     for n, stage in m.fs.stage.items():
         stage.RO.area.fix()
         stage.RO.width.fix()
-        if stage.add_pump:
+        if stage.has_pump:
             stage.pump.control_volume.properties_out[0].pressure.fix()
 
     # print(f"FINAL DOF = {degrees_of_freedom(m)}")
@@ -593,8 +601,16 @@ def set_system_recovery(m, recovery):
     for n, stage in m.fs.stage.items():
         stage.RO.area.unfix()
         stage.RO.width.unfix()
-        if stage.add_pump:
+        if stage.has_pump:
             stage.pump.control_volume.properties_out[0].pressure.unfix()
+
+    return m
+
+
+def run_n_stage_system(*args, **kwargs):
+
+    m = build_n_stage_system(*args, **kwargs)
+    initialize_n_stage_system(m, *args, **kwargs)
 
     return m
 
@@ -605,47 +621,11 @@ if __name__ == "__main__":
         n_stages=2,
         salinity=35,
         flow_vol=1,
-        water_recovery=0.5,
-        pump_dict={1: True, 2: True, 3: True},
-        # ro_op_dict=sw_ro_op_dict,
         add_erd=True,
-        # add_costing=False,
     )
-    # m.fs.system_recovery.display()
-    # for n, stage in m.fs.stage.items():
-    #     stage.RO.area.display()
-    #     stage.RO.length.display()
-    #     stage.RO.width.display()
 
     m = set_system_recovery(m, 0.5)
 
     res = solve(model=m, tee=False)
 
     report_n_stage_system(m)
-    # m.fs.SEC.display()
-    # m = run_n_stage_system(
-    #     prop_pack="NACL",
-    #     n_stages=2,
-    #     salinity=35,
-    #     # water_recovery=0.5,
-    #     pump_dict={1: True, 2: True},
-    #     # ro_op_dict=sw_ro_op_dict,
-    #     add_erd=True,
-    # )
-    # # m.fs.system_recovery.display()
-    # # for n, stage in m.fs.stage.items():
-    # #     stage.RO.area.display()
-    # #     stage.RO.length.display()
-    # #     stage.RO.width.display()
-
-    # m = set_system_recovery(m, 0.5)
-
-    # res = solve(model=m, tee=False)
-
-    # report_n_stage_system(m)
-    # m.fs.system_recovery.display()
-    # for n, stage in m.fs.stage.items():
-    #     print(f"\nSTAGE {n}\n")
-    #     stage.RO.area.display()
-    #     stage.RO.length.display()
-    #     stage.RO.width.display()
