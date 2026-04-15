@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Laboratory of the Rockies, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import logging
 from pyomo.environ import (
     RangeSet,
@@ -6,21 +17,17 @@ from pyomo.environ import (
     Constraint,
     Objective,
     Expression,
-    Param,
     Var,
     TransformationFactory,
     assert_optimal_termination,
-    check_optimal_termination,
     units as pyunits,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import (
     Mixer,
-    Separator,
     Product,
     Feed,
     StateJunction,
@@ -38,21 +45,15 @@ from watertap.unit_models.reverse_osmosis_1D import ReverseOsmosis1D
 from watertap.core import (  # noqa # pylint: disable=unused-import
     ConcentrationPolarizationType,
     MassTransferCoefficient,
-    MembraneChannel1DBlock,
     PressureChangeType,
 )
 from watertap.core.solvers import get_solver
+import watertap.flowsheets.multistage_RO.utils as utils
 
-from watertap.flowsheets.multistage_RO.utils import (
-    calculate_operating_pressure,
-    overscale_ro,
-    solve,
-    report_n_stage_system,
-    relax_bounds_for_low_salinity_waters,
-)
+__author__ = "Alexander V. Dudchenk, Kurban A. Sitterley"
 
 """
-Build and solve n-stage RO system with optional ERD and booster pumps.
+Build and solve N-stage RO system with optional ERD and booster pumps.
 """
 
 _logger = logging.getLogger(__name__)
@@ -89,12 +90,13 @@ def build_stage(
     if m is None:
         m = stage.model()
 
+    comp = m.fs.properties.solute_set.at(1)
+
     stage.has_pump = has_pump
 
     _logger.info(f"Building Stage {stage.index()}")
 
     stage.feed = StateJunction(property_package=m.fs.properties)
-    comp = stage.feed.config.property_package.solute_set.at(1)
 
     stage.RO = ReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -166,14 +168,14 @@ def set_stage_op_conditions(stage, m=None, max_pressure=200e5, ro_op_dict={}):
 
     if stage.has_pump:
 
-        operating_pressure = calculate_operating_pressure(
+        operating_pressure = utils.calculate_operating_pressure(
             feed_state_block=m.fs.feed.properties[0],
             over_pressure=m.over_pressure,
             water_recovery=m.water_recovery,
             salt_passage=0.01,
             solver=solver,
         )
-        # print(f"Estimated operating pressure: {operating_pressure*1e-5:.2f} bar")
+
         if operating_pressure >= max_pressure:
             operating_pressure = max_pressure
 
@@ -214,14 +216,15 @@ def set_stage_op_conditions(stage, m=None, max_pressure=200e5, ro_op_dict={}):
             raise ValueError(msg)
 
 
-def scale_stage(stage, m=None):
+def scale_stage(stage, m=None, **kwargs):
     """
     Scale a single stage
     """
     if m is None:
         m = stage.model()
 
-    overscale_ro(stage.RO, m.fs.properties, full_scaling=True)
+    full_scaling = kwargs.get("full_scaling", True)
+    utils.overscale_ro(stage.RO, m.fs.properties, full_scaling=full_scaling)
 
     if stage.has_pump:
         iscale.set_scaling_factor(stage.pump.control_volume.work, 1e-3)
@@ -253,7 +256,6 @@ def init_stage(stage):
     propagate_state(stage.RO_to_product)
     stage.product.initialize()
 
-    # print(f"DOF for Stage {stage.index()}: {degrees_of_freedom(stage)}")
     _logger.info(
         f"Finished initializing stage {stage.index()} with {degrees_of_freedom(stage)} DOF."
     )
@@ -264,12 +266,12 @@ def set_stage_bounds(stage):
     Set bounds for a single stage
     """
 
-    for phase in stage.RO.flux_mass_phase_comp:
-        if "H2O" in phase:
-            stage.RO.flux_mass_phase_comp[phase].setlb(
+    for t, x, p, c in stage.RO.flux_mass_phase_comp:
+        if p == "H2O":
+            stage.RO.flux_mass_phase_comp[t, x, p, c].setlb(
                 0 * pyunits.kg / (pyunits.m**2 * pyunits.hr)
             )
-            stage.RO.flux_mass_phase_comp[phase].setub(
+            stage.RO.flux_mass_phase_comp[t, x, p, c].setub(
                 200 * pyunits.kg / (pyunits.m**2 * pyunits.hr)
             )
 
@@ -328,19 +330,17 @@ def build_n_stage_system(
     add_erd=True,
     ro_op_dict={},
     add_costing=True,
+    max_pressure=200e5,
     *args,
     **kwargs,
 ):
+    """
+    Build N-stage system
+    """
 
     _logger.info(
         f"Running {n_stages} stage system with {sum(pump_dict.values())} pumps."
     )
-
-    # if ro_op_dict == {}:
-    #     if salinity <= 10:
-    #         ro_op_dict = default_bwro_op_dict
-    #     else:
-    #         ro_op_dict = default_swro_op_dict
 
     m = ConcreteModel()
     m.flow_vol = flow_vol * pyunits.liter / pyunits.s
@@ -494,9 +494,9 @@ def build_n_stage_system(
     )
 
     for n, stage in m.fs.stage.items():
-        scale_stage(stage, m=m)
+        scale_stage(stage, m=m, **kwargs)
 
-    if m.fs.find_component("ERD") is not None:
+    if add_erd:
         iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
 
     iscale.calculate_scaling_factors(m)
@@ -514,7 +514,9 @@ def build_n_stage_system(
 
     for n, stage in m.fs.stage.items():
         set_stage_bounds(stage)
-        set_stage_op_conditions(stage, m=m, ro_op_dict=ro_op_dict)
+        set_stage_op_conditions(
+            stage, m=m, max_pressure=max_pressure, ro_op_dict=ro_op_dict
+        )
 
     if add_erd:
         m.fs.ERD.efficiency_pump.fix(0.95)
@@ -529,7 +531,6 @@ def initialize_n_stage_system(m, *args, **kwargs):
 
     #### INITIALIZE
 
-    # print(f"DOF before initialization = {degrees_of_freedom(m)}")
     _logger.info(f"DOF before initialization = {degrees_of_freedom(m)}")
 
     m.fs.feed.initialize()
@@ -569,10 +570,9 @@ def initialize_n_stage_system(m, *args, **kwargs):
         if stage.has_pump:
             stage.pump.control_volume.properties_out[0].pressure.unfix()
 
-    # print(f"DOF before optimization = {degrees_of_freedom(m)}")
     _logger.info(f"DOF before optimization = {degrees_of_freedom(m)}")
 
-    results = solve(model=m, tee=True)
+    results = utils.solve(model=m, tee=True)
     assert_optimal_termination(results)
 
     # Fix area, with, and pump pressure
@@ -582,10 +582,9 @@ def initialize_n_stage_system(m, *args, **kwargs):
         if stage.has_pump:
             stage.pump.control_volume.properties_out[0].pressure.fix()
 
-    # print(f"FINAL DOF = {degrees_of_freedom(m)}")
     _logger.info(f"Final DOF = {degrees_of_freedom(m)}")
     assert degrees_of_freedom(m) == 0
-    results = solve(model=m, tee=True)
+    results = utils.solve(model=m, tee=True)
     assert_optimal_termination(results)
 
     return m
@@ -626,6 +625,6 @@ if __name__ == "__main__":
 
     m = set_system_recovery(m, 0.5)
 
-    res = solve(model=m, tee=False)
+    res = utils.solve(model=m, tee=False)
 
-    report_n_stage_system(m)
+    utils.report_n_stage_system(m)

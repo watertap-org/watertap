@@ -1,3 +1,14 @@
+#################################################################################
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
+# National Laboratory of the Rockies, and National Energy Technology
+# Laboratory (subject to receipt of any required approvals from the U.S. Dept.
+# of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#################################################################################
 import pytest
 from pyomo.environ import value, units as pyunits
 
@@ -125,11 +136,11 @@ recovery = [0.4, 0.5, 0.6]
 n_stages = [1, 2, 3]
 add_erd = [True, False]
 
-salinity = [35]
-flows = [1]
-recovery = [0.5]
-n_stages = [2]
-add_erd = [True]
+# salinity = [35]
+# flows = [1]
+# recovery = [0.5]
+# n_stages = [2]
+# add_erd = [True]
 
 default_ro_op_dict = {
     "A_comp": 1.5 * pyunits.liter / pyunits.m**2 / pyunits.hour / pyunits.bar,
