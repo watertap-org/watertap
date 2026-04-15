@@ -18,6 +18,7 @@ from pyomo.environ import (
     Objective,
     Expression,
     Var,
+    Param,
     TransformationFactory,
     assert_optimal_termination,
     units as pyunits,
@@ -360,7 +361,9 @@ def build_n_stage_system(
 
     comp = m.fs.properties.solute_set.at(1)
 
-    m.fs.stages_set = RangeSet(n_stages)
+    m.fs.n_stages = Param(initialize=n_stages, mutable=True)
+    m.fs.add_erd = add_erd
+    m.fs.stages_set = RangeSet(m.fs.n_stages)
     m.fs.stage = FlowsheetBlock(m.fs.stages_set, dynamic=False)
 
     m.fs.feed = Feed(property_package=m.fs.properties)
