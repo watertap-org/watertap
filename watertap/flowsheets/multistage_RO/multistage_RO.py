@@ -157,7 +157,7 @@ def build_stage(
     _logger.info(f"Stage {stage.index()} built with {degrees_of_freedom(stage)} DOF.")
 
 
-def set_stage_op_conditions(stage, m=None, max_pressure=200e5, ro_op_dict={}):
+def set_stage_op_conditions(stage, m=None, max_pressure=400e5, ro_op_dict={}):
     """
     Set operating conditions for a single stage
     """
@@ -204,6 +204,7 @@ def set_stage_op_conditions(stage, m=None, max_pressure=200e5, ro_op_dict={}):
     stage.RO.feed_side.spacer_porosity.fix(0.9)
     stage.RO.permeate.pressure[0].fix(101325)
     # Scale area and width to flow vol
+    stage.RO.width.setub(5000)
     stage.RO.width.fix(5 * value(m.flow_vol))
     stage.RO.area.fix(30 * value(m.flow_vol))
 
@@ -332,7 +333,7 @@ def build_n_stage_system(
     add_erd=True,
     ro_op_dict={},
     add_costing=True,
-    max_pressure=200e5,
+    max_pressure=400e5,
     *args,
     **kwargs,
 ):
@@ -362,7 +363,9 @@ def build_n_stage_system(
 
     comp = m.fs.properties.solute_set.at(1)
 
-    m.fs.n_stages = Param(initialize=n_stages, mutable=True)
+    m.fs.n_stages = Param(
+        initialize=n_stages, mutable=False, doc="Number of RO stages in system"
+    )
     m.fs.add_erd = add_erd
     m.fs.stages_set = RangeSet(m.fs.n_stages)
     m.fs.stage = FlowsheetBlock(m.fs.stages_set, dynamic=False)
