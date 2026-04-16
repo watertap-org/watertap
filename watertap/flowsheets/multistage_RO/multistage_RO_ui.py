@@ -24,6 +24,30 @@ def export_to_ui():
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
         build_options={
+            "recovery": {
+                "name": "recovery",
+                "display_name": "System Recovery (%)",
+                "values_allowed": "float",
+                "value": 50,  # default value
+                "max_val": 95,  # optional
+                "min_val": 20,  # optional
+            },
+            "flow_vol": {
+                "name": "flow_vol",
+                "display_name": "Feed Flow Rate (L/s)",
+                "values_allowed": "float",
+                "value": 1,  # default value
+                "max_val": 10,  # optional
+                "min_val": 1,  # optional
+            },
+            "salinity": {
+                "name": "salinity",
+                "display_name": "Feed Concentration (g/L)",
+                "values_allowed": "float",
+                "value": 35,  # default value
+                "max_val": 100,  # optional
+                "min_val": 5,  # optional
+            },
             "n_stages": {
                 "name": "n_stages",
                 "display_name": "Number of stages",
@@ -32,85 +56,82 @@ def export_to_ui():
                 "max_val": 5,  # optional
                 "min_val": 1,  # optional
             },
-        #     "FeedFlowRate": {
-        #         "name": "FeedFlowRate",
-        #         "display_name": "Feed Flow Rate (m3/s)",
-        #         "values_allowed": "float",
-        #         "value": 1e-3,  # default value
-        #         "max_val": 1,  # optional
-        #         "min_val": 1e-5,  # optional
-        #     },
-        #     "FeedNaClConcentration": {
-        #         "name": "FeedNaClConcentration",
-        #         "display_name": "Feed NaCl Concentration (kg/m3)",
-        #         "values_allowed": "float",
-        #         "value": 70,  # default value
-        #         "max_val": 100,  # optional
-        #         "min_val": 1,  # optional
-        #     },
-        #     "ROFiniteElements": {
-        #         "name": "ROFiniteElements",
-        #         "display_name": "RO Finite Elements",
-        #         "values_allowed": "float",
-        #         "value": 10,  # default value
-        #         "max_val": 20,  # optional
-        #         "min_val": 1,  # optional
-        #     },
-        #     "NaClSolubilityLimit": {
-        #         "name": "NaClSolubilityLimit",
-        #         "display_name": "NaCl Solubility Limit",
-        #         "values_allowed": ["False", "True"],
-        #         "value": "True",  # default value
-        #     },
-        #     "ConcentrationPolarization": {
-        #         "name": "ConcentrationPolarization",
-        #         "display_name": "Calculate Concentration Polzarization",
-        #         "values_allowed": ["False", "True"],
-        #         "value": "True",  # default value
-        #     },
-        #     "ROPressureDrop": {
-        #         "name": "ROPressureDrop",
-        #         "display_name": "Calculate Pressure Drop",
-        #         "values_allowed": ["False", "True"],
-        #         "value": "True",  # default value
-        #     },
-        #     "ACase": {
-        #         "name": "ACase",
-        #         "display_name": "Water Permeability",
-        #         "values_allowed": [
-        #             x.name for x in [ACase.optimize, ACase.fixed, ACase.single_optimum]
-        #         ],
-        #         "value": ACase.fixed.name,  # default value
-        #     },
-        #     "BCase": {
-        #         "name": "BCase",
-        #         "display_name": "Salt Permeability",
-        #         "values_allowed": [
-        #             x.name for x in [BCase.optimize, BCase.single_optimum]
-        #         ],
-        #         "value": BCase.optimize.name,  # default value
-        #     },
-        #     "ABTradeoff": {
-        #         "name": "ABTradeoff",
-        #         "display_name": "Water & Salt Permeability Equality Constraints",
-        #         "values_allowed": [
-        #             x.name
-        #             for x in [
-        #                 ABTradeoff.inequality_constraint,
-        #                 ABTradeoff.equality_constraint,
-        #                 ABTradeoff.none,
-        #             ]
-        #         ],
-        #         "value": ABTradeoff.none.name,  # default value
-        #     },
-        #     "BMax": {
-        #         "name": "BMax",
-        #         "display_name": "Maximum NaCl Permeability",
-        #         "values_allowed": "float",
-        #         "value": 3.5e-6,  # default value
-        #         "max_val": 1e-5,  # optional
-        #         "min_val": 1e-7,  # optional
-        #     },
+            "temperature": {
+                "name": "temperature",
+                "display_name": "Feed Temperature (°C)",
+                "values_allowed": "float",
+                "value": 25,  # default value
+                "max_val": 100,  # optional
+                "min_val": 1,  # optional
+            },
+            "max_perm_conc": {
+                "name": "max_perm_conc",
+                "display_name": "Maximum Product Concentration (g/L)",
+                "values_allowed": "float",
+                "value": 0.5,  # default value
+                "max_val": 10,  # optional
+                "min_val": 0.1,  # optional
+            },
+            "prop_pack": {
+                "name": "prop_pack",
+                "display_name": "Property Model",
+                "values_allowed": ["NaCl", "Seawater"],
+                "value": "Seawater",  # default value
+            },
+            "max_pressure": {
+                "name": "max_pressure",
+                "display_name": "Maximum Pumping Pressure (bar)",
+                "values_allowed": "float",
+                "value": 200,  # default value
+                "max_val": 400,  # optional
+                "min_val": 50,  # optional
+            },
+            "add_erd": {
+                "name": "add_erd",
+                "display_name": "Include ERD?",
+                "values_allowed": ["False", "True"],
+                "value": "True",  # default value
+            },
+            "A_comp": {
+                "name": "A_comp",
+                "display_name": "Water Permeability (L/m²/h/bar)",
+                "values_allowed": "float",
+                "value": 1.5,  # default value
+                "max_val": 10,  # optional
+                "min_val": 0,  # optional
+            },
+            "B_comp": {
+                "name": "B_comp",
+                "display_name": "Salt Permeability (L/m²/h)",
+                "values_allowed": "float",
+                "value": 0.1,  # default value
+                "max_val": 1,  # optional
+                "min_val": 0,  # optional
+            },
+            "stage_2_booster": {
+                "name": "stage_2_booster",
+                "display_name": "Include Stage 2 Booster?",
+                "values_allowed": ["False", "True"],
+                "value": "True",  # default value
+            },
+            "stage_3_booster": {
+                "name": "stage_3_booster",
+                "display_name": "Include Stage 3 Booster?",
+                "values_allowed": ["False", "True"],
+                "value": "False",  # default value
+            },
+            # "stage_4_booster": {
+            #     "name": "stage_4_booster",
+            #     "display_name": "Include Stage 4 Booster?",
+            #     "values_allowed": ["False", "True"],
+            #     "value": "False",  # default value
+            # },
+            # "stage_5_booster": {
+            #     "name": "stage_5_booster",
+            #     "display_name": "Include Stage 5 Booster?",
+            #     "values_allowed": ["False", "True"],
+            #     "value": "False",  # default value
+            # },
         },
     )
 
@@ -118,206 +139,297 @@ def export_to_ui():
 def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs):
     fs = flowsheet
     comp = fs.properties.solute_set.at(1)
+
+    exports.add(
+        obj=fs.costing.SEC,
+        name="SEC",
+        ui_units=pyunits.kWh / pyunits.m**3,
+        display_units="kWh/m3 of product water",
+        rounding=3,
+        description="Specific energy consumption (SEC)",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+    exports.add(
+        obj=fs.costing.LCOW,
+        name="LCOW",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="USD/m3 of product water",
+        rounding=3,
+        description="Levelized cost of water (LCOW)",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+    exports.add(
+        obj=fs.costing.total_capital_cost,
+        name="CAPEX",
+        ui_units=fs.costing.base_currency,
+        display_units="USD",
+        rounding=2,
+        description="Total capital expenditure (CAPEX)",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+    exports.add(
+        obj=fs.costing.total_operating_cost,
+        name="OPEX",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="USD/year",
+        rounding=2,
+        description="Total operating expenditure (OPEX)",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+    exports.add(
+        obj=fs.total_power,
+        name="Total Power Required",
+        ui_units=pyunits.kW,
+        display_units="kW",
+        rounding=2,
+        description="Total power required",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Feed water volumetric flowrate",
-        ui_units=pyunits.m**3 / pyunits.s,
-        display_units="m^3/s",
+        obj=fs.system_recovery,
+        name="System Recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=3,
-        description="Inlet water volumetric flowrate",
+        description="System recovery",
         is_input=True,
+        input_category="System",
+        is_output=True,
+        output_category="System",
+    )
+    exports.add(
+        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
+        name="Inlet volumetric flowrate",
+        ui_units=pyunits.liter / pyunits.s,
+        display_units="L/s",
+        rounding=3,
+        description="Inlet volumetric flowrate",
+        is_input=False,
         input_category="Feed",
-        is_output=False,
+        is_output=True,
+        output_category="Feed",
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", comp],
         name=f"Feed {comp} concentration",
-        ui_units=pyunits.kg / pyunits.m**3,
+        ui_units=pyunits.g / pyunits.liter,
         display_units="g/L",
         rounding=3,
         description=f"Inlet {comp} concentration",
-        is_input=True,
+        is_input=False,
         input_category="Feed",
-        is_output=False,
+        is_output=True,
+        output_category="Feed",
     )
-    # exports.add(
-    #     obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
-    #     name="Feed water mass flowrate",
-    #     ui_units=pyunits.kg / pyunits.s,
-    #     display_units="kg/s",
-    #     rounding=3,
-    #     description="Inlet water mass flowrate",
-    #     is_input=True,
-    #     input_category="Feed",
-    #     is_output=False,
-    # )
-    # exports.add(
-    #     obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", comp],
-    #     name=f"Feed {comp} mass flowrate",
-    #     ui_units=pyunits.kg / pyunits.s,
-    #     display_units="kg/s",
-    #     rounding=3,
-    #     description=f"Inlet {comp} mass flowrate",
-    #     is_input=True,
-    #     input_category="Feed",
-    #     is_output=False,
-    # )
 
     # Unit model data, feed pump
     for n, stage in fs.stage.items():
         if stage.has_pump:
             exports.add(
-                obj=stage.pump.efficiency_pump[0],
-                name=f"Stage {n} pump efficiency",
-                ui_units=pyunits.dimensionless,
-                display_units="fraction",
-                rounding=2,
-                description=f"Stage {n} pump efficiency",
-                is_input=True,
-                input_category=f"Stage {n} Pump",
-                is_output=True,
-            )
-            exports.add(
                 obj=stage.pump.control_volume.properties_out[0].pressure,
-                name=f"Stage {n} pump operating pressure",
+                name=f"Stage {n} Pump Operating Pressure",
                 ui_units=pyunits.bar,
                 display_units="bar",
                 rounding=2,
-                description=f"Stage {n} pump operating pressure",
+                description=f"Pump operating pressure",
                 is_input=True,
-                input_category=f"Stage {n} Pump",
+                input_category=f"Stage {n}",
                 is_output=True,
+                output_category=f"Stage {n}",
+            )
+            exports.add(
+                obj=stage.pump.work_mechanical[0],
+                name=f"Stage {n} Pump Power",
+                ui_units=pyunits.kW,
+                display_units="kW",
+                rounding=2,
+                description=f"Pump power",
+                is_input=True,
+                input_category=f"Stage {n}",
+                is_output=True,
+                output_category=f"Stage {n}",
+            )
+            exports.add(
+                obj=stage.pump.efficiency_pump[0],
+                name=f"Stage {n} Pump Efficiency",
+                ui_units=pyunits.dimensionless,
+                display_units="fraction",
+                rounding=2,
+                description=f"Pump efficiency",
+                is_input=True,
+                input_category=f"Stage {n}",
+                is_output=True,
+                output_category=f"Stage {n}",
             )
             # System metrics
         exports.add(
             obj=stage.RO.area,
-            name=f"Stage {n} RO membrane area",
+            name=f"Stage {n} Area",
             ui_units=pyunits.m**2,
-            display_units="m^2",
+            display_units="m2",
             rounding=2,
-            description=f"Stage {n} RO membrane area",
+            description=f"Membrane area",
             is_input=False,
             is_output=True,
-            output_category="System metrics",
+            output_category=f"Stage {n}",
+        )
+        exports.add(
+            obj=stage.RO.width,
+            name=f"Stage {n} Width",
+            ui_units=pyunits.m,
+            display_units="m",
+            rounding=2,
+            description=f"Stage width",
+            is_input=True,
+            input_category=f"Stage {n}",
+            is_output=True,
+            output_category=f"Stage {n}",
+        )
+        exports.add(
+            obj=stage.RO.length,
+            name=f"Stage {n} Length",
+            ui_units=pyunits.m,
+            display_units="m",
+            rounding=2,
+            description=f"Stage length",
+            is_input=True,
+            input_category=f"Stage {n}",
+            is_output=True,
+            output_category=f"Stage {n}",
         )
 
         # Unit model data, RO
         exports.add(
             obj=stage.RO.A_comp[0, "H2O"],
-            name=f"Stage {n} RO water permeability coefficient",
+            name=f"Stage {n} Water Permeability Coefficient",
             ui_units=pyunits.L / pyunits.hr / pyunits.m**2 / pyunits.bar,
             display_units="LMH/bar",
             rounding=2,
-            description=f"Stage {n} RO water permeability coefficient",
+            description=f"Water permeability coefficient",
             is_input=True,
-            input_category=f"Stage {n} Reverse Osmosis",
-            is_output=False,
+            input_category=f"Stage {n}",
+            is_output=True,
+            output_category=f"Stage {n}",
         )
 
         exports.add(
             obj=stage.RO.B_comp[0, comp],
-            name=f"Stage {n} RO salt permeability coefficient",
+            name=f"Stage {n} Salt Permeability Coefficient",
             ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
             display_units="LMH",
             rounding=2,
-            description=f"Stage {n} RO salt permeability coefficient",
+            description=f"Salt permeability coefficient",
             is_input=True,
-            input_category=f"Stage {n} Reverse Osmosis",
-            is_output=False,
+            input_category=f"Stage {n}",
+            is_output=True,
+            output_category=f"Stage {n}",
         )
         exports.add(
             obj=stage.RO.feed_side.channel_height,
-            name=f"Stage {n} RO feed-side channel height",
+            name=f"Stage {n} Channel Height",
             ui_units=pyunits.mm,
             display_units="mm",
             rounding=2,
-            description=f"Stage {n} RO feed-side channel height",
+            description=f"Feed-side channel height",
             is_input=True,
-            input_category=f"Stage {n} Reverse Osmosis",
+            input_category=f"Stage {n}",
             is_output=False,
         )
         exports.add(
             obj=stage.RO.feed_side.spacer_porosity,
-            name=f"Stage {n} RO feed-side spacer porosity",
+            name=f"Stage {n} Spacer Porosity",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
             rounding=2,
-            description=f"Stage {n} RO feed-side spacer porosity",
+            description=f"Feed-side spacer porosity",
             is_input=True,
-            input_category=f"Stage {n} Reverse Osmosis",
+            input_category=f"Stage {n}",
             is_output=False,
         )
         exports.add(
             obj=stage.RO.permeate.pressure[0],
-            name=f"Stage {n} RO permeate-side pressure",
+            name=f"Stage {n} RO Permeate Pressure",
             ui_units=pyunits.bar,
             display_units="bar",
             rounding=2,
-            description=f"Stage {n} RO permeate-side pressure",
+            description=f"Permeate-side pressure",
             is_input=True,
-            input_category=f"Stage {n} Reverse Osmosis",
+            input_category=f"Stage {n}",
             is_output=False,
         )
         exports.add(
-            obj=stage.RO.width,
-            name=f"Stage {n} RO stage width",
-            ui_units=pyunits.m,
-            display_units="m",
-            rounding=2,
-            description=f"Stage {n} RO stage width",
-            is_input=True,
-            input_category=f"Stage {n} Reverse Osmosis",
-            is_output=False,
-        )
-        exports.add(
-            obj=stage.RO.flux,
-            name=f"Stage {n} RO flux",
+            obj=stage.flux,
+            name=f"Stage {n} RO Flux",
             ui_units=pyunits.liter / pyunits.hr / pyunits.m**2,
             display_units="LMH",
             rounding=2,
-            description=f"Flux of Stage {n} RO unit",
+            description=f"Flux of stage {n} RO unit",
             is_input=False,
-            input_category=f"Stage {n} Reverse Osmosis",
+            input_category=f"Stage {n}",
             is_output=True,
+            output_category=f"Stage {n}",
+        )
+        exports.add(
+            obj=stage.recovery,
+            name=f"Stage {n} Volumetric Recovery",
+            ui_units=pyunits.dimensionless,
+            display_units="fraction",
+            rounding=2,
+            description=f"Volumetric recovery",
+            is_input=False,
+            input_category=f"Stage {n}",
+            is_output=True,
+            output_category=f"Stage {n}",
             # output_category="System metrics",
         )
         exports.add(
             obj=stage.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
-            name=f"Stage {n} RO water mass recovery",
+            name=f"Stage {n} Gravimetric Recovery",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
             rounding=2,
-            description=f"Water mass recovery of Stage {n} RO unit",
+            description=f"Gravimetric recovery",
             is_input=False,
-            input_category=f"Stage {n} Reverse Osmosis",
+            input_category=f"Stage {n}",
             is_output=True,
-            output_category="System metrics",
+            output_category=f"Stage {n}",
         )
 
     # Unit model data, ERD
     if fs.add_erd:
         exports.add(
             obj=fs.ERD.efficiency_pump[0],
-            name="ERD Pump efficiency",
+            name="ERD Efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
             rounding=2,
-            description="Efficiency of energy recovery device",
+            description="ERD efficiency",
             is_input=True,
-            input_category="Energy Recovery Device",
-            is_output=False,
+            input_category="ERD",
+            is_output=True,
+            output_category="ERD",
         )
         exports.add(
             obj=fs.ERD.control_volume.properties_out[0].pressure,
-            name="ERD operating pressure",
+            name="ERD Operating Pressure",
             ui_units=pyunits.bar,
             display_units="bar",
             rounding=2,
-            description="Operating pressure of energy recovery device",
+            description="ERD operating pressure",
             is_input=True,
-            input_category="Energy Recovery Device",
+            input_category="ERD",
             is_output=False,
         )
 
@@ -330,7 +442,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         rounding=2,
         description="Utilization factor - [annual use hours/total hours in year]",
         is_input=True,
-        input_category="System costing",
+        input_category="Costing",
         is_output=False,
     )
     exports.add(
@@ -341,7 +453,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         rounding=1,
         description="Total Installed Cost (TIC)",
         is_input=True,
-        input_category="System costing",
+        input_category="Costing",
         is_output=False,
     )
     exports.add(
@@ -352,7 +464,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         rounding=1,
         description="Total Purchased Equipment Cost (TPEC)",
         is_input=True,
-        input_category="System costing",
+        input_category="Costing",
         is_output=False,
     )
     exports.add(
@@ -363,7 +475,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         rounding=2,
         description="Total investment factor [investment cost/equipment cost]",
         is_input=True,
-        input_category="System costing",
+        input_category="Costing",
         is_output=False,
     )
     exports.add(
@@ -374,7 +486,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         rounding=2,
         description="Maintenance-labor-chemical factor [fraction of investment cost/year]",
         is_input=True,
-        input_category="System costing",
+        input_category="Costing",
         is_output=False,
     )
     exports.add(
@@ -385,18 +497,29 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         rounding=2,
         description="Capital annualization factor [fraction of investment cost/year]",
         is_input=True,
-        input_category="System costing",
+        input_category="Costing",
         is_output=False,
     )
     exports.add(
         obj=fs.costing.electricity_cost,
-        name="Electricity cost",
+        name="Electricity Cost",
         ui_units=fs.costing.base_currency / pyunits.kWh,
         display_units="$/kWh",
         rounding=3,
         description="Electricity cost",
         is_input=True,
-        input_category="System costing",
+        input_category="Costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.reverse_osmosis.membrane_cost,
+        name="Membrane Unit Cost",
+        ui_units=fs.costing.base_currency / pyunits.m**2,
+        display_units="$/m2",
+        rounding=3,
+        description="Membrane cost",
+        is_input=True,
+        input_category="Costing",
         is_output=False,
     )
 
@@ -427,9 +550,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Product
     exports.add(
         obj=fs.product.properties[0].flow_vol,
-        name="Product volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hr,
-        display_units="m3/h",
+        name="Product Flow Rate",
+        ui_units=pyunits.liter / pyunits.s,
+        display_units="L/s",
         rounding=2,
         description="Product water volumetric flow rate",
         is_input=False,
@@ -438,7 +561,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].conc_mass_phase_comp["Liq", comp],
-        name=f"Product {comp} concentration",
+        name=f"Product {comp} Concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
@@ -451,74 +574,71 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Disposal
     exports.add(
         obj=fs.disposal.properties[0].flow_vol,
-        name="Waste brine volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hr,
-        display_units="m3/h",
+        name="Brine Flow Rate",
+        ui_units=pyunits.liter / pyunits.s,
+        display_units="L/s",
         rounding=2,
-        description="Waste brine volumetric flow rate",
+        description="Brine volumetric flow rate",
         is_input=False,
         is_output=True,
         output_category="Disposal",
     )
     exports.add(
         obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", comp],
-        name=f"Waste brine {comp} concentration",
+        name=f"Brine {comp} Concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=3,
-        description=f"Waste brine {comp} concentration",
+        description=f"Brine {comp} concentration",
         is_input=False,
         is_output=True,
         output_category="Disposal",
     )
 
-    exports.add(
-        obj=fs.costing.SEC,
-        name="Specific energy consumption",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3 of product water",
-        rounding=3,
-        description="Specific energy consumption (SEC)",
-        is_input=False,
-        is_output=True,
-        output_category="System metrics",
-    )
-    exports.add(
-        obj=fs.costing.LCOW,
-        name="Levelized cost of water",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of product water",
-        rounding=3,
-        description="Levelized cost of water (LCOW)",
-        is_input=False,
-        is_output=True,
-        output_category="System metrics",
-    )
-
 
 def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
-    # m = build()
-    m = multistage_RO.build_n_stage_system(n_stages=build_options["n_stages"].value, add_erd=True)
-
-    # the UI sets `capital_recovery_factor`, so unfix `wacc`
-    m.fs.costing.wacc.unfix()
-    m.fs.costing.capital_recovery_factor.fix()
 
     solver = get_solver()
+    # print(build_options["stage_2_booster"].value, type(build_options["stage_2_booster"].value))
+    # print(build_options["stage_3_booster"].value, type(build_options["stage_3_booster"].value))
+    # assert False
+    pump_dict = {1: True}
+    for n in [2, 3]:
+        if build_options[f"stage_{n}_booster"].value == "True":
+            pump_dict[n] = True
+        else:
+            pump_dict[n] = False
 
-    m = multistage_RO.run_n_stage_system(n_stages=build_options["n_stages"].value, add_erd=True)
+    ro_op_dict = {
+        "A_comp": build_options["A_comp"].value
+        * pyunits.liter
+        / pyunits.m**2
+        / pyunits.hour
+        / pyunits.bar,
+        "B_comp": build_options["B_comp"].value
+        * pyunits.liter
+        / pyunits.m**2
+        / pyunits.hour,
+    }
 
-    # build, set, and initialize
-    # m = build(erd_type=erd_type)
-    # set_operating_conditions(m)
-    # initialize_system(m, solver=solver)
+    m = multistage_RO.run_n_stage_system(
+        prop_pack=build_options["prop_pack"].value,
+        flow_vol=build_options["flow_vol"].value,
+        salinity=build_options["salinity"].value,
+        temperature=build_options["temperature"].value,
+        n_stages=build_options["n_stages"].value,
+        add_erd=build_options["add_erd"].value,
+        max_pressure=build_options["max_pressure"].value * 1e5,  # convert bar to Pa
+        max_perm_conc=build_options["max_perm_conc"].value,
+        pump_dict=pump_dict,
+        ro_op_dict=ro_op_dict,
+    )
 
-    # NOTE: GUI aims to solve simulation-based flowsheet
-    # optimize_set_up(m)
+    recovery = build_options["recovery"].value / 100  # convert % to fraction
+    m = multistage_RO.set_system_recovery(m, recovery)
 
-    # display
-    results = utils.solve(m, solver=solver)
+    _ = utils.solve(m, solver=solver)
     return m
 
 
