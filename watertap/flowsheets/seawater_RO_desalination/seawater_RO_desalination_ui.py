@@ -230,17 +230,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="Desalination",
         is_output=False,
     )
-    exports.add(
-        obj=fs.desalination.P2.efficiency_pump,
-        name="Pump 2 efficiency",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=1,
-        description="Efficiency of pump 2 in the desalination circuit",
-        is_input=True,
-        input_category="Desalination",
-        is_output=False,
-    )
     # Unit model data, RO
     exports.add(
         obj=fs.desalination.RO.A_comp[0, "H2O"],
@@ -253,7 +242,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="Desalination",
         is_output=False,
     )
-
     exports.add(
         obj=fs.desalination.RO.B_comp[0, "TDS"],
         name="RO salt permeability coefficient",
@@ -270,7 +258,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         name="RO feed-side channel height",
         ui_units=pyunits.mm,
         display_units="mm",
-        rounding=2,
+        rounding=3,
         description="Feed-side channel height",
         is_input=True,
         input_category="Desalination",
@@ -457,7 +445,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         obj=fs.posttreatment.lime_addition.solution_density,
         name="Lime solution density",
         ui_units=pyunits.kg / pyunits.m**3,
-        display_units="mg/L",
+        display_units="kg/m3",
         rounding=1,
         description="Solution density of lime",
         is_input=True,
@@ -477,83 +465,9 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # System costing
-    exports.add(
-        obj=fs.costing.utilization_factor,
-        name="Utilization factor",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Utilization factor - [annual use hours/total hours in year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.TIC,
-        name="Total Installed Cost",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=1,
-        description="Total Installed Cost (TIC)",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.TPEC,
-        name="Total Purchased Equipment Cost",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=1,
-        description="Total Purchased Equipment Cost (TPEC)",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.total_investment_factor,
-        name="Total investment factor",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Total investment factor [investment cost/equipment cost]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.maintenance_labor_chemical_factor,
-        name="Maintenance-labor-chemical factor",
-        ui_units=1 / pyunits.year,
-        display_units="fraction/year",
-        rounding=2,
-        description="Maintenance-labor-chemical factor [fraction of investment cost/year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.capital_recovery_factor,
-        name="Capital annualization factor",
-        ui_units=1 / pyunits.year,
-        display_units="fraction/year",
-        rounding=2,
-        description="Capital annualization factor [fraction of investment cost/year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.electricity_cost,
-        name="Electricity cost",
-        ui_units=fs.costing.base_currency / pyunits.kWh,
-        display_units="$/kWh",
-        rounding=3,
-        description="Electricity cost",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
+    # TODO: Should we expose costing parameters? The separate ZO and RO costing complicates this
+    # If so,consider only exposing one input, but fixing the other behind the scenes as well
+    # Also note that the costing packages assume different parameter values (elec_cost, utilization factor, etc.)
 
     # --- Output data ---
     # Municipal
