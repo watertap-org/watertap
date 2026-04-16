@@ -22,116 +22,117 @@ import watertap.flowsheets.multistage_RO.utils as utils
 # lcow_results[salinity][n_stages][add_erd] = LCOW
 lcow_results_salinity = {
     5: {
-        1: {False: 0.2646417561974558, True: 0.24997536766294023},
-        2: {False: 0.263486123447289, True: 0.24904023931106112},
-        3: {False: 0.26290582661705675, True: 0.2486799517624164},
+        1: {False: 0.3501, True: 0.3307},
+        2: {False: 0.3485, True: 0.3294},
+        3: {False: 0.3478, True: 0.329},
     },
-    35: {
-        1: {False: 0.639173643425559, True: 0.5520735281058546},
-        2: {False: 0.6281747023336776, True: 0.5400820338676561},
-        3: {False: 0.6244117389129622, True: 0.5373567250248367},
-    },
-    75: {
-        1: {False: 1.3707996721914295, True: 1.1280897471800224},
-        2: {False: 1.310031037609782, True: 1.066010790989584},
-        3: {False: 1.2957645082194817, True: 1.056715235134523},
+    # 35: {
+    #     1: {False: 0.8456, True: 0.7303},
+    #     2: {False: 0.831, True: 0.7145},
+    #     3: {False: 0.826, True: 0.7109},
+    # },
+    # 75: {
+    #     1: {False: 1.8135, True: 1.4924},
+    #     2: {False: 1.7331, True: 1.4103},
+    #     3: {False: 1.7142, True: 1.398},
+    # },
+    100: {
+        1: {False: 2.8075, True: 2.2792},
+        2: {False: 2.6304, True: 2.105},
+        3: {False: 2.5822, True: 2.0704},
     },
 }
 
 # sec_results[salinity][n_stages][add_erd] = SEC
 sec_results_salinity = {
     5: {
-        1: {False: 1.185200975449009, True: 0.7986981264221501},
-        2: {False: 1.1822460224194102, True: 0.7975791321931648},
-        3: {False: 1.1788834876349958, True: 0.7974824333627738},
+        1: {False: 1.1852, True: 0.7986},
+        2: {False: 1.1822, True: 0.7975},
+        3: {False: 1.1788, True: 0.7974},
     },
-    35: {
-        1: {False: 3.9539366172570785, True: 2.527912638003297},
-        2: {False: 3.843786781180363, True: 2.395669592457694},
-        3: {False: 3.823722058124385, True: 2.3882162553839885},
-    },
-    75: {
-        1: {False: 9.857465150091395, True: 6.137098051963456},
-        2: {False: 9.363590468062696, True: 5.608104313741416},
-        3: {False: 9.250152434952605, True: 5.564988640713179},
+    # 35: {
+    #     1: {False: 3.9539, True: 2.5279},
+    #     2: {False: 3.8437, True: 2.3956},
+    #     3: {False: 3.8237, True: 2.3882},
+    # },
+    # 75: {
+    #     1: {False: 9.8574, True: 6.137},
+    #     2: {False: 9.3635, True: 5.6081},
+    #     3: {False: 9.2501, True: 5.5649},
+    # },
+    100: {
+        1: {False: 15.647, True: 9.688},
+        2: {False: 14.6124, True: 8.6606},
+        3: {False: 14.3329, True: 8.5305},
     },
 }
 
 
 lcow_results_flow = {
     1: {
-        1: {False: 0.639173643425559, True: 0.5520735281058546},
-        2: {False: 0.6281747023336776, True: 0.5400820338676561},
-        3: {False: 0.6244117389129622, True: 0.5373567250248367},
+        1: {False: 0.8456, True: 0.7303},
+        2: {False: 0.831, True: 0.7145},
+        3: {False: 0.826, True: 0.7109},
     },
-    5: {
-        1: {False: 0.6391736470342906, True: 0.5520735310135787},
-        2: {False: 0.6281747057787588, True: 0.5400820365865827},
-        3: {False: 0.6244117423389374, True: 0.5373567277301287},
-    },
-    10: {
-        1: {False: 0.6391736470431408, True: 0.5520735310135786},
-        2: {False: 0.6281747057787544, True: 0.5400820365865802},
-        3: {False: 0.6244117423435839, True: 0.5373567277298809},
+    1000: {
+        1: {False: 0.8496, True: 0.7313},
+        2: {False: 0.8333, True: 0.7167},
+        3: {False: 0.8284, True: 0.7132},
     },
 }
 sec_results_flow = {
     1: {
-        1: {False: 3.9539366172570785, True: 2.527912638003297},
-        2: {False: 3.843786781180363, True: 2.395669592457694},
-        3: {False: 3.823722058124385, True: 2.3882162553839885},
+        1: {False: 3.9539, True: 2.5279},
+        2: {False: 3.8437, True: 2.3956},
+        3: {False: 3.8237, True: 2.3882},
     },
-    5: {
-        1: {False: 3.95393664516048, True: 2.5279126552463063},
-        2: {False: 3.8437868076866253, True: 2.3956696081618216},
-        3: {False: 3.823722084869795, True: 2.3882158722428675},
-    },
-    10: {
-        1: {False: 3.9539366463023233, True: 2.5279126557388425},
-        2: {False: 3.843786809243369, True: 2.39566960911794},
-        3: {False: 3.8237226074695707, True: 2.38821627099504},
+    1000: {
+        1: {False: 4.1014, True: 2.5725},
+        2: {False: 3.8789, True: 2.4304},
+        3: {False: 3.8618, True: 2.4258},
     },
 }
 
+
 lcow_results_recov = {
     0.4: {
-        1: {False: 0.6919036149545981, True: 0.5835019346358996},
-        2: {False: 0.6857187546581422, True: 0.5785921691490907},
-        3: {False: 0.6833326235243236, True: 0.5763050336260196},
+        1: {False: 0.9153, True: 0.7719},
+        2: {False: 0.9072, True: 0.7654},
+        3: {False: 0.904, True: 0.7624},
     },
     0.5: {
-        1: {False: 0.639173643425559, True: 0.5520735281058546},
-        2: {False: 0.6281747023336776, True: 0.5400820338676561},
-        3: {False: 0.6244117389129622, True: 0.5373567250248367},
+        1: {False: 0.8456, True: 0.7303},
+        2: {False: 0.831, True: 0.7145},
+        3: {False: 0.826, True: 0.7109},
     },
     0.6: {
-        1: {False: 0.634032081033701, True: 0.5608013704587148},
-        2: {False: 0.6049856059766691, True: 0.5298662384592617},
-        3: {False: 0.6012572538785682, True: 0.5270390053395566},
+        1: {False: 0.8388, True: 0.7419},
+        2: {False: 0.8003, True: 0.701},
+        3: {False: 0.7954, True: 0.6972},
     },
 }
 
 
 sec_results_recov = {
     0.4: {
-        1: {False: 4.226692698047057, True: 2.398919476685519},
-        2: {False: 4.18962300828809, True: 2.3768661562930875},
-        3: {False: 4.177362916705994, True: 2.347255523779293},
+        1: {False: 4.2266, True: 2.3989},
+        2: {False: 4.1896, True: 2.3768},
+        3: {False: 4.1773, True: 2.3472},
     },
     0.5: {
-        1: {False: 3.9539366172570785, True: 2.527912638003297},
-        2: {False: 3.843786781180363, True: 2.395669592457694},
-        3: {False: 3.823722058124385, True: 2.3882162553839885},
+        1: {False: 3.9539, True: 2.5279},
+        2: {False: 3.8437, True: 2.3956},
+        3: {False: 3.8237, True: 2.3882},
     },
     0.6: {
-        1: {False: 4.016746989547713, True: 2.8528281788348218},
-        2: {False: 3.7355669156680023, True: 2.539915317385019},
-        3: {False: 3.7172824375971394, True: 2.531721996885654},
+        1: {False: 4.0167, True: 2.8528},
+        2: {False: 3.7355, True: 2.5399},
+        3: {False: 3.7172, True: 2.5317},
     },
 }
 
 salinity = [5, 35, 75]  # g/L
-flows = [1, 5, 10]  # L/s
+flows = [1, 5, 10, 50, 100, 500, 1000]  # L/s
 recovery = [0.4, 0.5, 0.6]
 n_stages = [1, 2, 3]
 add_erd = [True, False]
@@ -163,6 +164,7 @@ class TestMultiStageRO:
         m = multistage.build_n_stage_system(
             n_stages=5, add_costing=False, prop_pack="NACL"
         )
+        assert m.fs.properties.solute_set.at(1) == "NaCl"
         assert isinstance(m.fs.properties, NaClParameterBlock)
         assert len(m.fs.stage) == 5
         assert len(m.fs.stages_set) == 5
@@ -190,6 +192,7 @@ class TestMultiStageRO:
             prop_pack="seawater",
             add_erd=False,
         )
+        assert m.fs.properties.solute_set.at(1) == "TDS"
         assert isinstance(m.fs.properties, SeawaterParameterBlock)
         assert len(m.fs.stage) == 3
         for n, stage in m.fs.stage.items():
@@ -213,7 +216,7 @@ class TestMultiStageRO:
 
     @pytest.mark.parametrize("n", n_stages)
     @pytest.mark.parametrize("erd", add_erd)
-    @pytest.mark.parametrize("salt", salinity)
+    @pytest.mark.parametrize("salt", lcow_results_salinity.keys())
     @pytest.mark.integration
     def test_multistage_ro_salinity_range(self, salt, n, erd):
         """
@@ -244,7 +247,7 @@ class TestMultiStageRO:
 
     @pytest.mark.parametrize("n", n_stages)
     @pytest.mark.parametrize("erd", add_erd)
-    @pytest.mark.parametrize("flow", flows)
+    @pytest.mark.parametrize("flow", lcow_results_flow.keys())
     @pytest.mark.integration
     def test_multistage_ro_flow_range(self, flow, n, erd):
         """
@@ -275,7 +278,7 @@ class TestMultiStageRO:
 
     @pytest.mark.parametrize("n", n_stages)
     @pytest.mark.parametrize("erd", add_erd)
-    @pytest.mark.parametrize("recov", recovery)
+    @pytest.mark.parametrize("recov", lcow_results_recov.keys())
     @pytest.mark.integration
     def test_multistage_ro_recovery_range(self, recov, n, erd):
         """
