@@ -51,7 +51,7 @@ from watertap.core import (  # noqa # pylint: disable=unused-import
 from watertap.core.solvers import get_solver
 import watertap.flowsheets.multistage_RO.utils as utils
 
-__author__ = "Alexander V. Dudchenk, Kurban A. Sitterley"
+__author__ = "Alexander V. Dudchenko, Kurban A. Sitterley"
 
 """
 Build and solve N-stage RO system with optional ERD and booster pumps.
