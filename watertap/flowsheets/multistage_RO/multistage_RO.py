@@ -297,6 +297,7 @@ def build_costing(m, hpro_costing=False):
         cma_ro = {"ro_type": "standard"}
 
     m.fs.costing = WaterTAPCosting()
+    m.fs.costing.base_currency = pyunits.USD_2023
 
     for n, stage in m.fs.stage.items():
         if stage.has_pump:
@@ -619,14 +620,17 @@ def run_n_stage_system(*args, **kwargs):
 
 if __name__ == "__main__":
 
+    pump_dict = {1: True, 2: True, 3: True, 4: False, 5: True}
     m = run_n_stage_system(
-        n_stages=2,
-        salinity=35,
-        flow_vol=1,
+        n_stages=3,
+        salinity=95,
+        flow_vol=5,
         add_erd=True,
+        pump_dict=pump_dict,
+        # max_pressure=300e5
     )
 
-    m = set_system_recovery(m, 0.5)
+    m = set_system_recovery(m, 0.4)
 
     res = utils.solve(model=m, tee=False)
 
