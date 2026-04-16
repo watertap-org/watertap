@@ -370,12 +370,12 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=False,
         )
         exports.add(
-            obj=stage.flux,
-            name=f"Stage {n} RO Flux",
+            obj=stage.average_flux_LMH,
+            name=f"Stage {n} Average RO Flux",
             ui_units=pyunits.liter / pyunits.hr / pyunits.m**2,
             display_units="LMH",
             rounding=2,
-            description=f"Flux of stage {n} RO unit",
+            description=f"Average flux of stage {n} RO unit",
             is_input=False,
             input_category=f"Stage {n}",
             is_output=True,
@@ -392,7 +392,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             input_category=f"Stage {n}",
             is_output=True,
             output_category=f"Stage {n}",
-            # output_category="System metrics",
         )
         exports.add(
             obj=stage.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
@@ -523,30 +522,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
 
-    # Feed
-    # exports.add(
-    #     obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-    #     name="Feed volumetric flow rate",
-    #     ui_units=pyunits.m**3 / pyunits.hour,
-    #     display_units="m3/hr",
-    #     rounding=2,
-    #     description="Inlet volumetric flow rate",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Feed",
-    # )
-    # exports.add(
-    #     obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", comp],
-    #     name="Feed NaCl concentration",
-    #     ui_units=pyunits.g / pyunits.L,
-    #     display_units="g/L",
-    #     rounding=2,
-    #     description="Inlet NaCl concentration",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Feed",
-    # )
-
     # Product
     exports.add(
         obj=fs.product.properties[0].flow_vol,
@@ -600,9 +575,7 @@ def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
 
     solver = get_solver()
-    # print(build_options["stage_2_booster"].value, type(build_options["stage_2_booster"].value))
-    # print(build_options["stage_3_booster"].value, type(build_options["stage_3_booster"].value))
-    # assert False
+
     pump_dict = {1: True}
     for n in [2, 3]:
         if build_options[f"stage_{n}_booster"].value == "True":

@@ -136,7 +136,7 @@ def report_ro(blk, w=30):
         f'{f"Salt Perm (B)":<{w}s}{value(pyunits.convert(bcomp, to_units=pyunits.liter / pyunits.m**2 / pyunits.hour)):<{w}.3f}{f"LMH"}'
     )
     print(f'{f"Salt Perm (B)":<{w}s}{value(bcomp):<{w}.3e}{f"m/s"}')
-    print(f'{f"Total Flux":<{w}s}{value(blk.flux):<{w}.3f}{f"LMH"}')
+    print(f'{f"Average Flux (LMH)":<{w}s}{value(blk.average_flux_LMH):<{w}.3f}{f"LMH"}')
 
     print(
         f'{f"Membrane Area":<{w}s}{value(blk.RO.area):<{w}.3f}{f"{pyunits.get_units(blk.RO.area)}"}'
@@ -153,18 +153,6 @@ def report_ro(blk, w=30):
     print(
         f'{f"Outlet Crossflow Vel.":<{w}s}{value(blk.RO.feed_side.velocity[0, 1])*100:<{w}.3f}{f"cm/s"}'
     )
-    # for (_, i, _), x in blk.RO.feed_side.cp_modulus.items():
-    #     # print(i, x)
-    #     print(
-    #         f'{f"CP Modulus @ {i}":<{w}s}{value(x):<{w}.3f}{"-"}'
-    #     )
-    # for (_, i, _, c), x in blk.RO.flux_mass_phase_comp.items():
-    #     # print(i, x)
-    #     if c != "H2O":
-    #         continue
-    #     print(
-    #         f'{f"Flux {c} @ {i}":<{w}s}{value(x):<{w}.3f}{"-"}'
-    #     )
     print(
         f'{f"Perm Backpressure":<{w}s}{value(pyunits.convert(blk.RO.mixed_permeate[0].pressure, to_units=pyunits.bar)):<{w}.3f}{f"bar"}'
     )

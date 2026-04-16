@@ -137,15 +137,15 @@ def build_stage(
         / stage.feed.properties[0].flow_vol_phase["Liq"]
     )
 
-    stage.flux = Var(
+    stage.average_flux_LMH = Var(
         initialize=25,
         bounds=(0.5, 50),
         units=pyunits.liter / pyunits.m**2 / pyunits.hour,
         doc="Stage flux",
     )
 
-    stage.flux_constr = Constraint(
-        expr=stage.flux
+    stage.average_flux_LMH_constr = Constraint(
+        expr=stage.average_flux_LMH
         == pyunits.convert(
             stage.product.properties[0].flow_vol_phase["Liq"] / stage.RO.area,
             to_units=pyunits.liter / pyunits.m**2 / pyunits.hour,
