@@ -303,8 +303,7 @@ def test_one_port_with_multiple_arcs(flowsheet2):
 
 @pytest.fixture
 def flowsheet_deactivated_arc(flowsheet2):
-    # Deactivate the arc_expanded block on stream2 to simulate purge/recirculation toggle
-    flowsheet2.fs.stream2.arc_expanded.deactivate()
+    flowsheet2.fs.stream2.expanded_block.deactivate()
     return flowsheet2
 
 
@@ -335,29 +334,15 @@ def test_deactivated_arc(flowsheet_deactivated_arc):
                 "['fs.FeedWater.outlet']",
                 "None",
                 "None",
-                "['fs.SP1.treated', 'fs.SP1.sludge']",
+                "['fs.SP1.treated (deactivated)', 'fs.SP1.sludge']",
             ],
             "Destination": [
                 "['fs.SP1.inlet']",
                 "None",
-                "['fs.Treated.inlet']",
+                "['fs.Treated.inlet (deactivated)']",
                 "['fs.Treated.inlet']",
                 "None",
             ],
         }
     )
     pd.testing.assert_frame_equal(results.astype(str), expected.astype(str))
-
-    # # SP1.treated -> Treated.inlet arc is deactivated
-    # # SP1.treated's Destination should show "(deactivated)"
-    # treated_row = results[results["Port"] == "fs.SP1.treated"].iloc[0]
-    # assert treated_row["Destination"] == ["fs.Treated.inlet (deactivated)"]
-    #
-    # # Treated.inlet receives from both SP1.treated (deactivated) and SP1.sludge (active)
-    # product_row = results[results["Port"] == "fs.Treated.inlet"].iloc[0]
-    # assert "fs.SP1.treated (deactivated)" in product_row["Source"]
-    # assert "fs.SP1.sludge" in product_row["Source"]  # this one is still active
-    #
-    # # stream1 (FeedWater -> SP1) is untouched, should have no deactivated label
-    # feed_row = results[results["Port"] == "fs.FeedWater.outlet"].iloc[0]
-    # assert "(deactivated)" not in str(feed_row["Destination"])

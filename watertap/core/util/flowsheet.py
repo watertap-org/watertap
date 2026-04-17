@@ -44,8 +44,8 @@ def list_ports(block, descend_into=False):
 
     port_to_arc = {}
     for arc in flowsheet.component_objects(Arc, descend_into=descend_into):
-        # Check if the arc_expanded block exists and is deactivated
-        arc_expanded = arc.component("arc_expanded")
+        # Check if the arc's expanded block exists and is deactivated
+        arc_expanded = arc.expanded_block
         is_deactivated = arc_expanded is not None and not arc_expanded.active
 
         source_label = arc.source.name + (" (deactivated)" if is_deactivated else "")
