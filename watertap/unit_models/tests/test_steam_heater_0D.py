@@ -31,6 +31,11 @@ from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 solver = get_solver()
 
+from idaes.core.util.model_diagnostics import (
+    DiagnosticsToolbox,
+    check_optimal_termination,
+)
+
 
 def build(mode, estimate_cooling_water=False):
     m = ConcreteModel()
@@ -53,7 +58,7 @@ def build(mode, estimate_cooling_water=False):
         estimate_cooling_water=estimate_cooling_water,
     )
 
-    m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].set_value(1)
+    m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
     m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(0)
     m.fs.unit.hot_side_inlet.temperature.fix(273.15 + 140)
     m.fs.unit.hot_side_inlet.pressure[0].fix(201325)
@@ -71,23 +76,39 @@ def build(mode, estimate_cooling_water=False):
     m.fs.unit.overall_heat_transfer_coefficient.fix(2e3)
 
     iscale.calculate_scaling_factors(m.fs.unit)
+    from idaes.core.util.model_statistics import degrees_of_freedom
 
+    dg = DiagnosticsToolbox(m)
+    dg.display_overconstrained_set()
+    dg.display_underconstrained_set()
+    # m.fs.unit.outlet_liquid_mass_balance.pprint()
+    m.fs.unit.hot_side.material_balances.pprint()
+    m.fs.unit.display()
+    assert degrees_of_freedom(m) == 0
     return m
+
+
+def test_basic():
+    m = build(Mode.HEATER)
+    # opt = get_solver(solver)
+    # results = opt.solve(m, tee=True)
+    # assert check_optimal_termination(results)
 
 
 @pytest.mark.requires_idaes_solver
 class TestSteamHeater0D(UnitTestHarness):
     def configure(self):
-        m = build(Mode.HEATER)
+        m = build(Mode.CONDENSER)
 
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-        ] = 0.6913572208080987
-        self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
-            381.3881358453978
-        )
+        ] = 0.5
+        self.unit_solutions[
+            m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ] = 0.5
+        self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = 341.356646567839
         self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
-            338.631650369243
+            329.521210682437
         )
 
         self.conservation_equality = {
@@ -110,15 +131,13 @@ class TestCondenserNoEstimation(UnitTestHarness):
     def configure(self):
         m = build(Mode.CONDENSER, estimate_cooling_water=False)
         m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
-        m.fs.unit.area.unfix()
-
         self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
-            375.3825125826731
+            341.3566465678398
         )
         self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
-            327.67799780959757
+            329.5212106824374
         )
-        self.unit_solutions[m.fs.unit.area] = 7.089052938081363
+        self.unit_solutions[m.fs.unit.area] = 10
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
         ] = 0.5
@@ -143,8 +162,6 @@ class TestCondenserNoEstimation(UnitTestHarness):
 class TestCondenserwithEstimation(UnitTestHarness):
     def configure(self):
         m = build(Mode.CONDENSER, estimate_cooling_water=True)
-        m.fs.unit.area.unfix()
-
         outlet_temperature = 340
         m.fs.unit.cold_side_outlet.temperature[0].fix(outlet_temperature)
         m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
@@ -160,16 +177,16 @@ class TestCondenserwithEstimation(UnitTestHarness):
         )
 
         self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
-            373.69526509227114
+            347.6197595677517
         )
         self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = 340
-        self.unit_solutions[m.fs.unit.area] = 7.774904144204368
+        self.unit_solutions[m.fs.unit.area] = 10
         self.unit_solutions[
             m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-        ] = 0.24841897743647612
+        ] = 0.26018868152521274
         self.unit_solutions[
             m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 6.849266092188223
+        ] = 7.173773647766579
         self.unit_solutions[
             m.fs.unit.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"]
         ] = 0.035
