@@ -16,6 +16,9 @@ import watertap.flowsheets.multistage_RO.multistage_RO as multistage_RO
 import watertap.flowsheets.multistage_RO.utils as utils
 from watertap.core.solvers import get_solver
 
+build = multistage_RO.build_n_stage_system
+solve = utils.solve
+
 
 def export_to_ui():
     return FlowsheetInterface(
