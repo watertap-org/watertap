@@ -20,13 +20,9 @@ import idaes.logger as idaeslog
 from watertap.costing.unit_models.heat_exchanger import (
     cost_heat_exchanger,
 )
-from enum import Enum, auto
 from pyomo.common.config import ConfigValue
 
 from watertap.core.util.initialization import interval_initializer
-
-_log = idaeslog.getLogger(__name__)
-
 
 __author__ = "Elmira Shamlou, Alexander V. Dudchenko"
 
