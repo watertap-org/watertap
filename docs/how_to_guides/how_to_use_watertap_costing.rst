@@ -58,7 +58,7 @@ How To
     solver = get_solver()
 
 The :ref:`WaterTAP costing package<watertap_costing>` can be added to any WaterTAP flowsheet but is not required to run a WaterTAP model.
-For this How-To, we will build a flowsheet with:
+For this How-To, we will build a flowsheet with these units in the following order:
 
 - Feed block
 - Pump 1
