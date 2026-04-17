@@ -621,6 +621,8 @@ def run_n_stage_system(*args, **kwargs):
     return m
 
 
+build = run_n_stage_system
+
 if __name__ == "__main__":
 
     pump_dict = {1: True, 2: True, 3: True, 4: False, 5: True}
