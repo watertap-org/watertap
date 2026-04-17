@@ -22,7 +22,7 @@ from idaes.models.unit_models import (
     Product,
 )
 
-from watertap.core.util.unit_models import list_ports
+from watertap.core.util.flowsheet import list_ports
 from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
