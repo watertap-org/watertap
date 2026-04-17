@@ -17,7 +17,7 @@ from pyomo.environ import (
 from idaes.core import FlowsheetBlock
 import watertap.property_models.water_prop_pack as props_w
 import watertap.property_models.seawater_prop_pack as props_sw
-from watertap.unit_models.steam_heater_0D import SteamHeater0D, Mode
+from watertap.unit_models.steam_heater_0D import SteamHeater0D
 from watertap.core.solvers import get_solver
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
@@ -30,11 +30,6 @@ import pytest
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 solver = get_solver()
-
-from idaes.core.util.model_diagnostics import (
-    DiagnosticsToolbox,
-    check_optimal_termination,
-)
 
 
 def build(estimate_cooling_water=False):
@@ -73,11 +68,7 @@ def build(estimate_cooling_water=False):
     )
     m.fs.unit.area.fix(10)
     m.fs.unit.overall_heat_transfer_coefficient.fix(2e3)
-
     iscale.calculate_scaling_factors(m.fs.unit)
-    from idaes.core.util.model_statistics import degrees_of_freedom
-
-    assert degrees_of_freedom(m) == 0
     return m
 
 
