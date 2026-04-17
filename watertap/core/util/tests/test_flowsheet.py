@@ -14,13 +14,12 @@ import pytest
 import pandas as pd
 
 import pyomo.environ as pyo
-from pyomo.network import Arc, Port
+from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
     Feed,
     Separator,
     Product,
-    StateJunction,
 )
 
 from watertap.core.util.flowsheet import list_ports
