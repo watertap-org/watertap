@@ -40,11 +40,6 @@ To do: Consider incorporating as a modification to IDAES' FeedWaterHeater model 
 """
 
 
-class Mode(Enum):
-    HEATER = auto()
-    CONDENSER = auto()
-
-
 @declare_process_block_class(
     "SteamHeater0D",
     doc="""Feedwater Heater Condensing Section
