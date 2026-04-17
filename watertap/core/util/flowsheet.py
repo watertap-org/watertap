@@ -20,11 +20,12 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-def list_ports(block):
+def list_ports(block, descend_into=False):
     """
     Lists all the inlet and outlet ports on a unit model or flowsheet
     Args:
         block : a unit model or flowsheet model block
+        descend_into : whether or not to consider arcs in nested flowsheets or sub-blocks
 
     Returns:
         df : DataFrame with the unit model name, port name, and port path
@@ -42,16 +43,23 @@ def list_ports(block):
         flowsheet = block.parent_block()
 
     port_to_arc = {}
-    for arc in flowsheet.component_objects(Arc):
+    for arc in flowsheet.component_objects(Arc, descend_into=descend_into):
+        # Check if the arc_expanded block exists and is deactivated
+        arc_expanded = arc.component("arc_expanded")
+        is_deactivated = arc_expanded is not None and not arc_expanded.active
+
+        source_label = arc.source.name + (" (deactivated)" if is_deactivated else "")
+        dest_label = arc.dest.name + (" (deactivated)" if is_deactivated else "")
+
         # Assigns the destination to source ports
         if arc.source.name not in port_to_arc:
             port_to_arc[arc.source.name] = {"Source": [], "Destination": []}
-        port_to_arc[arc.source.name]["Destination"].append(arc.dest.name)
+        port_to_arc[arc.source.name]["Destination"].append(dest_label)
 
         # Assigns the source to destination ports
         if arc.dest.name not in port_to_arc:
             port_to_arc[arc.dest.name] = {"Source": [], "Destination": []}
-        port_to_arc[arc.dest.name]["Source"].append(arc.source.name)
+        port_to_arc[arc.dest.name]["Source"].append(source_label)
 
     rows = []
 
