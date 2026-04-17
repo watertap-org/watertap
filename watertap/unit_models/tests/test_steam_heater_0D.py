@@ -37,7 +37,7 @@ from idaes.core.util.model_diagnostics import (
 )
 
 
-def build(mode, estimate_cooling_water=False):
+def build(estimate_cooling_water=False):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.steam_properties = props_w.WaterParameterBlock()
@@ -54,7 +54,6 @@ def build(mode, estimate_cooling_water=False):
         },
         delta_temperature_callback=delta_temperature_chen_callback,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
-        mode=mode,
         estimate_cooling_water=estimate_cooling_water,
     )
 
@@ -78,27 +77,14 @@ def build(mode, estimate_cooling_water=False):
     iscale.calculate_scaling_factors(m.fs.unit)
     from idaes.core.util.model_statistics import degrees_of_freedom
 
-    dg = DiagnosticsToolbox(m)
-    dg.display_overconstrained_set()
-    dg.display_underconstrained_set()
-    # m.fs.unit.outlet_liquid_mass_balance.pprint()
-    m.fs.unit.hot_side.material_balances.pprint()
-    m.fs.unit.display()
     assert degrees_of_freedom(m) == 0
     return m
-
-
-def test_basic():
-    m = build(Mode.HEATER)
-    # opt = get_solver(solver)
-    # results = opt.solve(m, tee=True)
-    # assert check_optimal_termination(results)
 
 
 @pytest.mark.requires_idaes_solver
 class TestSteamHeater0D(UnitTestHarness):
     def configure(self):
-        m = build(Mode.CONDENSER)
+        m = build()
 
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
@@ -127,41 +113,9 @@ class TestSteamHeater0D(UnitTestHarness):
 
 
 @pytest.mark.requires_idaes_solver
-class TestCondenserNoEstimation(UnitTestHarness):
-    def configure(self):
-        m = build(Mode.CONDENSER, estimate_cooling_water=False)
-        m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
-        self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
-            341.3566465678398
-        )
-        self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
-            329.5212106824374
-        )
-        self.unit_solutions[m.fs.unit.area] = 10
-        self.unit_solutions[
-            m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-        ] = 0.5
-
-        self.conservation_equality = {
-            "Check 1": {
-                "in": m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-                + m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-                + m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"],
-                "out": m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-                + m.fs.unit.hot_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-                + m.fs.unit.cold_side_outlet.flow_mass_phase_comp[0, "Liq", "H2O"],
-            },
-        }
-
-        return m
-
-
-@pytest.mark.requires_idaes_solver
 class TestCondenserwithEstimation(UnitTestHarness):
     def configure(self):
-        m = build(Mode.CONDENSER, estimate_cooling_water=True)
+        m = build(estimate_cooling_water=True)
         outlet_temperature = 340
         m.fs.unit.cold_side_outlet.temperature[0].fix(outlet_temperature)
         m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)

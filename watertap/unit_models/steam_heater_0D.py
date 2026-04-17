@@ -28,7 +28,7 @@ from watertap.core.util.initialization import interval_initializer
 _log = idaeslog.getLogger(__name__)
 
 
-__author__ = "Elmira Shamlou"
+__author__ = "Elmira Shamlou, Alexander V. Dudchenko"
 
 """
 This unit model uses is based on the IDAES `feedwater_heater_0D` model.
@@ -55,14 +55,6 @@ of shell is a saturated liquid.""",
 class SteamHeater0DData(HeatExchangerData):
     CONFIG = HeatExchangerData.CONFIG()
     CONFIG.declare(
-        "mode",
-        ConfigValue(
-            default=Mode.HEATER,
-            domain=Mode,
-            description="Mode of operation: heater or condenser",
-        ),
-    )
-    CONFIG.declare(
         "estimate_cooling_water",
         ConfigValue(
             default=False,
@@ -85,6 +77,8 @@ class SteamHeater0DData(HeatExchangerData):
             )
 
     def set_total_condensation(self):
+        """Set the flow of the vapor phase to zero at the outlet,
+        ensuring total condensation."""
         for j in self.hot_side.config.property_package.component_list:
             lb = self.hot_side.properties_out[0].flow_mass_phase_comp["Vap", j].lb
             self.hot_side.properties_out[0].flow_mass_phase_comp["Vap", j].fix(lb)
@@ -100,7 +94,7 @@ class SteamHeater0DData(HeatExchangerData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        # initialize inlet states (This might be redundunt
+        # initialize inlet states (This might be redundant)
         # but we should do it for consistency with other unit models
         # as well as interval initializer needs this.
         hot_source_flags = self.hot_side.initialize(
@@ -123,7 +117,6 @@ class SteamHeater0DData(HeatExchangerData):
 
         interval_initializer(self)
         super().initialize_build(*args, **kwargs)
-
         if self.config.estimate_cooling_water:
             self.cold_side_outlet.temperature[0].fix(cold_side_outlet_temperature)
             self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix()
