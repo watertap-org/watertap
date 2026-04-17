@@ -762,3 +762,5 @@ def display_costing(m):
 
 if __name__ == "__main__":
     m = main(erd_type="pressure_exchanger")
+    # m.fs.posttreatment.uv_aop.display()
+    # m.fs.pretreatment.ferric_chloride_addition.display()

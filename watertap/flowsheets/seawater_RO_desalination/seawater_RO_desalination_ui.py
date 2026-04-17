@@ -83,7 +83,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # TODO: Consider whether ZO removal fractions should be exposed - currently they are not
     # Unit model data, ferric chloride addition
     exports.add(
-        obj=fs.pretreatment.ferric_chloride_addition.chemical_dosage,
+        obj=fs.pretreatment.ferric_chloride_addition.chemical_dosage[0],
         name="Ferric chloride dosage",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -174,7 +174,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, antiscalant addition
     exports.add(
-        obj=fs.pretreatment.anti_scalant_addition.chemical_dosage,
+        obj=fs.pretreatment.anti_scalant_addition.chemical_dosage[0],
         name="Antiscalant dosage",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -397,7 +397,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, UV AOP
     exports.add(
-        obj=fs.posttreatment.uv_aop.uv_reduced_equivalent_dose,
+        obj=fs.posttreatment.uv_aop.uv_reduced_equivalent_dose[0],
         name="UV reduced equivalent dose",
         ui_units=pyunits.mJ / pyunits.cm**2,
         display_units="mJ/cm^2",
@@ -419,7 +419,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.posttreatment.uv_aop.oxidant_dose,
+        obj=fs.posttreatment.uv_aop.oxidant_dose[0],
         name="UV AOP oxidant dose",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -431,7 +431,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, lime addition
     exports.add(
-        obj=fs.posttreatment.lime_addition.chemical_dosage,
+        obj=fs.posttreatment.lime_addition.chemical_dosage[0],
         name="Lime chemical dosage",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
