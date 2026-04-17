@@ -383,6 +383,8 @@ based on ``flow_rate`` would be:
         name="SEC",
     )
 
+.. _aggregate_metric_LCOW:
+
 Levelized Cost of Water (LCOW)
 ++++++++++++++++++++++++++++++
 
@@ -445,6 +447,7 @@ The contribution of flows to the LCOW is found as both an individual contributio
 Similarly, ``electricity`` is counted both as ``LCOW_aggregate_variable_opex['electricity']`` as well as part of the ``LCOW_aggregate_variable_opex['Pump']``. For this reason, the system LCOW 
 is the summation of all indexes in any of the component or aggregate expressions *except* those indexed by flow.
 
+.. _aggregate_metric_SEC:
 
 Specific Energy Consumption (SEC)
 +++++++++++++++++++++++++++++++++
@@ -462,7 +465,7 @@ This expression is indexed by unit model flowsheet name and is calculated as
   
         \text{SEC}^{\text{component}}_{Q,i} = \frac{C_{el,i}}{Q}
 
-For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_energy_consumption(flow_rate, name="SEC")`` would create ``m.fs.costing.SEC`` and ``m.fs.costing.SEC_component`` that is indexed by ``fs.pump1`` and ``fs.pump2``.
+For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_energy_consumption(flow_rate, name="SEC")`` would create ``m.fs.costing.SEC`` and ``m.fs.costing.SEC_component`` that is indexed by ``"fs.pump1"`` and ``"fs.pump2"``.
 
 Specific Electrical Carbon Intensity (SECI)
 +++++++++++++++++++++++++++++++++++++++++++
@@ -480,7 +483,7 @@ This expression is indexed by unit model flowsheet name and is calculated as
     
             \text{SECI}^{\text{component}}_{Q,i} = \frac{f_{eci} C_{el,i}}{Q}
 
-For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_electrical_carbon_intensity(flow_rate, name="SECI")`` would create ``m.fs.costing.SECI`` and ``m.fs.costing.SECI_component`` that is indexed by ``fs.pump1`` and ``fs.pump2``.
+For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_electrical_carbon_intensity(flow_rate, name="SECI")`` would create ``m.fs.costing.SECI`` and ``m.fs.costing.SECI_component`` that is indexed by ``"fs.pump1"`` and ``"fs.pump2"``.
 
 Annual Water Production
 +++++++++++++++++++++++
