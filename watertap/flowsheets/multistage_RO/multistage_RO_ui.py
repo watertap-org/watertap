@@ -120,18 +120,6 @@ def export_to_ui():
                 "values_allowed": ["False", "True"],
                 "value": "False",  # default value
             },
-            # "stage_4_booster": {
-            #     "name": "stage_4_booster",
-            #     "display_name": "Include Stage 4 Booster?",
-            #     "values_allowed": ["False", "True"],
-            #     "value": "False",  # default value
-            # },
-            # "stage_5_booster": {
-            #     "name": "stage_5_booster",
-            #     "display_name": "Include Stage 5 Booster?",
-            #     "values_allowed": ["False", "True"],
-            #     "value": "False",  # default value
-            # },
         },
     )
 
@@ -195,23 +183,23 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="System metrics",
     )
-    # --- Input data ---
-    # Feed conditions
+
+    # Feed
     exports.add(
         obj=fs.system_recovery,
         name="System Recovery",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=3,
-        description="System recovery",
+        description="System volumetric recovery",
         is_input=True,
         input_category="System",
         is_output=True,
-        output_category="System",
+        output_category="System metrics",
     )
     exports.add(
         obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Inlet volumetric flowrate",
+        name="Feed volumetric flowrate",
         ui_units=pyunits.liter / pyunits.s,
         display_units="L/s",
         rounding=3,
@@ -223,15 +211,61 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", comp],
-        name=f"Feed {comp} concentration",
+        name=f"Feed {comp} Concentration",
         ui_units=pyunits.g / pyunits.liter,
         display_units="g/L",
         rounding=3,
-        description=f"Inlet {comp} concentration",
+        description=f"Feed {comp} Concentration",
         is_input=False,
         input_category="Feed",
         is_output=True,
         output_category="Feed",
+    )
+    # Product
+    exports.add(
+        obj=fs.product.properties[0].flow_vol,
+        name="Product Flow Rate",
+        ui_units=pyunits.liter / pyunits.s,
+        display_units="L/s",
+        rounding=2,
+        description="Product water volumetric flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Product",
+    )
+    exports.add(
+        obj=fs.product.properties[0].conc_mass_phase_comp["Liq", comp],
+        name=f"Product {comp} Concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
+        rounding=3,
+        description=f"Product water {comp} concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Product",
+    )
+    # Disposal
+    exports.add(
+        obj=fs.disposal.properties[0].flow_vol,
+        name="Brine Flow Rate",
+        ui_units=pyunits.liter / pyunits.s,
+        display_units="L/s",
+        rounding=2,
+        description="Brine volumetric flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Disposal",
+    )
+    exports.add(
+        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", comp],
+        name=f"Brine {comp} Concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
+        rounding=3,
+        description=f"Brine {comp} concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Disposal",
     )
 
     # Unit model data, feed pump
@@ -360,7 +394,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         )
         exports.add(
             obj=stage.RO.permeate.pressure[0],
-            name=f"Stage {n} RO Permeate Pressure",
+            name=f"Stage {n} Permeate Pressure",
             ui_units=pyunits.bar,
             display_units="bar",
             rounding=2,
@@ -371,7 +405,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         )
         exports.add(
             obj=stage.average_flux_LMH,
-            name=f"Stage {n} Average RO Flux",
+            name=f"Stage {n} Average Flux",
             ui_units=pyunits.liter / pyunits.hr / pyunits.m**2,
             display_units="LMH",
             rounding=2,
@@ -446,18 +480,18 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.costing.TIC,
-        name="Total Installed Cost",
+        name="Total Installed Cost Factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=1,
-        description="Total Installed Cost (TIC)",
+        description="Total Installed Cost (TIC) Factor",
         is_input=True,
         input_category="Costing",
         is_output=False,
     )
     exports.add(
         obj=fs.costing.TPEC,
-        name="Total Purchased Equipment Cost",
+        name="Total Purchased Equipment Cost Factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=1,
@@ -468,7 +502,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.costing.total_investment_factor,
-        name="Total investment factor",
+        name="Total Investment Factor",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=2,
@@ -479,7 +513,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.costing.maintenance_labor_chemical_factor,
-        name="Maintenance-labor-chemical factor",
+        name="Maintenance-labor-chemical Factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
         rounding=2,
@@ -490,7 +524,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.costing.capital_recovery_factor,
-        name="Capital annualization factor",
+        name="Capital Annualization Factor",
         ui_units=1 / pyunits.year,
         display_units="fraction/year",
         rounding=2,
@@ -520,54 +554,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_input=True,
         input_category="Costing",
         is_output=False,
-    )
-
-    # Product
-    exports.add(
-        obj=fs.product.properties[0].flow_vol,
-        name="Product Flow Rate",
-        ui_units=pyunits.liter / pyunits.s,
-        display_units="L/s",
-        rounding=2,
-        description="Product water volumetric flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Product",
-    )
-    exports.add(
-        obj=fs.product.properties[0].conc_mass_phase_comp["Liq", comp],
-        name=f"Product {comp} Concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=3,
-        description=f"Product water {comp} concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Product",
-    )
-
-    # Disposal
-    exports.add(
-        obj=fs.disposal.properties[0].flow_vol,
-        name="Brine Flow Rate",
-        ui_units=pyunits.liter / pyunits.s,
-        display_units="L/s",
-        rounding=2,
-        description="Brine volumetric flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Disposal",
-    )
-    exports.add(
-        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", comp],
-        name=f"Brine {comp} Concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=3,
-        description=f"Brine {comp} concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Disposal",
     )
 
 
