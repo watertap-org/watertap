@@ -646,7 +646,7 @@ see property package for documentation.}""",
         if iscale.get_scaling_factor(self.vapor_pressure) is None:
             iscale.set_scaling_factor(self.vapor_pressure, 1e-5)
 
-        iscale.set_scaling_factor(self.evaporation_percent, 1e-2)
+        iscale.set_scaling_factor(self.evaporation_percent, 1e-1)
         liquid_fow = iscale.get_scaling_factor(
             self.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
