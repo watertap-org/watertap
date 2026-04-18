@@ -56,10 +56,47 @@ def cost_heat_exchanger(blk, cost_steam_flow=False):
     )
 
     if cost_steam_flow:
+
+        pressure_sat = blk.unit_model.hot_side_inlet.pressure[0]
+        # 1. Compute saturation temperature of steam: computed from El-Dessouky expression
+        tsat_constants = [
+            42.6776 * pyo.units.K,
+            -3892.7 * pyo.units.K,
+            1000 * pyo.units.kPa,
+            -9.48654 * pyo.units.dimensionless,
+        ]
+        psat = (
+            pyo.units.convert(pressure_sat, to_units=pyo.units.kPa)
+            + 101.325 * pyo.units.kPa
+        )
+        temperature_sat = tsat_constants[0] + tsat_constants[1] / (
+            pyo.log(psat / tsat_constants[2]) + tsat_constants[3]
+        )
+        # 3. Compute specific volume: computed from Affandi expression (Eq 5)
+        t_critical = 647.096 * pyo.units.K
+        t_red = temperature_sat / t_critical  # Reduced temperature
+        sp_vol_constants = [
+            -7.75883 * pyo.units.dimensionless,
+            3.23753 * pyo.units.dimensionless,
+            2.05755 * pyo.units.dimensionless,
+            -0.06052 * pyo.units.dimensionless,
+            0.00529 * pyo.units.dimensionless,
+        ]
+
+        log_sp_vol = (
+            sp_vol_constants[0]
+            + sp_vol_constants[1] * (pyo.log(1 / t_red)) ** 0.4
+            + sp_vol_constants[2] / (t_red**2)
+            + sp_vol_constants[3] / (t_red**4)
+            + sp_vol_constants[4] / (t_red**5)
+        )
+        sp_vol = pyo.exp(log_sp_vol) * pyo.units.m**3 / pyo.units.kg
+
         blk.costing_package.cost_flow(
             pyo.units.convert(
-                (blk.unit_model.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]),
-                to_units=pyo.units.kg / pyo.units.s,
+                (blk.unit_model.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"])
+                * sp_vol,
+                to_units=pyo.units.m**3 / pyo.units.s,
             ),
             "steam",
         )
