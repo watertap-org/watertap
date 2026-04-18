@@ -100,7 +100,7 @@ class TestGeneralMethods:
         assert model.fs.frame.base_currency == pyunits.MUSD_2018
         assert model.fs.frame.base_period == pyunits.year
 
-        assert len(model.fs.frame.defined_flows) == 22
+        assert len(model.fs.frame.defined_flows) == 21
         for f in model.fs.frame.defined_flows:
             assert f in [
                 "heat",
@@ -124,7 +124,6 @@ class TestGeneralMethods:
                 "sodium_bisulfite",
                 "sodium_chloride",
                 "sulfuric_acid",
-                "steam",
             ]
 
         # factor capital annualization
