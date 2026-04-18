@@ -12,7 +12,7 @@
 
 import pyomo.environ as pyo
 from ..util import (
-    cost_steam_flow,
+    cost_steam_flow as util_cost_steam_flow,
     register_costing_parameter_block,
     make_capital_cost_var,
 )
@@ -60,7 +60,7 @@ def cost_heat_exchanger(blk, cost_steam_flow=False, steam_type="steam"):
     )
 
     if cost_steam_flow:
-        cost_steam_flow(
+        util_cost_steam_flow(
             costing_package=blk.costing_package,
             steam_type=steam_type,
             steam_mass_flow=blk.unit_model.hot_side_inlet.flow_mass_phase_comp[

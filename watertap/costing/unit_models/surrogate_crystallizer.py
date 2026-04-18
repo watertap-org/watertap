@@ -88,6 +88,10 @@ def _cost_crystallizer_flows(blk, steam_type="steam"):
 def cost_crystallizer_by_crystal_mass(blk, steam_type="steam"):
     """
     Mass-based capital cost for FC crystallizer
+
+    Args:
+        blk: costing block to which the cost constraint will be added
+        steam_type: type of steam to use for costing the heat duty
     """
     make_capital_cost_var(blk)
     blk.costing_package.add_cost_factor(blk, "TIC")

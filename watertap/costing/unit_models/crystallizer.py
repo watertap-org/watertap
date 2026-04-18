@@ -149,7 +149,7 @@ def _cost_crystallizer_flows(blk, steam_type="steam"):
     build_rule=build_crystallizer_cost_param_block,
     parameter_block_name="crystallizer",
 )
-def cost_crystallizer_by_crystal_mass(blk):
+def cost_crystallizer_by_crystal_mass(blk, steam_type="steam"):
     """
     Mass-based capital cost for FC crystallizer
     """
@@ -174,14 +174,14 @@ def cost_crystallizer_by_crystal_mass(blk):
             to_units=blk.costing_package.base_currency,
         )
     )
-    _cost_crystallizer_flows(blk)
+    _cost_crystallizer_flows(blk, steam_type=steam_type)
 
 
 @register_costing_parameter_block(
     build_rule=build_crystallizer_cost_param_block,
     parameter_block_name="crystallizer",
 )
-def cost_crystallizer_by_volume(blk):
+def cost_crystallizer_by_volume(blk, steam_type="steam"):
     """
     Volume-based capital cost for FC crystallizer
     """
@@ -211,4 +211,4 @@ def cost_crystallizer_by_volume(blk):
             to_units=blk.costing_package.base_currency,
         )
     )
-    _cost_crystallizer_flows(blk)
+    _cost_crystallizer_flows(blk, steam_type=steam_type)
