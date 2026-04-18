@@ -79,21 +79,15 @@ def build_crystallizer_cost_param_block(blk):
         doc="Forced circulation crystallizer volume-based cost exponent (Yusuf et al., 2019)",
         units=pyo.units.dimensionless,
     )
-
-    blk.steam_cost = pyo.Var(
-        initialize=0.004,
-        units=pyo.units.USD_2018 / (pyo.units.meter**3),
-        doc="Steam cost, Panagopoulos (2019)",
-    )
-
     blk.NaCl_recovery_value = pyo.Var(
         initialize=0,
         units=pyo.units.USD_2018 / pyo.units.kg,
         doc="Unit recovery value of NaCl",
     )
 
+    # TODO: This should not be done in a costing package like this,
+    # This should be only done as an option by a user!
     costing = blk.parent_block()
-    costing.register_flow_type("steam", blk.steam_cost)
     costing.register_flow_type("NaCl", blk.NaCl_recovery_value)
 
 
