@@ -11,7 +11,11 @@
 #################################################################################
 
 import pyomo.environ as pyo
-from ..util import register_costing_parameter_block, make_capital_cost_var
+from ..util import (
+    cost_steam_flow,
+    register_costing_parameter_block,
+    make_capital_cost_var,
+)
 
 
 def build_heat_exchanger_cost_param_block(blk):
@@ -28,20 +32,12 @@ def build_heat_exchanger_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    blk.steam_cost = pyo.Var(
-        initialize=0.008,
-        units=pyo.units.USD_2018 / (pyo.units.kg),
-        doc="steam cost per kg",
-    )
-
-    blk.parent_block().register_flow_type("steam", blk.steam_cost)
-
 
 @register_costing_parameter_block(
     build_rule=build_heat_exchanger_cost_param_block,
     parameter_block_name="heat_exchanger",
 )
-def cost_heat_exchanger(blk, cost_steam_flow=False):
+def cost_heat_exchanger(blk, cost_steam_flow=False, steam_type="steam"):
     """
     Heat Exchanger Costing Method
 
@@ -64,10 +60,11 @@ def cost_heat_exchanger(blk, cost_steam_flow=False):
     )
 
     if cost_steam_flow:
-        blk.costing_package.cost_flow(
-            pyo.units.convert(
-                (blk.unit_model.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]),
-                to_units=pyo.units.kg / pyo.units.s,
-            ),
-            "steam",
+        cost_steam_flow(
+            costing_package=blk.costing_package,
+            steam_type=steam_type,
+            steam_mass_flow=blk.unit_model.hot_side_inlet.flow_mass_phase_comp[
+                0, "Vap", "H2O"
+            ],
+            steam_pressure=blk.unit_model.hot_side_inlet.pressure[0],
         )

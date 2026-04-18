@@ -28,20 +28,12 @@ def build_steam_ejector_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    blk.steam_cost = pyo.Var(
-        initialize=0.008,
-        units=pyo.units.USD_2018 / pyo.units.kg,
-        doc="Steam cost per kg",
-    )
-
-    blk.parent_block().register_flow_type("steam", blk.steam_cost)
-
 
 @register_costing_parameter_block(
     build_rule=build_steam_ejector_cost_param_block,
     parameter_block_name="steam_ejector",
 )
-def cost_steam_ejector(blk, cost_steam_flow=False):
+def cost_steam_ejector(blk, cost_steam_flow=False, steam_type="steam"):
     """
     Thermo Compressor (Steam Ejector) Costing Method.
 
@@ -79,12 +71,11 @@ def cost_steam_ejector(blk, cost_steam_flow=False):
     )
 
     if cost_steam_flow:
-        blk.costing_package.cost_flow(
-            pyo.units.convert(
-                blk.unit_model.properties_motive_steam[0.0].flow_mass_phase_comp[
-                    "Vap", "H2O"
-                ],
-                to_units=pyo.units.kg / pyo.units.s,
-            ),
-            "steam",
+        cost_steam_flow(
+            costing_package=blk.costing_package,
+            steam_type=steam_type,
+            steam_mass_flow=blk.unit_model.properties_motive_steam[
+                0.0
+            ].flow_mass_phase_comp["Vap", "H2O"],
+            steam_pressure=blk.unit_model.properties_motive_steam[0.0].pressure,
         )
