@@ -28,6 +28,14 @@ def build_heat_exchanger_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
+    blk.steam_cost = pyo.Var(
+        initialize=0.008,
+        units=pyo.units.USD_2018 / (pyo.units.kg),
+        doc="steam cost per kg",
+    )
+
+    blk.parent_block().register_flow_type("steam", blk.steam_cost)
+
 
 @register_costing_parameter_block(
     build_rule=build_heat_exchanger_cost_param_block,
