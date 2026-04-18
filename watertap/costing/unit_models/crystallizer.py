@@ -80,6 +80,12 @@ def build_crystallizer_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
+    blk.steam_cost = pyo.Var(
+        initialize=0.004,
+        units=pyo.units.USD_2018 / (pyo.units.meter**3),
+        doc="Steam cost, Panagopoulos (2019)",
+    )
+
     blk.NaCl_recovery_value = pyo.Var(
         initialize=0,
         units=pyo.units.USD_2018 / pyo.units.kg,
@@ -87,6 +93,7 @@ def build_crystallizer_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
+    costing.register_flow_type("steam", blk.steam_cost)
     costing.register_flow_type("NaCl", blk.NaCl_recovery_value)
 
 
