@@ -10,7 +10,11 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pyomo.environ as pyo
-from ..util import register_costing_parameter_block, make_capital_cost_var
+from ..util import (
+    register_costing_parameter_block,
+    make_capital_cost_var,
+    cost_steam_flow as util_cost_steam_flow,
+)
 
 
 def build_steam_ejector_cost_param_block(blk):
@@ -71,7 +75,7 @@ def cost_steam_ejector(blk, cost_steam_flow=False, steam_type="steam"):
     )
 
     if cost_steam_flow:
-        cost_steam_flow(
+        util_cost_steam_flow(
             costing_package=blk.costing_package,
             steam_type=steam_type,
             steam_mass_flow=blk.unit_model.properties_motive_steam[

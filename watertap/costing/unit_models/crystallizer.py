@@ -134,7 +134,7 @@ def _cost_crystallizer_flows(blk, steam_type="steam"):
 
     cost_steam_flow(
         costing_package=blk.costing_package,
-        steam_type=steam_type,
+        steam_cost_type=steam_type,
         steam_heat_duty=blk.unit_model.work_mechanical[0],
         steam_pressure=blk.costing_package.crystallizer.steam_pressure,
     )

@@ -75,7 +75,7 @@ def cost_surrogate_crystallizer(blk):
 def _cost_crystallizer_flows(blk, steam_type="steam"):
     cost_steam_flow(
         costing_package=blk.costing_package,
-        steam_type=steam_type,
+        steam_cost_type=steam_type,
         steam_heat_duty=blk.unit_model.heat_required,
         steam_pressure=blk.costing_package.surrogate_crystallizer.steam_pressure,
     )
