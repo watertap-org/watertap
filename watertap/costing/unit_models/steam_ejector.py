@@ -77,7 +77,7 @@ def cost_steam_ejector(blk, cost_steam_flow=False, steam_type="steam"):
     if cost_steam_flow:
         util_cost_steam_flow(
             costing_package=blk.costing_package,
-            steam_type=steam_type,
+            steam_cost_type=steam_type,
             steam_mass_flow=blk.unit_model.properties_motive_steam[
                 0.0
             ].flow_mass_phase_comp["Vap", "H2O"],
