@@ -24,7 +24,7 @@ from pyomo.environ import units as pyunits
 
 def export_to_ui():
     return FlowsheetInterface(
-        name="SWRO",
+        name="Seawater Rejection RO (SWRO)",
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
@@ -107,8 +107,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.pretreatment.ferric_chloride_addition.ratio_in_solution,
         name="Ferric chloride ratio in solution",
-        ui_units=pyunits.mg / pyunits.L,
-        display_units="mg/L",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=1,
         description="Ratio of ferric chloride in solution",
         is_input=True,
@@ -117,7 +117,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, chlorination
     exports.add(
-        obj=fs.pretreatment.chlorination.contact_time,
+        obj=fs.pretreatment.chlorination.contact_time[0],
         name="Chlorination contact time",
         ui_units=pyunits.hr,
         display_units="hr",
@@ -128,7 +128,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.pretreatment.chlorination.concentration_time,
+        obj=fs.pretreatment.chlorination.concentration_time[0],
         name="Chlorination concentration time",
         ui_units=pyunits.mg * pyunits.min / pyunits.L,
         display_units="mg*min/L",
@@ -139,10 +139,10 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.pretreatment.chlorination.chlorine_decay_rate,
+        obj=fs.pretreatment.chlorination.chlorine_decay_rate[0],
         name="Chlorine decay rate",
-        ui_units=pyunits.hr,
-        display_units="hr",
+        ui_units=pyunits.mg / pyunits.hr / pyunits.L,
+        display_units="mg/hr/L",
         rounding=1,
         description="Decay rate of chlorine",
         is_input=True,
@@ -151,7 +151,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, storage tank
     exports.add(
-        obj=fs.pretreatment.storage_tank_1.storage_time,
+        obj=fs.pretreatment.storage_tank_1.storage_time[0],
         name="Tank 1 storage time",
         ui_units=pyunits.hr,
         display_units="hr",
@@ -162,7 +162,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.pretreatment.storage_tank_1.surge_capacity,
+        obj=fs.pretreatment.storage_tank_1.surge_capacity[0],
         name="Tank 1 surge capacity",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -198,8 +198,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.pretreatment.anti_scalant_addition.ratio_in_solution,
         name="Antiscalant ratio in solution",
-        ui_units=pyunits.mg / pyunits.L,
-        display_units="mg/L",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=1,
         description="Ratio of Antiscalant in solution",
         is_input=True,
@@ -209,7 +209,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # --- Desalination ---
     # Unit model data, pump
     exports.add(
-        obj=fs.desalination.P1.efficiency_pump,
+        obj=fs.desalination.P1.efficiency_pump[0],
         name="Pump 1 efficiency",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -222,7 +222,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.desalination.P1.control_volume.properties_out[0].pressure,
         name="Pump 1 pressure",
-        ui_units=pyunits.dimensionless,
+        ui_units=pyunits.Pa,
         display_units="fraction",
         rounding=1,
         description="Pressure of pump 1 in the desalination circuit",
@@ -313,7 +313,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, pressure exchanger
     if build_options["ERD_type"].value == "pressure_exchanger":
         exports.add(
-            obj=fs.desalination.PXR.efficiency_pressure_exchanger,
+            obj=fs.desalination.PXR.efficiency_pressure_exchanger[0],
             name="Pressure exchanger efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
@@ -324,7 +324,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=False,
         )
         exports.add(
-            obj=fs.desalination.P2.efficiency_pump,
+            obj=fs.desalination.P2.efficiency_pump[0],
             name="Pump 2 efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
@@ -338,7 +338,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Unit model data, energy recovery device
     if build_options["ERD_type"].value == "pump_as_turbine":
         exports.add(
-            obj=fs.desalination.ERD.efficiency_pump,
+            obj=fs.desalination.ERD.efficiency_pump[0],
             name="Energy recovery device efficiency",
             ui_units=pyunits.dimensionless,
             display_units="fraction",
@@ -352,7 +352,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # --- Posttreatment ---
     # Unit model data, storage tanks
     exports.add(
-        obj=fs.posttreatment.storage_tank_2.storage_time,
+        obj=fs.posttreatment.storage_tank_2.storage_time[0],
         name="Tank 2 storage time",
         ui_units=pyunits.hr,
         display_units="hr",
@@ -363,7 +363,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.posttreatment.storage_tank_2.surge_capacity,
+        obj=fs.posttreatment.storage_tank_2.surge_capacity[0],
         name="Tank 2 surge capacity",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -374,7 +374,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.posttreatment.storage_tank_3.storage_time,
+        obj=fs.posttreatment.storage_tank_3.storage_time[0],
         name="Tank 3 storage time",
         ui_units=pyunits.hr,
         display_units="hr",
@@ -385,7 +385,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.posttreatment.storage_tank_3.surge_capacity,
+        obj=fs.posttreatment.storage_tank_3.surge_capacity[0],
         name="Tank 3 surge capacity",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -408,7 +408,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.posttreatment.uv_aop.uv_transmittance_in,
+        obj=fs.posttreatment.uv_aop.uv_transmittance_in[0],
         name="UV transmittance",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
@@ -455,8 +455,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.posttreatment.lime_addition.ratio_in_solution,
         name="Lime ratio in solution",
-        ui_units=pyunits.mg / pyunits.L,
-        display_units="mg/L",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=1,
         description="Ratio of lime in solution",
         is_input=True,
@@ -529,7 +529,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Disposal
     exports.add(
-        obj=fs.disposal.properties[0].flow_mass_comp["H2O"],
+        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "H2O"],
         name="Disposal water mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -540,7 +540,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.disposal.properties[0].flow_mass_comp["TDS"],
+        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "TDS"],
         name="Disposal tds mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -552,17 +552,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # System metrics
-    exports.add(
-        obj=fs.LCOW,
-        name="Levelized cost of water",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of product water",
-        rounding=3,
-        description="Levelized cost of water (LCOW)",
-        is_input=False,
-        is_output=True,
-        output_category="System metrics",
-    )
     total_capital_cost = (
         pyunits.convert(fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018)
         + fs.ro_costing.total_capital_cost
@@ -596,6 +585,29 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="USD_2018/yr",
         rounding=3,
         description="Total capital cost in USD_2018 per year",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+    lcow = (
+        (
+            total_capital_cost * fs.zo_costing.capital_recovery_factor
+            + total_operating_cost
+        )
+        / pyunits.convert(
+            fs.municipal.properties[0].flow_vol,
+            to_units=pyunits.m**3 / pyunits.year,
+        )
+        * fs.zo_costing.utilization_factor
+    )
+
+    exports.add(
+        obj=lcow,
+        name="Levelized cost of water",
+        ui_units=pyunits.USD_2018 / pyunits.m**3,
+        display_units="$/m3 of product water",
+        rounding=3,
+        description="Levelized cost of water (LCOW)",
         is_input=False,
         is_output=True,
         output_category="System metrics",
