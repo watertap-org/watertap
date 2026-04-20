@@ -71,17 +71,11 @@ def build_ec0():
         overpotential_calculation="fixed",
     )
 
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 0.1)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 10)
-
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 0.1)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 10)
-
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 10
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 0.1, index=("Liq", "H2O")
     )
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 100
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 10, index=("Liq", "TDS")
     )
 
     set_scaling_factor(ec.applied_current, 1e-4)
@@ -145,17 +139,11 @@ def build_ec1():
         electrode_material="iron",
         overpotential_calculation="detailed",
     )
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
-
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
-
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1e5
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "H2O")
     )
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1e7
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e5, index=("Liq", "TDS")
     )
 
     # only because dealing with bench scale
@@ -222,17 +210,11 @@ def build_ec2():
         electrode_material="aluminum",
         overpotential_calculation="regression",
     )
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
-
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
-
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1e5
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "H2O")
     )
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1e7
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e5, index=("Liq", "TDS")
     )
 
     set_scaling_factor(m.fs.unit.electrode_volume, 1e4)
@@ -297,17 +279,11 @@ def build_ec3():
         electrode_material="iron",
         overpotential_calculation="regression",
     )
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
-
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e2)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 1e5)
-
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1e5
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "H2O")
     )
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1e7
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e5, index=("Liq", "TDS")
     )
 
     set_scaling_factor(m.fs.unit.electrode_volume, 1e4)
@@ -363,24 +339,17 @@ def build_ec_costing():
         overpotential_calculation="fixed",
         reactor_material="stainless_steel",
     )
-
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "H2O"], 1e-2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "TDS"], 1e2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1e2)
-    set_scaling_factor(ec.properties_in[0].flow_mass_phase_comp["Liq", "Bar_-"], 1e1)
-
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "H2O"], 1e-2)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "TDS"], 10)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1e3)
-    set_scaling_factor(ec.properties_out[0].flow_mass_phase_comp["Liq", "Bar_-"], 1e3)
-
-    set_scaling_factor(ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "H2O"], 1)
-    set_scaling_factor(ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "TDS"], 1)
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "Foo_2+"], 1
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e-2, index=("Liq", "H2O")
     )
-    set_scaling_factor(
-        ec.properties_byproduct[0].flow_mass_phase_comp["Liq", "Bar_-"], 1
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "Foo_2+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "Bar_-")
     )
 
     set_scaling_factor(ec.applied_current, 1e-4)
