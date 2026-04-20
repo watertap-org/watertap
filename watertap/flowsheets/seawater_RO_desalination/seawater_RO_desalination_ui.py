@@ -9,7 +9,6 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.core.solvers import get_solver
 from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination import (
     build,
@@ -615,11 +614,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
 
 def build_flowsheet(build_options=None, **kwargs):
-    if build_options is not None:
-        if build_options["ERD_type"].value == "pump_as_turbine":
-            m = build(erd_type="pump_as_turbine")
-        else:
-            m = build(erd_type="pressure_exchanger")
+
+    if build_options["ERD_type"].value == "pump_as_turbine":
+        m = build(erd_type="pump_as_turbine")
+    else:
+        m = build(erd_type="pressure_exchanger")
 
     set_operating_conditions(m)
     initialize_system(m)
