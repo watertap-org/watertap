@@ -81,7 +81,14 @@ Zhang, F., Yang, C., Zhu, H., Li, Y., & Gui, W. (2020).
 An integrated prediction model of heavy metal ion concentration for 
   iron electrocoagulation process. 
 Chemical Engineering Journal, 391, 123628. 
-DOI: 10.1016/j.cej.2019.123628 
+DOI: 10.1016/j.cej.2019.123628
+
+R. Holze (2007)
+M.D. Lechner (ed.)
+Electrochemical Thermodynamics and Kinetics
+Table 5.1. Exchange current densities and rate constants in aqueous systems
+Landolt-Börnstein - Group IV Physical Chemistry 9A
+DOI: 10.1007/978-3-540-45316-1
 
 """
 
@@ -248,6 +255,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         self.mw_electrode_material = Param(
             initialize=100e-3,
+            mutable=True,
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight of coagulant species",
         )
@@ -268,6 +276,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         self.density_electrode_material = Param(
             initialize=2000,
+            mutable=True,
             units=pyunits.kg / pyunits.m**3,
             doc="Density of electrode material",
         )
@@ -375,7 +384,6 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                 self.anode_entropy_change_std.set_value(0.000533)
                 # Electrochemical Thermodynamics and Kinetics, pg 276
                 self.anodic_exchange_current_density.set_value(2.602e-5)
-                # Electrochemical Thermodynamics and Kinetics, pg 276
                 self.cathodic_exchange_current_density.set_value(1.0e-4)
 
         if self.config.electrode_material == ElectrodeMaterial.iron:
@@ -470,7 +478,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         self.electrolysis_time = Var(
             initialize=30,
-            bounds=(0.1, 200),
+            bounds=(0.1, None),
             units=pyunits.minute,
             doc="Electrolysis time",
         )
@@ -484,7 +492,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         self.current_density = Var(
             initialize=1,
-            bounds=(0, 2000),
+            bounds=(0, None),
             units=pyunits.ampere / pyunits.m**2,
             doc="Current density",
         )
@@ -512,7 +520,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
 
         self.current_efficiency = Var(
             initialize=1,
-            bounds=(0, 5),
+            bounds=(0, None),
             units=pyunits.kg / pyunits.kg,
             doc="Current efficiency",
         )
@@ -538,7 +546,14 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                 to_units=pyunits.S / pyunits.m,
             )
 
-        @self.Expression(doc="Theoretical metal loading")
+        @self.Expression(doc="Ohmic potential")
+        def ohmic_potential(b):
+            return pyunits.convert(
+                b.applied_current * (b.ohmic_resistance / b.anode_area),
+                to_units=pyunits.volt,
+            )
+
+        @self.Expression(doc="Theoretical coagulant dose")
         def theoretical_coagulant_dose(b):
             return pyunits.convert(
                 (b.applied_current * b.mw_electrode_material)
@@ -776,8 +791,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Cell voltage")
         def eq_cell_voltage(b):
             return b.cell_voltage == pyunits.convert(
-                b.overpotential
-                + b.applied_current * (b.ohmic_resistance / b.anode_area),
+                b.overpotential + b.ohmic_potential,
                 to_units=pyunits.volt,
             )
 
@@ -863,7 +877,7 @@ class ElectrocoagulationData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        self.state_args_out = state_args_out = deepcopy(state_args)
+        state_args_out = deepcopy(state_args)
 
         for j in self.properties_out.component_list:
             if j == "H2O":
