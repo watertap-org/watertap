@@ -26,7 +26,7 @@ destabilize and aggregate suspended particles in water. The process involves the
 of coagulant species via electrochemical reactions at the electrodes. As the cathode is oxidized,
 metal ions are released in to the water matrix and form hydroxide species, which then interact 
 with and enmesh suspended particles. After formation and agglomeration, the flocculated material 
-is either settled (or floated) out of the treated water stream.
+is settled (or floated) out of the treated water stream.
 
 EC is an electrochemically complex process. The performance and technoeconomics is influenced by 
 many factors including the composition of the water matrix, the applied current density, the electrode material, 
@@ -53,7 +53,7 @@ If the user uses the defaut overpotential calculation, the overpotential variabl
 If the user selects the regression approximation for the overpotential calculation, the model will set default values
 for the overpotential regression coefficients (``overpotential_k1`` and ``overpotential_k2``).
 
-If the user also selects the detailed calculation for the overpotential calculation, the model will also set default values 
+If the user selects the detailed calculation for the overpotential calculation, the model will also set default values 
 for the anode cell potential (``anode_cell_potential_std``), the anode entropy change (``anode_entropy_change_std``), 
 the anodic exchange current density (``anodic_exchange_current_density``), and the cathodic exchange current density 
 (``cathodic_exchange_current_density``) relevant to each electrode material.
@@ -94,7 +94,7 @@ Detailed Calculation
 ++++++++++++++++++++
 
 If the detailed calculation is selected, the model will use the Nernst equation to calculate the overpotential based on the standard cell potential,
-the entropy change, and the exchange current densities for the anodic and cathodic reactions, and a Tafel slope parameter to estimate the
+the entropy change, and the exchange current densities for the anodic and cathodic reactions, and will also use the Tafel slope parameter to estimate the
 activation overpotential. 
 
 In general, the overpotential is calculated as follows:
@@ -165,11 +165,11 @@ Any component can be included as long as it is properly configured into the prop
 Model Components
 -----------------
 
-The electrocoagulation model includes variables, parameters, and expressions that are common to 
+The electrocoagulation model includes variables and expressions that are common to 
 all configurations. These are provided in the table below.
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units",
    
    **Variables**
    "Inlet temperature", ":math:`T`", "``temperature``", "``[t]``", ":math:`\text{K}`"
@@ -185,7 +185,7 @@ all configurations. These are provided in the table below.
    "Current density", ":math:`i`", "``current_density``", None, ":math:`\text{A m}^{-2}`"
    "Applied current", ":math:`I`", "``applied_current``", None, ":math:`\text{A}`"
    "Ohmic resistance", ":math:`R_{ohmic}`", "``ohmic_resistance``", None, ":math:`\Omega \text{ m}^{2}`"
-   "Charge loading rate", ":math:`CLR`", "``charge_loading_rate``", None, ":math:`\text{C L}^{-1}`"
+   "Charge loading rate", ":math:`\text{CLR}`", "``charge_loading_rate``", None, ":math:`\text{C L}^{-1}`"
    "Current efficiency", ":math:`\eta`", "``current_efficiency``", None, ":math:`\text{dimensionless}`"
    "Overpotential", ":math:`E_{over}`", "``overpotential``", None, ":math:`\text{V}`"
    "Cell voltage", ":math:`E_{cell}`", "``cell_voltage``", None, ":math:`\text{V}`"
@@ -195,23 +195,30 @@ all configurations. These are provided in the table below.
    "Total floc basin volume (flotation + sedimentation)", ":math:`V_{floc}`", "``floc_basin_vol``", None, ":math:`\text{m}^3`"
    "Floc basin retention time", ":math:`t_{floc}`", "``floc_retention_time``", None, ":math:`\text{min}`"
 
-   **Parameters**
-   "Component removal efficiency on mass basis", ":math:`\eta_{j}`", "``removal_frac_mass_comp``", ``[j]``, ":math:`\text{dimensionless}`"
-   "Water recovery on mass basis", ":math:`\eta_{w}`", "``recovery_frac_mass_H2O``", None, ":math:`\text{dimensionless}`"
-   "Conversion factor for mg/L TDS to S/m", ":math:`x`", "``tds_to_cond_conversion``", None, ":math:`\text{mg m }\text{L}^{-1}\text{ S}^{-1}`"
-   "Standard temperature", ":math:`T_0`", "``standard_temperature``", None, ":math:`\text{K}`"
-   "Electrode molecular weight", ":math:`MW`", "``mw_electrode_material``", None, ":math:`\text{kg mol}^{-1}`"
-   "Stoichiometric coefficient for electrode material", ":math:`\nu`", "``stoich_coeff``", None, ":math:`\text{dimensionless}`"
-   "Charge transfer number", ":math:`z`", "``charge_transfer_number``", None, ":math:`\text{dimensionless}`"
-   "Electrode density", ":math:`\rho_{electrode}`", "``density_electrode_material``", None, ":math:`\text{kg m}^{-3}`"
-   "Fractional increase in water temperature from inlet to outlet", ":math:`x_T`", "``frac_increase_temperature``", None, ":math:`\text{dimensionless}`"
-
    **Expressions**
    "Conductivity", ":math:`\kappa`", "``conductivity``", None, ":math:`\text{S m}^{-1}`"
+   "Theoretical coagulant dose", ":math:`D_{c,t}`", "``theoretical_coagulant_dose``", None, ":math:`\text{kg}`"
+   "Ohmic potential", ":math:`E_{ohmic}`", "``ohmic_potential``", None, ":math:`\text{V}`"
    "Electrode area total", ":math:`A_{electrode}`", "``electrode_area_total``", None, ":math:`\text{m}^2`"
    "Total power required", ":math:`P_{tot}`", "``power_required``", None, ":math:`\text{W}`"
    "Power density Faradaic", ":math:`p_{F}`", "``power_density_faradaic``", None, ":math:`\mu\text{W m}^{-2}`"
    "Power density total", ":math:`p_{total}`", "``power_density_total``", None, ":math:`\mu\text{W m}^{-2}`"
+
+Common parameters and their initial values are listed below.
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "Default Value"
+
+   **Parameters**
+   "Component removal efficiency on mass basis", ":math:`\eta_{j}`", "``removal_frac_mass_comp``", ``[j]``, ":math:`\text{dimensionless}`", 0.7
+   "Water recovery on mass basis", ":math:`\eta_{w}`", "``recovery_frac_mass_H2O``", None, ":math:`\text{dimensionless}`", 0.99
+   "Conversion factor for mg/L TDS to S/m", ":math:`x`", "``tds_to_cond_conversion``", None, ":math:`\text{mg m }\text{L}^{-1}\text{ S}^{-1}`", 5e3
+   "Standard temperature", ":math:`T_0`", "``standard_temperature``", None, ":math:`\text{K}`", 298.15
+   "Electrode molecular weight", ":math:`MW`", "``mw_electrode_material``", None, ":math:`\text{kg mol}^{-1}`", different for electrode material; see table below
+   "Stoichiometric coefficient for electrode material", ":math:`\nu`", "``stoich_coeff``", None, ":math:`\text{dimensionless}`", different for electrode material; see table below
+   "Charge transfer number", ":math:`z`", "``charge_transfer_number``", None, ":math:`\text{dimensionless}`", different for electrode material; see table below
+   "Electrode density", ":math:`\rho_{electrode}`", "``density_electrode_material``", None, ":math:`\text{kg m}^{-3}`", different for electrode material; see table below
+   "Fractional increase in water temperature from inlet to outlet", ":math:`x_T`", "``frac_increase_temperature``", None, ":math:`\text{dimensionless}`", 1.05
 
 
 If ``overpotential_calculation`` is set to ``regression``, the following variables are also created:
@@ -234,19 +241,52 @@ Note that many of these parameters are dependent on the electrode material selec
    "Cathodic Tafel slope", ":math:`b_c`", "``tafel_slope_cathode``", None, ":math:`\text{V}`", 0.0633
 
    **Parameters**
-   "Anodic non-equilibrium cell potential, standard @ 25C", ":math:`E_{a}^0`", "``anode_cell_potential_std``", None, ":math:`\text{V}`", -0.5
-   "Anodic entropy change", ":math:`\frac{\Delta S_a}{z_aF}`", "``anode_entropy_change_std``", None, ":math:`\text{V K}^{-1}`", 1e-4
-   "Anodic exchange current density", ":math:`i_{a0}`", "``anodic_exchange_current_density``", None, ":math:`\text{A m}^{-2}`", 2e-5
+   "Cathode surface pH", ":math:`\text{pH}`", "``cathode_surface_pH``", None, ":math:`\text{dimensionless}`", 11
+   "Partial pressure of hydrogen gas", ":math:`P_{H2}`", "``partial_pressure_H2``", None, ":math:`\text{atm}`", 1
    "Cathodic non-equilibrium cell potential, standard @ 25C", ":math:`E_{c}^0`", "``cathode_cell_potential_std``", None, ":math:`\text{V}`", -0.83
    "Cathodic entropy change", ":math:`\frac{\Delta S_c}{z_cF}`", "``cathode_entropy_change_std``", None, ":math:`\text{V K}^{-1}`", -0.000836
-   "Cathodic exchange current density", ":math:`i_{a0}`", "``cathodic_exchange_current_density``", None, ":math:`\text{A m}^{-2}`", 1e-4
-   "Cathode surface pH", ":math:`pH`", "``cathode_surface_pH``", None, ":math:`\text{dimensionless}`", 11
+   "Anodic non-equilibrium cell potential, standard @ 25C", ":math:`E_{a}^0`", "``anode_cell_potential_std``", None, ":math:`\text{V}`", different for electrode material; see table below
+   "Anodic entropy change", ":math:`\frac{\Delta S_a}{z_aF}`", "``anode_entropy_change_std``", None, ":math:`\text{V K}^{-1}`", different for electrode material; see table below
+   "Anodic exchange current density", ":math:`i_{a0}`", "``anodic_exchange_current_density``", None, ":math:`\text{A m}^{-2}`", different for electrode material; see table below
+   "Cathodic exchange current density", ":math:`i_{a0}`", "``cathodic_exchange_current_density``", None, ":math:`\text{A m}^{-2}`", different for electrode material; see table below
 
    **Expressions**
+   "Hydroxide concentration at cathode surface", ":math:`C_{OH}`", "``cathode_conc_mol_hydroxide``", None, ":math:`\text{mol L}^{-1}`"
+   "Change in effluent temperature relative to standard", ":math:`\Delta T`", "``temp_diff_std``", None, ":math:`\text{K}`"
+   "Anode equilibrium potential adjusted for outlet temperature", ":math:`E_a^{adj}`", "``anode_cell_potential_temp_adj``", None, ":math:`\text{V}`"
    "Anode cell potential via Nernst equation", ":math:`E_a`", "``anode_cell_potential``", None, ":math:`\text{V}`"
    "Cathodic cell potential via Nernst equation", ":math:`E_c`", "``cathode_cell_potential``", None, ":math:`\text{V}`"
    "Anodic activation overpotential", ":math:`\varphi_a`", "``anode_overpotential``", None, ":math:`\text{V}`"
    "Cathodic activation overpotential", ":math:`\varphi_c`", "``cathode_overpotential``", None, ":math:`\text{V}`"
+   "Cathode equilibrium potential adjusted for outlet temperature", ":math:`E_c^{adj}`", "``cathode_cell_potential_temp_adj``", None, ":math:`\text{V}`"
+
+For aluminum electrodes, these are the default values used in the model.
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Units", "Default Value"
+
+   "Molecular weight of electrode material", ":math:`MW`", "``mw_electrode_material``", ":math:`\text{kg mol}^{-1}`", 26.98e-3
+   "Charge transfer number of electrode material", ":math:`z`", "``charge_transfer_number``", ":math:`\text{dimensionless}`", 3
+   "Stoichiometric coefficient for electrode material", ":math:`\nu`", "``stoic_coeff``", ":math:`\text{dimensionless}`", 1
+   "Density of electrode material", ":math:`\rho`", "``density_electrode_material``", ":math:`\text{kg m}^{-3}`", 2710
+   "Anodic non-equilibrium cell potential, standard @ 25C", ":math:`E_{a}^0`", "``anode_cell_potential_std``", ":math:`\text{V}`", -1.66
+   "Anodic entropy change", ":math:`\frac{\Delta S_a}{z_aF}`", "``anode_entropy_change_std``", ":math:`\text{V K}^{-1}`", 5.33e-4
+   "Anodic exchange current density", ":math:`i_{a0}`", "``anodic_exchange_current_density``", ":math:`\text{A m}^{-2}`", 2.602e-5
+   "Cathodic exchange current density", ":math:`i_{a0}`", "``cathodic_exchange_current_density``", ":math:`\text{A m}^{-2}`", 1e-4
+
+For iron electrodes, these are the default values used in the model.
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Units", "Default Value"
+
+   "Molecular weight of electrode material", ":math:`MW`", "``mw_electrode_material``", ":math:`\text{kg mol}^{-1}`", 55.845e-3
+   "Charge transfer number of electrode material", ":math:`z`", "``charge_transfer_number``", ":math:`\text{dimensionless}`", 1
+   "Stoichiometric coefficient for electrode material", ":math:`\nu`", "``stoic_coeff``", ":math:`\text{dimensionless}`", 1
+   "Density of electrode material", ":math:`\rho`", "``density_electrode_material``", ":math:`\text{kg m}^{-3}`", 7860
+   "Anodic non-equilibrium cell potential, standard @ 25C", ":math:`E_{a}^0`", "``anode_cell_potential_std``", ":math:`\text{V}`", -0.41
+   "Anodic entropy change", ":math:`\frac{\Delta S_a}{z_aF}`", "``anode_entropy_change_std``", ":math:`\text{V K}^{-1}`", 7e-5
+   "Anodic exchange current density", ":math:`i_{a0}`", "``anodic_exchange_current_density``", ":math:`\text{A m}^{-2}`", 2.5e-4
+   "Cathodic exchange current density", ":math:`i_{a0}`", "``cathodic_exchange_current_density``", ":math:`\text{A m}^{-2}`", 1e-3
 
 Degrees of Freedom
 --------------------
@@ -281,7 +321,7 @@ The specific combination would be dependent on what the user knows about the sys
 Solution Component Information
 ------------------------------
 The electrocoagulation model is designed to work with WaterTAP's
-multi-component aqueoous solution (MCAS) property package.
+multi-component aqueous solution (MCAS) property package.
 The inlet solute list must contain ``TDS`` because the model 
 uses the TDS concentration to calculate the conductivity of the solution.
 Because the removal efficiency is defined on a mass basis, MCAS must 
@@ -327,23 +367,28 @@ Equations and Relationships
     "Water mass balance", ":math:`M_{H_2O, out} = M_{H_2O, in} - M_{H_2O, byprod}`"
     "Component mass balance", ":math:`M_{j, out} = M_{j, in} - M_{j, byprod}`"
     "Component removal efficiency", ":math:`M_{j, byprod} = \eta_j M_{j, in}`"
-    "Charge loading rate", ":math:`CLR = \frac{I}{q_{liq}}`"
+    "Charge loading rate", ":math:`\text{CLR} = \frac{I}{q_{liq}}`"
     "Floc reactor volume", ":math:`V_{floc} = q_{liq} t_{floc}`"
     "Faraday's Law", ":math:`D_c = \frac{I \eta MW}{q_{liq} z F}`"
+    "Theoretical coagulant dose", ":math:`D_{c,t} = \frac{I MW}{q_{liq} z F}`"
     "Anode area required", ":math:`A_{anode} = \frac{I}{i}`"
     "Cathode area required", ":math:`A_{cathode} = A_{anode}`"
-    "Cell voltage required", ":math:`E_{cell} = E_{over} + \frac{I R_{ohmic}}{A_{anode}}`"
+    "Ohmic resistance", ":math:`R_{ohmic} = \frac{d_{gap}}{\kappa}`"
+    "Ohmic potential", ":math:`E_{ohmic} = \frac{I R_{ohmic}}{A_{anode}}`"
+    "Cell voltage required", ":math:`E_{cell} = E_{over} + E_{ohmic}`"
     "Electrode volume", ":math:`V_{electrode} = \left( A_{anode} + A_{cathode} \right)  d_{electrode}`"
     "Electrode mass", ":math:`m_{electrode} = V_{electrode} \rho_{electrode}`"
     "Reactor volume", ":math:`V_{cell} = q_{liq} t_{elec}`"
-    "Ohmic resistance", ":math:`R_{ohmic} = \frac{d_{gap}}{\kappa}`"
-
+    
     **Regression**
     "Overpotential regression", ":math:`E_{over} = k_1 \text{ln}(i) + k_2`"
 
     **Detailed**
-    "Anodic cell potential", ":math:`E_a = E_{a}^0 + \frac{\Delta S_a (T - T_0)}{z_a F} - \frac{RT}{z_a F} \text{ln}\left( C_{i}^{-\nu} \right)`"
-    "Cathodic cell potential", ":math:`E_c = E_{c}^0 + \frac{\Delta S_c (T - T_0)}{z_c F} + \frac{RT}{z_cF} \text{ln}(p_{H_2} (C_{OH})^2)`"
+    "Hydroxide concentration at cathode surface", ":math:`C_{OH} = 10^{14 - \text{pH}}`"
+    "Anode equilibrium potential adjusted for outlet temperature", ":math:`E_a^{adj} = E_{a}^0 + \frac{\Delta S_a (T - T_0)}{z_a F}`"
+    "Anodic cell potential", ":math:`E_a = E_a^{adj} - \frac{RT}{z_a F} \text{ln}\left( C_{i}^{-\nu} \right)`"
+    "Cathode equilibrium potential adjusted for outlet temperature", ":math:`E_c^{adj} = E_{c}^0 + \frac{\Delta S_c (T - T_0)}{z_c F}`"
+    "Cathodic cell potential", ":math:`E_c = E_c^{adj} + \frac{RT}{z_cF} \text{ln}(p_{H_2} (C_{OH})^2)`"
     "Anodic activation overpotential", ":math:`\varphi_a = b_a \text{ln}(i / i_{a0})`"
     "Cathodic activation overpotential", ":math:`\varphi_c = b_c \text{ln}(i / i_{c0})`"
     "Overpotential", ":math:`E_{over} = |E_c - E_a| + \varphi_a + |\varphi_c|`"
@@ -370,4 +415,11 @@ References
 | Zhang, F., Yang, C., Zhu, H., Li, Y., & Gui, W. (2020). 
 | An integrated prediction model of heavy metal ion concentration for iron electrocoagulation process. 
 | Chemical Engineering Journal, 391, 123628. 
-| DOI: 10.1016/j.cej.2019.123628 
+| DOI: 10.1016/j.cej.2019.123628
+
+| R. Holze (2007)
+| M.D. Lechner (ed.)
+| Electrochemical Thermodynamics and Kinetics
+| Table 5.1. Exchange current densities and rate constants in aqueous systems
+| Landolt-Börnstein - Group IV Physical Chemistry 9A
+| DOI: 10.1007/978-3-540-45316-1
