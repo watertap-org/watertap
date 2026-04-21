@@ -55,7 +55,7 @@ def export_to_ui():
                 "name": "n_stages",
                 "display_name": "Number of stages",
                 "values_allowed": "int",
-                "value": 3,  # default value
+                "value": 2,  # default value
                 "max_val": 5,  # optional
                 "min_val": 1,  # optional
             },
@@ -115,7 +115,7 @@ def export_to_ui():
                 "name": "stage_2_booster",
                 "display_name": "Include Stage 2 Booster?",
                 "values_allowed": ["False", "True"],
-                "value": "True",  # default value
+                "value": "False",  # default value
             },
             "stage_3_booster": {
                 "name": "stage_3_booster",
@@ -561,44 +561,49 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
 
 def build_flowsheet(build_options=None, **kwargs):
-    # build and solve initial flowsheet
 
     solver = get_solver()
 
-    pump_dict = {1: True}
-    for n in [2, 3]:
-        if build_options[f"stage_{n}_booster"].value == "True":
-            pump_dict[n] = True
-        else:
-            pump_dict[n] = False
+    if build_options is None:
 
-    ro_op_dict = {
-        "A_comp": build_options["A_comp"].value
-        * pyunits.liter
-        / pyunits.m**2
-        / pyunits.hour
-        / pyunits.bar,
-        "B_comp": build_options["B_comp"].value
-        * pyunits.liter
-        / pyunits.m**2
-        / pyunits.hour,
-    }
+        m = multistage_RO.run_n_stage_system()
+        m = multistage_RO.set_system_recovery(m, 0.5)
 
-    m = multistage_RO.run_n_stage_system(
-        prop_pack=build_options["prop_pack"].value,
-        flow_vol=build_options["flow_vol"].value,
-        salinity=build_options["salinity"].value,
-        temperature=build_options["temperature"].value,
-        n_stages=build_options["n_stages"].value,
-        add_erd=build_options["add_erd"].value,
-        max_pressure=build_options["max_pressure"].value * 1e5,  # convert bar to Pa
-        max_perm_conc=build_options["max_perm_conc"].value,
-        pump_dict=pump_dict,
-        ro_op_dict=ro_op_dict,
-    )
+    else:
+        pump_dict = {1: True}
+        for n in [2, 3]:
+            if build_options[f"stage_{n}_booster"].value == "True":
+                pump_dict[n] = True
+            else:
+                pump_dict[n] = False
 
-    recovery = build_options["recovery"].value / 100  # convert % to fraction
-    m = multistage_RO.set_system_recovery(m, recovery)
+        ro_op_dict = {
+            "A_comp": build_options["A_comp"].value
+            * pyunits.liter
+            / pyunits.m**2
+            / pyunits.hour
+            / pyunits.bar,
+            "B_comp": build_options["B_comp"].value
+            * pyunits.liter
+            / pyunits.m**2
+            / pyunits.hour,
+        }
+
+        m = multistage_RO.run_n_stage_system(
+            prop_pack=build_options["prop_pack"].value,
+            flow_vol=build_options["flow_vol"].value,
+            salinity=build_options["salinity"].value,
+            temperature=build_options["temperature"].value,
+            n_stages=build_options["n_stages"].value,
+            add_erd=build_options["add_erd"].value,
+            max_pressure=build_options["max_pressure"].value * 1e5,  # convert bar to Pa
+            max_perm_conc=build_options["max_perm_conc"].value,
+            pump_dict=pump_dict,
+            ro_op_dict=ro_op_dict,
+        )
+
+        recovery = build_options["recovery"].value / 100  # convert % to fraction
+        m = multistage_RO.set_system_recovery(m, recovery)
 
     _ = utils.solve(m, solver=solver)
     return m
