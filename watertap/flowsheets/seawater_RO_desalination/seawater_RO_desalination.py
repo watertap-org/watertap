@@ -69,31 +69,11 @@ from watertap.costing import WaterTAPCosting
 _log = idaeslog.getLogger(__name__)
 
 
-def build_flowsheet(erd_type=None):
+def main(erd_type="pressure_exchanger"):
     m = build(erd_type=erd_type)
+
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
-    return m
-
-
-def solve_flowsheet(flowsheet=None):
-    m = flowsheet.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
-    initialize_system(m)
-    assert_degrees_of_freedom(m, 0)
-    solve(m, checkpoint="solve flowsheet after initializing system")
-    display_results(m)
-    add_costing(m)
-    initialize_costing(m)
-    assert_degrees_of_freedom(m, 0)
-    solve(m, checkpoint="solve flowsheet with costing")
-
-
-def main(erd_type="pressure_exchanger"):
-    m = build_flowsheet(erd_type=erd_type)
-    # m = build(erd_type=erd_type)
-    #
-    # set_operating_conditions(m)
-    # assert_degrees_of_freedom(m, 0)
 
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
@@ -778,21 +758,6 @@ def display_costing(m):
                 )
             ),
         )
-
-
-def export_to_ui():
-    from idaes_flowsheet_processor.api import FlowsheetInterface
-
-    def noop(*args, **kwargs):
-        return
-
-    return FlowsheetInterface(
-        name="Seawater RO",
-        description="Seawater RO desalination",
-        do_export=noop,
-        do_build=noop,
-        do_solve=noop,
-    )
 
 
 if __name__ == "__main__":
