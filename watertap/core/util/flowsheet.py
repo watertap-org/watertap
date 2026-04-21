@@ -44,6 +44,7 @@ def list_ports(block, descend_into=False):
 
     port_to_arc = {}
     for arc in flowsheet.component_objects(Arc, descend_into=descend_into):
+        arc_name = arc.name
         # Check if the arc's expanded block exists and is deactivated
         arc_expanded = arc.expanded_block
         is_deactivated = arc_expanded is not None and not arc_expanded.active
@@ -53,12 +54,14 @@ def list_ports(block, descend_into=False):
 
         # Assigns the destination to source ports
         if arc.source.name not in port_to_arc:
-            port_to_arc[arc.source.name] = {"Source": [], "Destination": []}
+            port_to_arc[arc.source.name] = {"Arc": [], "Source": [], "Destination": []}
+        port_to_arc[arc.source.name]["Arc"].append(arc_name)
         port_to_arc[arc.source.name]["Destination"].append(dest_label)
 
         # Assigns the source to destination ports
         if arc.dest.name not in port_to_arc:
-            port_to_arc[arc.dest.name] = {"Source": [], "Destination": []}
+            port_to_arc[arc.dest.name] = {"Arc": [], "Source": [], "Destination": []}
+        port_to_arc[arc.dest.name]["Arc"].append(arc_name)
         port_to_arc[arc.dest.name]["Source"].append(source_label)
 
     rows = []
@@ -78,7 +81,7 @@ def list_ports(block, descend_into=False):
         ports = dict(unit.component_map(Port))
         for name, port in ports.items():
             connected = port_to_arc.get(
-                port.name, {"Source": None, "Destination": None}
+                port.name, {"Arc": None, "Source": None, "Destination": None}
             )
             if not connected["Source"] and not connected["Destination"]:
                 _log.warning(f"Port {port.name} is not connected to any stream.")
@@ -89,6 +92,7 @@ def list_ports(block, descend_into=False):
                     "Port": port.name,
                     "Source": connected["Source"] or None,
                     "Destination": connected["Destination"] or None,
+                    "Arc": connected["Arc"] or None,
                 }
             )
 

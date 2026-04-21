@@ -52,6 +52,7 @@ def test_feed_ports_summary(feed_unit):
             "Port": ["fs.feed.outlet"],
             "Source": ["None"],
             "Destination": ["None"],
+            "Arc": ["None"],
         }
     )
     pd.testing.assert_frame_equal(results.astype(str), expected.astype(str))
@@ -85,6 +86,7 @@ def test_product_ports_summary(product_unit):
             "Port": ["fs.product.inlet"],
             "Source": ["None"],
             "Destination": ["None"],
+            "Arc": ["None"],
         }
     )
     pd.testing.assert_frame_equal(results.astype(str), expected.astype(str))
@@ -109,6 +111,7 @@ def test_ro_ports_summary(ro_unit):
             "Port": ["fs.ro.inlet", "fs.ro.retentate", "fs.ro.permeate"],
             "Source": ["None", "None", "None"],
             "Destination": ["None", "None", "None"],
+            "Arc": ["None", "None", "None"],
         }
     )
     pd.testing.assert_frame_equal(results.astype(str), expected.astype(str))
@@ -199,6 +202,14 @@ def test_flowsheet_summary(flowsheet):
                 "['fs.Sludge.inlet']",
                 "None",
                 "None",
+            ],
+            "Arc": [
+                "['fs.stream1']",
+                "['fs.stream1']",
+                "['fs.stream2']",
+                "['fs.stream3']",
+                "['fs.stream2']",
+                "['fs.stream3']",
             ],
         }
     )
@@ -295,6 +306,13 @@ def test_one_port_with_multiple_arcs(flowsheet2):
                 "['fs.Treated.inlet']",
                 "None",
             ],
+            "Arc": [
+                "['fs.stream1']",
+                "['fs.stream1']",
+                "['fs.stream2']",
+                "['fs.stream3']",
+                "['fs.stream2', 'fs.stream3']",
+            ],
         }
     )
     pd.testing.assert_frame_equal(results.astype(str), expected.astype(str))
@@ -341,6 +359,13 @@ def test_deactivated_arc(flowsheet_deactivated_arc):
                 "['fs.Treated.inlet (deactivated)']",
                 "['fs.Treated.inlet']",
                 "None",
+            ],
+            "Arc": [
+                "['fs.stream1']",
+                "['fs.stream1']",
+                "['fs.stream2']",
+                "['fs.stream3']",
+                "['fs.stream2', 'fs.stream3']",
             ],
         }
     )
