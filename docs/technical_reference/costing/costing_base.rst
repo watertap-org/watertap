@@ -9,6 +9,7 @@ WaterTAP Costing Framework
 .. currentmodule:: watertap.costing.watertap_costing
 
 The WaterTAP Costing Base class and utility functions contain extensions, methods, and variables and constraints common to all WaterTAP Costing Packages, and which would be useful for creating custom costing packages for WaterTAP.
+An example of using WaterTAP costing in a flowsheet is provided in the :ref:`How to use WaterTAP Costing <how_to_use_watertap_costing>` guide.
 
 
 Extensions Over IDAES Costing Framework

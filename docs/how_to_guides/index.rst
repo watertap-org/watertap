@@ -5,6 +5,7 @@ How To Guides
    :maxdepth: 1
 
    how_to_run_models_in_a_py_script
+   how_to_use_watertap_costing
    how_to_run_zero_order_model
    how_to_use_a_property_model
    how_to_setup_simple_RO
@@ -26,5 +27,4 @@ How To Guides
    how_to_use_ui_api
    how_to_use_unit_test_harness
    how_to_contribute_development
-   how_to_use_watertap_costing
    notebooks
