@@ -231,6 +231,24 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     flow_cost * self.utilization_factor
                 ) / denominator
 
+    def add_LCOP(self, mass_product, name="LCOP"):
+        denominator = (
+            pyo.units.convert(mass_product, to_units=pyo.units.kg / self.base_period)
+            * self.utilization_factor
+        )
+
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=(
+                    self.total_capital_cost * self.capital_recovery_factor
+                    + self.total_operating_cost
+                )
+                / denominator,
+                doc=f"Levelized Cost of Product",
+            ),
+        )
+
     @staticmethod
     def _find_flow_unit(flow_expr):
         """
@@ -308,6 +326,27 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             "electricity", name, flow_rate, utilization_factor=1.0, period=pyo.units.hr
         )
 
+    def add_mass_based_specific_energy_consumption(
+        self, flow_rate, name="mass_based_specific_energy_consumption"
+    ):
+        """
+        Add specific energy consumption (kWh/kg) to costing block.
+        Args:
+            flow_rate - flow rate of water (mass-based) to be used in
+                        calculating specific energy consumption
+            name (optional) - the name of the Expression for the specific
+                              energy consumption (default: specific_energy_consumption)
+        """
+
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=self.aggregate_flow_electricity
+                / pyo.units.convert(flow_rate, to_units=pyo.units.kg / pyo.units.hr),
+                doc=f"Specific energy consumption based on product mass",
+            ),
+        )
+
     def add_annual_water_production(self, flow_rate, name="annual_water_production"):
         """
         Add annual water production to costing block.
@@ -327,6 +366,30 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     * self.utilization_factor
                 ),
                 doc=f"Annual water production based on flow {flow_rate.name}",
+            ),
+        )
+
+    def add_annual_product_generation(
+        self, flow_rate, name="annual_product_generation"
+    ):
+        """
+        Add annual water production to costing block.
+        Args:
+            flow_rate - flow rate of product (mass-based) to be used in
+                        calculating annual product generation
+            name (optional) - name for the annual product generation variable
+                              Expression (default: annual_product_generation)
+        """
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=(
+                    pyo.units.convert(
+                        flow_rate, to_units=pyo.units.kg / self.base_period
+                    )
+                    * self.utilization_factor
+                ),
+                doc=f"Annual product generation based on mass flow ",
             ),
         )
 
