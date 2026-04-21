@@ -19,23 +19,12 @@ from watertap.unit_models.pressure_changer import Pump
 import watertap.flowsheets.multistage_RO.multistage_RO as multistage
 import watertap.flowsheets.multistage_RO.utils as utils
 
-# lcow_results[salinity][n_stages][add_erd] = LCOW
 lcow_results_salinity = {
     5: {
         1: {False: 0.3501, True: 0.3307},
         2: {False: 0.3485, True: 0.3294},
         3: {False: 0.3478, True: 0.329},
     },
-    # 35: {
-    #     1: {False: 0.8456, True: 0.7303},
-    #     2: {False: 0.831, True: 0.7145},
-    #     3: {False: 0.826, True: 0.7109},
-    # },
-    # 75: {
-    #     1: {False: 1.8135, True: 1.4924},
-    #     2: {False: 1.7331, True: 1.4103},
-    #     3: {False: 1.7142, True: 1.398},
-    # },
     100: {
         1: {False: 2.8075, True: 2.2792},
         2: {False: 2.6304, True: 2.105},
@@ -43,23 +32,12 @@ lcow_results_salinity = {
     },
 }
 
-# sec_results[salinity][n_stages][add_erd] = SEC
 sec_results_salinity = {
     5: {
         1: {False: 1.1852, True: 0.7986},
         2: {False: 1.1822, True: 0.7975},
         3: {False: 1.1788, True: 0.7974},
     },
-    # 35: {
-    #     1: {False: 3.9539, True: 2.5279},
-    #     2: {False: 3.8437, True: 2.3956},
-    #     3: {False: 3.8237, True: 2.3882},
-    # },
-    # 75: {
-    #     1: {False: 9.8574, True: 6.137},
-    #     2: {False: 9.3635, True: 5.6081},
-    #     3: {False: 9.2501, True: 5.5649},
-    # },
     100: {
         1: {False: 15.647, True: 9.688},
         2: {False: 14.6124, True: 8.6606},
