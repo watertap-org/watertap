@@ -463,9 +463,7 @@ Custom costing methods generally consist of two functions:
 
 2. A function to build the costing model (``chem_addition_costing``), which is decorated with the ``@register_costing_parameter_block`` decorator. This function creates the costing variables and constraints needed to calculate capital and operating costs, and also defines the variable cost calculations using the ``cost_flow`` method of the costing package:sup:`2`.
 
-    - The first argument to the ``@register_costing_parameter_block`` decorator is the function that builds the costing parameter block, and the second argument is the desired name for the parameter block on the flowsheet costing block.
-    This is the name that will be used to access the parameters for this costing method from the flowsheet costing block.
-    In this example, the parameter block is named "chem_addition" and is accessed with ``m.fs.costing.chem_addition``.
+    - The first argument to the ``@register_costing_parameter_block`` decorator is the function that builds the costing parameter block, and the second argument is the desired name for the parameter block on the flowsheet costing block. This is the name that will be used to access the parameters for this costing method from the flowsheet costing block. In this example, the parameter block is named "chem_addition" and is accessed with ``m.fs.costing.chem_addition``.
     - Within the costing method function, we first create the necessary costing variables (capital cost and fixed operating cost:sup:`3`). Then we define the constraints that calculate capital and operating cost based on the parameters defined in the parameter block. 
     - The ``cost_flow`` method is used to aggregate flows of the same type across multiple units (most commonly this is done with chemical and electricty flows).
     - Costing methods that calculate capital costs must provide a capital cost factor ("TIC", "TPEC", or ``None``) to be used to calculate direct and indirect capital costs.
