@@ -46,6 +46,8 @@ Properties
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa}\cdotp\text{s}`" 
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
+   "Specific volume of vapor", ":math:`\upsilon`", "specific_vol_phase", "[Vap]", ":math:`\text{m}^3/\text{kg}`"
+   "Saturation temperature of solvent", ":math:`T_{sat}`", "temperature_sat_solvent", "None", ":math:`\text{K}`"
    
 Relationships
 -------------
@@ -116,6 +118,7 @@ The default scaling factors are as follows:
    * 1e-6 for latent heat of vaporization
    * 1e3 for the dynamic viscosity
    * 1 for the thermal conductivity
+   * 0.1 for specific volume of vapor
   
 Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    
