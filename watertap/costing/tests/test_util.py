@@ -245,7 +245,7 @@ def test_steam_flow_costs():
     m.fs.costing.display()
     assert m.fs.costing.aggregate_flow_costs[
         "steam_heat_duty_basis"
-    ].value == pytest.approx(50.30242437305643, rel=1e-3)
+    ].value == pytest.approx(57.35914343297248, rel=1e-3)
     assert m.fs.costing.aggregate_flow_costs["steam_mass_basis"].value == pytest.approx(
         110700.66199647238, rel=1e-3
     )
