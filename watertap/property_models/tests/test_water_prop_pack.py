@@ -38,8 +38,8 @@ class TestWaterProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Vap", "H2O")): 1,
         }
         self.stateblock_statistics = {
-            "number_variables": 23,
-            "number_total_constraints": 19,
+            "number_variables": 24,
+            "number_total_constraints": 20,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 4,
         }  # 4 state vars
@@ -59,6 +59,8 @@ class TestWaterProperty(PropertyTestHarness):
             ("cp_mass_phase", "Vap"): 1.865e3,
             ("visc_d_phase", "Liq"): 8.901e-4,
             ("therm_cond_phase", "Liq"): 0.6105,
+            ("specific_vol_phase", "Vap"): 43.3245,
+            ("temperature_sat_solvent", None): 298.0905,
         }
 
 
@@ -97,6 +99,8 @@ class TestWaterPropertySolution_1(PropertyRegressionTest):
             ("cp_mass_phase", "Vap"): 1.871e3,
             ("visc_d_phase", "Liq"): 5.466e-4,
             ("therm_cond_phase", "Liq"): 0.6404,
+            ("specific_vol_phase", "Vap"): 12.024,
+            ("temperature_sat_solvent", None): 323.118,
         }
 
 
@@ -135,4 +139,6 @@ class TestWaterPropertySolution_2(PropertyRegressionTest):
             ("cp_mass_phase", "Vap"): 1.890e3,
             ("visc_d_phase", "Liq"): 2.819e-4,
             ("therm_cond_phase", "Liq"): 0.6756,
+            ("specific_vol_phase", "Vap"): 1.6724,
+            ("temperature_sat_solvent", None): 373.266,
         }

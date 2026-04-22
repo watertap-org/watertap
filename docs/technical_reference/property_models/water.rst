@@ -69,6 +69,7 @@ Relationships
    "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
    "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
    "Specific volume of vapor", "Equation 6 in Affandi et al. (2013)"
+   "Saturation temperature of solvent", "Equation A.12 in El-Dessouky and Ettouney"
 
 \* Derived from the ideal gas law
 
@@ -148,3 +149,7 @@ References
 | Simplified Equations for Saturated Steam Properties for Simulation Purpose. 
 | Procedia Engineering 2013 Vol. 53 Pages 722-726. 
 | DOI: 10.1016/j.proeng.2013.02.095
+
+| El-Dessouky, H. T. & Ettouney, H. M. (Eds.). 
+| Appendix A - Thermodynamic Properties.
+| Fundamentals of Salt Water Desalination, Elsevier Science B.V., 2002, 525-563
