@@ -38,8 +38,8 @@ class TestWaterProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Vap", "H2O")): 1,
         }
         self.stateblock_statistics = {
-            "number_variables": 22,
-            "number_total_constraints": 18,
+            "number_variables": 23,
+            "number_total_constraints": 19,
             "number_unused_variables": 0,
             "default_degrees_of_freedom": 4,
         }  # 4 state vars

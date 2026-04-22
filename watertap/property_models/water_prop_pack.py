@@ -424,6 +424,44 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Thermal conductivity of seawater parameter 8",
         )
 
+        # Specific volume parameters, computed from Affandi expression (Eq 5)
+
+        self.sp_vol_phase_param_A1 = Var(
+            within=Reals,
+            initialize=-7.75883,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A1",
+        )
+        self.sp_vol_phase_param_A2 = Var(
+            within=Reals,
+            initialize=3.23753,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A2",
+        )
+        self.sp_vol_phase_param_A3 = Var(
+            within=Reals,
+            initialize=2.05755,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A3",
+        )
+        self.sp_vol_phase_param_A4 = Var(
+            within=Reals,
+            initialize=-0.06052,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A4",
+        )
+        self.sp_vol_phase_param_A5 = Var(
+            within=Reals,
+            initialize=0.00529,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A5",
+        )
+        self.temperature_crit = Var(
+            within=Reals,
+            initialize=647.096,
+            units=pyunits.degK,
+            doc="Critical temperature of steam",
+        )
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -467,6 +505,7 @@ class WaterParameterData(PhysicalParameterBlock):
             {
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
+                "specific_vol_phase": {"method": "_specific_vol_phase"},
             }
         )
 
@@ -1071,6 +1110,30 @@ class WaterStateBlockData(StateBlockData):
 
         self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)
 
+    def _specific_vol_phase(self):
+        self.specific_vol_phase = Var(
+            ["Vap"],
+            initialize=100,
+            bounds=(0, None),
+            units=pyunits.m**3 / pyunits.kg,
+            doc="Specific volume of steam",
+        )
+
+        def rule_specific_vol_phase(b, p):
+            t_red = self.temperature / self.params.temperature_crit
+            log_sp_vol = (
+                self.params.sp_vol_phase_param_A1
+                + self.params.sp_vol_phase_param_A2 * (log(1 / t_red)) ** 0.4
+                + self.params.sp_vol_phase_param_A3 / (t_red**2)
+                + self.params.sp_vol_phase_param_A4 / (t_red**4)
+                + self.params.sp_vol_phase_param_A5 / (t_red**5)
+            )
+            return (
+                b.specific_vol_phase[p] == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
+            )
+
+        self.eq_specific_vol_phase = Constraint(["Vap"], rule=rule_specific_vol_phase)
+
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
     # return a pyomo Var or Expression
@@ -1137,6 +1200,9 @@ class WaterStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.params.mw_comp, 1e2)
 
+        if self.is_property_constructed("specific_vol_phase"):
+            if iscale.get_scaling_factor(self.specific_vol_phase["Vap"]) is None:
+                iscale.set_scaling_factor(self.specific_vol_phase["Vap"], 0.1)
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if self.is_property_constructed("flow_vol_phase"):
