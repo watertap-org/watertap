@@ -16,12 +16,6 @@ How To
 
 .. testsetup:: python
 
-    # quiet idaes logs
-    import idaes.logger as idaeslogger
-    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
-    idaeslogger.getLogger('ideas.core.util.scaling').setLevel('CRITICAL')
-    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
-
     from pyomo.environ import (
         ConcreteModel,
         Constraint,
@@ -41,7 +35,7 @@ How To
     from idaes.core.util.initialization import propagate_state
     from idaes.models.unit_models import Feed, Product, StateJunction
 
-    from watertap.costing import WaterTAPCosting
+    from watertap.costing import WaterTAPCosting, WaterTAPCostingDetailed
     from watertap.unit_models.reverse_osmosis_1D import (
         ReverseOsmosis1D,
         ConcentrationPolarizationType,
@@ -54,11 +48,78 @@ How To
         make_fixed_operating_cost_var,
     )
     from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+    from watertap.unit_models.zero_order import ChemicalAdditionZO
     from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 
     from watertap.core.solvers import get_solver
 
     solver = get_solver()
+
+    # quiet idaes logs
+    import idaes.logger as idaeslogger
+
+    idaeslogger.getLogger("ideas.core").setLevel("CRITICAL")
+    idaeslogger.getLogger("ideas.core.util.scaling").setLevel("CRITICAL")
+    idaeslogger.getLogger("idaes.init").setLevel("CRITICAL")
+
+
+    def build_chem_addition_cost_param_block(blk):
+
+        blk.chemical_capex_base = Var(
+            initialize=5e4,
+            units=pyunits.USD_2020 / (pyunits.Mgallons / pyunits.day),
+            doc="Base capital cost for chemical addition",
+        )
+
+        blk.chemical_capex_exponent = Var(
+            initialize=0.7,
+            units=pyunits.dimensionless,
+            doc="Exponent for chemical addition capital cost scaling",
+        )
+
+        blk.factor_equip_replacement = Var(
+            initialize=0.1,
+            units=pyunits.year**-1,
+            doc="Fraction of chemical addition equipment replaced per year",
+        )
+
+        blk.chemical_unit_cost = Var(
+            initialize=0.1,
+            units=pyunits.USD_2023 / pyunits.kg,
+            doc="Unit cost of chemical addition",
+        )
+        costing_pkg = blk.parent_block()
+        costing_pkg.register_flow_type("bazchem", blk.chemical_unit_cost)
+
+
+    @register_costing_parameter_block(
+        build_rule=build_chem_addition_cost_param_block,
+        parameter_block_name="chem_addition",
+    )
+    def chem_addition_costing(blk):
+
+        make_capital_cost_var(blk)
+        blk.costing_package.add_cost_factor(blk, "TIC")
+        make_fixed_operating_cost_var(blk)
+
+        capex_base = pyunits.convert(
+            blk.costing_package.chem_addition.chemical_capex_base
+            * blk.unit_model.properties[0].flow_vol_phase["Liq"]
+            * blk.costing_package.base_currency**-1,
+            to_units=pyunits.dimensionless,
+        )
+
+        blk.capital_cost_constraint = Constraint(
+            expr=blk.capital_cost
+            == blk.cost_factor
+            * capex_base**blk.costing_package.chem_addition.chemical_capex_exponent
+        )
+        blk.fixed_operating_cost_constraint = Constraint(
+            expr=blk.fixed_operating_cost
+            == blk.costing_package.chem_addition.factor_equip_replacement * blk.capital_cost
+        )
+
+        blk.costing_package.cost_flow(blk.unit_model.chem_mass_flow, "bazchem")
 
     def real_build():
 
@@ -69,22 +130,17 @@ How To
         m.fs.feed = Feed(property_package=m.fs.properties)
         m.fs.pump1 = Pump(property_package=m.fs.properties)
 
-        m.fs.chem_addition = StateJunction(property_package=m.fs.properties)
-        m.fs.chem_addition.chem_dose = Var(
-            initialize=10,
-            bounds=(0, None),
-            units=pyunits.mg / pyunits.liter,
-            doc="Chemical addition dose",
+        m.fs.chem_addition = ChemicalAdditionZO(
+            property_package=m.fs.properties, process_subtype="default"
         )
         m.fs.chem_addition.chem_mass_flow = Expression(
             expr=pyunits.convert(
-                m.fs.chem_addition.chem_dose
-                * m.fs.feed.properties[0].flow_vol_phase["Liq"],
+                m.fs.chem_addition.chemical_dosage[0]
+                * m.fs.chem_addition.properties[0].flow_vol_phase["Liq"],
                 to_units=pyunits.kg / pyunits.s,
             ),
             doc="Mass flow of chemical addition",
         )
-        # 
 
         m.fs.RO = ReverseOsmosis1D(
             property_package=m.fs.properties,
@@ -165,10 +221,13 @@ How To
             hold_state=True,
         )
 
-        m.fs.pump1.control_volume.properties_out[0].pressure.fix(1 * pyunits.bar)
+        m.fs.pump1.control_volume.properties_out[0].pressure.setlb(10 * pyunits.bar) # so the numbers in breakdown are reasonable
+        m.fs.pump1.control_volume.properties_out[0].pressure.fix(10 * pyunits.bar)
         m.fs.pump1.efficiency_pump.fix(0.8)
 
-        m.fs.chem_addition.chem_dose.fix(10)
+        m.fs.chem_addition.chemical_dosage.fix(10)
+        m.fs.chem_addition.ratio_in_solution.fix(1)
+        m.fs.chem_addition.solution_density.fix(1000)
 
         m.fs.pump2.control_volume.deltaP.fix(60 * pyunits.bar)
         m.fs.pump2.efficiency_pump.fix(0.8)
@@ -211,13 +270,48 @@ How To
         m.fs.pump2.control_volume.properties_out[0].pressure.unfix()
         m.fs.RO.area.unfix()
         m.fs.RO.width.unfix()
-        # m.fs.RO.length.fix(1)
 
         m.fs.recovery.fix(0.5)
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
-    
+
+        return m
+
+    def real_add_costing(m):
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyunits.USD_2023
+
+        m.fs.pump1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.pump2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+        m.fs.chem_addition.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing, costing_method=chem_addition_costing
+        )
+
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol_phase["Liq"])
+        m.fs.costing.add_specific_energy_consumption(
+            m.fs.product.properties[0].flow_vol_phase["Liq"], name="SEC"
+        )
+        # Add objective
+        m.fs.obj = Objective(expr=m.fs.costing.LCOW)
+
+        # Change values of flowsheet-level costing variables if desired
+        m.fs.costing.electricity_cost.fix(0.12)
+        m.fs.costing.base_currency = pyunits.USD_2023
+
+        # Change values of unit model costing parameters if desired
+        m.fs.costing.chem_addition.chemical_unit_cost.fix(0.42)
+        m.fs.costing.reverse_osmosis.membrane_cost.fix(24)
+        m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.02)
+
     m = real_build()
+    real_add_costing(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    m.fs.del_component(m.fs.obj)
 
 
 The :ref:`WaterTAP costing package<watertap_costing>` can be added to any WaterTAP flowsheet but is not required to run a WaterTAP model.
@@ -247,22 +341,17 @@ Below is a code snippet to create the flowsheet.
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = SeawaterParameterBlock()
-        # add the WaterTAP costing package to the flowsheet
-        m.fs.costing = WaterTAPCosting()
 
         m.fs.feed = Feed(property_package=m.fs.properties)
         m.fs.pump1 = Pump(property_package=m.fs.properties)
 
-        m.fs.chem_addition = StateJunction(property_package=m.fs.properties)
-        m.fs.chem_addition.chem_dose = Var(
-            initialize=10,
-            bounds=(0, None),
-            units=pyunits.mg / pyunits.liter,
-            doc="Chemical addition dose",
+        m.fs.chem_addition = ChemicalAdditionZO(
+            property_package=m.fs.properties, process_subtype="default"
         )
         m.fs.chem_addition.chem_mass_flow = Expression(
             expr=pyunits.convert(
-                m.fs.chem_addition.chem_dose * m.fs.feed.properties[0].flow_vol_phase["Liq"],
+                m.fs.chem_addition.chemical_dosage[0]
+                * m.fs.chem_addition.properties[0].flow_vol_phase["Liq"],
                 to_units=pyunits.kg / pyunits.s,
             ),
             doc="Mass flow of chemical addition",
@@ -296,12 +385,11 @@ To get costing results, we need to add costing blocks to each unit model.
 How-To Create Custom Costing Method 
 ********************************************
 
-Note that the chemical addition unit in this flowsheet is not an existing WaterTAP model but a :doc:`state junction <idaes:reference_guides/model_libraries/generic/unit_models/statejunction>` (passthrough model) 
-with an added ``dose`` variable and expression ``chem_mass_flow`` to calculate the mass flow of the chemical. 
-Unlike other unit models on this flowsheet (like RO, which has a built-in costing method defined in the unit model file), this chemical addition unit model does not have a built-in costing method. If we want our 
-system results to reflect the cost of chemical addition, we need to create a custom costing method:sup:`1`.
+Like the other unit models on this flowsheet, the chemical addition unit model has an existing costing method.
+For illustrative purposes, consider that we want to create a custom costing method for the chemical addition unit model:sup:`1`.
 
-The code below shows an example of how to build a custom costing method. This is the general structure of :ref:`costing methods for existing WaterTAP unit models<detailed_unit_model_costing>` that are in the *watertap/costing/unit_models* directory.
+The code below shows an example of how to build a custom costing method. 
+This is the general structure of all :ref:`costing methods for existing WaterTAP unit models<detailed_unit_model_costing>` that are in the *watertap/costing/unit_models* directory.
 
 .. testcode::
 
@@ -331,7 +419,7 @@ The code below shows an example of how to build a custom costing method. This is
             doc="Unit cost of chemical addition",
         )
         costing_pkg = blk.parent_block()
-        costing_pkg.register_flow_type("chemical", blk.chemical_unit_cost)
+        costing_pkg.register_flow_type("bazchem", blk.chemical_unit_cost)
 
 
     @register_costing_parameter_block(
@@ -361,7 +449,7 @@ The code below shows an example of how to build a custom costing method. This is
             == blk.costing_package.chem_addition.factor_equip_replacement * blk.capital_cost
         )
 
-        blk.costing_package.cost_flow(blk.unit_model.chem_mass_flow, "chemical")
+        blk.costing_package.cost_flow(blk.unit_model.chem_mass_flow, "bazchem")
 
 
 Custom costing methods generally consist of two functions:
@@ -371,7 +459,7 @@ Custom costing methods generally consist of two functions:
     - Create variables for chemical addition capital cost calculation (``chemical_capex_base`` and ``chemical_capex_exponent``)
     - Create a variable for calculating fixed operating cost (``factor_equip_replacement``) as fraction of the capital cost per year
     - Create a variable for the unit cost of the chemical (``chemical_unit_cost``)
-    - Register a "chemical" flow type with the costing package and assign cost as ``chemical_unit_cost``. This will be used to calculate operating costs based on the mass flow of the chemical addition.
+    - Register a "bazchem" flow type with the costing package and assign cost as ``chemical_unit_cost``. This will be used to calculate operating costs based on the mass flow of bazchem.
 
 2. A function to build the costing model (``chem_addition_costing``), which is decorated with the ``@register_costing_parameter_block`` decorator. This function creates the costing variables and constraints needed to calculate capital and operating costs, and also defines the variable cost calculations using the ``cost_flow`` method of the costing package:sup:`2`.
 
@@ -384,7 +472,7 @@ Custom costing methods generally consist of two functions:
 
 .. important::
 
-    :sup:`1` Users can create a custom costing method for *any* unit model in the same way. The flowsheet costing block will use the costing method passed via the ``costing_method`` argument when creating the ``UnitModelCostingBlock`` before using the costing method defined by the unit model's ``default_costing_method`` attribute.
+    :sup:`1` Users can create a custom costing method for *any* new unit model in the same way. The flowsheet costing block will use the costing method passed via the ``costing_method`` argument when creating the ``UnitModelCostingBlock`` before using the costing method defined by the unit model's ``default_costing_method`` attribute.
 
     :sup:`2` The flow cost set via the ``register_flow_type`` method multiplied by the flow passed to the ``cost_flow`` method *must* be convertable to cost / time units because it is considered a variable operating cost for that flow type.
 
@@ -436,12 +524,8 @@ Costing proceeds in the following steps:
             m.fs.product.properties[0].flow_vol_phase["Liq"], name="SEC"
         )
 
-
-.. testsetup::
-
-    add_costing(m)
-
-At this point in the build, you can change values of flowsheet-level costing variables (``electricity_price`` in this example), or change the ``base_currency``.
+At this point in the build, you can change values of flowsheet-level costing variables (``electricity_price`` in this example), change the ``base_currency``, 
+or other costing variables/parameters.
 In the example below, we also create an ``Objective`` to minimize LCOW.
 
 .. testcode::
@@ -450,17 +534,14 @@ In the example below, we also create an ``Objective`` to minimize LCOW.
     m.fs.obj = Objective(expr=m.fs.costing.LCOW)
 
     # Change values of flowsheet-level costing variables if desired
-    m.fs.costing.electricity_cost.fix(0.1)
+    m.fs.costing.electricity_cost.fix(0.12)
     m.fs.costing.base_currency = pyunits.USD_2023
 
     # Change values of unit model costing parameters if desired
-    m.fs.costing.chem_addition.chemical_unit_cost.fix(0.1)
-    m.fs.costing.reverse_osmosis.membrane_unit_cost.fix(45)
+    m.fs.costing.chem_addition.chemical_unit_cost.fix(0.42)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(24)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.02)
 
-.. testsetup::
-
-    results = solver.solve(m)
-    assert_optimal_termination(results)
 
 How-To Access Costing Results
 ==============================
@@ -473,13 +554,13 @@ Examples of system-level costing results:
 - Total operating cost: ``m.fs.costing.total_operating_cost``
 - Total electricity required: ``m.fs.costing.aggregate_flow_electricity``
 - Total cost of electricity: ``m.fs.costing.aggregate_flow_costs["electricity"]``
-- Total cost of chemicals: ``m.fs.costing.aggregate_flow_costs["chemical"]``
+- Total cost of bazchem: ``m.fs.costing.aggregate_flow_costs["bazchem"]``
 - LCOW: ``m.fs.costing.LCOW``
 - SEC: ``m.fs.costing.SEC``
 
 Accessing the values of these variables/expressions is done using the ``value`` function from Pyomo.
 
-.. testcode:: python
+.. testcode::
 
     from pyomo.environ import value
 
@@ -490,22 +571,22 @@ Accessing the values of these variables/expressions is done using the ``value`` 
     SEC = value(m.fs.costing.SEC)
 
 
-In this example, we have registered flows of ``"electricity"`` and ``"chemical"`` for costing purposes. All registered flows are accessed through the ``aggregate_flow_*`` variable(s) on the costing block, 
-where the ``*`` is replaced by the name of the registered flow (e.g., ``electricity`` or ``chemical``).
+In this example, we have registered flows of ``"electricity"`` and ``"bazchem"`` for costing purposes. Results for all registered flows are accessed through the ``aggregate_flow_*`` variable(s) on the costing block, 
+where the ``*`` is replaced by the name of the registered flow (e.g., ``electricity`` or ``bazchem``).
 
-.. testcode:: python
+.. testcode::
 
     # Example of accessing aggregate flow results
     electricity_flow = value(m.fs.costing.aggregate_flow_electricity) # kW
-    chemical_flow = value(m.fs.costing.aggregate_flow_chemical) # kg/s
+    bazchem_flow = value(m.fs.costing.aggregate_flow_bazchem) # kg/s
 
-Costs for these flows are accessed via the ``aggregate_flow_costs`` indexed variable on the costing block. Similarly, the index name is the name of the flow.
+Costs for these flows are accessed via the ``aggregate_flow_costs`` indexed variable on the costing block. The index is the registered name of the flow.
 
-.. testcode:: python
+.. testcode::
 
     # Example of accessing aggregate flow costs
     electricity_cost = value(m.fs.costing.aggregate_flow_costs["electricity"])
-    chemical_cost = value(m.fs.costing.aggregate_flow_costs["chemical"])
+    bazchem_cost = value(m.fs.costing.aggregate_flow_costs["bazchem"])
 
 
 LCOW and SEC are further broken down into the contributions from each unit model, unit model class, and flow type in the following expressions.
@@ -524,13 +605,13 @@ Further descriptions of these breakdowns, how each expression is indexed, and th
 
 Values of these expressions can similarly be accessed using the ``value`` function from Pyomo.
 
-.. testcode:: python
+.. testcode::
 
     # Example of accessing breakdown of LCOW results
     pump1_direct_capex = value(m.fs.costing.LCOW_component_direct_capex["fs.pump1"])
     pump2_direct_capex = value(m.fs.costing.LCOW_component_direct_capex["fs.pump2"])
     electricity_variable_opex = value(m.fs.costing.LCOW_aggregate_variable_opex["electricity"])
-    chemical_variable_opex = value(m.fs.costing.LCOW_aggregate_variable_opex["chemical"])
+    chemical_variable_opex = value(m.fs.costing.LCOW_aggregate_variable_opex["bazchem"])
 
     # Example of accessing breakdown of SEC results
     pump1_SEC = value(m.fs.costing.SEC_component["fs.pump1"])
@@ -539,65 +620,76 @@ Values of these expressions can similarly be accessed using the ``value`` functi
 
 Alternatively, users can use the ``.display()`` method:sup:`1` on these components to view their values directly.
 
-.. testcode:: python
+.. testcode::
 
+    print("Example LCOW breakdowns")
     m.fs.costing.LCOW.display()
-    m.fs.costing.SEC.display()
     m.fs.costing.aggregate_flow_costs.display()
     m.fs.costing.LCOW_component_direct_capex.display()
-    m.fs.costing.LCOW_component_indirect_capex.display()
-    m.fs.costing.LCOW_component_fixed_opex.display()
     m.fs.costing.LCOW_component_variable_opex.display()
+    m.fs.costing.LCOW_aggregate_variable_opex.display()
+
+    print("\nExample SEC breakdowns")
+    m.fs.costing.SEC.display()
     m.fs.costing.SEC_component.display()
 
-The output below is only for demonstration purposes and may differ depending on the specific model and parameters used.
+The example output below will differ depending on the specific model and parameters used.
+
+The component-based LCOW breakdowns are indexed by each unit model on the flowsheet. However,
+the aggregation-based LCOW breakdowns are indexed by each unit model type and flow type. 
+
+Each registered flow appears in multiple places within the LCOW breakdowns. For example, for the ``LCOW_component_variable_opex`` breakdown, the electricity flow 
+is represented by the `fs.pump1`, `fs.pump2`, and `fs.ERD` indexes; the sum of these values (i.e., the total aggregation) equals the ``LCOW_aggregate_variable_opex['electricity']`` entry.
+Additionally, ``LCOW_aggregate_variable_opex["Pump"]`` corresponds to the sum of the variable costs for all pump unit models. 
+For this reason, the system LCOW is the summation of all indexes in any of the component or aggregate expressions *except* those indexed by flow.
+
+.. Note that if costing for a unit model 
+.. included more than one registered flow (e.g., both electricity and a chemical), the variable cost for that unit model will be the sum of the costs for each registered flow.
+
+
 
 .. code-block:: none
 
+    Example LCOW breakdowns
     LCOW : Size=1
         Key  : Value
-        None : 0.7431456904640147
-    SEC : Size=1
-        Key  : Value
-        None : 2.6082564743928325
+        None : 0.9500777438781891
     aggregate_flow_costs : Size=2, Index=fs.costing.used_flows, Units=USD_2023/a
-        Key         : Lower : Value              : Upper : Fixed : Stale : Domain
-        chemical :  None : 31.557600005338784 :  None : False : False :  Reals
-        electricity :  None :  3811.372904540384 :  None : False : False :  Reals
+        Key         : Lower : Value             : Upper : Fixed : Stale : Domain
+            bazchem :  None : 132.5419200224229 :  None : False : False :  Reals
+        electricity :  None : 7472.211129411058 :  None : False : False :  Reals
     LCOW_component_direct_capex : Size=5
         Key              : Value
-                fs.pump1 : 2.5358855332579296e-09
-                fs.pump2 :     0.1333160045572335
-                fs.RO :   0.026985738454967153
-                fs.ERD :   0.008982409079407897
-        fs.chem_addition :  0.0011924289089755807
-    LCOW_component_indirect_capex : Size=5
+                fs.pump1 :  0.019967960566987127
+                fs.pump2 :   0.13331600455723355
+                fs.RO :  0.014549869921975492
+                fs.ERD :   0.00898248500193364
+        fs.chem_addition : 0.0011924289089755805
+    LCOW_component_variable_opex : Size=5
         Key              : Value
-                fs.pump1 : 2.5358855332579296e-09
-                fs.pump2 :     0.1333160045572335
-                fs.RO :   0.026985738454967153
-                fs.ERD :   0.008982409079407897
-        fs.chem_addition :  0.0011924289089755807
-    LCOW_component_fixed_opex : Size=5
-        Key              : Value
-                fs.pump1 : 1.5215313199547577e-09
-                fs.pump2 :     0.0799896027343401
-                fs.RO :    0.07016291998291461
-                fs.ERD :   0.005389445447644737
-        fs.chem_addition :    0.00310031516333651
-    LCOW_component_variable_opex : Size=6
-        Key                                         : Value
-                                        fs.pump1 :  7.33995321187609e-09
-                                        fs.pump2 :    0.3858743713038191
-                                            fs.RO :                   0.0
-                                            fs.ERD :  -0.14432414010246428
-                                fs.chem_addition :                   0.0
-        fs.feed.properties[0.0].flow_vol_phase[Liq] : 0.0019999999999999996
+                fs.pump1 :  0.09907875980955234
+                fs.pump2 :   0.6614989222351185
+                fs.RO :                  0.0
+                fs.ERD : -0.28701751725730174
+        fs.chem_addition : 0.008399999999999998
+    LCOW_aggregate_variable_opex : Size=6
+        Key                  : Value
+                        Pump :   0.7605776820446709
+            ReverseOsmosis1D :                  0.0
+        EnergyRecoveryDevice : -0.28701751725730174
+        ChemicalAdditionZO : 0.008399999999999998
+                electricity :   0.4735601647873691
+                    bazchem : 0.008399999999999998
+    
+    Example SEC breakdowns
+    SEC : Size=1
+        Key  : Value
+        None : 2.982873118845953
     SEC_component : Size=3
         Key      : Value
-        fs.pump1 : 7.925672357944015e-08
-        fs.pump2 :     4.166666666666666
-        fs.ERD :   -1.5584102715305574
+        fs.pump1 :  0.6240798767717449
+        fs.pump2 :   4.166666666666667
+        fs.ERD : -1.8078734245924584
 
 .. note::
 

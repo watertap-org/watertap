@@ -431,22 +431,8 @@ Importantly, both ``LCOW_component_variable_opex`` and ``LCOW_aggregate_variable
 Energy (e.g., ``electricity``) and material (e.g., ``naocl``, ``caustic``) flows registered with the costing package will have their variable operating costs
 broken out in these expressions. This allows the user to see the contribution of individual flow costs to the overall LCOW.
 
-For an example of the breakdowns presented by each of these expressions, consider a flowsheet that has two pump units (``m.fs.pump1``, ``m.fs.pump2``) and one chemical addition 
-unit (``m.fs.chem_add``), and has registered ``electricity`` and ``anti_scalant`` flows. The user adds the LCOW via ``m.fs.costing.add_LCOW(flow_rate)``. The following expressions and indexes would be available on ``m.fs.costing``:
+For an example of the breakdowns presented by each of these expressions, see the :ref:`how to use WaterTAP costing<how_to_use_watertap_costing>` guide.
 
-* ``LCOW_component_direct_capex``: ``"fs.pump1"``, ``"fs.pump2"``, ``"fs.chem_add"``
-* ``LCOW_component_indirect_capex``: ``"fs.pump1"``, ``"fs.pump2"``, ``"fs.chem_add"``
-* ``LCOW_component_fixed_opex``: ``"fs.pump1"``, ``"fs.pump2"``, ``"fs.chem_add"``
-* ``LCOW_component_variable_opex``: ``"fs.pump1"``, ``"fs.pump2"``, ``"fs.chem_add"``, ``"electricity"``, ``"anti_scalant"``
-* ``LCOW_aggregate_direct_capex``: ``"Pump"``, ``"ChemicalAdditionZO"``
-* ``LCOW_aggregate_indirect_capex``: ``"Pump"``, ``"ChemicalAdditionZO"``
-* ``LCOW_aggregate_fixed_opex``: ``"Pump"``, ``"ChemicalAdditionZO"``
-* ``LCOW_aggregate_variable_opex``: ``"Pump"``, ``"ChemicalAdditionZO"``, ``"electricity"``, ``"anti_scalant"``
-
-The contribution of flows to the LCOW is found as both an individual contribution to individual unit model breakdown *and* as separate entries. For example, ``electricity`` is counted both in
-``LCOW_component_variable_opex['electricity']`` as well as part of the ``LCOW_component_variable_opex`` for each of the unit models that contribute electricity flow (e.g., ``LCOW_component_variable_opex['fs.pump1']`` includes the electricity cost for pump 1). 
-Similarly, ``electricity`` is counted both as ``LCOW_aggregate_variable_opex['electricity']`` as well as part of the ``LCOW_aggregate_variable_opex['Pump']``. For this reason, the system LCOW 
-is the summation of all indexes in any of the component or aggregate expressions *except* those indexed by flow.
 
 .. _aggregate_metric_SEC:
 
