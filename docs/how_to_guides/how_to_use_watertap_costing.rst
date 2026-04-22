@@ -14,7 +14,7 @@ Additional details on the WaterTAP costing package, including equations and defa
 How To
 ------
 
-.. testsetup:: python
+.. testsetup::
 
     from pyomo.environ import (
         ConcreteModel,
