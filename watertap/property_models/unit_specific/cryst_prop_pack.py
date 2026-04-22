@@ -149,6 +149,12 @@ class NaClParameterData(PhysicalParameterBlock):
         Fundamentals of Salt Water Desalination, Elsevier Science B.V., 2002, 525-563
 
         - Tavare, N. S. Industrial Crystallization, Springer US, 2013.
+
+        - M. Affandi, N. Mamat, S. N. A. M. Kanafiah and N. S. Khalid
+          Simplified Equations for Saturated Steam Properties for Simulation Purpose
+          Procedia Engineering 2013 Vol. 53 Pages 722-726
+          DOI: 10.1016/j.proeng.2013.02.095
+          
         """
 
         # Unit definitions
