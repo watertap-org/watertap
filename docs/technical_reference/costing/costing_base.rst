@@ -363,7 +363,7 @@ Aggregate Metrics
 ------------------
 
 Built-in methods can be used to add expressions for common aggregate metrics used in technoeconomic analyses of water systems.
-The following metrics can be added to the costing block by calling the respective method:
+The following methods can be added to add different metrics to the costing block:
 
 .. csv-table::
    :header: "Method", "Default Expression Name", "Description"
@@ -372,6 +372,7 @@ The following metrics can be added to the costing block by calling the respectiv
    "``add_specific_energy_consumption``", "``specific_energy_consumption``", "Adds specific energy consumption variable and constraint"
    "``add_specific_electrical_carbon_intensity``", "``specific_electrical_carbon_intensity``", "Adds specific electrical carbon intensity variable and constraint"
    "``add_annual_water_production``", "``annual_water_production``", "Adds annual water production variable and constraint" 
+   "``add_flow_component_breakdown``", "``*_component``", "Adds flow component breakdown variable and constraint"
 
 Each of these methods requires the user pass a volumetric flow rate :math:`Q` (with units of volume per time) to be used as the basis for the calculation.
 Users can optionally provide custom names for the created expression via the `name` keyword argument. For example, creating an expression called ``SEC`` on ``m.fs.costing`` 
@@ -417,7 +418,7 @@ to further break down the cost components contributing to the LCOW:
 
     :sup:`3` The unit model flowsheet name is the name assigned to the unit model when it is added to the flowsheet (e.g., ``m.fs.unit1 = MyUnitModel()`` would have a flowsheet name of "fs.unit1").
 
-    :sup:`4` The flow name is the name used when registering the flow with the costing package (e.g., ``m.fs.costing.register_flow_type("electricity", electricity_cost)`` would have a flow name of "electricity").
+    :sup:`4` The flow name is the name used when registering the flow with the costing package (e.g., ``m.fs.costing.register_flow_type("foobaz", foobaz_unit_cost)`` would have a flow name of "foobaz").
 
     :sup:`5` The unit model class name is the string representation of the class used to define the unit model (e.g., "ReverseOsmosis0D", "Pump").
 
@@ -452,8 +453,6 @@ This expression is indexed by unit model flowsheet name and is calculated as
   
         \text{SEC}^{\text{component}}_{Q,i} = \frac{C_{el,i}}{Q}
 
-For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_energy_consumption(flow_rate, name="SEC")`` would create ``m.fs.costing.SEC`` and ``m.fs.costing.SEC_component`` that is indexed by ``"fs.pump1"`` and ``"fs.pump2"``.
-
 Specific Electrical Carbon Intensity (SECI)
 +++++++++++++++++++++++++++++++++++++++++++
 
@@ -470,8 +469,6 @@ This expression is indexed by unit model flowsheet name and is calculated as
     
             \text{SECI}^{\text{component}}_{Q,i} = \frac{f_{eci} C_{el,i}}{Q}
 
-For a flowsheet with two pump units (``m.fs.pump1``, ``m.fs.pump2``), calling ``m.fs.costing.add_specific_electrical_carbon_intensity(flow_rate, name="SECI")`` would create ``m.fs.costing.SECI`` and ``m.fs.costing.SECI_component`` that is indexed by ``"fs.pump1"`` and ``"fs.pump2"``.
-
 Annual Water Production
 +++++++++++++++++++++++
 
@@ -481,6 +478,41 @@ For a given volumetric flow `Q`, the annual water production, :math:`\text{W}^{\
    
         \text{W}^{\text{A}}_{Q} = f_{util} Q
 
+Flow Breakdowns
+++++++++++++++++
+
+An additional method on the WaterTAP costing block is ``add_flow_component_breakdown``. 
+This allows the user to break down the costs associated with individual registered flows for a specific flow type (e.g., electricity, chemicals) per cubic meter of product flow :math:`Q_p`. 
+For a given registered flow type :math:`x` the flow component breakdown :math:`\text{FCB}_{u}` by flow source :math:`u` is calculated as
+
+    .. math::
+
+        \text{FCB}_{u} = \frac{F_{x,u} M_f}{Q_p}
+
+Where :math:`F_{x,u}` is the flow of :math:`x` from source :math:`u`, :math:`M_f` is an optional multiplier, and :math:`Q_p` is a specified volumetric flow rate.
+:math:`M_f` must have units that, when multipled with the units for :math:`F_{x,u}`, result in a rate (i.e., units per time). For example, if the flow rate was electricity (units of kW),
+the multiplier could be a electrical carbon intensity (units of kg/kWh) and the resulting units would be kg/hr.
+
+The method has two required arguments and three optional arguments:
+
+- ``flow_name`` (required): string for a registered flow type 
+- ``flow_rate`` (required): flow rate of water (volumetric) to be used for normalization
+- ``name`` (optional): base name prepended to ``"_component"`` for expression name (default is to use ``flow_name``)
+- ``period`` (optional): time period for normalization (default is ``base_period``)
+- ``multiplier`` (optional): multiplier for the flow (default is 1.0)
+
+To create a breakdown of costs for ``bazchem`` used per hour per cubic meter of water, the following will create 
+an expression ``m.fs.costing.bazchem_flow_component`` indexed to every unit that is associated with a flow of ``bazchem``.
+
+.. code-block::
+
+    m.fs.costing.add_flow_component_breakdown(
+        "bazchem", flow_rate, name="bazchem_flow", period=pyunits.hour
+    )
+
+.. note::
+
+    The ``add_flow_component_breakdown`` method will try to find the unit associated with each registered flow automatically. If it can't, the logger will print a warning and the index for the unidentified flow will be the name of the flow expression.
 
 Default Costing Methods
 -----------------------
