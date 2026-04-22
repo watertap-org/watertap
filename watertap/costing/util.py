@@ -258,7 +258,7 @@ def cost_steam_flow(
         steam_mass_flow (optional): the steam flow to cost in [mass]/[time]
         steam_pressure (needed if mass flow is provided): the pressure of the steam flow in [pressure]
     """
-    if steam_volume_flow is None:
+    if steam_mass_flow is None:
         if steam_mass_flow is not None and steam_heat_duty is not None:
             raise ValueError(
                 "If steam_volume_flow is not provided, either steam mass_flow or steam_heat_duty should be provided"
@@ -267,15 +267,15 @@ def cost_steam_flow(
             steam_pressure is not None
         ), "steam pressure must be provided if steam mass flow or heat duty is provided"
         dh_vap, sp_vol = _compute_steam_properties(steam_pressure)
-        if steam_mass_flow is not None:
-            steam_volume_flow = steam_mass_flow * sp_vol
+        if steam_volume_flow is not None:
+            steam_mass_flow = steam_volume_flow / sp_vol
         elif steam_heat_duty is not None:
-            steam_volume_flow = steam_heat_duty / dh_vap * sp_vol
+            steam_mass_flow = steam_heat_duty / dh_vap
 
     if costing_package.component(steam_cost_type) is None:
         costing_package.add_component(
             steam_cost_type,
-            pyo.Var(initialize=0.004, units=pyo.units.USD_2018 / (pyo.units.meter**3)),
+            pyo.Var(initialize=0.004, units=pyo.units.USD_2018 / (pyo.units.kg)),
         )
         costing_package.find_component(steam_cost_type).fix()
         costing_package.register_flow_type(
@@ -283,8 +283,8 @@ def cost_steam_flow(
         )
     costing_package.cost_flow(
         pyo.units.convert(
-            (steam_volume_flow),
-            to_units=pyo.units.m**3 / pyo.units.s,
+            (steam_mass_flow),
+            to_units=pyo.units.kg / pyo.units.s,
         ),
         steam_cost_type,
     )
