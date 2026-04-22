@@ -35,7 +35,7 @@ keywords = [
     "desalination",
     "nawi",
 ]
-version = "1.6.dev0"
+version = "1.7.dev0"
 
 dependencies = [
     # primary requirements for unit and property models
@@ -46,7 +46,7 @@ dependencies = [
     "watertap-solvers",
     "pyyaml",            # watertap.core.wt_database
     # for parameter_sweep
-    "parameter-sweep @ git+https://github.com/watertap-org/parameter-sweep",
+    "parameter-sweep>=0.2.0",
     "numpy",
     "pint<0.25",
 ]
@@ -60,9 +60,9 @@ testing = [
     "pytest",
     "pandas",
     # treebeardtech/nbmake#121
-    "nbmake != 1.5.1",
+    "nbmake!=1.5.1",
     "nbconvert",
-    "idaes-flowsheet-processor >=0.1.dev4",
+    "idaes-flowsheet-processor>=0.2.0",
 ]
 notebooks = ["jupyter", "ipykernel"]
 oli_api = [
@@ -71,7 +71,7 @@ oli_api = [
 ]
 
 reaktoro = [
-    "reaktoro-pse @ git+https://github.com/watertap-org/reaktoro-pse",
+    "reaktoro-pse>=0.3.0",
 ]
 
 all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
