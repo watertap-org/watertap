@@ -542,7 +542,7 @@ In the example below, we also create an ``Objective`` to minimize LCOW.
 
 
 How-To Access Costing Results
-==============================
+******************************
 
 After building the costing model and solving the optimization problem, system-level costing results are on the flowsheet costing block (``m.fs.costing``) and unit-level costing results are on the ``costing`` attribute of each unit model (e.g. ``m.fs.chem_addition.costing``).
 
