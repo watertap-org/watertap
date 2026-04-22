@@ -49,14 +49,25 @@ simply by doing the following:
     max = 1
     min = 1
     for phase in model.fs.unit.control_volume.properties_in[0.0].enth_mol_phase:
-        val = abs(value(model.fs.unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr))
+        val = abs(
+            value(
+                model.fs.unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr
+            )
+        )
         if val >= max:
             max = val
         if val <= min:
             val = min
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 10/val)
+            model.fs.unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase],
+            10 / val,
+        )
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 10/val)
+            model.fs.unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase],
+            10 / val,
+        )
 
-    iscale.constraint_scaling_transform(model.fs.unit.control_volume.enthalpy_balances[0.0], 10/max)
+    iscale.constraint_scaling_transform(
+        model.fs.unit.control_volume.enthalpy_balances[0.0], 10 / max
+    )
+

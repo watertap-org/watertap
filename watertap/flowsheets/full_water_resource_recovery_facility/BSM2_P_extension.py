@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -46,6 +46,7 @@ from watertap.core.solvers import get_solver
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.scaling import set_scaling_factor
+from idaes.core.util.scaling import constraint_scaling_transform
 import idaes.logger as idaeslog
 from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
@@ -116,17 +117,9 @@ def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m, bio_P=bio_P)
 
-    for mx in m.fs.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
     initialize_system(m, bio_P=bio_P)
-    for mx in m.fs.mixers:
-        mx.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 2].deactivate()
-    m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
     add_costing(m)
@@ -148,14 +141,19 @@ def main(bio_P=False):
     scaled_model.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Re-solve with controls in place
-    solve(scaled_model)
+    scaled_results = solve(scaled_model)
+    pyo.assert_optimal_termination(scaled_results)
 
-    results = scaling.propagate_solution(scaled_model, m)
+    scaling.propagate_solution(scaled_model, m)
 
     display_costing(m)
     display_performance_metrics(m)
 
-    return m, results
+    return (
+        m,
+        scaled_results,
+        scaled_model,
+    )
 
 
 def build(bio_P=False):
@@ -191,8 +189,9 @@ def build(bio_P=False):
     m.fs.MX1 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["feed_water", "recycle"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
+
     # First reactor (anaerobic) - standard CSTR
     m.fs.R1 = CSTR(
         property_package=m.fs.props_ASM2D, reaction_package=m.fs.rxn_props_ASM2D
@@ -241,8 +240,9 @@ def build(bio_P=False):
     m.fs.MX2 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["reactor", "clarifier"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
+
     # Sludge separator
     m.fs.SP2 = Separator(
         property_package=m.fs.props_ASM2D, outlet_list=["waste", "recycle"]
@@ -260,13 +260,14 @@ def build(bio_P=False):
     m.fs.MX3 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["feed_water", "recycle1", "recycle2"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
+
     # Mixing sludge from thickener and primary clarifier
     m.fs.MX4 = Mixer(
         property_package=m.fs.props_ASM2D,
         inlet_list=["thickener", "clarifier"],
-        momentum_mixing_type=MomentumMixingType.equality,
+        momentum_mixing_type=MomentumMixingType.none,
     )
 
     # ======================================================================
@@ -313,7 +314,7 @@ def build(bio_P=False):
     m.fs.Treated = Product(property_package=m.fs.props_ASM2D)
     m.fs.Sludge = Product(property_package=m.fs.props_ASM2D)
     # Mixers
-    m.fs.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX4)
+    m.fs.mixers = (m.fs.MX1, m.fs.MX2, m.fs.MX3, m.fs.MX4)
 
     # ======================================================================
     # Link units related to ASM section
@@ -365,60 +366,6 @@ def build(bio_P=False):
     )
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
-
-    # Oxygen concentration in reactors 3 and 4 is governed by mass transfer
-    # Add additional parameter and constraints
-    m.fs.R5.KLa = pyo.Var(
-        initialize=240 / 24,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.R6.KLa = pyo.Var(
-        initialize=240 / 24,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.R7.KLa = pyo.Var(
-        initialize=84 / 24,
-        units=pyo.units.hour**-1,
-        doc="Lumped mass transfer coefficient for oxygen",
-    )
-    m.fs.S_O_eq = pyo.Param(
-        default=8e-3,
-        units=pyo.units.kg / pyo.units.m**3,
-        mutable=True,
-        doc="Dissolved oxygen concentration at equilibrium",
-    )
-
-    @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
-    def mass_transfer_R5(self, t):
-        return pyo.units.convert(
-            m.fs.R5.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R5.KLa
-            * m.fs.R5.volume[t]
-            * (m.fs.S_O_eq - m.fs.R5.outlet.conc_mass_comp[t, "S_O2"])
-        )
-
-    @m.fs.R6.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    def mass_transfer_R6(self, t):
-        return pyo.units.convert(
-            m.fs.R6.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R6.KLa
-            * m.fs.R6.volume[t]
-            * (m.fs.S_O_eq - m.fs.R6.outlet.conc_mass_comp[t, "S_O2"])
-        )
-
-    @m.fs.R7.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
-    def mass_transfer_R7(self, t):
-        return pyo.units.convert(
-            m.fs.R7.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
-        ) == (
-            m.fs.R7.KLa
-            * m.fs.R7.volume[t]
-            * (m.fs.S_O_eq - m.fs.R7.outlet.conc_mass_comp[t, "S_O2"])
-        )
 
     return m
 
@@ -493,6 +440,10 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].fix(2.60e-3)
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].fix(3.20e-3)
 
+    m.fs.R5.KLa = 10 * pyo.units.hour**-1
+    m.fs.R6.KLa = 10 * pyo.units.hour**-1
+    m.fs.R7.KLa = 10 * pyo.units.hour**-1
+
     # Set fraction of outflow from reactor 5 that goes to recycle
     m.fs.SP1.split_fraction[:, "underflow"].fix(0.60)
 
@@ -538,6 +489,10 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.thickener.hydraulic_retention_time.fix(86400 * pyo.units.s)
     m.fs.thickener.diameter.fix(10 * pyo.units.m)
 
+    # Mixers - fix outlet pressures since MomentumMixingType.none and isobaric assumption
+    for mixer in m.fs.mixers:
+        mixer.outlet.pressure.fix()
+
 
 def scale_system(m, bio_P=False):
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
@@ -546,15 +501,20 @@ def scale_system(m, bio_P=False):
     ad_scaler = ADScaler()
     ad_scaler.scale_model(m.fs.AD)
 
-    set_scaling_factor(m.fs.AD.KH_co2, 1e1)
-    set_scaling_factor(m.fs.AD.KH_ch4, 1e1)
-    set_scaling_factor(m.fs.AD.KH_h2, 1e2)
-    set_scaling_factor(m.fs.AD.liquid_phase.heat, 1e1)
-
+    for vardata in m.fs.AD.KH_co2.values():
+        set_scaling_factor(vardata, 1e1)
+    for vardata in m.fs.AD.KH_ch4.values():
+        set_scaling_factor(vardata, 1e1)
+    for vardata in m.fs.AD.KH_h2.values():
+        set_scaling_factor(vardata, 1e2)
+    for vardata in m.fs.AD.liquid_phase.heat.values():
+        set_scaling_factor(vardata, 1e1)
     if bio_P:
-        set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e1)
+        for blkdata in m.fs.AD.liquid_phase.reactions.values():
+            set_scaling_factor(blkdata.S_H, 1e1)
     else:
-        set_scaling_factor(m.fs.AD.liquid_phase.reactions[0].S_H, 1e2)
+        for blkdata in m.fs.AD.liquid_phase.reactions.values():
+            set_scaling_factor(blkdata.S_H, 1e2)
 
     cstr_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4]
     cstr_scaler = CSTRScaler()
@@ -562,7 +522,8 @@ def scale_system(m, bio_P=False):
         cstr_scaler.scale_model(unit)
 
     for unit in cstr_list:
-        set_scaling_factor(unit.hydraulic_retention_time, 1e-3)
+        for vardata in unit.hydraulic_retention_time.values():
+            set_scaling_factor(vardata, 1e-3)
 
     aeration_list = [m.fs.R5, m.fs.R6, m.fs.R7]
     aeration_scaler = AerationTankScaler()
@@ -570,23 +531,39 @@ def scale_system(m, bio_P=False):
         aeration_scaler.scale_model(unit)
 
     for R in aeration_list:
-        set_scaling_factor(R.KLa, 1e-1)
+        for vardata in R.KLa.values():
+            set_scaling_factor(vardata, 1e-1)
         if bio_P:
-            set_scaling_factor(R.hydraulic_retention_time[0], 1e-2)
+            for vardata in R.hydraulic_retention_time.values():
+                set_scaling_factor(vardata, 1e-2)
 
     reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5, m.fs.R6, m.fs.R7]
     for unit in reactor_list:
-        set_scaling_factor(unit.control_volume.reactions[0.0].rate_expression, 1e3)
-        set_scaling_factor(unit.cstr_performance_eqn, 1e3)
-        set_scaling_factor(
-            unit.control_volume.rate_reaction_stoichiometry_constraint, 1e3
-        )
-        set_scaling_factor(unit.control_volume.material_balances, 1e3)
+        for blkdata in unit.control_volume.reactions.values():
+            for vardata in blkdata.rate_expression.values():
+                set_scaling_factor(vardata, 1e3)
+        for condata in unit.cstr_performance_eqn.values():
+            set_scaling_factor(condata, 1e3)
+        for (
+            condata
+        ) in unit.control_volume.rate_reaction_stoichiometry_constraint.values():
+            set_scaling_factor(condata, 1e3)
+        for condata in unit.control_volume.material_balances.values():
+            set_scaling_factor(condata, 1e3)
 
     if bio_P:
-        set_scaling_factor(
-            m.fs.R5.control_volume.rate_reaction_generation[0, "Liq", "S_I"], 1e-3
-        )
+        for t in m.fs.time:
+            set_scaling_factor(
+                m.fs.R5.control_volume.rate_reaction_generation[t, "Liq", "S_I"], 1e-3
+            )
+            # TODO switch away from constraint_scaling_transform when the flowsheet's
+            # scaling is improved.
+            constraint_scaling_transform(
+                m.fs.R5.control_volume.rate_reaction_stoichiometry_constraint[
+                    t, "Liq", "H2O"
+                ],
+                1e-6,
+            )
 
     clarifier_list = [m.fs.CL, m.fs.CL2]
     clarifier_scaler = ClarifierScaler()
@@ -605,7 +582,8 @@ def scale_system(m, bio_P=False):
     ad_as_scaler = ADM1ASM2dScaler()
     ad_as_scaler.scale_model(m.fs.translator_adm1_asm2d)
 
-    set_scaling_factor(m.fs.P1.control_volume.work[0], 1e-2)
+    for vardata in m.fs.P1.control_volume.work.values():
+        set_scaling_factor(vardata, 1e-2)
 
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
@@ -654,7 +632,7 @@ def initialize_system(m, bio_P=False, solver=None):
                 (0, "S_F"): 0.00047,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.045,
-                (0, "S_NH4"): 0.0075,
+                (0, "S_NH4"): 0.01,
                 (0, "S_NO3"): 0.003,
                 (0, "S_O2"): 0.0019,
                 (0, "S_PO4"): 0.011,
@@ -761,9 +739,9 @@ def initialize_system(m, bio_P=False, solver=None):
     def function(unit):
         # TODO: Resolve why bio_P=True does not work with the BTInitializer
         if bio_P:
-            unit.initialize(outlvl=idaeslog.INFO, solver="ipopt-watertap")
+            unit.initialize(outlvl=idaeslog.DEBUG)
         else:
-            initializer.initialize(unit)
+            initializer.initialize(unit, output_level=_log.debug)
 
     seq.run(m, function)
 
@@ -1036,7 +1014,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results, scaled_model = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {

@@ -50,7 +50,7 @@ Documentation for the property model can be found here:
 Documentation for the costing relationships can be found here:
     * :ref:`WaterTAP Costing Package <watertap_costing>`
 
-This flowsheet aims to solve an optimization problem that minimizes the levelized cost of water (LCOW) with a specified number of stages and system mass recovery. LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents the total capital cost, :math:`C_{op,tot}` represents the total operating cost, and :math:`f_{util}` represents the utilization factor:
+This flowsheet aims to solve an optimization problem that minimizes the LCOW with a specified number of stages and system mass recovery. LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents the total capital cost, :math:`C_{op,tot}` represents the total operating cost, and :math:`f_{util}` represents the utilization factor:
 
     .. math::
 
@@ -171,26 +171,26 @@ Flowsheet Specifications
    :header: "Description", "Value", "Units"
 
    "**Primary and booster pumps**", "", ""
-   "Pump efficiency", "0.75", "dimensionless"
-   "**ERDs**", "", ""
-   "efficiency", "0.8", "dimensionless"
-   "Outlet pressure", "101325", "Pa"
+   "Pump efficiency", "0.75", ":math:`\text{dimensionless}`"
+   "**ERDs**", 
+   "efficiency", "0.8", ":math:`\text{dimensionless}`"
+   "Outlet pressure", "101325", ":math:`\text{Pa}`"
    "**RO Stage**", "", ""
-   "Water permeability coefficient", "4.2E-12", "m/s-Pa"
-   "Salt permeability coefficient", "3.5E-8", "m/s"
-   "Feed-channel height", "1E-3", "m"
-   "Feed-side spacer porosity", "0.85", "dimensionless"
-   "Permeate pressure", "101325", "Pa"
-   "Minimum RO pressure", "10E5", "Pa"
-   "Maximum RO pressure", "85E5", "Pa"
+   "Water permeability coefficient", "4.2E-12", ":math:`\text{m/s/Pa}`"
+   "Salt permeability coefficient", "3.5E-8", ":math:`\text{m/s}`"
+   "Feed-channel height", "1E-3", ":math:`\text{m}`"
+   "Feed-side spacer porosity", "0.85", ":math:`\text{dimensionless}`"
+   "Permeate pressure", "101325", ":math:`\text{Pa}`"
+   "Minimum RO pressure", "10E5", ":math:`\text{Pa}`"
+   "Maximum RO pressure", "85E5", ":math:`\text{Pa}`"
    "**LSRRO stages**", "", ""
-   "Water permeability coefficient", "2.78E-12 to 4.2E-11", "m/s-Pa"
-   "Salt permeability coefficient", "3.5E-8 to B_max", "m/s"
-   "Feed-channel height", "1E-3", "m"
-   "Feed-side spacer porosity", "0.85", "dimensionless"
-   "Minimum LSRRO pressure", "10E5", "Pa"
-   "Maximum LSRRO pressure", "65E5", "Pa"
+   "Water permeability coefficient", "2.78E-12 to 4.2E-11", ":math:`\text{m/s/Pa}`"
+   "Salt permeability coefficient", "3.5E-8 to ``B_max``", ":math:`\text{m/s}`"
+   "Feed-channel height", "1E-3", ":math:`\text{m}`"
+   "Feed-side spacer porosity", "0.85", ":math:`\text{dimensionless}`"
+   "Minimum LSRRO pressure", "10E5", ":math:`\text{Pa}`"
+   "Maximum LSRRO pressure", "65E5", ":math:`\text{Pa}`"
    "**Additional Specifications**", "", ""
-   "Permeate quality limit", "500E-6", "ppm"
+   "Permeate quality limit", "500E-6", ":math:`\text{ppm}`"
 
 

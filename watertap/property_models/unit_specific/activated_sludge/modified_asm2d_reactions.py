@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -37,7 +37,6 @@ from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
-
 
 # Some more information about this module
 __author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
@@ -712,7 +711,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
             ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_NH4"): -self.i_NSF,
+            ("R8", "Liq", "S_NH4"): self.i_NSF,
             ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NO3"): 0,
             ("R8", "Liq", "S_PO4"): -(-self.i_PSF),
