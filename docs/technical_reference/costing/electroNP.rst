@@ -4,7 +4,7 @@ ElectroN-P Costing Method
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.electroNP`) when applying the `cost_electroNP` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.electroNP``) when applying the ``cost_electroNP`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -19,7 +19,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 Costing Method Variables
 ++++++++++++++++++++++++
 
-The following variables are used on the unit block (e.g., m.fs.unit.costing) when applying the `cost_electroNP` costing method in the ``watertap_costing_package``:
+The following variables are used on the unit block (e.g., ``m.fs.unit.costing``) when applying the ``cost_electroNP`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -35,7 +35,7 @@ Capital cost depends on the unit's inlet flow rate, :math:`Q_{in}`, as shown in 
 
     .. math::
 
-        C_{cap,tot} = HRT * Q_{in} * C_V
+        C_{cap,tot} = HRT \times Q_{in} \times C_V
 
  
 Operating Cost Calculations
@@ -49,8 +49,11 @@ Operating/maintenance costs consist of magnesium chloride usage cost and phospho
 
     .. math::
 
-        C_{op,MgCl2} = Q_{MgCl2} * C_{MgCl2}
-        C_{op,RP} = Q_{byproduct, S_{PO4}} * C_{RP}
+        C_{op,MgCl2} = Q_{MgCl2} \times C_{MgCl2}
+
+    .. math::
+
+        C_{op,RP} = Q_{byproduct, S_{PO4}} \times C_{RP}
 
  
 Code Documentation

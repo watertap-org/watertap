@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -35,17 +35,20 @@ from idaes.core.util.config import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 from pyomo.environ import (
+    Constraint,
     Param,
     units as pyunits,
     check_optimal_termination,
     Set,
-    Expr_if,
     value,
 )
 
 from idaes.core.util.exceptions import InitializationError
+
+from watertap.core.util.misc import smooth_heaviside
 
 __author__ = "Marcus Holly"
 
@@ -54,15 +57,88 @@ __author__ = "Marcus Holly"
 _log = idaeslog.getLogger(__name__)
 
 
+class ASM2dADM1Scaler(CustomScalerBase):
+    """
+    Default modular scaler for ASM2d-ADM1 translator block.
+    This Scaler relies on the associated property and reaction packages,
+    either through user provided options (submodel_scalers argument) or by default
+    Scalers assigned to the packages.
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+        Returns:
+            None
+        """
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            submodel=model.properties_in,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.properties_out,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+        Submodel Scalers are called for the property and reaction blocks. All other constraints
+        are scaled using the inverse maximum scheme.
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+        Returns:
+            None
+        """
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            submodel=model.properties_in,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.properties_out,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # Scale unit level constraints
+        for c in model.component_data_objects(Constraint, descend_into=True):
+            self.scale_constraint_by_nominal_value(
+                c,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+
 @declare_process_block_class("Translator_ASM2d_ADM1")
 class TranslatorDataASM2dADM1(TranslatorData):
     """
     Translator block representing the ASM2d/ADM1 interface
     """
 
+    default_scaler = ASM2dADM1Scaler
+
     CONFIG = TranslatorData.CONFIG()
 
-    # TODO: Change the default to False
     CONFIG.declare(
         "bio_P",
         ConfigValue(
@@ -190,6 +266,12 @@ see reaction package for documentation.}""",
             units=pyunits.kg / pyunits.m**3,
             mutable=True,
             doc="Smoothing factor",
+        )
+        self.heaviside_k = Param(
+            initialize=2e1,
+            units=pyunits.dimensionless,
+            mutable=True,
+            doc="Smooth heaviside k parameter",
         )
 
         @self.Constraint(
@@ -655,14 +737,16 @@ see reaction package for documentation.}""",
                     blk.eps_smooth,
                 )
 
-            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    blk.SF_AS3[t],
-                    blk.XN_org[t],
+                x = (
+                    (blk.XN_org[t] - blk.properties_in[t].conc_mass_comp["X_S"])
+                    * pyunits.m**3
+                    / pyunits.kg
                 )
+                return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
+                    x=x, k=self.heaviside_k
+                ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):
@@ -1103,14 +1187,16 @@ see reaction package for documentation.}""",
                     blk.eps_smooth,
                 )
 
-            # TODO: Can this be replaced with smooth_max or smooth_min?
             @self.Expression(self.flowsheet().time, doc="Protein mapping")
             def Xpr_mapping(blk, t):
-                return Expr_if(
-                    blk.XN_org[t] >= blk.properties_in[t].conc_mass_comp["X_S"],
-                    blk.SF_AS3[t],
-                    blk.XN_org[t],
+                x = (
+                    (blk.XN_org[t] - blk.properties_in[t].conc_mass_comp["X_S"])
+                    * pyunits.m**3
+                    / pyunits.kg
                 )
+                return (blk.SF_AS3[t] - blk.XN_org[t]) * smooth_heaviside(
+                    x=x, k=self.heaviside_k
+                ) + blk.XN_org[t]
 
             @self.Expression(self.flowsheet().time, doc="Lipids mapping")
             def Xli_mapping(blk, t):

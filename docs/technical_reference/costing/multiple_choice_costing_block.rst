@@ -6,15 +6,15 @@ Multiple Choice Unit Model Costing Block
 .. currentmodule:: watertap.costing.multiple_choice_costing_block
 
 The MultiUnitModelCostingBlock class is a wrapper around the IDAES
-`UnitModelCostingBlock` which allows the modeller to easily explore the implications of
+``UnitModelCostingBlock`` which allows the modeller to easily explore the implications of
 different unit model costing choices on overall flowsheet costs without rebuilding
 a new flowsheet or replacing Pyomo components.
 
 MultiUnitModelCostingBlock objects instead construct every single costing relationship
 specified for the unit model, and controls which one is active through the indexed
-mutable parameter `costing_block_selector`, which takes the value `1` when the
+mutable parameter ``costing_block_selector``, which takes the value `1` when the
 associated costing block is active and the value `0` otherwise. The helper method
-`select_costing_block` handles activating a single costing block whilst deactivating
+``select_costing_block`` handles activating a single costing block whilst deactivating
 all other costing blocks.
 
 Usage

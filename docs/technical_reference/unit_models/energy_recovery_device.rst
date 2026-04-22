@@ -1,5 +1,11 @@
+.. _ERD:
+
 Energy Recovery Device
 ======================
+
+.. code-block:: python
+
+   from watertap.unit_models.pressure_changer import EnergyRecoveryDevice
 
 .. index::
    pair: watertap.unit_models.energy_recovery_device;energy_recovery_device
@@ -17,7 +23,7 @@ Degrees of Freedom
 
 Energy recovery device units generally have two degrees of freedom:
 
-* outlet pressure, :math:`P_{out}` or pressure change across the inlet and outlet,:math:`\Delta P`
+* outlet pressure, :math:`P_{out}` or pressure change across the inlet and outlet, :math:`\Delta P`
 * energy recovery device efficiency
 
 Model Structure

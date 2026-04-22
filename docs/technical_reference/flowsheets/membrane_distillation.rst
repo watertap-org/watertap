@@ -1,3 +1,5 @@
+.. _MD_flowsheet:
+
 Membrane Distillation
 ======================
 
@@ -20,13 +22,13 @@ The simulation includes an integrated external heat exchanger for heat recovery,
 - Pumps, separators, and mixers to support the process flow and integration.
 
 Costing relationships for each of the unit models are described in the
-`WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_.
+:ref:`WaterTAP Costing Package <watertap_costing>`.
 
 The flowsheet relies on the following key assumptions:
 
    * Supports steady-state only
    * Supports optimization and minimizes the levelized cost of water (LCOW) with constraints
-   * Uses the `Seawater Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_ and  `Water Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/water.html>`_
+   * Uses the :ref:`Seawater Property Package <seawater>` and  :ref:`Water Property Package <water>`
    * Number of stages and system recovery should be specified for optimization
 
 .. figure:: ../../_static/flowsheets/MD.png
@@ -36,15 +38,15 @@ The flowsheet relies on the following key assumptions:
     Figure 1. MD flow diagram
 
 Documentation for each of the unit models can be found here:
-   * `MD <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/membrane_distillation_0D.html>`_
+   * :ref:`MD <MD_0D>`
    * `Heat Exchanger <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/heat_exchanger.html>`_
    * `Heater and chiller <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/heater.html>`_
    * `Mixer <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/mixer.html>`_
    * `Separator <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/separator.html>`_
 
 Documentation for the property model can be found here:
-   * `Seawater Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_
-   * `Water Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/water.html>`_
+   * :ref:`Seawater Property Package <seawater>`
+   * :ref:`Water Property Package <water>`
 
 This flowsheet aims to solve an optimization problem that minimizes the LCOW with a specified overall water recovery.
 LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents total capital cost, :math:`C_{op,tot}` represents total operating cost, and :math:`f_{util}` represents the utilization factor:
@@ -71,19 +73,19 @@ Flowsheet Specifications
    :header: "Description", "value", "Units"
 
    "**MD Module**"
-   "Membrane permeability coefficient", "1e-10", "m/Pa/s"
-   "Membrane thickness", "1e-4", "m"
-   "Membrane thermal conductivity", "0.2", "W/m/K"
-   "MD hot and cold channels height", "0.0019", "m"
+   "Membrane permeability coefficient", "1e-10", ":math:`\text{m/Pa/s}`"
+   "Membrane thickness", "1e-4", ":math:`\text{m}`"
+   "Membrane thermal conductivity", "0.2", ":math:`\text{W/m/K}`"
+   "MD hot and cold channels height", "0.0019", ":math:`\text{m}`"
    "MD hot and cold channels spacer porosity", "0.77", ":math:`\text{dimensionless}`"
    "**Heat Exchanger**"
    "Overall heat transfer coefficient", "2000", ":math:`\text{W/m}^{2}\text{/K}`"
    "**Pumps**"
    "Efficiency", "0.8", ":math:`\text{dimensionless}`"
    "**Heater**"
-   "Maximum outlet temperature", "90", "°C"
+   "Maximum outlet temperature", "90", ":math:`\text{°C}`"
    "**Cooler**"
-   "Minimum outlet temperature", "10", "°C"
+   "Minimum outlet temperature", "10", ":math:`\text{°C}`"
 
 
 

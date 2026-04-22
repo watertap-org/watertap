@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -55,6 +55,7 @@ from pathlib import Path
 from copy import deepcopy
 from itertools import product
 
+from watertap.custom_exceptions import FrozenPipes
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_oli_name,
     get_charge,
@@ -697,6 +698,8 @@ class Flash:
             ]
             missing_args = _check_args(args)
             not_floats = _check_floats(args)
+        else:
+            raise FrozenPipes(f"Unsupported flow_type: {flow_type}")
         if missing_args:
             raise RuntimeError(
                 f"Missing argument(s) for {flash_method}: {missing_args}"
@@ -972,7 +975,9 @@ class Flash:
                     pass
                 elif k in d["inflows"]["values"]:
                     d = d["inflows"]["values"]
-                elif k in d["corrosionParameters"]:
+                elif hasattr(d, "corrosionParameters") and (
+                    k in d["corrosionParameters"]
+                ):
                     d = d["corrosionParameters"]
                 else:
                     _logger.warning(f"Survey key {k} not found in JSON input.")
@@ -1114,8 +1119,7 @@ def flatten_results(processed_requests):
                 elif "data" in values:
                     # intended for vaporDiffusivityMatrix
                     mat_dim = int(sqrt(len(values["data"])))
-                    diffmat = reshape(values["data"], newshape=(mat_dim, mat_dim))
-
+                    diffmat = reshape(values["data"], shape=(mat_dim, mat_dim))
                     extracted_values = {
                         f'({values["speciesNames"][i]},{values["speciesNames"][j]})': {
                             "units": values["unit"],
@@ -1158,9 +1162,9 @@ def flatten_results(processed_requests):
                         prop_tag = _get_nested_data(result, prop)["name"]
             else:
                 _logger.warning(
-                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict}"
+                    f"Unexpected result:\n{result}\n\ninput_dict:\n{input_dict} from prop {prop}"
                 )
-
+                continue
             label = f"{prop_tag}_{phase_tag}" if phase_tag else prop_tag
             input_dict[k][label] = _extract_values(result, prop)
         return input_dict

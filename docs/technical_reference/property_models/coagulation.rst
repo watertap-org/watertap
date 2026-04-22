@@ -1,3 +1,5 @@
+.. _coagulation:
+
 Coagulation Property Package
 ============================
 

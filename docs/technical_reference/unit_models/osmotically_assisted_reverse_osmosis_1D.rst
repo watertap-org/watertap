@@ -1,5 +1,12 @@
+.. _OARO_1D:
+
 Osmotically Assisted Reverse Osmosis (1D)
 =========================================
+
+.. code-block:: python
+
+   from watertap.unit_models.osomtically_assisted_reverse_osmosis_1D import OsmoticallyAssistedReverseOsmosis1D
+
 This osmotically assisted reverse osmosis (OARO) unit model
    * is 1-dimensional
    * supports a single liquid phase only

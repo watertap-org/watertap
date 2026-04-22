@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -246,6 +246,15 @@ def build_flowsheet():
     assert degrees_of_freedom(m) == 0
 
     # Apply scaling
+    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+        if "flow_vol" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
+        if "temperature" in var.name:
+            iscale.set_scaling_factor(var, 1e-1)
+        if "pressure" in var.name:
+            iscale.set_scaling_factor(var, 1e-6)
+        if "conc_mass_comp" in var.name:
+            iscale.set_scaling_factor(var, 1e1)
     iscale.calculate_scaling_factors(m.fs)
 
     # Initialize flowsheet

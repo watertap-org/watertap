@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -16,7 +16,6 @@ from pyomo.environ import (
     Var,
     Param,
     Suffix,
-    NonNegativeReals,
     Reals,
     Reference,
     TransformationFactory,
@@ -281,30 +280,28 @@ class StoichiometricReactorData(UnitModelBlockData):
             )
         # Add unit parameters
         if self.has_dissolution_reaction:
-            self.mw_reagent = Var(
+            self.mw_reagent = Param(
                 self.reagent_list,
                 units=pyunits.kg / pyunits.mol,
                 doc="Molecular weight of reagents",
+                mutable=True,
             )
-            self.density_reagent = Var(
+            self.density_reagent = Param(
                 self.reagent_list,
                 initialize=1000,
                 units=units_meta("mass") / units_meta("volume"),
                 doc="Density of reagents",
+                mutable=True,
             )
             for r in self.reagent_list:
-                self.mw_reagent[r].fix(
-                    pyunits.convert(
-                        self.config.reagent[r]["mw"],
-                        to_units=pyunits.kg / pyunits.mol,
-                    )
+                self.mw_reagent[r] = pyunits.convert(
+                    self.config.reagent[r]["mw"],
+                    to_units=pyunits.kg / pyunits.mol,
                 )
                 if self.config.reagent[r].get("density_reagent") is not None:
-                    self.density_reagent[r].fix(
-                        pyunits.convert(
-                            self.config.reagent[r].get("density_reagent"),
-                            to_units=(units_meta("mass") / units_meta("volume")),
-                        )
+                    self.density_reagent[r] = pyunits.convert(
+                        self.config.reagent[r].get("density_reagent"),
+                        to_units=(units_meta("mass") / units_meta("volume")),
                     )
                 else:
                     _log.warning(
@@ -312,11 +309,9 @@ class StoichiometricReactorData(UnitModelBlockData):
                             r
                         )
                     )
-                    self.density_reagent[r].fix(
-                        pyunits.convert(
-                            1 * pyunits.kg / pyunits.liter,
-                            to_units=(units_meta("mass") / units_meta("volume")),
-                        )
+                    self.density_reagent[r] = pyunits.convert(
+                        1 * pyunits.kg / pyunits.liter,
+                        to_units=(units_meta("mass") / units_meta("volume")),
                     )
             self.dissolution_stoich_comp = Param(
                 self.reagent_list,
@@ -334,21 +329,28 @@ class StoichiometricReactorData(UnitModelBlockData):
             self.reagent_dose = Var(
                 self.reagent_list,
                 initialize=1,
-                domain=NonNegativeReals,
+                domain=Reals,
                 units=units_meta("mass") / units_meta("volume"),
                 doc="reagent dose",
             )
             self.flow_mass_reagent = Var(
                 self.reagent_list,
                 initialize=1e-3,
-                domain=NonNegativeReals,
+                domain=Reals,
                 units=units_meta("mass") / units_meta("time"),
+                doc="Mass flowrate of reagent",
+            )
+            self.flow_mol_reagent = Var(
+                self.reagent_list,
+                initialize=1e-3,
+                domain=Reals,
+                units=pyunits.mol / units_meta("time"),
                 doc="Mass flowrate of reagent",
             )
             self.flow_vol_reagent = Var(
                 self.reagent_list,
                 initialize=1e-3,
-                domain=NonNegativeReals,
+                domain=Reals,
                 units=units_meta("volume") / units_meta("time"),
                 doc="Volume flowrate of reagent",
             )
@@ -368,17 +370,16 @@ class StoichiometricReactorData(UnitModelBlockData):
                 units=pyunits.dimensionless,
                 doc="Solid mass fraction in sludge",
             )
-            self.mw_precipitate = Var(
+            self.mw_precipitate = Param(
                 self.precipitate_list,
                 units=pyunits.kg / pyunits.mol,
                 doc="Molecular weight of precipitate",
+                mutable=True,
             )
             for p in self.precipitate_list:
-                self.mw_precipitate[p].fix(
-                    pyunits.convert(
-                        self.config.precipitate[p]["mw"],
-                        to_units=pyunits.kg / pyunits.mol,
-                    )
+                self.mw_precipitate[p] = pyunits.convert(
+                    self.config.precipitate[p]["mw"],
+                    to_units=pyunits.kg / pyunits.mol,
                 )
 
             self.precipitation_stoich_comp = Param(
@@ -399,14 +400,21 @@ class StoichiometricReactorData(UnitModelBlockData):
             self.flow_mass_precipitate = Var(
                 self.precipitate_list,
                 initialize=1e-3,
-                domain=NonNegativeReals,
+                domain=Reals,
                 units=units_meta("mass") / units_meta("time"),
+                doc="Mass flowrate of precipitate",
+            )
+            self.flow_mol_precipitate = Var(
+                self.precipitate_list,
+                initialize=1e-3,
+                domain=Reals,
+                units=pyunits.mol / units_meta("time"),
                 doc="Mass flowrate of precipitate",
             )
             self.conc_mass_precipitate = Var(
                 self.precipitate_list,
                 initialize=1,
-                domain=NonNegativeReals,
+                domain=Reals,
                 units=units_meta("mass") / units_meta("volume"),
                 doc="Mass concentration of precipitate",
             )
@@ -588,6 +596,14 @@ class StoichiometricReactorData(UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.reagent_list,
+                doc="Mole generation from dissolution",
+            )
+            def eq_flow_mol_reagent(b, t, r):
+                return b.flow_mass_reagent[r] / b.mw_reagent[r] == b.flow_mol_reagent[r]
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.reagent_list,
                 doc="Reagent mass flow",
             )
             def eq_flow_mass_reagent(b, t, r):
@@ -604,8 +620,8 @@ class StoichiometricReactorData(UnitModelBlockData):
             )
             def eq_flow_vol_reagent(b, t, r):
                 return (
-                    b.flow_mass_reagent[r]
-                    == b.flow_vol_reagent[r] * b.density_reagent[r]
+                    b.flow_mass_reagent[r] / b.density_reagent[r]
+                    == b.flow_vol_reagent[r]
                 )
 
         if self.has_precipitation_reaction:
@@ -647,6 +663,17 @@ class StoichiometricReactorData(UnitModelBlockData):
                     * b.config.property_package.mw_comp[j]
                     / b.mw_precipitate[p]
                     for p in self.precipitate_list
+                )
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.precipitate_list,
+                doc="Mole generation from precipitation",
+            )
+            def eq_flow_mol_precipitate(b, t, p):
+                return (
+                    b.flow_mass_precipitate[p] / b.mw_precipitate[p]
+                    == b.flow_mol_precipitate[p]
                 )
 
             @self.Constraint(
@@ -756,24 +783,30 @@ class StoichiometricReactorData(UnitModelBlockData):
         var_dict = {}
         expr_dict = {}
 
-        for r in self.reagent_list:
-            var_dict["Reagent dose - " + r] = self.reagent_dose[r]
-            var_dict["Reagent flow - " + r] = self.flow_mass_reagent[r]
+        if len(self.config.reagent.keys()):
+            for r in self.reagent_list:
+                var_dict["Reagent dose - " + r] = self.reagent_dose[r]
+                var_dict["Reagent flow - " + r] = self.flow_mass_reagent[r]
 
-        for p in self.precipitate_list:
-            var_dict["Precipitate flow - " + p] = self.flow_mass_precipitate[p]
-            var_dict["Precipitate conc - " + p] = self.conc_mass_precipitate[p]
+        if len(self.config.precipitate.keys()):
+            for p in self.precipitate_list:
+                var_dict["Precipitate flow - " + p] = self.flow_mass_precipitate[p]
+                var_dict["Precipitate conc - " + p] = self.conc_mass_precipitate[p]
 
         return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
+        outputs = {
+            "Inlet": self.inlet,
+            "Outlet": self.outlet,
+        }
+        if self.has_precipitation_reaction:
+            outputs["Precipitation reactor outlet"] = self.precipitation_reactor_outlet
+            outputs["Waste"] = self.waste
+            if self.has_dissolution_reaction:
+                outputs["Dissolution reactor outlet"] = self.dissolution_reactor_outlet
         return create_stream_table_dataframe(
-            {
-                "Inlet": self.inlet,
-                "Reactor outlet": self.reactor_outlet,
-                "Outlet": self.outlet,
-                "Waste": self.waste,
-            },
+            outputs,
             time_point=time_point,
         )
 
@@ -784,7 +817,10 @@ class StoichiometricReactorData(UnitModelBlockData):
         # these variables should have user input, if not there will be a warning
 
         if self.has_dissolution_reaction:
+
             for r in self.reagent_list:
+                sf = 1 / self.mw_reagent[r].value
+                iscale.set_scaling_factor(self.mw_reagent[r], sf)
                 if iscale.get_scaling_factor(self.reagent_dose[r]) is None:
                     if iscale.get_scaling_factor(self.flow_mass_reagent[r]) is not None:
                         # scale reagent_dose based on flow_mass_reagent
@@ -802,15 +838,10 @@ class StoichiometricReactorData(UnitModelBlockData):
                             self.reagent_dose[r], default=1, warning=True
                         )
                         iscale.set_scaling_factor(self.reagent_dose[r], sf)
-                if iscale.get_scaling_factor(self.flow_mass_reagent[r]) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.dissolution_reactor.properties_in[0].flow_vol_phase["Liq"]
-                    )
-                    sf = iscale.get_scaling_factor(self.reagent_dose[r]) * sf
-                    iscale.set_scaling_factor(self.flow_mass_reagent[r], sf)
                 if iscale.get_scaling_factor(self.flow_vol_reagent[r]) is None:
-                    sf = iscale.get_scaling_factor(self.flow_mass_reagent[r])
-                    print(sf, self.density_reagent[r].value)
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mass_reagent[r], default=1e4, warning=True
+                    )
                     sf = sf / self.density_reagent[r].value
                     iscale.set_scaling_factor(self.flow_vol_reagent[r], sf)
             for (t, j), v in self.dissolution_reaction_generation_comp.items():
@@ -855,9 +886,23 @@ class StoichiometricReactorData(UnitModelBlockData):
                         self.dissolution_reactor.properties_in[0].flow_vol_phase["Liq"]
                     )
                     iscale.set_scaling_factor(self.flow_mass_reagent[r], sf)
+                if iscale.get_scaling_factor(self.flow_mol_reagent[r]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mass_reagent[r])
+                    sf = sf / iscale.get_scaling_factor(self.mw_reagent[r])
+                    iscale.set_scaling_factor(self.flow_mol_reagent[r], sf)
+            for (t, r), con in self.eq_flow_mol_reagent.items():
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_reagent[r], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(con, sf)
+            iscale.constraint_scaling_transform(
+                self.dissolution_reactor.eq_isothermal_dissolution[0], 1e-2
+            )
 
         if self.has_precipitation_reaction:
             for p in self.precipitate_list:
+                sf = 1 / self.mw_precipitate[p].value
+                iscale.set_scaling_factor(self.mw_precipitate[p], sf)
                 if iscale.get_scaling_factor(self.flow_mass_precipitate[p]) is None:
                     if (
                         iscale.get_scaling_factor(self.conc_mass_precipitate[p])
@@ -878,7 +923,21 @@ class StoichiometricReactorData(UnitModelBlockData):
                             self.flow_mass_precipitate[p], default=1e3, warning=True
                         )
                         iscale.set_scaling_factor(self.flow_mass_precipitate[p], sf)
+                    if iscale.get_scaling_factor(self.flow_mass_precipitate[p]) is None:
+                        iscale.set_scaling_factor(self.flow_mass_precipitate[p], sf)
+                if iscale.get_scaling_factor(self.flow_mol_precipitate[p]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mass_precipitate[p])
+                    sf = sf / iscale.get_scaling_factor(self.mw_precipitate[p])
 
+                    iscale.set_scaling_factor(self.flow_mol_precipitate[p], sf)
+                iscale.constraint_scaling_transform(
+                    self.precipitation_reactor.eq_isothermal_precipitation[0], 1e-2
+                )
+            for (t, p), con in self.eq_flow_mol_precipitate.items():
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_precipitate[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(con, sf)
             for p in self.precipitate_list:
                 if iscale.get_scaling_factor(self.conc_mass_precipitate[p]) is None:
                     sf = iscale.get_scaling_factor(

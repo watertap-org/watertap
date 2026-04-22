@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -12,6 +12,7 @@
 """
 Tests for general zero-order base class
 """
+
 import pytest
 
 from types import MethodType
@@ -210,7 +211,7 @@ class TestZOBase:
         with pytest.raises(
             KeyError,
             match="fs.unit - no value provided for recovery_vol"
-            " \(index: None\) in database.",
+            r" \(index: None\) in database.",
         ):
             model.fs.unit.set_param_from_data(
                 model.fs.unit.recovery_vol, {"recovery_vol": {}}
@@ -230,7 +231,7 @@ class TestZOBase:
         with pytest.raises(
             KeyError,
             match="fs.unit - no units provided for recovery_vol"
-            " \(index: None\) in database.",
+            r" \(index: None\) in database.",
         ):
             model.fs.unit.set_param_from_data(
                 model.fs.unit.recovery_vol, {"recovery_vol": {"value": 0.42}}

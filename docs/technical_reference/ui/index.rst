@@ -7,7 +7,7 @@ changes from the UI front-end.
 
 .. include:: <isonum.txt>
 
-.. py:currentmodule:: watertap.ui.fsapi
+.. py:currentmodule:: idaes_flowsheet_processor.api
 
 .. contents:: Contents
     :depth: 1

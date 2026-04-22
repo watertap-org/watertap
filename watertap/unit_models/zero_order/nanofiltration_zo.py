@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -155,7 +155,7 @@ class NanofiltrationZOData(ZeroOrderBaseData):
             doc="Capital cost of unit operation",
         )
 
-        blk.variable_operating_cost = pyo.Var(
+        blk.fixed_operating_cost = pyo.Var(
             initialize=1,
             units=blk.config.flowsheet_costing_block.base_currency
             / blk.config.flowsheet_costing_block.base_period,
@@ -177,8 +177,8 @@ class NanofiltrationZOData(ZeroOrderBaseData):
             expr=blk.capital_cost == blk.cost_factor * capex_expr
         )
 
-        blk.variable_operating_cost_constraint = pyo.Constraint(
-            expr=blk.variable_operating_cost
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost
             == pyo.units.convert(
                 rep_rate
                 * mem_cost

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -16,6 +16,7 @@ from pyomo.environ import (
     units,
 )
 from idaes.core import FlowsheetBlock
+import idaes.core.util.scaling as iscale
 from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
 from watertap.unit_models.anaerobic_digester import AD
@@ -88,6 +89,8 @@ def build_flowsheet():
     m.fs.R1.volume_vapor.fix(300 * pyo.units.m**3)
 
     m.fs.R1.liquid_outlet.temperature.fix(308.15 * pyo.units.K)
+
+    iscale.calculate_scaling_factors(m)
 
     # TO DO: Fix initialization
     m.fs.R1.initialize(outlvl=idaeslog.INFO_HIGH)

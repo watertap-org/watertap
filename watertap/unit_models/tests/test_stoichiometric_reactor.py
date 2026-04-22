@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -462,6 +462,10 @@ class TestStoichiometricReactor:
             m.fs.unit.flow_mass_reagent["CaO"] / (56.0774 * 1e-3)
         )
 
+        assert pytest.approx(flow_ca_in_reagent, rel=1e-5) == value(
+            m.fs.unit.flow_mol_reagent["CaO"]
+        )
+
         assert pytest.approx(expected_ca_mol_flow, rel=1e-5) == value(
             m.fs.unit.dissolution_reactor.properties_out[0].flow_mol_phase_comp[
                 "Liq", "Ca_2+"
@@ -559,6 +563,11 @@ class TestStoichiometricReactor:
         )
 
     @pytest.mark.unit
+    def test_report(self, basic_unit_mass):
+        m = basic_unit_mass
+        m.fs.unit.report()
+
+    @pytest.mark.unit
     def test_dissolution(self, dissolution_reactor):
         m = dissolution_reactor
         calculate_scaling_factors(m)
@@ -605,6 +614,11 @@ class TestStoichiometricReactor:
         )
 
     @pytest.mark.unit
+    def test_dissolution_report(self, dissolution_reactor):
+        m = dissolution_reactor
+        m.fs.unit.report()
+
+    @pytest.mark.unit
     def test_precipitation(self, precipitation_reactor):
         m = precipitation_reactor
         calculate_scaling_factors(m)
@@ -617,7 +631,9 @@ class TestStoichiometricReactor:
                 "Liq", "Ca_2+"
             ]
         )
-
+        assert pytest.approx(1e-3 / (100.09 * 1e-3), rel=1e-5) == value(
+            m.fs.unit.flow_mol_precipitate["Calcite"]
+        )
         expected_mg_mol_flow = 0.1 - 1e-4 / (58.3197 * 1e-3)
 
         assert pytest.approx(expected_mg_mol_flow, rel=1e-5) == value(
@@ -625,6 +641,11 @@ class TestStoichiometricReactor:
                 "Liq", "Mg_2+"
             ]
         )
+
+    @pytest.mark.unit
+    def test_precipitation_report(self, precipitation_reactor):
+        m = precipitation_reactor
+        m.fs.unit.report()
 
     @pytest.mark.unit
     def test_failed_build(self):

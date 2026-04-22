@@ -1,5 +1,11 @@
+.. _stoichiometric_reactor:
+
 Stoichiometric reactor
 ======================
+
+.. code-block:: python
+
+   from watertap.unit_models.stoichiometric_reactor import StoichiometricReactor
 
 .. index::
    pair: watertap.unit_models.stoichiometric_reactor;stoichiometric_reactor
@@ -50,8 +56,9 @@ Model Structure and Usage
 -------------------------
 The stoichiometric reactor uses control volumes to perform the dissolution reaction and 
 precipitation reaction, while an IDAES separator is used to separate precipitated solids 
-from the feed stream. The model should be used with MCAS property package 
-`Multi-Component Aqueous Solution (MCAS) Property Package <https://watertap.readthedocs.io/en/stable/technical_reference/property_models/mc_aq_sol.html>`_. The user needs to specify how supplied reagent and precipitant dissolve or precipitate 
+from the feed stream. The model should be used with MCAS property package
+:ref:`Multi-Component Aqueous Solution (MCAS) Property Package <mcas_tech_ref>`.
+The user needs to specify how supplied reagent and precipitant dissolve or precipitate
 out of the feed stream using ions present in the feed. 
 
 Example dictionary for dissolving Soda ash and Lime into their ions  
@@ -133,9 +140,11 @@ Variables
    "Reagent dose", reagent_dose,[reagent],kg/:math:`\text{m}^3`
    "Reagent density", density_reagent,[reagent],kg/:math:`\text{m}^3`
    "Reagent flow mass", flow_mass_reagent,[reagent],kg/s
+   "Reagent molar flow", flow_mol_reagent,[reagent],mol/s
    "Reagent flow volume", flow_vol_reagent,[reagent],:math:`\text{m}^3`/s
    "Stoichiometric coefficients for dissolution", dissolution_stoich_comp, "[reagent, :math:`j`]",dimensionless
    "Flow mass of precipitant",flow_mass_precipitate,[precipitant],kg/s
+   "Molar flow of precipitant",flow_mol_precipitate,[precipitant],mol/s
    "Mass concentration of precipitant",conc_mass_precipitate,[precipitant],kg/:math:`\text{m}^3`
    "Stoichiometric coefficients for precipitation", precipitation_stoich_comp, "[precipitant, :math:`j`]",dimensionless
    "Fraction of solids in waste stream",  waste_mass_frac_precipitate, None, fraction

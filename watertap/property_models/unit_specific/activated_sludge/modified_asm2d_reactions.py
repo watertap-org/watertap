@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -36,7 +36,7 @@ from idaes.core.util.exceptions import BurntToast
 
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-
+from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
 # Some more information about this module
 __author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
@@ -711,7 +711,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
             ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_NH4"): -self.i_NSF,
+            ("R8", "Liq", "S_NH4"): self.i_NSF,
             ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NO3"): 0,
             ("R8", "Liq", "S_PO4"): -(-self.i_PSF),
@@ -986,11 +986,45 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
         )
 
 
+class ModifiedASM2dReactionScaler(CustomScalerBase):
+    """
+    Scaler for the Activated Sludge Model No.2d reaction package.
+    Variables are scaled by their default scaling factor (if no user input provided), and constraints
+    are scaled using the inverse maximum scheme.
+    """
+
+    # TODO: Revisit this scaling factor
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+
+        if model.is_property_constructed("reaction_rate"):
+            for j in model.reaction_rate.values():
+                self.scale_variable_by_default(j, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # TODO: Revisit this scaling methodology
+        # Consider scale_constraint_by_default or scale_constraints_by_jacobian_norm
+        if model.is_property_constructed("rate_expression"):
+            for j in model.rate_expression.values():
+                self.scale_constraint_by_nominal_value(
+                    j,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+
 class _ModifiedASM2dReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
+
+    default_scaler = ModifiedASM2dReactionScaler
 
     def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """

@@ -1,3 +1,5 @@
+.. _lsrro_flowsheet:
+
 Low-Salt-Rejection Reverse Osmosis (LSRRO)
 ==========================================
 
@@ -15,7 +17,7 @@ Moreover, LSRRO can be constructed using commercially available nanofiltration m
 
 
 Implementation
-==============
+--------------
 
 Figure 1 illustrates the LSRRO flowsheet. The LSRRO system comprises a conventional RO stage followed by low-salt-rejection (LSR) stages, where the saline permeate of each LSR stage is recycled to the inlet of the previous stage. Brine is concentrated further as it passes through each subsequent LSR stage.
 The first stage RO permeate is collected as purified water (Product Water) and the last LSR stage produces the final concentrated brine. 
@@ -35,20 +37,20 @@ The flowsheet relies on the following key assumptions:
 
    * supports steady-state only
    * supports optimization and minimizes levelized cost of water (LCOW) with constraints
-   * `NaCl Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/NaCl.html>`_ is utilized
+   * :ref:`NaCl Property Package <nacl>` is utilized
    * number of stages and system recovery should be specified for optimization
 
 Documentation for each of the unit models can be found here:
-   * `RO and LSR <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/reverse_osmosis_0D.html>`_
+   * :ref:`RO and LSR <RO_0D>`
    * `Mixer <https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/mixer.html>`_
 
 Documentation for the property model can be found here:
-    * `NaCl Property Package <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/NaCl.html>`_
+    * :ref:`NaCl Property Package <nacl>`
 
 Documentation for the costing relationships can be found here:
-    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+    * :ref:`WaterTAP Costing Package <watertap_costing>`
 
-This flowsheet aims to solve an optimization problem that minimizes the levelized cost of water (LCOW) with a specified number of stages and system mass recovery. LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents the total capital cost, :math:`C_{op,tot}` represents the total operating cost, and :math:`f_{util}` represents the utilization factor:
+This flowsheet aims to solve an optimization problem that minimizes the LCOW with a specified number of stages and system mass recovery. LCOW can be represented by the following equation where :math:`Q` represents product volumetric flow, :math:`f_{crf}` represents the capital recovery factor, :math:`C_{cap,tot}` represents the total capital cost, :math:`C_{op,tot}` represents the total operating cost, and :math:`f_{util}` represents the utilization factor:
 
     .. math::
 
@@ -169,26 +171,26 @@ Flowsheet Specifications
    :header: "Description", "Value", "Units"
 
    "**Primary and booster pumps**", "", ""
-   "Pump efficiency", "0.75", "dimensionless"
-   "**ERDs**", "", ""
-   "efficiency", "0.8", "dimensionless"
-   "Outlet pressure", "101325", "Pa"
+   "Pump efficiency", "0.75", ":math:`\text{dimensionless}`"
+   "**ERDs**", 
+   "efficiency", "0.8", ":math:`\text{dimensionless}`"
+   "Outlet pressure", "101325", ":math:`\text{Pa}`"
    "**RO Stage**", "", ""
-   "Water permeability coefficient", "4.2E-12", "m/s-Pa"
-   "Salt permeability coefficient", "3.5E-8", "m/s"
-   "Feed-channel height", "1E-3", "m"
-   "Feed-side spacer porosity", "0.85", "dimensionless"
-   "Permeate pressure", "101325", "Pa"
-   "Minimum RO pressure", "10E5", "Pa"
-   "Maximum RO pressure", "85E5", "Pa"
+   "Water permeability coefficient", "4.2E-12", ":math:`\text{m/s/Pa}`"
+   "Salt permeability coefficient", "3.5E-8", ":math:`\text{m/s}`"
+   "Feed-channel height", "1E-3", ":math:`\text{m}`"
+   "Feed-side spacer porosity", "0.85", ":math:`\text{dimensionless}`"
+   "Permeate pressure", "101325", ":math:`\text{Pa}`"
+   "Minimum RO pressure", "10E5", ":math:`\text{Pa}`"
+   "Maximum RO pressure", "85E5", ":math:`\text{Pa}`"
    "**LSRRO stages**", "", ""
-   "Water permeability coefficient", "2.78E-12 to 4.2E-11", "m/s-Pa"
-   "Salt permeability coefficient", "3.5E-8 to B_max", "m/s"
-   "Feed-channel height", "1E-3", "m"
-   "Feed-side spacer porosity", "0.85", "dimensionless"
-   "Minimum LSRRO pressure", "10E5", "Pa"
-   "Maximum LSRRO pressure", "65E5", "Pa"
+   "Water permeability coefficient", "2.78E-12 to 4.2E-11", ":math:`\text{m/s/Pa}`"
+   "Salt permeability coefficient", "3.5E-8 to ``B_max``", ":math:`\text{m/s}`"
+   "Feed-channel height", "1E-3", ":math:`\text{m}`"
+   "Feed-side spacer porosity", "0.85", ":math:`\text{dimensionless}`"
+   "Minimum LSRRO pressure", "10E5", ":math:`\text{Pa}`"
+   "Maximum LSRRO pressure", "65E5", ":math:`\text{Pa}`"
    "**Additional Specifications**", "", ""
-   "Permeate quality limit", "500E-6", "ppm"
+   "Permeate quality limit", "500E-6", ":math:`\text{ppm}`"
 
 

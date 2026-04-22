@@ -6,12 +6,12 @@ the capital cost of building the reactor. The capital cost of lime and soda ash 
 total reagent mass being added to the softening process and is only constructed when both precipitant and reagents are provided.
 While acid addition capital cost is only constructed if reagents are provided but precipitants are not. Acid addition costing is 
 based on volume flow of acid per day. 
-(Please refer to the `stoichiometric reactor documentation <https://watertap.readthedocs.io/en/stable/technical_reference/unit_models/stoichiometric_reactor.html>`_ for details on dissolution and precipitation reaction configurations). 
+(Please refer to the :ref:`stoichiometric reactor documentation <stoichiometric_reactor>` for details on dissolution and precipitation reaction configurations).
 
 Costing Method Parameters
 +++++++++++++++++++++++++
 
-The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., `m.fs.costing.stoichiometric_reactor`) when applying the `cost_stoichiometric_reactor` costing method in the ``watertap_costing_package``:
+The following parameters are constructed for the unit on the FlowsheetCostingBlock (e.g., ``m.fs.costing.stoichiometric_reactor``) when applying the ``cost_stoichiometric_reactor`` costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
@@ -27,7 +27,7 @@ There are not unique costing variables constructed for the stoichiometric reacto
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-If user only includes reagents, refer to `stoichiometric reactor documentation <https://watertap.readthedocs.io/en/stable/technical_reference/unit_models/stoichiometric_reactor.html>`_
+If user only includes reagents, refer to :ref:`stoichiometric reactor documentation <stoichiometric_reactor>`
 
     .. math::
 

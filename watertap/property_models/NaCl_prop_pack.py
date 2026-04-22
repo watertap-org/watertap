@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -97,6 +97,14 @@ class NaClParameterData(PhysicalParameterBlock):
             initialize=extract_data(mw_comp_data),
             units=pyunits.kg / pyunits.mol,
             doc="Molecular weight kg/mol",
+        )
+
+        # Density of water at 25 C
+        self.dens_mass_solvent = Var(
+            within=Reals,
+            initialize=997,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density of water",
         )
 
         # mass density parameters, eq 4 in Bartholomew
@@ -226,7 +234,7 @@ class _NaClStateBlock(StateBlock):
         # Constraint on water concentration at outlet - unfix in these cases
         for b in self.values():
             if b.config.defined_state is False:
-                b.conc_mol_comp["H2O"].unfix()
+                b.flow_mass_phase_comp["Liq", "H2O"].unfix()
 
     def initialize(
         self,
@@ -491,7 +499,7 @@ class NaClStateBlockData(StateBlockData):
         )
 
     # -----------------------------------------------------------------------------
-    # Property Methods
+    # On-demand Property Methods
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -788,11 +796,16 @@ class NaClStateBlockData(StateBlockData):
         return self.enth_flow
 
     # TODO: make property package compatible with dynamics
-    # def get_material_density_terms(self, p, j):
-    #     """Create material density terms."""
+    def get_material_density_terms(self, p, j):
+        """Create material density terms."""
+        if j == "H2O":
+            return self.params.dens_mass_solvent
+        else:
+            return self.conc_mass_phase_comp[p, j]
 
-    # def get_enthalpy_density_terms(self, p):
-    #     """Create enthalpy density terms."""
+    def get_energy_density_terms(self, p):
+        """Create enthalpy density terms."""
+        return self.enth_mass_phase[p] * self.dens_mass_phase[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -15,6 +15,10 @@ import numpy as np
 
 from watertap.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import (
     run_parameter_sweep,
+)
+
+_parameter_sweep_expected_warning = pytest.warns(
+    UserWarning, match="No results .* to disk .*"
 )
 
 
@@ -38,7 +42,8 @@ def test_monte_carlo_sampling():
     )
 
     # Run the parameter sweep
-    global_results = run_parameter_sweep(None, seed=1)
+    with _parameter_sweep_expected_warning:
+        global_results = run_parameter_sweep(None, seed=1)
 
     # Compare individual values for specificity
     for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):
@@ -73,13 +78,14 @@ def test_monte_carlo_sampling_with_files():
     print("default_config_fpath = ", default_config_fpath)
 
     # Run the parameter sweep
-    global_results = run_parameter_sweep(
-        seed=1,
-        read_sweep_params_from_file=True,
-        sweep_params_fname=sweep_params_fpath,
-        read_model_defauls_from_file=True,
-        defaults_fname=default_config_fpath,
-    )
+    with _parameter_sweep_expected_warning:
+        global_results = run_parameter_sweep(
+            seed=1,
+            read_sweep_params_from_file=True,
+            sweep_params_fname=sweep_params_fpath,
+            read_model_defauls_from_file=True,
+            defaults_fname=default_config_fpath,
+        )
 
     # Compare individual values for specificity
     for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):
@@ -166,7 +172,8 @@ def test_lhs_sampling():
     )
 
     # Run the parameter sweep
-    global_results = run_parameter_sweep(seed=1, use_LHS=True)
+    with _parameter_sweep_expected_warning:
+        global_results = run_parameter_sweep(seed=1, use_LHS=True)
 
     # Compare individual values for specificity
     for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):

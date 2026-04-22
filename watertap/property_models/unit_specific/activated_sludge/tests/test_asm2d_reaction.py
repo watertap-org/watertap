@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -23,6 +23,7 @@ Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
 nutrient removal in wastewater treatment plants: influence of mathematical model
 assumptions", 2012, Wat. Sci. Tech., Vol. 65 No. 8, pp. 1496-1505
 """
+
 import pytest
 
 from pyomo.environ import (

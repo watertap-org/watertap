@@ -21,7 +21,7 @@ Create a Conda environment (in this example, named ``watertap``) where WaterTAP 
 
 .. code-block:: shell
 
-   conda create --name watertap --yes python=3.8 pip=21.1
+   conda create --name watertap --yes python=3.11
 
 Activate the ``watertap`` environment using the command given below. If the environment was activated successfully, the environment's name will be displayed in the terminal prompt such as ``(watertap) project-directory $``.
 
@@ -50,7 +50,7 @@ After installing WaterTAP, the IDAES Extensions command can be used to automatic
 Install on Mac (Intel)
 ----------------------
 
-.. warning:: Intel Mac support is currently experimental; therefore, some WaterTAP features may not work.
+.. warning:: Intel Mac is currently not being tested, and should therefore be considered _unsupported_. The steps described here should not be expected to work without issues, and are here for historical and/or informational purposes only.
 
 This section is for Apple's Mac computers with Intel processors. To check if your Mac is using an Intel processor, click the apple icon in the upper left corner of your screen. Then select the About This Mac item to view the type of processor in your computer.
 
@@ -58,7 +58,7 @@ Create a Conda environment (in this example, named ``watertap``) where WaterTAP 
 
 .. code-block:: shell
 
-   conda create --name watertap --yes python=3.8 pip=21.1
+   conda create --name watertap --yes python=3.11
 
 Activate the ``watertap`` environment using the command given below. If the environment was activated successfully, the environment's name will be displayed in the terminal prompt such as ``(watertap) project-directory $``.
 
@@ -143,7 +143,7 @@ Create a Conda environment (in this example, named ``watertap-dev``) where Water
 
 .. code-block:: shell
 
-   conda create --name watertap-dev --yes python=3.8 pip=21.1 && conda activate watertap-dev
+   conda create --name watertap-dev --yes python=3.11 && conda activate watertap-dev
 
 Clone the WaterTAP repository to your local development machine using ``git clone``, then enter the newly created ``watertap`` subdirectory:
 

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -16,6 +16,7 @@ from .reverse_osmosis_1D import ReverseOsmosis1D
 from .osmotically_assisted_reverse_osmosis_0D import OsmoticallyAssistedReverseOsmosis0D
 from .nanofiltration_ZO import NanofiltrationZO
 from .nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
+from .nanofiltration_0D import Nanofiltration0D
 from .pressure_exchanger import PressureExchanger
 from .pressure_changer import Pump, EnergyRecoveryDevice
 from .crystallizer import Crystallization

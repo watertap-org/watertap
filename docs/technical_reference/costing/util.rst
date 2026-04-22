@@ -121,7 +121,7 @@ Utilities for Common Variable Creation
 --------------------------------------
 
 The IDAES costing framework utilizes specific names on a unit model's costing block to
-calculate aggregates like `aggregate_capital_cost` and `aggregate_fixed_operating_cost`.
+calculate aggregates like ``aggregate_capital_cost`` and ``aggregate_fixed_operating_cost``.
 The ``make_capital_cost_var()`` and ``make_fixed_operating_cost_var()`` are utilities
 to create a Pyomo ``Var`` with these standard names.
 

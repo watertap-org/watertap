@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -10,11 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-""""
+""" "
 Base constraints and methods for membrane distillation channel
 __author__ = "Elmira Shamlou"
 
 """
+
 from copy import deepcopy
 from enum import Enum, auto
 from pyomo.environ import (
@@ -121,9 +122,14 @@ class MDChannelMixin:
             doc="Pressure at interface",
         )
         def eq_equal_pressure_interface(b, t, x):
-            if b._skip_element(x):
+            if hasattr(self, "properties_interface"):
+                if b._skip_element(x):
+                    return Constraint.Skip
+                return (
+                    b.properties_interface[t, x].pressure == b.properties[t, x].pressure
+                )
+            else:
                 return Constraint.Skip
-            return b.properties_interface[t, x].pressure == b.properties[t, x].pressure
 
         if has_pressure_change:
             self._add_pressure_change(pressure_change_type=pressure_change_type)
@@ -146,12 +152,13 @@ class MDChannelMixin:
                 doc="No temperature polarization",
             )
             def eq_no_temp_pol(b, t, x):
-                if b._skip_element(x):
-                    return Constraint.Skip
-                return (
-                    b.properties_interface[t, x].temperature
-                    == b.properties[t, x].temperature
-                )
+                if hasattr(self, "properties_interface"):
+                    if b._skip_element(x):
+                        return Constraint.Skip
+                    return (
+                        b.properties_interface[t, x].temperature
+                        == b.properties[t, x].temperature
+                    )
 
             return self.eq_no_temp_pol
 

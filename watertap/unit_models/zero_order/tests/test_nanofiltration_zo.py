@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -12,6 +12,7 @@
 """
 Tests for zero-order nanofiltration model
 """
+
 import pytest
 
 
@@ -374,7 +375,7 @@ class TestNFZO_non_default_subtype:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(0.00082586, rel=1e-5) == value(
+        assert pytest.approx(0.00089551, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
         assert pytest.approx(47.723905, rel=1e-5) == value(
@@ -384,20 +385,20 @@ class TestNFZO_non_default_subtype:
             model.fs.unit.properties_treated[0].conc_mass_comp["dye"]
         )
 
-        assert pytest.approx(0.000174141, rel=1e-5) == value(
+        assert pytest.approx(0.00010449, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(60.794315, rel=1e-5) == value(
+        assert pytest.approx(69.506485, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(14.237023, rel=1e-5) == value(
+        assert pytest.approx(23.710346, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["dye"]
         )
-        assert pytest.approx(4.0450235, rel=1e-5) == value(model.fs.unit.area)
+        assert pytest.approx(16.119175, rel=1e-5) == value(model.fs.unit.area)
         assert pytest.approx(0.9899499, rel=1e-5) == value(
             model.fs.unit.rejection_comp[0, "dye"]
         )
-        assert pytest.approx(0.0455219, rel=1e-5) == value(
+        assert pytest.approx(0.045521, rel=1e-5) == value(
             model.fs.unit.rejection_comp[0, "tds"]
         )
 
@@ -483,8 +484,8 @@ def test_costing_non_default_subtype():
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
     assert isinstance(m.fs.costing.nanofiltration, Block)
-    assert isinstance(m.fs.unit.costing.variable_operating_cost, Var)
-    assert isinstance(m.fs.unit.costing.variable_operating_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.fixed_operating_cost, Var)
+    assert isinstance(m.fs.unit.costing.fixed_operating_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
@@ -496,8 +497,8 @@ def test_costing_non_default_subtype():
     # Check for optimal solution
     assert check_optimal_termination(results)
 
-    assert pytest.approx(40657.003417, rel=1e-5) == value(m.fs.unit.area)
-    assert pytest.approx(2.03285, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-    assert pytest.approx(0.406570, rel=1e-5) == value(
-        m.fs.unit.costing.variable_operating_cost
+    assert pytest.approx(162015.7094, rel=1e-5) == value(m.fs.unit.area)
+    assert pytest.approx(8.10079, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(1.62016, rel=1e-5) == value(
+        m.fs.unit.costing.fixed_operating_cost
     )

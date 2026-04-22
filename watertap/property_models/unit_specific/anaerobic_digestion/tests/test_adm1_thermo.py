@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -16,7 +16,7 @@ Authors: Adam Atia, Alejandro Garciadiego, Xinhong Liu
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Param, value, Var
+from pyomo.environ import ConcreteModel, Param, Suffix, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
@@ -24,6 +24,7 @@ from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
     ADM1StateBlock,
+    ADM1PropertiesScaler,
 )
 from idaes.core.util.model_statistics import (
     fixed_variables_set,
@@ -31,7 +32,6 @@ from idaes.core.util.model_statistics import (
 )
 
 from watertap.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -111,6 +111,8 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_build(self, model):
+        assert model.props[1].default_scaler is ADM1PropertiesScaler
+
         assert isinstance(model.props[1].flow_vol, Var)
         assert value(model.props[1].flow_vol) == 1
 
@@ -298,3 +300,54 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def check_units(self, model):
         assert_units_consistent(model)
+
+
+class TestADM1PropertiesScaler:
+    @pytest.mark.unit
+    def test_variable_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = ADM1ParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ADM1PropertiesScaler)
+
+        scaler.variable_scaling_routine(model.props[1])
+
+        sfx = model.props[1].scaling_factor
+        # Scaling factors for FTPx
+        assert len(sfx) == 27
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e3, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-6, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1e-1, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = ADM1ParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ADM1PropertiesScaler)
+
+        scaler.constraint_scaling_routine(model.props[1])
+
+    @pytest.mark.unit
+    def test_scale_model(self):
+        model = ConcreteModel()
+        model.params = ADM1ParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, ADM1PropertiesScaler)
+
+        scaler.scale_model(model.props[1])
+
+        assert isinstance(model.props[1].scaling_factor, Suffix)
+
+        sfx = model.props[1].scaling_factor
+        # Scaling factors for FTPx
+        assert len(sfx) == 27

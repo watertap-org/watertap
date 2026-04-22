@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -66,7 +66,7 @@ def build():
     return m
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_solve():
     m = build()
     m.fs.unit.initialize()
@@ -83,5 +83,3 @@ def test_solve():
     assert value(
         m.fs.unit.treated.flow_mass_phase_comp[0, "Liq", "X"]
     ) == pytest.approx(0.005, rel=1e-3)
-
-    return m

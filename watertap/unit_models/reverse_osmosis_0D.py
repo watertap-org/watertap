@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -51,8 +51,8 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
     def _add_feed_side_membrane_channel_and_geometry(self):
         # Build membrane channel control volume
         self.feed_side = MembraneChannel0DBlock(
-            dynamic=False,
-            has_holdup=False,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
             property_package=self.config.property_package,
             property_package_args=self.config.property_package_args,
         )
@@ -189,3 +189,21 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         if hasattr(self, "width"):
             if iscale.get_scaling_factor(self.width) is None:
                 iscale.set_scaling_factor(self.width, 1)
+
+        for (t, x, j), condata in self.eq_mass_frac_permeate.items():
+            sf = iscale.get_scaling_factor(
+                self.flux_mass_phase_comp[t, x, "Liq", j], default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, p, j), condata in self.eq_permeate_production.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)
+
+        for (t, p, j), condata in self.eq_connect_mass_transfer.items():
+            sf = iscale.get_scaling_factor(
+                self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
+            )
+            iscale.constraint_scaling_transform(condata, sf)

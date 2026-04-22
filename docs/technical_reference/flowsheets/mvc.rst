@@ -1,3 +1,5 @@
+.. _MVC_flowsheet:
+
 Mechanical Vapor Compression
 ============================
 
@@ -33,9 +35,9 @@ system. The flowsheet relies on the following key assumptions:
 
 Documentation for each of the WaterTAP unit models can be found below.
     * `Pressure Changer <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/pressure_changer.html>`_
-    * `Evaporator <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
-    * `Compressor <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
-    * `Condenser <https://watertap.readthedocs.io/en/latest/technical_reference/unit_models/mvc.html>`_
+    * :ref:`Evaporator <MVC>`
+    * :ref:`Compressor <MVC>`
+    * :ref:`Condenser <MVC>`
 
 Documentation for each of the IDAES unit models can be found below.
     * `Feed <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/feed.html>`_
@@ -46,11 +48,11 @@ Documentation for each of the IDAES unit models can be found below.
     * `Translator <https://idaes-pse.readthedocs.io/en/latest/reference_guides/model_libraries/generic/unit_models/translator.html>`_
 
 Documentation for each of the property models can be found below.
-    * `Water <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/water.html>`_
-    * `Seawater <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/seawater.html>`_
+    * :ref:`Water <water>`
+    * :ref:`Seawater <seawater>`
 
 Documentation for the costing relationships can be found below.
-    * `WaterTAP Costing Package <https://watertap.readthedocs.io/en/latest/technical_reference/costing/watertap_costing.html>`_
+    * :ref:`WaterTAP Costing Package <watertap_costing>`
 
 The objective function is to minimize the levelized cost of water, which can be represented by the following equation
 where :math:`Q` represents volumetric flow, :math:`f_{crf}` represents capital recovery factor
@@ -81,7 +83,7 @@ Flowsheet Specifications
    :header: "Description", "Value", "Units"
 
    "**Feed Water**"
-   "Water mass flow","40", ":math:`\text{kg/s}`"
+   "Water mass flow","40", ":math:`\text{kg s}^{-1}`"
    "TDS mass fraction", "0.1", ":math:`\text{dimensionless}`"
    "Temperature", "298.15", ":math:`\text{K}`"
    "Pressure", "101325", ":math:`\text{Pa}`"
@@ -94,17 +96,17 @@ Flowsheet Specifications
    "Total flow split fraction to distillate HEX", "0.5", ":math:`\text{dimensionless}`"
 
    "**Distillate HEX**"
-   "Overall heat transfer coefficient", "2000", ":math:`W/\left(m^2K\right)`"
+   "Overall heat transfer coefficient", "2000", ":math:`\text{W m}^{-2} \text{ K}^{-1}`"
    "Cold-side pressure change", "7000", ":math:`\text{Pa}`"
    "Hot-side pressure change", "7000", ":math:`\text{Pa}`"
 
    "**Brine HEX**"
-   "Overall heat transfer coefficient", "2000", ":math:`W/\left(m^2K\right)`"
+   "Overall heat transfer coefficient", "2000", ":math:`\text{W m}^{-2} \text{ K}^{-1}`"
    "Cold-side pressure change", "7000", ":math:`\text{Pa}`"
    "Hot-side pressure change", "7000", ":math:`\text{Pa}`"
 
    "**Evaporator**"
-   "Overall heat transfer coefficient", "3000", ":math:`W/\left(m^2K\right)`"
+   "Overall heat transfer coefficient", "3000", ":math:`\text{W m}^{-2} \text{ K}^{-1}`"
 
    "**Compressor**"
    "Compressor efficiency", "0.8", ":math:`\text{dimensionless}`"
@@ -118,4 +120,14 @@ Flowsheet Specifications
    "Pressure change", "40000", ":math:`\text{Pa}`"
 
    "**Translator Block**"
-   "Outlet TDS mass flow", "1e-5", ":math:`\text{kg/s}`"
+   "Outlet TDS mass flow", "1e-5", ":math:`\text{kg s}^{-1}`"
+
+References
+-----------
+
+Chen, J. J. J. (1987). Comments on improvements on a replacement for the logarithmic mean. Chemical Engineering Science,
+42(10), 2488–2489. https://doi.org/10.1016/0009-2509(87)80128-8
+
+Carson I. Tucker, Timothy V. Bartholomew, Alexander V. Dudchenko, Meagan S. Mauter (2024),
+Component innovations for lower cost mechanical vapor compression, Water Research, Volume 260,
+121950. https://www.sciencedirect.com/science/article/pii/S0043135424008510

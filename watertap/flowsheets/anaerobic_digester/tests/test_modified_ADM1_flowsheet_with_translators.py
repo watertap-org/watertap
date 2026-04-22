@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -34,22 +34,20 @@ from watertap.core.solvers import get_solver
 solver = get_solver()
 
 
+@pytest.mark.requires_idaes_solver
 class TestADM1BioPFalse:
-    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=False)
         m.results = res
         return m
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
@@ -113,22 +111,20 @@ class TestADM1BioPFalse:
         )
 
 
+@pytest.mark.requires_idaes_solver
 class TestADM1BioPTrue:
-    @pytest.mark.requires_idaes_solver
     @pytest.fixture(scope="class")
     def system_frame(self):
         m, res = main(bio_P=True)
         m.results = res
         return m
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.integration
     def test_structure(self, system_frame):
         assert_units_consistent(system_frame)
         assert degrees_of_freedom(system_frame) == 0
         assert_optimal_termination(system_frame.results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame

@@ -1,3 +1,5 @@
+.. _ASM1_ADM1_translator:
+
 ASM1 to ADM1 Translator
 =======================
 
@@ -54,7 +56,7 @@ Sets
 
 ASM1 Components
 ---------------
-Additional documentation on the ASM1 property model can be found here: `Activated Sludge Model 1 Documentation <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ASM1.html>`_
+Additional documentation on the ASM1 property model can be found here: :ref:`Activated Sludge Model No.1 Documentation <ASM1>`
 
 .. csv-table::
   :header: "Description", "Symbol", "Variable"
@@ -75,7 +77,7 @@ Additional documentation on the ASM1 property model can be found here: `Activate
 
 ADM1 Components
 ---------------
-Additional documentation on the ADM1 property model can be found here: `Anaerobic Digestion Model 1 Documentation <https://watertap.readthedocs.io/en/latest/technical_reference/property_models/ADM1.html>`_
+Additional documentation on the ADM1 property model can be found here: :ref:`Anaerobic Digestion Model No.1 Documentation <ADM1>`
 
 .. csv-table::
   :header: "Description", "Symbol", "Variable"

@@ -1,5 +1,11 @@
+.. _pump:
+
 Pump
 ====
+
+.. code-block:: python
+
+   from watertap.unit_models.pressure_changer import Pump
 
 .. index::
    pair: watertap.unit_models.pump;pump
@@ -18,7 +24,7 @@ Pump units generally have two or more degrees of freedom, depending on the pump 
 
 Typical fixed variables are:
 
-* outlet pressure, :math:`P_{out}` or pressure difference across the inlet and outlet,:math:`\Delta P`
+* outlet pressure, :math:`P_{out}` or pressure difference across the inlet and outlet, :math:`\Delta P`
 * pump efficiency
 
 Model Structure
