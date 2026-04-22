@@ -545,7 +545,7 @@ Custom costing methods generally consist of two functions:
 
     :sup:`2` The flow cost set via the ``register_flow_type`` method multiplied by the flow passed to the ``cost_flow`` method *must* be convertable to cost / time units because it is considered a variable operating cost for that flow type.
 
-    :sup:`3` Any Pyomo component can be added to the parameter blocks. But note that as part of the building process via the ``@register_costing_parameter_block`` decorator, any ``Var``s found will be fixed to their initialized value, thus it is not necessary to fix them at the flowsheet level.
+    :sup:`3` Any Pyomo component can be added to the parameter blocks. But note that as part of the building process via the ``@register_costing_parameter_block`` decorator, any ``Var`` found will be fixed to their initialized value, thus it is not necessary to fix them at the flowsheet level.
 
     :sup:`4` For proper aggregation of capital and operating costs, the flowsheet costing block requires the following naming conventions:
 
