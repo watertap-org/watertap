@@ -263,7 +263,7 @@ How To
         m.fs.product.initialize()
         m.fs.brine.initialize()
 
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m)
         assert_optimal_termination(results)
 
         m.fs.pump1.control_volume.properties_out[0].pressure.unfix()
@@ -272,7 +272,7 @@ How To
         m.fs.RO.width.unfix()
 
         m.fs.recovery.fix(0.5)
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m)
         assert_optimal_termination(results)
 
         return m
