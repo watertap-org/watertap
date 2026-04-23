@@ -1,6 +1,6 @@
-.. _ASM2d_GHG:
+.. _ASM2d_N2O:
 
-ASM2D-GHG Property Package
+ASM2D-N2O Property Package
 ===============================
 .. raw:: html
 
@@ -28,7 +28,7 @@ The following changes have been made to the modified ASM2d model as provided in 
    * adds additional process rate equations for the new solutes
 
 
-This Activated Sludge Model no.2D  (ASM2D-GHG) property/reaction package with greenhouse gas extensions:
+This Activated Sludge Model no.2D  (ASM2D-N2O) property/reaction package with greenhouse gas extensions:
    * supports 'H2O', 'S_O2', 'S_F', 'S_A', S_I, S_NH4, S_HN2OH, S_N2O, S_NO, S_NO2, S_NO3, S_N2, S_PO4, S_IC, X_I, X_S, X_H, X_PAO, X_PP, X_PHA, X_AOB, X_NOB, S_K, and S_Mg as components
    * supports only liquid phase
 
@@ -262,7 +262,7 @@ Equations marked "(with decay)" indicate that the decay of heterotrophs and auto
    "MonodNH4", ":math:`(\frac{S_{NH4}}{KH_{NH4}+S_{NH4}})`"
    "MonodSPO4_P", ":math:`(\frac{S_{PO4}}{KP_{P}+S_{PO4}})`"
    "MonodSNH4_P", ":math:`(\frac{S_{NH4}}{KP_{NH4}+S_{NH4}})`"
-   "fSO2", ":math:`(/frac{S_{O2}}{KAOB_{ND,O2}+(1-2(/frac{KAOB_{ND,O2}}{KAOB_{I_O2}})^(0.5)S_{O2})+(/frac{S_{O2}^{2}}{KAOB_{I,O2}})})`"
+   "fSO2", ":math:`(/frac{S_{O2}}{KAOB_{ND,O2})+(1-2(/frac{KAOB_{ND,O2}}{KAOB_{I_O2}})^{0.5}S_{O2})+(/frac{S_{O2}^{2}}{KAOB_{I,O2}})})`"
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -276,41 +276,41 @@ Equations marked "(with decay)" indicate that the decay of heterotrophs and auto
    "Process 7", ":math:`ρ_7 = µ_{H}hH_{NO3}(\frac{KH2_{O2}}{KH2_{O2}+S_{O2}})(\frac{S_{F}}{K_{F2}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})MonodNH4*MonodPO4*X_{H}`"
    "Process 8", ":math:`ρ_8 = µ_{H}hH_{NO2}(\frac{KH3_{O2}}{KH3_{O2}+S_{O2}})(\frac{S_{F}}{K_{F3}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NO2}}{KH_{NO2}+S_{NO2}})MonodNH4*MonodPO4*X_{H}`"
    "Process 9", ":math:`ρ_9 = µ_{H}hH_{NO}(\frac{KH4_{O2}}{KH4_{O2}+S_{O2}})(\frac{S_{F}}{K_{F4}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NO}}{KH_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodNH4*MonodPO4*X_{H}`"
-   "Process 10", ":math:`ρ_10 = µ_{H}hH_{N2O}(\frac{KH5_{O2}}{KH5_{O2}+S_{O2}})(\frac{S_{F}}{K_{F5}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{N2O}}{KH_{N2O}+S_{N2O}})MonodNH4*MonodPO4*X_{H}`"
-   "Process 11", ":math:`ρ_11 = µ_{H}hH_{NO3}(\frac{KH2_{O2}}{KH2_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A2}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})MonodNH4*MonodPO4*X_{H}`"
-   "Process 12", ":math:`ρ_12 = µ_{H}hH_{NO2}(\frac{KH3_{O2}}{KH3_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A3}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO2}}{KH_{NO2}+S_{NO2}})MonodNH4*MonodPO4*X_{H}`"
-   "Process 13", ":math:`ρ_13 = µ_{H}hH_{NO}(\frac{KH4_{O2}}{KH4_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A4}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO}}{KH_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodNH4*MonodPO4*X_{H}`"
-   "Process 14", ":math:`ρ_14 = µ_{H}hH_{N2O}(\frac{KH5_{O2}}{KH5_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A5}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{N2O}}{KH_{N2O}+S_{N2O}})MonodNH4*MonodPO4*X_{H}`"
-   "Process 15", ":math:`ρ_15 = q_{fe}(\frac{KH_{O2}}{KH_{O2}+S_{O2}})(\frac{KH_{NO3}}{KH_{NO3}+S_{NO3}+S_{NO2}})(\frac{S_{F}}{K_{fe}+S_{F}})X_{H}`"
-   "Process 16 (with decay)", ":math:`ρ_16 = b_{H}((/frac{S_{O2}}{KH_{O2}+S_{O2}})+(/frac{hH_{NO3,end}KH_{O2}}{KH_{O2}+(/frac{S_{O2}S_{NO3}{KH_{NO3}+S_{NO3}})})*X_{H}`"
-   "Process 16 (without decay)", ":math:`ρ_16 = b_{H}X_{H}`"
-   "Process 17", ":math:`ρ_17 = q_{PHA}(/frac{S_{A}}{KP_{A}+S_{A}})MonodPP*X_{PAO}`"
-   "Process 18", ":math:`ρ_18 = q_{PP}(/frac{S_{O2}}{KP_{O2}+S_{O2}})MonodSPO4*MonodPHA*MonodIPP*X_{PAO}`"
-   "Process 19", ":math:`ρ_19 = q_{PP}*hP_{NO3}(/frac{KP2_{O2}}{KP2_{O2}+S_{O2}})(/frac{S_{NO3}}{KP_{NO3}+S_{NO3}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
-   "Process 20", ":math:`ρ_20 = q_{PP}*hP_{NO2}(/frac{KP3_{O2}}{KP3_{O2}+S_{O2}})(/frac{S_{NO2}}{KP_{NO2}+S_{NO2}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
-   "Process 21", ":math:`ρ_21 = q_{PP}*hP_{NO}(/frac{KP4_{O2}}{KP4_{O2}+S_{O2}})(/frac{S_{NO}}{KP_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
-   "Process 22", ":math:`ρ_22 = q_{PP}*hP_{N2O}(/frac{KP5_{O2}}{KP5_{O2}+S_{O2}})(/frac{S_{N2O}}{KP_{N2O}+S_{N2O}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
-   "Process 23", ":math:`ρ_23 = µ_{PAO}(/frac{S_{O2}}{KP_{O2}+S_{O2}})MonodSNH4_{P}(/frac{S_{PO4}}{KP_{PO4}+S_{PO4}})MonodPHA*X_{PAO}`"
-   "Process 24", ":math:`ρ_24 = µ_{PAO}*hP_{NO3}(/frac{KP2_{O2}}{KP2_{O2}+S_{O2}})(/frac{S_{NO3}}{KP_{NO3}+S_{NO3}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
-   "Process 25", ":math:`ρ_25 = µ_{PAO}*hP_{NO2}(/frac{KP3_{O2}}{KP3_{O2}+S_{O2}})(/frac{S_{NO2}}{KP_{NO2}+S_{NO2}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
-   "Process 26", ":math:`ρ_26 = µ_{PAO}*hP_{NO}(/frac{KP4_{O2}}{KP4_{O2}+S_{O2}})(/frac{S_{NO}}{KP_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
-   "Process 27", ":math:`ρ_27 = µ_{PAO}*hP_{N2O}(/frac{KP5_{O2}}{KP5_{O2}+S_{O2}})(/frac{S_{N2O}}{KP_{N2O}+S_{N2O}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
-   "Process 28 (with decay)", ":math:`ρ_28 = b_{PAO}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hP_{NO3,end}KP_{O2}}{KP_{O2}+(/frac{S_{O2}S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PAO}`"
-   "Process 28 (without decay)", ":math:`ρ_28 = b_{PAO}X_{PAO}`"
-   "Process 29 (with decay)", ":math:`ρ_29 = b_{PP}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hPP_{NO3,end}KP_{O2}}{KP_{O2}+(/frac{S_{O2}S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PP}`"
-   "Process 29 (without decay)", ":math:`ρ_29 = b_{PP}X_{Pp}`"
-   "Process 30 (with decay)", ":math:`ρ_30 = b_{PHA}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hPHA_{NO3,end}KP_{O2}}{KP_{O2}+(/frac{S_{O2}S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PHA}`"
-   "Process 30 (without decay)", ":math:`ρ_30 = b_{PHA}X_{PHA}`"
-   "Process 31", ":math:`ρ_31 = q_{AOB,AMO}(/frac{S_{O2}}{KAOB1_{O2}+S_{O2}})(/frac{S_{FA}}{KAOB_{NH4}+S_{FA}})*X_{AOB}`"
-   "Process 32", ":math:`ρ_32 = µ_{AOB,HAO}(/frac{S_{O2}}{KAOB2_{O2}+S_{O2}})(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{NH4}}{S_{NH4}+1e-12})(/frac{S_{PO4}}{KAOB_{P}+S_{PO4}})(/frac{X_{AOB}}{1+S_{IS}/K_I_IS_XAOB})`"
-   "Process 33", ":math:`ρ_33 = q_{AOB,HAO}(/frac{S_{O2}}{KAOB2_{O2}+S_{O2}})(/frac{S_{NO}}{KAOB_{HAO,NO}+S_{NO}})*X_{AOB}`"
-   "Process 34", ":math:`ρ_34 = q_{AOB,N2O,NN}(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{NO}}{KAOB_{NN,NO}+S_{NO}})*X_{AOB}`"
-   "Process 35", ":math:`ρ_35 = q_{AOB,N2O,ND}(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{FNA}}{KAOB_{NH2OH}+S_FNA})*fSO2*X_{AOB}`"
-   "Process 36", ":math:`ρ_36 = µ_{NOB}(/frac{S_{O2}}{KNOB_{O2}+S_{O2}})(/frac{S_{FNA}}{KNOB_{NO2}+S_FNA})*(/frac{S_{PO4}}{KNOB_{P}+S_{PO4}})(/frac{X_{NOB}}{1+S_{IS}/K_{I,IS,XNOB}})*X_{AOB}`"
+   "Process 10", ":math:`ρ_{10} = µ_{H}hH_{N2O}(\frac{KH5_{O2}}{KH5_{O2}+S_{O2}})(\frac{S_{F}}{K_{F5}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{N2O}}{KH_{N2O}+S_{N2O}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 11", ":math:`ρ_{11} = µ_{H}hH_{NO3}(\frac{KH2_{O2}}{KH2_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A2}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO3}}{KH_{NO3}+S_{NO3}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 12", ":math:`ρ_{12} = µ_{H}hH_{NO2}(\frac{KH3_{O2}}{KH3_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A3}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO2}}{KH_{NO2}+S_{NO2}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 13", ":math:`ρ_{13} = µ_{H}hH_{NO}(\frac{KH4_{O2}}{KH4_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A4}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NO}}{KH_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 14", ":math:`ρ_{14} = µ_{H}hH_{N2O}(\frac{KH5_{O2}}{KH5_{O2}+S_{O2}})(\frac{S_{A}}{KH_{A5}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{N2O}}{KH_{N2O}+S_{N2O}})MonodNH4*MonodPO4*X_{H}`"
+   "Process 15", ":math:`ρ_{15} = q_{fe}(\frac{KH_{O2}}{KH_{O2}+S_{O2}})(\frac{KH_{NO3}}{KH_{NO3}+S_{NO3}+S_{NO2}})(\frac{S_{F}}{K_{fe}+S_{F}})X_{H}`"
+   "Process 16 (with decay)", ":math:`ρ_{16} = b_{H}((/frac{S_{O2}}{KH_{O2}+S_{O2}})+(/frac{hH_{NO3,end}KH_{O2}}{KH_{O2}+S_{O2}})(/frac{S_{NO3}}{KH_{NO3}+S_{NO3}}))*X_{H}`"
+   "Process 16 (without decay)", ":math:`ρ_{16} = b_{H}X_{H}`"
+   "Process 17", ":math:`ρ_{17} = q_{PHA}(/frac{S_{A}}{KP_{A}+S_{A}})MonodPP*X_{PAO}`"
+   "Process 18", ":math:`ρ_{18} = q_{PP}(/frac{S_{O2}}{KP_{O2}+S_{O2}})MonodSPO4*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 19", ":math:`ρ_{19} = q_{PP}*hP_{NO3}(/frac{KP2_{O2}}{KP2_{O2}+S_{O2}})(/frac{S_{NO3}}{KP_{NO3}+S_{NO3}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 20", ":math:`ρ_{20} = q_{PP}*hP_{NO2}(/frac{KP3_{O2}}{KP3_{O2}+S_{O2}})(/frac{S_{NO2}}{KP_{NO2}+S_{NO2}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 21", ":math:`ρ_{21} = q_{PP}*hP_{NO}(/frac{KP4_{O2}}{KP4_{O2}+S_{O2}})(/frac{S_{NO}}{KP_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 22", ":math:`ρ_{22} = q_{PP}*hP_{N2O}(/frac{KP5_{O2}}{KP5_{O2}+S_{O2}})(/frac{S_{N2O}}{KP_{N2O}+S_{N2O}})MonodSPO4_{P}*MonodPHA*MonodIPP*X_{PAO}`"
+   "Process 23", ":math:`ρ_{23} = µ_{PAO}(/frac{S_{O2}}{KP_{O2}+S_{O2}})MonodSNH4_{P}(/frac{S_{PO4}}{KP_{PO4}+S_{PO4}})MonodPHA*X_{PAO}`"
+   "Process 24", ":math:`ρ_{24} = µ_{PAO}*hP_{NO3}(/frac{KP2_{O2}}{KP2_{O2}+S_{O2}})(/frac{S_{NO3}}{KP_{NO3}+S_{NO3}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 25", ":math:`ρ_{25} = µ_{PAO}*hP_{NO2}(/frac{KP3_{O2}}{KP3_{O2}+S_{O2}})(/frac{S_{NO2}}{KP_{NO2}+S_{NO2}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 26", ":math:`ρ_{26} = µ_{PAO}*hP_{NO}(/frac{KP4_{O2}}{KP4_{O2}+S_{O2}})(/frac{S_{NO}}{KP_{NO}+S_{NO}+S_{NO}^{2}/KI_{NO}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 27", ":math:`ρ_{27} = µ_{PAO}*hP_{N2O}(/frac{KP5_{O2}}{KP5_{O2}+S_{O2}})(/frac{S_{N2O}}{KP_{N2O}+S_{N2O}})MonodSNH4_{P}*MonodSPO4_{P}*MonodPHA*X_{PAO}`"
+   "Process 28 (with decay)", ":math:`ρ_{28} = b_{PAO}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hP_{NO3,end}KP_{O2}}{KP_{O2}+S_{O2})(/frac{S_{NO3}{KP_{NO3}+S_{NO3}}))*X_{PAO}`"
+   "Process 28 (without decay)", ":math:`ρ_{28} = b_{PAO}X_{PAO}`"
+   "Process 29 (with decay)", ":math:`ρ_{29} = b_{PP}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hPP_{NO3,end}KP_{O2}}{KP_{O2}+(/frac{S_{O2}S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PP}`"
+   "Process 29 (without decay)", ":math:`ρ_{29} = b_{PP}X_{Pp}`"
+   "Process 30 (with decay)", ":math:`ρ_{30} = b_{PHA}((/frac{S_{O2}}{KP_{O2}+S_{O2}})+(/frac{hPHA_{NO3,end}KP_{O2}}{KP_{O2}+S_{O2})(/frac{S_{NO3}{KP_{NO3}+S_{NO3}})})*X_{PHA}`"
+   "Process 30 (without decay)", ":math:`ρ_{30} = b_{PHA}X_{PHA}`"
+   "Process 31", ":math:`ρ_{31} = q_{AOB,AMO}(/frac{S_{O2}}{KAOB1_{O2}+S_{O2}})(/frac{S_{FA}}{KAOB_{NH4}+S_{FA}})*X_{AOB}`"
+   "Process 32", ":math:`ρ_{32} = µ_{AOB,HAO}(/frac{S_{O2}}{KAOB2_{O2}+S_{O2}})(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{NH4}}{S_{NH4}+1e-12})(/frac{S_{PO4}}{KAOB_{P}+S_{PO4}})({X_{AOB})`"
+   "Process 33", ":math:`ρ_{33} = q_{AOB,HAO}(/frac{S_{O2}}{KAOB2_{O2}+S_{O2}})(/frac{S_{NO}}{KAOB_{HAO,NO}+S_{NO}})*X_{AOB}`"
+   "Process 34", ":math:`ρ_{34} = q_{AOB,N2O,NN}(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{NO}}{KAOB_{NN,NO}+S_{NO}})*X_{AOB}`"
+   "Process 35", ":math:`ρ_{35} = q_{AOB,N2O,ND}(/frac{S_{NH2OH}}{KAOB_{NH2OH}+S_{NH2OH}})(/frac{S_{FNA}}{KAOB_{NH2OH}+S_FNA})*fSO2*X_{AOB}`"
+   "Process 36", ":math:`ρ_{36} = µ_{NOB}(/frac{S_{O2}}{KNOB_{O2}+S_{O2}})(/frac{S_{FNA}}{KNOB_{NO2}+S_FNA})*(/frac{S_{PO4}}{KNOB_{P}+S_{PO4}})({X_{NOB})`"
    "Process 37 (with decay)", ":math:`ρ_37 = b_{AOB}((/frac{S_{O2}}{KAOB1_{O2}+S_{O2}})+(/frac{hAOB_{NO3,end}KAOB1_{O2}}{KAOB1_{O2}+S_{O2}})(/frac{S_{NO3}}{KAOB_{NO3}+S_{NO3}})*X_{AOB}`"
-   "Process 37 (without decay)", ":math:`ρ_37 = b_{AOB}X_{AOB}`"
-   "Process 38 (with decay)", ":math:`ρ_38 = b_{NOB}((/frac{S_{O2}}{KNOB_{O2}+S_{O2}})+(/frac{hNOB_{NO3,end}KNOB_{O2}}{KNOB_{O2}+S_{O2}})(/frac{S_{NO3}}{KNOB_{NO3}+S_{NO3}})*X_{NOB}`"
-   "Process 38 (without decay)", ":math:`ρ_38 = b_{NOB}X_{NOB}`"
+   "Process 37 (without decay)", ":math:`ρ_{37} = b_{AOB}X_{AOB}`"
+   "Process 38 (with decay)", ":math:`ρ_{38} = b_{NOB}((/frac{S_{O2}}{KNOB_{O2}+S_{O2}})+(/frac{hNOB_{NO3,end}KNOB_{O2}}{KNOB_{O2}+S_{O2}})(/frac{S_{NO3}}{KNOB_{NO3}+S_{NO3}})*X_{NOB}`"
+   "Process 38 (without decay)", ":math:`ρ_{38} = b_{NOB}X_{NOB}`"
 
 References
 ----------
