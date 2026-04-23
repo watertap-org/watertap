@@ -16,3 +16,4 @@ Property Models
    modified_ASM2D
    ASM2D_GHG
    mc_aq_sol
+   air_water_equil
