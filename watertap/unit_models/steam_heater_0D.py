@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -21,7 +21,6 @@ import idaes.logger as idaeslog
 
 from watertap.core.solvers import get_solver
 from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
-
 
 _log = idaeslog.getLogger(__name__)
 
