@@ -83,6 +83,19 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # Unit model data, RO
     exports.add(
+        obj=fs.RO.area,
+        name="RO membrane area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="RO membrane area",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=True,
+        output_category="System metrics",
+    )
+
+    exports.add(
         obj=fs.RO.A_comp[0, "H2O"],
         name="RO water permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2 / pyunits.bar,
@@ -145,6 +158,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="m",
         rounding=2,
         description="Stage width",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.RO.length,
+        name="RO stage length",
+        ui_units=pyunits.m,
+        display_units="m",
+        rounding=2,
+        description="Stage length",
         is_input=True,
         input_category="Reverse Osmosis",
         is_output=False,
@@ -254,6 +278,28 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
+        obj=fs.costing.plant_lifetime,
+        name="Plant lifetime",
+        ui_units=pyunits.year,
+        display_units="years",
+        rounding=1,
+        description="Plant lifetime",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.wacc,
+        name="Discount rate",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Discount rate used in calculating the capital annualization",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
         obj=fs.costing.electricity_cost,
         name="Electricity cost",
         ui_units=fs.costing.base_currency / pyunits.kWh,
@@ -338,17 +384,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # System metrics
-    exports.add(
-        obj=fs.RO.area,
-        name="RO membrane area",
-        ui_units=pyunits.m**2,
-        display_units="m^2",
-        rounding=2,
-        description="Membrane area",
-        is_input=False,
-        is_output=True,
-        output_category="System metrics",
-    )
     exports.add(
         obj=fs.costing.specific_energy_consumption,
         name="Specific energy consumption",
