@@ -64,7 +64,7 @@ class SteamHeater0DData(HeatExchangerData):
 
     def set_subcooling_margin(self, margin_Pa):
         for t in self.flowsheet().time:
-            self.pressure_deltaP[t].fix(float(margin_Pa))
+            self.pressure_deltaP[t].fix(margin_Pa)
 
     def release_subcooling_margin(self):
         for t in self.flowsheet().time:
