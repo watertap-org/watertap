@@ -129,13 +129,13 @@ class TestParamBlock(object):
         assert value(model.rparams.Y_STO_NOX) == 0.80
 
         assert isinstance(model.rparams.k_H, Var)
-        assert value(model.rparams.k_H["10C"]) == 2
-        assert value(model.rparams.k_H["20C"]) == 3
+        assert value(model.rparams.k_H["ref_temp_1"]) == 2
+        assert value(model.rparams.k_H["ref_temp_2"]) == 3
         assert isinstance(model.rparams.K_X, Var)
         assert value(model.rparams.K_X) == 1
         assert isinstance(model.rparams.k_STO, Var)
-        assert value(model.rparams.k_STO["10C"]) == 2.5
-        assert value(model.rparams.k_STO["20C"]) == 5
+        assert value(model.rparams.k_STO["ref_temp_1"]) == 2.5
+        assert value(model.rparams.k_STO["ref_temp_2"]) == 5
         assert isinstance(model.rparams.eta_NOX, Var)
         assert value(model.rparams.eta_NOX) == 0.6
         assert isinstance(model.rparams.K_O2, Var)
@@ -147,28 +147,28 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.K_STO, Var)
         assert value(model.rparams.K_STO) == 1
         assert isinstance(model.rparams.mu_H, Var)
-        assert value(model.rparams.mu_H["10C"]) == 1
-        assert value(model.rparams.mu_H["20C"]) == 2
+        assert value(model.rparams.mu_H["ref_temp_1"]) == 1
+        assert value(model.rparams.mu_H["ref_temp_2"]) == 2
         assert isinstance(model.rparams.K_NH4, Var)
         assert value(model.rparams.K_NH4) == 0.01e-3
         assert isinstance(model.rparams.K_ALK, Var)
         assert value(model.rparams.K_ALK) == 0.1e-3
         assert isinstance(model.rparams.b_H_O2, Var)
-        assert value(model.rparams.b_H_O2["10C"]) == 0.1
-        assert value(model.rparams.b_H_O2["20C"]) == 0.2
+        assert value(model.rparams.b_H_O2["ref_temp_1"]) == 0.1
+        assert value(model.rparams.b_H_O2["ref_temp_2"]) == 0.2
         assert isinstance(model.rparams.b_H_NOX, Var)
-        assert value(model.rparams.b_H_NOX["10C"]) == 0.05
-        assert value(model.rparams.b_H_NOX["20C"]) == 0.1
+        assert value(model.rparams.b_H_NOX["ref_temp_1"]) == 0.05
+        assert value(model.rparams.b_H_NOX["ref_temp_2"]) == 0.1
         assert isinstance(model.rparams.b_STO_O2, Var)
-        assert value(model.rparams.b_STO_O2["10C"]) == 0.1
-        assert value(model.rparams.b_STO_O2["20C"]) == 0.2
+        assert value(model.rparams.b_STO_O2["ref_temp_1"]) == 0.1
+        assert value(model.rparams.b_STO_O2["ref_temp_2"]) == 0.2
         assert isinstance(model.rparams.b_STO_NOX, Var)
-        assert value(model.rparams.b_STO_NOX["10C"]) == 0.05
-        assert value(model.rparams.b_STO_NOX["20C"]) == 0.1
+        assert value(model.rparams.b_STO_NOX["ref_temp_1"]) == 0.05
+        assert value(model.rparams.b_STO_NOX["ref_temp_2"]) == 0.1
 
         assert isinstance(model.rparams.mu_A, Var)
-        assert value(model.rparams.mu_A["10C"]) == 0.35
-        assert value(model.rparams.mu_A["20C"]) == 1
+        assert value(model.rparams.mu_A["ref_temp_1"]) == 0.35
+        assert value(model.rparams.mu_A["ref_temp_2"]) == 1
         assert isinstance(model.rparams.K_A_NH4, Var)
         assert value(model.rparams.K_A_NH4) == 1e-3
         assert isinstance(model.rparams.K_A_O2, Var)
@@ -176,11 +176,11 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.K_A_ALK, Var)
         assert value(model.rparams.K_A_ALK) == 0.5e-3
         assert isinstance(model.rparams.b_A_O2, Var)
-        assert value(model.rparams.b_A_O2["10C"]) == 0.05
-        assert value(model.rparams.b_A_O2["20C"]) == 0.15
+        assert value(model.rparams.b_A_O2["ref_temp_1"]) == 0.05
+        assert value(model.rparams.b_A_O2["ref_temp_2"]) == 0.15
         assert isinstance(model.rparams.b_A_NOX, Var)
-        assert value(model.rparams.b_A_NOX["10C"]) == 0.02
-        assert value(model.rparams.b_A_NOX["20C"]) == 0.05
+        assert value(model.rparams.b_A_NOX["ref_temp_1"]) == 0.02
+        assert value(model.rparams.b_A_NOX["ref_temp_2"]) == 0.05
 
 
 class TestReactionBlock(object):
