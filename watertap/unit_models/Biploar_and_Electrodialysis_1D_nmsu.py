@@ -166,7 +166,7 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
            :header: "Configuration Options", "Description"
 
            "``PressureDropMethod.none``", "The frictional pressure drop is neglected." 
-           "``PressureDropMethod.experimental``", "The pressure drop is calculated by an experimental data as pressure drop per unit lenght."
+           "``PressureDropMethod.experimental``", "The pressure drop is calculated by an experimental data as pressure drop per unit length."
            "``PressureDropMethod.Darcy_Weisbach``", "The pressure drop is calculated by the Darcy-Weisbach equation."
        """,
         ),
@@ -871,12 +871,12 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
             units=pyunits.mole * pyunits.meter**-3,
             doc="Membrane fixed charge",
         )
-        self.kr = Var(
-            initialize=1.33 * 10**11,
-            bounds=(1e-6, 1e16),
-            units=pyunits.L * pyunits.mole**-1 * pyunits.second**-1,
-            doc="Re-association rate constant",
-        )
+        # self.kr = Var(
+        #     initialize=1.33 * 10**11,
+        #     bounds=(1e-6, 1e16),
+        #     units=pyunits.L * pyunits.mole**-1 * pyunits.second**-1,
+        #     doc="Re-association rate constant",
+        # )
         self.k2_zero = Var(
             initialize=2 * 10**-5,
             bounds=(1e-10, 1e2),
@@ -3496,8 +3496,8 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
             ):
                 iscale.set_scaling_factor(self.relative_permittivity, 1e-1)
 
-        if iscale.get_scaling_factor(self.kr, warning=True) is None:
-            iscale.set_scaling_factor(self.kr, 1e-11)
+        # if iscale.get_scaling_factor(self.kr, warning=True) is None:
+        #     iscale.set_scaling_factor(self.kr, 1e-11)
         if (
             hasattr(self, "k2_zero")
             and iscale.get_scaling_factor(self.k2_zero, warning=True) is None
@@ -3607,9 +3607,6 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                     ) / iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
                 sf = 1 / sf
                 iscale.set_scaling_factor(self.current_density_x[ind], sf)
-                iscale.constraint_scaling_transform(
-                    self.eq_currelec_migration_mono_cem_fluxent_relationship[ind], sf
-                )
 
         for ind in self.elec_migration_mono_cem_flux:
             iscale.set_scaling_factor(
@@ -4023,7 +4020,8 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
         ):
             sf = 1e-5
             iscale.set_scaling_factor(self.pressure_drop, sf)
-            iscale.constraint_scaling_transform(self.eq_pressure_drop[0], sf)
+            if hasattr(self, "eq_pressure_drop"):
+                iscale.constraint_scaling_transform(self.eq_pressure_drop[0], sf)
             for ind in self.eq_deltaP_acidate:
                 iscale.set_scaling_factor(self.acidate.deltaP, sf)
                 iscale.set_scaling_factor(self.diluate.deltaP, sf)
@@ -4248,11 +4246,12 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                 self.eq_get_total_areal_resistance_x[ind],
                 iscale.get_scaling_factor(self.total_areal_resistance_x[ind]),
             )
-        for ind in self.current_density_x:
-            iscale.constraint_scaling_transform(
-                self.eq_current_relationship[ind],
-                iscale.get_scaling_factor(self.current_density_x[ind]),
-            )
+        if self.config.has_catalyst:
+            for ind in self.current_density_x:
+                iscale.constraint_scaling_transform(
+                    self.eq_current_relationship[ind],
+                    iscale.get_scaling_factor(self.current_density_x[ind]),
+                )
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
