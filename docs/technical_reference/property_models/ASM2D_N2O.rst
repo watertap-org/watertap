@@ -106,7 +106,7 @@ Stoichiometric Coefficients
    "N content of inert particulate COD X_I", ":math:`i_{NXI}`", "i_NXI", 0.06003, ":math:`\text{dimensionless}`"
    "N content of slowly biodegradable substrate X_S", ":math:`i_{NXS}`", "i_NXS", 0.03552, ":math:`\text{dimensionless}`"
    "N content of biomass, X_H, X_PAO, X_AOB, X_NOB", ":math:`i_{NBM}`", "i_NBM", 0.08615, ":math:`\text{dimensionless}`"
-   ":lime:`P content of inert soluble COD S_I`", ":math:`i_{PSI}`", "i_PSI", 0.00649, ":math:`\text{dimensionless}`"
+   ":blue:`P content of inert soluble COD S_I`", ":math:`i_{PSI}`", "i_PSI", 0.00649, ":math:`\text{dimensionless}`"
    "P content of fermentable substrate, S_F", ":math:`i_{PSF}`", "i_PSF", 0.00559, ":math:`\text{dimensionless}`"
    "P content of inert particulate COD X_I", ":math:`i_{PXI}`", "i_PXI", 0.00649, ":math:`\text{dimensionless}`"
    "P content of slowly biodegradable substrate X_S", ":math:`i_{PXS}`", "i_PXS", 0.00559, ":math:`\text{dimensionless}`"
@@ -211,10 +211,9 @@ Kinetic Parameters
    ":lime:`Saturation/inhibition coefficient for nitrite`", ":math:`KP_{NO2}`", "KP_NO2", 0.0002, ":math:`\text{kg P/}\text{m}^3`"
    ":lime:`Saturation/inhibition coefficient for nitric oxide`", ":math:`KP_{NO}`", "KP_NO", 0.00005, ":math:`\text{kg P/}\text{m}^3`"
    ":lime:`Saturation/inhibition coefficient for nitrous oxide`", ":math:`KP_{N2O}`", "KP_N2O", 0.00005, ":math:`\text{kg P/}\text{m}^3`"
-   :NOTE: Need to double check the units on the variables below and remove if unused
-   ":lime:`Maximum rate for the AMO reaction`", ":math:`q_{AOB, AMO}`", "q_AOB,AMO", 5.2, ":math:`\text{kg AOB/}\text{kg PAO . day}`"
+   ":lime:`Maximum rate for the AMO reaction`", ":math:`q_{AOB, AMO}`", "q_AOB,AMO", 5.2, ":math:`\text{day}^{-1}`"
    ":lime:`Maximum AOB growth rate`", ":math:`µ_{AOB, HAO}`", "mu_AOB,HAO", 0.61, ":math:`\text{day}^{-1}`"
-   ":lime:`Maximum rate for the HAO reaction`", ":math:`q_{AOB, HAO}`", "q_AOB,HAO", 5.2, ":math:`\text{kg AOB/}\text{kg PAO . day}`"
+   ":lime:`Maximum rate for the HAO reaction`", ":math:`q_{AOB, HAO}`", "q_AOB,HAO", 5.2, ":math:`\text{day}^{-1}`"
    ":lime:`Maximum N2O production rate by NH2OH oxidation pathway`", ":math:`q_{AOB, N2O, NN}`", "q_AOB,N2O,NN", 0.0078, ":math:`\text{kg AOB/}\text{kg PAO . day}`"
    ":lime:`Maximum N2O production rate by ND pathway`", ":math:`q_{AOB, N2O, ND}`", "q_AOB,N2O,ND", 1.3008, ":math:`\text{kg AOB/}\text{kg PAO . day}`"
    ":lime:`Decay rate of AOB`", ":math:`b_{AOB}`", "b_AOB", 0.096, ":math:`\text{day}^{-1}`"
@@ -233,11 +232,10 @@ Kinetic Parameters
    ":lime:`Maximum NOB growth rate`", ":math:`µ_{NOB}`", "mu_NOB", 0.61, ":math:`\text{day}^{-1}`"
    ":lime:`Decay rate of  NOB`", ":math:`b_{NOB}`", "b_NOB", 0.096, ":math:`\text{day}^{-1}`"
    ":lime:`Anoxic reduction factor for NOB decay`", ":math:`h_{NOB, NO3, end}`", "h_NOB,NO3,end", 0.33, ":math:`\text{dimensionless}`"
-   ":lime:`NOB affinity constant for oxygen`", ":math:`K_{NOB, O2}`", "k_NOB,O2", 1.2, ":math:`\text{dimensionless}`"
-   ":lime:`NOB affinity constant for nitrite`", ":math:`K_{NOB, NO2}`", "k_NOB,NO2", 1e-6, ":math:`\text{dimensionless}`"
-   ":lime:`NOB affinity constant for phosphate`", ":math:`K_{NOB, P}`", "k_NOB,P", 0.01, ":math:`\text{dimensionless}`"
-   ":lime:`NOB affinity constant for nitrate`", ":math:`K_{NOB, NO3}`", "k_NOB,NO3", 0.5, ":math:`\text{dimensionless}`"
-    :NOTE: Add additional parameters if anything else is used
+   ":lime:`NOB affinity constant for oxygen`", ":math:`K_{NOB, O2}`", "k_NOB,O2", 1.2, ":math:`\text{kg O/}\text{m}^3`"
+   ":lime:`NOB affinity constant for nitrite`", ":math:`K_{NOB, NO2}`", "k_NOB,NO2", 1e-6, ":math:`\text{kg NO2/}\text{m}^3`"
+   ":lime:`NOB affinity constant for phosphate`", ":math:`K_{NOB, P}`", "k_NOB,P", 0.01, ":math:`\text{kg P/}\text{m}^3`"
+   ":lime:`NOB affinity constant for nitrate`", ":math:`K_{NOB, NO3}`", "k_NOB,NO3", 0.5, ":math:`\text{kg NO3/}\text{m}^3`"
 
 Properties
 ----------
