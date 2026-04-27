@@ -505,6 +505,8 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dh_vap_mass", 1e-6)
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
+        self.set_default_scaling("specific_vol_sat_phase", 1, index="Vap")
+        self.set_default_scaling("specific_vol_phase", 1, index="Vap")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -533,6 +535,7 @@ class WaterParameterData(PhysicalParameterBlock):
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
                 "specific_vol_sat_phase": {"method": "_specific_vol_sat_phase"},
+                "specific_vol_phase": {"method": "_specific_vol_phase"},
             }
         )
 
@@ -1164,6 +1167,20 @@ class WaterStateBlockData(StateBlockData):
             ["Vap"], rule=rule_specific_vol_sat_phase
         )
 
+    def _specific_vol_phase(self):
+        self.specific_vol_phase = Var(
+            ["Vap"],
+            initialize=0.001,
+            bounds=(0, None),
+            units=pyunits.m**3 / pyunits.kg,
+            doc="Specific volume of steam",
+        )
+
+        def rule_specific_vol_phase(b, p):
+            return b.specific_vol_phase[p] * b.dens_mass_phase[p] == 1
+
+        self.eq_specific_vol_phase = Constraint(["Vap"], rule=rule_specific_vol_phase)
+
     def _temperature_sat_solvent(self):
         self.temperature_sat_solvent = Var(
             initialize=298.15,
@@ -1249,9 +1266,6 @@ class WaterStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.params.mw_comp, 1e2)
 
-        if self.is_property_constructed("specific_vol_sat_phase"):
-            if iscale.get_scaling_factor(self.specific_vol_sat_phase["Vap"]) is None:
-                iscale.set_scaling_factor(self.specific_vol_sat_phase["Vap"], 0.1)
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if self.is_property_constructed("flow_vol_phase"):
