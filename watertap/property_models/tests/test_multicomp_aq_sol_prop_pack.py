@@ -512,7 +512,7 @@ def test_general_methods(model3):
         m.fs.stream[0].default_material_balance_type()
         is MaterialBalanceType.componentTotal
     )
-    assert m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.none
+    assert m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.enthalpyTotal
 
     assert hasattr(m.fs.stream[0], "get_material_flow_basis")
     assert m.fs.stream[0].get_material_flow_basis() is MaterialFlowBasis.molar
@@ -1649,10 +1649,10 @@ def test_flow_mass_basis():
     assert not m.fs.sb[0].is_property_constructed("eq_flow_mass_phase_comp")
 
     assert str(m.fs.sb[0].eq_flow_mol_phase_comp["Liq", "A"].expr) == (
-        "1/fs.properties.mw_comp[A]*fs.sb[0].flow_mass_phase_comp[Liq,A]  ==  fs.sb[0].flow_mol_phase_comp[Liq,A]"
+        "fs.sb[0].flow_mass_phase_comp[Liq,A]  ==  fs.properties.mw_comp[A]*fs.sb[0].flow_mol_phase_comp[Liq,A]"
     )
     assert str(m.fs.sb[0].eq_flow_mol_phase_comp["Liq", "H2O"].expr) == (
-        "1/fs.properties.mw_comp[H2O]*fs.sb[0].flow_mass_phase_comp[Liq,H2O]  ==  fs.sb[0].flow_mol_phase_comp[Liq,H2O]"
+        "fs.sb[0].flow_mass_phase_comp[Liq,H2O]  ==  fs.properties.mw_comp[H2O]*fs.sb[0].flow_mol_phase_comp[Liq,H2O]"
     )
 
 
@@ -1702,16 +1702,9 @@ def test_compatibility_with_mixer():
     )
 
     m.fs.mixer1 = Mixer(
-        property_package=m.fs.properties, energy_mixing_type=MixingType.none
-    )
+        property_package=m.fs.properties)
 
-    with pytest.raises(
-        NotImplementedError,
-        match="property package has not implemented the get_enthalpy_flow_terms method. Please contact the property package developer.",
-    ):
-        m.fs.mixer2 = Mixer(
-            property_package=m.fs.properties,
-        )
+
 
 
 c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]
@@ -2259,7 +2252,7 @@ def test_no_total_hardness(caplog):
     assert value(stream[0].total_hardness) == 0
 
     assert (
-        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        "No multivalent cations in solute_list; total_hardness fixed to 0."
         in caplog.text
     )
 
@@ -2298,21 +2291,16 @@ def test_no_total_hardness_not_TDS_with_apparent_species_only(caplog):
     stream[0].total_hardness
 
     stream[0].total_dissolved_solids
-    # stream[0].total_hardness
 
     assert_units_consistent(m)
 
     check_dof(m, fail_flag=True)
-
-    assert value(stream[0].total_dissolved_solids) == 0
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(31421.999, rel=1e-3)
     assert value(stream[0].total_hardness) == 0
-
     assert (
-        "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
-        in caplog.text
-    )
-    assert (
-        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        "No multivalent cations in solute_list; total_hardness fixed to 0."
         in caplog.text
     )
 
