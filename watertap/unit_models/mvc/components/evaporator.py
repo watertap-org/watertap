@@ -495,6 +495,32 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             )
             iscale.set_scaling_factor(self.heat_transfer, sf)
 
+        sf = iscale.get_scaling_factor(self.properties_vapor[0].enth_flow_phase["Vap"])
+        iscale.constraint_scaling_transform(self.eq_energy_balance[0], sf)
+        iscale.constraint_scaling_transform(self.eq_brine_pressure[0], 1e-5)
+        iscale.constraint_scaling_transform(self.eq_vapor_pressure[0], 1e-5)
+        iscale.constraint_scaling_transform(self.eq_vapor_temperature[0], 1e-2)
+
+        iscale.constraint_scaling_transform(self.eq_lmtd[0], 1)
+        sf = iscale.get_scaling_factor(self.heat_transfer)
+        iscale.constraint_scaling_transform(self.eq_evaporator_heat[0], sf)
+
+        iscale.constraint_scaling_transform(
+            self.connection_to_condenser.eq_delta_temperature_in[0], 1e-2
+        )
+        iscale.constraint_scaling_transform(
+            self.connection_to_condenser.eq_delta_temperature_out[0], 1e-2
+        )
+
+        iscale.constraint_scaling_transform(
+            self.connection_to_condenser.eq_heat_balance[0], sf
+        )
+        for phase, ion in self.properties_feed[0].flow_mass_phase_comp.keys():
+            sf = iscale.get_scaling_factor(
+                self.properties_feed[0].flow_mass_phase_comp[phase, ion]
+            )
+            iscale.constraint_scaling_transform(self.eq_mass_balance[0, ion], sf)
+
     @property
     def default_costing_method(self):
         return cost_evaporator
