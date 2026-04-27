@@ -512,7 +512,9 @@ def test_general_methods(model3):
         m.fs.stream[0].default_material_balance_type()
         is MaterialBalanceType.componentTotal
     )
-    assert m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.enthalpyTotal
+    assert (
+        m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.enthalpyTotal
+    )
 
     assert hasattr(m.fs.stream[0], "get_material_flow_basis")
     assert m.fs.stream[0].get_material_flow_basis() is MaterialFlowBasis.molar
@@ -1701,10 +1703,7 @@ def test_compatibility_with_mixer():
         charge={"Na_+": 1, "Cl_-": -1},
     )
 
-    m.fs.mixer1 = Mixer(
-        property_package=m.fs.properties)
-
-
+    m.fs.mixer1 = Mixer(property_package=m.fs.properties)
 
 
 c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]

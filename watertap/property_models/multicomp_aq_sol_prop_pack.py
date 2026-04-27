@@ -1377,7 +1377,7 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="State pressure",
         )
-        
+
         if self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             self.flow_mass_phase_comp = Var(
                 self.params.phase_list,
@@ -1399,6 +1399,7 @@ class MCASStateBlockData(StateBlockData):
             )
         else:
             raise ConfigurationError()
+
     # -----------------------------------------------------------------------------
     # Property Methods
     # Material flow state variables generated via on-demand props
@@ -1417,7 +1418,7 @@ class MCASStateBlockData(StateBlockData):
             def rule_flow_mol_phase_comp(b, p, j):
                 return (
                     b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
-                    == b.flow_mol_phase_comp[p, j] 
+                    == b.flow_mol_phase_comp[p, j]
                 )
 
             self.eq_flow_mol_phase_comp = Constraint(
@@ -1440,7 +1441,7 @@ class MCASStateBlockData(StateBlockData):
             def rule_flow_mass_phase_comp(b, p, j):
                 return (
                     b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
-                    == b.flow_mol_phase_comp[p, j] 
+                    == b.flow_mol_phase_comp[p, j]
                 )
 
             self.eq_flow_mass_phase_comp = Constraint(
@@ -2150,8 +2151,7 @@ class MCASStateBlockData(StateBlockData):
         )
 
         polyvalent = [
-            j for j in self.params.cation_set
-            if value(self.params.charge_comp[j]) >= 2
+            j for j in self.params.cation_set if value(self.params.charge_comp[j]) >= 2
         ]
         if not polyvalent:
             self.total_hardness.fix(0)
@@ -2163,14 +2163,13 @@ class MCASStateBlockData(StateBlockData):
         caco3_eq_weight = 50.0434 * pyunits.g / pyunits.mol
 
         def rule_total_hardness(b):
-            return b.total_hardness ==  pyunits.convert(
+            return b.total_hardness == pyunits.convert(
                 sum(
                     self.conc_mol_phase_comp["Liq", j]
                     * float(value(self.params.charge_comp[j]))
-                    * caco3_eq_weight 
-                        for j in polyvalent
-                    )
-                ,
+                    * caco3_eq_weight
+                    for j in polyvalent
+                ),
                 to_units=pyunits.mg / pyunits.L,
             )
 
@@ -2186,20 +2185,14 @@ class MCASStateBlockData(StateBlockData):
         )
 
         total_dissolved_solids_temp = pyunits.convert(
-            sum(
-                self.conc_mass_phase_comp["Liq", j] for j in self.params.solute_set
-            ),
+            sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.solute_set),
             to_units=pyunits.mg / pyunits.L,
         )
 
         def rule_total_dissolved_solids(b):
             return b.total_dissolved_solids == total_dissolved_solids_temp
 
-        self.eq_total_dissolved_solids = Constraint(
-            rule=rule_total_dissolved_solids
-        )
-
- 
+        self.eq_total_dissolved_solids = Constraint(rule=rule_total_dissolved_solids)
 
     def _enth_mass_phase(self):
         params = self.params
