@@ -1650,10 +1650,10 @@ def test_flow_mass_basis():
     assert not m.fs.sb[0].is_property_constructed("eq_flow_mass_phase_comp")
 
     assert str(m.fs.sb[0].eq_flow_mol_phase_comp["Liq", "A"].expr) == (
-        "fs.sb[0].flow_mass_phase_comp[Liq,A]  ==  fs.properties.mw_comp[A]*fs.sb[0].flow_mol_phase_comp[Liq,A]"
+        "1/fs.properties.mw_comp[A]*fs.sb[0].flow_mass_phase_comp[Liq,A]  ==  fs.sb[0].flow_mol_phase_comp[Liq,A]"
     )
     assert str(m.fs.sb[0].eq_flow_mol_phase_comp["Liq", "H2O"].expr) == (
-        "fs.sb[0].flow_mass_phase_comp[Liq,H2O]  ==  fs.properties.mw_comp[H2O]*fs.sb[0].flow_mol_phase_comp[Liq,H2O]"
+        "1/fs.properties.mw_comp[H2O]*fs.sb[0].flow_mass_phase_comp[Liq,H2O]  ==  fs.sb[0].flow_mol_phase_comp[Liq,H2O]"
     )
 
 
