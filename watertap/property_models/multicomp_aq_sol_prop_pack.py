@@ -2487,14 +2487,6 @@ class MCASStateBlockData(StateBlockData):
         # Nayar et al.(2016), eq. 5 and 6, 0-180 C, 0-160 g/kg
         def rule_pressure_sat(b):
             t = b.temperature
-            # if value(b.total_dissolved_solids)>0:
-            #     S_kg_kg = (
-            #         pyunits.convert(
-            #             b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
-            #         )
-            #         / b.dens_mass_phase["Liq"]
-            #     )
-            # else:
             S_kg_kg = sum(b.mass_frac_phase_comp["Liq", j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000 * pyunits.g / pyunits.kg
             psatw = (
