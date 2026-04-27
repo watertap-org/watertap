@@ -60,7 +60,7 @@ class TestWaterProperty(PropertyTestHarness):
             ("visc_d_phase", "Liq"): 8.901e-4,
             ("therm_cond_phase", "Liq"): 0.6105,
             ("specific_vol_phase", "Vap"): 43.3245,
-            ("temperature_sat_solvent", None): 298.0905,
+            ("temperature_sat_solvent", None): 373.240,
         }
 
 
@@ -100,7 +100,7 @@ class TestWaterPropertySolution_1(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 5.466e-4,
             ("therm_cond_phase", "Liq"): 0.6404,
             ("specific_vol_phase", "Vap"): 12.024,
-            ("temperature_sat_solvent", None): 323.118,
+            ("temperature_sat_solvent", None): 393.498,
         }
 
 
@@ -140,5 +140,5 @@ class TestWaterPropertySolution_2(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 2.819e-4,
             ("therm_cond_phase", "Liq"): 0.6756,
             ("specific_vol_phase", "Vap"): 1.6724,
-            ("temperature_sat_solvent", None): 373.266,
+            ("temperature_sat_solvent", None): 372.871,
         }

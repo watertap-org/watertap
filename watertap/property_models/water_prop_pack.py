@@ -1170,15 +1170,12 @@ class WaterStateBlockData(StateBlockData):
         )
 
         def rule_temperature_sat_solvent(b):
-            psat = pyunits.convert(b.pressure_sat, to_units=pyunits.kPa)
+            p = pyunits.convert(b.pressure, to_units=pyunits.kPa)
             return (
                 b.temperature_sat_solvent
                 == b.params.temp_sat_solvent_A1
                 + b.params.temp_sat_solvent_A2
-                / (
-                    log(psat / b.params.temp_sat_solvent_A3)
-                    + b.params.temp_sat_solvent_A4
-                )
+                / (log(p / b.params.temp_sat_solvent_A3) + b.params.temp_sat_solvent_A4)
             )
 
         self.eq_temperature_sat_solvent = Constraint(rule=rule_temperature_sat_solvent)
