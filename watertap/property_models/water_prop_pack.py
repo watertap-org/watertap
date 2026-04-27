@@ -532,7 +532,7 @@ class WaterParameterData(PhysicalParameterBlock):
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
-                "specific_vol_phase": {"method": "_specific_vol_phase"},
+                "specific_vol_sat_phase": {"method": "_specific_vol_sat_phase"},
             }
         )
 
@@ -1137,16 +1137,16 @@ class WaterStateBlockData(StateBlockData):
 
         self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)
 
-    def _specific_vol_phase(self):
-        self.specific_vol_phase = Var(
+    def _specific_vol_sat_phase(self):
+        self.specific_vol_sat_phase = Var(
             ["Vap"],
             initialize=100,
             bounds=(0, None),
             units=pyunits.m**3 / pyunits.kg,
-            doc="Specific volume of steam",
+            doc="Specific volume of saturated steam",
         )
 
-        def rule_specific_vol_phase(b, p):
+        def rule_specific_vol_sat_phase(b, p):
             t_red = self.temperature / self.params.temperature_crit
             log_sp_vol = (
                 self.params.sp_vol_phase_param_A1
@@ -1156,10 +1156,13 @@ class WaterStateBlockData(StateBlockData):
                 + self.params.sp_vol_phase_param_A5 / (t_red**5)
             )
             return (
-                b.specific_vol_phase[p] == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
+                b.specific_vol_sat_phase[p]
+                == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
             )
 
-        self.eq_specific_vol_phase = Constraint(["Vap"], rule=rule_specific_vol_phase)
+        self.eq_specific_vol_sat_phase = Constraint(
+            ["Vap"], rule=rule_specific_vol_sat_phase
+        )
 
     def _temperature_sat_solvent(self):
         self.temperature_sat_solvent = Var(
@@ -1246,9 +1249,9 @@ class WaterStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.params.mw_comp, 1e2)
 
-        if self.is_property_constructed("specific_vol_phase"):
-            if iscale.get_scaling_factor(self.specific_vol_phase["Vap"]) is None:
-                iscale.set_scaling_factor(self.specific_vol_phase["Vap"], 0.1)
+        if self.is_property_constructed("specific_vol_sat_phase"):
+            if iscale.get_scaling_factor(self.specific_vol_sat_phase["Vap"]) is None:
+                iscale.set_scaling_factor(self.specific_vol_sat_phase["Vap"], 0.1)
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if self.is_property_constructed("flow_vol_phase"):

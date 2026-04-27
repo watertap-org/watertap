@@ -46,7 +46,7 @@ Properties
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa}\cdotp\text{s}`" 
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
-   "Specific volume of vapor", ":math:`\upsilon`", "specific_vol_phase", "[Vap]", ":math:`\text{m}^3/\text{kg}`"
+   "Specific volume of vapor", ":math:`\upsilon`", "specific_vol_sat_phase", "[Vap]", ":math:`\text{m}^3/\text{kg}`"
    "Saturation temperature of solvent", ":math:`T_{sat}`", "temperature_sat_solvent", "None", ":math:`\text{K}`"
    
 Relationships
