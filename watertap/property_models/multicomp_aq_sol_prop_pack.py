@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Laboratory of the Rockies, and National Energy Technology
+# National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -11,10 +11,10 @@
 #################################################################################
 """
 This property package computes a multi-component aqueous solution that can
-contain ionic and/or neutral solute species. It supports basic calculation
-of component quantities and some physical, chemical and electrical properties.
+contain ionic and/or neutral solute species. It supports basic calculation 
+of component quantities and some physical, chemical and electrical properties. 
 
-This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally
+This property package was formerly named the "ion_DSPMDE_prop_pack" and was originally 
 designed for use with the Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE) for
 nanofiltration.
 """
@@ -1376,7 +1376,7 @@ class MCASStateBlockData(StateBlockData):
         # Add state variables
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 373.15),
+            bounds=(273.15, 1000),
             domain=NonNegativeReals,
             units=pyunits.K,
             doc="State temperature",
@@ -1384,33 +1384,11 @@ class MCASStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, None),
+            # bounds=(1e3, 50000000),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
         )
-
-        if self.params.config.material_flow_basis == MaterialFlowBasis.mass:
-            self.flow_mass_phase_comp = Var(
-                self.params.phase_list,
-                self.params.component_list,
-                initialize=0.5,
-                bounds=(0, None),
-                units=pyunits.kg / pyunits.s,
-                doc="Component Mass flowrate",
-            )
-        elif self.params.config.material_flow_basis == MaterialFlowBasis.molar:
-            self.flow_mol_phase_comp = Var(
-                self.params.phase_list,
-                self.params.component_list,
-                initialize=0.1,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=pyunits.mol / pyunits.s,
-                doc="Component molar flow rate",
-            )
-        else:
-            raise ConfigurationError()
 
     # -----------------------------------------------------------------------------
     # Property Methods
@@ -1429,8 +1407,8 @@ class MCASStateBlockData(StateBlockData):
 
             def rule_flow_mol_phase_comp(b, p, j):
                 return (
-                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
-                    == b.flow_mol_phase_comp[p, j]
+                    b.flow_mass_phase_comp[p, j]
+                    == b.flow_mol_phase_comp[p, j] * b.params.mw_comp[j]
                 )
 
             self.eq_flow_mol_phase_comp = Constraint(
@@ -1463,9 +1441,15 @@ class MCASStateBlockData(StateBlockData):
             )
 
     def _flow_mass_comp(self):
-        @self.Expression(self.params.component_list)
-        def flow_mass_comp(b, j):
-            return b.flow_mass_phase_comp["Liq", j]
+        add_object_reference(
+            self,
+            "flow_mass_comp",
+            {
+                j: self.flow_mass_phase_comp[p, j]
+                for j in self.params.component_list
+                for p in self.params.phase_list
+            },
+        )
 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
@@ -1851,11 +1835,15 @@ class MCASStateBlockData(StateBlockData):
                 == ElectricalMobilityCalculation.none
             ):
                 if (p, j) not in self.params.config.elec_mobility_data.keys():
-                    raise ConfigurationError(""" 
+                    raise ConfigurationError(
+                        """ 
                         Missing the "elec_mobility_data" configuration to build the elec_mobility_phase_comp 
                         and/or its derived variables for {} in {}. 
                         Provide this configuration or use ElectricalMobilityCalculation.EinsteinRelation.
-                        """.format(j, self.name))
+                        """.format(
+                            j, self.name
+                        )
+                    )
                 else:
                     return (
                         b.elec_mobility_phase_comp[p, j]
@@ -1877,10 +1865,14 @@ class MCASStateBlockData(StateBlockData):
                     )
                 else:
                     if (p, j) in self.params.config.elec_mobility_data.keys():
-                        _log.warning("""
+                        _log.warning(
+                            """
                             The provided elec_mobility_data of {} will be overwritten 
                             by the calculated data for {} because the EinsteinRelation 
-                            method is selected.""".format(j, self.name))
+                            method is selected.""".format(
+                                j, self.name
+                            )
+                        )
 
                     return b.elec_mobility_phase_comp[p, j] == b.diffus_phase_comp[
                         p, j
@@ -2093,11 +2085,13 @@ class MCASStateBlockData(StateBlockData):
                     )
                 else:
                     if len(self.params.ion_set) > 2:
-                        _log.warning(""" 
+                        _log.warning(
+                            """ 
                             Caution should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
                             Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
                             the phase equivalent conductivity using the "EquivalentConductivityCalculation.ElectricalMobility" method 
-                            is recommended.""")
+                            is recommended."""
+                        )
                     return (
                         b.equiv_conductivity_phase[p]
                         == self.params.config.equiv_conductivity_phase_data[p]
@@ -2197,7 +2191,9 @@ class MCASStateBlockData(StateBlockData):
         # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
         try:
             total_dissolved_solids_temp = pyunits.convert(
-                sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.ion_set),
+                sum(
+                    self.conc_mass_phase_comp["Liq", j] for j in self.params.solute_set
+                ),
                 to_units=pyunits.mg / pyunits.L,
             )
 
@@ -2371,12 +2367,15 @@ class MCASStateBlockData(StateBlockData):
         def rule_enth_mass_phase(b, p):
             # temperature in degC, but pyunits in K
             t = b.temperature - 273.15 * pyunits.K
-            S_kg_kg = (
-                pyunits.convert(
-                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
-                )
-                / b.dens_mass_phase[p]
-            )
+            # if value(b.total_dissolved_solids)>0:
+            #     S_kg_kg = (
+            #         pyunits.convert(
+            #             b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
+            #         )
+            #         / b.dens_mass_phase[p]
+            #     )
+            # else:
+            S_kg_kg = sum(b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
@@ -2498,12 +2497,15 @@ class MCASStateBlockData(StateBlockData):
         # Nayar et al.(2016), eq. 5 and 6, 0-180 C, 0-160 g/kg
         def rule_pressure_sat(b):
             t = b.temperature
-            S_kg_kg = (
-                pyunits.convert(
-                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
-                )
-                / b.dens_mass_phase["Liq"]
-            )
+            # if value(b.total_dissolved_solids)>0:
+            #     S_kg_kg = (
+            #         pyunits.convert(
+            #             b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
+            #         )
+            #         / b.dens_mass_phase["Liq"]
+            #     )
+            # else:
+            S_kg_kg = sum(b.mass_frac_phase_comp["Liq", j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000 * pyunits.g / pyunits.kg
             psatw = (
                 exp(
@@ -2536,9 +2538,9 @@ class MCASStateBlockData(StateBlockData):
             return self.flow_mass_phase_comp[p, j]
 
     # TODO: add enthalpy terms later
-    # def get_enthalpy_flow_terms(self, p):
-    #     """Create enthalpy flow terms."""
-    #     return self.enth_flow
+    def get_enthalpy_flow_terms(self, p):
+        """Create enthalpy flow terms."""
+        return self.enth_flow
 
     # TODO: make property package compatible with dynamics
     # def get_material_density_terms(self, p, j):
@@ -2551,7 +2553,7 @@ class MCASStateBlockData(StateBlockData):
         return MaterialBalanceType.componentTotal
 
     def default_energy_balance_type(self):
-        return EnergyBalanceType.none
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(self):
         if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
@@ -2647,8 +2649,8 @@ class MCASStateBlockData(StateBlockData):
 
         # touch this var since it is required for this method
         self.conc_mol_phase_comp
-        if solve:
 
+        if solve:
             if adjust_by_ion is not None:
                 ion_before_adjust = state_var["Liq", adjust_by_ion].value
             solve = get_solver()
@@ -2699,7 +2701,7 @@ class MCASStateBlockData(StateBlockData):
                             )
                     msg = (
                         f"{adjust_by_ion} adjusted: {state_var}['Liq',{adjust_by_ion}] was adjusted from "
-                        f"{ion_before_adjust} and fixed "  # pylint: disable=used-before-assignment
+                        f"{ion_before_adjust} and fixed "
                         f"to {ion_adjusted}."
                     )
                 else:
@@ -2786,22 +2788,6 @@ class MCASStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(
                             self.flow_mol_phase_comp["Liq", j], sf
                         )
-
-        if self.is_property_constructed("flow_mol_comp"):
-            for j in self.flow_mol_comp:
-                iscale.set_scaling_factor(
-                    self.flow_mol_comp[j],
-                    # Don't provide a default since this should always be set
-                    iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]),
-                )
-
-        if self.is_property_constructed("flow_mass_comp"):
-            for j in self.flow_mass_comp:
-                iscale.set_scaling_factor(
-                    self.flow_mass_comp[j],
-                    # Don't provide a default since this should always be set
-                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j]),
-                )
 
         # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value
