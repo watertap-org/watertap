@@ -67,7 +67,6 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 
 # Import idaes mixer to check compatibility in absence of get_enthalpy_flow_terms()
 from idaes.models.unit_models import Feed, Mixer
-from idaes.models.unit_models.mixer import MixingType
 import idaes.logger as idaeslog
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
