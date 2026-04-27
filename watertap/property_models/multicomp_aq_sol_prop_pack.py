@@ -1371,7 +1371,7 @@ class MCASStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            # bounds=(1e3, 50000000),
+            bounds=(1e3, 50000000),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
