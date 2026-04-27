@@ -34,16 +34,20 @@ class TestInfeasible:
     def test_var_not_set(self, m, capsys):
         print_variables_close_to_bounds(m)
         captured = capsys.readouterr()
-        assert captured.out == """No value for Var a
+        assert (
+            captured.out
+            == """No value for Var a
 No value for Var b
 """
+        )
 
     @pytest.mark.unit
     def test_var_not_set_con(self, m, capsys):
         print_constraints_close_to_bounds(m)
         captured = capsys.readouterr()
         assert (
-            captured.out == """Cannot evaluate Constraint abcon: missing variable value
+            captured.out
+            == """Cannot evaluate Constraint abcon: missing variable value
 """
         )
 
@@ -61,9 +65,12 @@ No value for Var b
         m.b.value = 0
         print_close_to_bounds(m)
         captured = capsys.readouterr()
-        assert captured.out == """a near UB of 10
+        assert (
+            captured.out
+            == """a near UB of 10
 abcon near UB of 10
 """
+        )
 
     @pytest.mark.unit
     def test_close_LB(self, m, capsys):
@@ -71,10 +78,13 @@ abcon near UB of 10
         m.b.value = -10
         print_close_to_bounds(m)
         captured = capsys.readouterr()
-        assert captured.out == """a near UB of 10
+        assert (
+            captured.out
+            == """a near UB of 10
 b near LB of -10
 abcon near LB of 0
 """
+        )
 
     @pytest.mark.unit
     def test_infeasible_bounds_none(self, m, capsys):
@@ -94,14 +104,20 @@ abcon near LB of 0
         m.b.value = -20
         print_infeasible_bounds(m)
         captured = capsys.readouterr()
-        assert captured.out == """VAR a: 20 </= UB 10
+        assert (
+            captured.out
+            == """VAR a: 20 </= UB 10
 VAR b: LB -10 </= -20
 """
+        )
 
     @pytest.mark.unit
     def test_infeasible_constraints(self, m, capsys):
         m.a.value = -20
         print_infeasible_constraints(m)
         captured = capsys.readouterr()
-        assert captured.out == """CONSTR abcon: 0.0 </= -40 <= 10.0
+        assert (
+            captured.out
+            == """CONSTR abcon: 0.0 </= -40 <= 10.0
 """
+        )
