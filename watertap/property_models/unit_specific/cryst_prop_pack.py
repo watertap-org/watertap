@@ -907,7 +907,7 @@ class NaClParameterData(PhysicalParameterBlock):
                 "solubility_mass_frac_phase_comp": {
                     "method": "_solubility_mass_frac_phase_comp"
                 },
-                "specific_vol_phase": {"method": "_specific_vol_phase"},
+                "specific_vol_sat_phase": {"method": "_specific_vol_sat_phase"},
             }
         )
 
@@ -1906,8 +1906,8 @@ class NaClStateBlockData(StateBlockData):
             self.phase_component_set, rule=rule_mole_frac_phase_comp
         )
 
-    def _specific_vol_phase(self):
-        self.specific_vol_phase = Var(
+    def _specific_vol_sat_phase(self):
+        self.specific_vol_sat_phase = Var(
             ["Vap"],
             initialize=100,
             bounds=(0, None),
@@ -1915,7 +1915,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Specific volume of steam",
         )
 
-        def rule_specific_vol_phase(b, p):
+        def rule_specific_vol_sat_phase(b, p):
             t_red = self.temperature / self.params.temperature_crit
             log_sp_vol = (
                 self.params.sp_vol_phase_param_A1
@@ -1925,10 +1925,13 @@ class NaClStateBlockData(StateBlockData):
                 + self.params.sp_vol_phase_param_A5 / (t_red**5)
             )
             return (
-                b.specific_vol_phase[p] == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
+                b.specific_vol_sat_phase[p]
+                == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
             )
 
-        self.eq_specific_vol_phase = Constraint(["Vap"], rule=rule_specific_vol_phase)
+        self.eq_specific_vol_sat_phase = Constraint(
+            ["Vap"], rule=rule_specific_vol_sat_phase
+        )
 
     # -----------------------------------------------------------------------------
     # Boilerplate Methods
@@ -2006,9 +2009,9 @@ class NaClStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.solubility_mass_frac_phase_comp) is None:
                 iscale.set_scaling_factor(self.solubility_mass_frac_phase_comp, 1e0)
 
-        if self.is_property_constructed("specific_vol_phase"):
-            if iscale.get_scaling_factor(self.specific_vol_phase["Vap"]) is None:
-                iscale.set_scaling_factor(self.specific_vol_phase["Vap"], 0.1)
+        if self.is_property_constructed("specific_vol_sat_phase"):
+            if iscale.get_scaling_factor(self.specific_vol_sat_phase["Vap"]) is None:
+                iscale.set_scaling_factor(self.specific_vol_sat_phase["Vap"], 0.1)
 
         # Scaling for flow_vol_phase: scaled as scale of dominant component in phase / density of phase
         if self.is_property_constructed("flow_vol_phase"):
@@ -2210,7 +2213,7 @@ class NaClStateBlockData(StateBlockData):
             "enth_mass_solute",
             "cp_mass_solvent",
             "cp_mass_solute",
-            "specific_vol_phase",
+            "specific_vol_sat_phase",
         ]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
