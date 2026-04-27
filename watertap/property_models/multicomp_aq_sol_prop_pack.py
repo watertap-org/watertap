@@ -2683,7 +2683,7 @@ class MCASStateBlockData(StateBlockData):
                             )
                     msg = (
                         f"{adjust_by_ion} adjusted: {state_var}['Liq',{adjust_by_ion}] was adjusted from "
-                        f"{ion_before_adjust} and fixed "
+                        f"{ion_before_adjust} and fixed "  # pylint: disable=used-before-assignment
                         f"to {ion_adjusted}."
                     )
                 else:
