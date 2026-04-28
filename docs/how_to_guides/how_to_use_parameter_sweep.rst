@@ -79,10 +79,15 @@ model is produced, in order to support native parallelism the preferred way to d
 
     def build_sweep_params(model, **kwargs):
         sweep_params = dict()
-        sweep_params['Feed Mass NaCl'] = LinearSample(model.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 0.005, 0.155, 4)
-        sweep_params['Water Recovery'] = LinearSample(model.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
+        sweep_params["Feed Mass NaCl"] = LinearSample(
+            model.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"], 0.005, 0.155, 4
+        )
+        sweep_params["Water Recovery"] = LinearSample(
+            model.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"], 0.3, 0.7, 4
+        )
 
         return sweep_params
+
 
 where the basic pattern is ``dict_name['Short/Pretty-print Name'] = LinearSample(m.path.to.model.variable, lower_limit, upper_limit, num_samples)``.
 For example, "Feed Mass NaCl" (the feed mass flow rate of NaCl), which is accessed through the model variable ``m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl']``, is to be varied between 0.005 and 0.155 with 4 equally-spaced values, i.e., ``[0.005, 0.055, 0.105, 0.155]``.
@@ -106,13 +111,20 @@ The user can apply these options to a sweep parameter sample by invoking *set_va
     def build_sweep_params(model, **kwargs):
         sweep_params = dict()
         # Set lower bound for feed salinity value
-        sweep_params['Feed Mass NaCl-LB'] = LinearSample(model.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
-        sweep_params['Feed Mass NaCl-LB'].set_variable_update_mode(SetMode.SET_LB)
+        sweep_params["Feed Mass NaCl-LB"] = LinearSample(
+            model.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"], 0.3, 0.7, 4
+        )
+        sweep_params["Feed Mass NaCl-LB"].set_variable_update_mode(SetMode.SET_LB)
         # Sweep across fixed and unfixed water recovery cases, when fixing the area, set it to 50
-        sweep_params['Membrane area-fixed-state'] = PredeterminedFixedSample(model.fs.RO.area, [True, False])
-        sweep_params['Membrane area-fixed-state'].set_variable_update_mode(SetMode.SET_FIXED_STATE, default_fixed_value=0.5)
+        sweep_params["Membrane area-fixed-state"] = PredeterminedFixedSample(
+            model.fs.RO.area, [True, False]
+        )
+        sweep_params["Membrane area-fixed-state"].set_variable_update_mode(
+            SetMode.SET_FIXED_STATE, default_fixed_value=0.5
+        )
 
         return sweep_params
+
 
 The above example would create a sweep with 8 samples in total, where lower bound for water recovery is changed from 0.3 to 0.7
 and membrane area is optimized along with other variables, and where it is fixed. 
@@ -140,7 +152,13 @@ future versions. The preferred way is to pass in generating functions as shown b
 
 .. testcode::
 
-    parameter_sweep(build_model, build_sweep_params, build_outputs, csv_results_file_name='outputs_results.csv', h5_results_file_name='outputs_results.h5')
+    parameter_sweep(
+        build_model,
+        build_sweep_params,
+        build_outputs,
+        csv_results_file_name="outputs_results.csv",
+        h5_results_file_name="outputs_results.h5",
+    )
 
 .. testcleanup::
 

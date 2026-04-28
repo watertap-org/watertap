@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -1102,26 +1102,26 @@ class TestMCAS:
 
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.material_balances[0.0, "H2O"]
-        ] == pytest.approx(0.01866, rel=1e-3)
+        ] == pytest.approx(0.1, rel=1e-3)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.material_balances[0.0, "Ca_2+"]
-        ] == pytest.approx(104.7, rel=1e-3)
+        ] == pytest.approx(1e3, rel=1e-3)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.material_balances[0.0, "SO4_2-"]
-        ] == pytest.approx(44.94, rel=1e-3)
+        ] == pytest.approx(1e2, rel=1e-3)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.material_balances[0.0, "Mg_2+"]
-        ] == pytest.approx(1.722, rel=1e-3)
+        ] == pytest.approx(10, rel=1e-3)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.material_balances[0.0, "Na_+"]
-        ] == pytest.approx(2.068, rel=1e-3)
+        ] == pytest.approx(10, rel=1e-3)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.material_balances[0.0, "Cl_-"]
-        ] == pytest.approx(0.6174, rel=1e-3)
+        ] == pytest.approx(1, rel=1e-3)
 
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.separation_constraint[0.0, "Liq", "H2O"]
-        ] == pytest.approx(0.0233193, rel=1e-5)
+        ] == pytest.approx(0.1, rel=1e-5)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.separation_constraint[0.0, "Liq", "Ca_2+"]
         ] == pytest.approx(0.004, rel=1e-5)
@@ -1143,13 +1143,13 @@ class TestMCAS:
         )
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.retentate_pressure_balance[0.0]
-        ] == pytest.approx(0.0000025, rel=1e-3)
+        ] == pytest.approx(1e-5, rel=1e-3)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.retentate_temperature_equality[0.0]
-        ] == pytest.approx(0.003354, rel=1e-3)
+        ] == pytest.approx(1e-2, rel=1e-3)
         assert mcas_case.fs.unit.scaling_factor[
             mcas_case.fs.unit.permeate_temperature_equality[0.0]
-        ] == pytest.approx(0.003354, rel=1e-3)
+        ] == pytest.approx(1e-2, rel=1e-3)
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component

@@ -63,17 +63,30 @@ the "state_definition" of **FTPx**.
         else:
             scale = min
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]],
+            10 / scale,
+        )
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i],
+            10 / scale,
+        )
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i],
+            10 / scale,
+        )
         iscale.constraint_scaling_transform(
-            model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-        iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+            model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]],
+            10 / scale,
+        )
+        iscale.constraint_scaling_transform(
+            model.fs.unit.control_volume.material_balances[0.0, i[1]], 10 / scale
+        )
 
-    if (hasattr(model.fs.unit.control_volume,"volume")):
-        iscale.set_scaling_factor(model.fs.unit.control_volume.volume, 10/model.fs.unit.volume[0.0].value)
+    if hasattr(model.fs.unit.control_volume, "volume"):
+        iscale.set_scaling_factor(
+            model.fs.unit.control_volume.volume, 10 / model.fs.unit.volume[0.0].value
+        )
+
 
 
 Scaling for FpcTP State Variables
@@ -90,7 +103,7 @@ For this example, our **GenericParameterBlock** (named **thermo_params**) is usi
 the "state_definition" of **FpcTP**.
 
 .. code-block::
-
+    
     # Specify a minimum division factor for scaling
     min = 1e-3
     # For species
@@ -102,13 +115,22 @@ the "state_definition" of **FpcTP**.
             scale = min
 
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]],
+            10 / scale,
+        )
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i],
+            10 / scale,
+        )
         iscale.set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i],
+            10 / scale,
+        )
         iscale.constraint_scaling_transform(
-            model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+            model.fs.unit.control_volume.material_balances[0.0, i[1]], 10 / scale
+        )
 
-    if (hasattr(model.fs.unit.control_volume,"volume")):
-        iscale.set_scaling_factor(model.fs.unit.control_volume.volume, 10/model.fs.unit.volume[0.0].value)
+    if hasattr(model.fs.unit.control_volume, "volume"):
+        iscale.set_scaling_factor(
+            model.fs.unit.control_volume.volume, 10 / model.fs.unit.volume[0.0].value
+        )

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import logging
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -43,6 +44,8 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
+_logger = logging.getLogger(__name__)
+
 
 class ERDtype(StrEnum):
     pressure_exchanger = "pressure_exchanger"
@@ -61,7 +64,6 @@ def erd_type_not_found(erd_type):
 def main(erd_type=ERDtype.pressure_exchanger):
     # set up solver
     solver = get_solver()
-
     # build, set, and initialize
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
@@ -297,14 +299,8 @@ def set_operating_conditions(
         pass
     else:
         erd_type_not_found(m.fs.erd_type)
-
-    m.fs.RO.initialize(optarg=solver.options)
-
-    # unfix guessed area, and fix water recovery
     m.fs.RO.area.unfix()
-
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
-
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
         raise RuntimeError(
@@ -352,7 +348,6 @@ def calculate_operating_pressure(
         101325
     )  # valid when osmotic pressure is independent of hydraulic pressure
     t.brine[0].temperature.fix(value(feed_state_block.temperature))
-
     # calculate osmotic pressure
     # since properties are created on demand, we must touch the property to create it
     t.brine[0].pressure_osm_phase
@@ -372,14 +367,36 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def initialize_system(m, solver=None):
+def initialize_system(m, solver=None, relaxed_initialization=False):
     if solver is None:
         solver = get_solver()
     optarg = solver.options
 
     # ---initialize RO---
-    m.fs.RO.initialize(optarg=optarg)
+    if relaxed_initialization:
+        _logger.info("Initializing RO with relaxed recovery specification")
+        m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
+        target_recovery = m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].value
+        m.fs.RO.area_objective = Objective(
+            expr=(m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"] - target_recovery)
+            ** 2
+        )
 
+        expected_DOFs = 1
+        _logger.info(
+            f"Unfixed membrane area, and added objective to achieve target recovery of {target_recovery}"
+        )
+        m.fs.RO.initialize(
+            optarg=optarg, initialization_degrees_of_freedom=expected_DOFs
+        )
+        m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(target_recovery)
+        m.fs.RO.del_component(m.fs.RO.area_objective)
+
+        _logger.info(
+            f"Deactivated target recovery objective, RO model initialized to recovery of {m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].value}"
+        )
+    else:
+        m.fs.RO.initialize(optarg=optarg)
     # ---initialize feed block---
     m.fs.feed.initialize(optarg=optarg)
 
