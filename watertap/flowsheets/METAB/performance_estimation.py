@@ -11,8 +11,11 @@
 #################################################################################
 import json
 import pandas as pd
-import PyPDF2
-from pdf2image import convert_from_path
+
+try:
+    from pdf2image import convert_from_path
+except ImportError:
+    pdf2image = None
 from IPython.display import display
 
 
@@ -92,12 +95,13 @@ def display_plot(method="poly", path="./results/"):
     file_path = path + method + "_parity.pdf"
 
     # Convert PDF pages to images
-    pages = convert_from_path(file_path)
+    if pdf2image is not None:
+        pages = convert_from_path(file_path)
 
-    # Get the first page as an image
-    first_page_image = pages[0]
+        # Get the first page as an image
+        first_page_image = pages[0]
 
-    # Display in Jupyter Notebook
-    display(first_page_image)
+        # Display in Jupyter Notebook
+        display(first_page_image)
 
-    # NEED poppler for Windows
+        # NEED poppler for Windows

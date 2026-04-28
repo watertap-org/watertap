@@ -12,9 +12,12 @@
 
 # input space generation
 
-import csv
 import pandas as pd
-from exposan.metab import create_system
+
+try:
+    from exposan.metab import create_system
+except ImportError:
+    exposan = None
 
 
 __author__ = "Maojian Wang"
@@ -221,6 +224,7 @@ def collect_results(case=None, results=None, mass=True):
 
 
 def run_model(df):
+    output_data = {}
     for idx in df.index:
         # Changine input variables
         inf_fr = df.loc[idx, "inf_fr"]
@@ -235,8 +239,7 @@ def run_model(df):
         gas_extraction = "M"
         t_span = 200
 
-        try:
-
+        if exposan is not None:
             # set model
             sys = create_system(
                 n_stages=n_stages,  # number of stages
@@ -256,8 +259,6 @@ def run_model(df):
             if idx == 0:
                 output_data = None
             output_data = collect_results(case=sys, results=output_data)
-        except:
-            pass
 
     return output_data
 

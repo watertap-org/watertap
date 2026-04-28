@@ -9,35 +9,12 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
-
-import os
-import numpy as np
 import pandas as pd
 
-# Import Pyomo libraries
-from pyomo.environ import (
-    ConcreteModel,
-    SolverFactory,
-    value,
-    Var,
-    Constraint,
-    Set,
-    Objective,
-    maximize,
-)
-from pyomo.common.timing import TicTocTimer
-
 # Import IDAES libraries
-from idaes.core.surrogate.sampling.data_utils import split_training_validation
-from idaes.core.surrogate.pysmo_surrogate import PysmoPolyTrainer, PysmoSurrogate
 from idaes.core.surrogate.plotting.sm_plotter import (
-    surrogate_scatter2D,
     surrogate_parity,
-    surrogate_residual,
 )
-from idaes.core.surrogate.surrogate_block import SurrogateBlock
-from idaes.core import FlowsheetBlock
 
 from idaes.core.surrogate.pysmo_surrogate import (
     PysmoPolyTrainer,
