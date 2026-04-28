@@ -257,7 +257,7 @@ def fix_init_vars(m):
     m.fs.NF.nfUnit.mixed_permeate[0].pressure.fix(101325)
     # NF membrane props for NF270
     m.fs.NF.nfUnit.radius_pore.fix(0.5e-9)
-    m.fs.NF.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
+    m.fs.NF.nfUnit.membrane_thickness_effective.fix(8.5989e-07)
     m.fs.NF.nfUnit.membrane_charge_density.fix(-50)
     m.fs.NF.nfUnit.dielectric_constant_pore.fix(41.3)
     iscale.calculate_scaling_factors(m)
@@ -279,6 +279,7 @@ def unfix_opt_vars(m):
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
     m.fs.disposal.properties[0].total_hardness
+    iscale.calculate_scaling_factors(m)
 
 
 def add_objective(m):
