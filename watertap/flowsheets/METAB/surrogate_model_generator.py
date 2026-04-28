@@ -9,6 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import os
 import pandas as pd
 
 # Import IDAES libraries
@@ -24,11 +25,13 @@ from idaes.core.surrogate.pysmo_surrogate import (
 )
 from idaes.core.surrogate.alamopy import AlamoTrainer, AlamoSurrogate
 
+local_path = os.path.dirname(os.path.abspath(__file__))
+
 
 def get_data(
     tool="pysmo",
-    input_data_file="./results/input_data.csv",
-    output_data_file="./results/output_data.csv",
+    input_data_file=os.path.join(local_path, "results", "input_data.csv"),
+    output_data_file=os.path.join(local_path, "results", "output_data.csv"),
 ):
     input_data = pd.read_csv(input_data_file, header=0)
     # print(input_data)

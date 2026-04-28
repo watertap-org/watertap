@@ -15,6 +15,7 @@ import pandas as pd
 # third-party
 try:
     import pdf2image
+    from pdf2image import convert_from_path
 except ImportError:
     pdf2image = None
 from IPython.display import display
@@ -97,8 +98,6 @@ def display_plot(method="poly", path="./results/"):
 
     # Convert PDF pages to images
     if pdf2image is not None:
-        from pdf2image import convert_from_path
-
         pages = convert_from_path(file_path)
 
         # Get the first page as an image
