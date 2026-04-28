@@ -74,6 +74,11 @@ reaktoro = [
     "reaktoro-pse>=0.3.0",
 ]
 
+exposan = [
+    "exposan",
+    "pdf2image",
+]
+
 all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
 
 [tool.setuptools]
