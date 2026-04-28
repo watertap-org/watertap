@@ -505,16 +505,26 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         sf = iscale.get_scaling_factor(self.heat_transfer)
         iscale.constraint_scaling_transform(self.eq_evaporator_heat[0], sf)
 
-        iscale.constraint_scaling_transform(
-            self.connection_to_condenser.eq_delta_temperature_in[0], 1e-2
-        )
-        iscale.constraint_scaling_transform(
-            self.connection_to_condenser.eq_delta_temperature_out[0], 1e-2
-        )
+        # connection_to_condenser is a Block, to build the constraints we need to call connect_to_condenser method.
 
-        iscale.constraint_scaling_transform(
-            self.connection_to_condenser.eq_heat_balance[0], sf
-        )
+        # If the evaporator is connected to a condenser, we want to scale those constraints as well, use try except in case the user has not yet connected the evaporator to a condenser when connect_to_condenser is called.
+        try:
+            iscale.constraint_scaling_transform(
+                self.connection_to_condenser.eq_delta_temperature_in[0], 1e-2
+            )
+            iscale.constraint_scaling_transform(
+                self.connection_to_condenser.eq_delta_temperature_out[0], 1e-2
+            )
+            iscale.constraint_scaling_transform(
+                self.connection_to_condenser.eq_heat_balance[0], sf
+            )
+        # except AttributeError:
+        #     pass
+        except AttributeError as e:
+            raise AttributeError(
+                f"Evaporator is not connected to a condenser or condenser constraints are missing: {e}"
+            )
+
         for phase, ion in self.properties_feed[0].flow_mass_phase_comp.keys():
             sf = iscale.get_scaling_factor(
                 self.properties_feed[0].flow_mass_phase_comp[phase, ion]
