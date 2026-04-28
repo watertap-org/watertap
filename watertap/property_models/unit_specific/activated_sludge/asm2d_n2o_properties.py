@@ -520,6 +520,7 @@ class ASM2dN2OStateBlockData(StateBlockData):
             units=pyo.units.kg / pyo.units.m**3,
         )
 
+        # Relationships defined in asm2d_PSFe_GHG.c
         def _VSS(self):
             vss = (
                 self.conc_mass_comp["X_I"] / self.params.CODtoVSS_XI

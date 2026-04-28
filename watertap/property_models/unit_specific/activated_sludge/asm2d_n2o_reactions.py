@@ -159,7 +159,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ]
         )
 
-        # Stoichiometric Parameters
+        # Stoichiometric Parameters - found in asm2dinit_bsm2.c
         self.f_SI = pyo.Var(
             initialize=0.00,
             units=pyo.units.dimensionless,
@@ -818,55 +818,55 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="AOB affinity constant for NH4",
         )
         self.KAOB2_O2 = pyo.Var(
-            initialize=0.6e-3,
+            initialize=6e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for oxygen (HAO reaction)",
         )
         self.KAOB_NH2OH = pyo.Var(
-            initialize=0.3e-3,
+            initialize=3e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for NH2OH",
         )
         self.KAOB_P = pyo.Var(
-            initialize=0.01e-3,
+            initialize=1e-5,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for phosphate",
         )
         self.KAOB_HAO_NO = pyo.Var(
-            initialize=0.0003e-3,
+            initialize=3e-7,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for NO (from HAO)",
         )
         self.KAOB_NN_NO = pyo.Var(
-            initialize=0.008e-3,
+            initialize=8e-6,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for NO (form NirK)",
         )
         self.KAOB_HNO2 = pyo.Var(
-            initialize=0.0006,
+            initialize=6e-4,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for free nitrous acid",
         )
         self.KAOB_ND_O2 = pyo.Var(
-            initialize=0.5e-3,
+            initialize=5e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB constant for O2 effect on the ND pathway",
         )
         self.KAOB_I_O2 = pyo.Var(
-            initialize=0.8e-3,
+            initialize=8e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="N2O constant for production inhibition by O2",
         )
         self.KAOB_NO3 = pyo.Var(
-            initialize=0.5e-3,
+            initialize=5e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="AOB affinity constant for nitrate",
@@ -902,130 +902,132 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             doc="NOB affinity constant for nitrite",
         )
         self.KNOB_P = pyo.Var(
-            initialize=0.01e-3,
+            initialize=1e-5,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="NOB affinity constant for phosphate",
         )
         self.KNOB_NO3 = pyo.Var(
-            initialize=0.5e-3,
+            initialize=5e-4,
             units=pyo.units.kg / pyo.units.m**3,
             domain=pyo.NonNegativeReals,
             doc="NOB affinity constant for nitrate",
         )
-        self.D_N2 = pyo.Var(
-            initialize=1.86e-9,
-            units=pyo.units.cm / pyo.units.s,
-            domain=pyo.NonNegativeReals,
-            doc="Diffusivity of N2",
-        )
-        self.D_N2O = pyo.Var(
-            initialize=1.77e-9,
-            units=pyo.units.cm / pyo.units.s,
-            domain=pyo.NonNegativeReals,
-            doc="Diffusivity of N2O",
-        )
-        self.D_NO = pyo.Var(
-            initialize=8.7e-11,
-            units=pyo.units.cm / pyo.units.s,
-            domain=pyo.NonNegativeReals,
-            doc="Diffusivity of N2",
-        )
-        self.D_O2 = pyo.Var(
-            initialize=2.12e-9,
-            units=pyo.units.cm / pyo.units.s,
-            domain=pyo.NonNegativeReals,
-            doc="Diffusivity of O2",
-        )
-        self.D_CO2 = pyo.Var(
-            initialize=1.92e-9,
-            units=pyo.units.cm / pyo.units.s,
-            domain=pyo.NonNegativeReals,
-            doc="Diffusivity of CO2",
-        )
-        self.D_H2S = pyo.Var(
-            initialize=1.41e-9,
-            units=pyo.units.cm / pyo.units.s,
-            domain=pyo.NonNegativeReals,
-            doc="Diffusivity of H2S",
-        )
-        self.H_N2 = pyo.Var(
-            initialize=6.4e-6,
-            units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
-            domain=pyo.NonNegativeReals,
-            doc="Henry constant of N2 at reference temperature (288.15 K)",
-        )
-        self.H_N2O = pyo.Var(
-            initialize=2.4e-4,
-            units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
-            domain=pyo.NonNegativeReals,
-            doc="Henry constant of N2O at reference temperature (288.15 K)",
-        )
-        self.H_NO = pyo.Var(
-            initialize=1.9e-5,
-            units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
-            domain=pyo.NonNegativeReals,
-            doc="Henry constant of NO at reference temperature (288.15 K)",
-        )
-        self.H_O2 = pyo.Var(
-            initialize=1.3e-5,
-            units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
-            domain=pyo.NonNegativeReals,
-            doc="Henry constant of O2 at reference temperature (288.15 K)",
-        )
-        self.H_CO2 = pyo.Var(
-            initialize=3.3e-4,
-            units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
-            domain=pyo.NonNegativeReals,
-            doc="Henry constant of CO2 at reference temperature (288.15 K)",
-        )
-        self.H_H2S = pyo.Var(
-            initialize=1e-3,
-            units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
-            domain=pyo.NonNegativeReals,
-            doc="Henry constant of H2S at reference temperature (288.15 K)",
-        )
-        self.P_N2 = pyo.Var(
-            initialize=0.78,
-            units=pyo.units.atm,
-            domain=pyo.NonNegativeReals,
-            doc="Partial pressure of N2 in air",
-        )
-        self.P_N2O = pyo.Var(
-            initialize=0,
-            units=pyo.units.atm,
-            domain=pyo.NonNegativeReals,
-            doc="Partial pressure of N2O in air",
-        )
-        self.P_NO = pyo.Var(
-            initialize=0,
-            units=pyo.units.atm,
-            domain=pyo.NonNegativeReals,
-            doc="Partial pressure of NO in air",
-        )
-        self.P_O2 = pyo.Var(
-            initialize=0.21,
-            units=pyo.units.atm,
-            domain=pyo.NonNegativeReals,
-            doc="Partial pressure of O2 in air",
-        )
-        self.P_CO2 = pyo.Var(
-            initialize=3.947e-4,
-            units=pyo.units.atm,
-            domain=pyo.NonNegativeReals,
-            doc="Partial pressure of CO2 in air",
-        )
-        self.P_H2S = pyo.Var(
-            initialize=0,
-            units=pyo.units.atm,
-            domain=pyo.NonNegativeReals,
-            doc="Partial pressure of H2S in air",
-        )
+        # Unused stripping-related parameters
+        # self.D_N2 = pyo.Var(
+        #     initialize=1.86e-9,
+        #     units=pyo.units.cm / pyo.units.s,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Diffusivity of N2",
+        # )
+        # self.D_N2O = pyo.Var(
+        #     initialize=1.77e-9,
+        #     units=pyo.units.cm / pyo.units.s,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Diffusivity of N2O",
+        # )
+        # self.D_NO = pyo.Var(
+        #     initialize=8.7e-11,
+        #     units=pyo.units.cm / pyo.units.s,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Diffusivity of N2",
+        # )
+        # self.D_O2 = pyo.Var(
+        #     initialize=2.12e-9,
+        #     units=pyo.units.cm / pyo.units.s,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Diffusivity of O2",
+        # )
+        # self.D_CO2 = pyo.Var(
+        #     initialize=1.92e-9,
+        #     units=pyo.units.cm / pyo.units.s,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Diffusivity of CO2",
+        # )
+        # self.D_H2S = pyo.Var(
+        #     initialize=1.41e-9,
+        #     units=pyo.units.cm / pyo.units.s,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Diffusivity of H2S",
+        # )
+        # self.H_N2 = pyo.Var(
+        #     initialize=6.4e-6,
+        #     units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Henry constant of N2 at reference temperature (288.15 K)",
+        # )
+        # self.H_N2O = pyo.Var(
+        #     initialize=2.4e-4,
+        #     units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Henry constant of N2O at reference temperature (288.15 K)",
+        # )
+        # self.H_NO = pyo.Var(
+        #     initialize=1.9e-5,
+        #     units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Henry constant of NO at reference temperature (288.15 K)",
+        # )
+        # self.H_O2 = pyo.Var(
+        #     initialize=1.3e-5,
+        #     units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Henry constant of O2 at reference temperature (288.15 K)",
+        # )
+        # self.H_CO2 = pyo.Var(
+        #     initialize=3.3e-4,
+        #     units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Henry constant of CO2 at reference temperature (288.15 K)",
+        # )
+        # self.H_H2S = pyo.Var(
+        #     initialize=1e-3,
+        #     units=pyo.units.mol / pyo.units.m**3 / pyo.units.Pa,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Henry constant of H2S at reference temperature (288.15 K)",
+        # )
+        # self.P_N2 = pyo.Var(
+        #     initialize=0.78,
+        #     units=pyo.units.atm,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Partial pressure of N2 in air",
+        # )
+        # self.P_N2O = pyo.Var(
+        #     initialize=0,
+        #     units=pyo.units.atm,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Partial pressure of N2O in air",
+        # )
+        # self.P_NO = pyo.Var(
+        #     initialize=0,
+        #     units=pyo.units.atm,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Partial pressure of NO in air",
+        # )
+        # self.P_O2 = pyo.Var(
+        #     initialize=0.21,
+        #     units=pyo.units.atm,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Partial pressure of O2 in air",
+        # )
+        # self.P_CO2 = pyo.Var(
+        #     initialize=3.947e-4,
+        #     units=pyo.units.atm,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Partial pressure of CO2 in air",
+        # )
+        # self.P_H2S = pyo.Var(
+        #     initialize=0,
+        #     units=pyo.units.atm,
+        #     domain=pyo.NonNegativeReals,
+        #     doc="Partial pressure of H2S in air",
+        # )
         # ----------------------------------------------------------------------------------------------------
 
         # Reaction Stoichiometry - see https://app.box.com/file/1812341593943
         # This is the stoichiometric part the Peterson matrix in dict form
         # Note that reaction stoichiometry is on a mass basis.
+        # S_IC stoichiometry can be found in asm2d_PSFe_GHG.c
 
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic hydrolysis
@@ -1205,10 +1207,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R7: Anoxic growth on S_F (NO3- to NO2-)
             ("R7", "Liq", "H2O"): 0,
             ("R7", "Liq", "S_O2"): 0,
-            ("R7", "Liq", "S_F"): -1 / self.Y_H * self.nG,
+            ("R7", "Liq", "S_F"): -1 / (self.Y_H * self.nG),
             ("R7", "Liq", "S_A"): 0,
             ("R7", "Liq", "S_I"): 0,
-            ("R7", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H * self.nG),
+            ("R7", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / (self.Y_H * self.nG)),
             ("R7", "Liq", "S_NH2OH"): 0,
             ("R7", "Liq", "S_N2O"): 0,
             ("R7", "Liq", "S_NO"): 0,
@@ -1217,8 +1219,8 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R7", "Liq", "S_N2"): 0,
             ("R7", "Liq", "S_NO3"): -(1 - self.Y_H * self.nG)
             / (1.142857 * self.Y_H * self.nG),
-            ("R7", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H * self.nG),
-            ("R7", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / self.Y_H * self.nG),
+            ("R7", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / (self.Y_H * self.nG)),
+            ("R7", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / (self.Y_H * self.nG)),
             ("R7", "Liq", "X_I"): 0,
             ("R7", "Liq", "X_S"): 0,
             ("R7", "Liq", "X_H"): 1,
@@ -1232,10 +1234,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R8: Anoxic growth on S_F (NO2- to NO)
             ("R8", "Liq", "H2O"): 0,
             ("R8", "Liq", "S_O2"): 0,
-            ("R8", "Liq", "S_F"): -1 / self.Y_H * self.nG,
+            ("R8", "Liq", "S_F"): -1 / (self.Y_H * self.nG),
             ("R8", "Liq", "S_A"): 0,
             ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H * self.nG),
+            ("R8", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / (self.Y_H * self.nG)),
             ("R8", "Liq", "S_NH2OH"): 0,
             ("R8", "Liq", "S_N2O"): 0,
             ("R8", "Liq", "S_NO"): (1 - self.Y_H * self.nG)
@@ -1244,8 +1246,8 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             / (0.5714286 * self.Y_H * self.nG),
             ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NO3"): 0,
-            ("R8", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H * self.nG),
-            ("R8", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / self.Y_H * self.nG),
+            ("R8", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / (self.Y_H * self.nG)),
+            ("R8", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / (self.Y_H * self.nG)),
             ("R8", "Liq", "X_I"): 0,
             ("R8", "Liq", "X_S"): 0,
             ("R8", "Liq", "X_H"): 1,
@@ -1259,10 +1261,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R9: Anoxic growth on S_F (NO to N2O)
             ("R9", "Liq", "H2O"): 0,
             ("R9", "Liq", "S_O2"): 0,
-            ("R9", "Liq", "S_F"): -1 / self.Y_H * self.nG,
+            ("R9", "Liq", "S_F"): -1 / (self.Y_H * self.nG),
             ("R9", "Liq", "S_A"): 0,
             ("R9", "Liq", "S_I"): 0,
-            ("R9", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H * self.nG),
+            ("R9", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / (self.Y_H * self.nG)),
             ("R9", "Liq", "S_NH2OH"): 0,
             ("R9", "Liq", "S_N2O"): (1 - self.Y_H * self.nG)
             / (0.5714286 * self.Y_H * self.nG),
@@ -1271,8 +1273,8 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R9", "Liq", "S_NO2"): 0,
             ("R9", "Liq", "S_N2"): 0,
             ("R9", "Liq", "S_NO3"): 0,
-            ("R9", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H * self.nG),
-            ("R9", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / self.Y_H * self.nG),
+            ("R9", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / (self.Y_H * self.nG)),
+            ("R9", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / (self.Y_H * self.nG)),
             ("R9", "Liq", "X_I"): 0,
             ("R9", "Liq", "X_S"): 0,
             ("R9", "Liq", "X_H"): 1,
@@ -1286,10 +1288,10 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             # R10: Anoxic growth on S_F (N2O to N2)
             ("R10", "Liq", "H2O"): 0,
             ("R10", "Liq", "S_O2"): 0,
-            ("R10", "Liq", "S_F"): -1 / self.Y_H * self.nG,
+            ("R10", "Liq", "S_F"): -1 / (self.Y_H * self.nG),
             ("R10", "Liq", "S_A"): 0,
             ("R10", "Liq", "S_I"): 0,
-            ("R10", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H * self.nG),
+            ("R10", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / (self.Y_H * self.nG)),
             ("R10", "Liq", "S_NH2OH"): 0,
             ("R10", "Liq", "S_N2O"): -(1 - self.Y_H * self.nG)
             / (0.5714286 * self.Y_H * self.nG),
@@ -1298,8 +1300,8 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "S_N2"): (1 - self.Y_H * self.nG)
             / (0.5714286 * self.Y_H * self.nG),
             ("R10", "Liq", "S_NO3"): 0,
-            ("R10", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H * self.nG),
-            ("R10", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / self.Y_H * self.nG),
+            ("R10", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / (self.Y_H * self.nG)),
+            ("R10", "Liq", "S_IC"): -(self.i_CBM - self.i_CSF / (self.Y_H * self.nG)),
             ("R10", "Liq", "X_I"): 0,
             ("R10", "Liq", "X_S"): 0,
             ("R10", "Liq", "X_H"): 1,
@@ -1314,7 +1316,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "H2O"): 0,
             ("R11", "Liq", "S_O2"): 0,
             ("R11", "Liq", "S_F"): 0,
-            ("R11", "Liq", "S_A"): -1 / self.Y_H * self.nG,
+            ("R11", "Liq", "S_A"): -1 / (self.Y_H * self.nG),
             ("R11", "Liq", "S_I"): 0,
             ("R11", "Liq", "S_NH4"): -self.i_NBM,
             ("R11", "Liq", "S_NH2OH"): 0,
@@ -1326,7 +1328,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "S_NO3"): -(1 - self.Y_H * self.nG)
             / (1.142857 * self.Y_H * self.nG),
             ("R11", "Liq", "S_PO4"): -self.i_PBM,
-            ("R11", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / self.Y_H * self.nG),
+            ("R11", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / (self.Y_H * self.nG)),
             ("R11", "Liq", "X_I"): 0,
             ("R11", "Liq", "X_S"): 0,
             ("R11", "Liq", "X_H"): 1,
@@ -1341,7 +1343,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "H2O"): 0,
             ("R12", "Liq", "S_O2"): 0,
             ("R12", "Liq", "S_F"): 0,
-            ("R12", "Liq", "S_A"): -1 / self.Y_H * self.nG,
+            ("R12", "Liq", "S_A"): -1 / (self.Y_H * self.nG),
             ("R12", "Liq", "S_I"): 0,
             ("R12", "Liq", "S_NH4"): -self.i_NBM,
             ("R12", "Liq", "S_NH2OH"): 0,
@@ -1353,7 +1355,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "S_N2"): 0,
             ("R12", "Liq", "S_NO3"): 0,
             ("R12", "Liq", "S_PO4"): -self.i_PBM,
-            ("R12", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / self.Y_H * self.nG),
+            ("R12", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / (self.Y_H * self.nG)),
             ("R12", "Liq", "X_I"): 0,
             ("R12", "Liq", "X_S"): 0,
             ("R12", "Liq", "X_H"): 1,
@@ -1368,7 +1370,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "H2O"): 0,
             ("R13", "Liq", "S_O2"): 0,
             ("R13", "Liq", "S_F"): 0,
-            ("R13", "Liq", "S_A"): -1 / self.Y_H * self.nG,
+            ("R13", "Liq", "S_A"): -1 / (self.Y_H * self.nG),
             ("R13", "Liq", "S_I"): 0,
             ("R13", "Liq", "S_NH4"): -self.i_NBM,
             ("R13", "Liq", "S_NH2OH"): 0,
@@ -1380,7 +1382,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "S_N2"): 0,
             ("R13", "Liq", "S_NO3"): 0,
             ("R13", "Liq", "S_PO4"): -self.i_PBM,
-            ("R13", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / self.Y_H * self.nG),
+            ("R13", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / (self.Y_H * self.nG)),
             ("R13", "Liq", "X_I"): 0,
             ("R13", "Liq", "X_S"): 0,
             ("R13", "Liq", "X_H"): 1,
@@ -1395,7 +1397,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "H2O"): 0,
             ("R14", "Liq", "S_O2"): 0,
             ("R14", "Liq", "S_F"): 0,
-            ("R14", "Liq", "S_A"): -1 / self.Y_H * self.nG,
+            ("R14", "Liq", "S_A"): -1 / (self.Y_H * self.nG),
             ("R14", "Liq", "S_I"): 0,
             ("R14", "Liq", "S_NH4"): -self.i_NBM,
             ("R14", "Liq", "S_NH2OH"): 0,
@@ -1407,7 +1409,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             / (0.5714286 * self.Y_H * self.nG),
             ("R14", "Liq", "S_NO3"): 0,
             ("R14", "Liq", "S_PO4"): -self.i_PBM,
-            ("R14", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / self.Y_H * self.nG),
+            ("R14", "Liq", "S_IC"): -(self.i_CBM - self.i_CSA / (self.Y_H * self.nG)),
             ("R14", "Liq", "X_I"): 0,
             ("R14", "Liq", "X_S"): 0,
             ("R14", "Liq", "X_H"): 1,
@@ -1840,7 +1842,7 @@ class ASM2dN2OReactionParameterData(ReactionParameterBlock):
             ("R30", "Liq", "S_Mg"): 0,
             # R31: NH3 oxidation to NH2OH with O2 consumption
             ("R31", "Liq", "H2O"): 0,
-            ("R31", "Liq", "S_O2"): -1.42857,
+            ("R31", "Liq", "S_O2"): -1.142857,
             ("R31", "Liq", "S_F"): 0,
             ("R31", "Liq", "S_A"): 0,
             ("R31", "Liq", "S_I"): 0,
@@ -2929,7 +2931,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_O2"]
                             / (b.params.KAOB1_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
-                        # S_FA requires "Free ammonia from PCM_speciation - asm2d_PSFe_GHG.c
+                        # S_FA requires "free ammonia from PCM_speciation" - asm2d_PSFe_GHG.c
                         # * (b.params.S_FA / (b.params.KAOB_NH4 + b.params.S_FA))
                         * b.conc_mass_comp_ref["X_AOB"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -2995,7 +2997,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_NH2OH"]
                             / (b.params.KAOB_NH2OH + b.conc_mass_comp_ref["S_NH2OH"])
                         )
-                        # S_FNA requires "Free Nitrous Acid from PCM_speciation - asm2d_PSFe_GHG.c
+                        # S_FNA requires "Free Nitrous Acid from PCM_speciation" - asm2d_PSFe_GHG.c
                         # * (b.params.S_FNA / (b.params.KAOB_HNO2 + b.params.S_FNA))
                         * self.fSO2 * b.conc_mass_comp_ref["X_AOB"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -3008,7 +3010,7 @@ class ASM2dN2OReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_O2"]
                             / (b.params.KNOB_O2 + b.conc_mass_comp_ref["S_O2"])
                         )
-                        # S_FNA requires "Free Nitrous Acid from PCM_speciation - asm2d_PSFe_GHG.c
+                        # S_FNA requires "Free Nitrous Acid from PCM_speciation" - asm2d_PSFe_GHG.c
                         # * (b.params.S_FNA / (b.params.KNOB_NO2 + b.params.S_FNA))
                         * (
                             b.conc_mass_comp_ref["S_PO4"]

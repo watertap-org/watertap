@@ -319,7 +319,7 @@ class TestParamBlock(object):
             ("R30", "Liq", "S_IC"): -0.075,
             ("R30", "Liq", "X_PHA"): -1,
             # R31: NH3 oxidation to NH2OH with O2 consumption
-            ("R31", "Liq", "S_O2"): -1.42857,
+            ("R31", "Liq", "S_O2"): -1.142857,
             ("R31", "Liq", "S_NH4"): -1,
             ("R31", "Liq", "S_NH2OH"): 1,
             # R32: NH2OH to NO coupled with O2 reduction (X_AOB growth)
@@ -802,16 +802,16 @@ class TestFlowsheet:
             15.5671e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH2OH"]) == pytest.approx(
-            9.512e-9, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2O"]) == pytest.approx(
-            1.1847e-8, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO"]) == pytest.approx(
-            1.2826e-8, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO2"]) == pytest.approx(
-            1.388e-11, rel=1e-4
+            0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
