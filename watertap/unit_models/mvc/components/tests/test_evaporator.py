@@ -18,7 +18,7 @@ from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
-from watertap.unit_models.mvc.components import Evaporator
+from watertap.unit_models.mvc.components import Evaporator, Condenser
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
 
@@ -37,6 +37,17 @@ def test_evaporator():
         property_package_feed=m.fs.properties_feed,
         property_package_vapor=m.fs.properties_vapor,
     )
+
+    # Add a condenser and connect it to the evaporator to test the connection constraints and scaling
+    m.fs.condenser = Condenser(property_package=m.fs.properties_vapor)
+    # state variables
+    # m.fs.condenser.inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(1)
+    m.fs.condenser.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
+    # m.fs.condenser.inlet.temperature[0].fix(400)  # K
+    m.fs.condenser.inlet.pressure[0].fix(0.5e5)  # Pa
+
+    # connect evaporator to condenser
+    m.fs.evaporator.connect_to_condenser(m.fs.condenser)
 
     # scaling
     m.fs.properties_feed.set_default_scaling(
