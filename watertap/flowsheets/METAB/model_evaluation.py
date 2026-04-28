@@ -15,7 +15,7 @@
 import pandas as pd
 
 try:
-    from exposan.metab import create_system
+    import exposan
 except ImportError:
     exposan = None
 
@@ -240,6 +240,8 @@ def run_model(df):
         t_span = 200
 
         if exposan is not None:
+            from exposan.metab import create_system
+
             # set model
             sys = create_system(
                 n_stages=n_stages,  # number of stages
