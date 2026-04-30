@@ -41,9 +41,7 @@ def test_evaporator():
     # Add a condenser and connect it to the evaporator to test the connection constraints and scaling
     m.fs.condenser = Condenser(property_package=m.fs.properties_vapor)
     # state variables
-    # m.fs.condenser.inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(1)
     m.fs.condenser.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
-    # m.fs.condenser.inlet.temperature[0].fix(400)  # K
     m.fs.condenser.inlet.pressure[0].fix(0.5e5)  # Pa
 
     # connect evaporator to condenser
