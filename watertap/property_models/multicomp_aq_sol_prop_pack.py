@@ -44,7 +44,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-
+from pyomo.core.base.units_container import InconsistentUnitsError
 # Import IDAES cores
 import idaes.logger as idaeslog
 from idaes.core import (
