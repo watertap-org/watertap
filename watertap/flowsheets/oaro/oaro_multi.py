@@ -104,7 +104,6 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     return m
 
 
-# TODO: Need to decouple costing from this build function w/ test failures
 def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
 
     # flowsheet set up
@@ -112,7 +111,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
 
     # stage set up
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
@@ -133,17 +131,9 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
 
     # --- Main pump ---
     m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
-    for pump in m.fs.PrimaryPumps.values():
-        pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-        )
 
     # --- Recycle pump ---
     m.fs.RecyclePumps = Pump(m.fs.NonFirstStages, property_package=m.fs.properties)
-    for pump in m.fs.RecyclePumps.values():
-        pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing, costing_method=cost_low_pressure_pump
-        )
 
     m.fs.total_pump_work = Expression(
         expr=sum(
@@ -163,7 +153,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OAROUnits = OsmoticallyAssistedReverseOsmosis0D(
@@ -175,11 +164,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    for stage in m.fs.OAROUnits.values():
-        stage.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method_arguments={"oaro_type": "high_pressure"},
-        )
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pump_as_turbine:
@@ -187,9 +171,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
             m.fs.Stages, property_package=m.fs.properties
         )
-        # add costing for ERD config
-        for erd in m.fs.EnergyRecoveryDevices.values():
-            erd.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
 
@@ -241,27 +222,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         initialize=85e5, units=pyunits.Pa, mutable=True
     )
 
-    # process costing and add system level metrics
-    m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.TIC.fix(2)
-    m.fs.costing.maintenance_labor_chemical_factor.fix(0.03)
-    # unfix wacc since we fix capital_recovery_factor
-    m.fs.costing.wacc.unfix()
-    m.fs.costing.capital_recovery_factor.fix(0.1)
-    m.fs.costing.electricity_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
-    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
-
-    m.fs.costing.cost_process()
-
-    product_flow_vol_total = m.fs.product.properties[0].flow_vol
-    m.fs.costing.add_annual_water_production(product_flow_vol_total)
-    m.fs.costing.add_LCOW(product_flow_vol_total)
-    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
-    m.fs.costing.add_specific_electrical_carbon_intensity(product_flow_vol_total)
+    add_costing(m, erd_type=erd_type)
 
     # Expressions for parameter sweep -----------------------------------------
     # Final permeate concentration as mass fraction
@@ -603,6 +564,50 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     iscale.calculate_scaling_factors(m)
 
     return m
+
+
+def add_costing(m, erd_type=ERDtype.pump_as_turbine):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    for pump in m.fs.PrimaryPumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+        )
+    for pump in m.fs.RecyclePumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing, costing_method=cost_low_pressure_pump
+        )
+    for stage in m.fs.OAROUnits.values():
+        stage.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"oaro_type": "high_pressure"},
+        )
+    if erd_type == ERDtype.pump_as_turbine:
+        # add costing for ERD config
+        for erd in m.fs.EnergyRecoveryDevices.values():
+            erd.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # process costing and add system level metrics
+    m.fs.costing.utilization_factor.fix(0.9)
+    m.fs.costing.TIC.fix(2)
+    m.fs.costing.maintenance_labor_chemical_factor.fix(0.03)
+    # unfix wacc since we fix capital_recovery_factor
+    m.fs.costing.wacc.unfix()
+    m.fs.costing.capital_recovery_factor.fix(0.1)
+    m.fs.costing.electricity_cost.set_value(0.07)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
+
+    m.fs.costing.cost_process()
+
+    product_flow_vol_total = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(product_flow_vol_total)
+    m.fs.costing.add_LCOW(product_flow_vol_total)
+    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
+    m.fs.costing.add_specific_electrical_carbon_intensity(product_flow_vol_total)
 
 
 def set_operating_conditions(
