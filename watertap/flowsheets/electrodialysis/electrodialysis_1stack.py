@@ -46,6 +46,7 @@ def main():
     solver = get_solver()
     # Simulate a fully defined operation
     m = build()
+    add_costing(m)
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
     solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
@@ -75,7 +76,6 @@ def build():
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
     m.fs.properties = MCASParameterBlock(**ion_dict)
-    m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
         property_package=m.fs.properties,
@@ -104,18 +104,7 @@ def build():
     m.fs.product.properties[0].flow_vol_phase[...]
     m.fs.disposal.properties[0].flow_vol_phase[...]
 
-    # costing
-    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(
-        m.fs.product.properties[0].flow_vol_phase["Liq"]
-    )
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(
-        m.fs.product.properties[0].flow_vol_phase["Liq"]
-    )
-
-    # Add two variable for reporting
+    # Add two variables for reporting
     m.fs.mem_area = Var(
         initialize=1,
         bounds=(0, 1e3),
@@ -177,6 +166,20 @@ def build():
     iscale.set_scaling_factor(m.fs.EDstack.cell_length, 10)
     iscale.calculate_scaling_factors(m)
     return m
+
+
+def add_costing(m):
+    # costing
+    m.fs.costing = WaterTAPCosting()
+    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(
+        m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
 
 
 def set_operating_conditions(m):

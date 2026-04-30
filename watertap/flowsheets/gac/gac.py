@@ -35,7 +35,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 __author__ = "Hunter Barber"
 
 
-def main():
+def main(cost_contactor_type="pressure"):
 
     # example usage
     m = build(
@@ -43,8 +43,8 @@ def main():
         film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="calculated",
         diffusivity_calculation="HaydukLaudie",
-        cost_contactor_type="pressure",
     )
+    add_costing(m, cost_contactor_type=cost_contactor_type)
     initialize(m)
     res = optimize(m)
     print("solver termination condition:", res.solver.termination_condition)
@@ -57,7 +57,6 @@ def build(
     film_transfer_coefficient_type="fixed",
     surface_diffusion_coefficient_type="fixed",
     diffusivity_calculation="none",
-    cost_contactor_type="pressure",
 ):
     # TODO: surrogates to replace empirical parameters
     #       autoscaling, check robustness of solve over sweeps
@@ -112,21 +111,6 @@ def build(
     m.fs.s02 = Arc(source=m.fs.gac.outlet, destination=m.fs.product.inlet)
     m.fs.s03 = Arc(source=m.fs.gac.adsorbed, destination=m.fs.adsorbed_removed.inlet)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
-
-    # build costing blocks
-    m.fs.costing = WaterTAPCosting()
-    m.fs.costing.base_currency = pyo.units.USD_2021
-    m.fs.gac.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing,
-        costing_method_arguments={"contactor_type": cost_contactor_type},
-    )
-
-    # add flowsheet level blocks
-    m.fs.costing.cost_process()
-    treated_flow = m.fs.product.properties[0].flow_vol
-    m.fs.costing.add_annual_water_production(treated_flow)
-    m.fs.costing.add_LCOW(treated_flow)
-    m.fs.costing.add_specific_energy_consumption(treated_flow)
 
     # touch properties and default scaling
     if material_flow_basis == "molar":
@@ -199,6 +183,25 @@ def build(
         m.fs.gac.tort.fix()
         m.fs.gac.spdfr.fix()
 
+    return m
+
+
+def add_costing(m, cost_contactor_type="pressure"):
+    # build costing blocks
+    m.fs.costing = WaterTAPCosting()
+    m.fs.costing.base_currency = pyo.units.USD_2021
+    m.fs.gac.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"contactor_type": cost_contactor_type},
+    )
+
+    # add flowsheet level blocks
+    m.fs.costing.cost_process()
+    treated_flow = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(treated_flow)
+    m.fs.costing.add_LCOW(treated_flow)
+    m.fs.costing.add_specific_energy_consumption(treated_flow)
+
     # costing specifications
     if cost_contactor_type == "pressure":
         m.fs.costing.gac_pressure.regen_frac.fix(0.7)
@@ -208,8 +211,6 @@ def build(
         m.fs.costing.gac_gravity.regen_frac.fix(0.7)
         m.fs.costing.gac_gravity.num_contactors_op.fix(1)
         m.fs.costing.gac_gravity.num_contactors_redundant.fix(1)
-
-    return m
 
 
 def initialize(m, solver=None):
@@ -258,4 +259,4 @@ def optimize(m, solver=None):
 
 
 if __name__ == "__main__":
-    m, results = main()
+    m, results = main(cost_contactor_type="pressure")

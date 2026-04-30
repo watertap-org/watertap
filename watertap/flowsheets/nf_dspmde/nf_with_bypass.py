@@ -75,6 +75,7 @@ def main():
     return m
 
 
+# TODO: Need to decouple costing from this build function w/ test failures
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)

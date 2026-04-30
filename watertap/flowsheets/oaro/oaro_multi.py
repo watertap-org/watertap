@@ -104,6 +104,7 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     return m
 
 
+# TODO: Need to decouple costing from this build function w/ test failures
 def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
 
     # flowsheet set up

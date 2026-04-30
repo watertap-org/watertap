@@ -61,6 +61,7 @@ def erd_type_not_found(erd_type):
     )
 
 
+# TODO: Need to decouple costing from this build function w/ test failures
 def main(erd_type=ERDtype.pressure_exchanger):
     # set up solver
     solver = get_solver()

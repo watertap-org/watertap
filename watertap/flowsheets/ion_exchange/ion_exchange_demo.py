@@ -81,6 +81,7 @@ def main():
     return m
 
 
+# TODO: Need to decouple costing from this build function w/ test failures
 def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
 
     if not target_ion:

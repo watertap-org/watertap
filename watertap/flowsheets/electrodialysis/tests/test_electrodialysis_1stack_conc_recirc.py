@@ -23,6 +23,7 @@ class TestElectrodialysis1StackFS:
     @pytest.fixture(scope="class")
     def ED1D1Stack_conc_recirc(self):
         m = edfs.build()
+        edfs.add_costing(m)
         return m
 
     @pytest.mark.component

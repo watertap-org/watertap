@@ -89,7 +89,6 @@ def build(erd_type=ERDtype.pump_as_turbine):
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -98,13 +97,10 @@ def build(erd_type=ERDtype.pump_as_turbine):
 
     # --- Main pump ---
     m.fs.P1 = Pump(property_package=m.fs.properties)
-    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P2 = Pump(property_package=m.fs.properties)
-    m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P3 = Pump(property_package=m.fs.properties)
-    m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
@@ -115,7 +111,6 @@ def build(erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OARO = OsmoticallyAssistedReverseOsmosis0D(
@@ -126,7 +121,6 @@ def build(erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pump_as_turbine:
@@ -134,19 +128,10 @@ def build(erd_type=ERDtype.pump_as_turbine):
         m.fs.ERD1 = EnergyRecoveryDevice(property_package=m.fs.properties)
         m.fs.ERD2 = EnergyRecoveryDevice(property_package=m.fs.properties)
         # add costing for ERD config
-        m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        # m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        # m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
-
-    # process costing and add system level metrics
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_electrical_carbon_intensity(
-        m.fs.product.properties[0].flow_vol
-    )
 
     # system water recovery
     m.fs.volumetric_recovery = Var(
@@ -216,7 +201,34 @@ def build(erd_type=ERDtype.pump_as_turbine):
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
+    add_costing(m)
+
     return m
+
+
+def add_costing(m, erd_type=ERDtype.pump_as_turbine):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # process costing and add system level metrics
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
+
+    if erd_type == ERDtype.pump_as_turbine:
+        # add costing for ERD config
+        m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    else:
+        erd_type_not_found(erd_type)
 
 
 def set_operating_conditions(

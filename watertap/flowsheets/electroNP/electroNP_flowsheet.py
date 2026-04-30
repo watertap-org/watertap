@@ -58,6 +58,16 @@ from watertap.costing import WaterTAPCosting
 _log = idaeslog.getLogger(__name__)
 
 
+def main():
+    m = build_flowsheet()
+    add_costing(m)
+    initialize_system(m)
+    results = solve(m)
+    display_costing(m)
+
+    return m, results
+
+
 def build_flowsheet():
     # flowsheet set up
     m = pyo.ConcreteModel()
@@ -72,7 +82,6 @@ def build_flowsheet():
     m.fs.rxn_props_ASM2D = ModifiedASM2dReactionParameterBlock(
         property_package=m.fs.props_ASM2D
     )
-    m.fs.costing = WaterTAPCosting()
 
     # Unit models
     m.fs.AD = AD(
@@ -82,7 +91,6 @@ def build_flowsheet():
         has_heat_transfer=True,
         has_pressure_change=False,
     )
-    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
@@ -94,11 +102,6 @@ def build_flowsheet():
     )
 
     m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
-    m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.electroNP.treated.flow_vol[0])
-    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
 
     # connections
     m.fs.stream_adm1_translator = Arc(
@@ -158,10 +161,7 @@ def build_flowsheet():
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
-    # Costing
-    m.fs.costing.electroNP.phosphorus_recovery_value = 0
-
-    # scaling
+    # Scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
             iscale.set_scaling_factor(var, 1e2)
@@ -177,6 +177,21 @@ def build_flowsheet():
     iscale.set_scaling_factor(m.fs.electroNP.byproduct.flow_vol[0.0], 1e7)
     iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].pressure_sat, 1e-3)
 
+    return m
+
+
+def add_costing(m):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.electroNP.phosphorus_recovery_value = 0
+
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.electroNP.treated.flow_vol[0])
+    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
+
+
+def initialize_system(m):
     m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_adm1_translator)
     m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH)
@@ -184,8 +199,7 @@ def build_flowsheet():
     m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
     m.fs.costing.initialize()
 
-    results = solve(m, tee=True)
-    return m, results
+    solve(m, tee=True)
 
 
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
@@ -269,7 +283,7 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m, results = build_flowsheet()
+    m, results = main()
     assert_optimal_termination(results)
     stream_table = create_stream_table_dataframe(
         {
@@ -283,4 +297,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-    display_costing(m)

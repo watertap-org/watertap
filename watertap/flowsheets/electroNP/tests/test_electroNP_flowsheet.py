@@ -24,15 +24,14 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.flowsheets.electroNP.electroNP_flowsheet import (
-    build_flowsheet,
-    display_costing,
+    main,
 )
 
 
 class TestElectroNPFlowsheet:
     @pytest.fixture(scope="class")
     def model(self):
-        m, res = build_flowsheet()
+        m, res = main()
 
         m.results = res
 
@@ -104,7 +103,3 @@ class TestElectroNPFlowsheet:
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
         ) == pytest.approx(1.36886, rel=1e-4)
         assert value(model.fs.costing.LCOW) == pytest.approx(6.284, rel=1e-4)
-
-    @pytest.mark.component
-    def test_display(self, model):
-        display_costing(model)

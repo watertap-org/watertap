@@ -57,6 +57,7 @@ desired water reovery > 50%.
 
 def main():
     m = build()
+    add_costing(m)
     solver = get_solver()
 
     ## Simulate a fully defined operation
@@ -121,7 +122,6 @@ def build():
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
     m.fs.properties = MCASParameterBlock(**ion_dict)
-    m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.sepa0 = Separator(
         property_package=m.fs.properties,
@@ -162,22 +162,6 @@ def build():
     # touch necessary variables to ensure they are constructed and solved
     m.fs.prod.properties[0].flow_vol_phase[...]
     m.fs.disp.properties[0].flow_vol_phase[...]
-
-    # costing
-    m.fs.EDstack.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing,
-        costing_method_arguments={"cost_electricity_flow": True, "has_rectifier": True},
-    )
-    m.fs.pump0.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.pump1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(
-        m.fs.prod.properties[0].flow_vol_phase["Liq"]
-    )
-    m.fs.costing.add_LCOW(m.fs.prod.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(
-        m.fs.prod.properties[0].flow_vol_phase["Liq"]
-    )
 
     # add extra variables and constraints
     m.fs.recovery_vol_H2O = Var(
@@ -255,6 +239,25 @@ def build():
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     return m
+
+
+def add_costing(m):
+    # costing
+    m.fs.costing = WaterTAPCosting()
+    m.fs.EDstack.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"cost_electricity_flow": True, "has_rectifier": True},
+    )
+    m.fs.pump0.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.pump1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(
+        m.fs.prod.properties[0].flow_vol_phase["Liq"]
+    )
+    m.fs.costing.add_LCOW(m.fs.prod.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.prod.properties[0].flow_vol_phase["Liq"]
+    )
 
 
 def _condition_base(m):
