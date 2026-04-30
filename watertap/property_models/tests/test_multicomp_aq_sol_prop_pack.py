@@ -512,7 +512,7 @@ def test_general_methods(model3):
         is MaterialBalanceType.componentTotal
     )
     assert (
-        m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.enthalpyTotal
+        m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.none
     )
 
     assert hasattr(m.fs.stream[0], "get_material_flow_basis")
