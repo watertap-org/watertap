@@ -19,7 +19,7 @@ from pyomo.environ import (
     assert_optimal_termination,
     value,
 )
-
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from pyomo.network import Arc
 from idaes.core import (
@@ -279,6 +279,8 @@ def unfix_opt_vars(m):
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
     m.fs.disposal.properties[0].total_hardness
+    # calculate_variable_from_constraint(m.fs.feed.properties[0].total_hardness, m.fs.feed.properties[0].eq_total_hardness)
+    # calculate_variable_from_constraint(m.fs.disposal.properties[0].total_hardness, m.fs.disposal.properties[0].eq_total_hardness)
     iscale.calculate_scaling_factors(m)
 
 
