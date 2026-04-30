@@ -45,6 +45,7 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.base.units_container import InconsistentUnitsError
+
 # Import IDAES cores
 import idaes.logger as idaeslog
 from idaes.core import (
@@ -2142,14 +2143,14 @@ class MCASStateBlockData(StateBlockData):
 
     def _total_hardness(self):
         self.total_hardness = Var(
-                initialize=1000,
-                domain=NonNegativeReals,
-                bounds=(0, None),
-                units=pyunits.mg / pyunits.L,
-                doc="total hardness as CaCO3",
-            )
-            # add try/except to handle case without multivalent cations,
-            # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
+            initialize=1000,
+            domain=NonNegativeReals,
+            bounds=(0, None),
+            units=pyunits.mg / pyunits.L,
+            doc="total hardness as CaCO3",
+        )
+        # add try/except to handle case without multivalent cations,
+        # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
         try:
             total_hardness_temp = pyunits.convert(
                 sum(
@@ -2165,8 +2166,10 @@ class MCASStateBlockData(StateBlockData):
                 ),
                 to_units=pyunits.mg / pyunits.L,
             )
+
             def rule_total_hardness(b):
                 return b.total_hardness == total_hardness_temp
+
             self.eq_total_hardness = Constraint(rule=rule_total_hardness)
         except InconsistentUnitsError:
             self.total_hardness.fix(0)
