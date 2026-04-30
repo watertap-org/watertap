@@ -95,8 +95,8 @@ A portion of the displayed output is shown below.
             None : 273.15 : 298.15 :  1000 :  True :  True : NonNegativeReals
         pressure : State pressure
             Size=1, Index=None, Units=Pa
-            Key  : Lower  : Value     : Upper    : Fixed : Stale : Domain
-            None : 1000.0 : 5000000.0 : 50000000 :  True :  True : NonNegativeReals
+            Key  : Lower    : Value     : Upper : Fixed : Stale : Domain
+            None : 100000.0 : 5000000.0 :  None :  True :  True : NonNegativeReals
         flow_mol_phase_comp : Component molar flow rate
             Size=3, Index=fs.properties.phase_list*fs.properties.component_list, Units=mol/s
             Key             : Lower : Value : Upper : Fixed : Stale : Domain
