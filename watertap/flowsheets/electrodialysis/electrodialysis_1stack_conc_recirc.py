@@ -57,7 +57,6 @@ desired water reovery > 50%.
 
 def main():
     m = build()
-    add_costing(m)
     solver = get_solver()
 
     ## Simulate a fully defined operation
@@ -162,6 +161,8 @@ def build():
     # touch necessary variables to ensure they are constructed and solved
     m.fs.prod.properties[0].flow_vol_phase[...]
     m.fs.disp.properties[0].flow_vol_phase[...]
+
+    add_costing(m)
 
     # add extra variables and constraints
     m.fs.recovery_vol_H2O = Var(

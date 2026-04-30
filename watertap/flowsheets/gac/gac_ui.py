@@ -833,11 +833,10 @@ def build_flowsheet(build_options=None, **kwargs):
                 "SurfaceDiffusionCoefficientType"
             ].value,
             diffusivity_calculation=build_options["DiffusivityCalculation"].value,
+            cost_contactor_type=build_options["ContactorType"].value,
         )
-        gac_fs.add_costing(m, cost_contactor_type=build_options["ContactorType"].value)
     else:
         m = gac_fs.build()
-        gac_fs.add_costing(m)
     gac_fs.initialize(m)
 
     return m

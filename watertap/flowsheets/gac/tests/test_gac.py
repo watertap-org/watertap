@@ -39,8 +39,8 @@ class TestGACFlowsheet:
             film_transfer_coefficient_type="calculated",
             surface_diffusion_coefficient_type="calculated",
             diffusivity_calculation="HaydukLaudie",
+            cost_contactor_type="pressure",
         )
-        gac_fs.add_costing(m, cost_contactor_type="pressure")
 
         return m
 
@@ -86,8 +86,8 @@ class TestGACFlowsheet:
                                 film_transfer_coefficient_type=film_option.name,
                                 surface_diffusion_coefficient_type=surface_option.name,
                                 diffusivity_calculation=diffus_option.name,
+                                cost_contactor_type=cost_option.name,
                             )
-                            gac_fs.add_costing(m, cost_contactor_type=cost_option.name)
                             gac_fs.initialize(m)
                             res = gac_fs.optimize(m)
 

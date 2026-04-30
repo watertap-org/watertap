@@ -46,7 +46,6 @@ def main():
     solver = get_solver()
     # Simulate a fully defined operation
     m = build()
-    add_costing(m)
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
     solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
@@ -103,6 +102,8 @@ def build():
     m.fs.separator.inlet_concentrate_state[0].flow_vol_phase[...]
     m.fs.product.properties[0].flow_vol_phase[...]
     m.fs.disposal.properties[0].flow_vol_phase[...]
+
+    add_costing(m)
 
     # Add two variables for reporting
     m.fs.mem_area = Var(

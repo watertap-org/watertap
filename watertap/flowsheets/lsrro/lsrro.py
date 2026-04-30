@@ -276,11 +276,6 @@ def build(
         == m.fs.product.properties[0].flow_vol
     )
 
-    add_costing(m)
-
-    # objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
-
     # Expressions for parameter sweep -----------------------------------------
     # Final permeate concentration as mass fraction
     m.fs.product.properties[0].mass_frac_phase_comp
@@ -293,6 +288,8 @@ def build(
 
     # Touch final brine concentration as mass fraction
     m.fs.disposal.properties[0].mass_frac_phase_comp
+
+    add_costing(m)
 
     m.fs.mass_water_recovery = Expression(
         expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]
@@ -313,12 +310,6 @@ def build(
     m.fs.final_permeate_concentration = Expression(
         expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         / sum(m.fs.product.flow_mass_phase_comp[0, "Liq", j] for j in ["H2O", "NaCl"])
-    )
-
-    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol, name="LCOW_feed")
-
-    m.fs.costing.add_specific_energy_consumption(
-        m.fs.feed.properties[0].flow_vol, name="specific_energy_consumption_feed"
     )
 
     @m.fs.Expression(m.fs.Stages)
@@ -527,6 +518,7 @@ def build(
 
 def add_costing(m):
     m.fs.costing = WaterTAPCosting()
+
     for pump in m.fs.PrimaryPumps.values():
         pump.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
@@ -572,10 +564,17 @@ def add_costing(m):
 
     m.fs.costing.cost_process()
 
+    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol, name="LCOW_feed")
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.feed.properties[0].flow_vol, name="specific_energy_consumption_feed"
+    )
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
     m.fs.costing.add_annual_water_production(product_flow_vol_total)
     m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
     m.fs.costing.add_LCOW(product_flow_vol_total)
+
+    # objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
 
 def build_high_pressure_pump_cost_param_block(blk):

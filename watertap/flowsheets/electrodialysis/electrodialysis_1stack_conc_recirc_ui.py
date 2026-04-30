@@ -13,7 +13,6 @@ from watertap.core.solvers import get_solver
 from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc import (
     build,
-    add_costing,
     _condition_base,
     initialize_system,
     solve,
@@ -607,7 +606,6 @@ def build_flowsheet(build_options=None, **kwargs):
 
     # the UI sets `capital_recovery_factor`, so unfix `wacc`
     m = build()
-    add_costing(m)
     m.fs.costing.wacc.unfix()
     m.fs.costing.capital_recovery_factor.fix()
 

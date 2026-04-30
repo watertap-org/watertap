@@ -127,9 +127,6 @@ def build(erd_type=ERDtype.pump_as_turbine):
         # add energy recovery turbine block
         m.fs.ERD1 = EnergyRecoveryDevice(property_package=m.fs.properties)
         m.fs.ERD2 = EnergyRecoveryDevice(property_package=m.fs.properties)
-        # add costing for ERD config
-        # m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        # m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
 

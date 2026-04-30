@@ -43,7 +43,6 @@ class TestElectrodialysisVoltageConst:
     @pytest.fixture(scope="class")
     def electrodialysis_1D1stack(self):
         m = edfs.build()
-        edfs.add_costing(m)
         return m
 
     @pytest.mark.unit
