@@ -9,8 +9,10 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import os
 import json
 import pandas as pd
+from IPython.display import IFrame
 
 # third-party
 try:
@@ -92,18 +94,10 @@ def display_performace(method="poly", path="./results/"):
     return display_metrics
 
 
-def display_plot(method="poly", path="./results/"):
+def display_plot(method="poly", path=None):
+    local_path = os.path.dirname(os.path.abspath(__file__))
+    if path is None:
+        path = os.path.join(local_path, "results")
 
-    file_path = path + method + "_parity.pdf"
-
-    # Convert PDF pages to images
-    if pdf2image is not None:
-        pages = convert_from_path(file_path)
-
-        # Get the first page as an image
-        first_page_image = pages[0]
-
-        # Display in Jupyter Notebook
-        display(first_page_image)
-
-        # NEED poppler for Windows
+    file_path = os.path.join(path, "{}_parity.pdf".format(method))
+    return IFrame(file_path, width=700, height=500)

@@ -71,8 +71,8 @@ def outputs_selections(output_data):
     ]
 
     # output_data = output_data[(output_data >= 0).all(axis=1)]
-    # print(output_data)
-    output_data.columns = output_data.columns.str.replace(" ", "")
+    output_data.columns = output_data.columns.str.strip().str.replace(" ", "")
+    print(output_data.columns.tolist())
     output_data = output_data[outputs_list]
 
     # print(output_data)
@@ -83,7 +83,7 @@ def outputs_selections(output_data):
 def gen_surrogate_model(
     tool="idaes", method="poly", feed_data=None, input_data=None, output_data=None
 ):
-    if feed_data == None:
+    if feed_data is None:
         feed_data = pd.concat([input_data, output_data], axis=1)
 
     input_labels = list(input_data.columns)
@@ -193,6 +193,7 @@ if __name__ == "__main__":
 
     feed_data, input_data, output_data = get_data()
     output_data = outputs_selections(output_data)
+    feed_data = pd.concat([input_data, output_data], axis=1)
     gen_surrogate_model(
         tool="idaes",
         method="poly",  # kri, poly,rbf,alamo
