@@ -614,7 +614,7 @@ see property package for documentation.}""",
             if sf is None:
                 sf = iscale.get_scaling_factor(
                     prop_type.flow_mass_phase_comp["Liq", j]
-                ) / value(
+                ) * value(
                     pyunits.convert(
                         prop_type.params.mw_comp[j],
                         to_units=pyunits.kg / pyunits.mol,
@@ -627,7 +627,7 @@ see property package for documentation.}""",
             if sf is None:
                 sf = iscale.get_scaling_factor(
                     prop_type.flow_mol_phase_comp["Liq", j]
-                ) * value(
+                ) / value(
                     pyunits.convert(
                         prop_type.params.mw_comp[j],
                         to_units=pyunits.kg / pyunits.mol,
