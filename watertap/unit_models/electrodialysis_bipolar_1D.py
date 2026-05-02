@@ -1114,7 +1114,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
                 * self.cell_triplet_num
                 + self.electrodes_resistance
             )
-        
+
         @self.Constraint(
             self.flowsheet().time,
             self.diluate.length_domain,
@@ -1124,7 +1124,7 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
             return self.current_density_x[t, x] == (
                 self.current_dens_lim_bpm[t, x]
                 + self.flux_splitting[t, x] * Constants.faraday_constant
-                )
+            )
 
         @self.Constraint(
             self.flowsheet().time,
