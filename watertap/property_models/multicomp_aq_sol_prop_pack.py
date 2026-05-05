@@ -2143,41 +2143,39 @@ class MCASStateBlockData(StateBlockData):
 
     def _total_hardness(self):
         self.total_hardness = Var(
-        #     initialize=1000,
-        #     domain=NonNegativeReals,
-        #     bounds=(0, None),
-        #     units=pyunits.mg / pyunits.L,
-        #     doc="total hardness as CaCO3",
-        # )
-        # # add try/except to handle case without multivalent cations,
-        # # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
-        # try:
-        #     total_hardness_temp = pyunits.convert(
-        #         sum(
-        #             self.flow_mol_phase_comp["Liq", j]
-        #             / self.flow_vol_phase["Liq"]
-        #             * 100.0869
-        #             * pyunits.g
-        #             / pyunits.mol
-        #             * float(value(self.charge_comp[j]))
-        #             / 2.0
-        #             for j in self.params.cation_set
-        #             if value(self.charge_comp[j]) > 1
-        #         ),
-        #         to_units=pyunits.mg / pyunits.L,
-        #     )
-
-        #     def rule_total_hardness(b):
-        #         return b.total_hardness == total_hardness_temp
-
-        #     self.eq_total_hardness = Constraint(rule=rule_total_hardness)
-        # except InconsistentUnitsError:
-        #     self.total_hardness.fix(0)
-        #     _log.warning(
-        #         "No multivalent cations in solute_list; total_hardness fixed to 0."
-        #         # "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
-        #     )
-        #     return
+            #     initialize=1000,
+            #     domain=NonNegativeReals,
+            #     bounds=(0, None),
+            #     units=pyunits.mg / pyunits.L,
+            #     doc="total hardness as CaCO3",
+            # )
+            # # add try/except to handle case without multivalent cations,
+            # # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
+            # try:
+            #     total_hardness_temp = pyunits.convert(
+            #         sum(
+            #             self.flow_mol_phase_comp["Liq", j]
+            #             / self.flow_vol_phase["Liq"]
+            #             * 100.0869
+            #             * pyunits.g
+            #             / pyunits.mol
+            #             * float(value(self.charge_comp[j]))
+            #             / 2.0
+            #             for j in self.params.cation_set
+            #             if value(self.charge_comp[j]) > 1
+            #         ),
+            #         to_units=pyunits.mg / pyunits.L,
+            #     )
+            #     def rule_total_hardness(b):
+            #         return b.total_hardness == total_hardness_temp
+            #     self.eq_total_hardness = Constraint(rule=rule_total_hardness)
+            # except InconsistentUnitsError:
+            #     self.total_hardness.fix(0)
+            #     _log.warning(
+            #         "No multivalent cations in solute_list; total_hardness fixed to 0."
+            #         # "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+            #     )
+            #     return
             initialize=1000,
             domain=NonNegativeReals,
             bounds=(0, None),
