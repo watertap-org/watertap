@@ -167,6 +167,7 @@ def build(
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
+    m.fs.costing = WaterTAPCosting()
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.Stages = RangeSet(m.fs.NumberOfStages)
@@ -193,9 +194,19 @@ def build(
 
     # Add the pumps
     m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
+    for pump in m.fs.PrimaryPumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_high_pressure_pump_lsrro,
+        )
 
     # Add the equalizer pumps
     m.fs.BoosterPumps = Pump(m.fs.LSRRO_Stages, property_package=m.fs.properties)
+    for pump in m.fs.BoosterPumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_high_pressure_pump_lsrro,
+        )
 
     m.fs.total_pump_work = Expression(
         expr=sum(
@@ -232,6 +243,18 @@ def build(
         has_full_reporting=True,
     )
 
+    for idx, ro_stage in m.fs.ROUnits.items():
+        if idx == m.fs.FirstStage:
+            ro_stage.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=m.fs.costing,
+                costing_method_arguments={"ro_type": "standard"},
+            )
+        else:
+            ro_stage.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=m.fs.costing,
+                costing_method_arguments={"ro_type": "high_pressure"},
+            )
+
     # Add EnergyRecoveryDevices
     m.fs.EnergyRecoveryDeviceSet = Set(
         initialize=(
@@ -243,6 +266,13 @@ def build(
     m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
         m.fs.EnergyRecoveryDeviceSet, property_package=m.fs.properties
     )
+    for erd in m.fs.EnergyRecoveryDevices.values():
+        erd.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "energy_recovery_device_type": "pressure_exchanger"
+            },
+        )
 
     m.fs.recovered_pump_work = Expression(
         expr=sum(
@@ -276,6 +306,32 @@ def build(
         == m.fs.product.properties[0].flow_vol
     )
 
+    # costing and summary quantities
+
+    # explicitly set the costing parameters used
+    m.fs.costing.utilization_factor.fix(0.9)
+    m.fs.costing.TIC.fix(2)
+    m.fs.costing.maintenance_labor_chemical_factor.fix(0.03)
+    # unfix wacc since we fix capital_recovery_factor
+    m.fs.costing.wacc.unfix()
+    m.fs.costing.capital_recovery_factor.fix(0.1)
+    m.fs.costing.electricity_cost.set_value(0.07)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
+
+    m.fs.costing.cost_process()
+
+    product_flow_vol_total = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(product_flow_vol_total)
+    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
+    m.fs.costing.add_LCOW(product_flow_vol_total)
+
+    # objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+
     # Expressions for parameter sweep -----------------------------------------
     # Final permeate concentration as mass fraction
     m.fs.product.properties[0].mass_frac_phase_comp
@@ -288,8 +344,6 @@ def build(
 
     # Touch final brine concentration as mass fraction
     m.fs.disposal.properties[0].mass_frac_phase_comp
-
-    add_costing(m)
 
     m.fs.mass_water_recovery = Expression(
         expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]
@@ -310,6 +364,12 @@ def build(
     m.fs.final_permeate_concentration = Expression(
         expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         / sum(m.fs.product.flow_mass_phase_comp[0, "Liq", j] for j in ["H2O", "NaCl"])
+    )
+
+    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol, name="LCOW_feed")
+
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.feed.properties[0].flow_vol, name="specific_energy_consumption_feed"
     )
 
     @m.fs.Expression(m.fs.Stages)
@@ -514,67 +574,6 @@ def build(
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     return m
-
-
-def add_costing(m):
-    m.fs.costing = WaterTAPCosting()
-
-    for pump in m.fs.PrimaryPumps.values():
-        pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method=cost_high_pressure_pump_lsrro,
-        )
-    for pump in m.fs.BoosterPumps.values():
-        pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method=cost_high_pressure_pump_lsrro,
-        )
-    for idx, ro_stage in m.fs.ROUnits.items():
-        if idx == m.fs.FirstStage:
-            ro_stage.costing = UnitModelCostingBlock(
-                flowsheet_costing_block=m.fs.costing,
-                costing_method_arguments={"ro_type": "standard"},
-            )
-        else:
-            ro_stage.costing = UnitModelCostingBlock(
-                flowsheet_costing_block=m.fs.costing,
-                costing_method_arguments={"ro_type": "high_pressure"},
-            )
-    for erd in m.fs.EnergyRecoveryDevices.values():
-        erd.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method_arguments={
-                "energy_recovery_device_type": "pressure_exchanger"
-            },
-        )
-
-    # explicitly set the costing parameters used
-    m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.TIC.fix(2)
-    m.fs.costing.maintenance_labor_chemical_factor.fix(0.03)
-    # unfix wacc since we fix capital_recovery_factor
-    m.fs.costing.wacc.unfix()
-    m.fs.costing.capital_recovery_factor.fix(0.1)
-    m.fs.costing.electricity_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
-    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
-
-    m.fs.costing.cost_process()
-
-    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol, name="LCOW_feed")
-    m.fs.costing.add_specific_energy_consumption(
-        m.fs.feed.properties[0].flow_vol, name="specific_energy_consumption_feed"
-    )
-    product_flow_vol_total = m.fs.product.properties[0].flow_vol
-    m.fs.costing.add_annual_water_production(product_flow_vol_total)
-    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
-    m.fs.costing.add_LCOW(product_flow_vol_total)
-
-    # objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
 
 def build_high_pressure_pump_cost_param_block(blk):
