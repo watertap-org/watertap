@@ -790,6 +790,18 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
             units=pyunits.ohm * pyunits.meter**2,
             doc="areal resistance of TWO electrode compartments of a stack",
         )
+        self.membrane_areal_resistance_coef_0 = Param(
+            initialize=2e-4,
+            mutable=True,
+            units=pyunits.ohm * pyunits.meter**2,
+            doc="Constant areal resistance of membrane at infinity-approximated electrolyte concentration",
+        )
+        self.membrane_areal_resistance_coef_1 = Param(
+            initialize=0,
+            mutable=True,
+            units=pyunits.ohm * pyunits.kg * pyunits.m**-1,
+            doc="Coefficient of membrane areal resistance to 1/c, where c is the electrolyte concentration",
+        )
         self.current_utilization = Var(
             initialize=1,
             bounds=(0, 1),
@@ -1174,15 +1186,13 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
 
                 return (
                     self.salt_conc_aem_x[t, x]
-                    == self.basate.properties[t, x].conc_mol_phase_comp["Liq", "Cl_-"]
-                    # smooth_min(
-                    #     self.basate.properties[t, x].conc_mol_phase_comp["Liq", "Na_+"]
-                    #     / conc_unit,
-                    #     self.basate.properties[t, x].conc_mol_phase_comp["Liq", "Cl_-"]
-                    #     / conc_unit,
-                    #     #eps=1e-12,
-                    # )
-                    # * conc_unit
+                    == smooth_min(
+                        self.basate.properties[t, x].conc_mol_phase_comp["Liq", "Na_+"]
+                        / conc_unit,
+                        self.basate.properties[t, x].conc_mol_phase_comp["Liq", "Cl_-"]
+                        / conc_unit,
+                    )
+                    * conc_unit
                 )
             else:
                 return self.salt_conc_aem_x[t, x] == self.salt_conc_aem_ref
@@ -1199,15 +1209,13 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
 
                 return (
                     self.salt_conc_cem_x[t, x]
-                    == self.acidate.properties[t, x].conc_mol_phase_comp["Liq", "Na_+"]
-                    # \smooth_min(
-                    #     self.acidate.properties[t, x].conc_mol_phase_comp["Liq", "Na_+"]
-                    #     / conc_unit,
-                    #     self.acidate.properties[t, x].conc_mol_phase_comp["Liq", "Cl_-"]
-                    #     / conc_unit,
-                    #     #eps=1e-12,
-                    # )
-                    # * conc_unit
+                    == smooth_min(
+                        self.acidate.properties[t, x].conc_mol_phase_comp["Liq", "Na_+"]
+                        / conc_unit,
+                        self.acidate.properties[t, x].conc_mol_phase_comp["Liq", "Cl_-"]
+                        / conc_unit,
+                    )
+                    * conc_unit
                 )
             else:
                 return self.salt_conc_cem_x[t, x] == self.salt_conc_cem_ref
@@ -1382,31 +1390,22 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
             if self.config.has_Nernst_diffusion_layer:
                 return self.total_areal_resistance_x[t, x] == (
                     (
-                        pyunits.ohm
-                        * pyunits.meter**2
-                        * (
-                            (
-                                0.108
-                                * pyunits.kg
-                                * pyunits.meter**-3
-                                / (
-                                    self.acidate.properties[t, x].conc_mass_phase_comp[
-                                        "Liq", "H_+"
-                                    ]
-                                    + self.acidate.properties[
-                                        t, x
-                                    ].conc_mass_phase_comp["Liq", "Cl_-"]
-                                    + self.basate.properties[t, x].conc_mass_phase_comp[
-                                        "Liq", "Na_+"
-                                    ]
-                                    + self.basate.properties[t, x].conc_mass_phase_comp[
-                                        "Liq", "OH_-"
-                                    ]
-                                )
-                                + 0.0492
-                            )
-                            / 5
+                        self.membrane_areal_resistance_coef_1
+                        / (
+                            self.acidate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "H_+"
+                            ]
+                            + self.acidate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "Cl_-"
+                            ]
+                            + self.basate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "Na_+"
+                            ]
+                            + self.basate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "OH_-"
+                            ]
                         )
+                        + self.membrane_areal_resistance_coef_0
                         + (
                             self.channel_height["basate"]
                             - self.dl_thickness_x["cem", "cathode_left", t, x]
@@ -1431,31 +1430,22 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
             else:
                 return self.total_areal_resistance_x[t, x] == (
                     (
-                        pyunits.ohm
-                        * pyunits.meter**2
-                        * (
-                            (
-                                0.108
-                                * pyunits.kg
-                                * pyunits.meter**-3
-                                / (
-                                    self.acidate.properties[t, x].conc_mass_phase_comp[
-                                        "Liq", "H_+"
-                                    ]
-                                    + self.acidate.properties[
-                                        t, x
-                                    ].conc_mass_phase_comp["Liq", "Cl_-"]
-                                    + self.basate.properties[t, x].conc_mass_phase_comp[
-                                        "Liq", "Na_+"
-                                    ]
-                                    + self.basate.properties[t, x].conc_mass_phase_comp[
-                                        "Liq", "OH_-"
-                                    ]
-                                )
-                                + 0.0492
-                            )
-                            / 5
+                        self.membrane_areal_resistance_coef_1
+                        / (
+                            self.acidate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "H_+"
+                            ]
+                            + self.acidate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "Cl_-"
+                            ]
+                            + self.basate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "Na_+"
+                            ]
+                            + self.basate.properties[t, x].conc_mass_phase_comp[
+                                "Liq", "OH_-"
+                            ]
                         )
+                        + self.membrane_areal_resistance_coef_0
                         + self.channel_height["basate"]
                         * self.basate.properties[t, x].elec_cond_phase["Liq"] ** -1
                         + self.channel_height["acidate"]
@@ -1766,7 +1756,7 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                 return self.elec_migration_mono_cem_flux[t, x, p, j] == (
                     self.water_trans_number_membrane["cem"]
                 ) * (self.current_density_x[t, x] / Constants.faraday_constant)
-            elif j in self.ion_set and j not in ["H_+", "OH_-"]:
+            elif j in self.ion_set:
                 return self.elec_migration_mono_cem_flux[t, x, p, j] == (
                     self.ion_trans_number_membrane["cem", j]
                 ) * (self.current_utilization * self.current_density_x[t, x]) / (
@@ -3036,6 +3026,71 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                 self.eq_mass_transfer_term_diluate[t, x, p, j].deactivate()
                 self.diluate.mass_transfer_term[t, x, p, j].fix(0)
 
+    def enable_zero_transport_constraints(self):
+        for t, x, p, j in self.eq_elec_migration_mono_aem_flux:
+            if ("aem", j) in self.ion_trans_number_membrane and value(
+                self.ion_trans_number_membrane["aem", j]
+            ) == 0:
+                self.eq_elec_migration_mono_aem_flux[t, x, p, j].activate()
+                self.elec_migration_mono_aem_flux[t, x, p, j].unfix()
+
+        for t, x, p, j in self.eq_elec_migration_mono_cem_flux:
+            if ("cem", j) in self.ion_trans_number_membrane and value(
+                self.ion_trans_number_membrane["cem", j]
+            ) == 0:
+                self.eq_elec_migration_mono_cem_flux[t, x, p, j].activate()
+                self.elec_migration_mono_cem_flux[t, x, p, j].unfix()
+
+        for t, x, p, j in self.nonelec_mono_aem_flux:
+            if ("aem", j) in self.solute_diffusivity_membrane and value(
+                self.solute_diffusivity_membrane["aem", j]
+            ) == 0:
+                self.eq_nonelec_mono_aem_flux[t, x, p, j].activate()
+                self.nonelec_mono_aem_flux[t, x, p, j].unfix()
+
+        for t, x, p, j in self.eq_nonelec_mono_cem_flux:
+            if ("cem", j) in self.solute_diffusivity_membrane and value(
+                self.solute_diffusivity_membrane["cem", j]
+            ) == 0:
+                self.eq_nonelec_mono_cem_flux[t, x, p, j].activate()
+                self.nonelec_mono_cem_flux[t, x, p, j].unfix()
+
+        for t, x, p, j in self.eq_elec_migration_bpem_flux:
+            if ("bpem", j) in self.solute_diffusivity_membrane and value(
+                self.solute_diffusivity_membrane["bpem", j]
+            ) == 0:
+                self.eq_elec_migration_bpem_flux[t, x, p, j].activate()
+                self.elec_migration_bpem_flux[t, x, p, j].unfix()
+
+        for t, x, p, j in self.eq_mass_transfer_term_basate:
+            gd = value(self.generation_aem_flux[t, x, p, j]) == 0
+            ef = value(self.elec_migration_bpem_flux[t, x, p, j]) == 0
+            nef = value(self.nonelec_bpem_flux[t, x, p, j]) == 0
+            emn = value(self.elec_migration_mono_cem_flux[t, x, p, j]) == 0
+            nmf = value(self.nonelec_mono_cem_flux[t, x, p, j]) == 0
+            if emn and nef and ef and gd and nmf:
+                self.eq_mass_transfer_term_basate[t, x, p, j].activate()
+                self.basate.mass_transfer_term[t, x, p, j].unfix()
+
+        for t, x, p, j in self.eq_mass_transfer_term_acidate:
+            gd = value(self.generation_cem_flux[t, x, p, j]) == 0
+            ef = value(self.elec_migration_bpem_flux[t, x, p, j]) == 0
+            nef = value(self.nonelec_bpem_flux[t, x, p, j]) == 0
+            emn = value(self.elec_migration_mono_aem_flux[t, x, p, j]) == 0
+            nmf = value(self.nonelec_mono_aem_flux[t, x, p, j]) == 0
+            if emn and nef and ef and gd and nmf:
+                self.eq_mass_transfer_term_acidate[t, x, p, j].activate()
+                self.acidate.mass_transfer_term[t, x, p, j].unfix()
+
+        for t, x, p, j in self.eq_mass_transfer_term_diluate:
+            gd = value(self.elec_migration_mono_aem_flux[t, x, p, j]) == 0
+            ef = value(self.elec_migration_mono_cem_flux[t, x, p, j]) == 0
+            nef = value(self.nonelec_mono_aem_flux[t, x, p, j]) == 0
+            emn = value(self.nonelec_mono_cem_flux[t, x, p, j]) == 0
+            if emn and nef and ef and gd:
+                self.eq_mass_transfer_term_diluate[t, x, p, j].activate()
+                self.diluate.mass_transfer_term[t, x, p, j].unfix()
+
     # initialize method
     def initialize_build(
         self,
@@ -3094,6 +3149,7 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                     self.diluate.properties[set].flow_mol_phase_comp[ind] = value(
                         self.diluate.properties[(0.0, 0.0)].flow_mol_phase_comp[ind]
                     )
+
             if (
                 "flow_mass_phase_comp"
                 in self.diluate.properties[set].define_state_vars()
@@ -3111,43 +3167,6 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                                     "Liq", j
                                 ]
                             )
-            self.total_areal_resistance_x[set].set_value(
-                (
-                    pyunits.ohm
-                    * pyunits.meter**2
-                    * (
-                        (
-                            0.108
-                            * pyunits.kg
-                            * pyunits.meter**-3
-                            / (
-                                self.acidate.properties[set].conc_mass_phase_comp[
-                                    "Liq", "H_+"
-                                ]
-                                + self.acidate.properties[set].conc_mass_phase_comp[
-                                    "Liq", "Cl_-"
-                                ]
-                                + self.basate.properties[set].conc_mass_phase_comp[
-                                    "Liq", "Na_+"
-                                ]
-                                + self.basate.properties[set].conc_mass_phase_comp[
-                                    "Liq", "OH_-"
-                                ]
-                            )
-                            + 0.0492
-                        )
-                        / 5
-                    )
-                    + self.channel_height["diluate"]
-                    * self.diluate.properties[set].elec_cond_phase["Liq"] ** -1
-                    + self.channel_height["basate"]
-                    * self.basate.properties[set].elec_cond_phase["Liq"] ** -1
-                    + self.channel_height["acidate"]
-                    * self.acidate.properties[set].elec_cond_phase["Liq"] ** -1
-                )
-                * self.cell_triplet_num
-                + self.electrodes_resistance
-            )
 
         # Set the intial conditions over the 1D length from the state vars - basate
         for set in self.basate.properties:
@@ -3190,52 +3209,49 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                                 ]
                             )
 
-            # Set the intial conditions over the 1D length from the state vars - acidate
-
-            for set in self.acidate.properties:
-                if (
-                    "flow_mol_phase_comp" or "flow_mass_phase_comp"
-                ) not in self.acidate.properties[set].define_state_vars():
-                    raise ConfigurationError(
-                        "Electrodialysis1D unit model requires "
-                        "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
-                        "state variable basis to apply the 'propogate_initial_state' method"
+        # Set the intial conditions over the 1D length from the state vars - acidate
+        for set in self.acidate.properties:
+            if (
+                "flow_mol_phase_comp" or "flow_mass_phase_comp"
+            ) not in self.acidate.properties[set].define_state_vars():
+                raise ConfigurationError(
+                    "Electrodialysis1D unit model requires "
+                    "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
+                    "state variable basis to apply the 'propogate_initial_state' method"
+                )
+            if "temperature" in self.acidate.properties[set].define_state_vars():
+                self.acidate.properties[set].temperature = value(
+                    self.acidate.properties[(0.0, 0.0)].temperature
+                )
+            if "pressure" in self.acidate.properties[set].define_state_vars():
+                self.acidate.properties[set].pressure = value(
+                    self.acidate.properties[(0.0, 0.0)].pressure
+                )
+            if (
+                "flow_mol_phase_comp"
+                in self.acidate.properties[set].define_state_vars()
+            ):
+                for ind in self.acidate.properties[set].flow_mol_phase_comp:
+                    self.acidate.properties[set].flow_mol_phase_comp[ind] = value(
+                        self.acidate.properties[(0.0, 0.0)].flow_mol_phase_comp[ind]
                     )
-                if "temperature" in self.acidate.properties[set].define_state_vars():
-                    self.acidate.properties[set].temperature = value(
-                        self.acidate.properties[(0.0, 0.0)].temperature
+            if (
+                "flow_mass_phase_comp"
+                in self.acidate.properties[set].define_state_vars()
+            ):
+                for ind in self.acidate.properties[set].flow_mass_phase_comp:
+                    self.acidate.properties[set].flow_mass_phase_comp[ind] = value(
+                        self.acidate.properties[(0.0, 0.0)].flow_mass_phase_comp[ind]
                     )
-                if "pressure" in self.acidate.properties[set].define_state_vars():
-                    self.acidate.properties[set].pressure = value(
-                        self.acidate.properties[(0.0, 0.0)].pressure
-                    )
-                if (
-                    "flow_mol_phase_comp"
-                    in self.acidate.properties[set].define_state_vars()
-                ):
-                    for ind in self.acidate.properties[set].flow_mol_phase_comp:
-                        self.acidate.properties[set].flow_mol_phase_comp[ind] = value(
-                            self.acidate.properties[(0.0, 0.0)].flow_mol_phase_comp[ind]
-                        )
-                if (
-                    "flow_mass_phase_comp"
-                    in self.acidate.properties[set].define_state_vars()
-                ):
-                    for ind in self.acidate.properties[set].flow_mass_phase_comp:
-                        self.acidate.properties[set].flow_mass_phase_comp[ind] = value(
-                            self.acidate.properties[(0.0, 0.0)].flow_mass_phase_comp[
-                                ind
-                            ]
-                        )
-                if hasattr(self, "conc_mem_surf_mol_x"):
-                    for mem in self.membrane_set:
-                        for side in self.electrode_side:
-                            for j in self.ion_set:
-                                self.conc_mem_surf_mol_x[mem, side, set, j].set_value(
-                                    self.acidate.properties[set].conc_mol_phase_comp[
-                                        "Liq", j
-                                    ]
-                                )
+            if hasattr(self, "conc_mem_surf_mol_x"):
+                for mem in self.membrane_set:
+                    for side in self.electrode_side:
+                        for j in self.ion_set:
+                            self.conc_mem_surf_mol_x[mem, side, set, j].set_value(
+                                self.acidate.properties[set].conc_mol_phase_comp[
+                                    "Liq", j
+                                ]
+                            )
 
         # ---------------------------------------------------------------------
 
@@ -3271,6 +3287,142 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
         )
         init_log.info_high("Initialization Step 3 Complete.")
         # ---------------------------------------------------------------------
+        # Seed diluate ion flows with a gradient AFTER control volume init.
+        # diluate.initialize() resets all flows to inlet values, so this must
+        # run after Steps 1-3 to actually affect the starting point for IPOPT.
+        if hasattr(self, "current_applied"):
+            _t0_seed = self.flowsheet().time.first()
+            if self.current_applied[_t0_seed].fixed:
+                _I_eff_seed = value(self.current_applied[_t0_seed]) * value(
+                    self.shadow_factor
+                )
+                if _I_eff_seed > 0:
+                    for _dset in self.diluate.properties:
+                        if _dset[1] > 0:
+                            for _ion, _mem in [("Na_+", "cem"), ("Cl_-", "aem")]:
+                                if _ion in self.ion_set:
+                                    _t_num = value(
+                                        self.ion_trans_number_membrane[_mem, _ion]
+                                    )
+                                    _removed = (
+                                        _t_num
+                                        * _I_eff_seed
+                                        * value(self.cell_triplet_num)
+                                        * _dset[1]
+                                        / 96485
+                                    )
+                                    _inlet_flow = value(
+                                        self.diluate.properties[
+                                            (_dset[0], 0.0)
+                                        ].flow_mol_phase_comp["Liq", _ion]
+                                    )
+                                    _seeded = _inlet_flow - _removed
+                                    if _seeded > 0:
+                                        self.diluate.properties[
+                                            _dset
+                                        ].flow_mol_phase_comp["Liq", _ion] = _seeded
+                                        if hasattr(
+                                            self.diluate.properties[_dset],
+                                            "conc_mol_phase_comp",
+                                        ):
+                                            _vol = value(
+                                                self.diluate.properties[
+                                                    _dset
+                                                ].flow_vol_phase["Liq"]
+                                            )
+                                            if _vol > 0:
+                                                self.diluate.properties[
+                                                    _dset
+                                                ].conc_mol_phase_comp["Liq", _ion] = (
+                                                    _seeded / _vol
+                                                )
+        print(
+            "DEBUG POST-INIT: Na+ at x=0.9 =",
+            value(
+                self.diluate.properties[(0.0, 0.9)].flow_mol_phase_comp["Liq", "Na_+"]
+            ),
+        )
+        # ---------------------------------------------------------------------
+        for set in self.diluate.properties:
+            self.total_areal_resistance_x[set].set_value(
+                (
+                    self.membrane_areal_resistance_coef_1
+                    / (
+                        self.acidate.properties[set].conc_mass_phase_comp["Liq", "H_+"]
+                        + self.acidate.properties[set].conc_mass_phase_comp[
+                            "Liq", "Cl_-"
+                        ]
+                        + self.basate.properties[set].conc_mass_phase_comp[
+                            "Liq", "Na_+"
+                        ]
+                        + self.basate.properties[set].conc_mass_phase_comp[
+                            "Liq", "OH_-"
+                        ]
+                    )
+                    + self.membrane_areal_resistance_coef_0
+                    + self.channel_height["diluate"]
+                    * self.diluate.properties[set].elec_cond_phase["Liq"] ** -1
+                    + self.channel_height["basate"]
+                    * self.basate.properties[set].elec_cond_phase["Liq"] ** -1
+                    + self.channel_height["acidate"]
+                    * self.acidate.properties[set].elec_cond_phase["Liq"] ** -1
+                )
+                * self.cell_triplet_num
+                / self.electrical_stage_num
+                + self.electrodes_resistance
+            )
+
+        # Seed current_density_x to a physically meaningful starting value.
+        # The Var is initialized to 1 A/m2 but the actual value can be ~100-300 A/m2.
+        # For Constant_Current mode, compute it directly from current_applied.
+        # For Constant_Voltage mode, estimate from total_areal_resistance_x.
+        print(f"DEBUG: hasattr current_applied = {hasattr(self, 'current_applied')}")
+        print(f"DEBUG: hasattr voltage_applied = {hasattr(self, 'voltage_applied')}")
+        if hasattr(self, "current_applied"):
+            _t0 = self.flowsheet().time.first()
+            print(
+                f"DEBUG: current_applied[{_t0}].fixed = {self.current_applied[_t0].fixed}"
+            )
+            print(
+                f"DEBUG: current_applied[{_t0}] value = {value(self.current_applied[_t0])}"
+            )
+            if self.current_applied[_t0].fixed:
+                _i_seed = value(self.current_applied[_t0]) / (
+                    value(self.cell_width)
+                    * value(self.shadow_factor)
+                    * value(self.cell_length)
+                )
+                print(f"DEBUG: seeding current_density_x to {_i_seed:.2f} A/m2")
+                for _set in self.current_density_x:
+                    self.current_density_x[_set].set_value(_i_seed)
+                print(
+                    f"DEBUG: current_density_x[0.0,0.5] after set = {value(self.current_density_x[0.0,0.5]):.2f}"
+                )
+        elif hasattr(self, "voltage_applied"):
+            _t0 = self.flowsheet().time.first()
+            print(
+                f"DEBUG: voltage_applied[{_t0}].fixed = {self.voltage_applied[_t0].fixed}"
+            )
+            if self.voltage_applied[_t0].fixed:
+                _V = value(self.voltage_applied[_t0])
+                print(f"DEBUG: seeding current_density_x from voltage {_V} V")
+                for _set in self.current_density_x:
+                    _R = value(self.total_areal_resistance_x[_set])
+                    if _R > 0:
+                        _i_seed = (
+                            _V
+                            / _R
+                            * value(self.electrical_stage_num)
+                            / value(self.cell_triplet_num)
+                        )
+                        self.current_density_x[_set].set_value(max(_i_seed, 1.0))
+        print(
+            f"DEBUG: flow seeding check - Na+ at x=0.9: {value(self.diluate.properties[(0.0,0.9)].flow_mol_phase_comp['Liq','Na_+']):.6f} mol/s"
+        )
+        print(
+            f"DEBUG: conc seeding check - Na+ at x=0.9: {value(self.diluate.properties[(0.0,0.9)].conc_mol_phase_comp['Liq','Na_+']):.4f} mol/m3"
+        )
+
         if not ignore_dof:
             check_dof(self, fail_flag=fail_on_warning, logger=init_log)
 
@@ -3286,7 +3438,6 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
             checkpoint="Initialization Step 4",
         )
         if not check_optimal_termination(res):
-
             from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
             dg = DiagnosticsToolbox(self)
@@ -3295,6 +3446,7 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
             # dg.compute_infeasibility_explanation()
         # ---------------------------------------------------------------------
         # Release state
+        self.enable_zero_transport_constraints()
         self.diluate.release_state(flags_diluate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         self.basate.release_state(flags_basate, outlvl)
@@ -3585,7 +3737,7 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                         )
                     )
                 ) ** -1 * iscale.get_scaling_factor(self.cell_triplet_num)
-                iscale.set_scaling_factor(self.total_areal_resistance_x[ind], 1 / 100)
+                iscale.set_scaling_factor(self.total_areal_resistance_x[ind], sf)
         for ind in self.current_density_x:
             if (
                 iscale.get_scaling_factor(self.current_density_x[ind], warning=False)
@@ -4127,9 +4279,17 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
         # Constraint scaling
 
         for ind, c in self.eq_get_current_density.items():
-            iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.current_density_x[ind])
-            )
+            if self.config.operation_mode == ElectricalOperationMode.Constant_Current:
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.current_density_x[ind])
+                )
+            else:
+                sf = iscale.get_scaling_factor(
+                    self.voltage_applied[ind[0]], warning=False
+                )
+                if sf is None:
+                    sf = iscale.get_scaling_factor(self.current_density_x[ind])
+                iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_power_electrical.items():
             iscale.constraint_scaling_transform(
