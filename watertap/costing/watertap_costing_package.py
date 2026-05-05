@@ -373,7 +373,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self, flow_rate, name="annual_product_generation"
     ):
         """
-        Add annual water production to costing block.
+        Add annual production to costing block.
         Args:
             flow_rate - flow rate of product (mass-based) to be used in
                         calculating annual product generation
