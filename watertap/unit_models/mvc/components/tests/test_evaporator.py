@@ -99,10 +99,11 @@ def test_evaporator():
 def test_evaporator_with_MCAS():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties_feed = MCASParameterBlock(solute_list=["Na_+","Cl_-"],
-                                              diffusivity_data={("Liq","Na_+"): 1.33e-9, 
-                                                                ("Liq", "Cl_-"): 2.03e-9},
-                                              material_flow_basis="mass",)
+    m.fs.properties_feed = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        diffusivity_data={("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
+        material_flow_basis="mass",
+    )
     m.fs.properties_vapor = props_w.WaterParameterBlock()
     m.fs.evaporator = Evaporator(
         property_package_feed=m.fs.properties_feed,
@@ -137,8 +138,9 @@ def test_evaporator_with_MCAS():
     m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
     m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "Na_+"].fix(0.05)
     m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "Cl_-"].fix(0.076)
-    m.fs.evaporator.properties_feed[0].assert_electroneutrality(defined_state=True,
-                                                                adjust_by_ion="Cl_-")
+    m.fs.evaporator.properties_feed[0].assert_electroneutrality(
+        defined_state=True, adjust_by_ion="Cl_-"
+    )
     m.fs.evaporator.inlet_feed.temperature[0].fix(273.15 + 50.52)  # K
     m.fs.evaporator.inlet_feed.pressure[0].fix(1e5)  # Pa
 
