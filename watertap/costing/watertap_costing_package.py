@@ -245,7 +245,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     + self.total_operating_cost
                 )
                 / denominator,
-                doc=f"Levelized Cost of Product",
+                doc="Levelized Cost of Product",
             ),
         )
 
