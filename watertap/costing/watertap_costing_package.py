@@ -389,7 +389,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     )
                     * self.utilization_factor
                 ),
-                doc=f"Annual product generation based on mass flow ",
+                doc="Annual product generation based on mass flow ",
             ),
         )
 
