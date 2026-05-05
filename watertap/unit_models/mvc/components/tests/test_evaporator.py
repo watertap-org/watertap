@@ -25,10 +25,8 @@ import watertap.property_models.water_prop_pack as props_w
 solver = get_solver()
 
 
-# -----------------------------------------------------------------------------
-@pytest.mark.requires_idaes_solver
-@pytest.mark.component
-def test_evaporator():
+@pytest.fixture()
+def evap_condense_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties_feed = props_sw.SeawaterParameterBlock()
@@ -38,7 +36,7 @@ def test_evaporator():
         property_package_vapor=m.fs.properties_vapor,
     )
 
-    # Add a condenser and connect it to the evaporator to test the connection constraints and scaling
+    # Add a condenser and connect it to the evaporator to test connection constraints.
     m.fs.condenser = Condenser(property_package=m.fs.properties_vapor)
     # state variables
     m.fs.condenser.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
@@ -80,6 +78,15 @@ def test_evaporator():
     m.fs.evaporator.area.fix(100)  # m^2
     m.fs.evaporator.delta_temperature_out.fix(5)
     m.fs.evaporator.delta_temperature_in.fix(30)
+
+    return m
+
+
+# -----------------------------------------------------------------------------
+@pytest.mark.requires_idaes_solver
+@pytest.mark.component
+def test_evaporator(evap_condense_model):
+    m = evap_condense_model
 
     # check build
     assert_units_consistent(m)
