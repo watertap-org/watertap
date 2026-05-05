@@ -17,7 +17,6 @@ from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
-
 from watertap.unit_models.mvc.components import Evaporator, Condenser
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
@@ -63,6 +62,9 @@ def evap_condense_model():
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_out, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.lmtd, 1e-1)
+    iscale.set_scaling_factor(
+        m.fs.condenser.control_volume.properties_in[0].enth_flow_phase["Liq"], 1e-8
+    )
     iscale.calculate_scaling_factors(m)
 
     # state variables
@@ -107,3 +109,30 @@ def test_evaporator(evap_condense_model):
     )
     assert m.fs.evaporator.lmtd.value == pytest.approx(13.79, rel=1e-3)
     assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.379e6, rel=1e-3)
+
+
+@pytest.mark.requires_idaes_solver
+@pytest.mark.component
+def test_evaporator_condenser_scaling(evap_condense_model):
+    m = evap_condense_model
+
+    m.fs.evaporator.initialize_build()
+    results = solver.solve(m, tee=False)
+    assert_optimal_termination(results)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    [print(v, val) for v, val in unscaled_var_list]
+    assert len(unscaled_var_list) == 0
+
+    # check that all constraints have been scaled
+    unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
+    [print(c) for c in unscaled_constraint_list]
+    assert len(unscaled_constraint_list) == 0
+
+    # check if any variables are badly scaled
+    badly_scaled_var_list = list(
+        iscale.badly_scaled_var_generator(m, large=100, small=0.01, zero=1e-10)
+    )
+    [print(i[0], i[1]) for i in badly_scaled_var_list]
+    assert len(badly_scaled_var_list) == 0

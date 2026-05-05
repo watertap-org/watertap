@@ -294,3 +294,4 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
                 self.control_volume.properties_in[t].flow_mass_phase_comp["Vap", j]
             )
             iscale.constraint_scaling_transform(c, sf)
+        iscale.constraint_scaling_transform(self.eq_condenser_pressure_sat[0], 1e-5)
