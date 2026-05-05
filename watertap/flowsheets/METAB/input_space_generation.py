@@ -26,6 +26,7 @@ def create_samples(
 ):
     if method == None:
         print("Please pick a sampling method")
+        return
     elif method == "LHS":
         lower_bounds = [lb[0] for lb in input_var_info.values()]
         upper_bounds = [lb[1] for lb in input_var_info.values()]

@@ -22,7 +22,7 @@ except ImportError:
     exposan = None
 
 
-__author__ = "Maojian Wang"
+__author__ = "Maojian Wang", "Marcus Holly"
 
 
 def get_input_data(filename=None):
@@ -56,23 +56,18 @@ def get_eff_fr(case=None, df=None):
             N=100,
             IDs=None,
         )
-        # print(r)
         comp = [i.strip() for i in r.split("flow (kmol/hr):")[1].split("\n")]
-        # print(comp)
-        # print(len(comp))
 
         fr_dict = {}
         for element in comp:
             element_list = element.split()
-            # print(element_list)
+            if not element_list:
+                continue
             fr_dict[element_list[0]] = [float(element_list[-1])]
-            # print(fr_dict)
-        if df == None:
+        if df is None:
             df = pd.DataFrame(fr_dict)
-            # print(df)
         else:
             df.loc[len(df)] = fr_dict
-            # NEED to TEST
     return df
 
 
@@ -80,7 +75,6 @@ def get_ch4_fr(case=None, df=None):
     if case is None:
         print(" The system is off")
     else:
-        # bge : biogas extracted in reactor 2
         eff_dg = case.outs[2]
         r = eff_dg._info(
             layout=None,
@@ -91,23 +85,18 @@ def get_ch4_fr(case=None, df=None):
             N=100,
             IDs=None,
         )
-        # print(r)
         comp = [i.strip() for i in r.split("flow (kmol/hr):")[1].split("\n")]
-        # print(comp)
-        # print(len(comp))
 
         fr_dict = {}
         for element in comp:
             element_list = element.split()
-            # print(element_list)
+            if not element_list:
+                continue
             fr_dict[element_list[0]] = [float(element_list[-1])]
-            # print(fr_dict)
-        if df == None:
+        if df is None:
             df = pd.DataFrame(fr_dict)
-            # print(df)
         else:
             df.loc[len(df)] = fr_dict
-            # NEED to TEST
     return df
 
 
@@ -115,7 +104,6 @@ def get_h2_fr(case=None, df=None):
     if case is None:
         print(" The system is off")
     else:
-        # bg2: biogas from reactor 2
         eff_dg = case.outs[1]
         r = eff_dg._info(
             layout=None,
@@ -126,20 +114,16 @@ def get_h2_fr(case=None, df=None):
             N=100,
             IDs=None,
         )
-        # print(r)
         comp = [i.strip() for i in r.split("flow (kmol/hr):")[1].split("\n")]
-        # print(comp)
-        # print(len(comp))
 
         fr_dict = {}
         for element in comp:
             element_list = element.split()
-            # print(element_list)
+            if not element_list:
+                continue
             fr_dict[element_list[0]] = [float(element_list[-1])]
-            # print(fr_dict)
-        if df == None:
+        if df is None:
             df = pd.DataFrame(fr_dict)
-            # print(df)
         else:
             df.loc[len(df)] = fr_dict
             # NEED to TEST
@@ -161,38 +145,33 @@ def get_r1_ex_biogas_fr(case=None, df=None):
             N=100,
             IDs=None,
         )
-        # print(r)
         comp = [i.strip() for i in r.split("flow (kmol/hr):")[1].split("\n")]
-        # print(comp)
-        # print(len(comp))
 
         fr_dict = {}
         for element in comp:
             element_list = element.split()
-            # print(element_list)
+            if not element_list:
+                continue
             fr_dict[element_list[0]] = [float(element_list[-1])]
-            # print(fr_dict)
-        if df == None:
+        if df is None:
             df = pd.DataFrame(fr_dict)
-            # print(df)
         else:
             df.loc[len(df)] = fr_dict
-            # NEED to TEST
     return df
 
 
 def get_mass_flowrate(case=None, df=None, stream=None):
     # df = None
     # stream = eff_dg
-    keys = str(stream.components)[20:-2].split(",")
+    keys = str(stream.components).split("(")[1].rstrip(")").split(",")
+    keys = [k.strip() for k in keys]
     values = [[float(x)] for x in list(stream.state[:-1])]
     fr_dict = dict(zip(keys, values))
     # if len(stream.state) != len(stream.conc.to_array()):
     fr_dict["Volumetric Flowrate"] = [stream.state[-1]]
     print(fr_dict)
-    if df == None:
+    if df is None:
         df = pd.DataFrame(fr_dict)
-        # print(df)
     else:
         df.loc[len(df)] = fr_dict
 
@@ -221,14 +200,13 @@ def collect_results(case=None, results=None, mass=True):
         results = result
     else:
         results = pd.concat([results, result], axis=0)
-    # print(results)
     return results
 
 
 def run_model(df):
     output_data = {}
     for idx in df.index:
-        # Changine input variables
+        # Changing input variables
         inf_fr = df.loc[idx, "inf_fr"]
         # print(df.columns)
         # print(df)
