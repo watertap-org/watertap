@@ -343,7 +343,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
                 / pyo.units.convert(flow_rate, to_units=pyo.units.kg / pyo.units.hr),
-                doc=f"Specific energy consumption based on product mass",
+                doc="Specific energy consumption based on product mass",
             ),
         )
 
