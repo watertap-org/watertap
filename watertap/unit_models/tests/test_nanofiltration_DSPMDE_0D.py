@@ -325,8 +325,10 @@ class TestNanoFiltration_with_CP_5ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 566
-        assert number_total_constraints(m) == 526
+        from idaes.core.util.model_statistics import variables_set
+        [print(i) for i in variables_set(m)]
+        assert number_variables(m) == 574
+        assert number_total_constraints(m) == 534
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit

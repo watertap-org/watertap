@@ -829,8 +829,14 @@ def test_seawater_data():
         0.07820, rel=1e-3
     )
 
-    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(0.753, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(0.753, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Ca_2+"]) == pytest.approx(0.322, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Mg_2+"]) == pytest.approx(0.322, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "SO4_2-"]) == pytest.approx(0.322, rel=1e-3)
+
     assert value(stream[0].total_hardness) == pytest.approx(
         value(
             (
@@ -1671,6 +1677,31 @@ def test_compatibility_with_feed_mole_basis():
     # then the issue has been fixed.
     m.fs.feed = Feed(property_package=m.fs.properties)
 
+@pytest.mark.component
+def test_davies_activity_coefficients():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(time_set=[0, 1], dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23, "Cl_-": 35},
+        charge={"Na_+": 1, "Cl_-": -1},
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+    )
+
+    stream = m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(55.51)
+    stream[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.1)
+    stream[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(0.1)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    stream[0].act_coeff_phase_comp
+    stream.initialize()
+
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
+    assert value(stream[0].ionic_strength_molal) == pytest.approx(0.1, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(0.781, rel=5e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(0.781, rel=5e-3)
 
 @pytest.mark.unit
 def test_compatibility_with_feed_mass_basis():
@@ -2072,7 +2103,7 @@ def test_seawater_data_with_flow_mass_basis():
         0.07820, rel=1e-3
     )
 
-    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
     assert value(stream[0].total_hardness) == pytest.approx(
         value(
@@ -3082,7 +3113,7 @@ class TestMCASScaler:
         ] == pytest.approx(24, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_debye_huckel_constant
-        ] == pytest.approx(12.49, rel=1e-3)
+        ] == pytest.approx(0.38, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_enth_mass_phase["Liq"]
         ] == pytest.approx(8.712e-07, rel=1e-3)
