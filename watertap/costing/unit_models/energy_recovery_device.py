@@ -47,7 +47,7 @@ def cost_energy_recovery_device(
 
 def build_energy_recovery_device_cost_param_block(blk):
 
-    blk.pressure_exchanger_cost = pyo.Var(
+    blk.unit_cost = pyo.Var(
         initialize=535,
         doc="Pressure exchanger cost",
         units=pyo.units.USD_2018 / (pyo.units.meter**3 / pyo.units.hours),
@@ -71,7 +71,7 @@ def cost_pressure_exchanger_erd(blk, cost_electricity_flow=True):
     t0 = blk.flowsheet().time.first()
     cost_by_flow_volume(
         blk,
-        blk.costing_package.energy_recovery_device.pressure_exchanger_cost,
+        blk.costing_package.energy_recovery_device.unit_cost,
         pyo.units.convert(
             blk.unit_model.control_volume.properties_in[t0].flow_vol,
             (pyo.units.meter**3 / pyo.units.hours),
