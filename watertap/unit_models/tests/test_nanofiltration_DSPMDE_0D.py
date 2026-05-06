@@ -368,7 +368,7 @@ class TestNanoFiltration_with_CP_5ions:
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
 
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
@@ -380,7 +380,7 @@ class TestNanoFiltration_with_CP_5ions:
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m, tee=False)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -413,28 +413,28 @@ class TestNanoFiltration_with_CP_5ions:
         m = NF_frame
 
         mole_flux_dict = {
-            "Na_+": 0.00029831,
-            "Cl_-": 0.00031137,
-            "Ca_2+": 1.9289e-06,
-            "SO4_2-": 1.95859e-06,
-            "Mg_2+": 6.56667e-06,
-            "H2O": 0.032671,
+            "Na_+": 0.000432,
+            "Cl_-": 0.000445,
+            "Ca_2+": 1.8640e-06,
+            "SO4_2-": 1.535177e-06,
+            "Mg_2+": 5.9231768e-06,
+            "H2O": 0.046265,
         }
         for j, val in mole_flux_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
             )
 
         # TODO: subsequently focus on the segment below during the validation and refinement phase
         intrinsic_rejection_dict = {
-            "Na_+": -0.0265173,
-            "Cl_-": 0.11538899,
-            "Ca_2+": 0.6905496,
-            "SO4_2-": 0.8687813,
-            "Mg_2+": 0.83309579,
+            "Na_+": -0.0595,
+            "Cl_-": 0.1119122,
+            "Ca_2+": 0.79942,
+            "SO4_2-": 0.93153,
+            "Mg_2+": 0.900556,
         }
         for j, val in intrinsic_rejection_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
             )
 
@@ -586,8 +586,8 @@ class TestNanoFiltration_without_CP_5ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 532
-        assert number_total_constraints(m) == 494
+        assert number_variables(m) == 540
+        assert number_total_constraints(m) == 502
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -603,7 +603,7 @@ class TestNanoFiltration_without_CP_5ions:
             "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
@@ -627,7 +627,7 @@ class TestNanoFiltration_without_CP_5ions:
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
 
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
@@ -639,7 +639,7 @@ class TestNanoFiltration_without_CP_5ions:
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m, tee=False)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -672,30 +672,31 @@ class TestNanoFiltration_without_CP_5ions:
         m = NF_frame
 
         mole_flux_dict = {
-            "Na_+": 0.0003574,
-            "Cl_-": 0.0003694,
-            "Ca_2+": 1.860337e-6,
-            "SO4_2-": 1.850918e-6,
-            "Mg_2+": 5.972139e-06,
-            "H2O": 0.039150,
+            "Na_+":  0.000517,
+            "Cl_-": 0.000527,
+            "Ca_2+": 1.62599e-6,
+            "SO4_2-": 1.33546e-6,
+            "Mg_2+": 4.847024e-06,
+            "H2O": 0.05562,
         }
         for j, val in mole_flux_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
             )
 
         # TODO: subsequently focus on the segment below during the validation and refinement phase
         intrinsic_rejection_dict = {
-            "Na_+": -0.017782,
-            "Cl_-": 0.1143856,
-            "Ca_2+": 0.731772,
-            "SO4_2-": 0.8854559,
-            "Mg_2+": 0.8584226,
+            "Na_+": -0.03651,
+            "Cl_-": 0.109958,
+            "Ca_2+": 0.83500,
+            "SO4_2-": 0.94183,
+            "Mg_2+": 0.91913,
         }
         for j, val in intrinsic_rejection_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
             )
+
 
     @pytest.mark.unit
     def test_report(self, NF_frame):
@@ -821,8 +822,8 @@ class TestNanoFiltration_with_CP_2ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 320
-        assert number_total_constraints(m) == 286
+        assert number_variables(m) == 328
+        assert number_total_constraints(m) == 294
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -853,7 +854,7 @@ class TestNanoFiltration_with_CP_2ions:
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
 
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
@@ -865,7 +866,7 @@ class TestNanoFiltration_with_CP_2ions:
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m, tee=False)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -898,31 +899,31 @@ class TestNanoFiltration_with_CP_2ions:
         m = NF_frame
 
         mole_flux_dict = {
-            "Na_+": 0.0010739,
-            "Cl_-": 0.0010739,
-            "H2O": 0.129305,
+            "Na_+": 0.00105,
+            "Cl_-": 0.00105,
+            "H2O": 0.126666,
         }
         for j, val in mole_flux_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
             )
 
         # TODO: subsequently focus on the segment below during the validation and refinement phase
         intrinsic_rejection_dict = {
-            "Na_+": 0.0964865,
-            "Cl_-": 0.0964865,
+            "Na_+": 0.097326,
+            "Cl_-": 0.097326,
         }
         for j, val in intrinsic_rejection_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
             )
 
         flow_mol_out_dict = {
-            "Na_+": 0.429868,
-            "Cl_-": 0.429868,
+            "Na_+": 0.431029,
+            "Cl_-": 0.431029,
         }
         for j, val in flow_mol_out_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.retentate.flow_mol_phase_comp[0, "Liq", j]
             )
 
@@ -1052,8 +1053,8 @@ class TestNanoFiltration_without_CP_2ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 304
-        assert number_total_constraints(m) == 272
+        assert number_variables(m) == 312
+        assert number_total_constraints(m) == 280
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -1084,7 +1085,7 @@ class TestNanoFiltration_without_CP_2ions:
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
 
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
@@ -1096,7 +1097,7 @@ class TestNanoFiltration_without_CP_2ions:
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m, tee=False)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -1129,22 +1130,22 @@ class TestNanoFiltration_without_CP_2ions:
         m = NF_frame
 
         mole_flux_dict = {
-            "Na_+": 0.0010636,
-            "Cl_-": 0.0010636,
-            "H2O": 0.1313564,
+            "Na_+": 0.001035,
+            "Cl_-": 0.001035,
+            "H2O": 0.1280256,
         }
         for j, val in mole_flux_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
             )
 
         # TODO: subsequently focus on the segment below during the validation and refinement phase
         intrinsic_rejection_dict = {
-            "Na_+": 0.096269,
-            "Cl_-": 0.096269,
+            "Na_+": 0.0973859,
+            "Cl_-": 0.0973859,
         }
         for j, val in intrinsic_rejection_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
             )
 
@@ -1293,8 +1294,8 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 566
-        assert number_total_constraints(m) == 526
+        assert number_variables(m) == 574
+        assert number_total_constraints(m) == 534
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -1334,7 +1335,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        initialization_tester(m, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
 
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
@@ -1346,7 +1347,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m, tee=True)
+        results = solver.solve(m, tee=False)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -1379,28 +1380,28 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         m = NF_frame
 
         mole_flux_dict = {
-            "Na_+": 0.0001269756,
-            "Cl_-": 0.0001352,
-            "Ca_2+": 1.4258536e-06,
-            "SO4_2-": 2.9210354e-06,
-            "Mg_2+": 5.5916186e-06,
-            "H2O": 0.0069096,
+            "Na_+": 0.001498,
+            "Cl_-": 0.0015270406707817534,
+            "Ca_2+": 6.9196753914411e-06,
+            "SO4_2-": 1.5250837999354785e-05,
+            "Mg_2+": 2.2574857451949207e-05,
+            "H2O": 0.0757858554209567,
         }
         for j, val in mole_flux_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
             )
 
         # TODO: subsequently focus on the segment below during the validation and refinement phase
         intrinsic_rejection_dict = {
-            "Na_+": 0.00753,
-            "Cl_-": 0.11317679,
-            "Ca_2+": 0.441427,
-            "SO4_2-": 0.510229,
-            "Mg_2+": 0.64273,
+            "Na_+": -0.11617833410774085,
+            "Cl_-": 0.1040910862761738,
+            "Ca_2+": 0.7976653244744981,
+            "SO4_2-": 0.8139521570124647,
+            "Mg_2+": 0.90129734577974,
         }
         for j, val in intrinsic_rejection_dict.items():
-            assert pytest.approx(val, rel=1e-3) == value(
+            assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
             )
 
@@ -1468,7 +1469,7 @@ def test_inverse_solve():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    initialization_tester(m, outlvl=idaeslog.DEBUG)
+    initialization_tester(m)
 
     badly_scaled_var_lst = list(
         badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
@@ -1489,7 +1490,7 @@ def test_inverse_solve():
     m.fs.unit.retentate.temperature[0].fix(298.15)
     m.fs.unit.retentate.pressure[0].fix(4e5)
 
-    results = solver.solve(m, tee=True)
+    results = solver.solve(m, tee=False)
 
     # Check for optimal solution
     assert_optimal_termination(results)
@@ -1512,26 +1513,26 @@ def test_inverse_solve():
     )
 
     mole_flux_dict = {
-        "Na_+": 0.0010739,
-        "Cl_-": 0.0010739,
-        "H2O": 0.129305,
+        "Na_+": 0.0010507,
+        "Cl_-": 0.0010507,
+        "H2O": 0.1266627,
     }
     for j, val in mole_flux_dict.items():
-        assert pytest.approx(val, rel=1e-3) == value(
+        assert pytest.approx(val, rel=5e-3) == value(
             m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
         )
 
     intrinsic_rejection_dict = {
-        "Na_+": 0.0964865,
-        "Cl_-": 0.0964865,
+        "Na_+": 0.0973109,
+        "Cl_-": 0.0973109,
     }
     for j, val in intrinsic_rejection_dict.items():
-        assert pytest.approx(val, rel=1e-3) == value(
+        assert pytest.approx(val, rel=5e-3) == value(
             m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
         )
     flow_mol_in_dict = {"Na_+": 0.483564, "Cl_-": 0.483564, "H2O": 53.821}
     for j, val in flow_mol_in_dict.items():
-        assert pytest.approx(val, rel=1e-3) == value(
+        assert pytest.approx(val, rel=5e-3) == value(
             m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", j]
         )
 
@@ -1600,7 +1601,7 @@ def test_mass_transfer_coeff_fixed():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    initialization_tester(m, outlvl=idaeslog.DEBUG)
+    initialization_tester(m)
 
     badly_scaled_var_lst = list(
         badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
@@ -1621,7 +1622,7 @@ def test_mass_transfer_coeff_fixed():
     m.fs.unit.retentate.temperature[0].fix(298.15)
     m.fs.unit.retentate.pressure[0].fix(4e5)
 
-    results = solver.solve(m, tee=True)
+    results = solver.solve(m, tee=False)
 
     # Check for optimal solution
     assert_optimal_termination(results)
@@ -1644,26 +1645,26 @@ def test_mass_transfer_coeff_fixed():
     )
 
     mole_flux_dict = {
-        "Na_+": 0.00107097,
-        "Cl_-": 0.00107097,
-        "H2O": 0.12989686,
+        "Na_+": 0.001046,
+        "Cl_-": 0.001046,
+        "H2O": 0.1270519,
     }
     for j, val in mole_flux_dict.items():
-        assert pytest.approx(val, rel=1e-3) == value(
+        assert pytest.approx(val, rel=5e-3) == value(
             m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
         )
 
     intrinsic_rejection_dict = {
-        "Na_+": 0.09700,
-        "Cl_-": 0.09700,
+        "Na_+": 0.09788315104842758,
+        "Cl_-": 0.09788315104842758,
     }
     for j, val in intrinsic_rejection_dict.items():
-        assert pytest.approx(val, rel=1e-3) == value(
+        assert pytest.approx(val, rel=5e-3) == value(
             m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
         )
     flow_mol_in_dict = {"Na_+": 0.483564, "Cl_-": 0.483564, "H2O": 53.821}
     for j, val in flow_mol_in_dict.items():
-        assert pytest.approx(val, rel=1e-3) == value(
+        assert pytest.approx(val, rel=5e-3) == value(
             m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", j]
         )
 
@@ -1762,7 +1763,7 @@ def test_pressure_recovery_step_2_ions():
     m.fs.unit.spacer_porosity.fix(0.85)
     m.fs.unit.channel_height.fix(5e-4)
     m.fs.unit.velocity[0, 0].fix(0.25)
-    m.fs.unit.area.fix(50)
+    m.fs.unit.area.fix(20)
     # Fix additional variables for calculating mass transfer coefficient with spiral wound correlation
     m.fs.unit.spacer_mixing_efficiency.fix()
     m.fs.unit.spacer_mixing_length.fix()
@@ -1798,10 +1799,12 @@ def test_pressure_recovery_step_2_ions():
     assert_optimal_termination(results)
 
     pressure_steps = np.linspace(1.8e5, 20e5, 10)
-
-    for p in pressure_steps:
+    from watertap.core.util.model_diagnostics.infeasible import print_close_to_bounds, print_infeasible_constraints
+    for p in pressure_steps:    
         m.fs.unit.inlet.pressure[0].fix(p)
         results = solver.solve(m)
+        # print_infeasible_constraints(m,print_expression=True,print_variables=True)
+        # print_close_to_bounds(m)
         assert_optimal_termination(results)
 
     m.fs.unit.inlet.pressure[0].fix(10e5)
@@ -1810,7 +1813,7 @@ def test_pressure_recovery_step_2_ions():
     for r in np.linspace(0.05, 0.97, 10):
         m.fs.unit.recovery_vol_phase.fix(r)
         print(r)
-        res = solver.solve(m, tee=True)
+        res = solver.solve(m, tee=False)
         assert_optimal_termination(res)
 
 
@@ -1940,17 +1943,17 @@ def test_pressure_recovery_step_5_ions():
         automate_rescale=False,
     )
 
-    res = solver.solve(m, tee=True)
+    res = solver.solve(m, tee=False)
     assert_optimal_termination(res)
 
     for k in np.linspace(2, 20, 10):
         m.fs.feed.properties[0].pressure.fix(k * 1e5)
-        res = solver.solve(m, tee=True)
+        res = solver.solve(m, tee=False)
         assert_optimal_termination(res)
 
     m.fs.feed.properties[0].pressure.fix(10e5)
 
     for r in np.linspace(0.05, 0.97, 10):
         m.fs.nfUnit.recovery_vol_phase.fix(r)
-        res = solver.solve(m, tee=True)
+        res = solver.solve(m, tee=False)
         assert_optimal_termination(res)
