@@ -9,8 +9,6 @@ Overview
 This guide shows you how to add the WaterTAP costing package, add unit model costing, create a custom costing model, and access costing results.
 Additional details on the WaterTAP costing package, including equations and default parameter values, can be found in the :ref:`official documentation<WaterTAPCostingBlockData>`.
 
-.. Note that this guide will use the primary costing package :ref:`the primary costing package<watertap_costing>` but identical steps could be taken with :ref:`the detailed costing package<watertap_costing_detailed>`.
-
 How To
 ------
 
@@ -325,6 +323,11 @@ How To
         )
         m.fs.costing.add_flow_component_breakdown(
             "bazchem",
+            m.fs.product.properties[0].flow_vol_phase["Liq"],
+            period=pyunits.hr,
+        )
+        m.fs.costing.add_flow_component_breakdown(
+            "electricity",
             m.fs.product.properties[0].flow_vol_phase["Liq"],
             period=pyunits.hr,
         )
@@ -689,10 +692,10 @@ If you are unsure, the units for costing variables (or any variable) can be acce
 .. testoutput::
 
     Base currency: USD_2023
-    RO capital cost units: USD_2023
-    Chemical addition capital cost units: USD_2023
-    Pump capital cost units: USD_2023
-    ERD capital cost units: USD_2023
+    RO capital cost units: USD_2018
+    Chemical addition capital cost units: USD_2018
+    Pump capital cost units: USD_2018
+    ERD capital cost units: USD_2018
 
 
 Accessing System-Level Costing Results
@@ -790,10 +793,6 @@ Each registered flow appears in multiple places within the LCOW breakdowns. For 
 is included in the results for the `fs.pump1`, `fs.pump2`, and `fs.ERD` indexes; the sum of these values (i.e., the total aggregation of electricity) equals the ``LCOW_aggregate_variable_opex['electricity']`` entry.
 Additionally, ``LCOW_aggregate_variable_opex["Pump"]`` corresponds to the sum of the variable costs for all pump unit models. 
 For this reason, the system LCOW is the summation of all indexes in any of the component or aggregate expressions *except* those indexed by flow.
-
-.. Note that if costing for a unit model 
-.. included more than one registered flow (e.g., both electricity and a chemical), the variable cost for that unit model will be the sum of the costs for each registered flow.
-
 
 .. code-block:: none
 
