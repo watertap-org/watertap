@@ -25,11 +25,11 @@ This object is a Pyomo Suffix and can be displayed to show what variables have s
 
 .. testsetup:: [scaling_factor]
 
-   # quiet idaes logs
-   import idaes.logger as idaeslogger
-   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
-   idaeslogger.getLogger('ideas.core.util.scaling').setLevel('CRITICAL')
-   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+    # quiet idaes logs
+    import idaes.logger as idaeslogger
+    idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
@@ -82,10 +82,11 @@ A user can achieve this by setting the default scaling at the property Parameter
 
 .. testsetup:: [set_default_scaling]
 
-   # quiet idaes logs
-   import idaes.logger as idaeslogger
-   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
-   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+    # quiet idaes logs
+    import idaes.logger as idaeslogger
+    idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock

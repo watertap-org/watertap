@@ -27,8 +27,8 @@ In general you would import your own flowsheet module.
 
     # quiet idaes logs
     import idaes.logger as idaeslogger
-    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
-    idaeslogger.getLogger('ideas.core.util.scaling').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
     idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
 .. testcode::
