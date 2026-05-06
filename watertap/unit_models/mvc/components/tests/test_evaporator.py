@@ -38,6 +38,7 @@ def evap_condense_model():
     # Add a condenser and connect it to the evaporator to test connection constraints.
     m.fs.condenser = Condenser(property_package=m.fs.properties_vapor)
     # state variables
+    # Condenser inlet mass flow is fixed at a near-zero dummy value (1e-8 kg/s)  because it should be pure vapor. The test checks that the model can be built, initialized, and solved with this dummy value without scaling issues. The actual vapor flow will be determined by the evaporator model and should not rely on this inlet flow.
     m.fs.condenser.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
     m.fs.condenser.inlet.pressure[0].fix(0.5e5)  # Pa
 
@@ -62,6 +63,13 @@ def evap_condense_model():
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_out, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.lmtd, 1e-1)
+    # The water property pack auto-derives enth_flow_phase scaling as:
+    #   sf(flow_mass_phase_comp) * sf(enth_mass_phase) = 1 * 1e-5 = 1e-5.
+    # However, the condenser inlet Liq flow is fixed at a near-zero dummy value (1e-8 kg/s),
+    # so the actual enthalpy flow is ~1e-3 J/s, giving a scaled value of ~1e-8 — which the
+    # badly-scaled-var check flags as too small. The manual override below suppresses that
+    # check by preventing calculate_scaling_factors from overwriting the factor. This is a
+    # test artifact caused by the dummy near-zero inlet flow, not a real scaling concern.
     iscale.set_scaling_factor(
         m.fs.condenser.control_volume.properties_in[0].enth_flow_phase["Liq"], 1e-8
     )
