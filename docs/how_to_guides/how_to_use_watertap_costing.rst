@@ -19,6 +19,7 @@ How To
     from pyomo.environ import (
         ConcreteModel,
         Constraint,
+        Param,
         Var,
         Expression,
         Objective,
