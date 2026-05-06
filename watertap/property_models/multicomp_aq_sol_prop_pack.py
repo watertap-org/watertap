@@ -1930,8 +1930,6 @@ class MCASStateBlockData(StateBlockData):
             rule=rule_act_coeff_phase_comp,
         )
 
-    # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
-    # the MIT's DSPMDE paper indicates usage of molar concentration
     def _ionic_strength_molal(self):
         self.ionic_strength_molal = Var(
             initialize=1,
@@ -1953,8 +1951,6 @@ class MCASStateBlockData(StateBlockData):
             initialize=1,
             domain=NonNegativeReals,
             units=(pyunits.kg/pyunits.mol)**0.5,
-            # TODO: units are technically (kg/mol)**0.5, but Debye Huckel equation
-            #  is empirical and units don't seem to cancel as typical. leaving as dimensionless for now
             doc="Temperature-dependent Debye Huckel constant A",
         )
 
@@ -1974,14 +1970,6 @@ class MCASStateBlockData(StateBlockData):
                     )
                 )
                 ** (1.5)
-                # * (
-                #     pyunits.coulomb**3
-                #     * pyunits.m**1.5
-                #     / pyunits.farad**1.5
-                #     / pyunits.J**1.5
-                #     / pyunits.mol**0.5
-                # )
-                # ** -1
             )
 
         self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)
