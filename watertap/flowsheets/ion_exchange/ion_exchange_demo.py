@@ -147,6 +147,11 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
     m.fs.costing.add_specific_energy_consumption(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
+    m.fs.costing.add_flow_component_breakdown(
+        "NaCl",
+        m.fs.product.properties[0].flow_vol_phase["Liq"],
+        name="regenerant_usage",
+    )
 
     # Arcs are used to "connect" Ports on unit process models to Ports on other unit process models
     # For example, in this next line the outlet Port on the Feed model is connected to the inlet Port on the ion exchange model
@@ -311,6 +316,10 @@ def display_results(m):
     )
     print(
         f'{"Specific Energy Consumption":<40s}{f"{m.fs.costing.specific_energy_consumption():<39,.5f}"}{"kWh/m3":<40s}'
+    )
+    regen_usage = m.fs.costing.regenerant_usage_component["fs.ion_exchange"]
+    print(
+        f'{f"Specific {ix.config.regenerant} Consumption":<40s}{f"{regen_usage():<39,.5f}"}{"kg/m3":<40s}'
     )
     print(
         f'{f"Annual Regenerant cost ({ix.config.regenerant})":<40s}{f"${m.fs.costing.aggregate_flow_costs[ix.config.regenerant]():<39,.2f}"}{"$/yr":<40s}'
