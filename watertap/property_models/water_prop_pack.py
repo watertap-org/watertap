@@ -424,6 +424,70 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Thermal conductivity of seawater parameter 8",
         )
 
+        # Specific volume parameters, computed from Affandi expression (Eq 5)
+
+        self.sp_vol_phase_param_A1 = Var(
+            within=Reals,
+            initialize=-7.75883,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A1",
+        )
+        self.sp_vol_phase_param_A2 = Var(
+            within=Reals,
+            initialize=3.23753,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A2",
+        )
+        self.sp_vol_phase_param_A3 = Var(
+            within=Reals,
+            initialize=2.05755,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A3",
+        )
+        self.sp_vol_phase_param_A4 = Var(
+            within=Reals,
+            initialize=-0.06052,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A4",
+        )
+        self.sp_vol_phase_param_A5 = Var(
+            within=Reals,
+            initialize=0.00529,
+            units=pyunits.dimensionless,
+            doc="Specific volume parameter A5",
+        )
+        self.temperature_crit = Var(
+            within=Reals,
+            initialize=647.096,
+            units=pyunits.degK,
+            doc="Critical temperature of steam",
+        )
+
+        # Parameters for saturation temperature of water vapour from eq. A.12 in El-Dessouky and Ettouney
+        self.temp_sat_solvent_A1 = Var(
+            within=Reals,
+            initialize=42.6776,
+            units=pyunits.K,
+            doc="Water boiling point parameter A1",
+        )
+        self.temp_sat_solvent_A2 = Var(
+            within=Reals,
+            initialize=-3892.7,
+            units=pyunits.K,
+            doc="Water boiling point parameter A2",
+        )
+        self.temp_sat_solvent_A3 = Var(
+            within=Reals,
+            initialize=1000,
+            units=pyunits.kPa,
+            doc="Water boiling point parameter A3",
+        )
+        self.temp_sat_solvent_A4 = Var(
+            within=Reals,
+            initialize=-9.48654,
+            units=pyunits.dimensionless,
+            doc="Water boiling point parameter A4",
+        )
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -441,6 +505,8 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dh_vap_mass", 1e-6)
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
+        self.set_default_scaling("specific_vol_sat_phase", 1, index="Vap")
+        self.set_default_scaling("specific_vol_phase", 1, index="Vap")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -467,6 +533,9 @@ class WaterParameterData(PhysicalParameterBlock):
             {
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
+                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
+                "specific_vol_sat_phase": {"method": "_specific_vol_sat_phase"},
+                "specific_vol_phase": {"method": "_specific_vol_phase"},
             }
         )
 
@@ -1071,6 +1140,66 @@ class WaterStateBlockData(StateBlockData):
 
         self.eq_therm_cond_phase = Constraint(["Liq"], rule=rule_therm_cond_phase)
 
+    def _specific_vol_sat_phase(self):
+        self.specific_vol_sat_phase = Var(
+            ["Vap"],
+            initialize=100,
+            bounds=(0, None),
+            units=pyunits.m**3 / pyunits.kg,
+            doc="Specific volume of saturated steam",
+        )
+
+        def rule_specific_vol_sat_phase(b, p):
+            t_red = self.temperature / self.params.temperature_crit
+            log_sp_vol = (
+                self.params.sp_vol_phase_param_A1
+                + self.params.sp_vol_phase_param_A2 * (log(1 / t_red)) ** 0.4
+                + self.params.sp_vol_phase_param_A3 / (t_red**2)
+                + self.params.sp_vol_phase_param_A4 / (t_red**4)
+                + self.params.sp_vol_phase_param_A5 / (t_red**5)
+            )
+            return (
+                b.specific_vol_sat_phase[p]
+                == exp(log_sp_vol) * pyunits.m**3 / pyunits.kg
+            )
+
+        self.eq_specific_vol_sat_phase = Constraint(
+            ["Vap"], rule=rule_specific_vol_sat_phase
+        )
+
+    def _specific_vol_phase(self):
+        self.specific_vol_phase = Var(
+            ["Vap"],
+            initialize=0.001,
+            bounds=(0, None),
+            units=pyunits.m**3 / pyunits.kg,
+            doc="Specific volume of steam",
+        )
+
+        def rule_specific_vol_phase(b, p):
+            return b.specific_vol_phase[p] * b.dens_mass_phase[p] == 1
+
+        self.eq_specific_vol_phase = Constraint(["Vap"], rule=rule_specific_vol_phase)
+
+    def _temperature_sat_solvent(self):
+        self.temperature_sat_solvent = Var(
+            initialize=298.15,
+            bounds=(273.15, 1000.15),
+            units=pyunits.K,
+            doc="Vapour (saturation) temperature of pure solvent at boiling pressure",
+        )
+
+        def rule_temperature_sat_solvent(b):
+            p = pyunits.convert(b.pressure, to_units=pyunits.kPa)
+            return (
+                b.temperature_sat_solvent
+                == b.params.temp_sat_solvent_A1
+                + b.params.temp_sat_solvent_A2
+                / (log(p / b.params.temp_sat_solvent_A3) + b.params.temp_sat_solvent_A4)
+            )
+
+        self.eq_temperature_sat_solvent = Constraint(rule=rule_temperature_sat_solvent)
+
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
     # return a pyomo Var or Expression
@@ -1191,5 +1320,12 @@ class WaterStateBlockData(StateBlockData):
                     sf *= iscale.get_scaling_factor(self.enth_mass_phase[p])
                     iscale.set_scaling_factor(self.enth_flow_phase[p], sf)
 
+        # Scaling saturation temperature
+        if self.is_property_constructed("temperature_sat_solvent"):
+            if iscale.get_scaling_factor(self.temperature_sat_solvent) is None:
+                iscale.set_scaling_factor(
+                    self.temperature_sat_solvent,
+                    iscale.get_scaling_factor(self.temperature),
+                )
         # transforming constraints
         transform_property_constraints(self)
