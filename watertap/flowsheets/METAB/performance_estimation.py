@@ -22,32 +22,20 @@ except ImportError:
     pdf2image = None
 from IPython.display import display
 
-
-def get_data(
-    tool="pysmo",
-    input_data_file="./results/input_data.csv",
-    output_data_file="./results/output_data.csv",
-):
-    input_data = pd.read_csv(input_data_file, header=0)
-    # print(input_data)
-    output_data = pd.read_csv(output_data_file, header=0).iloc[:, 1:]
-    # print(output_data)
-    feed_data = pd.concat([input_data, output_data], axis=1)
-    return feed_data, input_data, output_data
+local_path = os.path.dirname(os.path.abspath(__file__))
 
 
-def performance_estimiation(
+def performance_estimation(
     method="poly",  # "rbf"#"kri"alamo'
     path="./results/",
 ):
-    method_list = []
+    metrics_sum = pd.DataFrame()
     file = path + method + "_surrogate.json"
 
     with open(file, "r") as file:
         data = json.load(file)
 
     if method == "poly":
-        metrics_sum = pd.DataFrame()
         for ele in data["model_encoding"]:
             metrics = data["model_encoding"][ele]["attr"]["errors"]
             metrics["Comp"] = ele
@@ -59,7 +47,6 @@ def performance_estimiation(
             metrics_sum = pd.concat([metrics_sum, df])
 
     elif method == "kri":
-        metrics_sum = pd.DataFrame()
         for ele in data["model_encoding"]:
             metrics = {}
             metrics["R2"] = [data["model_encoding"][ele]["attr"]["training_R2"]]
@@ -69,7 +56,6 @@ def performance_estimiation(
             metrics_sum = pd.concat([metrics_sum, df])
 
     elif method == "rbf":
-        metrics_sum = pd.DataFrame()
         for ele in data["model_encoding"]:
             metrics = {}
             metrics["R2"] = [data["model_encoding"][ele]["attr"]["R2"]]
@@ -81,8 +67,8 @@ def performance_estimiation(
     return metrics_sum
 
 
-def display_performace(method="poly", path="./results/"):
-    metrics = performance_estimiation(method=method, path=path)
+def display_performance(method="poly", path="./results/"):
+    metrics = performance_estimation(method=method, path=path)
     if method == "poly":
         display_metrics = pd.DataFrame()
         display_metrics["Predicted Variables"] = metrics["Comp"]
@@ -95,7 +81,6 @@ def display_performace(method="poly", path="./results/"):
 
 
 def display_plot(method="poly", path=None):
-    local_path = os.path.dirname(os.path.abspath(__file__))
     if path is None:
         path = os.path.join(local_path, "results")
 

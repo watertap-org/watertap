@@ -28,6 +28,10 @@ from watertap.flowsheets.METAB.model_evaluation import (
     export_output_data,
 )
 
+from watertap.flowsheets.METAB.performance_estimation import (
+    performance_estimation,
+)
+
 try:
     import exposan
     from exposan.metab import create_system
@@ -40,6 +44,8 @@ INPUT_VAR_INFO = {
     "temp": (22, 35),
     "hrt": (1, 12),
 }
+
+local_path = os.path.dirname(os.path.abspath(__file__))
 
 
 @pytest.fixture
@@ -428,3 +434,55 @@ def test_export_output_data_integration(tmp_path):
 
     df_read_back = pd.read_csv(output_csv)
     assert df_read_back.shape == output_data.shape
+
+
+@pytest.fixture
+def surrogate_path():
+    # TODO: Need to fix this path issue, add tests for kri and rbf, and separate tests into unique files
+    return os.path.abspath(os.path.join(local_path, "..", "results", ""))
+
+
+def test_performance_estimation_poly(surrogate_path):
+    result = performance_estimation(method="poly", path=surrogate_path)
+    assert isinstance(result, pd.DataFrame)
+    assert result.shape[0] == 25
+
+    assert "MAE" in result.columns
+    assert "MSE" in result.columns
+    assert "R2" in result.columns
+    assert "Adjusted R2" in result.columns
+    assert "Comp" in result.columns
+
+    expected_components = [
+        "S_su",
+        "S_aa",
+        "S_fa",
+        "S_va",
+        "S_bu",
+        "S_pro",
+        "S_ac",
+        "S_h2",
+        "S_ch4",
+        "S_IC",
+        "S_IN",
+        "S_I",
+        "X_c",
+        "X_ch",
+        "X_pr",
+        "X_li",
+        "X_su",
+        "X_aa",
+        "X_fa",
+        "X_c4",
+        "X_pro",
+        "X_ac",
+        "X_h2",
+        "X_I",
+        "VolumetricFlowrate",
+    ]
+    assert list(result["Comp"]) == expected_components
+
+
+def test_performance_estimation_file_not_found():
+    with pytest.raises(FileNotFoundError):
+        performance_estimation(method="poly", path="./file_not_found/")
