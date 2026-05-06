@@ -326,6 +326,7 @@ class TestNanoFiltration_with_CP_5ions:
 
         # test statistics
         from idaes.core.util.model_statistics import variables_set
+
         [print(i) for i in variables_set(m)]
         assert number_variables(m) == 574
         assert number_total_constraints(m) == 534
@@ -672,7 +673,7 @@ class TestNanoFiltration_without_CP_5ions:
         m = NF_frame
 
         mole_flux_dict = {
-            "Na_+":  0.000517,
+            "Na_+": 0.000517,
             "Cl_-": 0.000527,
             "Ca_2+": 1.62599e-6,
             "SO4_2-": 1.33546e-6,
@@ -696,7 +697,6 @@ class TestNanoFiltration_without_CP_5ions:
             assert pytest.approx(val, rel=5e-3) == value(
                 m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
             )
-
 
     @pytest.mark.unit
     def test_report(self, NF_frame):
@@ -1799,8 +1799,12 @@ def test_pressure_recovery_step_2_ions():
     assert_optimal_termination(results)
 
     pressure_steps = np.linspace(1.8e5, 20e5, 10)
-    from watertap.core.util.model_diagnostics.infeasible import print_close_to_bounds, print_infeasible_constraints
-    for p in pressure_steps:    
+    from watertap.core.util.model_diagnostics.infeasible import (
+        print_close_to_bounds,
+        print_infeasible_constraints,
+    )
+
+    for p in pressure_steps:
         m.fs.unit.inlet.pressure[0].fix(p)
         results = solver.solve(m)
         # print_infeasible_constraints(m,print_expression=True,print_variables=True)

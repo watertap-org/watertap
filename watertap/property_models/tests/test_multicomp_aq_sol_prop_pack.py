@@ -831,11 +831,21 @@ def test_seawater_data():
 
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
-    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(0.753, rel=1e-3)
-    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(0.753, rel=1e-3)
-    assert value(stream[0].act_coeff_phase_comp["Liq", "Ca_2+"]) == pytest.approx(0.322, rel=1e-3)
-    assert value(stream[0].act_coeff_phase_comp["Liq", "Mg_2+"]) == pytest.approx(0.322, rel=1e-3)
-    assert value(stream[0].act_coeff_phase_comp["Liq", "SO4_2-"]) == pytest.approx(0.322, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        0.753, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        0.753, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        0.322, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        0.322, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        0.322, rel=1e-3
+    )
 
     assert value(stream[0].total_hardness) == pytest.approx(
         value(
@@ -1677,6 +1687,7 @@ def test_compatibility_with_feed_mole_basis():
     # then the issue has been fixed.
     m.fs.feed = Feed(property_package=m.fs.properties)
 
+
 @pytest.mark.component
 def test_davies_activity_coefficients():
     m = ConcreteModel()
@@ -1700,8 +1711,13 @@ def test_davies_activity_coefficients():
 
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.1, rel=1e-3)
-    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(0.781, rel=5e-3)
-    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(0.781, rel=5e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        0.781, rel=5e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        0.781, rel=5e-3
+    )
+
 
 @pytest.mark.unit
 def test_compatibility_with_feed_mass_basis():

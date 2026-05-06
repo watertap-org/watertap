@@ -785,7 +785,7 @@ class MCASParameterData(PhysicalParameterBlock):
             mutable=True,
             default=0.3,
             initialize=0.3,
-            units=(pyunits.kg / pyunits.mol)**0.5,
+            units=(pyunits.kg / pyunits.mol) ** 0.5,
             doc="Debye Huckel constant b",
         )
 
@@ -1920,7 +1920,7 @@ class MCASStateBlockData(StateBlockData):
                 return log10(
                     b.act_coeff_phase_comp[p, j]
                 ) == -b.debye_huckel_constant * b.charge_comp[j] ** 2 * (
-                    I**0.5 / (1 + pyunits.kg**0.5 * pyunits.mol**-0.5 *I**0.5)
+                    I**0.5 / (1 + pyunits.kg**0.5 * pyunits.mol**-0.5 * I**0.5)
                     - b.params.debye_huckel_b * I
                 )
 
@@ -1950,26 +1950,27 @@ class MCASStateBlockData(StateBlockData):
         self.debye_huckel_constant = Var(
             initialize=1,
             domain=NonNegativeReals,
-            units=(pyunits.kg/pyunits.mol)**0.5,
+            units=(pyunits.kg / pyunits.mol) ** 0.5,
             doc="Temperature-dependent Debye Huckel constant A",
         )
 
         def rule_debye_huckel_constant(b):
-            return (
-                b.debye_huckel_constant
-                == ((2 * Constants.pi * Constants.avogadro_number * b.dens_mass_solvent) ** 0.5 / log(10))
-                * (
-                    Constants.elemental_charge**2
-                    / (
-                        4
-                        * Constants.pi
-                        * Constants.vacuum_electric_permittivity
-                        * b.params.dielectric_constant
-                        * Constants.boltzmann_constant
-                        * b.temperature
-                    )
+            return b.debye_huckel_constant == (
+                (2 * Constants.pi * Constants.avogadro_number * b.dens_mass_solvent)
+                ** 0.5
+                / log(10)
+            ) * (
+                Constants.elemental_charge**2
+                / (
+                    4
+                    * Constants.pi
+                    * Constants.vacuum_electric_permittivity
+                    * b.params.dielectric_constant
+                    * Constants.boltzmann_constant
+                    * b.temperature
                 )
-                ** (1.5)
+            ) ** (
+                1.5
             )
 
         self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)
