@@ -95,7 +95,7 @@ def test_evaporator(evap_condense_model):
     assert degrees_of_freedom(m) == 0
 
     # initialize
-    m.fs.evaporator.initialize_build()
+    m.fs.evaporator.initialize()
 
     # solve
     solver = get_solver()
