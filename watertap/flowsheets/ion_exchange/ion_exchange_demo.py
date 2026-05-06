@@ -148,7 +148,9 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
         m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
     m.fs.costing.add_flow_component_breakdown(
-        "NaCl", "regenerant_usage", m.fs.product.properties[0].flow_vol_phase["Liq"]
+        "NaCl",
+        m.fs.product.properties[0].flow_vol_phase["Liq"],
+        name="regenerant_usage",
     )
 
     # Arcs are used to "connect" Ports on unit process models to Ports on other unit process models
@@ -351,5 +353,3 @@ def display_results(m):
 
 if __name__ == "__main__":
     m = main()
-    m.fs.costing.regenerant_usage_component.display()
-    print(pyunits.get_units(m.fs.costing.regenerant_usage_component["fs.ion_exchange"]))
