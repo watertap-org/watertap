@@ -44,7 +44,6 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.core.base.units_container import InconsistentUnitsError
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -1372,7 +1371,7 @@ class MCASStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e3, None),
+            bounds=(1, None),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
@@ -2149,34 +2148,35 @@ class MCASStateBlockData(StateBlockData):
             units=pyunits.mg / pyunits.L,
             doc="Total hardness as CaCO3 equivalent",
         )
-        # add try/except to handle case without multivalent cations,
-        # which would return 0 and result in InconsistentUnits error due to conversion of dimensionless to mg/L
-        try:
-            total_hardness_temp = pyunits.convert(
-                sum(
-                    self.flow_mol_phase_comp["Liq", j]
-                    / self.flow_vol_phase["Liq"]
-                    * 100.0869
-                    * pyunits.g
-                    / pyunits.mol
-                    * float(value(self.charge_comp[j]))
-                    / 2.0
-                    for j in self.params.cation_set
-                    if value(self.charge_comp[j]) > 1
-                ),
-                to_units=pyunits.mg / pyunits.L,
-            )
-
-            def rule_total_hardness(b):
-                return b.total_hardness == total_hardness_temp
-
-            self.eq_total_hardness = Constraint(rule=rule_total_hardness)
-        except InconsistentUnitsError:
+        polyvalent = [
+            j for j in self.params.cation_set if value(self.params.charge_comp[j]) >= 2
+        ]
+        if not polyvalent:
             self.total_hardness.fix(0)
             _log.warning(
                 "No multivalent cations in solute_list; total_hardness fixed to 0."
             )
             return
+
+        total_hardness_temp = pyunits.convert(
+            sum(
+                self.flow_mol_phase_comp["Liq", j]
+                / self.flow_vol_phase["Liq"]
+                * 100.0869
+                * pyunits.g
+                / pyunits.mol
+                * float(value(self.charge_comp[j]))
+                / 2.0
+                for j in self.params.cation_set
+                if value(self.charge_comp[j]) > 1
+            ),
+            to_units=pyunits.mg / pyunits.L,
+        )
+
+        def rule_total_hardness(b):
+            return b.total_hardness == total_hardness_temp
+
+        self.eq_total_hardness = Constraint(rule=rule_total_hardness)
 
     def _total_dissolved_solids(self):
         self.total_dissolved_solids = Var(
