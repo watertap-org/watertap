@@ -76,6 +76,7 @@ def main():
     iscale.calculate_scaling_factors(m.fs)
 
     add_costing(m)
+    m.fs.costing.initialize()
 
     # solving
     m.fs.crystallizer.initialize(outlvl=idaeslog.WARNING)
