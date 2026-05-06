@@ -9,7 +9,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "Pressure exchanger unit cost", ":math:`C_{PX}`", "``pressure_exchanger_cost``", "535", ":math:`\text{USD}_{2018}\text{/m}^3\text{/hr}`"
+   "Pressure exchanger unit cost", ":math:`C_{PX}`", "``unit_cost``", "535", ":math:`\text{USD}_{2018}\text{/m}^3\text{/hr}`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
