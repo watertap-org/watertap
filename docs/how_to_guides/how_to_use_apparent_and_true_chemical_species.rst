@@ -32,6 +32,10 @@ an ``"Apparent"`` species.
 
 .. testsetup::
 
+    # quiet pyomo logs
+    import logging
+    logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
+
     # quiet idaes logs
     import idaes.logger as idaeslogger
     idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')

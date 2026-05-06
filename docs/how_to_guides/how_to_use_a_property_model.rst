@@ -5,6 +5,10 @@ The example below shows how to use a property model and display outputs for a st
 users to model the chemical and physical properties of simple systems without the use of unit models.
 
 .. testsetup::
+    
+    # quiet pyomo logs
+    import logging
+    logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
 
     # quiet idaes logs
     import idaes.logger as idaeslogger

@@ -24,6 +24,10 @@ For example, the code below imports from an existing flowsheet module, RO with e
 In general you would import your own flowsheet module.
 
 .. testsetup::
+    
+    # quiet pyomo logs
+    import logging
+    logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
 
     # quiet idaes logs
     import idaes.logger as idaeslogger

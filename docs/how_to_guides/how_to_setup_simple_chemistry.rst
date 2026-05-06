@@ -81,6 +81,10 @@ In this example, we will define a simple thermo-properties configuration diction
 for a chemical system that contains only water.
 
 .. testsetup::
+    
+    # quiet pyomo logs
+    import logging
+    logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
 
     # quiet idaes logs
     import idaes.logger as idaeslogger

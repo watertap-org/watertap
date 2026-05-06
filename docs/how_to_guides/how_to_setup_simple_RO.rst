@@ -4,6 +4,10 @@ How to setup a simple RO model
 The example below shows how to setup and initialize a simple RO unit model.
 
 .. testsetup::
+    
+    # quiet pyomo logs
+    import logging
+    logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
 
     # quiet idaes logs
     import idaes.logger as idaeslogger

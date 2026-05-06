@@ -12,7 +12,11 @@ How To
 As before, we begin by importing or explicitly programming any functions relating to flowsheet building/specification, simulation, and optimization setup steps.  We will use the same RO with energy recovery flowsheet for this example.
 
 .. testsetup::
-
+    
+    # quiet pyomo logs
+    import logging
+    logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
+    
     # quiet idaes logs
     import idaes.logger as idaeslogger
     idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')

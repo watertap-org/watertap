@@ -24,12 +24,16 @@ Scaling factors are located in the ``scaling_factor`` object on each block of a 
 This object is a Pyomo Suffix and can be displayed to show what variables have scaling factors and their values as shown below:
 
 .. testsetup:: [scaling_factor]
+    
+   # quiet pyomo logs
+   import logging
+   logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
 
-    # quiet idaes logs
-    import idaes.logger as idaeslogger
-    idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
-    idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
-    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+   # quiet idaes logs
+   import idaes.logger as idaeslogger
+   idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
@@ -82,11 +86,15 @@ A user can achieve this by setting the default scaling at the property Parameter
 
 .. testsetup:: [set_default_scaling]
 
-    # quiet idaes logs
-    import idaes.logger as idaeslogger
-    idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
-    idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
-    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+   # quiet pyomo logs
+   import logging
+   logging.getLogger('pyomo.core').setLevel(logging.CRITICAL)
+
+   # quiet idaes logs
+   import idaes.logger as idaeslogger
+   idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
