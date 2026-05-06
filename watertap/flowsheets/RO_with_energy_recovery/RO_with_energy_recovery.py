@@ -91,7 +91,6 @@ def build(erd_type=ERDtype.pressure_exchanger):
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -100,7 +99,6 @@ def build(erd_type=ERDtype.pressure_exchanger):
 
     # --- Main pump ---
     m.fs.P1 = Pump(property_package=m.fs.properties)
-    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
@@ -110,7 +108,6 @@ def build(erd_type=ERDtype.pressure_exchanger):
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
     )
-    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pressure_exchanger:
@@ -124,28 +121,16 @@ def build(erd_type=ERDtype.pressure_exchanger):
             inlet_list=["P1", "P2"],
         )
 
-        # add costing for PX and recirculation pump
-        m.fs.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         # mixer and separator have no associated costing
     elif erd_type == ERDtype.pump_as_turbine:
         # add energy recovery turbine block
         m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
-        # add costing for ERD config
-        m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     elif erd_type == ERDtype.no_ERD:
         pass
     else:
         erd_type_not_found(erd_type)
 
-    # process costing and add system level metrics
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_electrical_carbon_intensity(
-        m.fs.product.properties[0].flow_vol
-    )
+    add_costing(m, erd_type=erd_type)
 
     # connections
     if erd_type == ERDtype.pressure_exchanger:
@@ -195,6 +180,28 @@ def build(erd_type=ERDtype.pressure_exchanger):
         erd_type_not_found(erd_type)
 
     return m
+
+
+def add_costing(m, erd_type=ERDtype.pressure_exchanger):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    if erd_type == ERDtype.pressure_exchanger:
+        # add costing for PX and recirculation pump
+        m.fs.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    elif erd_type == ERDtype.pump_as_turbine:
+        # add costing for ERD config
+        m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # process costing and add system level metrics
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
 
 
 def set_operating_conditions(

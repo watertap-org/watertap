@@ -33,7 +33,6 @@ def main():
     m.fs = FlowsheetBlock(dynamic=False)
     # attach property package
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
     # build the unit model
     m.fs.crystallizer = Crystallization(property_package=m.fs.properties)
 
@@ -75,14 +74,12 @@ def main():
         "flow_mass_phase_comp", 1e-1, index=("Sol", "NaCl")
     )
     iscale.calculate_scaling_factors(m.fs)
-    m.fs.crystallizer.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing,
-        costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
-    )
-    m.fs.costing.cost_process()
+
+    add_costing(m)
+    m.fs.costing.initialize()
 
     # solving
-    m.fs.crystallizer.initialize(outlvl=idaeslog.DEBUG)
+    m.fs.crystallizer.initialize(outlvl=idaeslog.WARNING)
     assert_units_consistent(m)  # check that units are consistent
     assert degrees_of_freedom(m) == 0
     solver = get_solver()
@@ -143,6 +140,15 @@ def main():
     m.fs.crystallizer.report()
 
     return m
+
+
+def add_costing(m):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.crystallizer.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
+    )
+    m.fs.costing.cost_process()
 
 
 if __name__ == "__main__":
