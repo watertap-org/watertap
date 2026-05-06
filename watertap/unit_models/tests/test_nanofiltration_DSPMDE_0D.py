@@ -13,7 +13,6 @@
 import pytest
 import numpy as np
 from math import log
-import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -62,7 +61,9 @@ from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import (
     Feed,
 )
-import idaes.logger as idaeslog
+
+# Uncomment the following line to enable logging during testing (e.g., initialization_tester(m, outlvl=idaeslog.DEBUG))
+# import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
