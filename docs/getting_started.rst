@@ -143,7 +143,7 @@ Create a Conda environment (in this example, named ``watertap-dev``) where Water
 
 .. code-block:: shell
 
-   conda create --name watertap-dev --yes python=3.11 && conda activate watertap-dev
+   conda create --name watertap-dev --yes python=3.11 cyipopt reaktoro && conda activate watertap-dev
 
 Clone the WaterTAP repository to your local development machine using ``git clone``, then enter the newly created ``watertap`` subdirectory:
 
@@ -151,24 +151,11 @@ Clone the WaterTAP repository to your local development machine using ``git clon
 
    git clone https://github.com/watertap-org/watertap && cd watertap
 
-Install WaterTAP conda-forge dependencies using ``conda`` (this is to enable use of reaktoro packages, which are not available on PyPI):
-
-.. code-block:: shell
-
-   conda install cyipopt reaktoro
-
-
 Install WaterTAP and the development dependencies using ``pip`` :
 
 .. code-block:: shell
 
    pip install -e .[dev]
-
-or alternatively, if you are using reaktoro features, you can add the ``[reaktoro-pse]`` extra to the command above:
-
-.. code-block:: shell
-
-   pip install -e .[dev, reaktoro-pse]
 
 If needed, or if this is your first time installing IDAES or WaterTAP on your machine, run the following line from the same environment where WaterTAP was installed.
 
