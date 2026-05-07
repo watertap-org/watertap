@@ -44,7 +44,6 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.core.base.units_container import InconsistentUnitsError
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -187,18 +186,6 @@ class MCASScaler(CustomScalerBase):
                     sf = self.get_scaling_factor(
                         model.flow_mol_phase_comp[p, j]
                     ) / self.get_scaling_factor(model.flow_mol_phase_comp["Liq", "H2O"])
-                    self.set_variable_scaling_factor(v, sf, overwrite=overwrite)
-
-        if model.is_property_constructed("mass_frac_phase_comp"):
-            for (p, j), v in model.mass_frac_phase_comp.items():
-                if j == "H2O":
-                    self.set_variable_scaling_factor(v, 1, overwrite=overwrite)
-                else:
-                    sf = self.get_scaling_factor(
-                        model.flow_mass_phase_comp[p, j]
-                    ) / self.get_scaling_factor(
-                        model.flow_mass_phase_comp["Liq", "H2O"]
-                    )
                     self.set_variable_scaling_factor(v, sf, overwrite=overwrite)
 
         if model.is_property_constructed("mass_frac_phase_comp"):
@@ -1376,7 +1363,7 @@ class MCASStateBlockData(StateBlockData):
         # Add state variables
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 373.15),
+            bounds=(273.15, 1000),
             domain=NonNegativeReals,
             units=pyunits.K,
             doc="State temperature",
@@ -1384,7 +1371,7 @@ class MCASStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, None),
+            bounds=(1, None),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
@@ -1463,9 +1450,15 @@ class MCASStateBlockData(StateBlockData):
             )
 
     def _flow_mass_comp(self):
-        @self.Expression(self.params.component_list)
-        def flow_mass_comp(b, j):
-            return b.flow_mass_phase_comp["Liq", j]
+        add_object_reference(
+            self,
+            "flow_mass_comp",
+            {
+                j: self.flow_mass_phase_comp[p, j]
+                for j in self.params.component_list
+                for p in self.params.phase_list
+            },
+        )
 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
@@ -2153,37 +2146,37 @@ class MCASStateBlockData(StateBlockData):
             domain=NonNegativeReals,
             bounds=(0, None),
             units=pyunits.mg / pyunits.L,
-            doc="total hardness as CaCO3",
+            doc="Total hardness as CaCO3 equivalent",
         )
-        # add try/except to handle case without multivalent cations,
-        # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
-        try:
-            total_hardness_temp = pyunits.convert(
-                sum(
-                    self.flow_mol_phase_comp["Liq", j]
-                    / self.flow_vol_phase["Liq"]
-                    * 100.0869
-                    * pyunits.g
-                    / pyunits.mol
-                    * float(value(self.charge_comp[j]))
-                    / 2.0
-                    for j in self.params.cation_set
-                    if value(self.charge_comp[j]) > 1
-                ),
-                to_units=pyunits.mg / pyunits.L,
-            )
-
-            def rule_total_hardness(b):
-                return b.total_hardness == total_hardness_temp
-
-            self.eq_total_hardness = Constraint(rule=rule_total_hardness)
-
-        except InconsistentUnitsError:
+        polyvalent = [
+            j for j in self.params.cation_set if value(self.params.charge_comp[j]) >= 2
+        ]
+        if not polyvalent:
             self.total_hardness.fix(0)
             _log.warning(
-                "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+                "No multivalent cations in solute_list; total_hardness fixed to 0."
             )
             return
+
+        total_hardness_temp = pyunits.convert(
+            sum(
+                self.flow_mol_phase_comp["Liq", j]
+                / self.flow_vol_phase["Liq"]
+                * 100.0869
+                * pyunits.g
+                / pyunits.mol
+                * float(value(self.charge_comp[j]))
+                / 2.0
+                for j in self.params.cation_set
+                if value(self.charge_comp[j]) > 1
+            ),
+            to_units=pyunits.mg / pyunits.L,
+        )
+
+        def rule_total_hardness(b):
+            return b.total_hardness == total_hardness_temp
+
+        self.eq_total_hardness = Constraint(rule=rule_total_hardness)
 
     def _total_dissolved_solids(self):
         self.total_dissolved_solids = Var(
@@ -2191,29 +2184,18 @@ class MCASStateBlockData(StateBlockData):
             domain=NonNegativeReals,
             bounds=(0, None),
             units=pyunits.mg / pyunits.L,
-            doc="total dissolved solids",
+            doc="Total dissolved solids",
         )
-        # add try/except to handle case without ions,
-        # which would return 0 and result in Inconsitentunits error due to conversion of dimensionless to mg/L
-        try:
-            total_dissolved_solids_temp = pyunits.convert(
-                sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.ion_set),
-                to_units=pyunits.mg / pyunits.L,
-            )
 
-            def rule_total_dissolved_solids(b):
-                return b.total_dissolved_solids == total_dissolved_solids_temp
+        total_dissolved_solids_temp = pyunits.convert(
+            sum(self.conc_mass_phase_comp["Liq", j] for j in self.params.solute_set),
+            to_units=pyunits.mg / pyunits.L,
+        )
 
-            self.eq_total_dissolved_solids = Constraint(
-                rule=rule_total_dissolved_solids
-            )
+        def rule_total_dissolved_solids(b):
+            return b.total_dissolved_solids == total_dissolved_solids_temp
 
-        except InconsistentUnitsError:
-            self.total_dissolved_solids.fix(0)
-            _log.warning(
-                "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
-            )
-            return
+        self.eq_total_dissolved_solids = Constraint(rule=rule_total_dissolved_solids)
 
     def _enth_mass_phase(self):
         params = self.params
@@ -2371,12 +2353,7 @@ class MCASStateBlockData(StateBlockData):
         def rule_enth_mass_phase(b, p):
             # temperature in degC, but pyunits in K
             t = b.temperature - 273.15 * pyunits.K
-            S_kg_kg = (
-                pyunits.convert(
-                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
-                )
-                / b.dens_mass_phase[p]
-            )
+            S_kg_kg = sum(b.mass_frac_phase_comp[p, j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
@@ -2498,12 +2475,7 @@ class MCASStateBlockData(StateBlockData):
         # Nayar et al.(2016), eq. 5 and 6, 0-180 C, 0-160 g/kg
         def rule_pressure_sat(b):
             t = b.temperature
-            S_kg_kg = (
-                pyunits.convert(
-                    b.total_dissolved_solids, to_units=pyunits.kg / pyunits.m**3
-                )
-                / b.dens_mass_phase["Liq"]
-            )
+            S_kg_kg = sum(b.mass_frac_phase_comp["Liq", j] for j in b.params.solute_set)
             S_g_kg = S_kg_kg * 1000 * pyunits.g / pyunits.kg
             psatw = (
                 exp(
@@ -2535,10 +2507,9 @@ class MCASStateBlockData(StateBlockData):
         elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             return self.flow_mass_phase_comp[p, j]
 
-    # TODO: add enthalpy terms later
-    # def get_enthalpy_flow_terms(self, p):
-    #     """Create enthalpy flow terms."""
-    #     return self.enth_flow
+    def get_enthalpy_flow_terms(self, p):
+        """Create enthalpy flow terms."""
+        return self.enth_flow
 
     # TODO: make property package compatible with dynamics
     # def get_material_density_terms(self, p, j):
@@ -2647,8 +2618,8 @@ class MCASStateBlockData(StateBlockData):
 
         # touch this var since it is required for this method
         self.conc_mol_phase_comp
-        if solve:
 
+        if solve:
             if adjust_by_ion is not None:
                 ion_before_adjust = state_var["Liq", adjust_by_ion].value
             solve = get_solver()
@@ -2786,22 +2757,6 @@ class MCASStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(
                             self.flow_mol_phase_comp["Liq", j], sf
                         )
-
-        if self.is_property_constructed("flow_mol_comp"):
-            for j in self.flow_mol_comp:
-                iscale.set_scaling_factor(
-                    self.flow_mol_comp[j],
-                    # Don't provide a default since this should always be set
-                    iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]),
-                )
-
-        if self.is_property_constructed("flow_mass_comp"):
-            for j in self.flow_mass_comp:
-                iscale.set_scaling_factor(
-                    self.flow_mass_comp[j],
-                    # Don't provide a default since this should always be set
-                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j]),
-                )
 
         # The following variables and parameters have computed scaling factors;
         # Users do not have to input scaling factors but, if they do, their value

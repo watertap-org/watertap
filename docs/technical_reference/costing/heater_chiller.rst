@@ -9,11 +9,11 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
 .. csv-table::
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
-   "**Electric Heater**"
+   "**Electric Heater** (cost method = ``cost_electric_heater``)"
    "Heater unit cost", ":math:`C_{heater}`", "``unit_cost``", "0.066", ":math:`\text{USD}_{2018}\text{/W}`"
    "Heat generation efficiency", ":math:`HE`", "``HE``", "0.99", ":math:`\text{dimensionless}`"
 
-   "**Chiller**"
+   "**Chiller** (cost method = ``cost_heater_chiller``)"
    "Chiller unit cost", ":math:`C_{chiller}`", "``unit_cost``", "0.2", ":math:`\text{USD}_{2018}\text{/W}`"
    "Coefficient of performance", ":math:`COP`", "``COP``", "7", ":math:`\text{dimensionless}`"
 

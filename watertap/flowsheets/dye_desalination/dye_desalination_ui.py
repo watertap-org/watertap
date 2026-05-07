@@ -284,7 +284,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.high_pressure_pump.cost
+    v = fs.ro_costing.high_pressure_pump.unit_cost
     exports.add(
         obj=v,
         name="RO unit pump cost",
@@ -296,7 +296,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.pressure_exchanger.cost
+    v = fs.ro_costing.pressure_exchanger.unit_cost
     exports.add(
         obj=v,
         name=v.doc,
