@@ -83,6 +83,11 @@ def outputs_selections(output_data):
 def gen_surrogate_model(
     tool="idaes", method="poly", feed_data=None, input_data=None, output_data=None
 ):
+    if method not in ("poly", "kri", "rbf", "alamo"):
+        raise ValueError(
+            f"Unsupported method: {method}. Choose from 'poly', 'kri', 'rbf', or 'alamo'."
+        )
+
     if feed_data is None:
         feed_data = pd.concat([input_data, output_data], axis=1)
 

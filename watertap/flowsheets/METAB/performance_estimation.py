@@ -29,6 +29,12 @@ def performance_estimation(
     method="poly",  # "rbf"#"kri"alamo'
     path="./results/",
 ):
+
+    if method not in ("poly", "kri", "rbf"):
+        raise ValueError(
+            f"Unsupported method: {method}. Choose from 'poly', 'kri', or 'rbf'."
+        )
+
     metrics_sum = pd.DataFrame()
     file = path + method + "_surrogate.json"
 
@@ -69,14 +75,20 @@ def performance_estimation(
 
 def display_performance(method="poly", path="./results/"):
     metrics = performance_estimation(method=method, path=path)
+    display_metrics = pd.DataFrame()
+
     if method == "poly":
-        display_metrics = pd.DataFrame()
         display_metrics["Predicted Variables"] = metrics["Comp"]
         display_metrics["R^2"] = metrics["R2"]
         display_metrics["Adjusted R^2"] = metrics["Adjusted R2"]
         display_metrics["MAE"] = metrics["MAE"]
         display_metrics["MSE"] = metrics["MSE"]
-        display_metrics.index = range(1, len(display_metrics) + 1)
+    elif method in ("kri", "rbf"):
+        display_metrics["R^2"] = metrics["R2"]
+        display_metrics["RMSE"] = metrics["RMSE"]
+
+    display_metrics.index = range(1, len(display_metrics) + 1)
+
     return display_metrics
 
 

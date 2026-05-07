@@ -11,11 +11,7 @@
 #################################################################################
 import pytest
 import pandas as pd
-import csv
 import os
-from unittest.mock import MagicMock
-import tempfile
-from watertap.flowsheets.METAB.input_space_generation import create_samples
 from watertap.flowsheets.METAB.model_evaluation import (
     get_input_data,
     get_eff_fr,
@@ -28,81 +24,8 @@ from watertap.flowsheets.METAB.model_evaluation import (
     export_output_data,
 )
 
-from watertap.flowsheets.METAB.performance_estimation import (
-    performance_estimation,
-)
-
-try:
-    import exposan
-    from exposan.metab import create_system
-except ImportError:
-    exposan = None
-
-# Use the same input_var_info as the __main__ example
-INPUT_VAR_INFO = {
-    "inf_fr": (5, 10),
-    "temp": (22, 35),
-    "hrt": (1, 12),
-}
 
 local_path = os.path.dirname(os.path.abspath(__file__))
-
-
-@pytest.fixture
-def temp_csv(tmp_path):
-    return str(tmp_path / "test_input_data.csv")
-
-
-def test_no_method_message(capsys, temp_csv):
-    create_samples(method=None, input_var_info=INPUT_VAR_INFO, csv_file=temp_csv)
-    captured = capsys.readouterr()
-    assert "Please pick a sampling method" in captured.out
-
-
-def test_lhs_method(temp_csv):
-    """Should create a CSV file when using LHS method."""
-    create_samples(
-        method="LHS",
-        input_var_info=INPUT_VAR_INFO,
-        sample_numbers=20,
-        csv_file=temp_csv,
-    )
-    assert os.path.exists(temp_csv)
-
-    with open(temp_csv, "r") as f:
-        reader = csv.reader(f)
-        headers = next(reader)
-        rows = list(reader)
-
-    assert headers == list(INPUT_VAR_INFO.keys())
-    assert len(rows) == 20
-
-
-def test_lhs_samples_within_bounds(temp_csv):
-    create_samples(
-        method="LHS",
-        input_var_info=INPUT_VAR_INFO,
-        sample_numbers=20,
-        csv_file=temp_csv,
-    )
-    with open(temp_csv, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            assert (
-                INPUT_VAR_INFO["inf_fr"][0]
-                <= float(row["inf_fr"])
-                <= INPUT_VAR_INFO["inf_fr"][1]
-            )
-            assert (
-                INPUT_VAR_INFO["temp"][0]
-                <= float(row["temp"])
-                <= INPUT_VAR_INFO["temp"][1]
-            )
-            assert (
-                INPUT_VAR_INFO["hrt"][0]
-                <= float(row["hrt"])
-                <= INPUT_VAR_INFO["hrt"][1]
-            )
 
 
 def test_get_input_data_no_filename():
@@ -434,55 +357,3 @@ def test_export_output_data_integration(tmp_path):
 
     df_read_back = pd.read_csv(output_csv)
     assert df_read_back.shape == output_data.shape
-
-
-@pytest.fixture
-def surrogate_path():
-    # TODO: Need to fix this path issue, add tests for kri and rbf, and separate tests into unique files
-    return os.path.abspath(os.path.join(local_path, "..", "results", ""))
-
-
-def test_performance_estimation_poly(surrogate_path):
-    result = performance_estimation(method="poly", path=surrogate_path)
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == 25
-
-    assert "MAE" in result.columns
-    assert "MSE" in result.columns
-    assert "R2" in result.columns
-    assert "Adjusted R2" in result.columns
-    assert "Comp" in result.columns
-
-    expected_components = [
-        "S_su",
-        "S_aa",
-        "S_fa",
-        "S_va",
-        "S_bu",
-        "S_pro",
-        "S_ac",
-        "S_h2",
-        "S_ch4",
-        "S_IC",
-        "S_IN",
-        "S_I",
-        "X_c",
-        "X_ch",
-        "X_pr",
-        "X_li",
-        "X_su",
-        "X_aa",
-        "X_fa",
-        "X_c4",
-        "X_pro",
-        "X_ac",
-        "X_h2",
-        "X_I",
-        "VolumetricFlowrate",
-    ]
-    assert list(result["Comp"]) == expected_components
-
-
-def test_performance_estimation_file_not_found():
-    with pytest.raises(FileNotFoundError):
-        performance_estimation(method="poly", path="./file_not_found/")
