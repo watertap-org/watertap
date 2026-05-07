@@ -10,7 +10,7 @@ users to model the chemical and physical properties of simple systems without th
 
    # quiet idaes logs
    import idaes.logger as idaeslogger
-   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
 .. testcode::
@@ -86,29 +86,29 @@ A portion of the displayed output is shown below.
 
 .. testoutput::
 
-   Block fs.state_block[0]
+    Block fs.state_block[0]
 
-     Variables:
-       temperature : State temperature
-           Size=1, Index=None, Units=K
-           Key  : Lower  : Value  : Upper  : Fixed : Stale : Domain
-           None : 273.15 : 298.15 : 373.15 :  True :  True : NonNegativeReals
-       pressure : State pressure
-           Size=1, Index=None, Units=Pa
-           Key  : Lower    : Value     : Upper : Fixed : Stale : Domain
-           None : 100000.0 : 5000000.0 :  None :  True :  True : NonNegativeReals
-       flow_mol_phase_comp : Component molar flow rate
-           Size=3, Index=fs.properties.phase_list*fs.properties.component_list, Units=mol/s
-           Key             : Lower : Value : Upper : Fixed : Stale : Domain
-           ('Liq', 'Cl_-') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
-            ('Liq', 'H2O') :     0 :  53.8 :  None :  True :  True : NonNegativeReals
-           ('Liq', 'Na_+') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
-       flow_mass_phase_comp : Component Mass flowrate
-           Size=3, Index=fs.properties.phase_list*fs.properties.component_list, Units=kg/s
-           Key             : Lower : Value                : Upper : Fixed : Stale : Domain
-           ('Liq', 'Cl_-') :     0 :             0.016905 :  None : False : False :  Reals
-            ('Liq', 'H2O') :     0 :   0.9683999999999999 :  None : False : False :  Reals
-           ('Liq', 'Na_+') :     0 : 0.011108999999999999 :  None : False : False :  Reals
+      Variables:
+        temperature : State temperature
+            Size=1, Index=None, Units=K
+            Key  : Lower  : Value  : Upper : Fixed : Stale : Domain
+            None : 273.15 : 298.15 :  1000 :  True :  True : NonNegativeReals
+        pressure : State pressure
+            Size=1, Index=None, Units=Pa
+            Key  : Lower : Value     : Upper : Fixed : Stale : Domain
+            None :     1 : 5000000.0 :  None :  True :  True : NonNegativeReals
+        flow_mol_phase_comp : Component molar flow rate
+            Size=3, Index=fs.properties.phase_list*fs.properties.component_list, Units=mol/s
+            Key             : Lower : Value : Upper : Fixed : Stale : Domain
+            ('Liq', 'Cl_-') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
+             ('Liq', 'H2O') :     0 :  53.8 :  None :  True :  True : NonNegativeReals
+            ('Liq', 'Na_+') :     0 : 0.483 :  None :  True :  True : NonNegativeReals
+        flow_mass_phase_comp : Component Mass flowrate
+            Size=3, Index=fs.properties.phase_list*fs.properties.component_list, Units=kg/s
+            Key             : Lower : Value                : Upper : Fixed : Stale : Domain
+            ('Liq', 'Cl_-') :     0 :             0.016905 :  None : False : False :  Reals
+             ('Liq', 'H2O') :     0 :   0.9683999999999999 :  None : False : False :  Reals
+            ('Liq', 'Na_+') :     0 : 0.011108999999999999 :  None : False : False :  Reals
        ...
 
 The default material flow basis (i.e., state variable) for the MCAS property model is component molar flowrate. 
