@@ -20,7 +20,6 @@ from watertap.flowsheets.METAB.performance_estimation import (
     display_plot,
 )
 
-
 local_path = os.path.dirname(os.path.abspath(__file__))
 
 

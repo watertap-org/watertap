@@ -24,7 +24,6 @@ from watertap.flowsheets.METAB.model_evaluation import (
     export_output_data,
 )
 
-
 local_path = os.path.dirname(os.path.abspath(__file__))
 
 
