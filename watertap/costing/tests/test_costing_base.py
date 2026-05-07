@@ -148,6 +148,25 @@ def test_breakdowns():
     m.fs.costing.add_specific_electrical_carbon_intensity(
         m.fs.product.properties[0].flow_vol
     )
+    # Tests for performance indices introduced from valorization_costing_block
+    m.fs.costing.add_LCOP(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        )
+    )
+    m.fs.costing.add_mass_based_specific_energy_consumption(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        )
+    )
+    m.fs.costing.add_annual_product_generation(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        )
+    )
 
     assert_units_consistent(m)
 
