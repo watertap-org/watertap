@@ -12,7 +12,6 @@
 import pytest
 import pandas as pd
 import os
-from IPython.display import IFrame
 
 from watertap.flowsheets.METAB.performance_estimation import (
     performance_estimation,

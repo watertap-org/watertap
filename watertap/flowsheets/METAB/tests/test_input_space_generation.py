@@ -14,12 +14,6 @@ import csv
 import os
 from watertap.flowsheets.METAB.input_space_generation import create_samples
 
-try:
-    import exposan
-    from exposan.metab import create_system
-except ImportError:
-    exposan = None
-
 input_var_info = {
     "inf_fr": (5, 10),
     "temp": (22, 35),

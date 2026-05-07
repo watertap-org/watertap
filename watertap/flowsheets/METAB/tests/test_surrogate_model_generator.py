@@ -9,17 +9,15 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-import json
 import os
 
 import pandas as pd
-import numpy as np
 import pytest
 
 from watertap.flowsheets.METAB.surrogate_model_generator import (
     get_data,
     outputs_selections,
-    gen_surrogate_model,
+    # gen_surrogate_model,
 )
 
 local_path = os.path.dirname(os.path.abspath(__file__))

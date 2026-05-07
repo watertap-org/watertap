@@ -15,12 +15,6 @@ import pandas as pd
 from IPython.display import IFrame
 
 # third-party
-try:
-    import pdf2image
-    from pdf2image import convert_from_path
-except ImportError:
-    pdf2image = None
-from IPython.display import display
 
 local_path = os.path.dirname(os.path.abspath(__file__))
 
