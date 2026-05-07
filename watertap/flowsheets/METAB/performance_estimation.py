@@ -24,6 +24,8 @@ from IPython.display import display
 
 local_path = os.path.dirname(os.path.abspath(__file__))
 
+__author__ = "Marcus Holly"
+
 
 def performance_estimation(
     method="poly",  # "rbf"#"kri"alamo'

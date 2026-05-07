@@ -15,7 +15,7 @@
 from idaes.core.surrogate.pysmo.sampling import LatinHypercubeSampling
 import csv
 
-__author__ = "Maojian Wang"
+__author__ = "Marcus Holly"
 
 
 def create_samples(

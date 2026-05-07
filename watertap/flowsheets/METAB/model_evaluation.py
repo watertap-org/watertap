@@ -22,7 +22,7 @@ except ImportError:
     exposan = None
 
 
-__author__ = "Maojian Wang", "Marcus Holly"
+__author__ = "Marcus Holly"
 
 
 def get_input_data(filename=None):

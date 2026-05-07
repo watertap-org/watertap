@@ -25,6 +25,8 @@ from idaes.core.surrogate.pysmo_surrogate import (
 )
 from idaes.core.surrogate.alamopy import AlamoTrainer, AlamoSurrogate
 
+__author__ = "Marcus Holly"
+
 local_path = os.path.dirname(os.path.abspath(__file__))
 
 
