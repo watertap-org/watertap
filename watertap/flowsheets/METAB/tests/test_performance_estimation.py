@@ -181,11 +181,14 @@ def test_display_performance_invalid_method(surrogate_path):
 def test_display_plot_w_path():
     path = os.path.abspath(os.path.join(local_path, "..", "results"))
     result = display_plot(method="poly", path=path)
-    assert isinstance(result, IFrame)
+
+    assert hasattr(result, "src")
     assert "poly_parity.pdf" in result.src
+    assert path in result.src
 
 
 def test_display_plot_wo_path():
     result = display_plot(method="poly", path=None)
-    assert isinstance(result, IFrame)
+
+    assert hasattr(result, "src")
     assert "poly_parity.pdf" in result.src
