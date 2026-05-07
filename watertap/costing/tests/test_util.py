@@ -21,6 +21,7 @@ from watertap.costing.watertap_costing_package import WaterTAPCosting
 from watertap.costing.util import (
     cost_rectifier,
     register_costing_parameter_block,
+    cost_steam_flow,
 )
 
 solver = get_solver()
@@ -185,3 +186,69 @@ def test_rectifier_costing():
     assert pytest.approx(80040, rel=1e-3) == pyo.value(
         m.fs.costing.aggregate_flow_costs["electricity"]
     )
+
+
+def test_steam_flow_costs():
+    # build generic models
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting()
+    m.fs.steam_mass_flow = pyo.Var(
+        initialize=1,
+        domain=pyo.NonNegativeReals,
+        units=pyo.units.kg / pyo.units.s,
+    )
+    m.fs.steam_mass_flow.fix()
+    m.fs.steam_pressure = pyo.Var(
+        initialize=1,
+        domain=pyo.NonNegativeReals,
+        units=pyo.units.bar,
+    )
+    m.fs.steam_pressure.fix()
+    m.fs.steam_volume_flow = pyo.Var(
+        initialize=1,
+        domain=pyo.NonNegativeReals,
+        units=pyo.units.m**3 / pyo.units.s,
+    )
+    m.fs.steam_volume_flow.fix()
+    m.fs.heat_duty_for_steam = pyo.Var(
+        initialize=1,
+        domain=pyo.NonNegativeReals,
+        units=pyo.units.kW,
+    )
+    m.fs.heat_duty_for_steam.fix()
+    cost_steam_flow(
+        costing_package=m.fs.costing,
+        steam_cost_type="steam_volume_basis",
+        steam_volume_flow=m.fs.steam_volume_flow,
+        steam_pressure=m.fs.steam_pressure,
+    )
+
+    cost_steam_flow(
+        costing_package=m.fs.costing,
+        steam_cost_type="steam_heat_duty_basis",
+        steam_heat_duty=m.fs.heat_duty_for_steam,
+        steam_pressure=m.fs.steam_pressure,
+    )
+
+    cost_steam_flow(
+        costing_package=m.fs.costing,
+        steam_cost_type="steam_mass_basis",
+        steam_mass_flow=m.fs.steam_mass_flow,
+        steam_pressure=m.fs.steam_pressure,
+    )
+
+    m.fs.costing.cost_process()
+
+    assert istat.degrees_of_freedom(m) == 0
+    results = solver.solve(m)
+    m.fs.costing.display()
+    assert m.fs.costing.aggregate_flow_costs[
+        "steam_heat_duty_basis"
+    ].value == pytest.approx(57.35914343297248, rel=1e-3)
+    assert m.fs.costing.aggregate_flow_costs["steam_mass_basis"].value == pytest.approx(
+        126230.40000000004, rel=1e-3
+    )
+    assert m.fs.costing.aggregate_flow_costs[
+        "steam_volume_basis"
+    ].value == pytest.approx(143938.74071564063, rel=1e-3)
