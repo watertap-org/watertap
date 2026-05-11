@@ -27,7 +27,6 @@ from watertap.flowsheets.METAB.model_evaluation import (
 # third-party
 try:
     import exposan
-    from exposan.metab import create_system
 except ImportError:
     exposan = None
 

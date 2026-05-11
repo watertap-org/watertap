@@ -22,7 +22,6 @@ from watertap.flowsheets.METAB.performance_estimation import (
 # third-party
 try:
     import IPython
-    from IPython.display import IFrame
 except ImportError:
     IPython = None
 
