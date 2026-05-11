@@ -96,7 +96,7 @@ def display_plot(method="poly", path=None):
     if path is None:
         path = os.path.join(local_path, "results")
 
-    if IFrame is not None:
+    if IPython is not None:
         file_path = os.path.join(path, "{}_parity.pdf".format(method))
         return IFrame(file_path, width=700, height=500)
     else:

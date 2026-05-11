@@ -24,6 +24,13 @@ from watertap.flowsheets.METAB.model_evaluation import (
     export_output_data,
 )
 
+# third-party
+try:
+    import exposan
+    from exposan.metab import create_system
+except ImportError:
+    exposan = None
+
 local_path = os.path.dirname(os.path.abspath(__file__))
 
 

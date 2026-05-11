@@ -19,6 +19,13 @@ from watertap.flowsheets.METAB.performance_estimation import (
     display_plot,
 )
 
+# third-party
+try:
+    import IPython
+    from IPython.display import IFrame
+except ImportError:
+    IPython = None
+
 local_path = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -178,6 +185,9 @@ def test_display_performance_invalid_method(surrogate_path):
 
 
 def test_display_plot_w_path():
+    if IPython is None:
+        pytest.skip("IPython not available")
+
     path = os.path.abspath(os.path.join(local_path, "..", "results"))
     result = display_plot(method="poly", path=path)
 
@@ -187,6 +197,9 @@ def test_display_plot_w_path():
 
 
 def test_display_plot_wo_path():
+    if IPython is None:
+        pytest.skip("IPython not available")
+
     result = display_plot(method="poly", path=None)
 
     assert hasattr(result, "src")
