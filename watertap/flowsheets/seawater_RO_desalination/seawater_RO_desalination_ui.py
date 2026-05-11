@@ -23,7 +23,7 @@ from pyomo.environ import units as pyunits
 
 def export_to_ui():
     return FlowsheetInterface(
-        name="Seawater Rejection RO (SWRO)",
+        name="Seawater Reverse Osmosis (SWRO)",
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
@@ -222,7 +222,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         obj=fs.desalination.P1.control_volume.properties_out[0].pressure,
         name="Pump 1 pressure",
         ui_units=pyunits.Pa,
-        display_units="fraction",
+        display_units="Pa",
         rounding=1,
         description="Pressure of pump 1 in the desalination circuit",
         is_input=True,
@@ -583,17 +583,16 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         ui_units=pyunits.USD_2018 / pyunits.yr,
         display_units="USD_2018/yr",
         rounding=3,
-        description="Total capital cost in USD_2018 per year",
+        description="Total operating cost in USD_2018 per year",
         is_input=False,
         is_output=True,
         output_category="System metrics",
     )
     lcow = (
-        (
-            total_capital_cost * fs.zo_costing.capital_recovery_factor
-            + total_operating_cost
-        )
-        / pyunits.convert(
+        total_capital_cost * fs.zo_costing.capital_recovery_factor
+        + total_operating_cost
+    ) / (
+        pyunits.convert(
             fs.municipal.properties[0].flow_vol,
             to_units=pyunits.m**3 / pyunits.year,
         )
