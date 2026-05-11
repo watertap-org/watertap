@@ -67,7 +67,6 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 
 # Import idaes mixer to check compatibility in absence of get_enthalpy_flow_terms()
 from idaes.models.unit_models import Feed, Mixer
-from idaes.models.unit_models.mixer import MixingType
 import idaes.logger as idaeslog
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
@@ -1701,17 +1700,7 @@ def test_compatibility_with_mixer():
         charge={"Na_+": 1, "Cl_-": -1},
     )
 
-    m.fs.mixer1 = Mixer(
-        property_package=m.fs.properties, energy_mixing_type=MixingType.none
-    )
-
-    with pytest.raises(
-        NotImplementedError,
-        match="property package has not implemented the get_enthalpy_flow_terms method. Please contact the property package developer.",
-    ):
-        m.fs.mixer2 = Mixer(
-            property_package=m.fs.properties,
-        )
+    m.fs.mixer1 = Mixer(property_package=m.fs.properties)
 
 
 c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]
@@ -2259,7 +2248,7 @@ def test_no_total_hardness(caplog):
     assert value(stream[0].total_hardness) == 0
 
     assert (
-        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        "No multivalent cations in solute_list; total_hardness fixed to 0."
         in caplog.text
     )
 
@@ -2298,21 +2287,16 @@ def test_no_total_hardness_not_TDS_with_apparent_species_only(caplog):
     stream[0].total_hardness
 
     stream[0].total_dissolved_solids
-    # stream[0].total_hardness
 
     assert_units_consistent(m)
 
     check_dof(m, fail_flag=True)
-
-    assert value(stream[0].total_dissolved_solids) == 0
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(31421.999, rel=1e-3)
     assert value(stream[0].total_hardness) == 0
-
     assert (
-        "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
-        in caplog.text
-    )
-    assert (
-        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        "No multivalent cations in solute_list; total_hardness fixed to 0."
         in caplog.text
     )
 
