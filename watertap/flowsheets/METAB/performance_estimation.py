@@ -12,9 +12,13 @@
 import os
 import json
 import pandas as pd
-from IPython.display import IFrame
 
 # third-party
+try:
+    import IPython
+    from IPython.display import IFrame
+except ImportError:
+    IPython = None
 
 local_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -92,5 +96,8 @@ def display_plot(method="poly", path=None):
     if path is None:
         path = os.path.join(local_path, "results")
 
-    file_path = os.path.join(path, "{}_parity.pdf".format(method))
-    return IFrame(file_path, width=700, height=500)
+    if IFrame is not None:
+        file_path = os.path.join(path, "{}_parity.pdf".format(method))
+        return IFrame(file_path, width=700, height=500)
+    else:
+        print("Please install IPython to use this functionality")
