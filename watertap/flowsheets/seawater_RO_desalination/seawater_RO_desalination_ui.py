@@ -297,6 +297,18 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
+        obj=fs.desalination.RO.area,
+        name="RO membrane area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="Stage area of reverse osmosis membrane",
+        is_input=True,
+        input_category="Desalination",
+        is_output=True,
+        output_category="System metrics",
+    )
+    exports.add(
         obj=fs.desalination.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
         name="RO water mass recovery",
         ui_units=pyunits.dimensionless,
