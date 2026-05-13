@@ -175,8 +175,6 @@ def test_display_performance_rbf(surrogate_path):
     assert list(result.columns) == ["R^2", "RMSE"]
     assert result.shape[0] == 25
 
-    # TODO: Need to add tests for surrogate_model_generator, and separate tests into unique files
-
 
 def test_display_performance_invalid_method(surrogate_path):
     with pytest.raises(ValueError, match="Unsupported method"):
