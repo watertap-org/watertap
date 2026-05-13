@@ -78,7 +78,7 @@ reaktoro = [
 
 exposan = [
     "exposan",
-    "pdf2image",
+    "IPython"
 ]
 
 dev = [

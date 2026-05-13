@@ -27,8 +27,6 @@ __author__ = "Marcus Holly"
 
 def get_input_data(filename=None):
     if filename == None:
-        # It is a test mode
-        # Define data
         input_data = {
             "inf_fr": [5, 5, 5],
             "temp": [20, 25, 30],  # First column data
@@ -126,7 +124,6 @@ def get_h2_fr(case=None, df=None):
             df = pd.DataFrame(fr_dict)
         else:
             df.loc[len(df)] = fr_dict
-            # NEED to TEST
     return df
 
 
@@ -161,13 +158,10 @@ def get_r1_ex_biogas_fr(case=None, df=None):
 
 
 def get_mass_flowrate(case=None, df=None, stream=None):
-    # df = None
-    # stream = eff_dg
     keys = str(stream.components).split("(")[1].rstrip(")").split(",")
     keys = [k.strip() for k in keys]
     values = [[float(x)] for x in list(stream.state[:-1])]
     fr_dict = dict(zip(keys, values))
-    # if len(stream.state) != len(stream.conc.to_array()):
     fr_dict["Volumetric Flowrate"] = [stream.state[-1]]
     print(fr_dict)
     if df is None:
@@ -208,8 +202,6 @@ def run_model(df):
     for idx in df.index:
         # Changing input variables
         inf_fr = df.loc[idx, "inf_fr"]
-        # print(df.columns)
-        # print(df)
         temp = df.loc[idx, "temp"]
         hrt = df.loc[idx, "hrt"]
 

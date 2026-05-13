@@ -31,7 +31,6 @@ def create_samples(
         lower_bounds = [lb[0] for lb in input_var_info.values()]
         upper_bounds = [lb[1] for lb in input_var_info.values()]
         bounds = [lower_bounds, upper_bounds]
-        # print(bounds)
         samples = LatinHypercubeSampling(
             bounds, number_of_samples=sample_numbers, sampling_type="creation"
         ).sample_points()

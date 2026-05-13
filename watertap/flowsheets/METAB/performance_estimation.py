@@ -45,10 +45,8 @@ def performance_estimation(
         for ele in data["model_encoding"]:
             metrics = data["model_encoding"][ele]["attr"]["errors"]
             metrics["Comp"] = ele
-            # print(metrics)
             for key in metrics:
                 metrics[key] = [metrics[key]]
-            # print(metrics)
             df = pd.DataFrame.from_dict(metrics)
             metrics_sum = pd.concat([metrics_sum, df])
 

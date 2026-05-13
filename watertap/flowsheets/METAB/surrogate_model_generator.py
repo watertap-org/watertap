@@ -31,14 +31,11 @@ local_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_data(
-    tool="pysmo",
     input_data_file=os.path.join(local_path, "results", "input_data.csv"),
     output_data_file=os.path.join(local_path, "results", "output_data.csv"),
 ):
     input_data = pd.read_csv(input_data_file, header=0)
-    # print(input_data)
     output_data = pd.read_csv(output_data_file, header=0).iloc[:, 1:]
-    # print(output_data)
     feed_data = pd.concat([input_data, output_data], axis=1)
     return feed_data, input_data, output_data
 
@@ -72,12 +69,9 @@ def outputs_selections(output_data):
         "VolumetricFlowrate",
     ]
 
-    # output_data = output_data[(output_data >= 0).all(axis=1)]
     output_data.columns = output_data.columns.str.strip().str.replace(" ", "")
     print(output_data.columns.tolist())
     output_data = output_data[outputs_list]
-
-    # print(output_data)
 
     return output_data
 
@@ -114,8 +108,6 @@ def gen_surrogate_model(
         trainer.config.number_of_crossvalidations = 3
         # Train surrogate (calls PySMO through IDAES Python wrapper)
         poly_train = trainer.train_surrogate()
-
-        # trainer._get_metrics()
 
         poly_surr = PysmoSurrogate(
             poly_train, input_labels, output_labels, input_bounds
