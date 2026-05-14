@@ -160,7 +160,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         description="Stage width",
         is_input=True,
         input_category="Reverse Osmosis",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.RO.length,
@@ -171,7 +171,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         description="Stage length",
         is_input=True,
         input_category="Reverse Osmosis",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
         obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
