@@ -10,7 +10,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.environ import ConcreteModel, value
 
-from watertap.unit_models.electrodialysis_bipolar_1D import (
+from watertap.unit_models.Biploar_and_Electrodialysis_1D_nmsu import (
     Bipolar_and_Electrodialysis1D,
     ElectricalOperationMode,
     LimitingCurrentDensitybpemMethod,
