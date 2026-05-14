@@ -149,23 +149,34 @@ def test_breakdowns():
         m.fs.product.properties[0].flow_vol
     )
     # Tests for performance indices introduced from valorization_costing_block
-    m.fs.costing.add_LCOP(
+    m.fs.costing.add_levelized_cost(
         sum(
             m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
             for comp in m.fs.properties.component_list
-        )
+        ),
+        flow_basis="mass",
+        name="LCOP",
     )
-    m.fs.costing.add_mass_based_specific_energy_consumption(
-        sum(
-            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
-            for comp in m.fs.properties.component_list
-        )
+    m.fs.costing.add_levelized_cost(
+        m.fs.product.properties[0].flow_vol,
+        flow_basis="volumetric",
+        name="LCOT",
     )
-    m.fs.costing.add_annual_product_generation(
+    m.fs.costing.add_specific_energy_consumption(
         sum(
             m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
             for comp in m.fs.properties.component_list
-        )
+        ),
+        flow_basis="mass",
+        name="specific_energy_consumption_with_product",
+    )
+    m.fs.costing.add_annual_total(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="annual_product_generation",
     )
 
     assert_units_consistent(m)
