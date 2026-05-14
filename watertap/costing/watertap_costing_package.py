@@ -414,30 +414,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             ),
         )
 
-    # def add_annual_product_generation(
-    #     self, flow_rate, name="annual_product_generation"
-    # ):
-    #     """
-    #     Add annual production to costing block.
-    #     Args:
-    #         flow_rate - flow rate of product (mass-based) to be used in
-    #                     calculating annual product generation
-    #         name (optional) - name for the annual product generation variable
-    #                           Expression (default: annual_product_generation)
-    #     """
-    #     self.add_component(
-    #         name,
-    #         pyo.Expression(
-    #             expr=(
-    #                 pyo.units.convert(
-    #                     flow_rate, to_units=pyo.units.kg / self.base_period
-    #                 )
-    #                 * self.utilization_factor
-    #             ),
-    #             doc="Annual product generation based on mass flow ",
-    #         ),
-    #     )
-
     def add_electricity_intensity(self, flow_rate, name="electricity_intensity"):
         """
         Add calculation of overall electricity intensity to costing block.
@@ -478,58 +454,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             utilization_factor=1.0,
             multiplier=self.electrical_carbon_intensity,
         )
-
-    # def _add_flow_component_breakdowns(
-    #     self,
-    #     flow_name,
-    #     name,
-    #     flow_rate,
-    #     period=None,
-    #     utilization_factor=None,
-    #     multiplier=1.0,
-    # ):
-    #     """
-    #     Add per-component breakdowns for specific `flow_name` consumption with base-name `name`
-    #     at `flow_rate`.
-    #     Optional `multiplier` for the flow and period specification (default is 1 hour),
-    #     and specified `utilization_factor` (default is self.utilization_factor).
-    #     """
-    #     if utilization_factor is None:
-    #         utilization_factor = self.utilization_factor
-    #     if period is None:
-    #         period = self.base_period
-    #     denominator = (
-    #         pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / period)
-    #         * utilization_factor
-    #     )
-    #     f_units = pyo.units.get_units(getattr(self, f"aggregate_flow_{flow_name}"))
-    #     c_units = f_units * pyo.units.get_units(multiplier)
-    #
-    #     try:
-    #         flows = self._registered_flows[flow_name]
-    #     except KeyError:
-    #         raise RuntimeError(f"Unrecognized flow_name {flow_name}.")
-    #
-    #     specific_flow_consumption = pyo.Expression(
-    #         pyo.Any,
-    #         doc=f"Specific {flow_name} consumption by component",
-    #         initialize=0.0 * period * c_units / pyo.units.m**3,
-    #     )
-    #     self.add_component(name + "_component", specific_flow_consumption)
-    #
-    #     for flow_expr in flows:
-    #         flow_std = pyo.units.convert(flow_expr, to_units=f_units)
-    #         unit = self._find_flow_unit(flow_expr)
-    #         if unit is not None:
-    #             specific_flow_consumption[unit.name] += (
-    #                 flow_std * utilization_factor * multiplier
-    #             ) / denominator
-    #             continue
-    #         _log.warning(f"Could not find unique unit for flow {flow_expr}")
-    #         flow_name = self._get_flow_name(flow_expr)
-    #         specific_flow_consumption[flow_name] += (
-    #             flow_std * utilization_factor * multiplier
-    #         ) / denominator
 
     def _add_flow_component_breakdowns(
         self,
