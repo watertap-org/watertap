@@ -510,7 +510,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 ) / denominator
                 continue
             _log.warning(f"Could not find unique unit for flow {flow_expr}")
-            flow_name_str = self._get_flow_name(flow_expr)  # fixed shadowing bug
+            flow_name_str = self._get_flow_name(flow_expr)
             specific_flow_consumption[flow_name_str] += (
                 flow_std * utilization_factor * multiplier
             ) / denominator
