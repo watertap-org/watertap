@@ -10,7 +10,7 @@ The following parameters are constructed for the unit on the FlowsheetCostingBlo
    :header: "Description", "Symbol", "Parameter Name", "Default Value", "Units"
 
    "Membrane replacement factor", ":math:`f_{replace}`", "``factor_membrane_replacement``", "0.2", ":math:`\text{yr}^{-1}`"
-   "Membrane cost", ":math:`C_{mem}`", "``membrane_unit_cost``", "56", ":math:`\text{USD}_{2018}\text{/m}^2`"
+   "Membrane cost", ":math:`C_{mem}`", "``membrane_cost``", "56", ":math:`\text{USD}_{2018}\text{/m}^2`"
 
 Costing Method Variables
 ++++++++++++++++++++++++
