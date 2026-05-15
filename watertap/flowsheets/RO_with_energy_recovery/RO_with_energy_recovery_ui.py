@@ -515,6 +515,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             + fs.PXR.brine_side.deltaP[0]
         )
 
+        total_power = fs.P1.work_mechanical[0] + fs.P2.work_mechanical[0]
+
         exports.add(
             obj=total_pressure_drop,
             name="Total pressure drop",
@@ -526,9 +528,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=True,
             output_category="System metrics",
         )
-
-    if build_options["ERD_type"].value == "pressure_exchanger":
-        total_power = fs.P1.work_mechanical[0] + fs.P2.work_mechanical[0]
 
         exports.add(
             obj=total_power,
@@ -547,16 +546,16 @@ def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
     if build_options is not None:
         if build_options["ERD_type"].value == "pressure_exchanger":
-            erd_type = "pressure_exchanger"
+            erd_type = ERDtype.pressure_exchanger
             m = build(erd_type=erd_type)
         elif build_options["ERD_type"].value == "no_ERD":
-            erd_type = "no_ERD"
+            erd_type = ERDtype.no_ERD
             m = build(erd_type=erd_type)
         else:
-            erd_type = "pump_as_turbine"
+            erd_type = ERDtype.pump_as_turbine
             m = build(erd_type=erd_type)
     else:
-        erd_type = "pressure_exchanger"
+        erd_type = ERDtype.pump_as_turbine
         m = build(erd_type=erd_type)
 
     # the UI sets `capital_recovery_factor`, so unfix `wacc`
