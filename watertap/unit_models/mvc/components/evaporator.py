@@ -312,8 +312,8 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             dT_out = b.delta_temperature_out
             temp_units = pyunits.get_units(dT_in)
             dT_avg = (dT_in + dT_out) / 2
-            # external function that ruturns the real root, for the cuberoot of negitive
-            # numbers, so it will return without error for positive and negitive dT.
+            # external function that ruturns the real root, for the cuberoot of negative
+            # numbers, so it will return without error for positive and negative dT.
             b.cbrt = ExternalFunction(
                 library=functions_lib(), function="cbrt", arg_units=[temp_units**3]
             )
@@ -522,8 +522,6 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 self.connection_to_condenser.eq_heat_balance[0], sf
             )
-        # except AttributeError:
-        #     pass
         except AttributeError as e:
             raise AttributeError(
                 f"Evaporator is not connected to a condenser or condenser constraints are missing: {e}"
