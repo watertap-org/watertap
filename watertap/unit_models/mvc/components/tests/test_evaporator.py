@@ -302,7 +302,7 @@ def test_evaporator_with_MCAS_mole_flow():
 def test_evaporator_condenser_scaling(evap_condense_model):
     m = evap_condense_model
 
-    m.fs.evaporator.initialize_build()
+    m.fs.evaporator.initialize()
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
