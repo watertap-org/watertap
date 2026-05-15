@@ -42,13 +42,20 @@ def test_get_input_data_no_filename():
     assert list(df["hrt"]) == [12, 13, 14]
 
 
-def test_get_input_data_w_filename():
-    local_path = os.path.dirname(os.path.abspath(__file__))
-    input_data_path = os.path.join(local_path, "..", "results", "input_data.csv")
-    df = get_input_data(input_data_path)
+def test_get_input_data_w_filename(tmp_path):
+    input_data_path = tmp_path / "input_data.csv"
+    dummy = pd.DataFrame(
+        {
+            "inf_fr": [5, 5, 5, 5, 5],
+            "temp": [20, 25, 30, 35, 40],
+            "hrt": [1, 2, 3, 4, 5],
+        }
+    )
+    dummy.to_csv(input_data_path, index=False)
+    df = get_input_data(str(input_data_path))
     assert isinstance(df, pd.DataFrame)
     assert list(df.columns) == ["inf_fr", "temp", "hrt"]
-    assert df.shape == (20, 3)
+    assert df.shape == (5, 3)
 
 
 @pytest.fixture
@@ -318,22 +325,17 @@ def test_collect_results_mass_false(mock_collection):
     assert isinstance(result, pd.DataFrame)
 
 
-def test_run_model_integration():
-    local_path = os.path.dirname(os.path.abspath(__file__))
-    input_data_file = os.path.abspath(
-        os.path.join(local_path, "..", "results", "input_data.csv")
-    )
-    output_data_file = os.path.abspath(
-        os.path.join(local_path, "..", "results", "output_data.csv")
-    )
-
+def test_run_model_integration(tmp_path):
     if exposan is None:
         pytest.skip("exposan not available")
 
-    if not os.path.exists(input_data_file):
-        pytest.skip("input_data.csv not found")
-
-    input_data = get_input_data(filename=input_data_file)
+    input_data = pd.DataFrame(
+        {
+            "inf_fr": [5, 5, 5],
+            "temp": [20, 25, 30],
+            "hrt": [1, 5, 10],
+        }
+    )
     output_data = run_model(input_data)
 
     assert isinstance(output_data, pd.DataFrame)
@@ -341,18 +343,16 @@ def test_run_model_integration():
 
 
 def test_export_output_data_integration(tmp_path):
-    local_path = os.path.dirname(os.path.abspath(__file__))
     if exposan is None:
         pytest.skip("exposan not available")
 
-    input_data_file = os.path.abspath(
-        os.path.join(local_path, "..", "results", "input_data.csv")
+    input_data = pd.DataFrame(
+        {
+            "inf_fr": [5, 5, 5],
+            "temp": [20, 25, 30],
+            "hrt": [1, 5, 10],
+        }
     )
-
-    if not os.path.exists(input_data_file):
-        pytest.skip("input_data.csv not found")
-
-    input_data = get_input_data(filename=input_data_file)
     output_data = run_model(input_data)
 
     output_csv = str(tmp_path / "output_data.csv")

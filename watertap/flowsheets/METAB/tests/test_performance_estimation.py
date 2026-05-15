@@ -12,6 +12,7 @@
 import pytest
 import pandas as pd
 import os
+import json
 
 from watertap.flowsheets.METAB.performance_estimation import (
     performance_estimation,
@@ -27,121 +28,73 @@ except ImportError:
 
 local_path = os.path.dirname(os.path.abspath(__file__))
 
+dummy_components = ["S_su", "S_aa", "S_fa"]
+
 
 @pytest.fixture
-def surrogate_path():
-    return os.path.abspath(os.path.join(local_path, "..", "results")) + os.sep
+def surrogate_path(tmp_path):
+    poly_data = {
+        "model_encoding": {
+            comp: {
+                "attr": {
+                    "errors": {
+                        "MAE": 0.01,
+                        "MSE": 0.0001,
+                        "R2": 0.98,
+                        "Adjusted R2": 0.97,
+                    }
+                }
+            }
+            for comp in dummy_components
+        }
+    }
+    kri_data = {
+        "model_encoding": {
+            comp: {"attr": {"training_R2": 0.96, "training_rmse": 0.04}}
+            for comp in dummy_components
+        }
+    }
+    rbf_data = {
+        "model_encoding": {
+            comp: {"attr": {"R2": 0.95, "rmse": 0.05}} for comp in dummy_components
+        }
+    }
+
+    for method, data in [("poly", poly_data), ("kri", kri_data), ("rbf", rbf_data)]:
+        with open(tmp_path / f"{method}_surrogate.json", "w") as f:
+            json.dump(data, f)
+
+    return str(tmp_path) + os.sep
 
 
 def test_performance_estimation_poly(surrogate_path):
     result = performance_estimation(method="poly", path=surrogate_path)
     assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == 25
+    assert result.shape[0] == len(dummy_components)
 
     assert list(result.columns) == ["MAE", "MSE", "R2", "Adjusted R2", "Comp"]
 
-    expected_components = [
-        "S_su",
-        "S_aa",
-        "S_fa",
-        "S_va",
-        "S_bu",
-        "S_pro",
-        "S_ac",
-        "S_h2",
-        "S_ch4",
-        "S_IC",
-        "S_IN",
-        "S_I",
-        "X_c",
-        "X_ch",
-        "X_pr",
-        "X_li",
-        "X_su",
-        "X_aa",
-        "X_fa",
-        "X_c4",
-        "X_pro",
-        "X_ac",
-        "X_h2",
-        "X_I",
-        "VolumetricFlowrate",
-    ]
-    assert list(result["Comp"]) == expected_components
+    assert list(result["Comp"]) == dummy_components
 
 
 def test_performance_estimation_kri(surrogate_path):
     result = performance_estimation(method="kri", path=surrogate_path)
     assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == 25
+    assert result.shape[0] == len(dummy_components)
 
     assert list(result.columns) == ["R2", "RMSE", "Comp"]
 
-    expected_components = [
-        "S_su",
-        "S_aa",
-        "S_fa",
-        "S_va",
-        "S_bu",
-        "S_pro",
-        "S_ac",
-        "S_h2",
-        "S_ch4",
-        "S_IC",
-        "S_IN",
-        "S_I",
-        "X_c",
-        "X_ch",
-        "X_pr",
-        "X_li",
-        "X_su",
-        "X_aa",
-        "X_fa",
-        "X_c4",
-        "X_pro",
-        "X_ac",
-        "X_h2",
-        "X_I",
-        "VolumetricFlowrate",
-    ]
-    assert list(result["Comp"]) == expected_components
+    assert list(result["Comp"]) == dummy_components
 
 
 def test_performance_estimation_rbf(surrogate_path):
     result = performance_estimation(method="rbf", path=surrogate_path)
     assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == 25
+    assert result.shape[0] == len(dummy_components)
 
     assert list(result.columns) == ["R2", "RMSE", "Comp"]
 
-    expected_components = [
-        "S_su",
-        "S_aa",
-        "S_fa",
-        "S_va",
-        "S_bu",
-        "S_pro",
-        "S_ac",
-        "S_h2",
-        "S_ch4",
-        "S_IC",
-        "S_IN",
-        "S_I",
-        "X_c",
-        "X_ch",
-        "X_pr",
-        "X_li",
-        "X_su",
-        "X_aa",
-        "X_fa",
-        "X_c4",
-        "X_pro",
-        "X_ac",
-        "X_h2",
-        "X_I",
-        "VolumetricFlowrate",
-    ]
-    assert list(result["Comp"]) == expected_components
+    assert list(result["Comp"]) == dummy_components
 
 
 def test_performance_estimation_file_not_found():
@@ -159,21 +112,21 @@ def test_display_performance_poly(surrogate_path):
         "MAE",
         "MSE",
     ]
-    assert result.shape[0] == 25
+    assert result.shape[0] == len(dummy_components)
 
 
 def test_display_performance_kri(surrogate_path):
     result = display_performance(method="kri", path=surrogate_path)
     assert isinstance(result, pd.DataFrame)
     assert list(result.columns) == ["R^2", "RMSE"]
-    assert result.shape[0] == 25
+    assert result.shape[0] == len(dummy_components)
 
 
 def test_display_performance_rbf(surrogate_path):
     result = display_performance(method="rbf", path=surrogate_path)
     assert isinstance(result, pd.DataFrame)
     assert list(result.columns) == ["R^2", "RMSE"]
-    assert result.shape[0] == 25
+    assert result.shape[0] == len(dummy_components)
 
 
 def test_display_performance_invalid_method(surrogate_path):

@@ -22,10 +22,6 @@ from watertap.flowsheets.METAB.surrogate_model_generator import (
 
 local_path = os.path.dirname(os.path.abspath(__file__))
 
-input_data = os.path.join(local_path, "..", "results", "input_data.csv")
-output_data = os.path.join(local_path, "..", "results", "output_data.csv")
-results_path = os.path.abspath(os.path.join(local_path, "..", "results"))
-
 input_columns = ["inf_fr", "temp", "hrt"]
 
 output_columns = [
@@ -58,7 +54,27 @@ output_columns = [
 
 
 @pytest.fixture
-def data():
+def csv_files(tmp_path):
+    input_df = pd.DataFrame(
+        {
+            "inf_fr": [5, 5, 5],
+            "temp": [20, 25, 30],
+            "hrt": [12, 13, 14],
+        }
+    )
+    output_df = pd.DataFrame({col: [0.1, 0.2, 0.3] for col in output_columns})
+
+    input_file = tmp_path / "input_data.csv"
+    output_file = tmp_path / "output_data.csv"
+    input_df.to_csv(input_file, index=False)
+    output_df.to_csv(output_file, index=False)
+
+    return str(input_file), str(output_file)
+
+
+@pytest.fixture
+def data(csv_files):
+    input_data, output_data = csv_files
     feed, input, output = get_data(
         input_data_file=input_data,
         output_data_file=output_data,
@@ -78,7 +94,8 @@ def small_data_sample(data):
     )
 
 
-def test_get_data():
+def test_get_data(csv_files):
+    input_data, output_data = csv_files
     feed, input, output = get_data(
         input_data_file=input_data,
         output_data_file=output_data,
@@ -92,7 +109,8 @@ def test_get_data():
     assert "Unnamed: 0" not in output.columns
 
 
-def test_get_data_missing_input_file_raises():
+def test_get_data_missing_input_file_raises(csv_files):
+    _, output_data = csv_files
     with pytest.raises(FileNotFoundError):
         get_data(
             input_data_file="/nonexistent/path/input.csv",
@@ -100,7 +118,8 @@ def test_get_data_missing_input_file_raises():
         )
 
 
-def test_get_data_missing_output_file_raises():
+def test_get_data_missing_output_file_raises(csv_files):
+    input_data, _ = csv_files
     with pytest.raises(FileNotFoundError):
         get_data(
             input_data_file=input_data,
@@ -111,61 +130,60 @@ def test_get_data_missing_output_file_raises():
 # TODO (diagnosis from AI): PySMO polynomial regression (polynomial_regression_fitting) creates a solution.pickle
 #  file but does not reliably close the file handle, leading to a PytestUnraisableExceptionWarning / ResourceWarning:
 #  unclosed file <_io.FileIO [closed]> during Python garbage collection and pytest teardown.
-# def test_gen_surrogate_model_poly_saves_json(small_data_sample):
+# def test_gen_surrogate_model_poly_saves_json(small_data_sample, tmp_path):
 #     feed, input, output = small_data_sample
 #     gen_surrogate_model(
-#         method="poly", feed_data=feed, input_data=input, output_data=output
+#         method="poly", feed_data=feed, input_data=input, output_data=output, path=tmp_path
 #     )
-#     json_path = os.path.join(results_path, "poly_surrogate.json")
+#     json_path = tmp_path / "poly_surrogate.json"
 #     assert os.path.exists(json_path)
 #     with open(json_path) as f:
 #         data = json.load(f)
 #     assert isinstance(data, dict)
-#     assert os.path.exists(os.path.join(results_path, "poly_parity.pdf"))
-
-
-# def test_gen_surrogate_model_poly_none_feed_data(small_data_sample):
+#     assert os.path.exists(tmp_path / "poly_parity.pdf")
+#
+#
+# def test_gen_surrogate_model_poly_none_feed_data(small_data_sample, tmp_path):
 #     _, input, output = small_data_sample
-#     gen_surrogate_model(method="poly", feed_data=None, input_data=input, output_data=output)
-#     assert os.path.exists(os.path.join(results_path, "poly_surrogate.json"))
+#     gen_surrogate_model(method="poly", feed_data=None, input_data=input, output_data=output, path=tmp_path)
+#     assert os.path.exists(tmp_path / "poly_surrogate.json")
 #
 #
-# def test_gen_surrogate_model_kri_saves_json(small_data_sample):
+# def test_gen_surrogate_model_kri_saves_json(small_data_sample, tmp_path):
 #     feed, input, output = small_data_sample
-#     gen_surrogate_model(method="kri", feed_data=feed, input_data=input, output_data=output)
-#     json_path = os.path.join(results_path, "kri_surrogate.json")
+#     gen_surrogate_model(method="kri", feed_data=feed, input_data=input, output_data=output, path=tmp_path)
+#     json_path = tmp_path / "kri_surrogate.json"
 #     assert os.path.exists(json_path)
 #     with open(json_path) as f:
 #         data = json.load(f)
 #     assert isinstance(data, dict)
-#     assert os.path.exists(os.path.join(results_path, "kri_parity.pdf"))
+#     assert os.path.exists(tmp_path / "kri_parity.pdf")
 #
 #
-# def test_gen_surrogate_model_kri_none_feed_data(small_data_sample):
+# def test_gen_surrogate_model_kri_none_feed_data(small_data_sample, tmp_path):
 #     _, input, output = small_data_sample
-#     gen_surrogate_model(method="kri", feed_data=None, input_data=input, output_data=output)
-#     assert os.path.exists(os.path.join(results_path, "kri_surrogate.json"))
+#     gen_surrogate_model(method="kri", feed_data=None, input_data=input, output_data=output, path=tmp_path)
+#     assert os.path.exists(tmp_path / "kri_surrogate.json")
 #
 #
-# def test_gen_surrogate_model_rbf_saves_json(small_data_sample):
+# def test_gen_surrogate_model_rbf_saves_json(small_data_sample, tmp_path):
 #     feed, input, output = small_data_sample
-#     gen_surrogate_model(method="rbf", feed_data=feed, input_data=input, output_data=output)
-#     json_path = os.path.join(results_path, "rbf_surrogate.json")
+#     gen_surrogate_model(method="rbf", feed_data=feed, input_data=input, output_data=output, path=tmp_path)
+#     json_path = tmp_path / "rbf_surrogate.json"
 #     assert os.path.exists(json_path)
 #     with open(json_path) as f:
 #         data = json.load(f)
 #     assert isinstance(data, dict)
-#     assert os.path.exists(os.path.join(results_path, "rbf_parity.pdf"))
+#     assert os.path.exists(tmp_path / "rbf_parity.pdf")
 #
 #
-#
-# def test_gen_surrogate_model_rbf_none_feed_data(small_data_sample):
+# def test_gen_surrogate_model_rbf_none_feed_data(small_data_sample, tmp_path):
 #     _, input, output = small_data_sample
-#     gen_surrogate_model(method="rbf", feed_data=None, input_data=input, output_data=output)
-#     assert os.path.exists(os.path.join(results_path, "rbf_surrogate.json"))
+#     gen_surrogate_model(method="rbf", feed_data=None, input_data=input, output_data=output, path=tmp_path)
+#     assert os.path.exists(tmp_path / "rbf_surrogate.json")
 #
 #
-# def test_gen_surrogate_model_unknown_method_raises(small_data_sample):
+# def test_gen_surrogate_model_unknown_method_raises(small_data_sample, tmp_path):
 #     feed, input, output = small_data_sample
 #     with pytest.raises(ValueError):
 #         gen_surrogate_model(
@@ -173,4 +191,5 @@ def test_get_data_missing_output_file_raises():
 #             feed_data=feed,
 #             input_data=input,
 #             output_data=output,
+#             path=tmp_path,
 #         )

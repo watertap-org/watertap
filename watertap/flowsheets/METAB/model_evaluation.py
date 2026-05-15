@@ -235,9 +235,9 @@ def run_model(df):
     return output_data
 
 
-def export_output_data(df, path=None, filename="output_data.csv"):
+def export_output_data(df, path=None, filename=None):
     df.to_csv(filename)
-    print("The output data is readay")
+    print("The output data is ready")
 
 
 if __name__ == "__main__":

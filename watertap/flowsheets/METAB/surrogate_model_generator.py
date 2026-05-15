@@ -31,8 +31,8 @@ local_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_data(
-    input_data_file=os.path.join(local_path, "results", "input_data.csv"),
-    output_data_file=os.path.join(local_path, "results", "output_data.csv"),
+    input_data_file=os.path.join(local_path, "input_data.csv"),
+    output_data_file=os.path.join(local_path, "output_data.csv"),
 ):
     input_data = pd.read_csv(input_data_file, header=0)
     output_data = pd.read_csv(output_data_file, header=0).iloc[:, 1:]
@@ -114,11 +114,13 @@ def gen_surrogate_model(
         )
 
         poly_surr.save_to_file(
-            "./results/{}_surrogate.json".format(method), overwrite=True
+            os.path.join(local_path, f"{method}_surrogate.json"), overwrite=True
         )
 
         surrogate_parity(
-            poly_surr, feed_data, filename="./results/{}_parity.pdf".format(method)
+            poly_surr,
+            feed_data,
+            filename=os.path.join(local_path, f"{method}_parity.pdf"),
         )
 
     elif method == "kri":
@@ -137,10 +139,12 @@ def gen_surrogate_model(
             krig_train, input_labels, output_labels, input_bounds
         )
         krig_surr.save_to_file(
-            "./results/{}_surrogate.json".format(method), overwrite=True
+            os.path.join(local_path, f"{method}_surrogate.json"), overwrite=True
         )
         surrogate_parity(
-            krig_surr, feed_data, filename="./results/{}_parity.pdf".format(method)
+            krig_surr,
+            feed_data,
+            filename=os.path.join(local_path, f"{method}_parity.pdf"),
         )
 
     elif method == "rbf":
@@ -154,10 +158,12 @@ def gen_surrogate_model(
         rbf_train = trainer.train_surrogate()
         rbf_surr = PysmoSurrogate(rbf_train, input_labels, output_labels, input_bounds)
         rbf_surr.save_to_file(
-            "./results/{}_surrogate.json".format(method), overwrite=True
+            os.path.join(local_path, f"{method}_surrogate.json"), overwrite=True
         )
         surrogate_parity(
-            rbf_surr, feed_data, filename="./results/{}_parity.pdf".format(method)
+            rbf_surr,
+            feed_data,
+            filename=os.path.join(local_path, f"{method}_parity.pdf"),
         )
 
     elif method == "alamo":
@@ -181,10 +187,12 @@ def gen_surrogate_model(
             surrogate_expressions, input_labels, output_labels, input_bounds
         )
         alm_surr.save_to_file(
-            "./results/{}_surrogate.json".format(method), overwrite=True
+            os.path.join(local_path, f"{method}_surrogate.json"), overwrite=True
         )
         surrogate_parity(
-            alm_surr, feed_data, filename="./results/{}_parity.pdf".format(method)
+            alm_surr,
+            feed_data,
+            filename=os.path.join(local_path, f"{method}_parity.pdf"),
         )
 
 

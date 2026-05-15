@@ -27,7 +27,7 @@ __author__ = "Marcus Holly"
 
 def performance_estimation(
     method="poly",  # "rbf"#"kri"alamo'
-    path="./results/",
+    path=local_path,
 ):
 
     if method not in ("poly", "kri", "rbf"):
