@@ -1458,23 +1458,21 @@ class Bipolar_and_Electrodialysis1DData(InitializationMixin, UnitModelBlockData)
                     + self.electrodes_resistance
                 )
 
-        if self.config.has_catalyst:
-
-            @self.Constraint(
-                self.flowsheet().time,
-                self.diluate.length_domain,
-                doc="Calculate total current generated via catalyst action",
+        @self.Constraint(
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            doc="Calculate total current generated via catalyst action",
+        )
+        def eq_current_relationship(self, t, x):
+            return self.current_density_x[t, x] == (
+                self.current_dens_lim_bpm[t, x]
+                + self.flux_splitting[t, x] * Constants.faraday_constant
             )
-            def eq_current_relationship(self, t, x):
-                return self.current_density_x[t, x] == (
-                    self.current_dens_lim_bpem[t, x]
-                    + self.flux_splitting[t, x] * Constants.faraday_constant
-                )
 
         @self.Constraint(
             self.flowsheet().time,
             self.diluate.length_domain,
-            doc="calcualte current density from the electrical input",
+            doc="Calculate current density from the electrical input",
         )
         def eq_get_current_density(self, t, x):
             if self.config.operation_mode == ElectricalOperationMode.Constant_Current:

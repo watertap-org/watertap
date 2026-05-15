@@ -21,6 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Scientific/Engineering :: Chemistry",
@@ -72,6 +74,26 @@ oli_api = [
 
 reaktoro = [
     "reaktoro-pse>=0.3.0",
+]
+
+dev = [
+    "black==26.3.1",
+    "pre-commit",
+
+    # coverage
+    "pytest-cov",
+
+    # pylint and astroid should be pinned to exact versions
+    "pylint==3.3.9", 
+    "astroid==3.3.11",
+
+    # docs
+    "sphinx==7.1.*",
+    "nbsphinx",
+    "sphinx_rtd_theme",
+
+    # include all optional dependencies 
+    "watertap[testing,notebooks,oli_api,reaktoro]",
 ]
 
 all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
