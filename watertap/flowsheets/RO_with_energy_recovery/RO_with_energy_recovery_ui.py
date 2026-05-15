@@ -27,6 +27,14 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        build_options={
+            "ERD_type": {
+                "name": "ERD_type",
+                "display_name": "Energy Recovery Device Type",
+                "values_allowed": ["pressure_exchanger", "pump_as_turbine", "no_ERD"],
+                "value": "pump_as_turbine",  # default value
+            },
+        },
     )
 
 
@@ -79,6 +87,28 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_input=True,
         input_category="Feed Pump",
         is_output=False,
+    )
+    exports.add(
+        obj=fs.P1.control_volume.deltaP[0],
+        name="Feed pump pressure drop",
+        ui_units=pyunits.bar,
+        display_units="bar",
+        rounding=2,
+        description="Pressure change of feed pump",
+        is_input=False,
+        is_output=True,
+        output_category="Feed Pump",
+    )
+    exports.add(
+        obj=fs.P1.work_mechanical[0],
+        name="Feed pump power",
+        ui_units=pyunits.kW,
+        display_units="kW",
+        rounding=2,
+        description="Power of feed pump",
+        is_input=False,
+        is_output=True,
+        output_category="Feed Pump",
     )
 
     # Unit model data, RO
@@ -164,11 +194,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.RO.length,
-        name="RO stage length",
+        name="Total membrane length",
         ui_units=pyunits.m,
         display_units="m",
         rounding=2,
-        description="Stage length",
+        description="Total membrane length",
         is_input=True,
         input_category="Reverse Osmosis",
         is_output=True,
@@ -187,27 +217,170 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # Unit model data, ERD
+    if build_options["ERD_type"].value == "pump_as_turbine":
+        exports.add(
+            obj=fs.ERD.efficiency_pump[0],
+            name="ERD Pump efficiency",
+            ui_units=pyunits.dimensionless,
+            display_units="fraction",
+            rounding=2,
+            description="Efficiency of energy recovery device",
+            is_input=True,
+            input_category="Energy Recovery Device",
+            is_output=False,
+        )
+        exports.add(
+            obj=fs.ERD.control_volume.properties_out[0].pressure,
+            name="ERD operating pressure",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Operating pressure of energy recovery device",
+            is_input=True,
+            input_category="Energy Recovery Device",
+            is_output=False,
+        )
+
+    # Unit model data, pressure exchanger
+    if build_options["ERD_type"].value == "pressure_exchanger":
+        exports.add(
+            obj=fs.PXR.efficiency_pressure_exchanger[0],
+            name="Pressure exchanger efficiency",
+            ui_units=pyunits.dimensionless,
+            display_units="fraction",
+            rounding=2,
+            description="Efficiency of pressure exchanger",
+            is_input=True,
+            input_category="Pressure exchanger",
+            is_output=False,
+        )
+        exports.add(
+            obj=fs.PXR.brine_side.deltaP[0],
+            name="Pressure exchanger pressure drop",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Pressure change of pressure exchanger",
+            is_input=False,
+            is_output=True,
+            output_category="Pressure exchanger",
+        )
+        # Unit model data, booster pump
+        exports.add(
+            obj=fs.P2.efficiency_pump[0],
+            name="Booster pump efficiency",
+            ui_units=pyunits.dimensionless,
+            display_units="fraction",
+            rounding=2,
+            description="Efficiency of booster pump",
+            is_input=True,
+            input_category="Booster Pump",
+            is_output=False,
+        )
+        exports.add(
+            obj=fs.P2.control_volume.properties_out[0].pressure,
+            name="Booster pump operating pressure",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Operating pressure of feed pump",
+            is_input=False,
+            is_output=True,
+            output_category="Booster Pump",
+        )
+        exports.add(
+            obj=fs.P2.control_volume.deltaP[0],
+            name="Booster pump pressure drop",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Pressure change of booster pump",
+            is_input=False,
+            is_output=True,
+            output_category="Booster Pump",
+        )
+        exports.add(
+            obj=fs.P2.work_mechanical[0],
+            name="Booster pump power",
+            ui_units=pyunits.kW,
+            display_units="kW",
+            rounding=2,
+            description="Power of booster pump",
+            is_input=False,
+            is_output=True,
+            output_category="Booster Pump",
+        )
+
+    # Feed
     exports.add(
-        obj=fs.ERD.efficiency_pump[0],
-        name="ERD Pump efficiency",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
+        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
+        name="Feed volumetric flow rate",
+        ui_units=pyunits.m**3 / pyunits.hour,
+        display_units="m3/hr",
         rounding=2,
-        description="Efficiency of energy recovery device",
-        is_input=True,
-        input_category="Energy Recovery Device",
-        is_output=False,
+        description="Inlet volumetric flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Feed",
     )
     exports.add(
-        obj=fs.ERD.control_volume.properties_out[0].pressure,
-        name="ERD operating pressure",
-        ui_units=pyunits.bar,
-        display_units="bar",
+        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        name="Feed NaCl concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
         rounding=2,
-        description="Operating pressure of energy recovery device",
-        is_input=True,
-        input_category="Energy Recovery Device",
-        is_output=False,
+        description="Inlet NaCl concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Feed",
+    )
+
+    # Product
+    exports.add(
+        obj=fs.product.properties[0].flow_vol,
+        name="Product volumetric flow rate",
+        ui_units=pyunits.m**3 / pyunits.hr,
+        display_units="m3/h",
+        rounding=2,
+        description="Outlet product water volumetric flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Product",
+    )
+    exports.add(
+        obj=fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        name="Product NaCl concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
+        rounding=3,
+        description="Outlet product water NaCl concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Product",
+    )
+
+    # Disposal
+    exports.add(
+        obj=fs.disposal.properties[0].flow_vol,
+        name="Waste brine volumetric flow rate",
+        ui_units=pyunits.m**3 / pyunits.hr,
+        display_units="m3/h",
+        rounding=2,
+        description="Outlet brine volumetric flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Disposal",
+    )
+    exports.add(
+        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
+        name="Waste brine NaCl concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
+        rounding=3,
+        description="Outlet brine NaCl concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Disposal",
     )
 
     # System costing
@@ -311,78 +484,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
 
-    # Feed
-    exports.add(
-        obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Feed volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hour,
-        display_units="m3/hr",
-        rounding=2,
-        description="Inlet volumetric flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Feed",
-    )
-    exports.add(
-        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="Feed NaCl concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=2,
-        description="Inlet NaCl concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Feed",
-    )
-
-    # Product
-    exports.add(
-        obj=fs.product.properties[0].flow_vol,
-        name="Product volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hr,
-        display_units="m3/h",
-        rounding=2,
-        description="Outlet product water volumetric flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Product",
-    )
-    exports.add(
-        obj=fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="Product NaCl concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=3,
-        description="Outlet product water NaCl concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Product",
-    )
-
-    # Disposal
-    exports.add(
-        obj=fs.disposal.properties[0].flow_vol,
-        name="Waste brine volumetric flow rate",
-        ui_units=pyunits.m**3 / pyunits.hr,
-        display_units="m3/h",
-        rounding=2,
-        description="Outlet brine volumetric flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Disposal",
-    )
-    exports.add(
-        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "NaCl"],
-        name="Waste brine NaCl concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=3,
-        description="Outlet brine NaCl concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Disposal",
-    )
-
     # System metrics
     exports.add(
         obj=fs.costing.specific_energy_consumption,
@@ -407,10 +508,56 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="System metrics",
     )
 
+    if build_options["ERD_type"].value == "pressure_exchanger":
+        total_pressure_drop = (
+            fs.P1.control_volume.deltaP[0]
+            + fs.P2.control_volume.deltaP[0]
+            + fs.PXR.brine_side.deltaP[0]
+        )
 
-def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwargs):
+        exports.add(
+            obj=total_pressure_drop,
+            name="Total pressure drop",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=3,
+            description="Total pressure change",
+            is_input=False,
+            is_output=True,
+            output_category="System metrics",
+        )
+
+    if build_options["ERD_type"].value == "pressure_exchanger":
+        total_power = fs.P1.work_mechanical[0] + fs.P2.work_mechanical[0]
+
+        exports.add(
+            obj=total_power,
+            name="Total booster pump power",
+            ui_units=pyunits.kW,
+            display_units="kW",
+            rounding=3,
+            description="Total power of booster pumps",
+            is_input=False,
+            is_output=True,
+            output_category="System metrics",
+        )
+
+
+def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
-    m = build()
+    if build_options is not None:
+        if build_options["ERD_type"].value == "pressure_exchanger":
+            erd_type = "pressure_exchanger"
+            m = build(erd_type=erd_type)
+        elif build_options["ERD_type"].value == "no_ERD":
+            erd_type = "no_ERD"
+            m = build(erd_type=erd_type)
+        else:
+            erd_type = "pump_as_turbine"
+            m = build(erd_type=erd_type)
+    else:
+        erd_type = "pressure_exchanger"
+        m = build(erd_type=erd_type)
 
     # the UI sets `capital_recovery_factor`, so unfix `wacc`
     m.fs.costing.wacc.unfix()
