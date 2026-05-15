@@ -392,7 +392,6 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             self.properties_feed[0].flow_mass_phase_comp
         # ---------------------------------------------------------------------
         # Initialize feed side
-        self.properties_feed[0].flow_mass_phase_comp[...]  # Ensure its there
         flags_feed = self.properties_feed.initialize(
             solver=solver, optarg=optarg, hold_state=True
         )
