@@ -26,6 +26,19 @@ __author__ = "Marcus Holly"
 
 
 def get_input_data(filename=None):
+    """
+    Load input variable data from a CSV file or return a hardcoded default dataset.
+    If no filename is provided, a small default dataset with three sample points
+    is returned, covering influent flowrate, temperature, and hydraulic retention
+    time.
+
+    Args:
+        filename (str, optional): Path to a CSV file containing input variable
+            columns
+
+    Returns:
+        pd.DataFrame: DataFrame with one row per sample point
+    """
     if filename == None:
         input_data = {
             "inf_fr": [5, 5, 5],
@@ -41,6 +54,19 @@ def get_input_data(filename=None):
 
 
 def get_eff_fr(case=None, df=None):
+    """
+    Extract effluent molar flowrates from a METAB system and append them to a DataFrame
+
+    Args:
+        case: An EXPOsan METAB system object with an ``outs`` attribute
+        df: Existing DataFrame to append the new row
+            to. If ``None``, a new DataFrame is created from the extracted
+            flowrates.
+
+    Returns:
+        pd.DataFrame: DataFrame containing one row of effluent molar flowrates,
+        with component names as columns
+    """
     if case is None:
         print(" The system is off")
     else:
@@ -70,6 +96,19 @@ def get_eff_fr(case=None, df=None):
 
 
 def get_ch4_fr(case=None, df=None):
+    """
+    Extract methane stream molar flowrates from a METAB system and append them to a DataFrame
+
+    Args:
+        case: An EXPOsan METAB system object with an ``outs`` attribute
+        df: Existing DataFrame to append the new row
+            to. If ``None``, a new DataFrame is created from the extracted
+            flowrates.
+
+    Returns:
+        pd.DataFrame: DataFrame containing one row of CH4 stream molar
+        flowrates, with component names as columns
+    """
     if case is None:
         print(" The system is off")
     else:
@@ -99,6 +138,18 @@ def get_ch4_fr(case=None, df=None):
 
 
 def get_h2_fr(case=None, df=None):
+    """
+    Extract hydrogen stream molar flowrates from a METAB system and append them to a DataFrame.
+
+    Args:
+        case: An EXPOsan METAB system object with an ``outs`` attribute
+        df: Existing DataFrame to append the new row
+            to.
+
+    Returns:
+        pd.DataFrame: DataFrame containing one row of H2 stream molar
+        flowrates, with component names as columns
+    """
     if case is None:
         print(" The system is off")
     else:
@@ -128,6 +179,18 @@ def get_h2_fr(case=None, df=None):
 
 
 def get_r1_ex_biogas_fr(case=None, df=None):
+    """
+    Extract reactor 1 extracted biogas molar flowrates from a METAB system and append them to a DataFrame.
+
+    Args:
+        case: An EXPOsan METAB system object with an ``outs`` attribute
+        df: Existing DataFrame to append the new row
+            to
+
+    Returns:
+        pd.DataFrame: DataFrame containing one row of reactor 1 biogas molar
+        flowrates, with component names as columns
+    """
     if case is None:
         print(" The system is off")
     else:
@@ -158,6 +221,25 @@ def get_r1_ex_biogas_fr(case=None, df=None):
 
 
 def get_mass_flowrate(case=None, df=None, stream=None):
+    """
+    Extract mass flowrates and volumetric flowrate from a stream and append them to a DataFrame.
+
+    Reads component mass flowrates directly from a stream's state vector,
+    using the stream's component list as column names. A ``Volumetric Flowrate``
+    column is appended from the last element of the state vector. Columns where
+    all values are zero are dropped from the result.
+
+    Args:
+        case: An EXPOsan METAB system object
+        df: Existing DataFrame to append the new row
+            to
+        stream: An EXPOsan stream object with ``components`` and ``state``
+            attributes
+
+    Returns:
+        pd.DataFrame: DataFrame with one row of mass flowrates and volumetric
+        flowrate, with zero-only columns removed.
+    """
     keys = str(stream.components).split("(")[1].rstrip(")").split(",")
     keys = [k.strip() for k in keys]
     values = [[float(x)] for x in list(stream.state[:-1])]
@@ -175,6 +257,31 @@ def get_mass_flowrate(case=None, df=None, stream=None):
 
 
 def collect_results(case=None, results=None, mass=True):
+    """
+    Gathers flowrates from four output streams — effluent, methane biogas
+    (reactor 2 extraction), hydrogen biogas (reactor 1 extraction), and reactor
+    1 extracted biogas — and concatenates them into a single wide-format row.
+    Column names are prefixed to distinguish streams:
+
+    - ``eff_``  : effluent digestate (no prefix applied)
+    - ``bge2_`` : biogas extraction from reactor 2 (CH4-rich)
+    - ``bgr2_`` : biogas from reactor 2 hydrogen stream
+    - ``bge1_`` : biogas extraction from reactor 1
+
+    Args:
+        case: An EXPOsan METAB system object whose ``outs`` streams will be
+            read.
+        results (pd.DataFrame, optional): Accumulator DataFrame from previous
+            iterations.
+        mass (bool, optional): If ``True``, use ``get_mass_flowrate`` for all
+            streams. If ``False``, use the molar flowrate helpers
+            (``get_eff_fr``, ``get_ch4_fr``, ``get_h2_fr``,
+            ``get_r1_ex_biogas_fr``).
+
+    Returns:
+        pd.DataFrame: Updated accumulator with the current run's output
+        appended as a new row
+    """
     if mass:
         eff_fr = get_mass_flowrate(case, None, case.outs[3])
         ch4_fr = get_mass_flowrate(case, None, case.outs[2])
@@ -198,6 +305,30 @@ def collect_results(case=None, results=None, mass=True):
 
 
 def run_model(df):
+    """
+    Iterates over all rows of the input DataFrame, configures a two-stage
+    fluidized-bed METAB system with membrane gas extraction for each set of
+    conditions, simulates it using the BDF solver, and accumulates the output
+    stream flowrates into a single results DataFrame.
+
+    Fixed model parameters applied to every run:
+
+    - ``n_stages``       : 2
+    - ``reactor_type``   : ``"FB"`` (fluidized bed)
+    - ``gas_extraction`` : ``"M"`` (membrane)
+    - ``t_span``         : 200 (simulation time in days)
+
+    Args:
+        df (pd.DataFrame): Input DataFrame with one row per simulation run.
+            Must contain columns ``inf_fr`` (influent flowrate, m³/d),
+            ``temp`` (reactor temperature, °C), and ``hrt`` (total hydraulic
+            retention time, d).
+
+    Returns:
+        pd.DataFrame: Accumulated output flowrates from all simulation runs,
+        as returned by ``collect_results``. Returns an empty dict if
+        ``exposan`` is not installed or no rows are processed.
+    """
     output_data = {}
     for idx in df.index:
         # Changing input variables
@@ -235,7 +366,19 @@ def run_model(df):
     return output_data
 
 
-def export_output_data(df, path=None, filename=None):
+def export_output_data(df, filename=None):
+    """
+    Export a DataFrame of output results to a CSV file.
+
+    Args:
+        df: Output data to export
+        filename (str, optional): Full path (including filename and extension)
+            for the output CSV file. Passed directly to ``df.to_csv()``.
+            Defaults to ``None``.
+
+    Returns:
+        None
+    """
     df.to_csv(filename)
     print("The output data is ready")
 

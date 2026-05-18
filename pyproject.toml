@@ -78,7 +78,6 @@ reaktoro = [
 
 exposan = [
     "exposan",
-    "IPython"
 ]
 
 dev = [

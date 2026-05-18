@@ -19,11 +19,25 @@ __author__ = "Marcus Holly"
 
 
 def create_samples(
-    method=None,
+    method="LHS",
     input_var_info=None,
     sample_numbers=10,
     csv_file="./results/input_data.csv",
 ):
+    """
+    Generate input samples over a defined variable space and write them to a CSV file
+
+    Args:
+        method (str, optional): Sampling strategy to use.
+            This currently only supports the Latin Hypercube Sampling (LHS) method
+        input_var_info (dict, optional): Ordered mapping of input variable names
+        sample_numbers (int, optional): Number of sample points to generate
+        csv_file (str, optional): Path to the output CSV file
+
+    Returns:
+        None. Results are written to ``csv_file`` and a confirmation message is
+        printed on success.
+    """
     if method == None:
         print("Please pick a sampling method")
         return

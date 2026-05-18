@@ -13,12 +13,8 @@ import os
 import json
 import pandas as pd
 
-# third-party
-try:
-    import IPython
-    from IPython.display import IFrame
-except ImportError:
-    IPython = None
+from idaes.core.surrogate.metrics import compute_fit_metrics
+from idaes.core.surrogate.plotting.sm_plotter import surrogate_parity
 
 local_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,76 +22,109 @@ __author__ = "Marcus Holly"
 
 
 def performance_estimation(
-    method="poly",  # "rbf"#"kri"alamo'
-    path=local_path,
+    surrogate=None,
+    dataframe=None,
 ):
+    """
+    Evaluates the surrogate against the provided dataframe and returns a
+    DataFrame summarising fit metrics for each output variable.
 
-    if method not in ("poly", "kri", "rbf"):
+    Args:
+        surrogate: IDAES surrogate object
+            Must implement input_labels(), output_labels(), and
+            evaluate_surrogate()
+        dataframe (pd.DataFrame): DataFrame containing both input and output
+            columns corresponding to the surrogate's input_labels() and
+            output_labels()
+
+    Returns:
+        pd.DataFrame: One row per output variable with columns:
+            - ``Comp``  : output variable name
+            - ``R2``    : coefficient of determination
+            - ``RMSE``  : root mean squared error
+            - ``MSE``   : mean squared error
+            - ``MAE``   : mean absolute error
+            - ``maxAE`` : maximum absolute error
+            - ``SSE``   : sum of squared errors
+    """
+
+    if surrogate is None or dataframe is None:
         raise ValueError(
-            f"Unsupported method: {method}. Choose from 'poly', 'kri', or 'rbf'."
+            "Both 'surrogate' and 'dataframe' must be provided to use compute_fit_metrics."
         )
 
-    metrics_sum = pd.DataFrame()
-    file = path + method + "_surrogate.json"
+    # Delegate all metric computation to IDAES
+    metrics_by_output = compute_fit_metrics(surrogate, dataframe)
 
-    with open(file, "r") as file:
-        data = json.load(file)
+    # Reshape dict-of-dicts into a flat DataFrame, one row per output label
+    rows = []
+    for output_label, metrics in metrics_by_output.items():
+        row = {"Comp": output_label, **metrics}
+        rows.append(row)
 
-    if method == "poly":
-        for ele in data["model_encoding"]:
-            metrics = data["model_encoding"][ele]["attr"]["errors"]
-            metrics["Comp"] = ele
-            for key in metrics:
-                metrics[key] = [metrics[key]]
-            df = pd.DataFrame.from_dict(metrics)
-            metrics_sum = pd.concat([metrics_sum, df])
-
-    elif method == "kri":
-        for ele in data["model_encoding"]:
-            metrics = {}
-            metrics["R2"] = [data["model_encoding"][ele]["attr"]["training_R2"]]
-            metrics["RMSE"] = [data["model_encoding"][ele]["attr"]["training_rmse"]]
-            metrics["Comp"] = [ele]
-            df = pd.DataFrame.from_dict(metrics)
-            metrics_sum = pd.concat([metrics_sum, df])
-
-    elif method == "rbf":
-        for ele in data["model_encoding"]:
-            metrics = {}
-            metrics["R2"] = [data["model_encoding"][ele]["attr"]["R2"]]
-            metrics["RMSE"] = [data["model_encoding"][ele]["attr"]["rmse"]]
-            metrics["Comp"] = [ele]
-            df = pd.DataFrame.from_dict(metrics)
-            metrics_sum = pd.concat([metrics_sum, df])
+    metrics_sum = pd.DataFrame(rows)
 
     return metrics_sum
 
 
-def display_performance(method="poly", path="./results/"):
-    metrics = performance_estimation(method=method, path=path)
-    display_metrics = pd.DataFrame()
+def display_performance(surrogate=None, dataframe=None):
+    metrics = performance_estimation(
+        surrogate=surrogate,
+        dataframe=dataframe,
+    )
+    """
+    Return a formatted DataFrame of surrogate performance metrics for display.
 
-    if method == "poly":
-        display_metrics["Predicted Variables"] = metrics["Comp"]
-        display_metrics["R^2"] = metrics["R2"]
-        display_metrics["Adjusted R^2"] = metrics["Adjusted R2"]
-        display_metrics["MAE"] = metrics["MAE"]
-        display_metrics["MSE"] = metrics["MSE"]
-    elif method in ("kri", "rbf"):
-        display_metrics["R^2"] = metrics["R2"]
-        display_metrics["RMSE"] = metrics["RMSE"]
+    Args:
+        surrogate: IDAES surrogate object
+        dataframe: DataFrame containing input and output columns
+
+    Returns:
+        pd.DataFrame: One row per output variable, 1-based index, with columns:
+            - ``Predicted Variables`` : output variable name
+            - ``R^2``                 : coefficient of determination
+            - ``MAE``                 : mean absolute error
+            - ``MSE``                 : mean squared error
+            - ``RMSE``                : root mean squared error
+            - ``Max AE``              : maximum absolute error
+    """
+
+    display_metrics = pd.DataFrame(
+        {
+            "Predicted Variables": metrics["Comp"],
+            "R^2": metrics["R2"],
+            "MAE": metrics["MAE"],
+            "MSE": metrics["MSE"],
+            "RMSE": metrics["RMSE"],
+            "Max AE": metrics["maxAE"],
+        }
+    )
 
     display_metrics.index = range(1, len(display_metrics) + 1)
 
     return display_metrics
 
 
-def display_plot(method="poly", path=None):
+def display_plot(surrogate, dataframe, method="poly", path=None, show=True):
+    """
+    Produces one parity plot per output variable and consolidates into a PDF
+
+    Args:
+        surrogate: IDAES surrogate object
+        dataframe: DataFrame containing input and output
+            columns corresponding to the surrogate's labels
+        method (str, optional): Surrogate method identifier used to name the
+            output PDF file (e.g. ``"poly"``, ``"kri"``, ``"rbf"``)
+        path (str, optional): Directory in which to save the PDF
+        show (bool, optional): Whether to display each figure interactively
+            via matplotlib
+
+    Returns:
+        list[matplotlib.figure.Figure]: One figure per output variable
+    """
     if path is None:
         path = os.path.join(local_path, "results")
 
-    if IPython is not None:
-        file_path = os.path.join(path, "{}_parity.pdf".format(method))
-        return IFrame(file_path, width=700, height=500)
-    else:
-        print("Please install IPython to use this functionality")
+    filename = os.path.join(path, f"{method}_parity.pdf")
+
+    return surrogate_parity(surrogate, dataframe, filename=filename, show=show)

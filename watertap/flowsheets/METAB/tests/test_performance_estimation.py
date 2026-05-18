@@ -11,146 +11,143 @@
 #################################################################################
 import pytest
 import pandas as pd
+import numpy as np
 import os
-import json
+import matplotlib
 
+matplotlib.use("Agg")
+
+from unittest.mock import MagicMock
 from watertap.flowsheets.METAB.performance_estimation import (
     performance_estimation,
     display_performance,
     display_plot,
 )
 
-# third-party
-try:
-    import IPython
-except ImportError:
-    IPython = None
-
 local_path = os.path.dirname(os.path.abspath(__file__))
 
 dummy_components = ["S_su", "S_aa", "S_fa"]
+dummy_inputs = ["x1", "x2"]
 
 
 @pytest.fixture
-def surrogate_path(tmp_path):
-    poly_data = {
-        "model_encoding": {
-            comp: {
-                "attr": {
-                    "errors": {
-                        "MAE": 0.01,
-                        "MSE": 0.0001,
-                        "R2": 0.98,
-                        "Adjusted R2": 0.97,
-                    }
-                }
-            }
-            for comp in dummy_components
-        }
-    }
-    kri_data = {
-        "model_encoding": {
-            comp: {"attr": {"training_R2": 0.96, "training_rmse": 0.04}}
-            for comp in dummy_components
-        }
-    }
-    rbf_data = {
-        "model_encoding": {
-            comp: {"attr": {"R2": 0.95, "rmse": 0.05}} for comp in dummy_components
-        }
-    }
+def mock_surrogate():
+    surrogate = MagicMock()
+    surrogate.input_labels.return_value = dummy_inputs
+    surrogate.output_labels.return_value = dummy_components
 
-    for method, data in [("poly", poly_data), ("kri", kri_data), ("rbf", rbf_data)]:
-        with open(tmp_path / f"{method}_surrogate.json", "w") as f:
-            json.dump(data, f)
+    def evaluate_surrogate(dataframe):
+        # dataframe here contains only input columns (x1, x2),
+        # so generate predictions from those rather than indexing output columns
+        n = len(dataframe)
+        preds = np.random.rand(n, len(dummy_components)) + 1.0
+        return pd.DataFrame(preds, columns=dummy_components)
 
-    return str(tmp_path) + os.sep
+    surrogate.evaluate_surrogate.side_effect = evaluate_surrogate
+    return surrogate
 
 
-def test_performance_estimation_poly(surrogate_path):
-    result = performance_estimation(method="poly", path=surrogate_path)
+@pytest.fixture
+def mock_dataframe():
+    np.random.seed(42)
+    n = 20
+    data = {inp: np.random.rand(n) for inp in dummy_inputs}
+    data.update({comp: np.random.rand(n) + 1.0 for comp in dummy_components})
+    return pd.DataFrame(data)
+
+
+def test_performance_estimation_returns_dataframe(mock_surrogate, mock_dataframe):
+    result = performance_estimation(surrogate=mock_surrogate, dataframe=mock_dataframe)
     assert isinstance(result, pd.DataFrame)
+
+
+def test_performance_estimation_one_row_per_output(mock_surrogate, mock_dataframe):
+    result = performance_estimation(surrogate=mock_surrogate, dataframe=mock_dataframe)
     assert result.shape[0] == len(dummy_components)
 
-    assert list(result.columns) == ["MAE", "MSE", "R2", "Adjusted R2", "Comp"]
 
+def test_performance_estimation_columns(mock_surrogate, mock_dataframe):
+    result = performance_estimation(surrogate=mock_surrogate, dataframe=mock_dataframe)
+    assert set(result.columns) >= {"Comp", "R2", "RMSE", "MAE", "MSE", "maxAE"}
+
+
+def test_performance_estimation_comp_values(mock_surrogate, mock_dataframe):
+    result = performance_estimation(surrogate=mock_surrogate, dataframe=mock_dataframe)
     assert list(result["Comp"]) == dummy_components
 
 
-def test_performance_estimation_kri(surrogate_path):
-    result = performance_estimation(method="kri", path=surrogate_path)
+def test_performance_estimation_missing_surrogate():
+    with pytest.raises(ValueError, match="surrogate"):
+        performance_estimation(surrogate=None, dataframe=pd.DataFrame())
+
+
+def test_performance_estimation_missing_dataframe(mock_surrogate):
+    with pytest.raises(ValueError, match="dataframe"):
+        performance_estimation(surrogate=mock_surrogate, dataframe=None)
+
+
+def test_display_performance_returns_dataframe(mock_surrogate, mock_dataframe):
+    result = display_performance(surrogate=mock_surrogate, dataframe=mock_dataframe)
     assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == len(dummy_components)
-
-    assert list(result.columns) == ["R2", "RMSE", "Comp"]
-
-    assert list(result["Comp"]) == dummy_components
 
 
-def test_performance_estimation_rbf(surrogate_path):
-    result = performance_estimation(method="rbf", path=surrogate_path)
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == len(dummy_components)
-
-    assert list(result.columns) == ["R2", "RMSE", "Comp"]
-
-    assert list(result["Comp"]) == dummy_components
-
-
-def test_performance_estimation_file_not_found():
-    with pytest.raises(FileNotFoundError):
-        performance_estimation(method="poly", path="./file_not_found/")
-
-
-def test_display_performance_poly(surrogate_path):
-    result = display_performance(method="poly", path=surrogate_path)
-    assert isinstance(result, pd.DataFrame)
+def test_display_performance_columns(mock_surrogate, mock_dataframe):
+    result = display_performance(surrogate=mock_surrogate, dataframe=mock_dataframe)
     assert list(result.columns) == [
         "Predicted Variables",
         "R^2",
-        "Adjusted R^2",
         "MAE",
         "MSE",
+        "RMSE",
+        "Max AE",
     ]
+
+
+def test_display_performance_row_count(mock_surrogate, mock_dataframe):
+    result = display_performance(surrogate=mock_surrogate, dataframe=mock_dataframe)
     assert result.shape[0] == len(dummy_components)
 
 
-def test_display_performance_kri(surrogate_path):
-    result = display_performance(method="kri", path=surrogate_path)
-    assert isinstance(result, pd.DataFrame)
-    assert list(result.columns) == ["R^2", "RMSE"]
-    assert result.shape[0] == len(dummy_components)
+def test_display_performance_index_starts_at_one(mock_surrogate, mock_dataframe):
+    result = display_performance(surrogate=mock_surrogate, dataframe=mock_dataframe)
+    assert list(result.index) == list(range(1, len(dummy_components) + 1))
 
 
-def test_display_performance_rbf(surrogate_path):
-    result = display_performance(method="rbf", path=surrogate_path)
-    assert isinstance(result, pd.DataFrame)
-    assert list(result.columns) == ["R^2", "RMSE"]
-    assert result.shape[0] == len(dummy_components)
+def test_display_plot_returns_figure_list(mock_surrogate, mock_dataframe, tmp_path):
+    result = display_plot(
+        surrogate=mock_surrogate,
+        dataframe=mock_dataframe,
+        path=str(tmp_path),
+        show=False,
+    )
+    assert isinstance(result, list)
+    assert len(result) == len(dummy_components)
 
 
-def test_display_performance_invalid_method(surrogate_path):
-    with pytest.raises(ValueError, match="Unsupported method"):
-        display_performance(method="invalid", path=surrogate_path)
+def test_display_plot_saves_pdf(mock_surrogate, mock_dataframe, tmp_path):
+    display_plot(
+        surrogate=mock_surrogate,
+        dataframe=mock_dataframe,
+        method="poly",
+        path=str(tmp_path),
+        show=False,
+    )
+    expected_pdf = tmp_path / "poly_parity.pdf"
+    assert expected_pdf.exists()
 
 
-def test_display_plot_w_path():
-    if IPython is None:
-        pytest.skip("IPython not available")
+def test_display_plot_default_path(
+    mock_surrogate, mock_dataframe, tmp_path, monkeypatch
+):
+    # Redirect local_path so the default path stays inside tmp_path
+    import watertap.flowsheets.METAB.performance_estimation as pe_module
 
-    path = os.path.abspath(os.path.join(local_path, "..", "results"))
-    result = display_plot(method="poly", path=path)
+    monkeypatch.setattr(pe_module, "local_path", str(tmp_path))
+    os.makedirs(tmp_path / "results", exist_ok=True)
 
-    assert hasattr(result, "src")
-    assert "poly_parity.pdf" in result.src
-    assert path in result.src
-
-
-def test_display_plot_wo_path():
-    if IPython is None:
-        pytest.skip("IPython not available")
-
-    result = display_plot(method="poly", path=None)
-
-    assert hasattr(result, "src")
-    assert "poly_parity.pdf" in result.src
+    result = display_plot(
+        surrogate=mock_surrogate,
+        dataframe=mock_dataframe,
+        show=False,
+    )
+    assert isinstance(result, list)

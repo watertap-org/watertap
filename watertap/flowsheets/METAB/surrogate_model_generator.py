@@ -34,6 +34,19 @@ def get_data(
     input_data_file=os.path.join(local_path, "input_data.csv"),
     output_data_file=os.path.join(local_path, "output_data.csv"),
 ):
+    """
+    Load input and output data from CSV files and combine them into a single feed DataFrame.
+
+    Args:
+        input_data_file: Path to the input variables CSV file.
+        output_data_file: Path to the output variables CSV file.
+
+    Returns:
+        tuple:
+            - ``feed_data``   : Combined input and output DataFrame used for training.
+            - ``input_data``  : Input variables only.
+            - ``output_data`` : Output variables only (first column dropped).
+    """
     input_data = pd.read_csv(input_data_file, header=0)
     output_data = pd.read_csv(output_data_file, header=0).iloc[:, 1:]
     feed_data = pd.concat([input_data, output_data], axis=1)
@@ -41,6 +54,22 @@ def get_data(
 
 
 def outputs_selections(output_data):
+    """
+    Filter and reorder output data columns to the standard ADM1 component set.
+
+    The selected outputs are (in order):
+    ``S_su``, ``S_aa``, ``S_fa``, ``S_va``, ``S_bu``, ``S_pro``, ``S_ac``,
+    ``S_h2``, ``S_ch4``, ``S_IC``, ``S_IN``, ``S_I``, ``X_c``, ``X_ch``,
+    ``X_pr``, ``X_li``, ``X_su``, ``X_aa``, ``X_fa``, ``X_c4``, ``X_pro``,
+    ``X_ac``, ``X_h2``, ``X_I``, ``VolumetricFlowrate``.
+
+    Args:
+        output_data (pd.DataFrame): Raw output DataFrame as loaded from CSV.
+
+    Returns:
+        pd.DataFrame: Output DataFrame restricted to the standard ADM1
+        component columns in the order listed above
+    """
     outputs_list = [
         "S_su",
         "S_aa",
@@ -79,6 +108,33 @@ def outputs_selections(output_data):
 def gen_surrogate_model(
     tool="idaes", method="poly", feed_data=None, input_data=None, output_data=None
 ):
+    """
+    Train an IDAES surrogate model and save it to disk alongside a parity plot.
+
+    Method-specific configuration:
+
+    - ``"poly"``  : PySMO polynomial up to order 6, multinomials enabled,
+                    80/20 train/test split, 3-fold cross-validation.
+    - ``"kri"``   : PySMO Kriging with numerical gradients and regularization.
+    - ``"rbf"``   : PySMO RBF with cubic basis function.
+    - ``"alamo"`` : ALAMO with constant, linear, exponential, log, sin, cos
+                    basis functions and monomial/multi-linear powers up to 3.
+
+    Args:
+        tool (str, optional): Surrogate toolbox identifier
+        method (str, optional): Surrogate modelling method
+        feed_data: Combined input and output
+            DataFrame used for training
+        input_data (pd.DataFrame, optional): Input variables DataFrame. Used
+            to derive input labels and bounds
+        output_data (pd.DataFrame, optional): Output variables DataFrame.
+
+    Returns:
+        None. Writes the following files to the module directory:
+            - ``<method>_surrogate.json`` : serialised surrogate model.
+            - ``<method>_parity.pdf``     : parity plot for all output variables.
+
+    """
     if method not in ("poly", "kri", "rbf", "alamo"):
         raise ValueError(
             f"Unsupported method: {method}. Choose from 'poly', 'kri', 'rbf', or 'alamo'."
