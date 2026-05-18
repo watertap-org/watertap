@@ -122,9 +122,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_input=True,
         input_category="Reverse Osmosis",
         is_output=True,
-        output_category="System metrics",
+        output_category="Reverse Osmosis",
     )
-
     exports.add(
         obj=fs.RO.A_comp[0, "H2O"],
         name="RO water permeability coefficient",
@@ -136,7 +135,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="Reverse Osmosis",
         is_output=False,
     )
-
     exports.add(
         obj=fs.RO.B_comp[0, "NaCl"],
         name="RO salt permeability coefficient",
@@ -203,18 +201,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="Reverse Osmosis",
         is_output=True,
     )
-    exports.add(
-        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
-        name="RO water mass recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Water mass recovery of RO unit",
-        is_input=True,
-        input_category="Reverse Osmosis",
-        is_output=True,
-        output_category="System metrics",
-    )
 
     # Unit model data, ERD
     if build_options["ERD_type"].value == "pump_as_turbine":
@@ -265,6 +251,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_output=True,
             output_category="Pressure exchanger",
         )
+
         # Unit model data, booster pump
         exports.add(
             obj=fs.P2.efficiency_pump[0],
@@ -485,6 +472,18 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
 
     # System metrics
+    exports.add(
+        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
+        name="RO water mass recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Water mass recovery of RO unit",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=True,
+        output_category="System metrics",
+    )
     exports.add(
         obj=fs.costing.specific_energy_consumption,
         name="Specific energy consumption",
