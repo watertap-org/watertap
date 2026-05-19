@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import os
-import json
 import pandas as pd
 
 from idaes.core.surrogate.metrics import compute_fit_metrics
