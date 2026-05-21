@@ -522,10 +522,8 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 self.connection_to_condenser.eq_heat_balance[0], sf
             )
-        except AttributeError as e:
-            raise AttributeError(
-                f"Evaporator is not connected to a condenser or condenser constraints are missing: {e}"
-            )
+        except AttributeError:
+            pass
 
         for phase, ion in self.properties_feed[0].flow_mass_phase_comp.keys():
             sf = iscale.get_scaling_factor(
