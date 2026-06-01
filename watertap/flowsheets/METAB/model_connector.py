@@ -30,7 +30,7 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions i
     ADM1ReactionParameterBlock,
 )
 
-from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.core import FlowsheetBlock
 
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
@@ -114,7 +114,7 @@ def model_checker(model, solver_info):
     dof = degrees_of_freedom(model)
     assert dof == 0, f"Error: Degrees of freedom is {dof}, but it should be 0."
     print("DOF check passed")
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    for var in model.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
             iscale.set_scaling_factor(var, 1e1)
         if "temperature" in var.name:

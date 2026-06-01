@@ -21,10 +21,8 @@ from pyomo.environ import units
 from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import DiagnosticsToolbox
 from idaes.models.unit_models import (
     CSTR,
-    Feed,
     Mixer,
     Separator,
     PressureChanger,
