@@ -13,6 +13,7 @@
 This flowsheet is a WWTP model where METAB is integrated with the ASM1 flowsheet
 
 """
+
 __author__ = "Marcus Holly"
 
 import pyomo.environ as pyo
@@ -419,5 +420,3 @@ def report_st(m):
 
 if __name__ == "__main__":
     m, results = main()
-    m.fs.Treated.display()
-    m.fs.Sludge.display()
