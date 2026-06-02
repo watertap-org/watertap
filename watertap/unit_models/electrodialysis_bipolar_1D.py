@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -1118,21 +1118,20 @@ class Electrodialysis_Bipolar_1DData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().time,
             self.diluate.length_domain,
+            doc="Calculate total current generated via catalyst action",
+        )
+        def eq_current_relationship(self, t, x):
+            return self.current_density_x[t, x] == (
+                self.current_dens_lim_bpm[t, x]
+                + self.flux_splitting[t, x] * Constants.faraday_constant
+            )
+
+        @self.Constraint(
+            self.flowsheet().time,
+            self.diluate.length_domain,
             doc="Calculate current density from the electrical input",
         )
         def eq_get_current_density(self, t, x):
-
-            @self.Constraint(
-                self.flowsheet().time,
-                self.diluate.length_domain,
-                doc="Calculate total current generated via catalyst action",
-            )
-            def eq_current_relationship(self, t, x):
-                return self.current_density_x[t, x] == (
-                    self.current_dens_lim_bpm[t, x]
-                    + self.flux_splitting[t, x] * Constants.faraday_constant
-                )
-
             if self.config.operation_mode == ElectricalOperationMode.Constant_Current:
                 return (
                     self.current_density_x[t, x]

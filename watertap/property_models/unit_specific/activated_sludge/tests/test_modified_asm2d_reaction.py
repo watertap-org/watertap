@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -19,6 +19,7 @@ X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions fordynamic simulations of anaerobic digestion processes,
 Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 """
+
 import pytest
 
 from pyomo.environ import (

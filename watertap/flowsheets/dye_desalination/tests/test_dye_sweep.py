@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -18,8 +18,8 @@ from watertap.flowsheets.dye_desalination.dye_sweep import (
 
 # test the first 11 case studies that can be run with or without RO
 pytest_parameterize_NF = list(range(1, 12))
-# then test case studies 9-11 that can only run with RO
-pytest_parameterize_RO = list(range(12, 18))
+# then test case studies 12-20 that can only run with RO
+pytest_parameterize_RO = list(range(12, 20))
 
 
 @pytest.mark.parametrize("case_num", pytest_parameterize_NF)

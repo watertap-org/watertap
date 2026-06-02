@@ -1,9 +1,9 @@
 License Agreement
 =================
 
-WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-National Renewable Energy Laboratory, and National Energy Technology
+National Laboratory of the Rockies, and National Energy Technology
 Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 of Energy). All rights reserved.
 
@@ -18,8 +18,8 @@ notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
 3. Neither the name of the University of California, Lawrence Berkeley
-National Laboratory, Oak Ridge National Laboratory, National Renewable
-Energy Laboratory, National Energy Technology Laboratory, U.S. Dept.
+National Laboratory, Oak Ridge National Laboratory, National Laboratory
+of the Rockies, National Energy Technology Laboratory, U.S. Dept.
 of Energy nor the names of its contributors may be used to endorse or
 promote products derived from this software without specific prior written
 permission.

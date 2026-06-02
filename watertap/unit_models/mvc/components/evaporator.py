@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -18,6 +18,7 @@ from pyomo.environ import (
     units as pyunits,
     ExternalFunction,
     check_optimal_termination,
+    value,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -38,7 +39,6 @@ import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
 from watertap.costing.unit_models.evaporator import cost_evaporator
-
 
 _log = idaeslog.getLogger(__name__)
 
@@ -388,6 +388,8 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         if hasattr(self, "connection_to_condenser"):
             self.connection_to_condenser.deactivate()
 
+        if not self.properties_feed[0].is_property_constructed("flow_mass_phase_comp"):
+            self.properties_feed[0].flow_mass_phase_comp
         # ---------------------------------------------------------------------
         # Initialize feed side
         flags_feed = self.properties_feed.initialize(
@@ -422,7 +424,9 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             ("Liq", "H2O"): self.properties_vapor[0]
             .flow_mass_phase_comp["Liq", "H2O"]
             .lb,
-            ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")],
+            ("Vap", "H2O"): value(
+                self.properties_feed[0].flow_mass_phase_comp["Liq", "H2O"]
+            ),
         }
 
         self.properties_vapor.initialize(
@@ -480,8 +484,8 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         var_dict = {
             "Heat transfer": self.heat_transfer,
-            "Evaporator temperature": self.properties_brine[0].temperature,
-            "Evaporator pressure": self.properties_brine[0].pressure,
+            "Evaporator temperature": self.properties_brine[time_point].temperature,
+            "Evaporator pressure": self.properties_brine[time_point].pressure,
         }
 
         return {"vars": var_dict}

@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -11,6 +11,8 @@
 #################################################################################
 
 import pyomo.environ as pyo
+
+from watertap.custom_exceptions import FrozenPipes
 from ..util import (
     register_costing_parameter_block,
     make_capital_cost_var,
@@ -20,7 +22,7 @@ from ..util import (
 
 def build_hcl_cost_param_block(blk):
 
-    blk.cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         mutable=True,
         initialize=0.17,
         doc="HCl cost",  # for 37% sol'n - CatCost v 1.0.4
@@ -34,12 +36,12 @@ def build_hcl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("HCl", blk.cost / blk.purity)
+    costing.register_flow_type("HCl", blk.unit_cost / blk.purity)
 
 
 def build_naoh_cost_param_block(blk):
 
-    blk.cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         mutable=True,
         initialize=0.59,
         doc="NaOH cost",  # for 30% sol'n - iDST
@@ -54,12 +56,12 @@ def build_naoh_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("NaOH", blk.cost / blk.purity)
+    costing.register_flow_type("NaOH", blk.unit_cost / blk.purity)
 
 
 def build_meoh_cost_param_block(blk):
     # MeOH = Methanol
-    blk.cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         mutable=True,
         initialize=3.395,
         doc="MeOH cost",  # for 100% purity - ICIS
@@ -74,12 +76,12 @@ def build_meoh_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("MeOH", blk.cost / blk.purity)
+    costing.register_flow_type("MeOH", blk.unit_cost / blk.purity)
 
 
 def build_nacl_cost_param_block(blk):
 
-    blk.cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         mutable=True,
         initialize=0.09,
         doc="NaCl cost",  # for solid, 100% purity - CatCost
@@ -94,7 +96,7 @@ def build_nacl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("NaCl", blk.cost / blk.purity)
+    costing.register_flow_type("NaCl", blk.unit_cost / blk.purity)
 
 
 def build_ion_exhange_cost_param_block(blk):
@@ -268,6 +270,10 @@ def cost_ion_exchange(blk):
 
     elif ix_type == "anion":
         resin_cost = ion_exchange_params.anion_exchange_resin_cost
+    else:
+        raise FrozenPipes(
+            f"Invalid ion exchange type {ix_type}. Valid types are 'cation' or 'anion'."
+        )
 
     blk.capital_cost_vessel_constraint = pyo.Constraint(
         expr=blk.capital_cost_vessel
@@ -282,7 +288,8 @@ def cost_ion_exchange(blk):
     blk.capital_cost_resin_constraint = pyo.Constraint(
         expr=blk.capital_cost_resin
         == pyo.units.convert(
-            resin_cost * bed_vol_ft3, to_units=blk.costing_package.base_currency
+            resin_cost * bed_vol_ft3,
+            to_units=blk.costing_package.base_currency,
         )
     )
     if blk.unit_model.config.regenerant == "single_use":

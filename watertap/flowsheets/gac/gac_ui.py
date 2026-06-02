@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -133,7 +133,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "Feed"
     exports.add(
         obj=fs.feed.properties[0].temperature,
-        name="Temperature",
+        name="Feed temperature",
         ui_units=pyunits.kelvin,
         display_units="K",
         rounding=rounding,
@@ -145,7 +145,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].pressure,
-        name="Pressure",
+        name="Feed pressure",
         ui_units=pyunits.bar,
         display_units="bar",
         rounding=rounding,
@@ -157,7 +157,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
+        name="Feed volumetric flow rate",
         ui_units=pyunits.Mgallon / pyunits.day,
         display_units="MGD",
         rounding=rounding,
@@ -168,7 +168,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", solute_name],
-        name="Solute concentration",
+        name="Feed solute concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=rounding,
@@ -185,7 +185,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         fix_mass = True
     exports.add(
         obj=fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"],
-        name="Molar flow rate water",
+        name="Feed molar flow rate of water",
         ui_units=pyunits.mol / pyunits.s,
         display_units="mol/s",
         rounding=rounding,
@@ -197,7 +197,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].flow_mol_phase_comp["Liq", solute_name],
-        name="Molar flow rate solute",
+        name="Feed molar flow rate of solute",
         ui_units=pyunits.mol / pyunits.s,
         display_units="mol/s",
         rounding=rounding,
@@ -209,7 +209,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"],
-        name="Mass flow rate water",
+        name="Feed mass flow rate of water",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=rounding,
@@ -221,7 +221,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.feed.properties[0].flow_mass_phase_comp["Liq", solute_name],
-        name="Mass flow rate solute",
+        name="Feed mass flow rate of solute",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=rounding,
@@ -236,7 +236,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "Product"
     exports.add(
         obj=fs.product.properties[0].temperature,
-        name="Temperature",
+        name="Product temperature",
         ui_units=pyunits.kelvin,
         display_units="K",
         rounding=rounding,
@@ -247,7 +247,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].pressure,
-        name="Pressure",
+        name="Product pressure",
         ui_units=pyunits.bar,
         display_units="bar",
         rounding=rounding,
@@ -258,7 +258,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].flow_vol_phase["Liq"],
-        name="Volumetric flow rate",
+        name="Product volumetric flow rate",
         ui_units=pyunits.Mgallon / pyunits.day,
         display_units="MGD",
         rounding=rounding,
@@ -269,7 +269,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].conc_mass_phase_comp["Liq", solute_name],
-        name="Solute concentration",
+        name="Product solute concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=rounding,
@@ -280,7 +280,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].flow_mol_phase_comp["Liq", "H2O"],
-        name="Molar flow rate water",
+        name="Product molar flow rate of water",
         ui_units=pyunits.mol / pyunits.s,
         display_units="mol/s",
         rounding=rounding,
@@ -291,7 +291,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.product.properties[0].flow_mol_phase_comp["Liq", solute_name],
-        name="Molar flow rate solute",
+        name="Product molar flow rate of solute",
         ui_units=pyunits.mol / pyunits.s,
         display_units="mol/s",
         rounding=rounding,
@@ -305,7 +305,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     category = "GAC media properties"
     exports.add(
         obj=fs.gac.particle_dens_app,
-        name="Apparent density",
+        name="GAC media apparent density",
         ui_units=pyunits.kg * pyunits.m**-3,
         display_units="kg/m3",
         rounding=rounding,
@@ -316,7 +316,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.particle_dens_bulk,
-        name="Bulk density",
+        name="GAC media bulk density",
         ui_units=pyunits.kg * pyunits.m**-3,
         display_units="kg/m3",
         rounding=rounding,
@@ -326,7 +326,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.particle_dia,
-        name="Diameter",
+        name="GAC media particle Diameter",
         ui_units=pyunits.mm,
         display_units="mm",
         rounding=rounding,
@@ -338,7 +338,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     if build_options["SurfaceDiffusionCoefficientType"].value == "calculated":
         exports.add(
             obj=fs.gac.particle_porosity,
-            name="Porosity",
+            name="GAC media particle porosity",
             ui_units=pyunits.dimensionless,
             display_units="-",
             rounding=rounding,
@@ -464,7 +464,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_length,
-        name="Bed length",
+        name="GAC bed length",
         ui_units=pyunits.m,
         display_units="m",
         rounding=rounding,
@@ -476,7 +476,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_diameter,
-        name="Bed diameter",
+        name="GAC bed diameter",
         ui_units=pyunits.m,
         display_units="m",
         rounding=rounding,
@@ -489,7 +489,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_area,
-        name="Bed area",
+        name="GAC bed area",
         ui_units=pyunits.m**2,
         display_units="m2",
         rounding=rounding,
@@ -501,7 +501,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_volume,
-        name="Bed volume",
+        name="GAC bed volume",
         ui_units=pyunits.m**3,
         display_units="m3",
         rounding=rounding,
@@ -525,7 +525,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.residence_time,
-        name="Residence time",
+        name="GAC residence time",
         ui_units=pyunits.min,
         display_units="min",
         rounding=rounding,
@@ -537,7 +537,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_voidage,
-        name="Bed voidage",
+        name="GAC bed voidage",
         ui_units=pyunits.dimensionless,
         display_units="-",
         rounding=rounding,
@@ -549,7 +549,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.bed_mass_gac,
-        name="Media mass",
+        name="GAC media mass",
         ui_units=pyunits.kg,
         display_units="kg",
         rounding=rounding,
@@ -612,7 +612,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.mass_adsorbed,
-        name="Solute adsorption rate",
+        name="GAC solute adsorption rate",
         ui_units=pyunits.kg,
         display_units="kg",
         rounding=rounding,
@@ -624,7 +624,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.gac.gac_usage_rate,
-        name="Media usage rate",
+        name="GAC media usage rate",
         ui_units=pyunits.kg * pyunits.day**-1,
         display_units="kg/day",
         rounding=rounding,

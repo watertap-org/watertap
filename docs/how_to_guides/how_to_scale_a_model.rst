@@ -103,7 +103,8 @@ A user can achieve this by setting the default scaling at the property Parameter
 
 .. testcode:: [set_default_scaling]
 
-    # where prop is the property parameter block, var_name is the variable string name, ind is the variable index as a tuple, and sf is the scaling factor
+    # where prop is the property parameter block, var_name is the variable string name, 
+    # ind is the variable index as a tuple, and sf is the scaling factor
     prop.set_default_scaling(var_name, sf, index=ind)
 
 
@@ -140,8 +141,8 @@ Users can observe these values by displaying the suffix as follows:
 
     Whenever a user scales a constraint that was already transformed, the constraint is transformed to its original state before applying the new scaling factor.
 
-Using the calculate_scaling_factors function
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Using the ``calculate_scaling_factors`` function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``calculate_scaling_factors`` function determines and sets scaling factors for all standard variables and transforms all standard constraints by using 
 developer provided default values and user provided case specific scaling factors. If the expected case specific scaling factors are not set by the user, 

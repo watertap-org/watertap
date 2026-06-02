@@ -13,6 +13,7 @@ Default costing methods are provided for the unit models listed below. However, 
    cstr_injection
    cstr
    dewatering
+   electrocoagulation
    electrodialysis
    electrolyzer
    electroNP
@@ -29,6 +30,7 @@ Default costing methods are provided for the unit models listed below. However, 
    pressure_exchanger
    pump
    reverse_osmosis
+   steam_ejector
    stoichiometric_reactor
    thickener
    uv_aop

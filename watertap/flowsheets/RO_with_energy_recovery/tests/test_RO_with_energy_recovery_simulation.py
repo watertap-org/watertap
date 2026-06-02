@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -41,7 +41,6 @@ from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import 
     display_design,
     ERDtype,
 )
-
 
 solver = get_solver()
 
@@ -226,6 +225,45 @@ class TestROwithPX:
         )
 
     @pytest.mark.component
+    def test_initialize_system_with_relaxation(self, system_frame):
+        m = build(erd_type="pressure_exchanger")
+
+        set_operating_conditions(m)
+        initialize_system(m, solver=solver, relaxed_initialization=True)
+        assert degrees_of_freedom(m) == 0
+        # test that the area_objective has been removed
+        assert getattr(m.fs.RO, "area_objective", None) is None
+        # check results across pressure exchanger, proxy for both upstream and downstream of RO
+        # high pressure inlet
+        assert value(
+            m.fs.PXR.brine_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.4928, rel=1e-3)
+        assert value(
+            m.fs.PXR.brine_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        ) == pytest.approx(3.561e-2, rel=1e-3)
+        assert value(m.fs.PXR.brine_inlet.temperature[0]) == pytest.approx(
+            298.15, rel=1e-3
+        )
+        assert value(m.fs.PXR.brine_inlet.pressure[0]) == pytest.approx(
+            7.242e6, rel=1e-3
+        )
+        # low pressure inlet
+        assert value(
+            m.fs.PXR.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(0.4980, rel=1e-3)
+        assert value(
+            m.fs.PXR.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+        ) == pytest.approx(1.806e-2, rel=1e-3)
+        assert value(m.fs.PXR.feed_inlet.temperature[0]) == pytest.approx(
+            298.15, rel=1e-3
+        )
+        assert value(m.fs.PXR.feed_inlet.pressure[0]) == pytest.approx(101325, rel=1e-3)
+        # low pressure outlet
+        assert value(m.fs.PXR.feed_outlet.pressure[0]) == pytest.approx(
+            6.885e6, rel=1e-3
+        )
+
+    @pytest.mark.component
     def test_simulation(self, system_frame):
         m = system_frame
 
@@ -259,9 +297,7 @@ class TestROwithPX:
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---system metrics---
+        assert captured.out == """---system metrics---
 Feed: 1.02 kg/s, 35000 ppm
 Product: 0.493 kg/s, 240 ppm
 Volumetric recovery: 49.5%
@@ -269,7 +305,6 @@ Water recovery: 50.0%
 Energy Consumption: 2.8 kWh/m3
 Levelized cost of water: 0.44 $/m3
 """
-        )
 
     @pytest.mark.component
     def test_display_design(self, system_frame, capsys):
@@ -278,9 +313,7 @@ Levelized cost of water: 0.44 $/m3
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---decision variables---
+        assert captured.out == """---decision variables---
 Operating pressure 74.9 bar
 Membrane area 54.3 m2
 ---design variables---
@@ -293,7 +326,6 @@ Pump 2
 outlet pressure: 74.9 bar
 power 0.38 kW
 """
-        )
 
     @pytest.mark.component
     def test_display_state(self, system_frame, capsys):
@@ -302,9 +334,7 @@ power 0.38 kW
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---state---
+        assert captured.out == """---state---
 Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
 Split 1   : 0.505 kg/s, 35000 ppm, 1.0 bar
 P1 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
@@ -316,7 +346,6 @@ RO perm   : 0.493 kg/s, 240 ppm, 1.0 bar
 RO reten  : 0.528 kg/s, 67424 ppm, 72.4 bar
 PXR brine out: 0.528 kg/s, 67424 ppm, 1.0 bar
 """
-        )
 
     @pytest.mark.component
     def test_optimization(self, system_frame):
@@ -557,9 +586,7 @@ class TestROnoERD:
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---system metrics---
+        assert captured.out == """---system metrics---
 Feed: 1.02 kg/s, 35000 ppm
 Product: 0.493 kg/s, 240 ppm
 Volumetric recovery: 49.5%
@@ -567,7 +594,6 @@ Water recovery: 50.0%
 Energy Consumption: 5.2 kWh/m3
 Levelized cost of water: 0.74 $/m3
 """
-        )
 
     @pytest.mark.component
     def test_display_design(self, system_frame, capsys):
@@ -576,9 +602,7 @@ Levelized cost of water: 0.74 $/m3
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---decision variables---
+        assert captured.out == """---decision variables---
 Operating pressure 74.9 bar
 Membrane area 54.3 m2
 ---design variables---
@@ -586,7 +610,6 @@ Pump 1
 outlet pressure: 74.9 bar
 power 9.24 kW
 """
-        )
 
     @pytest.mark.component
     def test_display_state(self, system_frame, capsys):
@@ -595,15 +618,12 @@ power 9.24 kW
 
         captured = capsys.readouterr()
 
-        assert (
-            captured.out
-            == """---state---
+        assert captured.out == """---state---
 Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
 P1 out    : 1.021 kg/s, 35000 ppm, 74.9 bar
 RO perm   : 0.493 kg/s, 240 ppm, 1.0 bar
 RO reten  : 0.528 kg/s, 67424 ppm, 72.4 bar
 """
-        )
 
     @pytest.mark.component
     def test_optimization(self, system_frame):

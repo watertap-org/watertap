@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -12,9 +12,6 @@
 """
 Initial property package for seawater system
 """
-
-# Import Python libraries
-import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -51,7 +48,7 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
-from watertap.core.solvers import get_solver
+import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -62,7 +59,14 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
+
+# Import WaterTAP libraries
+from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -736,6 +740,19 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e9)
         self.set_default_scaling("boiling_point_elevation_phase", 1e0, index="Liq")
 
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
+
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -761,19 +778,40 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
             }
         )
-
         obj.define_custom_properties(
             {
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
-                "osm_coeff": {"method": "_osm_coeff"},
-                "enth_flow": {"method": "_enth_flow"},
-                "dh_vap_mass": {"method": "_dh_vap_mass"},
+                "dens_mass_solvent": {
+                    "doc": "Mass Density of Pure Water",
+                    "units": pyunits.kg * pyunits.m**-3,
+                    "method": "_dens_mass_solvent",
+                },
+                "osm_coeff": {
+                    "doc": "Osmotic Coefficient",
+                    "units": pyunits.dimensionless,
+                    "method": "_osm_coeff",
+                },
+                "enth_flow": {
+                    "doc": "Enthalpy Flow",
+                    "units": pyunits.J * pyunits.s**-1,
+                    "method": "_enth_flow",
+                },
+                "dh_vap_mass": {
+                    "doc": "Latent Heat of Vaporization",
+                    "units": pyunits.J * pyunits.kg**-1,
+                    "method": "_dh_vap_mass",
+                },
                 "boiling_point_elevation_phase": {
-                    "method": "_boiling_point_elevation_phase"
+                    "doc": "Boiling Point Elevation",
+                    "units": pyunits.K,
+                    "method": "_boiling_point_elevation_phase",
+                },
+                "energy_density_phase": {
+                    "doc": "Energy Density",
+                    "units": pyunits.J * pyunits.m**-3,
+                    "method": "_energy_density_phase",
                 },
             }
         )
-
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -804,7 +842,7 @@ class _SeawaterStateBlock(StateBlock):
         # Constraint on water concentration at outlet - unfix in these cases
         for b in self.values():
             if b.config.defined_state is False:
-                b.conc_mol_comp["H2O"].unfix()
+                b.flow_mass_phase_comp["Liq", "H2O"].unfix()
 
     def initialize(
         self,
@@ -1419,6 +1457,17 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list, rule=rule_enth_mass_phase
         )
 
+    def _energy_density_phase(self):
+        def rule_energy_density_phase(b, p):
+            # We have b.energy_inernal_mass_phase
+            # = b.enth_mass_phase[p] - b.pressure/b.dens_mass_phase[p]
+            # Energy density is then just b.energy_inernal_mass_phase * b.dens_mass_phase[p]
+            return self.enth_mass_phase[p] * self.dens_mass_phase[p] - b.pressure
+
+        self.energy_density_phase = Expression(
+            self.params.phase_list, rule=rule_energy_density_phase
+        )
+
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
 
@@ -1597,12 +1646,13 @@ class SeawaterStateBlockData(StateBlockData):
         """Create enthalpy flow terms."""
         return self.enth_flow
 
-    # TODO: make property package compatible with dynamics
-    # def get_material_density_terms(self, p, j):
-    #     """Create material density terms."""
+    def get_material_density_terms(self, p, j):
+        """Create material density terms."""
+        return self.conc_mass_phase_comp[p, j]
 
-    # def get_enthalpy_density_terms(self, p):
-    #     """Create enthalpy density terms."""
+    def get_energy_density_terms(self, p):
+        """Create energy density terms."""
+        return self.energy_density_phase[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal

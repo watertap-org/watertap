@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -10,11 +10,12 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-""""
+""" "
 Base constraints and methods for membrane distillation channel
 __author__ = "Elmira Shamlou"
 
 """
+
 from copy import deepcopy
 from enum import Enum, auto
 from pyomo.environ import (

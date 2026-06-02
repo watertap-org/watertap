@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -87,7 +87,7 @@ def build_naocl_mixer_cost_param_block(blk):
 
 def build_naocl_cost_param_block(blk):
 
-    blk.cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         initialize=0.23,
         doc="NaOCl cost",
         units=pyo.units.USD_2018 / pyo.units.kg,
@@ -100,7 +100,7 @@ def build_naocl_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("NaOCl", blk.cost / blk.purity)
+    costing.register_flow_type("NaOCl", blk.unit_cost / blk.purity)
 
 
 @register_costing_parameter_block(
@@ -133,7 +133,7 @@ def cost_naocl_mixer(blk, dosing_rate):
 
 
 def build_caoh2_cost_param_block(blk):
-    blk.cost = pyo.Param(
+    blk.unit_cost = pyo.Param(
         mutable=True,
         initialize=0.12,
         doc="CaOH2 cost",
@@ -147,7 +147,7 @@ def build_caoh2_cost_param_block(blk):
     )
 
     costing = blk.parent_block()
-    costing.register_flow_type("CaOH2", blk.cost / blk.purity)
+    costing.register_flow_type("CaOH2", blk.unit_cost / blk.purity)
 
 
 def build_caoh2_mixer_cost_param_block(blk):

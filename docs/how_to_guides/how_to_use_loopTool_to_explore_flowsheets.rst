@@ -445,12 +445,12 @@ All the parameters will use their param names or object keys as reference (e.g. 
     # if not providing any outputs
     data = h5file[
         "ro_erd_type_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/fs.ro.ro_recovery/value"
-    ][()] # wil create a list
+    ][()] # will create a list
    
     # if specified output names with build_output_kwargs (RO recovery)
     data = h5file[
         "ro_erd_type_analysis/erd_type/pressure_exchanger/membrane_cost/outputs/RO recovery/value"
-    ][()] # wil create a list
+    ][()] # will create a list
 
 **Backup management**
 

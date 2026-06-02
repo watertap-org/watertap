@@ -35,6 +35,16 @@ The WaterTAP documentation is available online at <https://watertap.readthedocs.
 If you want to clone the repository and work directly with the code, please
 refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/stable/getting_started.html#for-watertap-developers) section of the documentation.
 
+## Contact
+
+For general inquiries about WaterTAP, including potential collaborations, partnerships, and analyses,
+please reach out to us at [watertap-contact@lbl.gov](watertap-contact@lbl.gov). For technical questions or issues encountered while
+using WaterTAP, please contact our support team at [watertap-support@lbl.gov](watertap-support@lbl.gov). For all other inquiries
+about WaterTAP, please contact Adam Atia at [Adam.Atia@netl.doe.gov](Adam.Atia@netl.doe.gov).
+
+We are always eager to explore new opportunities and facilitate tailored solutions to problems in
+the water treatment industry.
+
 ## Cite this work
 
 To cite this work, please use the "Cite this repository" feature available on the right side of this repository page.

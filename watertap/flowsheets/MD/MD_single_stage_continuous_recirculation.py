@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -239,7 +239,7 @@ def build():
     m.fs.s15 = Arc(source=m.fs.pump_permeate.outlet, destination=m.fs.chiller.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
-    add_costs(m)
+    add_costing(m)
 
     # set default property values
     m.fs.properties_hot_ch.set_default_scaling(
@@ -282,7 +282,7 @@ def build():
     return m
 
 
-def add_costs(m):
+def add_costing(m):
     m.fs.costing = WaterTAPCosting()
     m.fs.MD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.heater.costing = UnitModelCostingBlock(
