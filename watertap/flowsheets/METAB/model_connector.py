@@ -124,7 +124,7 @@ def model_checker(model, solver_info):
         if "conc_mass_comp" in var.name:
             iscale.set_scaling_factor(var, 1e3)
 
-    iscale.calculate_scaling_factors(m)
+    iscale.calculate_scaling_factors(model)
     solver = get_solver()
     results = solver.solve(model, tee=solver_info)
     print(results)
