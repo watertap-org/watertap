@@ -72,7 +72,6 @@ def build_flowsheet():
     m.fs.rxn_props_ASM2D = ModifiedASM2dReactionParameterBlock(
         property_package=m.fs.props_ASM2D
     )
-    m.fs.costing = WaterTAPCosting()
 
     # Unit models
     m.fs.AD = AD(
@@ -82,7 +81,6 @@ def build_flowsheet():
         has_heat_transfer=True,
         has_pressure_change=False,
     )
-    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.translator_adm1_asm2d = Translator_ADM1_ASM2D(
         inlet_property_package=m.fs.props_ADM1,
@@ -94,11 +92,8 @@ def build_flowsheet():
     )
 
     m.fs.electroNP = ElectroNPZO(property_package=m.fs.props_ASM2D)
-    m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.electroNP.treated.flow_vol[0])
-    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
+    add_costing(m)
 
     # connections
     m.fs.stream_adm1_translator = Arc(
@@ -158,10 +153,7 @@ def build_flowsheet():
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
-    # Costing
-    m.fs.costing.electroNP.phosphorus_recovery_value = 0
-
-    # scaling
+    # Scaling
     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
         if "flow_vol" in var.name:
             iscale.set_scaling_factor(var, 1e2)
@@ -186,6 +178,18 @@ def build_flowsheet():
 
     results = solve(m, tee=True)
     return m, results
+
+
+def add_costing(m):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.electroNP.treated.flow_vol[0])
+    m.fs.costing.add_LCOW(m.fs.AD.inlet.flow_vol[0])
+
+    m.fs.costing.electroNP.phosphorus_recovery_value = 0
 
 
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):

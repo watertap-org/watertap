@@ -46,6 +46,9 @@ Properties
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa}\cdotp\text{s}`" 
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
+   "Specific volume of vapor", ":math:`\upsilon`", "specific_vol_phase", "[Vap]", ":math:`\text{m}^3/\text{kg}`"
+   "Specific volume of saturated vapor (steam)", ":math:`\upsilon_{sat}`", "specific_vol_sat_phase", "[Vap]", ":math:`\text{m}^3/\text{kg}`"
+   "Saturation temperature of solvent", ":math:`T_{sat}`", "temperature_sat_solvent", "None", ":math:`\text{K}`"
    
 Relationships
 -------------
@@ -58,7 +61,7 @@ Relationships
    "Volumetric flowrate", ":math:`Q = \frac{\sum_{j} M_j}{\rho}`"
    "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
    "Specific enthalpy of liquid", "Equations 25-27 in Nayar et al. (2016)"
-   "Specific enthalpy of vapor", "Equations 25-27 in Nayar et al. (2016) :math:`+ h_{vap}`"
+   "Specific enthalpy of vapor", "Equations 25-27 in Nayar et al. (2016) + :math:`h_{vap}`"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
    "Component mole flowrate", ":math:`N_j = \frac{M_j}{MW_j}`"
    "Component mole fraction", ":math:`y_j = \frac{N_j}{\sum_{j} N_j}`"
@@ -68,6 +71,9 @@ Relationships
    "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
    "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
    "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
+   "Specific volume of saturated vapor (steam)", "Equation 6 in Affandi et al. (2013)"
+   "Specific volume of vapor*", ":math:`\upsilon = \frac{1}{\rho}`"
+   "Saturation temperature of solvent", "Equation A.12 in El-Dessouky and Ettouney"
 
 \* Derived from the ideal gas law
 
@@ -114,19 +120,42 @@ The default scaling factors are as follows:
    * 1e-6 for latent heat of vaporization
    * 1e3 for the dynamic viscosity
    * 1 for the thermal conductivity
+   * 1 for specific volume of vapor
+   * 1 for specific volume of saturated vapor (steam)
   
 Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    
 References
 ----------
 
-K.G. Nayar, M.H. Sharqawy, L.D. Banchik, and J.H. Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016. https://doi.org/10.1016/j.desal.2016.02.024
+| K.G. Nayar, M.H. Sharqawy, L.D. Banchik, and J.H. Lienhard V, 
+| "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,
+| "Desalination, Vol.390, pp.1 - 24, 2016. 
+| https://doi.org/10.1016/j.desal.2016.02.024
 
-M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater)
+| M.H. Sharqawy, J.H.L. V, S.M. Zubair, 
+| Thermophysical properties of seawater: a review of existing correlations and data, 
+| Desalination and Water Treatment. 16 (2010) 354–380. 
+| https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater)
 
-F.J. Millero, R. Feistel, D.G. Wright, T.J. McDougall, The composition of Standard Seawater and the definition of the Reference-Composition Salinity Scale, Deep-Sea Research Part I. 55 (2008) 50–72. https://doi.org/10.1016/j.dsr.2007.10.001.
+| F.J. Millero, R. Feistel, D.G. Wright, T.J. McDougall, 
+| The composition of Standard Seawater and the definition of the Reference-Composition Salinity Scale, 
+| Deep-Sea Research Part I. 55 (2008) 50–72. 
+| https://doi.org/10.1016/j.dsr.2007.10.001.
 
-T.V. Bartholomew, M.S. Mauter, Computational framework for modeling membrane processes without process and solution property simplifications, Journal of Membrane Science. 573 (2019) 682–693. https://doi.org/10.1016/j.memsci.2018.11.067.
+| T.V. Bartholomew, M.S. Mauter, 
+| Computational framework for modeling membrane processes without process and solution property simplifications, 
+| Journal of Membrane Science. 573 (2019) 682–693. 
+| https://doi.org/10.1016/j.memsci.2018.11.067.
 
-Water Gas Phase Thermochemistry Data, National Institute of Standards and Technology, 2021, https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&amp;Mask=1#Thermo-Gas.
+| Water Gas Phase Thermochemistry Data, National Institute of Standards and Technology, 2021, 
+| https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&amp;Mask=1#Thermo-Gas.
 
+| M. Affandi, N. Mamat, S. N. A. M. Kanafiah and N. S. Khalid. 
+| Simplified Equations for Saturated Steam Properties for Simulation Purpose. 
+| Procedia Engineering 2013 Vol. 53 Pages 722-726. 
+| DOI: 10.1016/j.proeng.2013.02.095
+
+| El-Dessouky, H. T. & Ettouney, H. M. (Eds.). 
+| Appendix A - Thermodynamic Properties.
+| Fundamentals of Salt Water Desalination, Elsevier Science B.V., 2002, 525-563
