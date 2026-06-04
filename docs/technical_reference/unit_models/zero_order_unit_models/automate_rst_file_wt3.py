@@ -29,7 +29,8 @@ import os
 from glob import glob
 from pathlib import Path
 
-sidor_db_path = os.path.dirname(os.path.abspath(__file__))
+DOCS_DIR = Path(__file__).resolve().parent
+sidor_db_path = str(DOCS_DIR)
 
 
 def grab_unit_components(unit_class, i):
@@ -227,7 +228,12 @@ def grab_unit_components_feed(unit_class):
     )
 
 
-df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
+classification_file = DOCS_DIR / "WT3_unit_classification_for_doc.xlsx"
+if not classification_file.exists():
+    raise FileNotFoundError(
+        f"Required classification file not found: {classification_file}"
+    )
+df = pd.read_excel(classification_file)
 
 unit_name_list = [i.title() for i in df["Name"]]
 model_type_list = df["model type long"]
@@ -272,11 +278,36 @@ costing_exceptions = {}
 p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
+additional_costing_details = ['ozone_zo']
+
+def extract_costing_details(cost_func):    
+    with open(DOCS_DIR / "zo_costing_functions.rst", "r") as f:
+        # Read lines
+        lines = f.read()
+
+        # Start and end indices for the costing details section
+        start_index = lines.find(f".. start_{cost_func}_costing")
+        end_index = lines.find(f".. end_{cost_func}_costing")
+        
+        costing_details = "".join(lines[start_index:end_index])
+
+    return costing_details
+
+
+def create_costing_rst_section(cost_func):
+    section = extract_costing_details(cost_func)
+
+    output = f"""
+        {section}
+        """
+    
+    return output
+   
 
 if __name__ == "__main__":
 
     # Create index file for all zero order model docs
-    with open("index.rst", "w") as f:
+    with open(DOCS_DIR / "index.rst", "w") as f:
         f.write("Zero-Order Unit Models\n")
         f.write("=" * len("Zero-Order Unit Models"))
         f.write("\n")
@@ -305,10 +336,10 @@ if __name__ == "__main__":
         ]
 
         # append unit doc to index
-        with open("index.rst", "a") as f:
+        with open(DOCS_DIR / "index.rst", "a") as f:
             f.write(f"   {zo_name_list[i]}\n")
 
-        with open(f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
+        with open(DOCS_DIR / f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
             # write doc title based on unit name
             if zo_name_list[i] in title_exceptions:
                 f.write(f"{title_exceptions[zo_name_list[i]]} (ZO)")
@@ -390,6 +421,12 @@ if __name__ == "__main__":
                     f.write(
                         f"\nFor full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
                     )
+
+                    # Check is a costing description exists in zo_costing_functions.rst
+                    if zo_name_list[i] in additional_costing_details:
+                        print(f"Using custom costing details for {zo_name_list[i]}")
+                        output = create_costing_rst_section(zo_name_list[i])
+                        f.write(output)
 
             # write Additional Variables section if unit is non-basic
             # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
