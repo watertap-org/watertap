@@ -114,19 +114,7 @@ def build(
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # build costing blocks
-    m.fs.costing = WaterTAPCosting()
-    m.fs.costing.base_currency = pyo.units.USD_2021
-    m.fs.gac.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing,
-        costing_method_arguments={"contactor_type": cost_contactor_type},
-    )
-
-    # add flowsheet level blocks
-    m.fs.costing.cost_process()
-    treated_flow = m.fs.product.properties[0].flow_vol
-    m.fs.costing.add_annual_water_production(treated_flow)
-    m.fs.costing.add_LCOW(treated_flow)
-    m.fs.costing.add_specific_energy_consumption(treated_flow)
+    add_costing(m, cost_contactor_type=cost_contactor_type)
 
     # touch properties and default scaling
     if material_flow_basis == "molar":
@@ -199,16 +187,6 @@ def build(
         m.fs.gac.tort.fix()
         m.fs.gac.spdfr.fix()
 
-    # costing specifications
-    if cost_contactor_type == "pressure":
-        m.fs.costing.gac_pressure.regen_frac.fix(0.7)
-        m.fs.costing.gac_pressure.num_contactors_op.fix(1)
-        m.fs.costing.gac_pressure.num_contactors_redundant.fix(1)
-    else:
-        m.fs.costing.gac_gravity.regen_frac.fix(0.7)
-        m.fs.costing.gac_gravity.num_contactors_op.fix(1)
-        m.fs.costing.gac_gravity.num_contactors_redundant.fix(1)
-
     return m
 
 
@@ -255,6 +233,32 @@ def optimize(m, solver=None):
     pyo.assert_optimal_termination(res)
 
     return res
+
+
+def add_costing(m, cost_contactor_type="pressure"):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.costing.base_currency = pyo.units.USD_2021
+    m.fs.gac.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"contactor_type": cost_contactor_type},
+    )
+
+    # add flowsheet level blocks
+    m.fs.costing.cost_process()
+    treated_flow = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(treated_flow)
+    m.fs.costing.add_LCOW(treated_flow)
+    m.fs.costing.add_specific_energy_consumption(treated_flow)
+
+    # costing specifications
+    if cost_contactor_type == "pressure":
+        m.fs.costing.gac_pressure.regen_frac.fix(0.7)
+        m.fs.costing.gac_pressure.num_contactors_op.fix(1)
+        m.fs.costing.gac_pressure.num_contactors_redundant.fix(1)
+    else:
+        m.fs.costing.gac_gravity.regen_frac.fix(0.7)
+        m.fs.costing.gac_gravity.num_contactors_op.fix(1)
+        m.fs.costing.gac_gravity.num_contactors_redundant.fix(1)
 
 
 if __name__ == "__main__":

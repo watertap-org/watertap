@@ -239,7 +239,7 @@ def build():
     m.fs.s15 = Arc(source=m.fs.pump_permeate.outlet, destination=m.fs.chiller.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
-    add_costs(m)
+    add_costing(m)
 
     # set default property values
     m.fs.properties_hot_ch.set_default_scaling(
@@ -282,7 +282,7 @@ def build():
     return m
 
 
-def add_costs(m):
+def add_costing(m):
     m.fs.costing = WaterTAPCosting()
     m.fs.MD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.heater.costing = UnitModelCostingBlock(
