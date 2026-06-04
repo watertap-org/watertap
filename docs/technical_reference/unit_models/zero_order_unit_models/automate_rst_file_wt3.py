@@ -278,9 +278,10 @@ costing_exceptions = {}
 p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
-additional_costing_details = ['ozone_zo']
+additional_costing_details = ["ozone_zo"]
 
-def extract_costing_details(cost_func):    
+
+def extract_costing_details(cost_func):
     with open(DOCS_DIR / "zo_costing_functions.rst", "r") as f:
         # Read lines
         lines = f.read()
@@ -288,7 +289,7 @@ def extract_costing_details(cost_func):
         # Start and end indices for the costing details section
         start_index = lines.find(f".. start_{cost_func}_costing")
         end_index = lines.find(f".. end_{cost_func}_costing")
-        
+
         costing_details = "".join(lines[start_index:end_index])
 
     return costing_details
@@ -300,9 +301,9 @@ def create_costing_rst_section(cost_func):
     output = f"""
         {section}
         """
-    
+
     return output
-   
+
 
 if __name__ == "__main__":
 
