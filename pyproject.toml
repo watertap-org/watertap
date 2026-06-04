@@ -1,18 +1,17 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools >= 64", "setuptools_scm >= 8"]
+requires = ["setuptools >= 64"]
 
 [project]
 name = "watertap"
 description = "WaterTAP modeling library"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "NAWI team" }]
-license = { text = "BSD" }
+license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Natural Language :: English",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
@@ -125,8 +124,7 @@ OARO = "watertap.flowsheets.oaro.oaro_multi_ui"
 GAC = "watertap.flowsheets.gac.gac_ui"
 ED_conc_recirc = "watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc_ui"
 LSRRO = "watertap.flowsheets.lsrro.lsrro_ui"
-"generic desal train" = "watertap.flowsheets.generic_desalination_train.generic_train_ui"
-
+generic_desal_train = "watertap.flowsheets.generic_desalination_train.generic_train_ui"
 
 [tool.pylint."messages control"]
 disable = [
