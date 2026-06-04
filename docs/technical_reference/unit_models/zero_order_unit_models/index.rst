@@ -96,3 +96,4 @@ The zero-order models rely on default model parameter values specified in YAML f
    walnut_shell_filter_zo
    water_pumping_station_zo
    well_field_zo
+   zo_costing_functions
