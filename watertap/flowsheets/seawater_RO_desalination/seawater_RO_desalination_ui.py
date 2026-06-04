@@ -57,8 +57,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "tds"],
         name="Feed TDS concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
         rounding=2,
         description="Total dissolved solids concentration",
         is_input=True,
@@ -69,8 +69,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     exports.add(
         obj=fs.feed.conc_mass_comp[0, "tss"],
         name="Feed TSS concentration",
-        ui_units=pyunits.g / pyunits.m**3,
-        display_units="g/m3",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
         rounding=2,
         description="Total suspended solids concentration",
         is_input=True,
@@ -227,7 +227,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         description="Pressure of pump 1 in the desalination circuit",
         is_input=True,
         input_category="Desalination",
-        is_output=False,
+        is_output=True,
     )
     # Unit model data, RO
     exports.add(
@@ -344,6 +344,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
             is_input=True,
             input_category="Desalination",
             is_output=False,
+        )
+        exports.add(
+            obj=fs.desalination.P2.control_volume.properties_out[0].pressure,
+            name="Pump 2 pressure",
+            ui_units=pyunits.Pa,
+            display_units="Pa",
+            rounding=1,
+            description="Pressure of pump 2 in the desalination circuit",
+            is_input=True,
+            input_category="Desalination",
+            is_output=True,
         )
 
     # Unit model data, energy recovery device
@@ -483,6 +494,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # --- Output data ---
     # Municipal
     exports.add(
+        obj=fs.municipal.properties[0].flow_vol,
+        name="Municipal water volumetric flowrate",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Municipal water volumetric flowrate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
         obj=fs.municipal.properties[0].flow_mass_comp["H2O"],
         name="Municipal water mass flow",
         ui_units=pyunits.kg / pyunits.s,
@@ -504,7 +526,29 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Outlets",
     )
+    exports.add(
+        obj=fs.municipal.properties[0].conc_mass_comp["tds"],
+        name="Municipal TDS concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Municipal total dissolved solids concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
     # Landfill
+    exports.add(
+        obj=fs.landfill.properties[0].flow_vol,
+        name="Landfill water volume flow",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Landfill water volumetric flowrate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
     exports.add(
         obj=fs.landfill.properties[0].flow_mass_comp["H2O"],
         name="Landfill water mass flow",
@@ -528,6 +572,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
+        obj=fs.landfill.properties[0].conc_mass_comp["tds"],
+        name="Landfill TDS concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Landfill total dissolved solids concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
         obj=fs.landfill.properties[0].flow_mass_comp["tss"],
         name="Landfill tss mass flow",
         ui_units=pyunits.kg / pyunits.s,
@@ -538,7 +593,29 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="Outlets",
     )
+    exports.add(
+        obj=fs.landfill.properties[0].conc_mass_comp["tss"],
+        name="Landfill TSS concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Landfill total suspended solids concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
     # Disposal
+    exports.add(
+        obj=fs.disposal.properties[0].flow_vol,
+        name="Disposal water volume flow",
+        ui_units=pyunits.m**3 / pyunits.day,
+        display_units="m3/day",
+        rounding=2,
+        description="Disposal water volumetric flow",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
     exports.add(
         obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "H2O"],
         name="Disposal water mass flow",
@@ -557,6 +634,17 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="kg/s",
         rounding=2,
         description="Disposal total dissolved solids mass flow",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "TDS"],
+        name="Disposal TDS concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Disposal total dissolved solids concentration",
         is_input=False,
         is_output=True,
         output_category="Outlets",
@@ -618,6 +706,23 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         display_units="$/m3 of product water",
         rounding=3,
         description="Levelized cost of water (LCOW)",
+        is_input=False,
+        is_output=True,
+        output_category="System metrics",
+    )
+
+    sec = pyunits.convert(
+        fs.zo_costing.aggregate_flow_electricity / fs.municipal.properties[0].flow_vol,
+        to_units=pyunits.kWh / pyunits.m**3,
+    )
+
+    exports.add(
+        obj=sec,
+        name="Specific energy consumption",
+        ui_units=pyunits.kWh / pyunits.m**3,
+        display_units="kWh/yr of product water",
+        rounding=3,
+        description="Specific energy consumption (SEC)",
         is_input=False,
         is_output=True,
         output_category="System metrics",
