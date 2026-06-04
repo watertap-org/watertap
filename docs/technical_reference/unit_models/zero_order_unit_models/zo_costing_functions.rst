@@ -1,6 +1,11 @@
-.. start_ozone_zo_costing
+ZO Costing Functions
+===================
 
-.. _ozone_zo_costing:
+Costing functions for zero-order unit models that do not follow power law..
+
+ozone_zo
+--------
+.. start_ozone_zo_costing
 
 Ozone capital cost is calculated using the following equation:
 

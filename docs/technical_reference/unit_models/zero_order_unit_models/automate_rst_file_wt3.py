@@ -29,8 +29,7 @@ import os
 from glob import glob
 from pathlib import Path
 
-DOCS_DIR = Path(__file__).resolve().parent
-sidor_db_path = str(DOCS_DIR)
+sidor_db_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def grab_unit_components(unit_class, i):
@@ -228,12 +227,7 @@ def grab_unit_components_feed(unit_class):
     )
 
 
-classification_file = DOCS_DIR / "WT3_unit_classification_for_doc.xlsx"
-if not classification_file.exists():
-    raise FileNotFoundError(
-        f"Required classification file not found: {classification_file}"
-    )
-df = pd.read_excel(classification_file)
+df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
 
 unit_name_list = [i.title() for i in df["Name"]]
 model_type_list = df["model type long"]
@@ -282,7 +276,7 @@ additional_costing_details = ["ozone_zo"]
 
 
 def extract_costing_details(cost_func):
-    with open(DOCS_DIR / "zo_costing_functions.rst", "r") as f:
+    with open("zo_costing_functions.rst", "r") as f:
         # Read lines
         lines = f.read()
 
@@ -308,7 +302,7 @@ def create_costing_rst_section(cost_func):
 if __name__ == "__main__":
 
     # Create index file for all zero order model docs
-    with open(DOCS_DIR / "index.rst", "w") as f:
+    with open("index.rst", "w") as f:
         f.write("Zero-Order Unit Models\n")
         f.write("=" * len("Zero-Order Unit Models"))
         f.write("\n")
@@ -337,10 +331,10 @@ if __name__ == "__main__":
         ]
 
         # append unit doc to index
-        with open(DOCS_DIR / "index.rst", "a") as f:
+        with open("index.rst", "a") as f:
             f.write(f"   {zo_name_list[i]}\n")
 
-        with open(DOCS_DIR / f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
+        with open(f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
             # write doc title based on unit name
             if zo_name_list[i] in title_exceptions:
                 f.write(f"{title_exceptions[zo_name_list[i]]} (ZO)")
