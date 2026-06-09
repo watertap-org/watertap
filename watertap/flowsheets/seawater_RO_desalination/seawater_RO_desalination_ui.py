@@ -495,7 +495,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Municipal
     exports.add(
         obj=fs.municipal.properties[0].flow_vol,
-        name="Municipal water volumetric flowrate",
+        name="Municipal water volume flow",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
@@ -517,7 +517,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.municipal.properties[0].flow_mass_comp["tds"],
-        name="Municipal tds mass flow",
+        name="Municipal TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=2,
@@ -562,7 +562,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.landfill.properties[0].flow_mass_comp["tds"],
-        name="Landfill tds mass flow",
+        name="Landfill TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=5,
@@ -584,7 +584,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.landfill.properties[0].flow_mass_comp["tss"],
-        name="Landfill tss mass flow",
+        name="Landfill TSS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=5,
@@ -629,7 +629,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     exports.add(
         obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "TDS"],
-        name="Disposal tds mass flow",
+        name="Disposal TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
         rounding=2,
