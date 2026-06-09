@@ -1,3 +1,0 @@
-Season,Flexibility Type,Num Flexible Trains,Total Operational Cost,Total Water Production (m3),LCOW ($/m3),Total Energy Cost,Fixed Demand Cost,Variable Demand Cost,Total Electricity Cost,Total Feed Cost,Total Brine Cost,Total Chemical Cost,Total Replacement Cost,Total Demand Response Revenue,Total Cost,Maximum Power,Energy Capacity,Power Capacity,LVOF
-winter,no_flex,0,155096.3794,374203.2,0.739299829,31331.64726,9240.588223,1214.740668,41786.97615,67424,20294.62401,25590.7792,992.3107079,0,276648.3619,1466.606716,0,,
-summer,no_flex,0,247948.6416,374203.2,0.987433096,118659.9669,9240.588221,6738.683323,134639.2384,67424,20294.62401,25590.7792,992.3107079,0,369500.6241,1466.606716,0,,
