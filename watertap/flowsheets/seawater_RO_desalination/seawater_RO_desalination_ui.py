@@ -44,11 +44,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # Feed conditions
     exports.add(
         obj=fs.feed.flow_vol[0],
-        name="Feed volumetric flow rate",
+        name="Feed volume flow",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
         rounding=2,
-        description="Inlet volumetric flow rate",
+        description="Inlet volumetric flowrate",
         is_input=True,
         input_category="Feed",
         is_output=True,
