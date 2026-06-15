@@ -19,7 +19,7 @@ environment*.yml @sufikaur
 
 /watertap/data/ @kurbansitterley @adam-a-a
 
-/watertap/costing/ @bknueven @adam-a-a
+/watertap/costing/ @bknueven @adam-a-a @kurbansitterley
 
 /watertap/flowsheets/activated_sludge/ @agarciadiego @luohezhiming @MarcusHolly @adam-a-a @Morgan88888888
 /watertap/flowsheets/anaerobic_digester/ @agarciadiego @adam-a-a @MarcusHolly @luohezhiming @Morgan88888888
@@ -43,7 +43,7 @@ environment*.yml @sufikaur
 /watertap/property_models/unit_specific/activated_sludge/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
 /watertap/property_models/unit_specific/anaerobic_digestion/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
 
-/watertap/tools/ @bknueven @adam-a-a @k1nshuk @avdudchenko
+/watertap/tools/ @bknueven @adam-a-a @avdudchenko
 
 /watertap/unit_models/ @adam-a-a
 /watertap/unit_models/MD/ @ElmiraShamlou @adam-a-a
