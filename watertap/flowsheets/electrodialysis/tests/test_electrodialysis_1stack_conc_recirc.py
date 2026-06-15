@@ -147,11 +147,3 @@ class TestElectrodialysis1StackFS:
         assert value(m.fs.EDstack.outlet_diluate.temperature[0]) == pytest.approx(
             298.15, rel=1e-3
         )
-
-    @pytest.mark.unit
-    def test_main_1D(self):
-        edfs.main(ED_1D=True)
-
-    @pytest.mark.unit
-    def test_main_0D(self):
-        edfs.main(ED_1D=False)

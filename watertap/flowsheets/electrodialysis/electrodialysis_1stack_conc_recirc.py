@@ -52,7 +52,6 @@ from watertap.unit_models.electrodialysis_0D import (
 )
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from idaes.core.util import DiagnosticsToolbox
 
 __author__ = "Xiangyu Bi"
 _log = idaeslogger.getLogger(__name__)
@@ -68,7 +67,7 @@ def main(ED_1D=True):
     m = build(ED_1D=ED_1D)
     solver = get_solver()
 
-    ## Simulate a fully defined operation
+    # Simulate a fully defined operation
     # A fully-defined system simulation, dof=0
     init_arg = {
         ("flow_vol_phase", ("Liq")): 5.2e-4,

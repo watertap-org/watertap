@@ -118,7 +118,7 @@ def build(MD_1D=False):
     # unit models
 
     if MD_1D:
-        m.fs.MD = MembraneDistillation0D(
+        m.fs.MD = MembraneDistillation1D(
             hot_ch={
                 "property_package": m.fs.properties_hot_ch,
                 "property_package_vapor": m.fs.properties_vapor,
@@ -691,4 +691,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(MD_1D=True)
+    m = main(MD_1D=False)
