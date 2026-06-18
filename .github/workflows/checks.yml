@@ -219,7 +219,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
         channels: conda-forge
         conda-remove-defaults: 'true'
-        auto-activate-base: false
+        auto-activate: false
 
     - name: Define install URL (default)
       env:
@@ -235,7 +235,7 @@ jobs:
       run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
 
-    - name: Bootstrap packaging tools
+    - name: Bootstrap packaging tools and verify installation
       run: |
         conda install --quiet --yes pip setuptools wheel
         python -m pip show setuptools wheel
@@ -288,7 +288,7 @@ jobs:
     - name: Install dependencies
       run: |
         echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip setuptools wheel pandoc
+        conda install --quiet --yes pip setuptools wheel pandoc reaktoro
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         pip install -e ".[dev]"

@@ -23,7 +23,8 @@ from watertap.core.util.model_diagnostics.infeasible import (
 
 class TestInfeasible:
     @pytest.fixture(scope="class")
-    def m(self):
+    @classmethod
+    def m(cls):
         m = ConcreteModel()
         m.a = Var(bounds=(0, 10))
         m.b = Var(bounds=(-10, 10))

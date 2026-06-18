@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestAerationBasinZO_no_default:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -161,7 +162,8 @@ class TestAerationBasinZO_no_default:
 
 class TestAerationBasinZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -299,7 +301,8 @@ params = db._get_technology("aeration_basin")
 
 class Test_AerationBasin_ZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

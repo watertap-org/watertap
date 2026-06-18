@@ -43,7 +43,8 @@ solver = get_solver()
 
 class TestDeepWellInjectionZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

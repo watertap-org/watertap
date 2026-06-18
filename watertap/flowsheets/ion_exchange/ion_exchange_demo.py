@@ -173,6 +173,12 @@ def add_costing(m):
     m.fs.costing.add_specific_energy_consumption(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
     )
+    # Add breakdown of NaCl usage per unit product flow to costing package with name "regenerant_usage"
+    m.fs.costing.add_flow_component_breakdown(
+        "NaCl",
+        m.fs.product.properties[0].flow_vol_phase["Liq"],
+        name="regenerant_usage",
+    )
 
 
 def set_operating_conditions(m, flow_in=0.05, conc_mass_in=0.1, solver=None):
@@ -314,6 +320,10 @@ def display_results(m):
     )
     print(
         f'{"Specific Energy Consumption":<40s}{f"{m.fs.costing.specific_energy_consumption():<39,.5f}"}{"kWh/m3":<40s}'
+    )
+    regen_usage = m.fs.costing.regenerant_usage_component["fs.ion_exchange"]
+    print(
+        f'{f"Specific {ix.config.regenerant} Consumption":<40s}{f"{regen_usage():<39,.5f}"}{"kg/m3":<40s}'
     )
     print(
         f'{f"Annual Regenerant cost ({ix.config.regenerant})":<40s}{f"${m.fs.costing.aggregate_flow_costs[ix.config.regenerant]():<39,.2f}"}{"$/yr":<40s}'

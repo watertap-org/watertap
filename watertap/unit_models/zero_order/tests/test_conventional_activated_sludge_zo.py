@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestCASZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -179,7 +180,8 @@ params = db._get_technology("conventional_activated_sludge")
 
 class Test_CASZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

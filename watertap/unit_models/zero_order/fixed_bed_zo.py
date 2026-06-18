@@ -10,22 +10,21 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-This module contains a zero-order representation of a fixed bed unit
-operation.
+This module contains a zero-order representation of a biological
+fixed bed (bioreactor) unit operation.
 """
 
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
 
-# Some more information about this module
 __author__ = "Adam Atia"
 
 
 @declare_process_block_class("FixedBedZO")
 class FixedBedZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for an Ion exchange unit operation.
+    Zero-Order model for a Fixed Bed bioreactor unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -60,19 +59,16 @@ class FixedBedZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.ferric_chloride_dose)
 
         self.acetic_acid_demand = Var(
-            self.flowsheet().time,
             units=pyunits.kg / pyunits.hr,
             bounds=(0, None),
             doc="Consumption rate of acetic acid",
         )
         self.phosphoric_acid_demand = Var(
-            self.flowsheet().time,
             units=pyunits.kg / pyunits.hr,
             bounds=(0, None),
             doc="Consumption rate of phosphoric acid",
         )
         self.ferric_chloride_demand = Var(
-            self.flowsheet().time,
             units=pyunits.kg / pyunits.hr,
             bounds=(0, None),
             doc="Consumption rate of ferric chloride",
@@ -82,30 +78,29 @@ class FixedBedZOData(ZeroOrderBaseData):
         self._perf_var_dict["Phosphoric Acid Demand"] = self.phosphoric_acid_demand
         self._perf_var_dict["Ferric Chlorided Demand"] = self.ferric_chloride_demand
 
-        @self.Constraint(self.flowsheet().time, doc="Acetic acid demand constraint")
-        def acetic_acid_demand_equation(b, t):
-            return b.acetic_acid_demand[t] == pyunits.convert(
-                b.acetic_acid_dose * b.properties_in[t].flow_vol,
+        @self.Constraint(doc="Acetic acid demand constraint")
+        def acetic_acid_demand_equation(b):
+            return b.acetic_acid_demand == pyunits.convert(
+                b.acetic_acid_dose * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
 
-        @self.Constraint(self.flowsheet().time, doc="Phosphoric acid demand constraint")
-        def phosphoric_acid_demand_equation(b, t):
-            return b.phosphoric_acid_demand[t] == pyunits.convert(
-                b.phosphoric_acid_dose * b.properties_in[t].flow_vol,
+        @self.Constraint(doc="Phosphoric acid demand constraint")
+        def phosphoric_acid_demand_equation(b):
+            return b.phosphoric_acid_demand == pyunits.convert(
+                b.phosphoric_acid_dose * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
 
-        @self.Constraint(self.flowsheet().time, doc="Acetic acid demand constraint")
-        def ferric_chloride_demand_equation(b, t):
-            return b.ferric_chloride_demand[t] == pyunits.convert(
-                b.ferric_chloride_dose * b.properties_in[t].flow_vol,
+        @self.Constraint(doc="Ferric chloride demand constraint")
+        def ferric_chloride_demand_equation(b):
+            return b.ferric_chloride_demand == pyunits.convert(
+                b.ferric_chloride_dose * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
 
         # Activated Carbon demand
         self.activated_carbon_demand = Var(
-            self.flowsheet().time,
             units=pyunits.kg / pyunits.hr,
             bounds=(0, None),
             doc="Replacement rate for activated carbon",
@@ -124,24 +119,21 @@ class FixedBedZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.activated_carbon_parameter_b)
         self._perf_var_dict["Activated Carbon Demand"] = self.activated_carbon_demand
 
-        @self.Constraint(
-            self.flowsheet().time, doc="Activated carbon demand constraint"
-        )
-        def activated_carbon_demand_equation(b, t):
-            return b.activated_carbon_demand[t] == pyunits.convert(
+        @self.Constraint(doc="Activated carbon demand constraint")
+        def activated_carbon_demand_equation(b):
+            return b.activated_carbon_demand == pyunits.convert(
                 b.activated_carbon_parameter_a
                 * pyunits.convert(
-                    b.properties_in[t].flow_vol / (pyunits.m**3 / pyunits.hour),
+                    b.properties_in[0].flow_vol / (pyunits.m**3 / pyunits.hour),
                     to_units=pyunits.dimensionless,
                 )
                 ** b.activated_carbon_parameter_b
-                * b.properties_in[t].flow_vol,
+                * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
 
         # Sand demand
         self.sand_demand = Var(
-            self.flowsheet().time,
             units=pyunits.kg / pyunits.hr,
             bounds=(0, None),
             doc="Replacement rate for sand",
@@ -160,22 +152,21 @@ class FixedBedZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.sand_parameter_b)
         self._perf_var_dict["Sand Demand"] = self.sand_demand
 
-        @self.Constraint(self.flowsheet().time, doc="Sand demand constraint")
-        def sand_demand_equation(b, t):
-            return b.sand_demand[t] == pyunits.convert(
+        @self.Constraint(doc="Sand demand constraint")
+        def sand_demand_equation(b):
+            return b.sand_demand == pyunits.convert(
                 b.sand_parameter_a
                 * pyunits.convert(
-                    b.properties_in[t].flow_vol / (pyunits.m**3 / pyunits.hour),
+                    b.properties_in[0].flow_vol / (pyunits.m**3 / pyunits.hour),
                     to_units=pyunits.dimensionless,
                 )
                 ** b.sand_parameter_b
-                * b.properties_in[t].flow_vol,
+                * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
 
         # Anthracite demand
         self.anthracite_demand = Var(
-            self.flowsheet().time,
             units=pyunits.kg / pyunits.hr,
             bounds=(0, None),
             doc="Replacement rate for anthracite",
@@ -194,22 +185,21 @@ class FixedBedZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.anthracite_parameter_b)
         self._perf_var_dict["Anthracite Demand"] = self.anthracite_demand
 
-        @self.Constraint(self.flowsheet().time, doc="Anthracite demand constraint")
-        def anthracite_demand_equation(b, t):
-            return b.anthracite_demand[t] == pyunits.convert(
+        @self.Constraint(doc="Anthracite demand constraint")
+        def anthracite_demand_equation(b):
+            return b.anthracite_demand == pyunits.convert(
                 b.anthracite_parameter_a
                 * pyunits.convert(
-                    b.properties_in[t].flow_vol / (pyunits.m**3 / pyunits.hour),
+                    b.properties_in[0].flow_vol / (pyunits.m**3 / pyunits.hour),
                     to_units=pyunits.dimensionless,
                 )
                 ** b.anthracite_parameter_b
-                * b.properties_in[t].flow_vol,
+                * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
 
         # Cationic polymer demand
         self.cationic_polymer_demand = Var(
-            self.flowsheet().time,
             units=pyunits.kg / pyunits.hr,
             bounds=(0, None),
             doc="Replacement rate for cationic polymer",
@@ -228,18 +218,16 @@ class FixedBedZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.cationic_polymer_parameter_b)
         self._perf_var_dict["Cationic Polymer Demand"] = self.cationic_polymer_demand
 
-        @self.Constraint(
-            self.flowsheet().time, doc="Cationic Polymer demand constraint"
-        )
-        def cationic_polymer_demand_equation(b, t):
-            return b.cationic_polymer_demand[t] == pyunits.convert(
+        @self.Constraint(doc="Cationic Polymer demand constraint")
+        def cationic_polymer_demand_equation(b):
+            return b.cationic_polymer_demand == pyunits.convert(
                 b.cationic_polymer_parameter_a
                 * pyunits.convert(
-                    b.properties_in[t].flow_vol / (pyunits.m**3 / pyunits.hour),
+                    b.properties_in[0].flow_vol / (pyunits.m**3 / pyunits.hour),
                     to_units=pyunits.dimensionless,
                 )
                 ** b.cationic_polymer_parameter_b
-                * b.properties_in[t].flow_vol,
+                * b.properties_in[0].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
 
@@ -264,23 +252,21 @@ class FixedBedZOData(ZeroOrderBaseData):
 
         # Register flows - electricity already done by cost_power_law_flow
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.acetic_acid_demand[t0], "acetic_acid"
+            blk.unit_model.acetic_acid_demand, "acetic_acid"
         )
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.phosphoric_acid_demand[t0], "phosphoric_acid"
+            blk.unit_model.phosphoric_acid_demand, "phosphoric_acid"
         )
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.ferric_chloride_demand[t0], "ferric_chloride"
+            blk.unit_model.ferric_chloride_demand, "ferric_chloride"
         )
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.activated_carbon_demand[t0], "activated_carbon"
+            blk.unit_model.activated_carbon_demand, "activated_carbon"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(blk.unit_model.sand_demand, "sand")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.anthracite_demand, "anthracite"
         )
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.sand_demand[t0], "sand"
-        )
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.anthracite_demand[t0], "anthracite"
-        )
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.cationic_polymer_demand[t0], "cationic_polymer"
+            blk.unit_model.cationic_polymer_demand, "cationic_polymer"
         )

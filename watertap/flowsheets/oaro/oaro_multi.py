@@ -45,6 +45,9 @@ from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
 )
+from watertap.unit_models.reverse_osmosis_1D import (
+    ReverseOsmosis1D,
+)
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
     MassTransferCoefficient,
@@ -71,12 +74,15 @@ def propagate_state(arc):
     arc.destination.display()
 
 
-def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
+# TODO: Need to add config option to use 1D OARO unit model
+def main(
+    number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine, RO_1D=False
+):
     # set up solver
     solver = get_solver()
 
     # build, set, and initialize
-    m = build(number_of_stages=number_of_stages, erd_type=erd_type)
+    m = build(number_of_stages=number_of_stages, erd_type=erd_type, RO_1D=RO_1D)
     set_operating_conditions(m)
     initialize_system(
         m,
@@ -84,10 +90,14 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
         solvent_multiplier=0.5,
         solute_multiplier=0.7,
         solver=solver,
+        RO_1D=RO_1D,
     )
 
     optimize_set_up(
-        m, number_of_stages=number_of_stages, water_recovery=system_recovery
+        m,
+        number_of_stages=number_of_stages,
+        water_recovery=system_recovery,
+        RO_1D=RO_1D,
     )
 
     results = solve(m, solver=solver)
@@ -104,7 +114,7 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     return m
 
 
-def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
+def build(number_of_stages, erd_type=ERDtype.pump_as_turbine, RO_1D=False):
 
     # flowsheet set up
     m = ConcreteModel()
@@ -145,14 +155,24 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     )
 
     # --- Reverse Osmosis Block ---
-    m.fs.RO = ReverseOsmosis0D(
-        property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        has_full_reporting=True,
-    )
+    if RO_1D:
+        m.fs.RO = ReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
+    else:
+        m.fs.RO = ReverseOsmosis0D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OAROUnits = OsmoticallyAssistedReverseOsmosis0D(
@@ -822,6 +842,7 @@ def initialize_system(
     solvent_multiplier=None,
     solute_multiplier=None,
     solver=None,
+    RO_1D=False,
 ):
     if solver is None:
         solver = get_solver()
@@ -893,6 +914,7 @@ def optimize_set_up(
     m,
     number_of_stages=None,
     water_recovery=None,
+    RO_1D=False,
 ):
     # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
@@ -1091,17 +1113,50 @@ def optimize_set_up(
         )
     )
 
-    m.fs.RO.ro_feed_water_flux_con = Constraint(
-        expr=(
-            0.4 / 5,
-            pyunits.convert(
-                m.fs.RO.flux_mass_phase_comp[0.0, 0.0, "Liq", "H2O"]
-                / m.fs.RO.dens_solvent,
-                to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
-            ),
-            40 * 1.5,
+    if RO_1D:
+        m.fs.RO.ro_feed_water_flux_con = Constraint(
+            expr=(
+                0.4 / 5,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0.0, 0.1, "Liq", "H2O"]
+                    / m.fs.RO.dens_solvent,
+                    to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+                ),
+                40 * 1.5,
+            )
         )
-    )
+        m.fs.RO.ro_feed_salt_flux_con = Constraint(
+            expr=(
+                0,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0, 0.1, "Liq", "NaCl"],
+                    to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+                ),
+                50,
+            )
+        )
+    else:
+        m.fs.RO.ro_feed_water_flux_con = Constraint(
+            expr=(
+                0.4 / 5,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0.0, 0.0, "Liq", "H2O"]
+                    / m.fs.RO.dens_solvent,
+                    to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+                ),
+                40 * 1.5,
+            )
+        )
+        m.fs.RO.ro_feed_salt_flux_con = Constraint(
+            expr=(
+                0,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0, 0, "Liq", "NaCl"],
+                    to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+                ),
+                50,
+            )
+        )
 
     m.fs.RO.ro_permeate_water_flux_con = Constraint(
         expr=(
@@ -1120,17 +1175,6 @@ def optimize_set_up(
             0,
             pyunits.convert(
                 m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "NaCl"],
-                to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
-            ),
-            50,
-        )
-    )
-
-    m.fs.RO.ro_feed_salt_flux_con = Constraint(
-        expr=(
-            0,
-            pyunits.convert(
-                m.fs.RO.flux_mass_phase_comp[0, 0, "Liq", "NaCl"],
                 to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
             ),
             50,
@@ -1429,4 +1473,9 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(number_of_stages=3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(
+        number_of_stages=3,
+        system_recovery=0.5,
+        erd_type=ERDtype.pump_as_turbine,
+        RO_1D=False,
+    )

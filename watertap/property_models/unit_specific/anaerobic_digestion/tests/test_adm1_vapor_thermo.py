@@ -48,7 +48,8 @@ solver = get_solver()
 
 class TestParamBlock(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         model = ConcreteModel()
         model.params = ADM1_vaporParameterBlock()
 
@@ -81,7 +82,8 @@ class TestParamBlock(object):
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         model = ConcreteModel()
         model.params = ADM1_vaporParameterBlock()
 

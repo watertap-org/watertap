@@ -35,13 +35,21 @@ import pandas as pd
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.unit_models.electrodialysis_1D import (
-    ElectricalOperationMode,
-    PressureDropMethod,
-    FrictionFactorMethod,
-    HydraulicDiameterMethod,
-    LimitingCurrentDensityMethod,
+    Electrodialysis1D,
+    ElectricalOperationMode as ElectricalOperationMode1D,
+    PressureDropMethod as PressureDropMethod1D,
+    FrictionFactorMethod as FrictionFactorMethod1D,
+    HydraulicDiameterMethod as HydraulicDiameterMethod1D,
+    LimitingCurrentDensityMethod as LimitingCurrentDensityMethod1D,
 )
-from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
+from watertap.unit_models.electrodialysis_0D import (
+    Electrodialysis0D,
+    ElectricalOperationMode as ElectricalOperationMode0D,
+    PressureDropMethod as PressureDropMethod0D,
+    FrictionFactorMethod as FrictionFactorMethod0D,
+    HydraulicDiameterMethod as HydraulicDiameterMethod0D,
+    LimitingCurrentDensityMethod as LimitingCurrentDensityMethod0D,
+)
 from watertap.costing.watertap_costing_package import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
@@ -55,11 +63,11 @@ desired water reovery > 50%.
 """
 
 
-def main():
-    m = build()
+def main(ED_1D=True):
+    m = build(ED_1D=ED_1D)
     solver = get_solver()
 
-    ## Simulate a fully defined operation
+    # Simulate a fully defined operation
     # A fully-defined system simulation, dof=0
     init_arg = {
         ("flow_vol_phase", ("Liq")): 5.2e-4,
@@ -70,28 +78,46 @@ def main():
         init_arg,
         hold_state=True,
     )
-    m.fs.EDstack.voltage_applied[0].fix(10)
+    if ED_1D:
+        m.fs.EDstack.voltage_applied[0].fix(10)
+    else:
+        m.fs.EDstack.voltage[0].fix(10)
+
     m.fs.recovery_vol_H2O.fix(0.7)
-    _condition_base(m)
+    _condition_base(m, ED_1D=ED_1D)
 
     # Initialize and solve the model
-    initialize_system(m, solver=solver)
+    initialize_system(m, solver=solver, ED_1D=ED_1D)
     solve(m, solver=solver)
     print("\n***---Fully-defined simulation results, Fixed inlet and voltage---***")
-    display_model_metrics(m)
+    display_model_metrics(m, ED_1D=ED_1D)
 
     # Perform an optimization over cell_length, cell_pair_mum, and voltage_applied
 
     ed = m.fs.EDstack
-    ulim = (
-        ed.voltage_x[0, 0].value
-        / ed.current_density_x[0, 0].value
-        * ed.current_dens_lim_x[0, 0].value
-        * 1.5
-    )
-    m.fs.EDstack.voltage_applied[0].unfix()
-    m.fs.EDstack.voltage_applied[0].setlb(0.1)
-    m.fs.EDstack.voltage_applied[0].setub(ulim)
+    if ED_1D:
+        ulim = (
+            ed.voltage_x[0, 0].value
+            / ed.current_density_x[0, 0].value
+            * ed.current_dens_lim_x[0, 0].value
+            * 1.5
+        )
+        m.fs.EDstack.voltage_applied[0].unfix()
+        m.fs.EDstack.voltage_applied[0].setlb(0.1)
+        m.fs.EDstack.voltage_applied[0].setub(ulim)
+        print(f"Upper limit is: {ulim}")
+    else:
+        # TODO: current_density doesn't exist for 0D, find a better way to calculate ulim
+        # Currently using ulim computed from the 1D model
+        # ulim = (
+        #         ed.voltage[0].value
+        #         / ed.current_density[0].value
+        #         * ed.current_dens_lim_ioa[0].value
+        #         * 1.5
+        # )
+        m.fs.EDstack.voltage[0].unfix()
+        m.fs.EDstack.voltage[0].setlb(0.1)
+        m.fs.EDstack.voltage[0].setub(65.3786)
     m.fs.EDstack.cell_pair_num.unfix()
     m.fs.EDstack.cell_pair_num.setlb(10)
     m.fs.EDstack.cell_pair_num.setub(1000)
@@ -104,12 +130,12 @@ def main():
     m.fs.EDstack.cell_pair_num.fix(round(m.fs.EDstack.cell_pair_num.value))
     solve(m, solver=solver, tee=True)
     print("\n***---Optimization results, Product conc = 100 ppb---***")
-    display_model_metrics(m)
+    display_model_metrics(m, ED_1D=ED_1D)
 
     return m
 
 
-def build():
+def build(ED_1D=True):
     # ---building model---
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -139,18 +165,31 @@ def build():
     m.fs.pump0.ratioP_calculation.deactivate()
 
     # Add electrodialysis (ED) stacks
-    m.fs.EDstack = Electrodialysis1D(
-        property_package=m.fs.properties,
-        operation_mode=ElectricalOperationMode.Constant_Voltage,
-        finite_elements=20,
-        has_pressure_change=True,
-        has_nonohmic_potential_membrane=True,
-        has_Nernst_diffusion_layer=True,
-        limiting_current_density_method=LimitingCurrentDensityMethod.Theoretical,
-        pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
-        hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
-        friction_factor_method=FrictionFactorMethod.Gurreri,
-    )
+    if ED_1D:
+        m.fs.EDstack = Electrodialysis1D(
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode1D.Constant_Voltage,
+            finite_elements=20,
+            has_pressure_change=True,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_method=LimitingCurrentDensityMethod1D.Theoretical,
+            pressure_drop_method=PressureDropMethod1D.Darcy_Weisbach,
+            hydraulic_diameter_method=HydraulicDiameterMethod1D.spacer_specific_area_known,
+            friction_factor_method=FrictionFactorMethod1D.Gurreri,
+        )
+    else:
+        m.fs.EDstack = Electrodialysis0D(
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode0D.Constant_Voltage,
+            has_pressure_change=True,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_method=LimitingCurrentDensityMethod0D.Theoretical,
+            pressure_drop_method=PressureDropMethod0D.Darcy_Weisbach,
+            hydraulic_diameter_method=HydraulicDiameterMethod0D.spacer_specific_area_known,
+            friction_factor_method=FrictionFactorMethod0D.Gurreri,
+        )
     m.fs.sepa1 = Separator(
         property_package=m.fs.properties,
         outlet_list=["to_disp", "to_conc_in1"],
@@ -185,10 +224,16 @@ def build():
         == m.fs.prod.properties[0].flow_vol_phase["Liq"]
     )
 
-    m.fs.eq_electrodialysis_equal_flow = Constraint(
-        expr=m.fs.EDstack.diluate.properties[0, 0].flow_vol_phase["Liq"]
-        == m.fs.EDstack.concentrate.properties[0, 0].flow_vol_phase["Liq"]
-    )
+    if ED_1D:
+        m.fs.eq_electrodialysis_equal_flow = Constraint(
+            expr=m.fs.EDstack.diluate.properties[0, 0].flow_vol_phase["Liq"]
+            == m.fs.EDstack.concentrate.properties[0, 0].flow_vol_phase["Liq"]
+        )
+    else:
+        m.fs.eq_electrodialysis_equal_flow = Constraint(
+            expr=m.fs.EDstack.diluate.properties_in[0].flow_vol_phase["Liq"]
+            == m.fs.EDstack.concentrate.properties_in[0].flow_vol_phase["Liq"]
+        )
     m.fs.eq_feed_salinity = Constraint(
         expr=m.fs.feed_salinity
         == sum(
@@ -215,9 +260,14 @@ def build():
         * m.fs.EDstack.cell_pair_num
     )
 
-    m.fs.voltage_per_cp = Expression(
-        expr=m.fs.EDstack.voltage_applied[0] / m.fs.EDstack.cell_pair_num
-    )
+    if ED_1D:
+        m.fs.voltage_per_cp = Expression(
+            expr=m.fs.EDstack.voltage_applied[0] / m.fs.EDstack.cell_pair_num
+        )
+    else:
+        m.fs.voltage_per_cp = Expression(
+            expr=m.fs.EDstack.voltage[0] / m.fs.EDstack.cell_pair_num
+        )
 
     # Add Arcs
     m.fs.arc0 = Arc(source=m.fs.feed.outlet, destination=m.fs.sepa0.inlet)
@@ -261,7 +311,7 @@ def add_costing(m):
     )
 
 
-def _condition_base(m):
+def _condition_base(m, ED_1D=True):
     # ---specifications---
     # Here is simulated a scenario of a defined EDstack and
     # specific water recovery and product salinity.
@@ -277,14 +327,19 @@ def _condition_base(m):
 
     # Set ED unit vars
     # membrane properties
+    if ED_1D:
+        m.fs.EDstack.membrane_areal_resistance_coef["cem"].fix(0)
+        m.fs.EDstack.membrane_areal_resistance_coef["aem"].fix(0)
+        m.fs.EDstack.spacer_conductivity_coefficient.fix(1)
+    else:
+        pass
+
     m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
     m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
     m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
     m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
-    m.fs.EDstack.membrane_areal_resistance_coef["cem"].fix(0)
-    m.fs.EDstack.membrane_areal_resistance_coef["aem"].fix(0)
     m.fs.EDstack.solute_diffusivity_membrane["cem", "Na_+"].fix(3.28e-11)
     m.fs.EDstack.solute_diffusivity_membrane["aem", "Na_+"].fix(3.28e-11)
     m.fs.EDstack.solute_diffusivity_membrane["cem", "Cl_-"].fix(3.28e-11)
@@ -305,7 +360,6 @@ def _condition_base(m):
     # Spacer properties
     m.fs.EDstack.spacer_porosity.fix(0.83)
     m.fs.EDstack.spacer_specific_area.fix(10400)
-    m.fs.EDstack.spacer_conductivity_coefficient.fix(1)
 
     # Electrochemical properties
     m.fs.EDstack.electrodes_resistance.fix(0)
@@ -324,7 +378,7 @@ def solve(m, solver=None, tee=True, check_termination=True):
     return results
 
 
-def initialize_system(m, solver=None):
+def initialize_system(m, solver=None, ED_1D=True):
     # set up solver
     if solver is None:
         solver = get_solver()
@@ -339,10 +393,14 @@ def initialize_system(m, solver=None):
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
     )
+    if ED_1D:
+        iscale.set_scaling_factor(m.fs.EDstack.voltage_applied, 1)
+    else:
+        iscale.set_scaling_factor(m.fs.EDstack.voltage, 1)
+
     iscale.set_scaling_factor(m.fs.EDstack.cell_width, 5)
     iscale.set_scaling_factor(m.fs.EDstack.cell_length, 1)
     iscale.set_scaling_factor(m.fs.EDstack.cell_pair_num, 0.1)
-    iscale.set_scaling_factor(m.fs.EDstack.voltage_applied, 1)
     iscale.set_scaling_factor(m.fs.pump0.control_volume.work, 1e1)
     iscale.set_scaling_factor(m.fs.pump1.control_volume.work, 1e1)
     iscale.calculate_scaling_factors(m)
@@ -361,7 +419,7 @@ def initialize_system(m, solver=None):
         ),
     )
 
-    # populate intitial properties throughout the system
+    # populate initial properties throughout the system
     m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.arc0)
     m.fs.sepa0.initialize(optarg=optarg)
@@ -375,7 +433,28 @@ def initialize_system(m, solver=None):
     m.fs.pump0.deltaP[0].unfix()
     propagate_state(m.fs.arc1f)
     propagate_state(m.fs.arc3f)
-    m.fs.EDstack.initialize(optarg=optarg)
+
+    if ED_1D:
+        m.fs.EDstack.initialize(optarg=optarg)
+    else:
+        # Set values close to the converged solution
+        m.fs.EDstack.N_Re.set_value(84.48)
+        m.fs.EDstack.N_Sc.set_value(625)
+        m.fs.EDstack.N_Sh.set_value(22.31)
+        m.fs.EDstack.diluate.properties_in[0].flow_mol_phase_comp[
+            "Liq", "Na_+"
+        ].set_value(1.26e-2)
+        m.fs.EDstack.concentrate.properties_in[0].flow_mol_phase_comp[
+            "Liq", "Na_+"
+        ].set_value(2.88e-2)
+        m.fs.EDstack.diluate.properties_out[0].flow_mol_phase_comp[
+            "Liq", "Na_+"
+        ].set_value(6.22e-4)
+        m.fs.EDstack.concentrate.properties_out[0].flow_mol_phase_comp[
+            "Liq", "Na_+"
+        ].set_value(4.07e-2)
+        m.fs.EDstack.initialize(optarg=optarg)
+
     propagate_state(m.fs.arc4)
     m.fs.prod.initialize(optarg=optarg)
     propagate_state(m.fs.arc5)
@@ -396,7 +475,7 @@ def initialize_system(m, solver=None):
     iscale.calculate_scaling_factors(m)
 
 
-def display_model_metrics(m):
+def display_model_metrics(m, ED_1D=True):
 
     print("---Report the ED unit---")
 
@@ -431,13 +510,18 @@ def display_model_metrics(m):
 
     print("---Performance Metrics---")
 
+    if ED_1D:
+        voltage = m.fs.EDstack.voltage_applied[0]
+    else:
+        voltage = m.fs.EDstack.voltage[0]
+
     pm_table = pd.DataFrame(
         data=[
             value(m.fs.recovery_vol_H2O),
             value(m.fs.mem_area),
             value(m.fs.EDstack.cell_pair_num),
             value(m.fs.EDstack.cell_length),
-            value(m.fs.EDstack.voltage_applied[0]),
+            value(voltage),
             value(m.fs.costing.specific_energy_consumption),
             value(m.fs.costing.LCOW),
         ],
@@ -490,4 +574,4 @@ def display_model_metrics(m):
 
 
 if __name__ == "__main__":
-    m = main()
+    m = main(ED_1D=True)

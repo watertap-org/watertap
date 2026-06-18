@@ -35,7 +35,8 @@ solver = get_solver()
 
 class TestLandfillZOdefault:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -111,7 +112,8 @@ params = db._get_technology("landfill")
 
 class TestLandfillZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

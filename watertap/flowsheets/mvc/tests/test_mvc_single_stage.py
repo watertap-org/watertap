@@ -50,7 +50,8 @@ solver = get_solver()
 
 class TestMVC:
     @pytest.fixture(scope="class")
-    def mvc_single_stage(self):
+    @classmethod
+    def mvc_single_stage(cls):
         m = build()
         add_Q_ext(m, time_point=m.fs.config.time)
         return m

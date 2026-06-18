@@ -42,6 +42,7 @@ from watertap.unit_models.pressure_changer import Pump
 from idaes.core import UnitModelCostingBlock, FlowDirection
 import idaes.core.util.scaling as iscale
 from watertap.unit_models.MD.membrane_distillation_0D import MembraneDistillation0D
+from watertap.unit_models.MD.membrane_distillation_1D import MembraneDistillation1D
 from watertap.unit_models.MD.MD_channel_base import (
     ConcentrationPolarizationType,
     TemperaturePolarizationType,
@@ -65,9 +66,9 @@ from watertap.core.util.initialization import (
 __author__ = "Elmira Shamlou"
 
 
-def main():
+def main(MD_1D=False):
     solver = get_solver()
-    m = build()
+    m = build(MD_1D=MD_1D)
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
@@ -84,7 +85,7 @@ def main():
     return m
 
 
-def build():
+def build(MD_1D=False):
 
     # flowsheet set up
     m = ConcreteModel()
@@ -116,28 +117,52 @@ def build():
 
     # unit models
 
-    m.fs.MD = MembraneDistillation0D(
-        hot_ch={
-            "property_package": m.fs.properties_hot_ch,
-            "property_package_vapor": m.fs.properties_vapor,
-            "has_pressure_change": True,
-            "temperature_polarization_type": TemperaturePolarizationType.calculated,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            "pressure_change_type": PressureChangeType.calculated,
-            "flow_direction": FlowDirection.forward,
-        },
-        cold_ch={
-            "property_package": m.fs.properties_cold_ch,
-            "property_package_vapor": m.fs.properties_vapor,
-            "has_pressure_change": True,
-            "temperature_polarization_type": TemperaturePolarizationType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.none,
-            "concentration_polarization_type": ConcentrationPolarizationType.none,
-            "pressure_change_type": PressureChangeType.calculated,
-            "flow_direction": FlowDirection.backward,
-        },
-    )
+    if MD_1D:
+        m.fs.MD = MembraneDistillation1D(
+            hot_ch={
+                "property_package": m.fs.properties_hot_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.calculated,
+                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+                "pressure_change_type": PressureChangeType.calculated,
+                "flow_direction": FlowDirection.forward,
+            },
+            cold_ch={
+                "property_package": m.fs.properties_cold_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.calculated,
+                "mass_transfer_coefficient": MassTransferCoefficient.none,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+                "pressure_change_type": PressureChangeType.calculated,
+                "flow_direction": FlowDirection.backward,
+            },
+        )
+    else:
+        m.fs.MD = MembraneDistillation0D(
+            hot_ch={
+                "property_package": m.fs.properties_hot_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.calculated,
+                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+                "pressure_change_type": PressureChangeType.calculated,
+                "flow_direction": FlowDirection.forward,
+            },
+            cold_ch={
+                "property_package": m.fs.properties_cold_ch,
+                "property_package_vapor": m.fs.properties_vapor,
+                "has_pressure_change": True,
+                "temperature_polarization_type": TemperaturePolarizationType.calculated,
+                "mass_transfer_coefficient": MassTransferCoefficient.none,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+                "pressure_change_type": PressureChangeType.calculated,
+                "flow_direction": FlowDirection.backward,
+            },
+        )
 
     m.fs.hx = HeatExchanger(
         hot_side_name="hot",
@@ -666,4 +691,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main()
+    m = main(MD_1D=False)
