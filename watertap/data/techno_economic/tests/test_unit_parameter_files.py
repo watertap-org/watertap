@@ -117,7 +117,7 @@ def test_unit_parameter_files(tech):
         "mbr",
         "metab",
         "municipal_drinking",
-        "ozonation",
+        "ozone",
         "ozone_aop",
         "photothermal_membrane",
         "pump_electricity",

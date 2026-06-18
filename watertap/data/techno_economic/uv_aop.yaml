@@ -1,12 +1,14 @@
 default:         # default is for hydrogen peroxide
-  capital_cost:  #Cost parameters retrieved by fitting TWDB data in ALAMO (MADp modeler, max terms=4)
+  capital_cost:
     cost_factor: None
     aop_capital_a_parameter:
       value: 1228000
       units: USD_2014
+      reference: Texas Water Development Board IT3PR User Manual Figure 3.4
     aop_capital_b_parameter:
       value: 0.2277
       units: dimensionless
+      reference: Texas Water Development Board IT3PR User Manual Figure 3.4
     reactor_cost:
       value: 202.346
       units: USD_2020/(m^3/hr)
@@ -56,6 +58,7 @@ default:         # default is for hydrogen peroxide
   energy_electric_flow_vol_inlet:
     value: 0.1      #todo: revisit this value later on
     units: kWh/m^3
+    reference: WT3 OCWD case study
 
 hydrogen_peroxide:
   capital_cost: #Cost parameters retrieved by fitting TWDB data in ALAMO (MADp modeler, max terms=4)
@@ -63,9 +66,11 @@ hydrogen_peroxide:
     aop_capital_a_parameter:
       value: 1228000
       units: USD_2014
+      reference: Texas Water Development Board IT3PR User Manual Figure 3.4
     aop_capital_b_parameter:
       value: 0.2277
       units: dimensionless
+      reference: Texas Water Development Board IT3PR User Manual Figure 3.4
     reactor_cost:
       value: 202.346
       units: USD_2020/(m^3/hr)
@@ -114,3 +119,4 @@ hydrogen_peroxide:
   energy_electric_flow_vol_inlet:
     value: 0.1      #todo: revisit this value later on
     units: kWh/m^3
+    reference: WT3 OCWD case study
