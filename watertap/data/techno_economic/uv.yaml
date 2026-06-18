@@ -4,9 +4,11 @@ default:
     reactor_cost:
       value: 202.346
       units: USD_2020/(m^3/hr)
+      reference: Developed from data in UV System Cost Analysis Tool (UVCAT), prepared by Carollo for NYSERDA
     lamp_cost:
       value: 235.5
       units: USD_2020/kW
+      reference: Developed from data in UV System Cost Analysis Tool (UVCAT), prepared by Carollo for NYSERDA
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless

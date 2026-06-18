@@ -31,6 +31,7 @@ The zero-order models rely on default model parameter values specified in YAML f
    conventional_activated_sludge_zo
    cooling_supply_zo
    cooling_tower_zo
+   crystallizer_zo
    decarbonator_zo
    deep_well_injection_zo
    dissolved_air_flotation_zo
@@ -62,7 +63,6 @@ The zero-order models rely on default model parameter values specified in YAML f
    metab_zo
    microbial_battery_zo
    microfiltration_zo
-   microscreen_filtration_zo
    municipal_drinking_zo
    municipal_wwtp_zo
    nanofiltration_zo

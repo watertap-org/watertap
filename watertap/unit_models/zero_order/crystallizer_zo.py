@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-This module contains a zero-order representation of a brine concentrator unit.
+This module contains a zero-order representation of a crystallizer unit.
 """
 
 import pyomo.environ as pyo
@@ -19,13 +19,13 @@ from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido, ZeroOrderBaseData
 
-__author__ = "Adam Atia"
+__author__ = "Adam Atia, Kurban Sitterley"
 
 
-@declare_process_block_class("BrineConcentratorZO")
-class BrineConcentratorZOData(ZeroOrderBaseData):
+@declare_process_block_class("CrystallizerZO")
+class CrystallizerZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a brine concentrator unit operation.
+    Zero-Order model for a crystallizer unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -33,24 +33,23 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "brine_concentrator"
+        self._tech_type = "crystallizer"
 
         build_sido(self)
 
         if "tds" not in self.config.property_package.solute_set:
             raise KeyError(
                 "TDS must be included in the solute list for determining"
-                " electricity intensity and power consumption of the brine "
-                "concentrator unit."
+                " electricity intensity and power consumption of the crystallizer unit."
             )
 
         # Fitting parameters based on regressions for capital and electricity
-        # developed from data in Table 5.1, Table A2.3 in:
+        # developed from data in Table 4.4, Table A2.1, Table A2.3 in:
         # Survey of High-Recovery and Zero Liquid Discharge Technologies for
         # Water Utilities (2008). WateReuse Foundation:
         # https://www.waterboards.ca.gov/water_issues/programs/grants_loans/water_recycling/research/02_006a_01.pdf
-        # Capital = f(TDS, recovery, flow)
-        # Electricity = f(TDS, recovery, flow)
+        # Capital = f(TDS, purge fraction, flow)
+        # Electricity = f(TDS, purge fraction, flow)
         self.elec_coeff_1 = Var(
             units=pyunits.kWh / pyunits.m**3,
             doc="Constant 1 in electricity intensity equation",
@@ -77,12 +76,18 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
             self.flowsheet().config.time,
             units=pyunits.kW,
             bounds=(0, None),
-            doc="Power consumption of brine concentrator",
+            doc="Power consumption of crystallizer",
         )
         self.electricity_intensity = Var(
             units=pyunits.kWh / pyunits.m**3,
             doc="Specific energy consumption with respect to feed flowrate",
         )
+
+        @self.Expression(
+            doc="Purge fraction for crystallizer",
+        )
+        def purge_fraction(b):
+            return 1 - b.recovery_frac_mass_H2O[0]
 
         @self.Constraint(doc="Electricity intensity constraint")
         def electricity_intensity_constraint(b):
@@ -97,7 +102,7 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
                 b.electricity_intensity
                 == b.elec_coeff_1
                 + b.elec_coeff_2 * tds_in
-                + b.elec_coeff_3 * b.recovery_frac_mass_H2O[0]
+                + b.elec_coeff_3 * b.purge_fraction
                 + b.elec_coeff_4 * q_in
             )
 
@@ -115,14 +120,14 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
 
     @property
     def default_costing_method(self):
-        return self.cost_brine_concentrator
+        return self.cost_crystallizer
 
     @staticmethod
-    def cost_brine_concentrator(blk):
+    def cost_crystallizer(blk):
         """
-        General method for costing brine concentration processes. Capital cost
-        is based on the volumetirc flowrate and TDS of the incoming stream and
-        the water recovery.
+        General method for costing crystallizer processes. Capital cost
+        is based on the volumetric flowrate and TDS of the incoming stream and
+        the purge fraction.
         This method also registers the electricity demand as a costed flow.
         """
         t0 = blk.flowsheet().time.first()
@@ -163,7 +168,7 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
                 to_units=blk.config.flowsheet_costing_block.base_currency,
             )
             + pyo.units.convert(
-                C * blk.unit_model.recovery_frac_mass_H2O[t0],
+                C * blk.unit_model.purge_fraction,
                 to_units=blk.config.flowsheet_costing_block.base_currency,
             )
             + pyo.units.convert(

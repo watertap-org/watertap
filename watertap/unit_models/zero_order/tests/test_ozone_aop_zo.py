@@ -43,7 +43,8 @@ solver = get_solver()
 
 class TestOzoneAOPZO_with_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -201,7 +202,8 @@ class TestOzoneAOPZO_with_default_removal:
 
 class TestOzoneAOPZO_w_o_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

@@ -23,7 +23,7 @@ Additional Variables
 
    "Hours per day of filter press operation", "hours_per_day_operation", ":math:`h/d`"
    "Filter press cycle time", "cycle_time", ":math:`h`"
-   "Parameter A for electricity calculation", "electricity_a_parameter", ":math:`kWh/a/ft^3`"
+   "Parameter A for electricity calculation", "electricity_a_parameter", ":math:`kWh/ft^3/a`"
    "Parameter B for electricity calculation", "electricity_b_parameter", ":math:`dimensionless`"
    "Filter press capacity", "filter_press_capacity", ":math:`ft^3`"
    "Filter press power", "electricity", ":math:`kW`"

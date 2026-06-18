@@ -1,5 +1,5 @@
-Iron And Manganese Removal (ZO)
-===============================
+Crystallizer (ZO)
+=================
 
 Model Type
 ----------
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the :py:meth:`~watertap.unit_models.zero_order.iron_and_manganese_removal_zo.IronManganeseRemovalZOData.cost_iron_and_manganese_removal` method.
+Costing is calculated using the :py:meth:`~watertap.unit_models.zero_order.crystallizer_zo.CrystallizerZOData.cost_crystallizer` method.
 For full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -21,13 +21,11 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Ratio of air to water", "air_water_ratio", ":math:`dimensionless`"
-   "Flow basis", "flow_basis", ":math:`m^3/h`"
-   "Air flow rate", "air_flow_rate", ":math:`m^3/h`"
-   "Constant in electricity intensity equation", "electricity_intensity_parameter", ":math:`hp*h/m^3`"
-   "Dual media filter surface area", "filter_surf_area", ":math:`m^2`"
-   "Number of dual media filter units", "num_filter_units", ":math:`dimensionless`"
-   "Power consumption of iron and manganese removal", "electricity", ":math:`kW`"
+   "Constant 1 in electricity intensity equation", "elec_coeff_1", ":math:`kWh/m^3`"
+   "Constant 2 in electricity intensity equation", "elec_coeff_2", ":math:`kWh/m^3/(mg/L)`"
+   "Constant 3 in electricity intensity equation", "elec_coeff_3", ":math:`kWh/m^3`"
+   "Constant 4 in electricity intensity equation", "elec_coeff_4", ":math:`kWh/m^3/(m^3/h)`"
+   "Power consumption of crystallizer", "electricity", ":math:`kW`"
    "Specific energy consumption with respect to feed flowrate", "electricity_intensity", ":math:`kWh/m^3`"
 
 Additional Constraints
@@ -36,18 +34,17 @@ Additional Constraints
 .. csv-table::
    :header: "Description", "Constraint Name"
 
-   "Air flow rate constraint", "air_flow_rate_constraint"
    "Electricity intensity constraint", "electricity_intensity_constraint"
    "Power consumption constraint", "electricity_constraint"
 
 .. index::
-   pair: watertap.unit_models.zero_order.iron_and_manganese_removal_zo;iron_and_manganese_removal_zo
+   pair: watertap.unit_models.zero_order.crystallizer_zo;crystallizer_zo
 
-.. currentmodule:: watertap.unit_models.zero_order.iron_and_manganese_removal_zo
+.. currentmodule:: watertap.unit_models.zero_order.crystallizer_zo
 
 Class Documentation
 -------------------
 
-.. automodule:: watertap.unit_models.zero_order.iron_and_manganese_removal_zo
+.. automodule:: watertap.unit_models.zero_order.crystallizer_zo
     :members:
     :noindex:

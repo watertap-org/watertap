@@ -1,56 +1,57 @@
-default: 
+default:
   capital_cost:
     cost_factor: None
-    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008). Table 5.1, Table A2.3
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008). Table 4.4, Table A2.1, Table A2.3
     validity_range:
       flow_vol:
         lower_bound:
-          value: 0.06
-          units: Mgallons/day
+          value: 11
+          units: gallon/minute
         upper_bound:
-          value: 20
-          units: Mgallons/day
-      recovery_vol:
+          value: 1047
+          units: gallon/minute
+      purge_fraction:
         lower_bound:
-          value: 0.555
+          value: 0 # ~ 100% recovery
           units: dimensionless
         upper_bound:
-          value: 0.98448
+          value: 0.516129032
           units: dimensionless
       tds:
         lower_bound:
-          value: 4000
+          value: 145000
           units: mg/liter
         upper_bound:
-          value: 61851
+          value: 358000
           units: mg/liter
     capital_a_parameter:
-      value: 15.1e6
+      value: 1.41e6
       units: USD_2007
     capital_b_parameter:
-      value: 3.02e2
+      value: -7.11E-1
       units: USD_2007/(mg/liter)
     capital_c_parameter:
-      value: -18.8e6
+      value: 1.45e6
       units: USD_2007
     capital_d_parameter:
-      value: 8.08e4
+      value: 5.55E5
       units: USD_2007/(m^3/hr)
   elec_coeff_1:
-    value: 9.73
+    value: 56.7
     units: kWh/m^3
   elec_coeff_2:
-    value: 1.1E-4
-    units: L/mg*kWh/m^3
+    value: 1.83E-5
+    units: kWh/m^3/(mg/L)
   elec_coeff_3:
-    value: 10.4
+    value: -9.47
     units: kWh/m^3
   elec_coeff_4:
-    value: 3.83E-5
+    value: -8.63E-4
     units: kWh/m^6*hr
   recovery_frac_mass_H2O:
-    value: 0.9
+    value: 0.95
     units: dimensionless
+    reference: Default value based on 5% purge fraction per source. Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
   default_removal_frac_mass_comp:
     value: 0.98
     units: dimensionless
@@ -59,4 +60,3 @@ default:
       value: 0.98
       units: dimensionless
       constituent_longform: Total Dissolved Solids
-      

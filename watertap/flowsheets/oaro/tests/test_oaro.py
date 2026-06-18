@@ -42,7 +42,8 @@ solver = get_solver()
 # -----------------------------------------------------------------------------
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(erd_type=ERDtype.pump_as_turbine)
 
         return m

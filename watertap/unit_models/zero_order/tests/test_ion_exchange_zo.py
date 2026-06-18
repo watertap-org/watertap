@@ -43,7 +43,8 @@ solver = get_solver()
 
 class TestIonExchangeZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -157,7 +158,8 @@ class TestIonExchangeZO_w_default_removal:
 
 class TestIonExchangeZO_clinoptilolite:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -277,7 +279,8 @@ params = db._get_technology("ion_exchange")
 
 class TestIXZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

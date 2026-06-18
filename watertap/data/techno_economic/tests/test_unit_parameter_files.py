@@ -101,6 +101,7 @@ def test_unit_parameter_files(tech):
         "coag_and_floc",
         "cofermentation",
         "constructed_wetlands",
+        "crystallizer",
         "deep_well_injection",
         "electrochemical_nutrient_removal",
         "electrodialysis_reversal",

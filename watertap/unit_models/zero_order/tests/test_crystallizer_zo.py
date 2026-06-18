@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for zero-order brine concentrator model
+Tests for zero-order crystallizer model
 """
 
 import pytest
@@ -28,15 +28,15 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import BrineConcentratorZO
+from watertap.unit_models.zero_order import CrystallizerZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -44,20 +44,20 @@ solver = get_solver()
 @pytest.mark.unit
 def test_no_tds_in_solute_list_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
     m.db = Database()
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,
         match="TDS must be included in the solute list for "
         "determining electricity intensity and power "
-        "consumption of the brine concentrator unit.",
+        "consumption of the crystallizer unit.",
     ):
-        m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=m.db)
+        m.fs.unit = CrystallizerZO(property_package=m.fs.params, database=m.db)
 
 
-class TestBrineConcentratorZO_wo_default_removal:
+class TestCrystallizerZO_w_o_default_removal:
     @pytest.fixture(scope="class")
     @classmethod
     def model(cls):
@@ -67,7 +67,7 @@ class TestBrineConcentratorZO_wo_default_removal:
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(solute_list=["tds"])
 
-        m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=m.db)
+        m.fs.unit = CrystallizerZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(250)
@@ -87,7 +87,7 @@ class TestBrineConcentratorZO_wo_default_removal:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("brine_concentrator")
+        data = model.db.get_unit_operation_parameters("crystallizer")
 
         model.fs.unit.load_parameters_from_database(use_default_removal=False)
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
@@ -134,19 +134,17 @@ class TestBrineConcentratorZO_wo_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(9.005, rel=1e-3) == value(
+        assert pytest.approx(9.505, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(0.555247, rel=1e-3) == value(
+        assert pytest.approx(0.526038, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(196.78715, rel=1e-3) == value(
+        assert pytest.approx(328.8590, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(855570.663, rel=1e-3) == value(
-            model.fs.unit.electricity[0]
-        )
-        assert pytest.approx(23.186197, rel=1e-3) == value(
+        assert pytest.approx(916158.41, rel=1e-3) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(24.82814, rel=1e-3) == value(
             model.fs.unit.electricity_intensity
         )
 
@@ -168,7 +166,7 @@ class TestBrineConcentratorZO_wo_default_removal:
         model.fs.unit.report()
 
 
-class TestBrineConcentratorZO_w_default_removal:
+class TestCrystallizerZO_w_default_removal:
     @pytest.fixture(scope="class")
     @classmethod
     def model(cls):
@@ -178,7 +176,7 @@ class TestBrineConcentratorZO_w_default_removal:
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(solute_list=["tds", "foo"])
 
-        m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=m.db)
+        m.fs.unit = CrystallizerZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(250)
@@ -199,7 +197,7 @@ class TestBrineConcentratorZO_w_default_removal:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("brine_concentrator")
+        data = model.db.get_unit_operation_parameters("crystallizer")
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
         assert (
@@ -247,25 +245,20 @@ class TestBrineConcentratorZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(9.00502, rel=1e-3) == value(
+        assert pytest.approx(9.506, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(0.555185, rel=1e-3) == value(
+        assert pytest.approx(0.5259835, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(0.002220, rel=1e-3) == value(
+        assert pytest.approx(0.002104, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(196.787149, rel=1e-3) == value(
+        assert pytest.approx(328.427, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(0.78652, rel=1e-3) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
-        )
-        assert pytest.approx(855649.563040, rel=1e-3) == value(
-            model.fs.unit.electricity[0]
-        )
-        assert pytest.approx(23.186, rel=1e-3) == value(
+        assert pytest.approx(916131.54, rel=1e-3) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(24.82499, rel=1e-3) == value(
             model.fs.unit.electricity_intensity
         )
 
@@ -299,15 +292,13 @@ def test_costing():
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2007
 
-    m.fs.unit = BrineConcentratorZO(
-        property_package=m.fs.params,
-        database=m.db,
-    )
+    m.fs.unit = CrystallizerZO(property_package=m.fs.params, database=m.db)
 
     rho = 1000 * pyunits.kg / pyunits.m**3
-    flow_vol = 10 * pyunits.Mgallons / pyunits.day
-    conc = 8000 * pyunits.mg / pyunits.L
-    recovery = 0.952
+    flow_vol = 11 * pyunits.gallon / pyunits.minute
+    conc = 257000 * pyunits.mg / pyunits.L
+    purge_fraction = 0.0545
+    recovery = 1 - purge_fraction
     flow_mass = rho * flow_vol
     flow_conc = conc * flow_vol
 
@@ -320,30 +311,31 @@ def test_costing():
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     m.fs.costing.cost_process()
-    m.fs.costing.add_LCOW(m.fs.unit.properties_treated[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.unit.properties_in[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(
-        m.fs.unit.properties_treated[0].flow_vol, name="SEC"
+        m.fs.unit.properties_in[0].flow_vol, name="SEC"
     )
 
     m.fs.unit.initialize()
 
     results = solver.solve(m)
     assert_optimal_termination(results)
-    assert isinstance(m.fs.costing.brine_concentrator, Block)
-    assert isinstance(m.fs.costing.brine_concentrator.capital_a_parameter, Var)
-    assert isinstance(m.fs.costing.brine_concentrator.capital_b_parameter, Var)
-    assert isinstance(m.fs.costing.brine_concentrator.capital_c_parameter, Var)
-    assert isinstance(m.fs.costing.brine_concentrator.capital_d_parameter, Var)
+
+    assert isinstance(m.fs.costing.crystallizer, Block)
+    assert isinstance(m.fs.costing.crystallizer.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.crystallizer.capital_b_parameter, Var)
+    assert isinstance(m.fs.costing.crystallizer.capital_c_parameter, Var)
+    assert isinstance(m.fs.costing.crystallizer.capital_d_parameter, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert (
         pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3)
-        == 134656099.12  # ~$127.4M from reference
+        == 3245569.41  # ~$3.0M from reference
     )
     assert (
-        pytest.approx(value(m.fs.costing.SEC), rel=1e-3) == 21.770
-    )  # ~19.8 kWh/m3 from reference
-    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 1.9306
+        pytest.approx(value(m.fs.costing.SEC), rel=1e-3) == 59.922
+    )  # 59.4 kWh/m3 from reference
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 12.4234
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

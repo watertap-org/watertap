@@ -41,7 +41,8 @@ __author__ = "Xiangyu Bi"
 
 class TestElectrodialysisVoltageConst:
     @pytest.fixture(scope="class")
-    def electrodialysis_1D1stack(self):
+    @classmethod
+    def electrodialysis_1D1stack(cls):
         m = edfs.build(ED_1D=True)
         return m
 
@@ -70,7 +71,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.product.inlet, Port)
         assert isinstance(m.fs.disposal.inlet, Port)
 
-        # Test consting
+        # Test costing
         assert isinstance(m.fs.EDstack.costing, Block)
         assert isinstance(m.fs.EDstack.costing.capital_cost, Var)
         assert isinstance(m.fs.EDstack.costing.fixed_operating_cost, Var)
@@ -99,7 +100,7 @@ class TestElectrodialysisVoltageConst:
             assert arc.destination is port_tpl[1]
 
         # Test the primary EDstack properties
-        # test configrations
+        # test configurations
         assert len(m.fs.EDstack.config) == 21
         assert not m.fs.EDstack.config.dynamic
         assert not m.fs.EDstack.config.has_holdup

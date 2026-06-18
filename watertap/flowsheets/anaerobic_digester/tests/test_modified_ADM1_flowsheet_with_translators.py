@@ -37,7 +37,8 @@ solver = get_solver()
 @pytest.mark.requires_idaes_solver
 class TestADM1BioPFalse:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m, res = main(bio_P=False)
         m.results = res
         return m
@@ -114,7 +115,8 @@ class TestADM1BioPFalse:
 @pytest.mark.requires_idaes_solver
 class TestADM1BioPTrue:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m, res = main(bio_P=True)
         m.results = res
         return m
