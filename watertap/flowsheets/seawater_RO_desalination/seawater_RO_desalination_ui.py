@@ -82,7 +82,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # TODO: Consider whether ZO removal fractions should be exposed - currently they are not
     # Unit model data, ferric chloride addition
     exports.add(
-        obj=fs.pretreatment.ferric_chloride_addition.chemical_dosage[0],
+        obj=fs.pretreatment.ferric_chloride_addition.chemical_dosage,
         name="Ferric chloride dosage",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -173,7 +173,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, antiscalant addition
     exports.add(
-        obj=fs.pretreatment.anti_scalant_addition.chemical_dosage[0],
+        obj=fs.pretreatment.anti_scalant_addition.chemical_dosage,
         name="Antiscalant dosage",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -453,7 +453,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     )
     # Unit model data, lime addition
     exports.add(
-        obj=fs.posttreatment.lime_addition.chemical_dosage[0],
+        obj=fs.posttreatment.lime_addition.chemical_dosage,
         name="Lime chemical dosage",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
