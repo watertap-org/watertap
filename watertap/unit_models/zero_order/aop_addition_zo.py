@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-This module contains a zero-order representation of a AOP addition
+This module contains a method for adding AOP capital cost to zero-order models.
 """
 
 import pyomo.environ as pyo
@@ -20,7 +20,10 @@ class AOPAdditionMixin:
     @staticmethod
     def _get_aop_capital_cost(blk, A, B):
         """
-        Generate expression for capital cost due to AOP addition.
+        Generate expression for capital cost for AOP addition.
+
+        Expression is based on lb/day H2O2 flowrate developed from
+        Texas Water Development Board IT3P Figure 3.4.
         """
         t0 = blk.flowsheet().time.first()
 

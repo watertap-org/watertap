@@ -1,18 +1,17 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools >= 64", "setuptools_scm >= 8"]
+requires = ["setuptools >= 64"]
 
 [project]
 name = "watertap"
 description = "WaterTAP modeling library"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "NAWI team" }]
-license = { text = "BSD" }
+license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Natural Language :: English",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
@@ -43,7 +42,7 @@ dependencies = [
     # primary requirements for unit and property models
     # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
     # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
-    "idaes-pse>=2.11.0",
+    "idaes-pse @ git+https://github.com/IDAES/idaes-pse.git@74b9ea61a0b1c79622d61a8f0019c8859282ad60",
     "pyomo>=6.6.1",
     "watertap-solvers",
     "pyyaml",            # watertap.core.wt_database
@@ -64,7 +63,7 @@ testing = [
     # treebeardtech/nbmake#121
     "nbmake!=1.5.1",
     "nbconvert",
-    "idaes-flowsheet-processor>=0.2.0",
+    "idaes-flowsheet-processor @ git+https://github.com/prommis/idaes-flowsheet-processor.git@main",
 ]
 notebooks = ["jupyter", "ipykernel"]
 oli_api = [
@@ -125,8 +124,7 @@ OARO = "watertap.flowsheets.oaro.oaro_multi_ui"
 GAC = "watertap.flowsheets.gac.gac_ui"
 ED_conc_recirc = "watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc_ui"
 LSRRO = "watertap.flowsheets.lsrro.lsrro_ui"
-"generic desal train" = "watertap.flowsheets.generic_desalination_train.generic_train_ui"
-
+generic_desal_train = "watertap.flowsheets.generic_desalination_train.generic_train_ui"
 
 [tool.pylint."messages control"]
 disable = [

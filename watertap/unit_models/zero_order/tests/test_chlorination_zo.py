@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestChlorinationZO_with_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.db = Database()
@@ -154,7 +155,8 @@ class TestChlorinationZO_with_default_removal:
 
 class TestChlorinationZO_w_o_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.db = Database()

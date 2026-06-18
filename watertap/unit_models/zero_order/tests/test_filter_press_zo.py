@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestFilterPressZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

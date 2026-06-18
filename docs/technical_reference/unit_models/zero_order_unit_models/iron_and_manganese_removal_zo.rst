@@ -24,7 +24,7 @@ Additional Variables
    "Ratio of air to water", "air_water_ratio", ":math:`dimensionless`"
    "Flow basis", "flow_basis", ":math:`m^3/h`"
    "Air flow rate", "air_flow_rate", ":math:`m^3/h`"
-   "Constant in electricity intensity equation", "electricity_intensity_parameter", ":math:`h*hp/m^3`"
+   "Constant in electricity intensity equation", "electricity_intensity_parameter", ":math:`hp*h/m^3`"
    "Dual media filter surface area", "filter_surf_area", ":math:`m^2`"
    "Number of dual media filter units", "num_filter_units", ":math:`dimensionless`"
    "Power consumption of iron and manganese removal", "electricity", ":math:`kW`"
