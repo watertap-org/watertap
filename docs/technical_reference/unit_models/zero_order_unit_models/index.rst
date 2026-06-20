@@ -6,7 +6,6 @@ The zero-order models rely on default model parameter values specified in YAML f
    :maxdepth: 1
 
    aeration_basin_zo
-   air_flotation_zo
    anaerobic_digestion_oxidation_zo
    anaerobic_digestion_reactive_zo
    anaerobic_mbr_mec_zo

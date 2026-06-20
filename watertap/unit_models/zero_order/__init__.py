@@ -19,7 +19,6 @@ from .deep_well_injection_zo import DeepWellInjectionZO
 from .dmbr_zo import DMBRZO
 from .electrodialysis_reversal_zo import ElectrodialysisReversalZO
 from .aeration_basin_zo import AerationBasinZO
-from .air_flotation_zo import AirFlotationZO
 from .bioreactor_zo import BioreactorZO
 from .buffer_tank_zo import BufferTankZO
 from .chemical_addition_zo import ChemicalAdditionZO
