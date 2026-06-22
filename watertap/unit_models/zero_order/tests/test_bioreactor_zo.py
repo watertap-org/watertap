@@ -41,7 +41,8 @@ solver = get_solver()
 
 class TestBioreactorZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

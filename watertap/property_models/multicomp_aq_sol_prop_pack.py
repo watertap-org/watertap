@@ -33,6 +33,7 @@ from pyomo.environ import (
     Reals,
     NonNegativeReals,
     log,
+    log10,
     Var,
     Param,
     Set,
@@ -775,16 +776,16 @@ class MCASParameterData(PhysicalParameterBlock):
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
-            default=80.4,
-            initialize=80.4,  # todo: make a variable with parameter values for coefficients in the function of temperature
+            default=78.36,
+            initialize=78.36,  # todo: make a variable with parameter values for coefficients in the function of temperature
             units=pyunits.dimensionless,
-            doc="Dielectric constant of water",
+            doc="Dielectric constant of water. Default value for 25C, from Malmberg-Maryott (1956)",
         )
         self.debye_huckel_b = Param(
             mutable=True,
             default=0.3,
             initialize=0.3,
-            units=pyunits.kg / pyunits.mol,
+            units=(pyunits.kg / pyunits.mol) ** 0.5,
             doc="Debye Huckel constant b",
         )
 
@@ -1916,10 +1917,10 @@ class MCASStateBlockData(StateBlockData):
                 == ActivityCoefficientModel.davies
             ):
                 I = b.ionic_strength_molal
-                return log(
+                return log10(
                     b.act_coeff_phase_comp[p, j]
                 ) == -b.debye_huckel_constant * b.charge_comp[j] ** 2 * (
-                    I**0.5 / (1 * pyunits.mole**0.5 / pyunits.kg**0.5 + I**0.5)
+                    I**0.5 / (1 + pyunits.kg**0.5 * pyunits.mol**-0.5 * I**0.5)
                     - b.params.debye_huckel_b * I
                 )
 
@@ -1929,8 +1930,6 @@ class MCASStateBlockData(StateBlockData):
             rule=rule_act_coeff_phase_comp,
         )
 
-    # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
-    # the MIT's DSPMDE paper indicates usage of molar concentration
     def _ionic_strength_molal(self):
         self.ionic_strength_molal = Var(
             initialize=1,
@@ -1951,36 +1950,27 @@ class MCASStateBlockData(StateBlockData):
         self.debye_huckel_constant = Var(
             initialize=1,
             domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            # TODO: units are technically (kg/mol)**0.5, but Debye Huckel equation
-            #  is empirical and units don't seem to cancel as typical. leaving as dimensionless for now
+            units=(pyunits.kg / pyunits.mol) ** 0.5,
             doc="Temperature-dependent Debye Huckel constant A",
         )
 
         def rule_debye_huckel_constant(b):
-            return (
-                b.debye_huckel_constant
-                == ((2 * Constants.pi * Constants.avogadro_number) ** 0.5 / log(10))
-                * (
-                    Constants.elemental_charge**2
-                    / (
-                        4
-                        * Constants.pi
-                        * Constants.vacuum_electric_permittivity
-                        * b.params.dielectric_constant
-                        * Constants.boltzmann_constant
-                        * b.temperature
-                    )
+            return b.debye_huckel_constant == (
+                (2 * Constants.pi * Constants.avogadro_number * b.dens_mass_solvent)
+                ** 0.5
+                / log(10)
+            ) * (
+                Constants.elemental_charge**2
+                / (
+                    4
+                    * Constants.pi
+                    * Constants.vacuum_electric_permittivity
+                    * b.params.dielectric_constant
+                    * Constants.boltzmann_constant
+                    * b.temperature
                 )
-                ** (3 / 2)
-                * (
-                    pyunits.coulomb**3
-                    * pyunits.m**1.5
-                    / pyunits.farad**1.5
-                    / pyunits.J**1.5
-                    / pyunits.mol**0.5
-                )
-                ** -1
+            ) ** (
+                1.5
             )
 
         self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)

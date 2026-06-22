@@ -304,8 +304,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 doc=f"Specific energy consumption based on flow {flow_rate.name}",
             ),
         )
-        self._add_flow_component_breakdowns(
-            "electricity", name, flow_rate, utilization_factor=1.0, period=pyo.units.hr
+        self.add_flow_component_breakdown(
+            "electricity", flow_rate, name=name, period=pyo.units.hr
         )
 
     def add_annual_water_production(self, flow_rate, name="annual_water_production"):
@@ -314,7 +314,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating annual water production
-            name (optional) - name for the annual water productionvariable
+            name (optional) - name for the annual water production
                               Expression (default: annual_water_production)
         """
         self.add_component(
@@ -362,40 +362,46 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
-        self._add_flow_component_breakdowns(
+        self.add_flow_component_breakdown(
             "electricity",
-            name,
             flow_rate,
+            name=name,
             period=pyo.units.hr,
-            utilization_factor=1.0,
             multiplier=self.electrical_carbon_intensity,
         )
 
-    def _add_flow_component_breakdowns(
+    def add_flow_component_breakdown(
         self,
         flow_name,
-        name,
         flow_rate,
+        name=None,
         period=None,
-        utilization_factor=None,
         multiplier=1.0,
     ):
         """
-        Add per-component breakdowns for specific `flow_name` consumption with base-name `name`
-        at `flow_rate`.
-        Optional `multiplier` for the flow and period specification (default is 1 hour),
-        and specified `utilization_factor` (default is self.utilization_factor).
+        Add per-component breakdowns for a registered flow type normalized by a flow rate over a period
+        Args:
+            flow_name - name of registered flow
+            flow_rate - flow rate of water (volumetric) to be used for normalization
+            name (optional)- base name for the component Expression (default is flow_name)
+            period (optional) - time period for normalization (default is base_period)
+            multiplier (optional) - multiplier for the flow (default is 1.0)
         """
-        if utilization_factor is None:
-            utilization_factor = self.utilization_factor
+        # NOTE: utilization_factor cancels in final expression but is included for convention
+
         if period is None:
             period = self.base_period
+
+        if name is None:
+            name = flow_name
+
         denominator = (
             pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / period)
-            * utilization_factor
+            * self.utilization_factor
         )
         f_units = pyo.units.get_units(getattr(self, f"aggregate_flow_{flow_name}"))
         c_units = f_units * pyo.units.get_units(multiplier)
+        expr_units = c_units / pyo.units.get_units(denominator)
 
         try:
             flows = self._registered_flows[flow_name]
@@ -413,15 +419,17 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             flow_std = pyo.units.convert(flow_expr, to_units=f_units)
             unit = self._find_flow_unit(flow_expr)
             if unit is not None:
-                specific_flow_consumption[unit.name] += (
-                    flow_std * utilization_factor * multiplier
-                ) / denominator
+                specific_flow_consumption[unit.name] += pyo.units.convert(
+                    (flow_std * self.utilization_factor * multiplier) / denominator,
+                    to_units=expr_units,
+                )
                 continue
             _log.warning(f"Could not find unique unit for flow {flow_expr}")
             flow_name = self._get_flow_name(flow_expr)
-            specific_flow_consumption[flow_name] += (
-                flow_std * utilization_factor * multiplier
-            ) / denominator
+            specific_flow_consumption[flow_name] += pyo.units.convert(
+                (flow_std * self.utilization_factor * multiplier) / denominator,
+                to_units=expr_units,
+            )
 
     def build_process_costs(self):
         """

@@ -38,7 +38,8 @@ from idaes.core.util import DiagnosticsToolbox
 )
 class TestASM2DFlowsheet:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m, res = build_flowsheet()
 
         m.results = res

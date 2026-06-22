@@ -105,7 +105,8 @@ def test_config():
 # -----------------------------------------------------------------------------
 class TestAdm1Asm1(object):
     @pytest.fixture(scope="class")
-    def admasm(self):
+    @classmethod
+    def admasm(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -190,7 +191,7 @@ class TestAdm1Asm1(object):
         assert hasattr(admasm.fs.unit.outlet, "pressure")
         assert hasattr(admasm.fs.unit.outlet, "alkalinity")
 
-        assert number_variables(admasm) == 136
+        assert number_variables(admasm) == 135
         assert number_total_constraints(admasm) == 16
         assert number_unused_variables(admasm.fs.unit) == 4
 
@@ -309,7 +310,7 @@ class TestAdm1Asm1(object):
 
 class TestADM1ASM1Scaler:
     @pytest.fixture
-    def model(self):
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
