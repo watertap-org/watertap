@@ -17,8 +17,7 @@ from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido, ZeroOrderBaseData
 
-# Some more inforation about this module
-__author__ = "Marcus Holly"
+__author__ = "Marcus Holly, Kurban Sitterley"
 
 
 @declare_process_block_class("MBRZO")
@@ -59,24 +58,23 @@ class MBRZOData(ZeroOrderBaseData):
             doc="Specific energy consumption with respect to feed flowrate",
         )
 
+        @self.Expression(doc="Electricity intensity base term")
+        def electricity_intensity_base(b):
+            return (
+                pyunits.convert(
+                    b.properties_in[0].flow_vol / (pyunits.m**3 / pyunits.day),
+                    to_units=pyunits.dimensionless,
+                )
+                ** b.elec_coeff_2
+            )
+
         @self.Constraint(
             self.flowsheet().config.time, doc="Electricity intensity constraint"
         )
         def electricity_intensity_constraint(b, t):
-            q_in = pyunits.convert(
-                b.properties_in[t].flow_vol / (pyunits.m**3 / pyunits.hour),
-                to_units=pyunits.dimensionless,
-            )
-            return (
-                pyunits.convert(
-                    b.electricity_intensity[t] / (pyunits.kWh / pyunits.m**3),
-                    to_units=pyunits.dimensionless,
-                )
-                == pyunits.convert(
-                    (b.elec_coeff_1) / (pyunits.kWh / pyunits.m**3),
-                    to_units=pyunits.dimensionless,
-                )
-                * q_in**b.elec_coeff_2
+            return b.electricity_intensity[t] == pyunits.convert(
+                b.elec_coeff_1 * b.electricity_intensity_base,
+                to_units=pyunits.kWh / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -84,9 +82,11 @@ class MBRZOData(ZeroOrderBaseData):
         )
         def electricity_constraint(b, t):
             q_in = pyunits.convert(
-                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.day
             )
-            return b.electricity[t] == b.electricity_intensity[t] * q_in
+            return b.electricity[t] == pyunits.convert(
+                b.electricity_intensity[t] * q_in, to_units=pyunits.kW
+            )
 
         self._perf_var_dict["Power Consumption (kW)"] = self.electricity
         self._perf_var_dict["Electricity intensity per Inlet Flowrate  (kWh/m3)"] = (

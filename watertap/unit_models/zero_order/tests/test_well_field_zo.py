@@ -15,7 +15,6 @@ Tests for zero-order well field model
 
 import pytest
 
-
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -23,6 +22,7 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestWellFieldZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -140,7 +141,8 @@ class TestWellFieldZO:
 
 class TestWellFieldZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -244,6 +246,11 @@ params = db._get_technology("well_field")
 
 @pytest.mark.parametrize("subtype", [k for k in params.keys()])
 def test_costing(subtype):
+    """
+    Compare against well cost from reference
+    Voutchkov, N. (2018). Desalination Project Cost Estimating and Management,
+    Table 4.7; 50 m deep wells, ~$3.0M for 1000 m3/hr.
+    """
     m = ConcreteModel()
     m.db = Database()
 
@@ -252,11 +259,15 @@ def test_costing(subtype):
         solute_list=["toc", "nitrate", "sulfate", "bar", "crux"]
     )
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2018
     m.fs.unit = WellFieldZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
+    rho = 997 * pyunits.kg / pyunits.m**3
+    flow_vol = 1000 * pyunits.m**3 / pyunits.hr
+    flow_mass = rho * flow_vol
 
-    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
     m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
     m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(2)
     m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.3)
@@ -267,20 +278,34 @@ def test_costing(subtype):
 
     assert degrees_of_freedom(m.fs.unit) == 0
     m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(
+        m.fs.unit.properties[0].flow_vol,
+    )
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.unit.properties[0].flow_vol, name="SEC"
+    )
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
-    _ = solver.solve(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
+    # Well cost for 1000 m3/hr in Voutchkov is ~$3.0M
     if subtype == "default":
-        assert pytest.approx(1.665893, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
+        assert pytest.approx(3254127.66, rel=1e-5) == value(
+            m.fs.costing.total_capital_cost
         )
+        assert pytest.approx(0.10235, rel=1e-3) == value(m.fs.costing.SEC)
+        assert pytest.approx(3094748.13, rel=1e-5) == value(m.fs.unit.costing.well_cost)
     if subtype == "emwd":
-        assert pytest.approx(47.921893, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
+        assert pytest.approx(52455215.83, rel=1e-5) == value(
+            m.fs.costing.total_capital_cost
         )
+        assert pytest.approx(46791334.45, rel=1e-5) == value(
+            m.fs.unit.costing.pipe_cost
+        )
+        assert pytest.approx(3094748.13, rel=1e-5) == value(m.fs.unit.costing.well_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

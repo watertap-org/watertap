@@ -47,7 +47,8 @@ solver = get_solver()
 
 class TestGasSpargedMembraneZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
         m.fs = FlowsheetBlock(dynamic=False)
