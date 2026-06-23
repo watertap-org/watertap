@@ -742,6 +742,15 @@ def add_costing(m):
             * b.fs.zo_costing.utilization_factor
         )
 
+    @m.Expression()
+    def SEC(b):
+        # Note: there is no electricity flow in ro_costing
+        return pyunits.convert(
+            b.fs.zo_costing.aggregate_flow_electricity
+            / b.fs.municipal.properties[0].flow_vol,
+            to_units=pyunits.kWh / pyunits.m**3,
+        )
+
     assert_units_consistent(m)
 
 
@@ -757,6 +766,7 @@ def display_costing(m):
     m.total_capital_cost.display()
     m.total_operating_cost.display()
     m.LCOW.display()
+    m.SEC.display()
 
     print("\nUnit Capital Costs\n")
     for u in m.fs.zo_costing._registered_unit_costing:
