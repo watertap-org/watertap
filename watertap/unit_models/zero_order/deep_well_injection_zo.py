@@ -19,7 +19,6 @@ from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
 
-# Some more information about this module
 __author__ = "Chenyu Wang"
 
 
@@ -81,30 +80,35 @@ class DeepWellInjectionZOData(ZeroOrderBaseData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C = blk.unit_model._get_tech_parameters(
-            blk,
-            parameter_dict,
-            blk.unit_model.config.process_subtype,
-            ["well_pump_cost", "pipe_cost_basis", "flow_exponent"],
+        well_pump_cost, pipe_cost_basis, flow_exponent = (
+            blk.unit_model._get_tech_parameters(
+                blk,
+                parameter_dict,
+                blk.unit_model.config.process_subtype,
+                ["well_pump_cost", "pipe_cost_basis", "flow_exponent"],
+            )
         )
 
-        # Add cost variable and constraint
-        blk.capital_cost = pyo.Var(
-            initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
-            bounds=(0, None),
-            doc="Capital cost of unit operation",
+        blk.well_cost = pyo.Expression(
+            expr=pyo.units.convert(
+                well_pump_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
         )
 
-        cost_well_pump = A
-
-        cost_pipe = (
-            B * blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0]
+        blk.pipe_cost = pyo.Expression(
+            expr=pyo.units.convert(
+                pipe_cost_basis
+                * blk.unit_model.pipe_distance[t0]
+                * blk.unit_model.pipe_diameter[t0],
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
         )
-
-        cost_total = pyo.units.convert(
-            cost_well_pump + cost_pipe,
-            to_units=blk.config.flowsheet_costing_block.base_currency,
+        blk.base_cost = pyo.Expression(
+            expr=pyo.units.convert(
+                blk.well_cost + blk.pipe_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
         )
 
         Q = pyo.units.convert(
@@ -120,8 +124,8 @@ class DeepWellInjectionZOData(ZeroOrderBaseData):
         # Call general power law costing method
         blk.unit_model._general_power_law_form(
             blk,
-            cost_total,
-            C,
+            blk.base_cost,
+            flow_exponent,
             sizing_term,
             factor,
             number_of_parallel_units,

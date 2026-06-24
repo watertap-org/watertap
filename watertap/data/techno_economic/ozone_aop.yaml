@@ -69,7 +69,7 @@ default:  # default aop is for hydrogen peroxide
   recovery_frac_mass_H2O:
     value: 1
     units: dimensionless
-    reference: Texas Water Development Board IT3PR User Manual
+    reference: Texas Water Development Board IT3PR version 2.0 User Manual
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless

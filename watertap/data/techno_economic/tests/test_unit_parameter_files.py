@@ -70,6 +70,7 @@ def test_unit_parameter_files(tech):
         "chemical_addition",
         "co2_addition",
         "cooling_supply",
+        "deep_well_injection",
         "energy_recovery",
         "feed_water_tank",
         "injection_well_disposal",

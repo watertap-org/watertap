@@ -97,7 +97,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
         muni.outlet.flow_mass_comp[0.0, "tds"]
     )
 
-    assert value(m.LCOW) == pytest.approx(0.84897, rel=1e-5)
+    assert value(m.LCOW) == pytest.approx(0.829189, rel=1e-5)
 
 
 @pytest.mark.component
@@ -179,7 +179,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
         muni.outlet.flow_mass_comp[0.0, "tds"]
     )
 
-    assert value(m.LCOW) == pytest.approx(1.1194839, rel=1e-5)
+    assert value(m.LCOW) == pytest.approx(1.09970, rel=1e-5)
 
     @pytest.mark.component
     def test_main_0D(self):

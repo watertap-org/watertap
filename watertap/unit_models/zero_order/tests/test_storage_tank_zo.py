@@ -23,6 +23,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -128,8 +129,17 @@ class TestStorageTankZO:
 db = Database()
 params = db._get_technology("storage_tank")
 
+lcow_dict = {
+    "default": 0.040387,
+    "treated_storage": 0.086992,
+}
+capex_dict = {
+    "default": 1705344.72,
+    "treated_storage": 3673235.72,
+}
 
-@pytest.mark.parametrize("subtype", [k for k in params.keys() if k != "default"])
+
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
 def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
@@ -140,25 +150,36 @@ def test_costing(subtype):
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = StorageTankZO(
+    m.fs.unit = StorageTankZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
+    m.fs.costing.base_currency = pyunits.USD_2010
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(100)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties[0].flow_vol)
 
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
     assert isinstance(m.fs.costing.storage_tank, Block)
     assert isinstance(m.fs.costing.storage_tank.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.storage_tank.capital_b_parameter, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == lcow_dict[subtype]
+    assert (
+        pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3)
+        == capex_dict[subtype]
+    )
