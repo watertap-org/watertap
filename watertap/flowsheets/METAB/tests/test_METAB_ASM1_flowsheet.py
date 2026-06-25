@@ -30,6 +30,7 @@ from watertap.flowsheets.METAB.METAB_ASM1_flowsheet import (
 
 class TestMETABASM1Flowsheet:
     @pytest.fixture(scope="class")
+    @classmethod
     def model(self):
         m, res = main()
 
