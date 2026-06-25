@@ -23,6 +23,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -117,7 +118,15 @@ class TestStaticMixerZO:
         model.fs.unit.report()
 
 
+@pytest.mark.component
 def test_costing():
+    """
+    Comparing to reference
+    Chemical Engineering Design, 2nd Edition. Principles, Practice and Economics of Plant and Process Design.
+    Table 7.2 eq fit to power eq.
+    Flow = 50 L/s
+    Capex = 6,165 USD
+    """
     m = ConcreteModel()
     m.db = Database()
 
@@ -126,27 +135,39 @@ def test_costing():
     m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2010
 
-    m.fs.unit1 = StaticMixerZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = StaticMixerZO(property_package=m.fs.params, database=m.db)
+    rho = 997 * pyunits.kg / pyunits.m**3
+    flow_vol = 50 * pyunits.liter / pyunits.second
+    flow_mass = rho * flow_vol
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.unit.properties[0].flow_vol
+    m.fs.unit.properties[0].conc_mass_comp
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties[0].flow_vol)
 
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
     assert isinstance(m.fs.costing.static_mixer, Block)
     assert isinstance(m.fs.costing.static_mixer.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.static_mixer.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.static_mixer.reference_state, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
-
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 0.0002963
+    assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 6592.208

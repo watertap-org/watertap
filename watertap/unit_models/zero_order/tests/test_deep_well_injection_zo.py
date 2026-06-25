@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for zero-order well field model
+Tests for zero-order deep well injection model
 """
 
 import pytest
@@ -24,6 +24,7 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -135,6 +136,7 @@ class TestDeepWellInjectionZO:
         model.fs.unit.report()
 
 
+@pytest.mark.component
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
@@ -144,26 +146,47 @@ def test_costing():
     m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2020
 
-    m.fs.unit1 = DeepWellInjectionZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = DeepWellInjectionZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(10)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(20)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(30)
-    m.fs.unit1.load_parameters_from_database()
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    rho = 997 * pyunits.kg / pyunits.m**3
+    flow_vol = 1 * pyunits.Mgallons / pyunits.day
+    flow_mass = flow_vol * rho
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(10)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(20)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(30)
+    m.fs.unit.load_parameters_from_database()
+    m.fs.unit.pipe_diameter.fix(1)
+    m.fs.unit.pipe_distance.fix(1)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    assert_units_consistent(m.fs)
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties[0].flow_vol)
+
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
     assert isinstance(m.fs.costing.deep_well_injection, Block)
     assert isinstance(m.fs.costing.deep_well_injection.well_pump_cost, Var)
     assert isinstance(m.fs.costing.deep_well_injection.pipe_cost_basis, Var)
     assert isinstance(m.fs.costing.deep_well_injection.flow_exponent, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert (
+        pytest.approx(value(m.fs.unit.costing.pipe_cost), rel=1e-3) == 35000
+    )  # pipe_cost_basis
+    assert pytest.approx(value(m.fs.unit.costing.well_cost), rel=1e-3) == 17202970.80
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 0.37768
+    assert (
+        pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 15352031.72
+    )

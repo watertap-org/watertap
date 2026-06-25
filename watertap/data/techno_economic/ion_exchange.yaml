@@ -1,4 +1,4 @@
-default:  # TODO: should have removal rates for (e.g.) sulfate, nitrate, arsenic, etc.
+default:  # TODO: should have removal rates for (e.g.) sulfate, nitrate, arsenic, etc.  
   recovery_frac_mass_H2O:
     value: 1
     units: dimensionless
@@ -7,20 +7,40 @@ default:  # TODO: should have removal rates for (e.g.) sulfate, nitrate, arsenic
     units: dimensionless
   removal_frac_mass_comp:
     tds:
-      value: 0
+      value: 0.9
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
+  energy_electric_flow_vol_inlet:
+    value: 0.00542 
+    units: kWh/m^3
+    reference: Average from output from standard designs from EPA-WBS Anion Exchange model
   NaCl_dose:
-    # Using anion exchange dose as default
-    value: 0.0061
+    value: 0.5486
     units: kg/m^3
+    reference: Average from output from standard designs from EPA-WBS Anion Exchange model 
   resin_replacement:
-    # Using anion exchange replacement rate as default
-    value: 1.36231e-3
+    value: 0.0016
     units: kg/m^3
+    reference: Average from output from standard designs from EPA-WBS Anion Exchange model 
   capital_cost:
     # Using cost parameters for anion exchange as default
     cost_factor: None
+    reference: Regressed from output from standard designs from EPA-WBS Anion Exchange model
+    validity_range:
+      flow_vol:
+        lower_bound:
+          value: 0.305
+          units: Mgallons/day
+        upper_bound:
+          value: 75.072
+          units: Mgallons/day
+      sulfate_influent: # model uses tds concentration, not sulfate
+        lower_bound:
+          value: 50
+          units: mg/L
+        upper_bound:
+          value: 150
+          units: mg/L
     capital_a_parameter:
       value: 8.61434
       units: dimensionless
@@ -42,17 +62,39 @@ anion_exchange:  # TODO: add some differentiation between default, anion, and ca
     units: dimensionless
   removal_frac_mass_comp:
     tds:
-      value: 0
+      value: 0.9
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
+  energy_electric_flow_vol_inlet:
+    value: 0.00542 
+    units: kWh/m^3
+    reference: Average from output from standard designs from EPA-WBS Anion Exchange model
   NaCl_dose:
-    value: 0.0061
+    value: 0.5486
     units: kg/m^3
+    reference: Average from output from standard designs from EPA-WBS Anion Exchange model 
   resin_replacement:
-    value: 1.36231e-3
+    value: 0.0016
     units: kg/m^3
+    reference: Average from output from standard designs from EPA-WBS Anion Exchange model 
   capital_cost:
     cost_factor: None
+    reference: Regressed from output from standard designs from EPA-WBS Anion Exchange model
+    validity_range:
+      flow_vol:
+        lower_bound:
+          value: 0.305
+          units: Mgallons/day
+        upper_bound:
+          value: 75.072
+          units: Mgallons/day
+      sulfate_influent: # model uses tds concentration, not sulfate
+        lower_bound:
+          value: 50
+          units: mg/L
+        upper_bound:
+          value: 150
+          units: mg/L
     capital_a_parameter:
       value: 8.61434
       units: dimensionless
@@ -74,17 +116,39 @@ cation_exchange:
     units: dimensionless
   removal_frac_mass_comp:
     tds:
-      value: 0
+      value: 0.9
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
+  energy_electric_flow_vol_inlet:
+    value: 0.069
+    units: kWh/m^3
+    reference: Average from output from standard designs from EPA-WBS Cation Exchange model
   NaCl_dose:
-    value: 0.0039
+    value: 2.333
     units: kg/m^3
+    reference: Average from output from standard designs from EPA-WBS Cation Exchange model 
   resin_replacement:
-    value: 1.82378e-3
+    value: 0.00237
     units: kg/m^3
+    reference: Average from output from standard designs from EPA-WBS Cation Exchange model 
   capital_cost:
     cost_factor: None
+    reference: Regressed from output from standard designs from EPA-WBS Cation Exchange model 
+    validity_range:
+      flow_vol:
+        lower_bound:
+          value: 0.03
+          units: Mgallons/day
+        upper_bound:
+          value: 75.072
+          units: Mgallons/day
+      tds_influent: 
+        lower_bound:
+          value: 200
+          units: mg/L
+        upper_bound:
+          value: 1000
+          units: mg/L
     capital_a_parameter:
       value: 9.97141
       units: dimensionless

@@ -15,7 +15,6 @@ Tests for zero-order surface discharge model
 
 import pytest
 
-
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -23,19 +22,19 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import SurfaceDischargeZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -244,17 +243,15 @@ def test_costing(subtype):
     m.db = Database()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.params = WaterParameterBlock(solute_list=["toc", "nitrate", "sulfate", "bar"])
+    m.fs.params = WaterParameterBlock(solute_list=["bar"])
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2020
     m.fs.unit = SurfaceDischargeZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
-    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
-    m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(2)
-    m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.3)
-    m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(40)
+    m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(0.01)
 
     m.fs.unit.load_parameters_from_database()
 
@@ -263,15 +260,21 @@ def test_costing(subtype):
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
-    _ = solver.solve(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
+    assert pytest.approx(2132094, rel=1e-3) == value(
+        m.fs.unit.costing.near_shore_discharge
+    )
     if subtype == "default":
-        assert pytest.approx(2.8785, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(2132094, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+        # no pipe costs for default subtype
     if subtype == "emwd":
-        assert pytest.approx(22.705337, rel=1e-5) == value(
+        assert pytest.approx(21732094, rel=1e-3) == value(
             m.fs.unit.costing.capital_cost
         )
+        assert pytest.approx(19600000, rel=1e-5) == value(m.fs.unit.costing.pipe_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

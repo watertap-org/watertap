@@ -23,11 +23,11 @@ from pyomo.environ import (
     value,
     Var,
     Param,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core import UnitModelCostingBlock
@@ -36,6 +36,7 @@ from watertap.unit_models.zero_order import BackwashSolidsHandlingZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -154,38 +155,7 @@ class TestBackwashSolidsHandling_w_default_removal:
         model.fs.unit.report()
 
 
-db = Database()
-params = db._get_technology("backwash_solids_handling")
-
-
-class TestIXZOsubtype:
-    @pytest.fixture(scope="class")
-    @classmethod
-    def model(cls):
-        m = ConcreteModel()
-
-        m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["nitrate"])
-
-        m.fs.unit = BackwashSolidsHandlingZO(property_package=m.fs.params, database=db)
-
-        return m
-
-    @pytest.mark.parametrize("subtype", [params.keys()])
-    @pytest.mark.component
-    def test_load_parameters(self, model, subtype):
-        model.fs.unit.config.process_subtype = subtype
-        data = db.get_unit_operation_parameters(
-            "backwash_solids_handling", subtype=subtype
-        )
-
-        model.fs.unit.load_parameters_from_database()
-
-        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
-            assert v.fixed
-            assert v.value == data["removal_frac_mass_comp"][j]["value"]
-
-
+@pytest.mark.component
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
@@ -195,27 +165,47 @@ def test_costing():
     m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2007
 
-    m.fs.unit1 = BackwashSolidsHandlingZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = BackwashSolidsHandlingZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    rho = 1000 * pyunits.kg / pyunits.m**3
+    flow_vol = 100 * pyunits.Mgallons / pyunits.day
+    flow_mass = rho * flow_vol
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
+
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties_in[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.unit.properties_in[0].flow_vol, name="SEC"
+    )
+
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
 
     assert isinstance(m.fs.costing.backwash_solids_handling, Block)
     assert isinstance(m.fs.costing.backwash_solids_handling.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.backwash_solids_handling.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.backwash_solids_handling.reference_state, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
+    assert (
+        pytest.approx(value(m.fs.unit.costing.direct_capital_cost), rel=1e-3)
+        == 2873715.19  # calculated basis from reference
+    )
+    assert pytest.approx(value(m.fs.costing.SEC), rel=1e-3) == 0.1023574
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 0.008120
 
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
-
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

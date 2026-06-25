@@ -65,16 +65,23 @@ class ChlorinationZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.chlorine_decay_rate)
 
         self.chlorine_dose = Var(
-            self.flowsheet().time, units=pyunits.mg / pyunits.L, doc="Chlorine dose"
+            self.flowsheet().time,
+            # costing correlation is only valid for doses between 1 and 25 mg/L
+            bounds=(1, 25),
+            units=pyunits.mg / pyunits.L,
+            doc="Chlorine dose",
         )
 
         @self.Constraint(self.flowsheet().time, doc="Chlorine dose constraint")
         def chlorine_dose_constraint(b, t):
-            return b.chlorine_dose[t] == self.initial_chlorine_demand[
-                t
-            ] + self.chlorine_decay_rate[t] * self.contact_time[t] + (
-                self.concentration_time[t]
-                / pyunits.convert(self.contact_time[t], to_units=pyunits.minute)
+            return b.chlorine_dose[t] == pyunits.convert(
+                self.initial_chlorine_demand[t]
+                + self.chlorine_decay_rate[t] * self.contact_time[t]
+                + (
+                    self.concentration_time[t]
+                    / pyunits.convert(self.contact_time[t], to_units=pyunits.minute)
+                ),
+                to_units=pyunits.mg / pyunits.liter,
             )
 
         self._perf_var_dict["Chlorine Dose (mg/L)"] = self.chlorine_dose
@@ -116,9 +123,6 @@ class ChlorinationZOData(ZeroOrderBaseData):
             blk.unit_model.config.process_subtype,
             ["capital_a_parameter", "capital_b_parameter", "capital_c_parameter"],
         )
-
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(

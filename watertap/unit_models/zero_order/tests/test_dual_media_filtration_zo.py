@@ -23,6 +23,7 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -317,6 +318,7 @@ class TestDualMediaFiltrationZO_w_default_removal:
         model.fs.unit.report()
 
 
+@pytest.mark.component
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
@@ -326,27 +328,52 @@ def test_costing():
     m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2014
 
-    m.fs.unit1 = DualMediaFiltrationZO(property_package=m.fs.params, database=m.db)
+    m.fs.unit = DualMediaFiltrationZO(property_package=m.fs.params, database=m.db)
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    rho = 1000 * pyunits.kg / pyunits.m**3
+    flow_vol = 30 * pyunits.Mgallons / pyunits.day
+    flow_mass = rho * flow_vol
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit) == 0
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties_in[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.unit.properties_in[0].flow_vol, name="SEC"
+    )
+
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
     assert isinstance(m.fs.costing.dual_media_filtration, Block)
     assert isinstance(m.fs.costing.dual_media_filtration.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.dual_media_filtration.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.dual_media_filtration.reference_state, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert (
+        pytest.approx(value(m.fs.unit.costing.direct_capital_cost), rel=1e-3)
+        == 3828050.12  # equal to basis capital cost
+    )
+    assert pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3) == 6641571.25
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == 0.015489
+    assert pytest.approx(value(m.fs.costing.SEC), rel=1e-3) == 0.05071
+
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
