@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import os
-import importlib.metadata
 
 import pyomo.environ as pyo
 import pytest
