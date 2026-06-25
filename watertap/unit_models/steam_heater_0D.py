@@ -11,183 +11,121 @@
 #################################################################################
 
 
-from idaes.core import (
-    declare_process_block_class,
-)
+from pyomo.environ import NonNegativeReals, Var, units as pyunits
+
+from idaes.core import declare_process_block_class
+from idaes.core.util.model_serializer import to_json, from_json, StoreSpec
 from idaes.models.unit_models.heat_exchanger import HeatExchangerData
-from watertap.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from watertap.costing.unit_models.heat_exchanger import (
-    cost_heat_exchanger,
-)
-from enum import Enum, auto
-from pyomo.common.config import ConfigValue
+
+from watertap.core.solvers import get_solver
+from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
 
 _log = idaeslog.getLogger(__name__)
 
 
 __author__ = "Elmira Shamlou"
 
-"""
-This unit model uses is based on the IDAES `feedwater_heater_0D` model.
-However, the constraints and properties defined in the IDAES unit model do not align with those in the available WaterTAP property packages.
-To address this, alternative constraints have been replaced to ensure full condensation based on the WaterTAP properties. 
-In addition, a condenser option and its corresponding initialization routine have been added, allowing the user to switch between the condenser and steam heater models.
-Note that additional components like desuperheaters, drain mixers, and coolers are not included. If necessary, these can be modeled separately by adding heat exchangers and mixers to the flowsheet.
-To do: Consider incorporating as a modification to IDAES' FeedWaterHeater model directly in the IDAES repo"
-"""
 
-
-class Mode(Enum):
-    HEATER = auto()
-    CONDENSER = auto()
-
-
-@declare_process_block_class(
-    "SteamHeater0D",
-    doc="""Feedwater Heater Condensing Section
-The feedwater heater condensing section model is a normal 0D heat exchanger
-model with an added constraint to calculate the steam flow such that the outlet
-of shell is a saturated liquid.""",
-)
+@declare_process_block_class("SteamHeater0D")
 class SteamHeater0DData(HeatExchangerData):
     CONFIG = HeatExchangerData.CONFIG()
-    CONFIG.declare(
-        "mode",
-        ConfigValue(
-            default=Mode.HEATER,
-            domain=Mode,
-            description="Mode of operation: heater or condenser",
-        ),
-    )
-    CONFIG.declare(
-        "estimate_cooling_water",
-        ConfigValue(
-            default=False,
-            domain=bool,
-            description="Estimate cooling water flow rate for condenser mode",
-        ),
-    )
 
     def build(self):
         super().build()
 
-        @self.Constraint(
+        self.pressure_deltaP = Var(
             self.flowsheet().time,
-            self.hot_side.config.property_package.component_list,
-            doc="Mass balance",
+            initialize=0.0,
+            bounds=(0.0, None),
+            domain=NonNegativeReals,
+            units=pyunits.Pa,
         )
-        def outlet_liquid_mass_balance(b, t, j):
-            lb = b.hot_side.properties_out[t].flow_mass_phase_comp["Vap", j].lb
-            b.hot_side.properties_out[t].flow_mass_phase_comp["Vap", j].fix(lb)
-            return (
-                b.hot_side.properties_in[t].flow_mass_phase_comp["Vap", j]
-                + b.hot_side.properties_in[t].flow_mass_phase_comp["Liq", j]
-                == b.hot_side.properties_out[t].flow_mass_phase_comp["Liq", j]
-            )
+        self.pressure_deltaP.fix(0)
 
-        @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
+        @self.Constraint(self.flowsheet().time)
         def outlet_pressure_sat(b, t):
             return (
                 b.hot_side.properties_out[t].pressure
-                >= b.hot_side.properties_out[t].pressure_sat
+                == b.hot_side.properties_out[t].pressure_sat
+                + b.pressure_deltaP[t]
             )
 
+        self._apply_total_condensation()
+
+    def _apply_total_condensation(self):
+        for t in self.flowsheet().time:
+            for j in self.hot_side.config.property_package.component_list:
+                v = self.hot_side.properties_out[t].flow_mass_phase_comp[
+                    "Vap", j
+                ]
+                v.fix(v.lb)
+
+    def set_subcooling_margin(self, margin_Pa):
+        for t in self.flowsheet().time:
+            self.pressure_deltaP[t].fix(margin_Pa)
+
+    def release_subcooling_margin(self):
+        for t in self.flowsheet().time:
+            self.pressure_deltaP[t].unfix()
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        for t in self.flowsheet().time:
+            sf_p = iscale.get_scaling_factor(
+                self.hot_side.properties_out[t].pressure, default=1e-5
+            )
+            if iscale.get_scaling_factor(self.pressure_deltaP[t]) is None:
+                iscale.set_scaling_factor(self.pressure_deltaP[t], sf_p)
+            if iscale.get_scaling_factor(self.outlet_pressure_sat[t]) is None:
+                iscale.constraint_scaling_transform(
+                    self.outlet_pressure_sat[t], sf_p
+                )
+
     def initialize_build(self, *args, **kwargs):
-        """
-        Initialization routine for both heater and condenser modes. For condenser mode with cooling water estimation, the initialization is performed based on a specified design temperature rise on the cold side.
-        """
         solver = kwargs.get("solver", None)
         optarg = kwargs.get("optarg", {})
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        if self.config.mode == Mode.HEATER:
-            self.hot_side_inlet.fix()
-            self.cold_side_inlet.fix()
-            self.hot_side_outlet.unfix()
-            self.cold_side_outlet.unfix()
-            self.area.fix()
+        flags = to_json(
+            self,
+            return_dict=True,
+            wts=StoreSpec.value_isfixed_isactive(only_fixed=True),
+        )
 
-            self.outlet_liquid_mass_balance.deactivate()
-            self.outlet_pressure_sat.deactivate()
+        self.hot_side_outlet.unfix()
+        self.cold_side_outlet.unfix()
 
-            # regular heat exchanger initialization
-            super().initialize_build(*args, **kwargs)
+        for t in self.flowsheet().time:
+            for sb in (
+                self.hot_side.properties_in[t],
+                self.cold_side.properties_in[t],
+            ):
+                state_var_ids = set()
+                for _name, var in sb.define_state_vars().items():
+                    for idx in var:
+                        state_var_ids.add(id(var[idx]))
+                for v in sb.component_data_objects(Var, descend_into=False):
+                    if id(v) not in state_var_ids and v.fixed:
+                        v.unfix()
 
-            for j in self.hot_side.config.property_package.component_list:
-                self.hot_side.properties_out[0].flow_mass_phase_comp["Vap", j].fix(0)
+        super().initialize_build(*args, **kwargs)
 
-            self.outlet_liquid_mass_balance.activate()
-            self.outlet_pressure_sat.activate()
+        from_json(
+            self,
+            sd=flags,
+            wts=StoreSpec.value_isfixed_isactive(only_fixed=True),
+        )
 
-            for j in self.hot_side.config.property_package.component_list:
-                self.hot_side_inlet.flow_mass_phase_comp[0, "Vap", j].unfix()
-
-            opt = get_solver(solver, optarg)
-
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete (w/ extraction calc): {}".format(
-                    idaeslog.condition(res)
-                )
-            )
-        elif (
-            self.config.mode == Mode.CONDENSER
-            and not self.config.estimate_cooling_water
-        ):
-            # condenser mode without cooling water estimation
-            super().initialize_build(*args, **kwargs)
-            opt = get_solver(solver, optarg)
-
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info("Initialization Complete {}".format(idaeslog.condition(res)))
-
-        elif self.config.mode == Mode.CONDENSER and self.config.estimate_cooling_water:
-
-            # condenser mode with cooling water estimation
-            cold_side_outlet_temperature = self.cold_side_outlet.temperature[0].value
-            self.hot_side_inlet.fix()
-            self.cold_side_inlet.fix()
-            self.cold_side_outlet.unfix()
-
-            super().initialize_build(*args, **kwargs)
-            self.area.unfix()
-            self.cold_side_outlet.temperature[0].fix(cold_side_outlet_temperature)
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"]
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].fix()
-
-            for j in self.cold_side.config.property_package.component_list:
-                self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", j].unfix()
-
-            self.outlet_liquid_mass_balance.activate()
-            self.outlet_pressure_sat.activate()
-
-            opt = get_solver(solver, optarg)
-
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete (w/ cooling water estimation): {}".format(
-                    idaeslog.condition(res)
-                )
-            )
-
-            self.cold_side.properties_in[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
-            self.cold_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"].fix()
-
-            opt = get_solver(solver, optarg)
-
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete (w/ cooling water estimation): {}".format(
-                    idaeslog.condition(res)
-                )
-            )
+        opt = get_solver(solver, optarg)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info(
+            "Initialization Complete: {}".format(idaeslog.condition(res))
+        )
 
     @property
     def default_costing_method(self):
