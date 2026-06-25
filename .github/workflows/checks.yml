@@ -221,19 +221,21 @@ jobs:
         conda-remove-defaults: 'true'
         auto-activate: false
 
-    - name: Define install URL (default)
-      env:
-        _repo_full_name: watertap-org/watertap
-        _ref_to_install: main
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+        ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+    - name: Define install target (default)
       run: |
-        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
-    - name: Define install URL (for PRs)
-      if: github.event.pull_request
-      env:
-        _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
-        _ref_to_install: ${{ github.event.pull_request.head.sha }}
+        echo "_repo_full_name=watertap-org/watertap" >> "$GITHUB_ENV"
+        echo "_ref_to_install=main" >> "$GITHUB_ENV"
+
+    - name: Define install target (for PRs)
+      if: ${{ github.event_name == 'pull_request' }}
       run: |
-        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+        echo "_ref_to_install=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
 
     - name: Bootstrap packaging tools and verify installation
       run: |
@@ -242,7 +244,7 @@ jobs:
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install "watertap @ ${_install_url}" pytest
+        pip install --progress-bar off "git+https://github.com/${_repo_full_name}.git@${_ref_to_install}" pytest pytest-cov
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -252,6 +254,16 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
+    - name: Verify installed watertap version
+      run: |
+        python -c "import importlib.metadata as m; print(m.version('watertap'))"
+        pip show watertap
+    - name: Environment summary
+      uses: ./.github/actions/environment-summary
+      with:
+        python-version: ${{ matrix.python-version }}
+        os: ${{ matrix.os }}
+        job-name: User mode pytest
     - name: Run pytest
       run: |
         pytest --pyargs watertap
