@@ -5,6 +5,7 @@ default:
   capital_cost:
     basis: flow_vol
     cost_factor: None
+    reference: Developed with Aspen Cost Estimation for San Luis Case Study in WT3.
     reference_state:
       value: 45.0
       units: m^3/hr

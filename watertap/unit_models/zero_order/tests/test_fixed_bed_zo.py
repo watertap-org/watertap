@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Tests for zero-order fixed bed model
+Tests for zero-order biological fixed bed (bioreactor) model
 """
 
 import pytest
@@ -23,26 +23,27 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import FixedBedZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
 
 class TestFixedBedZO_w_o_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -201,7 +202,7 @@ class TestFixedBedZO_w_o_default_removal:
         assert pytest.approx(9.9999e-3, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(3082.56, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(1111.0710, rel=1e-5) == value(model.fs.unit.electricity[0])
         assert (
             model.fs.unit.properties_in[0].flow_mass_comp["H2O"].value
             == model.fs.unit.properties_treated[0].flow_mass_comp["H2O"].value
@@ -215,7 +216,8 @@ class TestFixedBedZO_w_o_default_removal:
 
 class TestFixedBedZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -347,7 +349,7 @@ class TestFixedBedZO_w_default_removal:
         assert pytest.approx(0.39984, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(3083.79, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(1111.515, rel=1e-5) == value(model.fs.unit.electricity[0])
         assert (
             model.fs.unit.properties_in[0].flow_mass_comp["H2O"].value
             == model.fs.unit.properties_treated[0].flow_mass_comp["H2O"].value
@@ -363,9 +365,11 @@ db = Database()
 params = db._get_technology("fixed_bed")
 
 
-class TestIXZOsubtype:
+@pytest.mark.component
+class TestFixedBedZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -388,8 +392,18 @@ class TestIXZOsubtype:
             assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
 
-db = Database()
-params = db._get_technology("fixed_bed")
+lcow_dict = {
+    "default": 0.134469,
+    "gravity_basin": 0.141832,
+}
+sec_dict = {
+    "default": 0.03086,
+    "gravity_basin": 0.03072,
+}
+capex_dict = {
+    "default": 7021566.29,  # ~$6.4M from source
+    "gravity_basin": 7762382.22,  # ~$7.1M from source
+}
 
 
 @pytest.mark.component
@@ -400,56 +414,68 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = WaterParameterBlock(solute_list=["tss"])
 
     m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2017
 
-    m.fs.unit1 = FixedBedZO(
+    m.fs.unit = FixedBedZO(
         property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
+    rho = 997 * pyunits.kg / pyunits.m**3
+    flow_vol = 7.365 * pyunits.Mgallons / pyunits.day
+    flow_mass = flow_vol * rho
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(flow_mass)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit) == 0
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.unit.properties_in[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(
+        m.fs.unit.properties_in[0].flow_vol, name="SEC"
+    )
 
-    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.unit.initialize()
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
 
     assert isinstance(m.fs.costing.fixed_bed, Block)
     assert isinstance(m.fs.costing.fixed_bed.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.fixed_bed.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.fixed_bed.reference_state, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
-    assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
-
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.acetic_acid_demand in m.fs.costing._registered_flows["acetic_acid"]
     assert (
-        m.fs.unit1.acetic_acid_demand[0]
-        in m.fs.costing._registered_flows["acetic_acid"]
-    )
-    assert (
-        m.fs.unit1.phosphoric_acid_demand[0]
+        m.fs.unit.phosphoric_acid_demand
         in m.fs.costing._registered_flows["phosphoric_acid"]
     )
     assert (
-        m.fs.unit1.ferric_chloride_demand[0]
+        m.fs.unit.ferric_chloride_demand
         in m.fs.costing._registered_flows["ferric_chloride"]
     )
     assert (
-        m.fs.unit1.activated_carbon_demand[0]
+        m.fs.unit.activated_carbon_demand
         in m.fs.costing._registered_flows["activated_carbon"]
     )
-    assert m.fs.unit1.sand_demand[0] in m.fs.costing._registered_flows["sand"]
+    assert m.fs.unit.sand_demand in m.fs.costing._registered_flows["sand"]
+    assert m.fs.unit.anthracite_demand in m.fs.costing._registered_flows["anthracite"]
     assert (
-        m.fs.unit1.anthracite_demand[0] in m.fs.costing._registered_flows["anthracite"]
-    )
-    assert (
-        m.fs.unit1.cationic_polymer_demand[0]
+        m.fs.unit.cationic_polymer_demand
         in m.fs.costing._registered_flows["cationic_polymer"]
+    )
+
+    assert pytest.approx(value(m.fs.costing.LCOW), rel=1e-3) == lcow_dict[subtype]
+    assert pytest.approx(value(m.fs.costing.SEC), rel=1e-3) == sec_dict[subtype]
+    assert (
+        pytest.approx(value(m.fs.costing.total_capital_cost), rel=1e-3)
+        == capex_dict[subtype]
     )

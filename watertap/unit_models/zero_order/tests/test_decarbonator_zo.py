@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestDecarbonatorZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -130,7 +131,8 @@ class TestDecarbonatorZO:
 
 class TestDecarbonatorZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

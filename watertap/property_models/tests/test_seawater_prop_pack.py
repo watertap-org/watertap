@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
+from pyomo.environ import ConcreteModel
+from idaes.core import FlowsheetBlock
 import watertap.property_models.seawater_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
@@ -162,50 +164,6 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
         }
 
 
-# @pytest.mark.component
-# class TestSeawaterPropertySolution_3(PropertyRegressionTest):
-#     def configure(self):
-#         self.prop_pack = props.SeawaterParameterBlock
-#         self.param_args = {}
-#
-#         self.solver = "ipopt"
-#         self.optarg = {"nlp_scaling_method": "user-scaling"}
-#
-#         self.scaling_args = {
-#             ("flow_vol_phase", "Liq"): 1,
-#         }
-#         self.state_args = {
-#             ("flow_vol_phase", "Liq"): 10,
-#             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.04,
-#             ("temperature", None): 273.15 + 10,
-#             ("pressure", None): 2e6,
-#         }
-#         self.regression_solution = {
-#             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.96,
-#             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.04,
-#             ("dens_mass_phase", "Liq"): 1.039e3,
-#             ("dens_mass_solvent", None): 999.5,
-#             ("flow_vol_phase", "Liq"): 9.628e-4,
-#             ("conc_mass_phase_comp", ("Liq", "H2O")): 986.8,
-#             ("conc_mass_phase_comp", ("Liq", "TDS")): 51.93,
-#             ("flow_mol_phase_comp", ("Liq", "H2O")): 52.73,
-#             ("flow_mol_phase_comp", ("Liq", "TDS")): 1.592,
-#             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9707,
-#             ("mole_frac_phase_comp", ("Liq", "TDS")): 2.931e-2,
-#             ("molality_phase_comp", ("Liq", "TDS")): 1.676,
-#             ("visc_d_phase", "Liq"): 1.443e-3,
-#             ("osm_coeff", None): 0.9106,
-#             ("pressure_osm_phase", "Liq"): 3.591e6,
-#             ("enth_mass_phase", "Liq"): 4.783e4,
-#             ("pressure_sat", None): 1.194e3,
-#             ("cp_mass_phase", "Liq"): 3.916e3,
-#             ("therm_cond_phase", "Liq"): 0.5854,
-#             ("dh_vap_mass", None): 2.353e6,
-#             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
-#             ("boiling_point_elevation_phase", "Liq"): 0.4069,
-#         }
-
-
 @pytest.mark.component
 class TestSeawaterCalculateState_1(PropertyCalculateStateTest):
     def configure(self):
@@ -334,3 +292,13 @@ class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1239.69,
             ("enth_mass_phase", "Liq"): 3.8562e5,
         }
+
+
+@pytest.mark.unit
+def test_list_and_print_properties():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.props = props.SeawaterParameterBlock()
+
+    m.fs.props.list_properties()
+    m.fs.props.print_properties()

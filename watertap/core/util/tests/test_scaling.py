@@ -39,7 +39,8 @@ solver = get_solver()
 # TODO: Consider using dummy metadata rather than importing property package
 class TestScaling:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = props.NaClParameterBlock()

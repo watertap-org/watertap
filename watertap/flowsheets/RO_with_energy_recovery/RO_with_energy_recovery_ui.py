@@ -27,6 +27,14 @@ def export_to_ui():
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
+        build_options={
+            "ERD_type": {
+                "name": "ERD_type",
+                "display_name": "Energy Recovery Device Type",
+                "values_allowed": ["pressure_exchanger", "pump_as_turbine", "no_ERD"],
+                "value": "pump_as_turbine",  # default value
+            },
+        },
     )
 
 
@@ -80,8 +88,42 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="Feed Pump",
         is_output=False,
     )
+    exports.add(
+        obj=fs.P1.control_volume.deltaP[0],
+        name="Feed pump pressure drop",
+        ui_units=pyunits.bar,
+        display_units="bar",
+        rounding=2,
+        description="Pressure change of feed pump",
+        is_input=False,
+        is_output=True,
+        output_category="Feed Pump",
+    )
+    exports.add(
+        obj=fs.P1.work_mechanical[0],
+        name="Feed pump power",
+        ui_units=pyunits.kW,
+        display_units="kW",
+        rounding=2,
+        description="Power of feed pump",
+        is_input=False,
+        is_output=True,
+        output_category="Feed Pump",
+    )
 
     # Unit model data, RO
+    exports.add(
+        obj=fs.RO.area,
+        name="RO membrane area",
+        ui_units=pyunits.m**2,
+        display_units="m2",
+        rounding=2,
+        description="RO membrane area",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=True,
+        output_category="Reverse Osmosis",
+    )
     exports.add(
         obj=fs.RO.A_comp[0, "H2O"],
         name="RO water permeability coefficient",
@@ -93,7 +135,6 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         input_category="Reverse Osmosis",
         is_output=False,
     )
-
     exports.add(
         obj=fs.RO.B_comp[0, "NaCl"],
         name="RO salt permeability coefficient",
@@ -147,123 +188,115 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         description="Stage width",
         is_input=True,
         input_category="Reverse Osmosis",
-        is_output=False,
+        is_output=True,
     )
     exports.add(
-        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
-        name="RO water mass recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
+        obj=fs.RO.length,
+        name="Total membrane length",
+        ui_units=pyunits.m,
+        display_units="m",
         rounding=2,
-        description="Water mass recovery of RO unit",
+        description="Total membrane length",
         is_input=True,
         input_category="Reverse Osmosis",
         is_output=True,
-        output_category="System metrics",
     )
 
     # Unit model data, ERD
-    exports.add(
-        obj=fs.ERD.efficiency_pump[0],
-        name="ERD Pump efficiency",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Efficiency of energy recovery device",
-        is_input=True,
-        input_category="Energy Recovery Device",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.ERD.control_volume.properties_out[0].pressure,
-        name="ERD operating pressure",
-        ui_units=pyunits.bar,
-        display_units="bar",
-        rounding=2,
-        description="Operating pressure of energy recovery device",
-        is_input=True,
-        input_category="Energy Recovery Device",
-        is_output=False,
-    )
+    if build_options["ERD_type"].value == "pump_as_turbine":
+        exports.add(
+            obj=fs.ERD.efficiency_pump[0],
+            name="ERD Pump efficiency",
+            ui_units=pyunits.dimensionless,
+            display_units="fraction",
+            rounding=2,
+            description="Efficiency of energy recovery device",
+            is_input=True,
+            input_category="Energy Recovery Device",
+            is_output=False,
+        )
+        exports.add(
+            obj=fs.ERD.control_volume.properties_out[0].pressure,
+            name="ERD operating pressure",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Operating pressure of energy recovery device",
+            is_input=True,
+            input_category="Energy Recovery Device",
+            is_output=False,
+        )
 
-    # System costing
-    exports.add(
-        obj=fs.costing.utilization_factor,
-        name="Utilization factor",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Utilization factor - [annual use hours/total hours in year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.TIC,
-        name="Total Installed Cost",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=1,
-        description="Total Installed Cost (TIC)",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.TPEC,
-        name="Total Purchased Equipment Cost",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=1,
-        description="Total Purchased Equipment Cost (TPEC)",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.total_investment_factor,
-        name="Total investment factor",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="Total investment factor [investment cost/equipment cost]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.maintenance_labor_chemical_factor,
-        name="Maintenance-labor-chemical factor",
-        ui_units=1 / pyunits.year,
-        display_units="fraction/year",
-        rounding=2,
-        description="Maintenance-labor-chemical factor [fraction of investment cost/year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.capital_recovery_factor,
-        name="Capital annualization factor",
-        ui_units=1 / pyunits.year,
-        display_units="fraction/year",
-        rounding=2,
-        description="Capital annualization factor [fraction of investment cost/year]",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.electricity_cost,
-        name="Electricity cost",
-        ui_units=fs.costing.base_currency / pyunits.kWh,
-        display_units="$/kWh",
-        rounding=3,
-        description="Electricity cost",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
+    # Unit model data, pressure exchanger
+    if build_options["ERD_type"].value == "pressure_exchanger":
+        exports.add(
+            obj=fs.PXR.efficiency_pressure_exchanger[0],
+            name="Pressure exchanger efficiency",
+            ui_units=pyunits.dimensionless,
+            display_units="fraction",
+            rounding=2,
+            description="Efficiency of pressure exchanger",
+            is_input=True,
+            input_category="Pressure exchanger",
+            is_output=False,
+        )
+        exports.add(
+            obj=fs.PXR.brine_side.deltaP[0],
+            name="Pressure exchanger pressure drop",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Pressure change of pressure exchanger",
+            is_input=False,
+            is_output=True,
+            output_category="Pressure exchanger",
+        )
+
+        # Unit model data, booster pump
+        exports.add(
+            obj=fs.P2.efficiency_pump[0],
+            name="Booster pump efficiency",
+            ui_units=pyunits.dimensionless,
+            display_units="fraction",
+            rounding=2,
+            description="Efficiency of booster pump",
+            is_input=True,
+            input_category="Booster Pump",
+            is_output=False,
+        )
+        exports.add(
+            obj=fs.P2.control_volume.properties_out[0].pressure,
+            name="Booster pump operating pressure",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Operating pressure of feed pump",
+            is_input=False,
+            is_output=True,
+            output_category="Booster Pump",
+        )
+        exports.add(
+            obj=fs.P2.control_volume.deltaP[0],
+            name="Booster pump pressure drop",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=2,
+            description="Pressure change of booster pump",
+            is_input=False,
+            is_output=True,
+            output_category="Booster Pump",
+        )
+        exports.add(
+            obj=fs.P2.work_mechanical[0],
+            name="Booster pump power",
+            ui_units=pyunits.kW,
+            display_units="kW",
+            rounding=2,
+            description="Power of booster pump",
+            is_input=False,
+            is_output=True,
+            output_category="Booster Pump",
+        )
 
     # Feed
     exports.add(
@@ -337,15 +370,117 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Disposal",
     )
 
+    # System costing
+    exports.add(
+        obj=fs.costing.utilization_factor,
+        name="Utilization factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Utilization factor - [annual use hours/total hours in year]",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.TIC,
+        name="Total Installed Cost",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=1,
+        description="Total Installed Cost (TIC)",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.TPEC,
+        name="Total Purchased Equipment Cost",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=1,
+        description="Total Purchased Equipment Cost (TPEC)",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.total_investment_factor,
+        name="Total investment factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Total investment factor [investment cost/equipment cost]",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.maintenance_labor_chemical_factor,
+        name="Maintenance-labor-chemical factor",
+        ui_units=1 / pyunits.year,
+        display_units="fraction/year",
+        rounding=2,
+        description="Maintenance-labor-chemical factor [fraction of investment cost/year]",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.capital_recovery_factor,
+        name="Capital annualization factor",
+        ui_units=1 / pyunits.year,
+        display_units="fraction/year",
+        rounding=2,
+        description="Capital annualization factor [fraction of investment cost/year]",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.plant_lifetime,
+        name="Plant lifetime",
+        ui_units=pyunits.year,
+        display_units="years",
+        rounding=1,
+        description="Plant lifetime",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.wacc,
+        name="Discount rate",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Discount rate used in calculating the capital annualization",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.electricity_cost,
+        name="Electricity cost",
+        ui_units=fs.costing.base_currency / pyunits.kWh,
+        display_units="$/kWh",
+        rounding=3,
+        description="Electricity cost",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
+
     # System metrics
     exports.add(
-        obj=fs.RO.area,
-        name="RO membrane area",
-        ui_units=pyunits.m**2,
-        display_units="m^2",
+        obj=fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"],
+        name="RO water mass recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=2,
-        description="Membrane area",
-        is_input=False,
+        description="Water mass recovery of RO unit",
+        is_input=True,
+        input_category="Reverse Osmosis",
         is_output=True,
         output_category="System metrics",
     )
@@ -372,10 +507,55 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="System metrics",
     )
 
+    if build_options["ERD_type"].value == "pressure_exchanger":
+        total_pressure_drop = (
+            fs.P1.control_volume.deltaP[0]
+            + fs.P2.control_volume.deltaP[0]
+            + fs.PXR.brine_side.deltaP[0]
+        )
 
-def build_flowsheet(erd_type=ERDtype.pump_as_turbine, build_options=None, **kwargs):
+        total_power = fs.P1.work_mechanical[0] + fs.P2.work_mechanical[0]
+
+        exports.add(
+            obj=total_pressure_drop,
+            name="Total pressure drop",
+            ui_units=pyunits.bar,
+            display_units="bar",
+            rounding=3,
+            description="Total pressure change",
+            is_input=False,
+            is_output=True,
+            output_category="System metrics",
+        )
+
+        exports.add(
+            obj=total_power,
+            name="Total booster pump power",
+            ui_units=pyunits.kW,
+            display_units="kW",
+            rounding=3,
+            description="Total power of booster pumps",
+            is_input=False,
+            is_output=True,
+            output_category="System metrics",
+        )
+
+
+def build_flowsheet(build_options=None, **kwargs):
     # build and solve initial flowsheet
-    m = build()
+    if build_options is not None:
+        if build_options["ERD_type"].value == "pressure_exchanger":
+            erd_type = ERDtype.pressure_exchanger
+            m = build(erd_type=erd_type)
+        elif build_options["ERD_type"].value == "no_ERD":
+            erd_type = ERDtype.no_ERD
+            m = build(erd_type=erd_type)
+        else:
+            erd_type = ERDtype.pump_as_turbine
+            m = build(erd_type=erd_type)
+    else:
+        erd_type = ERDtype.pump_as_turbine
+        m = build(erd_type=erd_type)
 
     # the UI sets `capital_recovery_factor`, so unfix `wacc`
     m.fs.costing.wacc.unfix()
