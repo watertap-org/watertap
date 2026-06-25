@@ -3235,3 +3235,12 @@ class TestMCASScaler:
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_total_hardness
         ] == pytest.approx(0.0001443, rel=1e-3)
+
+
+@pytest.mark.unit
+def test_list_and_print_properties():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(solute_list=["Na+", "Cl-"])
+    m.fs.properties.list_properties()
+    m.fs.properties.print_properties()
