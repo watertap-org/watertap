@@ -31,7 +31,7 @@ The Steam Heater 0D model supports the following additional configuration option
 .. csv-table::
    :header: "Configuration option", "Description"
 
-   "``mode``", "Initialization mode. Options are ``Mode.HEATER`` and ``Mode.CONDENSER``."
+   "``mode``", "Mode of operation: heater or condenser. Options are ``Mode.HEATER`` and ``Mode.CONDENSER``. Selects the initialization routine."
    "``estimate_cooling_water``", "When ``mode`` is ``Mode.CONDENSER``, optionally estimate the cold-side inlet flow rate from a specified cold-side outlet temperature."
 
 The configuration options affect the initialization routine. The unit model
