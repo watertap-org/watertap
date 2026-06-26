@@ -10,10 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import os
-
-import pyomo.environ as pyo
 import pytest
 import pandas as pd
+import pyomo.environ as pyo
 
 from idaes.apps.grid_integration import PriceTakerModel
 

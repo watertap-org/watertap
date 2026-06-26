@@ -15,7 +15,7 @@ This module contains the default values of all the required
 parameters.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -90,6 +90,8 @@ class IntakeParams(UnitParams):
     minimum_flowrate: float = 1063.5
     nominal_flowrate: float = 1063.5
     maximum_flowrate: float = 1063.5
+    feed_cost: float = None  # in $/m3
+    chemical_cost: float = None  # in $/m3
 
 
 @dataclass
@@ -221,6 +223,7 @@ class PosttreatmentParams(UnitParams):
 
     energy_intensity: float = 0.41
     leakage_fraction: float = 0
+    chemical_cost: float = None  # in $/m3
 
 
 @dataclass
@@ -229,6 +232,7 @@ class BrineDischargeParams(UnitParams):
 
     energy_intensity: float = 0.1
     leakage_fraction: float = 0
+    brine_cost: float = None  # in $/m3
 
 
 @dataclass
@@ -265,6 +269,11 @@ class FlexDesalParams:
     include_battery: bool = False
     include_onsite_solar: bool = False
     onsite_capacity: float = 0
+    # Other parameters not used in tutorial, but have related functions in wrd_flowsheet.py
+    nonworking_hours: list[int] = field(default_factory=list)
+    rainy_days: int = None
+    CAPEX_yr: float = None
+    max_daily_shutdowns: Optional[int] = None
 
     def __post_init__(self):
         self.intake = IntakeParams()
@@ -273,6 +282,9 @@ class FlexDesalParams:
         self.posttreatment = PosttreatmentParams()
         self.brinedischarge = BrineDischargeParams()
         self.battery = Battery()
+        # Only used for second tutorial
+        self.wrd_uf = WRD_UFParams()
+        self.wrd_ro = WRD_ROParams()
 
         # datetime array
         t = np.arange(
@@ -288,3 +300,76 @@ class FlexDesalParams:
         self.num_hours = total_num_seconds / 3600
         self.num_days = self.num_hours / 24
         self.num_months = self.num_days / 31
+
+
+@dataclass
+class WRD_ROParams(UnitParams):
+    """Parameters for the RO unit"""
+
+    num_ro_skids: int = 4
+    minimum_operating_skids: int = 2
+    allow_shutdown: bool = True
+    minimum_flowrate: float = 0
+    nominal_flowrate: float = 337.670
+    maximum_flowrate: float = 400
+    minimum_recovery: float = 0.88
+    nominal_recovery: float = 0.92
+    maximum_recovery: float = 0.925
+    minimum_uptime: int = 2
+    minimum_downtime: int = 2
+    startup_delay: int = 1
+    allow_variable_recovery: bool = False
+    replacement_types: list[str] = field(default_factory=list)
+    replacement_costs: list[float] = field(default_factory=list)
+    replacement_lifetimes: list[float] = field(default_factory=list)
+    replacement_max_flex_penalty: list[float] = field(default_factory=list)
+
+    def __post_init__(self):
+        # self._surrogate = # load the surrogate model here.
+        self.surrogate_type: str = "constant_energy_intensity"
+        self.surrogate_file: Optional[str] = None
+        self.surrogate_a = 1
+        self.surrogate_b = 1
+        self.surrogate_c = 1
+
+    @property
+    def surrogate_coeffs(self):
+        """Returs the coefficients of the surrogate model as a dictionary"""
+        return {
+            "a": self.surrogate_a,
+            "b": self.surrogate_b,
+            "c": self.surrogate_c,
+        }
+
+
+@dataclass
+class WRD_UFParams(UnitParams):
+    """Parameters for the UF unit"""
+
+    num_uf_pumps: int = 4
+    minimum_operating_pumps: int = 1
+    allow_shutdown: bool = True
+    minimum_flowrate: float = 344
+    nominal_flowrate: float = 900
+    maximum_flowrate: float = 989
+    nominal_recovery: float = 1
+    minimum_uptime: int = 2
+    minimum_downtime: int = 2
+    startup_delay: int = 1
+    allow_variable_recovery: bool = False
+
+    def __post_init__(self):
+        # self._surrogate = # load the surrogate model here.
+        self.surrogate_type: str = "quadratic_energy_intensity"
+        self.surrogate_a = 1
+        self.surrogate_b = 1
+        self.surrogate_c = 1
+
+    @property
+    def surrogate_coeffs(self):
+        """Returs the coefficients of the surrogate model as a dictionary"""
+        return {
+            "a": self.surrogate_a,
+            "b": self.surrogate_b,
+            "c": self.surrogate_c,
+        }
