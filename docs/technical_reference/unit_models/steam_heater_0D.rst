@@ -5,7 +5,7 @@ Steam Heater 0D
 
 .. code-block:: python
 
-   from watertap.unit_models.steam_heater_0D import SteamHeater0D, Mode
+   from watertap.unit_models.steam_heater_0D import SteamHeater0D
 
 .. index::
    pair: watertap.unit_models.steam_heater_0D;steam_heater_0D
@@ -19,24 +19,12 @@ The model extends the IDAES heat exchanger with WaterTAP-specific constraints
 for the condensing hot side:
 
 * vapor flow in the hot-side outlet is fixed to its lower bound
-* hot-side inlet vapor and liquid flow are balanced to the hot-side outlet liquid flow
-* hot-side outlet pressure is constrained to be greater than or equal to the
-  saturation pressure of the hot-side outlet state
+* hot-side outlet pressure is constrained to the saturation pressure of the
+  hot-side outlet state plus a non-negative pressure margin
 
-Configuration
--------------
-
-The Steam Heater 0D model supports the following additional configuration options:
-
-.. csv-table::
-   :header: "Configuration option", "Description"
-
-   "``mode``", "Mode of operation: heater or condenser. Options are ``Mode.HEATER`` and ``Mode.CONDENSER``. Selects the initialization routine."
-   "``estimate_cooling_water``", "When ``mode`` is ``Mode.CONDENSER``, optionally estimate the cold-side inlet flow rate from a specified cold-side outlet temperature."
-
-The configuration options affect the initialization routine. The unit model
-equations are built from the base heat exchanger equations plus the condensing
-hot-side constraints listed above.
+The pressure margin is represented by ``pressure_deltaP``. It is fixed to zero
+by default, and users can call ``set_subcooling_margin`` or
+``release_subcooling_margin`` to fix or unfix the margin.
 
 Degrees of Freedom
 ------------------
@@ -52,12 +40,6 @@ flow. Typical specifications include:
 * either heat transfer area or another design/operating variable that closes the
   heat exchanger degrees of freedom
 
-When using ``Mode.HEATER``, the initialization routine can unfix the hot-side
-inlet vapor flow so the model can estimate the required steam flow. When using
-``Mode.CONDENSER`` with ``estimate_cooling_water=True``, the initialization
-routine can estimate the cold-side inlet flow from a fixed cold-side outlet
-temperature.
-
 Model Structure
 ---------------
 
@@ -72,8 +54,42 @@ WaterTAP usage names the two sides ``hot`` and ``cold``:
        cold_side_name="cold",
        hot={"property_package": m.fs.steam_properties},
        cold={"property_package": m.fs.cold_side_properties},
-       mode=Mode.HEATER,
    )
+
+Sets
+----
+
+.. csv-table::
+   :header: "Description", "Symbol", "Indices"
+
+   "Time", ":math:`t`", "[0]"
+   "Phases", ":math:`p`", "['Liq', 'Vap']*"
+   "Components", ":math:`j`", "\*"
+
+\*Phases and components depend on the imported property packages.
+
+Variables
+---------
+
+The Steam Heater 0D model adds the following variable:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Pressure margin above hot-side saturation pressure", ":math:`\Delta P_{sat}`", "``pressure_deltaP``", "[t]", ":math:`\text{Pa}`"
+
+Each hot-side and cold-side property block also contains the state variables
+defined by the selected property packages. Common variables of interest include:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Phase-component mass flow", ":math:`M_{p,j}`", "``flow_mass_phase_comp``", "[p, j]", "\*"
+   "Temperature", ":math:`T`", "``temperature``", "[t]", "\*"
+   "Pressure", ":math:`P`", "``pressure``", "[t]", "\*"
+   "Saturation pressure", ":math:`P_{sat}`", "``pressure_sat``", "[t]", "\*"
+
+\*Units depend on the imported property packages.
 
 Equations and Relationships
 ---------------------------
@@ -82,10 +98,10 @@ In addition to the standard IDAES heat exchanger equations, Steam Heater 0D adds
 the following relationships on the hot side:
 
 .. csv-table::
-   :header: "Description", "Constraint name"
+   :header: "Description", "Equation", "Model object"
 
-   "Condensed hot-side material balance", "``outlet_liquid_mass_balance``"
-   "Hot-side outlet pressure lower bounded by saturation pressure", "``outlet_pressure_sat``"
+   "Total condensation at the hot-side outlet", ":math:`M^{hot,out}_{Vap,j,t} = M^{hot,out,lb}_{Vap,j,t}`", "``hot_side.properties_out[t].flow_mass_phase_comp['Vap', j]``"
+   "Hot-side outlet pressure set by saturation pressure and margin", ":math:`P^{hot,out}_{t} = P^{hot,out}_{sat,t} + \Delta P_{sat,t}`", "``outlet_pressure_sat``"
 
 The model uses the default heat exchanger costing method from
 ``watertap.costing.unit_models.heat_exchanger``.
@@ -96,9 +112,5 @@ Class Documentation
 .. currentmodule:: watertap.unit_models.steam_heater_0D
 
 .. autoclass:: SteamHeater0D
-    :members:
-    :noindex:
-
-.. autoclass:: Mode
     :members:
     :noindex:
