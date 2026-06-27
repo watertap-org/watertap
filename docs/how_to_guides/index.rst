@@ -5,11 +5,16 @@ How To Guides
    :maxdepth: 1
 
    how_to_run_models_in_a_py_script
-   how_to_run_zero_order_model
    how_to_use_a_property_model
    how_to_setup_simple_RO
    how_to_setup_RO_config_options
+   how_to_run_zero_order_model
    how_to_use_MCAS_property_model
+   how_to_use_watertap_costing
+   how_to_add_watertap_costing_to_flowsheet
+   how_to_create_custom_costing_method
+   how_to_cost_a_flow
+   how_to_access_costing_results
    how_to_setup_simple_chemistry
    how_to_use_apparent_and_true_chemical_species
    how_to_use_inherent_reactions
