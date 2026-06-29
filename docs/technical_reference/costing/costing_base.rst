@@ -10,6 +10,7 @@ WaterTAP Costing Framework
 
 The WaterTAP Costing Base class and utility functions contain extensions, methods, and variables and constraints common to all WaterTAP Costing Packages, and which would be useful for creating custom costing packages for WaterTAP.
 
+.. _extensions_over_idaes_costing_framework:
 
 Extensions Over IDAES Costing Framework
 ---------------------------------------
@@ -259,6 +260,7 @@ adjusted to the desired year for the model, accessible on the costing block as `
 The default costing year is 2018, but the user can directly set the ``base_currency`` at 
 the flowsheet level (e.g., ``m.fs.costing.base_currency = pyo.units.USD_2020``).
 
+.. _common_global_costing_parameters:
 
 Common Global Costing Parameters
 --------------------------------

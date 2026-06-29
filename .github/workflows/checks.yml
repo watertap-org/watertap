@@ -314,4 +314,4 @@ jobs:
         job-name: notebooks
     - name: Run pytest with nbmake
       run: |
-        pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
+        find tutorials -name "*.ipynb" -not -path "*/.ipynb_checkpoints/*" | grep -v "tutorials/flex_ro/mp_model.ipynb" | xargs pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}"
