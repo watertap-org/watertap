@@ -408,23 +408,38 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.add_specific_energy_consumption(flow_rate, name=name)
 
     def add_specific_electrical_carbon_intensity(
-        self, flow_rate, name="specific_electrical_carbon_intensity"
+        self,
+        flow_rate,
+        flow_basis="volumetric",
+        name="specific_electrical_carbon_intensity",
     ):
         """
-        Add specific electrical carbon intensity (kg_CO2eq/m**3) to costing block.
+        Add specific electrical carbon intensity (kg_CO2eq/m**3, kg_CO2eq/kg, kg_CO2eq/kWh) to costing block.
         Args:
-            flow_rate - flow rate of water (volumetric) to be used in
-                        calculating specific electrical carbon intensity
+            flow_rate - flow rate to be used in calculating specific electrical carbon intensity
+            flow_basis (optional) - basis for the flow rate, either "volumetric", "mass", or "energy" (default is "volumetric")
             name (optional) - the name of the Expression for the specific
                               carbon intensity (default: specific_electrical_carbon_intensity)
         """
+
+        if flow_basis not in ("volumetric", "mass", "energy"):
+            raise ValueError(
+                f"Unrecognized flow_basis {flow_basis}. Valid options are "
+                "'volumetric', 'mass', and 'energy'."
+            )
+
+        flow_units = {
+            "volumetric": pyo.units.m**3,
+            "mass": pyo.units.kg,
+            "energy": pyo.units.kWh,
+        }[flow_basis]
 
         self.add_component(
             name,
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
                 * self.electrical_carbon_intensity
-                / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr),
+                / pyo.units.convert(flow_rate, to_units=flow_units / pyo.units.hr),
                 doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
