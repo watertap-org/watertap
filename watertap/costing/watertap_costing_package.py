@@ -231,42 +231,15 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     flow_cost * self.utilization_factor
                 ) / denominator
 
-    def add_levelized_cost(self, flow_rate, flow_basis="volumetric", name="LCOW"):
+    def add_LCOW(self, flow_rate, name="LCOW"):
         """
-        Add Levelized Cost of Water (LCOW) or Product (LCOP) to costing block.
+        Add Levelized Cost of Water (LCOW) to costing block.
 
         Args:
-            flow_rate: flow rate to be used in calculating the levelized cost
-            flow_basis: basis for the flow rate, either "volumetric", "mass", or "energy"
-            name: name for the levelized cost expression
+            flow_rate: flow rate of water (volumetric) to be used in calculating LCOW
+            name: name for the levelized cost of water expression (default: LCOW)
         """
-        if flow_basis not in ("volumetric", "mass", "energy"):
-            raise ValueError(
-                f"Unrecognized flow_basis {flow_basis}. Valid options are "
-                "'volumetric', 'mass', and 'energy'."
-            )
-
-        flow_units = {
-            "volumetric": pyo.units.m**3 / self.base_period,
-            "mass": pyo.units.kg / self.base_period,
-            "energy": pyo.units.kW / self.base_period,
-        }[flow_basis]
-
-        denominator = (
-            pyo.units.convert(flow_rate, to_units=flow_units) * self.utilization_factor
-        )
-
-        self.add_component(
-            name,
-            pyo.Expression(
-                expr=(
-                    self.total_capital_cost * self.capital_recovery_factor
-                    + self.total_operating_cost
-                )
-                / denominator,
-                doc=f"Levelized cost based on flow {flow_rate.name}",
-            ),
-        )
+        return self.add_levelized_cost(flow_rate, flow_basis="volumetric", name=name)
 
     @staticmethod
     def _find_flow_unit(flow_expr):
