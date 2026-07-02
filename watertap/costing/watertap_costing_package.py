@@ -391,15 +391,17 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             )
 
         flow_units = {
-            "volumetric": pyo.units.m**3 / self.base_period,
-            "mass": pyo.units.kg / self.base_period,
-            "energy": pyo.units.kWh / self.base_period,
+            "volumetric": pyo.units.m**3,
+            "mass": pyo.units.kg,
+            "energy": pyo.units.kWh,
         }[flow_basis]
 
         self.add_component(
             name,
             pyo.Expression(
-                expr=pyo.units.convert(flow_rate, to_units=flow_units)
+                expr=pyo.units.convert(
+                    flow_rate, to_units=flow_units / self.base_period
+                )
                 * self.utilization_factor,
                 doc=f"Annual production based on flow {flow_rate.name}",
             ),
