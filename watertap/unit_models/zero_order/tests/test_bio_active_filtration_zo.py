@@ -41,7 +41,8 @@ solver = get_solver()
 
 class TestBioActiveFiltrationZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -162,7 +163,8 @@ class TestBioActiveFiltrationZO:
 
 class TestBioActiveFiltrationZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

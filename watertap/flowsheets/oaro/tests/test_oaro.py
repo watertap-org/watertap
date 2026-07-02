@@ -42,7 +42,8 @@ solver = get_solver()
 # -----------------------------------------------------------------------------
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(erd_type=ERDtype.pump_as_turbine)
 
         return m
@@ -121,5 +122,9 @@ class TestOAROwithTurbine:
             build(erd_type="not_a_configuration")
 
     @pytest.mark.component
-    def test_main(self):
-        main(raise_on_failure=True)
+    def test_main_0D(self):
+        main(RO_1D=False, OARO_1D=False, raise_on_failure=True)
+
+    @pytest.mark.component
+    def test_main_1D(self):
+        main(RO_1D=True, OARO_1D=True, raise_on_failure=True)

@@ -41,6 +41,9 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.unit_models.reverse_osmosis_1D import (
+    ReverseOsmosis1D,
+)
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
@@ -69,33 +72,13 @@ from watertap.costing import WaterTAPCosting
 _log = idaeslog.getLogger(__name__)
 
 
-def build_flowsheet(erd_type=None):
-    m = build(erd_type=erd_type)
+def main(erd_type="pressure_exchanger", RO_1D=False):
+    m = build(erd_type=erd_type, RO_1D=RO_1D)
+
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
-    return m
 
-
-def solve_flowsheet(flowsheet=None):
-    m = flowsheet.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
-    initialize_system(m)
-    assert_degrees_of_freedom(m, 0)
-    solve(m, checkpoint="solve flowsheet after initializing system")
-    display_results(m)
-    add_costing(m)
-    initialize_costing(m)
-    assert_degrees_of_freedom(m, 0)
-    solve(m, checkpoint="solve flowsheet with costing")
-
-
-def main(erd_type="pressure_exchanger"):
-    m = build_flowsheet(erd_type=erd_type)
-    # m = build(erd_type=erd_type)
-    #
-    # set_operating_conditions(m)
-    # assert_degrees_of_freedom(m, 0)
-
-    initialize_system(m)
+    initialize_system(m, RO_1D=RO_1D)
     assert_degrees_of_freedom(m, 0)
 
     solve(m, checkpoint=f" solve flowsheet after initializing {erd_type} system")
@@ -111,7 +94,7 @@ def main(erd_type="pressure_exchanger"):
     return m
 
 
-def build(erd_type=None):
+def build(erd_type=None, RO_1D=False):
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()
@@ -158,13 +141,22 @@ def build(erd_type=None):
 
     # desalination
     desal.P1 = Pump(property_package=m.fs.prop_desal)
-    desal.RO = ReverseOsmosis0D(
-        property_package=m.fs.prop_desal,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-    )
+    if RO_1D:
+        desal.RO = ReverseOsmosis1D(
+            property_package=m.fs.prop_desal,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
+    else:
+        desal.RO = ReverseOsmosis0D(
+            property_package=m.fs.prop_desal,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
     desal.RO.width.setub(5000)
     desal.RO.area.setub(20000)
     if erd_type == "pressure_exchanger":
@@ -478,7 +470,7 @@ def set_operating_conditions(m):
     m.fs.landfill.load_parameters_from_database()
 
 
-def initialize_system(m):
+def initialize_system(m, RO_1D=False):
     prtrt = m.fs.pretreatment
     desal = m.fs.desalination
     psttrt = m.fs.posttreatment
@@ -501,18 +493,32 @@ def initialize_system(m):
         m.fs.tb_prtrt_desal.properties_in[0].flow_mass_comp["tds"]
     )
 
-    desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-        m.fs.feed.properties[0].flow_mass_comp["H2O"]
-    )
-    desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"] = value(
-        m.fs.feed.properties[0].flow_mass_comp["tds"]
-    )
-    desal.RO.feed_side.properties_in[0].temperature = value(
-        m.fs.tb_prtrt_desal.properties_out[0].temperature
-    )
-    desal.RO.feed_side.properties_in[0].pressure = value(
-        desal.P1.control_volume.properties_out[0].pressure
-    )
+    if RO_1D:
+        desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "H2O"] = value(
+            m.fs.feed.properties[0].flow_mass_comp["H2O"]
+        )
+        desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "TDS"] = value(
+            m.fs.feed.properties[0].flow_mass_comp["tds"]
+        )
+        desal.RO.feed_side.properties[0, 0].temperature = value(
+            m.fs.tb_prtrt_desal.properties_out[0].temperature
+        )
+        desal.RO.feed_side.properties[0, 0].pressure = value(
+            desal.P1.control_volume.properties_out[0].pressure
+        )
+    else:
+        desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+            m.fs.feed.properties[0].flow_mass_comp["H2O"]
+        )
+        desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"] = value(
+            m.fs.feed.properties[0].flow_mass_comp["tds"]
+        )
+        desal.RO.feed_side.properties_in[0].temperature = value(
+            m.fs.tb_prtrt_desal.properties_out[0].temperature
+        )
+        desal.RO.feed_side.properties_in[0].pressure = value(
+            desal.P1.control_volume.properties_out[0].pressure
+        )
     desal.RO.initialize()
 
     propagate_state(m.fs.s_tb_desal)
@@ -736,6 +742,15 @@ def add_costing(m):
             * b.fs.zo_costing.utilization_factor
         )
 
+    @m.Expression()
+    def SEC(b):
+        # Note: there is no electricity flow in ro_costing
+        return pyunits.convert(
+            b.fs.zo_costing.aggregate_flow_electricity
+            / b.fs.municipal.properties[0].flow_vol,
+            to_units=pyunits.kWh / pyunits.m**3,
+        )
+
     assert_units_consistent(m)
 
 
@@ -751,6 +766,7 @@ def display_costing(m):
     m.total_capital_cost.display()
     m.total_operating_cost.display()
     m.LCOW.display()
+    m.SEC.display()
 
     print("\nUnit Capital Costs\n")
     for u in m.fs.zo_costing._registered_unit_costing:
@@ -780,20 +796,5 @@ def display_costing(m):
         )
 
 
-def export_to_ui():
-    from idaes_flowsheet_processor.api import FlowsheetInterface
-
-    def noop(*args, **kwargs):
-        return
-
-    return FlowsheetInterface(
-        name="Seawater RO",
-        description="Seawater RO desalination",
-        do_export=noop,
-        do_build=noop,
-        do_solve=noop,
-    )
-
-
 if __name__ == "__main__":
-    m = main(erd_type="pressure_exchanger")
+    m = main(erd_type="pressure_exchanger", RO_1D=False)

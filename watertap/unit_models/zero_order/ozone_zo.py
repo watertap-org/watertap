@@ -19,7 +19,6 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, ZeroOrderBaseData
 
-# Some more information about this module
 __author__ = "Kurban Sitterley"
 
 
@@ -34,7 +33,7 @@ class OzoneZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "ozonation"
+        self._tech_type = "ozone"
 
         build_siso(self)
 
@@ -44,23 +43,23 @@ class OzoneZOData(ZeroOrderBaseData):
             )
 
         self.contact_time = Var(
-            self.flowsheet().time, units=pyunits.minute, doc="Ozone contact time"
+            initialize=1, units=pyunits.minute, doc="Ozone contact time"
         )
 
         self.concentration_time = Var(
-            self.flowsheet().time,
+            initialize=0.3,
             units=(pyunits.mg * pyunits.minute) / pyunits.liter,
             doc="CT value for ozone contactor",
         )
 
         self.mass_transfer_efficiency = Var(
-            self.flowsheet().time,
+            initialize=0.8,
             units=pyunits.dimensionless,
             doc="Ozone mass transfer efficiency",
         )
 
         self.specific_energy_coeff = Var(
-            self.flowsheet().time,
+            initialize=5,
             units=pyunits.kWh / pyunits.lb,
             bounds=(0, None),
             doc="Specific energy consumption for ozone generation",
@@ -72,7 +71,6 @@ class OzoneZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.specific_energy_coeff)
 
         self.ozone_flow_mass = Var(
-            self.flowsheet().time,
             initialize=1,
             bounds=(0, None),
             units=pyunits.lb / pyunits.hr,
@@ -80,9 +78,8 @@ class OzoneZOData(ZeroOrderBaseData):
         )
 
         self.ozone_consumption = Var(
-            self.flowsheet().time,
             initialize=1,
-            bounds=(0, None),
+            bounds=(1, 25),  # costs only valid for 1-25 mg/L
             units=pyunits.mg / pyunits.liter,
             doc="Ozone consumption",
         )
@@ -95,34 +92,32 @@ class OzoneZOData(ZeroOrderBaseData):
             doc="Ozone generation power demand",
         )
 
-        @self.Constraint(self.flowsheet().time, doc="Ozone consumption constraint")
-        def ozone_consumption_constraint(b, t):
+        @self.Constraint(doc="Ozone consumption constraint")
+        def ozone_consumption_constraint(b):
             return (
-                b.ozone_consumption[t]
+                b.ozone_consumption
                 == (
                     (
                         pyunits.convert(
-                            b.properties_in[t].conc_mass_comp["toc"],
+                            b.properties_in[0].conc_mass_comp["toc"],
                             to_units=pyunits.mg / pyunits.liter,
                         )
-                        + self.concentration_time[t] / self.contact_time[t]
+                        + self.concentration_time / self.contact_time
                     )
                 )
-                / self.mass_transfer_efficiency[t]
+                / self.mass_transfer_efficiency
             )
 
-        @self.Constraint(self.flowsheet().time, doc="Ozone mass flow constraint")
-        def ozone_flow_mass_constraint(b, t):
-            return b.ozone_flow_mass[t] == pyunits.convert(
-                b.properties_in[t].flow_vol * b.ozone_consumption[t],
+        @self.Constraint(doc="Ozone mass flow constraint")
+        def ozone_flow_mass_constraint(b):
+            return b.ozone_flow_mass == pyunits.convert(
+                b.properties_in[0].flow_vol * b.ozone_consumption,
                 to_units=pyunits.lb / pyunits.hr,
             )
 
-        @self.Constraint(self.flowsheet().time, doc="Ozone power constraint")
-        def electricity_constraint(b, t):
-            return b.electricity[t] == (
-                b.specific_energy_coeff[t] * b.ozone_flow_mass[t]
-            )
+        @self.Constraint(doc="Ozone power constraint")
+        def electricity_constraint(b):
+            return b.electricity[0] == b.specific_energy_coeff * b.ozone_flow_mass
 
         self._perf_var_dict["Ozone Contact Time (min)"] = self.contact_time
         self._perf_var_dict["Ozone CT Value ((mg*min)/L)"] = self.concentration_time
@@ -191,17 +186,17 @@ class OzoneZOData(ZeroOrderBaseData):
         """
         Generate expressions for capital cost of ozonation system.
         """
-        t0 = blk.flowsheet().time.first()
+        # TODO: re-visit capex equation
 
         ln_Q = pyo.log(
             pyo.units.convert(
-                blk.unit_model.properties_in[t0].flow_vol
+                blk.unit_model.properties_in[0].flow_vol
                 / (pyo.units.m**3 / pyo.units.hour),
                 to_units=pyo.units.dimensionless,
             )
         )
         dosage = pyo.units.convert(
-            blk.unit_model.ozone_consumption[t0] / (pyo.units.mg / pyo.units.liter),
+            blk.unit_model.ozone_consumption / (pyo.units.mg / pyo.units.liter),
             to_units=pyo.units.dimensionless,
         )
 

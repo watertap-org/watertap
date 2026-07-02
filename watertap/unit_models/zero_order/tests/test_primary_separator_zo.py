@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestPrimarySeparatorZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -174,7 +175,8 @@ class TestPrimarySeparatorZO:
 
 class TestPrimarySeparatorZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

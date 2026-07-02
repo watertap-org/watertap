@@ -8,10 +8,11 @@ users to model the chemical and physical properties of simple systems without th
 
 .. testsetup::
 
-   # quiet idaes logs
-   import idaes.logger as idaeslogger
-   idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
-   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+    # quiet idaes logs
+    import idaes.logger as idaeslogger
+    idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
+    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
 .. testcode::
     

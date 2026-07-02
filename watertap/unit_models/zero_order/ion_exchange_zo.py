@@ -17,9 +17,13 @@ operation.
 import pyomo.environ as pyo
 from pyomo.environ import Reference, units as pyunits, Var
 from idaes.core import declare_process_block_class
-from watertap.core import build_sido, pump_electricity, ZeroOrderBaseData
+from watertap.core import (
+    build_sido,
+    constant_intensity,
+    pump_electricity,
+    ZeroOrderBaseData,
+)
 
-# Some more information about this module
 __author__ = "Adam Atia"
 
 
@@ -38,15 +42,11 @@ class IonExchangeZOData(ZeroOrderBaseData):
 
         build_sido(self)
         self._Q = Reference(self.properties_in[:].flow_vol)
-        pump_electricity(self, self._Q)
 
-        # mutable parameter; default value found in WT3 for anion exchange
         if self.config.process_subtype == "clinoptilolite":
-            pass
+            pump_electricity(self, self._Q)
         else:
-            self.eta_pump.set_value(0.8)
-            # mutable parameter; default value of 2 bar converted to feet head
-            self.lift_height.set_value(69.91052 * pyunits.feet)
+            constant_intensity(self)
 
         # Add variables and constraints for material requirements
         self.NaCl_flowrate = Var(
