@@ -56,19 +56,37 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
 
-    def add_LCOW(self, flow_rate, name="LCOW"):
+    def add_levelized_cost(self, flow_rate, name="LCOW", flow_basis="volumetric"):
         """
-        Add Levelized Cost of Water (LCOW) to costing block.
+        Add Levelized Cost of Water (LCOW) or Product (LCOP) to costing block.
         Args:
-            flow_rate - flow rate of water (volumetric) to be used in
-                        calculating LCOW
-            name (optional) - name for the LCOW variable (default: LCOW)
+            flow_rate - flow rate to be used in calculating the levelized cost
+            name (optional) - name for the levelized cost expression (default: LCOW)
+            flow_basis (optional) - basis for the flow rate, either "volumetric", "mass", or "energy" (default is "volumetric")
         """
 
+        if flow_basis not in ("volumetric", "mass", "energy"):
+            raise ValueError(
+                f"Unrecognized flow_basis {flow_basis}. Valid options are "
+                "'volumetric', 'mass', and 'energy'."
+            )
+
+        flow_units = {
+            "volumetric": pyo.units.m**3,
+            "mass": pyo.units.kg,
+            "energy": pyo.units.kW,
+        }[flow_basis]
+
         denominator = (
-            pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / self.base_period)
+            pyo.units.convert(flow_rate, to_units=flow_units / self.base_period)
             * self.utilization_factor
         )
+
+        metric_label = {
+            "LCOW": "Levelized Cost of Water",
+            "LCOP": "Levelized Cost of Product",
+        }.get(name, f"Levelized Cost ({name})")
+        doc_string = f"{metric_label} based on flow {flow_rate.name}"
 
         self.add_component(
             name,
@@ -78,31 +96,32 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     + self.total_operating_cost
                 )
                 / denominator,
-                doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
+                doc=doc_string,
             ),
         )
 
         c_units = self.base_currency
         t_units = self.base_period
+        levelized_units = c_units / flow_units
         direct_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by component",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} direct capital expenditure by component",
+            initialize=0 * levelized_units,
         )
         indirect_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by component",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} indirect capital expenditure by component",
+            initialize=0 * levelized_units,
         )
         fixed_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by component",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} fixed operating expenditure by component",
+            initialize=0 * levelized_units,
         )
         variable_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by component",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} variable operating expenditure by component",
+            initialize=0 * levelized_units,
         )
         self.add_component(name + "_component_direct_capex", direct_capex_lcows)
         self.add_component(name + "_component_indirect_capex", indirect_capex_lcows)
@@ -111,23 +130,23 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         agg_direct_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} direct capital expenditure by unit type",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} direct capital expenditure by unit type",
+            initialize=0 * levelized_units,
         )
         agg_indirect_capex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} indirect capital expenditure by unit type",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} indirect capital expenditure by unit type",
+            initialize=0 * levelized_units,
         )
         agg_fixed_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} fixed operating expenditure by unit type",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} fixed operating expenditure by unit type",
+            initialize=0 * levelized_units,
         )
         agg_variable_opex_lcows = pyo.Expression(
             pyo.Any,
-            doc=f"Levelized Cost of Water based on flow {flow_rate.name} variable operating expenditure by unit type",
-            initialize=0 * c_units / pyo.units.m**3,
+            doc=f"{doc_string} variable operating expenditure by unit type",
+            initialize=0 * levelized_units,
         )
         self.add_component(name + "_aggregate_direct_capex", agg_direct_capex_lcows)
         self.add_component(name + "_aggregate_indirect_capex", agg_indirect_capex_lcows)
