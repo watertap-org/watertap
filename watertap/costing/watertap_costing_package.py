@@ -362,18 +362,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name (optional) - name for the annual water production
                               Expression (default: annual_water_production)
         """
-        self.add_component(
-            name,
-            pyo.Expression(
-                expr=(
-                    pyo.units.convert(
-                        flow_rate, to_units=pyo.units.m**3 / self.base_period
-                    )
-                    * self.utilization_factor
-                ),
-                doc=f"Annual water production based on flow {flow_rate.name}",
-            ),
-        )
+        return self.add_annual_total(flow_rate, flow_basis="volumetric", name=name)
 
     def add_annual_total(self, flow_rate, flow_basis="volumetric", name="annual_total"):
         """
