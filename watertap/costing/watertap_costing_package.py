@@ -465,7 +465,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         Args:
             flow_name - name of registered flow
             flow_rate - flow rate of water (volumetric) to be used for normalization
-            name (optional)- base name for the component Expression (default is flow_name)
+            name (optional) - base name for the component Expression (default is flow_name)
             flow_basis (optional) - basis for the flow rate, either "volumetric", "mass", or "energy" (default is "volumetric")
             period (optional) - time period for normalization (default is base_period)
             multiplier (optional) - multiplier for the flow (default is 1.0)
@@ -474,6 +474,15 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         if period is None:
             period = self.base_period
+
+        if name is None:
+            name = flow_name
+
+        if flow_basis not in ("volumetric", "mass", "energy"):
+            raise ValueError(
+                f"Unrecognized flow_basis {flow_basis}. Valid options are "
+                "'volumetric', 'mass', and 'energy'."
+            )
 
         base_flow_units = {
             "volumetric": pyo.units.m**3,
