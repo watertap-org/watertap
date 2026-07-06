@@ -195,7 +195,7 @@ class ModifiedADM1ReactionParameterData(ReactionParameterBlock):
             "X_ac": 0.0006947201,
             "X_h2": 0.0006947201,
             "X_I": 0.0002093322,
-            "X_PP": 1,
+            "X_PP": 1 / 31,
             "X_PAO": 0.0006947201,
         }
 

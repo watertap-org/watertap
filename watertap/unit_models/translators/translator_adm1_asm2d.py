@@ -365,7 +365,7 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         )
         def SIP_AD1(blk, t):
             return (
-                blk.properties_in[t].conc_mass_comp["X_PP"] / mw_XPP
+                blk.properties_in[t].conc_mass_comp["X_PP"] / mw_p
                 + (blk.config.inlet_reaction_package.Pi["X_su"] * blk.biomass[t])
                 - (
                     blk.config.inlet_reaction_package.f_sI_xc

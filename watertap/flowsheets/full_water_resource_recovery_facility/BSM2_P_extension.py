@@ -109,6 +109,8 @@ from watertap.costing.unit_models.clarifier import (
     cost_primary_clarifier,
 )
 
+from idaes.core.util import DiagnosticsToolbox
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -116,44 +118,48 @@ _log = idaeslog.getLogger(__name__)
 def main(bio_P=False):
     m = build(bio_P=bio_P)
     set_operating_conditions(m, bio_P=bio_P)
+    set_scaling(m)
 
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
+    print("---Structural Issues---")
+    dt = DiagnosticsToolbox(m)
+    dt.report_structural_issues()
 
     initialize_system(m, bio_P=bio_P)
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
+    print("---Numerical Issues---")
+    dt.report_numerical_issues()
+
+    import idaes.core.util.scaling as iscale
+
+    # Custom scaling visualization tools
+    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    print("----------------   Scaling Factors   ----------------")
+    for x in badly_scaled_var_list:
+        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
 
     add_costing(m)
     m.fs.costing.initialize()
 
-    scale_system(m, bio_P=bio_P)
-    scaling = pyo.TransformationFactory("core.scale_model")
-    scaled_model = scaling.create_using(m, rename=False)
-
-    solve(scaled_model)
+    results = solve(m)
 
     # Switch to fixed KLa in R5, R6, and R7 (S_O concentration is controlled in R5)
     # KLa for R5 and R6 taken from [1], and KLa for R7 taken from [2]
-    scaled_model.fs.R5.KLa.fix(24.0 / 24)
-    scaled_model.fs.R6.KLa.fix(24.0 / 24)
-    scaled_model.fs.R7.KLa.fix(8.4 / 24)
-    scaled_model.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    scaled_model.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    scaled_model.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
-
-    # Re-solve with controls in place
-    scaled_results = solve(scaled_model)
-    pyo.assert_optimal_termination(scaled_results)
-
-    scaling.propagate_solution(scaled_model, m)
+    # m.fs.R5.KLa.fix(24.0 / 24)
+    # m.fs.R6.KLa.fix(24.0 / 24)
+    # m.fs.R7.KLa.fix(8.4 / 24)
+    # m.fs.R5.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R6.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    # m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
+    #
+    # # Re-solve with controls in place
+    # results = solve(m)
+    # pyo.assert_optimal_termination(results)
 
     display_costing(m)
     display_performance_metrics(m)
 
-    return (
-        m,
-        scaled_results,
-        scaled_model,
-    )
+    return (m, results)
 
 
 def build(bio_P=False):
@@ -494,119 +500,179 @@ def set_operating_conditions(m, bio_P=False):
         mixer.outlet.pressure.fix()
 
 
-def scale_system(m, bio_P=False):
-    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+def set_scaling(m, bio_P=False):
+    asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
+    adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
+
+    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e2
+    # asm2d_scaler.default_scaling_factors["conc_mass_comp[X_PHA]"] = 1e5
+    asm2d_scaler.default_scaling_factors["temperature"] = 1e-2
+    asm2d_scaler.default_scaling_factors["pressure"] = 1e-5
+
+    adm1_scaler.default_scaling_factors["flow_vol"] = 1e2
+    # adm1_scaler.default_scaling_factors["conc_mass_comp"] = 1e2
+    adm1_scaler.default_scaling_factors["temperature"] = 1e-2
+    adm1_scaler.default_scaling_factors["pressure"] = 1e-5
+
+    m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
+    m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
+
+    # Also use global mutation to change the max and min scaling factors
+    # allowed from objects derived from CustomScalerBase, i.e., all the
+    # model scaler objects
+    CustomScalerBase.CONFIG["max_variable_scaling_factor"] = 1e20
+    CustomScalerBase.CONFIG["max_constraint_scaling_factor"] = 1e20
+    CustomScalerBase.CONFIG["max_expression_scaling_hint"] = 1e20
+
+    CustomScalerBase.CONFIG["min_variable_scaling_factor"] = 1e-20
+    CustomScalerBase.CONFIG["min_constraint_scaling_factor"] = 1e-20
+    CustomScalerBase.CONFIG["min_expression_scaling_hint"] = 1e-20
+
     csb = CustomScalerBase()
 
-    ad_scaler = ADScaler()
-    ad_scaler.scale_model(m.fs.AD)
+    for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
+        # if blk.parent_block() is m.fs:
+        if isinstance(blk, UnitModelBlockData):
+            if blk == m.fs.AD:
+                AD_scaler = m.fs.AD.default_scaler()
+                AD_scaler.scale_model(m.fs.AD)
 
-    for vardata in m.fs.AD.KH_co2.values():
-        set_scaling_factor(vardata, 1e1)
-    for vardata in m.fs.AD.KH_ch4.values():
-        set_scaling_factor(vardata, 1e1)
-    for vardata in m.fs.AD.KH_h2.values():
-        set_scaling_factor(vardata, 1e2)
-    for vardata in m.fs.AD.liquid_phase.heat.values():
-        set_scaling_factor(vardata, 1e1)
-    if bio_P:
-        for blkdata in m.fs.AD.liquid_phase.reactions.values():
-            set_scaling_factor(blkdata.S_H, 1e1)
-    else:
-        for blkdata in m.fs.AD.liquid_phase.reactions.values():
-            set_scaling_factor(blkdata.S_H, 1e2)
+                for vardata in m.fs.AD.KH_co2.values():
+                    set_scaling_factor(vardata, 1e1)
+                for vardata in m.fs.AD.KH_ch4.values():
+                    set_scaling_factor(vardata, 1e1)
+                for vardata in m.fs.AD.KH_h2.values():
+                    set_scaling_factor(vardata, 1e2)
+                for vardata in m.fs.AD.liquid_phase.heat.values():
+                    set_scaling_factor(vardata, 1e1)
+                for blkdata in m.fs.AD.liquid_phase.reactions.values():
+                    set_scaling_factor(blkdata.S_H, 1e1)
 
-    cstr_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4]
-    cstr_scaler = CSTRScaler()
-    for unit in cstr_list:
-        cstr_scaler.scale_model(unit)
-
-    for unit in cstr_list:
-        for vardata in unit.hydraulic_retention_time.values():
-            set_scaling_factor(vardata, 1e-3)
-
-    aeration_list = [m.fs.R5, m.fs.R6, m.fs.R7]
-    aeration_scaler = AerationTankScaler()
-    for unit in aeration_list:
-        aeration_scaler.scale_model(unit)
-
-    for R in aeration_list:
-        for vardata in R.KLa.values():
-            set_scaling_factor(vardata, 1e-1)
-        if bio_P:
-            for vardata in R.hydraulic_retention_time.values():
-                set_scaling_factor(vardata, 1e-2)
-
-    reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5, m.fs.R6, m.fs.R7]
-    for unit in reactor_list:
-        for blkdata in unit.control_volume.reactions.values():
-            for vardata in blkdata.rate_expression.values():
-                set_scaling_factor(vardata, 1e3)
-        for condata in unit.cstr_performance_eqn.values():
-            set_scaling_factor(condata, 1e3)
-        for (
-            condata
-        ) in unit.control_volume.rate_reaction_stoichiometry_constraint.values():
-            set_scaling_factor(condata, 1e3)
-        for condata in unit.control_volume.material_balances.values():
-            set_scaling_factor(condata, 1e3)
-
-    if bio_P:
-        for t in m.fs.time:
-            set_scaling_factor(
-                m.fs.R5.control_volume.rate_reaction_generation[t, "Liq", "S_I"], 1e-3
-            )
-            # TODO switch away from constraint_scaling_transform when the flowsheet's
-            # scaling is improved.
-            constraint_scaling_transform(
-                m.fs.R5.control_volume.rate_reaction_stoichiometry_constraint[
-                    t, "Liq", "H2O"
-                ],
-                1e-6,
-            )
-
-    clarifier_list = [m.fs.CL, m.fs.CL2]
-    clarifier_scaler = ClarifierScaler()
-    for unit in clarifier_list:
-        clarifier_scaler.scale_model(unit)
-
-    thickener_scaler = ThickenerScaler()
-    thickener_scaler.scale_model(m.fs.thickener)
-
-    dewaterer_scaler = DewatererScaler()
-    dewaterer_scaler.scale_model(m.fs.dewater)
-
-    as_ad_scaler = ASM2dADM1Scaler()
-    as_ad_scaler.scale_model(m.fs.translator_asm2d_adm1)
-
-    ad_as_scaler = ADM1ASM2dScaler()
-    ad_as_scaler.scale_model(m.fs.translator_adm1_asm2d)
-
-    for vardata in m.fs.P1.control_volume.work.values():
-        set_scaling_factor(vardata, 1e-2)
-
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-        if "flow_vol" in var.name:
-            set_scaling_factor(var, 1e2)
-        if "temperature" in var.name:
-            set_scaling_factor(var, 1e-2)
-        if "pressure" in var.name:
-            set_scaling_factor(var, 1e-5)
-        if "conc_mass_comp" in var.name:
-            set_scaling_factor(var, 1e2)
-        if "anions" in var.name:
-            set_scaling_factor(var, 1e0)
-        if "cations" in var.name:
-            set_scaling_factor(var, 1e1)
-        if "mass_transfer_term" in var.name:
-            set_scaling_factor(var, 1e1)
-
-    for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
-        csb.scale_constraint_by_nominal_value(
-            c,
-            scheme=ConstraintScalingScheme.inverseMaximum,
-            overwrite=True,
-        )
+            elif hasattr(blk, "default_scaler") and blk.default_scaler is not None:
+                print(f"Scaling {blk.name}")
+                scaler = blk.default_scaler()
+                scaler.scale_model(blk)
+            else:
+                print(f"No default scaler for unit model {blk.name}")
+        elif "_expanded" in blk.name:
+            print(f"Scaling {blk.name}")
+            # Expanded arc block
+            for con in blk.component_data_objects(pyo.Constraint):
+                csb.scale_constraint_by_nominal_value(
+                    con, scheme=ConstraintScalingScheme.inverseMaximum
+                )
+    # m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    # csb = CustomScalerBase()
+    #
+    # ad_scaler = ADScaler()
+    # ad_scaler.scale_model(m.fs.AD)
+    #
+    # for vardata in m.fs.AD.KH_co2.values():
+    #     set_scaling_factor(vardata, 1e1)
+    # for vardata in m.fs.AD.KH_ch4.values():
+    #     set_scaling_factor(vardata, 1e1)
+    # for vardata in m.fs.AD.KH_h2.values():
+    #     set_scaling_factor(vardata, 1e2)
+    # for vardata in m.fs.AD.liquid_phase.heat.values():
+    #     set_scaling_factor(vardata, 1e1)
+    # if bio_P:
+    #     for blkdata in m.fs.AD.liquid_phase.reactions.values():
+    #         set_scaling_factor(blkdata.S_H, 1e1)
+    # else:
+    #     for blkdata in m.fs.AD.liquid_phase.reactions.values():
+    #         set_scaling_factor(blkdata.S_H, 1e2)
+    #
+    # cstr_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4]
+    # cstr_scaler = CSTRScaler()
+    # for unit in cstr_list:
+    #     cstr_scaler.scale_model(unit)
+    #
+    # for unit in cstr_list:
+    #     for vardata in unit.hydraulic_retention_time.values():
+    #         set_scaling_factor(vardata, 1e-3)
+    #
+    # aeration_list = [m.fs.R5, m.fs.R6, m.fs.R7]
+    # aeration_scaler = AerationTankScaler()
+    # for unit in aeration_list:
+    #     aeration_scaler.scale_model(unit)
+    #
+    # for R in aeration_list:
+    #     for vardata in R.KLa.values():
+    #         set_scaling_factor(vardata, 1e-1)
+    #     if bio_P:
+    #         for vardata in R.hydraulic_retention_time.values():
+    #             set_scaling_factor(vardata, 1e-2)
+    #
+    # reactor_list = [m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4, m.fs.R5, m.fs.R6, m.fs.R7]
+    # for unit in reactor_list:
+    #     for blkdata in unit.control_volume.reactions.values():
+    #         for vardata in blkdata.rate_expression.values():
+    #             set_scaling_factor(vardata, 1e3)
+    #     for condata in unit.cstr_performance_eqn.values():
+    #         set_scaling_factor(condata, 1e3)
+    #     for (
+    #         condata
+    #     ) in unit.control_volume.rate_reaction_stoichiometry_constraint.values():
+    #         set_scaling_factor(condata, 1e3)
+    #     for condata in unit.control_volume.material_balances.values():
+    #         set_scaling_factor(condata, 1e3)
+    #
+    # if bio_P:
+    #     for t in m.fs.time:
+    #         set_scaling_factor(
+    #             m.fs.R5.control_volume.rate_reaction_generation[t, "Liq", "S_I"], 1e-3
+    #         )
+    #         # TODO switch away from constraint_scaling_transform when the flowsheet's
+    #         # scaling is improved.
+    #         constraint_scaling_transform(
+    #             m.fs.R5.control_volume.rate_reaction_stoichiometry_constraint[
+    #                 t, "Liq", "H2O"
+    #             ],
+    #             1e-6,
+    #         )
+    #
+    # clarifier_list = [m.fs.CL, m.fs.CL2]
+    # clarifier_scaler = ClarifierScaler()
+    # for unit in clarifier_list:
+    #     clarifier_scaler.scale_model(unit)
+    #
+    # thickener_scaler = ThickenerScaler()
+    # thickener_scaler.scale_model(m.fs.thickener)
+    #
+    # dewaterer_scaler = DewatererScaler()
+    # dewaterer_scaler.scale_model(m.fs.dewater)
+    #
+    # as_ad_scaler = ASM2dADM1Scaler()
+    # as_ad_scaler.scale_model(m.fs.translator_asm2d_adm1)
+    #
+    # ad_as_scaler = ADM1ASM2dScaler()
+    # ad_as_scaler.scale_model(m.fs.translator_adm1_asm2d)
+    #
+    # for vardata in m.fs.P1.control_volume.work.values():
+    #     set_scaling_factor(vardata, 1e-2)
+    #
+    # for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    #     if "flow_vol" in var.name:
+    #         set_scaling_factor(var, 1e2)
+    #     if "temperature" in var.name:
+    #         set_scaling_factor(var, 1e-2)
+    #     if "pressure" in var.name:
+    #         set_scaling_factor(var, 1e-5)
+    #     if "conc_mass_comp" in var.name:
+    #         set_scaling_factor(var, 1e2)
+    #     if "anions" in var.name:
+    #         set_scaling_factor(var, 1e0)
+    #     if "cations" in var.name:
+    #         set_scaling_factor(var, 1e1)
+    #     if "mass_transfer_term" in var.name:
+    #         set_scaling_factor(var, 1e1)
+    #
+    # for c in m.fs.component_data_objects(pyo.Constraint, descend_into=True):
+    #     csb.scale_constraint_by_nominal_value(
+    #         c,
+    #         scheme=ConstraintScalingScheme.inverseMaximum,
+    #         overwrite=True,
+    #     )
 
 
 def initialize_system(m, bio_P=False, solver=None):
@@ -739,7 +805,23 @@ def initialize_system(m, bio_P=False, solver=None):
     def function(unit):
         # TODO: Resolve why bio_P=True does not work with the BTInitializer
         if bio_P:
-            unit.initialize(outlvl=idaeslog.DEBUG)
+            # unit.initialize(outlvl=idaeslog.DEBUG)
+            if unit == m.fs.AD:
+                print("Entering exception clause")
+                m.fs.AD.inlet.flow_vol.fix()
+                m.fs.AD.inlet.conc_mass_comp.fix()
+                m.fs.AD.inlet.temperature.fix()
+                m.fs.AD.inlet.pressure.fix()
+
+                solver = get_solver()
+                solver.solve(m.fs.AD, tee=True)
+
+                m.fs.AD.inlet.flow_vol.unfix()
+                m.fs.AD.inlet.conc_mass_comp.unfix()
+                m.fs.AD.inlet.temperature.unfix()
+                m.fs.AD.inlet.pressure.unfix()
+            else:
+                unit.initialize(outlvl=idaeslog.DEBUG)
         else:
             initializer.initialize(unit, output_level=_log.debug)
 
@@ -749,6 +831,8 @@ def initialize_system(m, bio_P=False, solver=None):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
+        solver.options["max_iter"] = 500
+        # solver.options["max_iter"] = 0
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
@@ -1014,7 +1098,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results, scaled_model = main(bio_P=True)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {

@@ -52,6 +52,27 @@ __author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+_comp_list = [
+    "S_A",
+    "S_F",
+    "S_I",
+    "S_N2",
+    "S_NH4",
+    "S_NO3",
+    "S_O2",
+    "S_PO4",
+    "S_K",
+    "S_Mg",
+    "S_IC",
+    "X_AUT",
+    "X_H",
+    "X_I",
+    "X_PAO",
+    "X_PHA",
+    "X_PP",
+    "X_S",
+]
+
 
 @declare_process_block_class("ModifiedASM2dParameterBlock")
 class ModifiedASM2dParameterData(PhysicalParameterBlock):
@@ -353,9 +374,11 @@ class ModifiedASM2dPropertiesScaler(CustomScalerBase):
     pressure is scaled assuming an order of magnitude of 1e5 Pa.
     """
 
+    CONFIG = CustomScalerBase.CONFIG
+
     UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyo.units.Pa, 1e-5),
+        "pressure": (pyo.units.Pa, 1e-5),
     }
 
     DEFAULT_SCALING_FACTORS = {
@@ -363,12 +386,17 @@ class ModifiedASM2dPropertiesScaler(CustomScalerBase):
         "temperature": 1e-2,
     }
 
+    for c in _comp_list:
+        DEFAULT_SCALING_FACTORS[f"conc_mass_comp[{c}]"] = 1e2
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         self.scale_variable_by_default(model.temperature, overwrite=overwrite)
         self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
         self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for idx, var in model.conc_mass_comp.items():
+            self.scale_variable_by_default(var, overwrite=overwrite)
 
     # There are currently no constraints in this model
     def constraint_scaling_routine(
@@ -484,6 +512,8 @@ class ModifiedASM2dStateBlockData(StateBlockData):
     StateBlock for calculating thermophysical proeprties associated with the ASM2d
     reaction system.
     """
+
+    default_scaler = ModifiedASM2dPropertiesScaler
 
     def build(self):
         """
