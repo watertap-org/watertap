@@ -78,6 +78,7 @@ class CSTR_InjectionScaler(CustomScalerBase):
         "hydraulic_retention_time": 1e-3,
         "KLa": 1e-1,
         "mass_transfer_term": 1e2,
+        "rate_reaction_extent": 1e3,
     }
 
     def variable_scaling_routine(
@@ -128,6 +129,12 @@ class CSTR_InjectionScaler(CustomScalerBase):
             model.hydraulic_retention_time[0], overwrite=overwrite
         )
         self.scale_variable_by_default(model.KLa, overwrite=overwrite)
+
+        for rxn in model.config.reaction_package.rate_reaction_idx:
+            self.scale_variable_by_default(
+                model.control_volume.rate_reaction_extent[0, rxn], overwrite=overwrite
+            )
+
         if model.config.has_aeration:
             if "S_O" and "S_O2" in model.config.property_package.component_list:
                 self.scale_variable_by_default(

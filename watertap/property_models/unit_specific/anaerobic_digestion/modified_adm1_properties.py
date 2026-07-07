@@ -258,12 +258,12 @@ class ModifiedADM1PropertiesScaler(CustomScalerBase):
 
     UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
-        "pressure": (pyo.units.Pa, 1e-6),
+        "pressure": (pyo.units.Pa, 1e-5),
     }
 
     DEFAULT_SCALING_FACTORS = {
         "flow_vol": 1e5,
-        "temperature": 1e-1,
+        "temperature": 1e-2,
     }
 
     for c in _comp_list:

@@ -121,11 +121,55 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
         )
 
 
+class ADM1VaporPropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Anaerobic Digestion Model No.1 vapor property package.
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "pressure": (pyo.units.Pa, 1e-6),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e2,
+        "temperature": 1e-1,
+        "conc_mass_comp": 1e2,
+        "pressure_sat": 1e-3,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for c in model.params.component_list:
+            self.scale_variable_by_default(model.pressure_sat[c], overwrite=overwrite)
+        for c in model.params.solute_set:
+            self.scale_variable_by_default(model.conc_mass_comp[c], overwrite=overwrite)
+
+    # There are currently no constraints in this model
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for c in model.component_data_objects(pyo.Constraint, descend_into=True):
+            self.scale_constraint_by_nominal_value(
+                c,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+
 class _ADM1_vaporStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_scaler = ADM1VaporPropertiesScaler
 
     def initialize(
         self,
@@ -216,48 +260,6 @@ class _ADM1_vaporStateBlock(StateBlock):
         # Unfix state variables
         revert_state_vars(self, flags)
         init_log.info("State Released.")
-
-
-class ADM1VaporPropertiesScaler(CustomScalerBase):
-    """
-    Scaler for the Anaerobic Digestion Model No.1 vapor property package.
-    Flow and temperature are scaled by the default value (if no user input provided), and
-    pressure is scaled assuming an order of magnitude of 1e5 Pa.
-    """
-
-    UNIT_SCALING_FACTORS = {
-        # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyo.units.Pa, 1e-6),
-    }
-
-    DEFAULT_SCALING_FACTORS = {
-        "flow_vol": 1e2,
-        "temperature": 1e-1,
-        "conc_mass_comp": 1e2,
-        "pressure_sat": 1e-3,
-    }
-
-    def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
-        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
-        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
-        for c in model.params.component_list:
-            self.scale_variable_by_default(model.pressure_sat[c], overwrite=overwrite)
-        for c in model.params.solute_set:
-            self.scale_variable_by_default(model.conc_mass_comp[c], overwrite=overwrite)
-
-    # There are currently no constraints in this model
-    def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        for c in model.component_data_objects(pyo.Constraint, descend_into=True):
-            self.scale_constraint_by_nominal_value(
-                c,
-                scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite,
-            )
 
 
 @declare_process_block_class("ADM1_vaporStateBlock", block_class=_ADM1_vaporStateBlock)
