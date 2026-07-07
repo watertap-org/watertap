@@ -18,10 +18,9 @@ parameters.
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
-
+from scipy import optimize
 import numpy as np
 from pyomo.environ import exp
-from scipy import optimize
 
 
 @dataclass

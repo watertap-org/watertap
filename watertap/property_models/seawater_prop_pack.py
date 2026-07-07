@@ -10,10 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Initial property package for seawater system
+Property package for seawater system
 """
 
-# Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -27,10 +26,9 @@ from pyomo.environ import (
     log10,
     exp,
     check_optimal_termination,
+    units as pyunits,
 )
-from pyomo.environ import units as pyunits
 
-# Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
@@ -67,6 +65,7 @@ from watertap.core.util.property_helpers import (
     get_property_metadata,
     print_property_metadata,
 )
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

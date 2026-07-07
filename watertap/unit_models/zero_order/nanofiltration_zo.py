@@ -16,7 +16,6 @@ operation.
 
 import pyomo.environ as pyo
 from idaes.core import declare_process_block_class
-from pyomo.environ import Var, units as pyunits
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module
@@ -44,37 +43,37 @@ class NanofiltrationZOData(ZeroOrderBaseData):
         ):
             constant_intensity(self)
         else:
-            self.rejection_comp = Var(
+            self.rejection_comp = pyo.Var(
                 self.flowsheet().time,
                 self.config.property_package.config.solute_list,
-                units=pyunits.dimensionless,
+                units=pyo.units.dimensionless,
                 doc="Component rejection",
             )
 
-            self.water_permeability_coefficient = Var(
+            self.water_permeability_coefficient = pyo.Var(
                 self.flowsheet().time,
-                units=pyunits.L / pyunits.m**2 / pyunits.hour / pyunits.bar,
+                units=pyo.units.L / pyo.units.m**2 / pyo.units.hour / pyo.units.bar,
                 doc="Membrane water permeability coefficient, A",
             )
 
-            self.applied_pressure = Var(
+            self.applied_pressure = pyo.Var(
                 self.flowsheet().time,
-                units=pyunits.bar,
+                units=pyo.units.bar,
                 doc="Net driving pressure across membrane",
             )
 
-            self.area = Var(units=pyunits.m**2, doc="Membrane area")
+            self.area = pyo.Var(units=pyo.units.m**2, doc="Membrane area")
 
             self._fixed_perf_vars.append(self.applied_pressure)
             self._fixed_perf_vars.append(self.water_permeability_coefficient)
 
             @self.Constraint(self.flowsheet().time, doc="Water permeance constraint")
             def water_permeance_constraint(b, t):
-                return b.properties_treated[t].flow_vol == pyunits.convert(
+                return b.properties_treated[t].flow_vol == pyo.units.convert(
                     b.water_permeability_coefficient[t]
                     * b.area
                     * b.applied_pressure[t],
-                    to_units=pyunits.m**3 / pyunits.s,
+                    to_units=pyo.units.m**3 / pyo.units.s,
                 )
 
             @self.Constraint(

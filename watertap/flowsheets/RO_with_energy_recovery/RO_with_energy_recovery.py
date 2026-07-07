@@ -21,32 +21,30 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.network import Arc
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
-from idaes.core.util.initialization import propagate_state
+
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from idaes.models.unit_models.mixer import MomentumMixingType
-from idaes.core import UnitModelCostingBlock
+from idaes.core.util.initialization import propagate_state
+from idaes.models.unit_models import Mixer, Separator, Product, Feed, MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
-import watertap.property_models.NaCl_prop_pack as props
-from watertap.unit_models.reverse_osmosis_0D import (
+from watertap.property_models import NaClParameterBlock
+from watertap.unit_models import (
     ReverseOsmosis0D,
+    ReverseOsmosis1D,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
+    PressureExchanger,
+    Pump,
+    EnergyRecoveryDevice,
 )
-from watertap.unit_models.reverse_osmosis_1D import (
-    ReverseOsmosis1D,
-)
-from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.core.util.unit_models import calculate_operating_pressure
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 _logger = logging.getLogger(__name__)
 
@@ -94,7 +92,8 @@ def build(erd_type=ERDtype.pressure_exchanger, RO_1D=False):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
+    m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)

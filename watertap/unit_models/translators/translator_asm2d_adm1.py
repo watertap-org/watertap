@@ -23,6 +23,14 @@ Water Research, 95, pp.370-382. https://github.com/wwtmodels/Plant-Wide-Models
 """
 
 # Import Pyomo libraries
+from pyomo.environ import (
+    Constraint,
+    Param,
+    units as pyunits,
+    check_optimal_termination,
+    Set,
+    value,
+)
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue
 
 # Import IDAES cores
@@ -33,22 +41,12 @@ from idaes.core.util.config import (
     is_reaction_parameter_block,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
-
-from pyomo.environ import (
-    Constraint,
-    Param,
-    units as pyunits,
-    check_optimal_termination,
-    Set,
-    value,
-)
-
 from idaes.core.util.exceptions import InitializationError
 
 from watertap.core.util.misc import smooth_heaviside
+from watertap.core.solvers import get_solver
 
 __author__ = "Marcus Holly"
 

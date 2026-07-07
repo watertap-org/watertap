@@ -18,6 +18,7 @@ from pyomo.environ import (
     value,
 )
 
+import idaes.logger as idaeslog
 from idaes.core import declare_process_block_class, FlowDirection, useDefault
 from idaes.core.util import scaling as iscale
 from watertap.core import (
@@ -29,7 +30,6 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_base import (
     OsmoticallyAssistedReverseOsmosisBaseData,
     _add_has_full_reporting,
 )
-import idaes.logger as idaeslog
 
 __author__ = "Adam Atia, Chenyu Wang"
 

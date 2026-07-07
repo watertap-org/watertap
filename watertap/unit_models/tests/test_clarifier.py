@@ -21,34 +21,23 @@ from pyomo.environ import (
     Suffix,
     TransformationFactory,
 )
-
-from idaes.core import (
-    FlowsheetBlock,
-)
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
-from watertap.core.solvers import get_solver
-
-from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 import idaes.core.util.scaling as iscale
-
-from watertap.unit_models.clarifier import Clarifier, ClarifierScaler
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.models.unit_models.separator import SplittingType
 
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.unit_models import Clarifier, ClarifierScaler
+from watertap.property_models import (
     ASM1ParameterBlock,
     ASM1PropertiesScaler,
 )
-
-from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.clarifier import (
     cost_circular_clarifier,
     cost_rectangular_clarifier,
     cost_primary_clarifier,
 )
+from watertap.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -501,8 +490,8 @@ class TestClarifierScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             2.955746851e9, rel=1e-3
         )
 
@@ -567,8 +556,8 @@ class TestClarifierScaler:
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+        jac, _ = iscale.get_jacobian(sm, scaled=False)
+        assert (iscale.jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             2729.85, rel=1e-3
         )
 

@@ -28,8 +28,8 @@ from pyomo.environ import (
     log10,
     value,
     check_optimal_termination,
+    units as pyunits,
 )
-from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigValue, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -54,7 +54,6 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.solvers import get_solver
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -68,6 +67,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.solvers import get_solver
 
 boltzmann = pyunits.convert(
     Constants.boltzmann_constant,

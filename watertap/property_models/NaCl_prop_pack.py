@@ -10,13 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Initial property package for H2O-NaCl system
+Property package for H2O-NaCl system
 """
 
-# Import Python libraries
-import idaes.logger as idaeslog
-
-# Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -27,10 +23,10 @@ from pyomo.environ import (
     Suffix,
     value,
     check_optimal_termination,
+    units as pyunits,
 )
-from pyomo.environ import units as pyunits
 
-# Import IDAES cores
+import idaes.logger as idaeslog
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
@@ -49,7 +45,6 @@ from idaes.core.util.initialization import (
     solve_indexed_blocks,
 )
 from idaes.core.util.misc import extract_data
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -62,6 +57,7 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.solvers import get_solver
 from watertap.core.util.property_helpers import (
     get_property_metadata,
     print_property_metadata,

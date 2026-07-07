@@ -14,7 +14,6 @@ import pytest
 from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models.heat_exchanger import (
     HeatExchanger,
@@ -25,7 +24,8 @@ import idaes.core.util.scaling as iscale
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
 )
-import watertap.property_models.seawater_prop_pack as props
+from watertap.property_models import SeawaterParameterBlock
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -36,7 +36,7 @@ solver = get_solver()
 def test_heat_exchanger():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.properties = SeawaterParameterBlock()
     m.fs.unit = HeatExchanger(
         hot_side_name="hot",
         cold_side_name="cold",

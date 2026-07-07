@@ -10,7 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-# Import Pyomo libraries
+from copy import copy
+
 from pyomo.environ import (
     Var,
     Suffix,
@@ -18,9 +19,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from copy import copy
 
-# Import IDAES cores
 from idaes.core import (
     ControlVolume0DBlock,
     declare_process_block_class,
@@ -30,7 +29,6 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
@@ -38,6 +36,7 @@ import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
 from watertap.costing.unit_models.compressor import cost_compressor
+from watertap.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
 

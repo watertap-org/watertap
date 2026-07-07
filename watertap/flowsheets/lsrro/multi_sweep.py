@@ -10,12 +10,13 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from parameter_sweep import LinearSample, parameter_sweep
+
 from pyomo.environ import (
     units as pyunits,
     Expression,
 )
 
-from parameter_sweep import LinearSample, parameter_sweep
 from watertap.flowsheets.lsrro import lsrro
 
 

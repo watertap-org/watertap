@@ -12,7 +12,6 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-import watertap.property_models.seawater_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
@@ -21,12 +20,13 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyRegressionTest,
     PropertyCalculateStateTest,
 )
+from watertap.property_models import SeawaterParameterBlock
 
 
 # -----------------------------------------------------------------------------
 class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
         self.prop_args = {}
         self.has_density_terms = True
@@ -34,7 +34,7 @@ class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
 
 class TestSeawaterProperty(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
@@ -75,7 +75,7 @@ class TestSeawaterProperty(PropertyTestHarness):
 @pytest.mark.component
 class TestSeawaterPropertySolution_1(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -121,7 +121,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
 @pytest.mark.component
 class TestSeawaterPropertySolution_2(PropertyRegressionTest):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -167,7 +167,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
 @pytest.mark.component
 class TestSeawaterCalculateState_1(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -192,7 +192,7 @@ class TestSeawaterCalculateState_1(PropertyCalculateStateTest):
 @pytest.mark.component
 class TestNaClCalculateState_2(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -217,7 +217,7 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
 @pytest.mark.component
 class TestNaClCalculateState_3(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -243,7 +243,7 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
 @pytest.mark.component
 class TestSeawaterCalculateState_4(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -270,7 +270,7 @@ class TestSeawaterCalculateState_4(PropertyCalculateStateTest):
 @pytest.mark.component
 class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
     def configure(self):
-        self.prop_pack = props.SeawaterParameterBlock
+        self.prop_pack = SeawaterParameterBlock
         self.param_args = {}
 
         self.solver = "ipopt"
@@ -298,7 +298,7 @@ class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
 def test_list_and_print_properties():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.props = props.SeawaterParameterBlock()
+    m.fs.props = SeawaterParameterBlock()
 
     m.fs.props.list_properties()
     m.fs.props.print_properties()

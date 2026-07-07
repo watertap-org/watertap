@@ -2,6 +2,9 @@
 
 ASM2D Property Package
 ======================
+.. code-block:: python
+
+   from watertap.property_models import ASM2dParameterBlock
 
 This package implements properties and reactions of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with biological phosphorus removal as provided in Henze, M. et al. (1999) [1].
 

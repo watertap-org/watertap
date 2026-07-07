@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import logging
+
 from pyomo.environ import (
     value,
     Var,
@@ -21,7 +23,6 @@ from idaes.core import (
     FlowsheetBlock,
     register_idaes_currency_units,
 )
-import logging
 
 __author__ = "Alexander V. Dudchenko"
 

@@ -10,11 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-# Import Pyomo libraries
 from pyomo.environ import Suffix, check_optimal_termination
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
-# Import IDAES cores
 from idaes.core import (
     ControlVolume0DBlock,
     declare_process_block_class,
@@ -24,7 +22,6 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -32,6 +29,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import InitializationMixin
+from watertap.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
 

@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from enum import Enum, auto
 
 from pyomo.environ import (
     NonNegativeReals,
@@ -21,27 +22,26 @@ from pyomo.environ import (
     Constraint,
     log,
 )
-from enum import Enum, auto
 
+import idaes.logger as idaeslog
 from idaes.core import UnitModelBlockData
-from watertap.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.logger as idaeslog
-from watertap.core import InitializationMixin
 
 from .MD_channel_base import (
     ConcentrationPolarizationType,
     TemperaturePolarizationType,
     MassTransferCoefficient,
 )
+from watertap.core import InitializationMixin
 from watertap.costing.unit_models.membrane_distillation import (
     cost_membrane_distillation,
 )
 from watertap.core.util.initialization import interval_initializer
+from watertap.core.solvers import get_solver
 
 __author__ = "Elmira Shamlou"
 

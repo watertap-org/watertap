@@ -30,7 +30,7 @@ An example usage is provided below.
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
-   from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
+   from watertap.property_models import SeawaterParameterBlock
    from watertap.unit_models import ReverseOsmosis0D
    from watertap.core.solvers import get_solver
    from watertap.core.util import calculate_operating_pressure

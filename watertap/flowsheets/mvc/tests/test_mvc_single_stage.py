@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     Block,
@@ -20,12 +21,12 @@ from pyomo.environ import (
     Objective,
     assert_optimal_termination,
 )
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
 from idaes.models.unit_models import Feed, Product, Mixer, Separator
 from idaes.models.unit_models.heat_exchanger import HeatExchanger
 from idaes.models.unit_models.translator import Translator
-from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import degrees_of_freedom, number_total_objectives
 
 from watertap.flowsheets.mvc.mvc_single_stage import (
@@ -39,11 +40,10 @@ from watertap.flowsheets.mvc.mvc_single_stage import (
     set_up_optimization,
     main,
 )
-
-import watertap.property_models.seawater_prop_pack as props_seawater
-import watertap.property_models.water_prop_pack as props_water
-from watertap.unit_models.pressure_changer import Pump
+from watertap.unit_models import Pump
 from watertap.unit_models.mvc.components import Evaporator, Compressor, Condenser
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
+from watertap.core.solvers import get_solver
 
 solver = get_solver()
 
@@ -63,8 +63,8 @@ class TestMVC:
         # test model set up
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties_feed, props_seawater.SeawaterParameterBlock)
-        assert isinstance(m.fs.properties_vapor, props_water.WaterParameterBlock)
+        assert isinstance(m.fs.properties_feed, SeawaterParameterBlock)
+        assert isinstance(m.fs.properties_vapor, WaterParameterBlock)
         assert isinstance(m.fs.costing, Block)
 
         # test unit models

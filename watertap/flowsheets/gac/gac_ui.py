@@ -14,16 +14,17 @@ GUI configuration for the GAC model.
 """
 
 from pyomo.environ import units as pyunits
-from idaes.core import MaterialFlowBasis
+
+from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
+
 from watertap.core.solvers import get_solver
-from watertap.property_models.multicomp_aq_sol_prop_pack import DiffusivityCalculation
-from watertap.unit_models.gac import (
+from watertap.property_models import MaterialFlowBasis, DiffusivityCalculation
+from watertap.unit_models import (
     FilmTransferCoefficientType,
     SurfaceDiffusionCoefficientType,
 )
 from watertap.costing.unit_models.gac import ContactorType
 from watertap.flowsheets.gac import gac as gac_fs
-from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
 
 __author__ = "Hunter Barber"
 

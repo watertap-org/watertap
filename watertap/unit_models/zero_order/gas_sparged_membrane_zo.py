@@ -14,13 +14,14 @@ This module contains a zero-order representation of a gas-sparged membrane unit.
 """
 
 from types import MethodType
-from idaes.core import declare_process_block_class
+from pyomo.environ import NonNegativeReals, Var, Reference, units as pyunits
 
-from watertap.core import pump_electricity, ZeroOrderBaseData
+from idaes.core import declare_process_block_class
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from pyomo.environ import NonNegativeReals, Var, units as pyunits, Reference
+
 from watertap.core.zero_order_sido import initialize_sido
+from watertap.core import pump_electricity, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Adam Atia"

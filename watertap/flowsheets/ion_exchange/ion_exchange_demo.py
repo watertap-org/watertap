@@ -9,6 +9,9 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+
+import math
+
 from pyomo.environ import (
     ConcreteModel,
     Objective,
@@ -25,12 +28,10 @@ from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import Product, Feed
 
 from watertap.core.util.initialization import check_dof
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.unit_models.ion_exchange_0D import IonExchange0D
+from watertap.property_models import MCASParameterBlock
+from watertap.unit_models import IonExchange0D
 from watertap.costing import WaterTAPCosting
 from watertap.core.solvers import get_solver
-
-import math
 
 solver = get_solver()
 

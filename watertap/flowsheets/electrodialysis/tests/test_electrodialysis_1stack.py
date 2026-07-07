@@ -32,7 +32,7 @@ from watertap.unit_models.electrodialysis_1D import (
     Electrodialysis1D,
 )
 
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+from watertap.property_models import MCASParameterBlock
 
 import watertap.flowsheets.electrodialysis.electrodialysis_1stack as edfs
 

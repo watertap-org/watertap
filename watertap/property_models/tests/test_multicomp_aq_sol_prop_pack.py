@@ -69,7 +69,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 from idaes.models.unit_models import Feed, Mixer
 import idaes.logger as idaeslog
 
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
+from watertap.property_models import (
     MCASParameterBlock,
     MCASStateBlock,
     ActivityCoefficientModel,

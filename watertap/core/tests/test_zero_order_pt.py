@@ -23,7 +23,8 @@ from pyomo.environ import ConcreteModel, value
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
-from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
+from watertap.core import ZeroOrderBaseData
+from watertap.property_models import ZOParameterBlock, ZOStateBlock
 from watertap.core.zero_order_pt import (
     build_pt,
     initialize_pt,
@@ -49,7 +50,7 @@ class TestPT:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.water_props = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.unit = DerivedPT(property_package=m.fs.water_props)
 
@@ -78,7 +79,7 @@ class TestPT:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert isinstance(model.fs.unit.properties, WaterStateBlock)
+        assert isinstance(model.fs.unit.properties, ZOStateBlock)
 
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.outlet, Port)

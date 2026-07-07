@@ -11,21 +11,16 @@
 #################################################################################
 
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     assert_optimal_termination,
 )
+
 from idaes.core import (
     FlowsheetBlock,
 )
-from watertap.unit_models.osmotically_assisted_reverse_osmosis_1D import (
-    OsmoticallyAssistedReverseOsmosis1D,
-)
-from watertap.unit_models.reverse_osmosis_base import TransportModel
-import watertap.property_models.NaCl_prop_pack as props
-
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
@@ -34,12 +29,17 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
 )
 
+from watertap.unit_models import (
+    OsmoticallyAssistedReverseOsmosis1D,
+)
+from watertap.unit_models.reverse_osmosis_base import TransportModel
+from watertap.property_models import NaClParameterBlock
+from watertap.core.solvers import get_solver
 from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
-
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 # -----------------------------------------------------------------------------
@@ -52,7 +52,7 @@ def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -186,7 +186,7 @@ def build_SKK():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -335,7 +335,7 @@ def build_SKK_CP_calculation_with_kf_calculation():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -519,7 +519,7 @@ def build_SKK_CP_calculation_with_kf_fixed():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -702,7 +702,7 @@ def build_CP_calculation_with_kf_calculation():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -866,7 +866,7 @@ def build_Pdrop_fixed_per_unit_length():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -1038,7 +1038,7 @@ def build_Pdrop_calculation():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
 
     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
         property_package=m.fs.properties,
@@ -1210,7 +1210,7 @@ class TestOsmoticallyAssistedReverseOsmosis_water_recovery:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props.NaClParameterBlock()
+        m.fs.properties = NaClParameterBlock()
 
         m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
             property_package=m.fs.properties,

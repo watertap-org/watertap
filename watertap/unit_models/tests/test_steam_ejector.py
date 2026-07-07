@@ -10,15 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from pyomo.environ import (
-    ConcreteModel,
-)
+from pyomo.environ import ConcreteModel
 
-from idaes.core import FlowsheetBlock
-import watertap.property_models.water_prop_pack as props_w
-from watertap.unit_models.steam_ejector import SteamEjector
-from watertap.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core import FlowsheetBlock
+
+from watertap.property_models import WaterParameterBlock
+from watertap.unit_models import SteamEjector
+from watertap.core.solvers import get_solver
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 solver = get_solver()
@@ -27,7 +26,7 @@ solver = get_solver()
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = props_w.WaterParameterBlock()
+    m.fs.properties = WaterParameterBlock()
 
     m.fs.unit = SteamEjector(
         property_package=m.fs.properties,

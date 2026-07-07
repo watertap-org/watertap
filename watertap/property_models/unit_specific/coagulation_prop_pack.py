@@ -24,9 +24,8 @@ from pyomo.environ import (
     value,
     exp,
     check_optimal_termination,
+    units as pyunits,
 )
-
-from pyomo.environ import units as pyunits
 
 # Import IDAES cores
 from idaes.core import (

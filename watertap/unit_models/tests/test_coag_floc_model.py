@@ -10,23 +10,26 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
-from watertap.property_models.unit_specific.coagulation_prop_pack import (
-    CoagulationParameterBlock,
-)
-from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
-from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
-from watertap.unit_models.coag_floc_model import CoagulationFlocculation
+import re
+
 from pyomo.environ import (
     ConcreteModel,
     value,
     units as pyunits,
 )
+
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
-from watertap.core.solvers import get_solver
+
+from watertap.property_models import (
+    CoagulationParameterBlock,
+    NaClParameterBlock,
+    SeawaterParameterBlock,
+)
+from watertap.unit_models import CoagulationFlocculation
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
-import re
+from watertap.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
 

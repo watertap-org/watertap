@@ -13,7 +13,6 @@
 import math
 import os
 import pytest
-
 import pandas as pd
 
 from watertap.flowsheets.lsrro.multi_sweep import run_case

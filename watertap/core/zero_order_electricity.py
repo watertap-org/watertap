@@ -14,11 +14,10 @@ This module contains common methods for determining the electricity intensity
 and demand for zero-order unit models.
 """
 
-import idaes.logger as idaeslog
-
 from pyomo.environ import Param, Var, units as pyunits
 
-# Some more information about this module
+import idaes.logger as idaeslog
+
 __author__ = "Andrew Lee"
 
 # Set up logger

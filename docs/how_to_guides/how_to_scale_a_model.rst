@@ -37,12 +37,12 @@ This object is a Pyomo Suffix and can be displayed to show what variables have s
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
-   import watertap.property_models.NaCl_prop_pack as props
-   from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+   from watertap.property_models import NaClParameterBlock
+   from watertap.unit_models import ReverseOsmosis0D
 
    m = ConcreteModel()
    m.fs = FlowsheetBlock(dynamic=False)
-   m.fs.properties = props.NaClParameterBlock()
+   m.fs.properties = NaClParameterBlock()
 
    m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
@@ -98,12 +98,13 @@ A user can achieve this by setting the default scaling at the property Parameter
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
-   import watertap.property_models.NaCl_prop_pack as props
-   from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+   from watertap.property_models import NaClParameterBlock
+   
+   from watertap.unit_models import ReverseOsmosis0D
 
    m = ConcreteModel()
    m.fs = FlowsheetBlock(dynamic=False)
-   m.fs.properties = props.NaClParameterBlock()
+   m.fs.properties = NaClParameterBlock()
 
    prop = m.fs.properties
    var_name = 'flow_mass_phase_comp'

@@ -3,6 +3,10 @@
 Electrocoagulation (0D)
 =======================
 
+.. code-block:: python
+
+   from watertap.unit_models import Electrocoagulation
+
 .. index::
    pair: watertap.unit_models.electrocoagulation;electrocoagulation
 

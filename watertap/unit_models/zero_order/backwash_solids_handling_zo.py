@@ -13,8 +13,8 @@
 This module contains a zero-order representation of a backwash solids handling unit.
 """
 
-from idaes.core import declare_process_block_class
 from pyomo.environ import Reference
+from idaes.core import declare_process_block_class
 from watertap.core import build_sido, pump_electricity, ZeroOrderBaseData
 
 # Some more information about this module

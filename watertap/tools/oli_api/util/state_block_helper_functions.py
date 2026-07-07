@@ -20,10 +20,9 @@ from pyomo.environ import (
 
 from idaes.core import FlowsheetBlock, MaterialFlowBasis
 from idaes.core.util.scaling import calculate_scaling_factors
+
 from watertap.core.solvers import get_solver
-
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-
+from watertap.property_models import MCASParameterBlock
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
     get_molar_mass,
     get_charge,

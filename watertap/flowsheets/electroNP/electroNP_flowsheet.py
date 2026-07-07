@@ -11,48 +11,43 @@
 #################################################################################
 __author__ = "Chenyu Wang"
 
-import pyomo.environ as pyo
 from pyomo.environ import (
+    ConcreteModel,
+    Var,
     units,
     value,
     assert_optimal_termination,
+    TransformationFactory,
     units as pyunits,
 )
 from pyomo.network import Arc
+
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
 )
-from watertap.core.solvers import get_solver
-import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
-from watertap.unit_models.anaerobic_digester import AD
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
-    ModifiedADM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties_vapor import (
-    ADM1_vaporParameterBlock,
-)
-from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_reactions import (
-    ModifiedADM1ReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reactions import (
-    ModifiedASM2dReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
-)
-from watertap.unit_models.translators.translator_adm1_asm2d import (
-    Translator_ADM1_ASM2D,
-)
-from watertap.unit_models.electroNP_ZO import ElectroNPZO
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
 from idaes.core.util.initialization import propagate_state
+import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+
+from watertap.unit_models import AD, ElectroNPZO
+from watertap.unit_models.translators.translator_adm1_asm2d import (
+    Translator_ADM1_ASM2D,
+)
+from watertap.property_models import (
+    ModifiedADM1ParameterBlock,
+    ADM1_vaporParameterBlock,
+    ModifiedADM1ReactionParameterBlock,
+    ModifiedASM2dReactionParameterBlock,
+    ModifiedASM2dParameterBlock,
+)
 from watertap.core.util.initialization import check_solve
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -60,7 +55,7 @@ _log = idaeslog.getLogger(__name__)
 
 def build_flowsheet():
     # flowsheet set up
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props_ADM1 = ModifiedADM1ParameterBlock()
@@ -102,7 +97,7 @@ def build_flowsheet():
     m.fs.stream_translator_electroNP = Arc(
         source=m.fs.translator_adm1_asm2d.outlet, destination=m.fs.electroNP.inlet
     )
-    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+    TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Feed conditions based on mass balance in Flores-Alsina, where 0 terms are expressed as 1e-9
     m.fs.AD.inlet.flow_vol[0].fix(
@@ -154,7 +149,7 @@ def build_flowsheet():
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
     # Scaling
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    for var in m.fs.component_data_objects(Var, descend_into=True):
         if "flow_vol" in var.name:
             iscale.set_scaling_factor(var, 1e2)
         if "temperature" in var.name:

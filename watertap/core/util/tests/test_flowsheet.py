@@ -15,6 +15,8 @@ import pandas as pd
 
 import pyomo.environ as pyo
 from pyomo.network import Arc
+
+import idaes.logger as idaeslog
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import (
     Feed,
@@ -23,14 +25,8 @@ from idaes.models.unit_models import (
 )
 
 from watertap.core.util.flowsheet import list_ports
-from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
-)
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
-)
-import idaes.logger as idaeslog
+from watertap.property_models import SeawaterParameterBlock, ModifiedASM2dParameterBlock
+from watertap.unit_models import ReverseOsmosis0D
 
 
 @pytest.fixture

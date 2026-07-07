@@ -20,13 +20,13 @@ from pyomo.environ import (
 )
 from idaes.core.util.initialization import solve_indexed_blocks
 
-from watertap.property_models.seawater_prop_pack import SeawaterStateBlockData
-from watertap.property_models.NaCl_prop_pack import NaClStateBlockData
-from watertap.property_models.NaCl_T_dep_prop_pack import (
-    NaClStateBlockData as NaClTDepStateBlockData,
-)
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASStateBlockData
 from watertap.core import MembraneChannel0DBlock, MembraneChannel1DBlock
+from watertap.property_models import (
+    SeawaterStateBlockData,
+    NaClStateBlockData,
+    NaClTDepStateBlockData,
+    MCASStateBlockData,
+)
 from watertap.core.solvers import get_solver
 
 

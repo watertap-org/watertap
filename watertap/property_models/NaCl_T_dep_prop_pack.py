@@ -10,11 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Initial property package for H2O-NaCl system with temperature dependence
+Property package for H2O-NaCl system with temperature dependence
 """
-
-# Import Python libraries
-import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -27,10 +24,10 @@ from pyomo.environ import (
     Suffix,
     value,
     check_optimal_termination,
+    units as pyunits,
 )
-from pyomo.environ import units as pyunits
 
-# Import IDAES cores
+import idaes.logger as idaeslog
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
@@ -49,7 +46,6 @@ from idaes.core.util.initialization import (
     solve_indexed_blocks,
 )
 from idaes.core.util.misc import extract_data
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -66,22 +62,23 @@ from watertap.core.util.property_helpers import (
     get_property_metadata,
     print_property_metadata,
 )
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("NaClParameterBlock")
-class NaClParameterData(PhysicalParameterBlock):
+@declare_process_block_class("NaClTDepParameterBlock")
+class NaClTDepParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     def build(self):
         """
         Callable method for Block construction.
         """
-        super(NaClParameterData, self).build()
+        super(NaClTDepParameterData, self).build()
 
-        self._state_block_class = NaClStateBlock
+        self._state_block_class = NaClTDepStateBlock
 
         # components
         self.H2O = Solvent()
@@ -761,7 +758,7 @@ class NaClParameterData(PhysicalParameterBlock):
         )
 
 
-class _NaClStateBlock(StateBlock):
+class _NaClTDepStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -1009,11 +1006,11 @@ class _NaClStateBlock(StateBlock):
         return results
 
 
-@declare_process_block_class("NaClStateBlock", block_class=_NaClStateBlock)
-class NaClStateBlockData(StateBlockData):
+@declare_process_block_class("NaClTDepStateBlock", block_class=_NaClTDepStateBlock)
+class NaClTDepStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
-        super(NaClStateBlockData, self).build()
+        super(NaClTDepStateBlockData, self).build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 

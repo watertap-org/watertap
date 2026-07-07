@@ -31,8 +31,8 @@ from idaes.core.util.testing import initialization_tester
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
 from watertap.core.solvers import get_solver
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.unit_models.electrocoagulation import Electrocoagulation
+from watertap.property_models import MCASParameterBlock
+from watertap.unit_models import Electrocoagulation
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
 
 solver = get_solver()

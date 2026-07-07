@@ -48,12 +48,11 @@ __author__ = "Oluwamayowa Amusat, Alexander Dudchenko, Paul Vecchiarelli, Adam A
 
 
 import logging
-
 import json
 from pathlib import Path
-
 from copy import deepcopy
 from itertools import product
+from numpy import reshape, sqrt
 
 from watertap.custom_exceptions import FrozenPipes
 from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
@@ -66,8 +65,6 @@ from watertap.tools.oli_api.util.fixed_keys_dict import (
     input_unit_set,
     output_unit_set,
 )
-
-from numpy import reshape, sqrt
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()

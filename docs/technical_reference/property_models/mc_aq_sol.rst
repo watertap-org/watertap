@@ -2,6 +2,9 @@
 
 Multi-Component Aqueous Solution (MCAS) Property Package
 ========================================================
+.. code-block:: python
+
+   from watertap.property_models import MCASParameterBlock
 
 This property package implements property relationships for an aqueous solution that may contain multiple neutral and/or ionic solutes.
 

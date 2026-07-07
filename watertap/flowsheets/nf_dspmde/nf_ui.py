@@ -9,11 +9,13 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+from pyomo.environ import units as pyunits
+
 from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
 from watertap.flowsheets.nf_dspmde import nf
+
 from watertap.flowsheets.nf_dspmde import nf_with_bypass
 from watertap.unit_models.nanofiltration_DSPMDE_0D import ConcentrationPolarizationType
-from pyomo.environ import units as pyunits
 from watertap.core.solvers import get_solver
 
 

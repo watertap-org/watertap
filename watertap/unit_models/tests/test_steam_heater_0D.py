@@ -9,18 +9,15 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
 import pytest
-
 from pyomo.environ import ConcreteModel
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.core.util.scaling as iscale
 
-import watertap.property_models.water_prop_pack as props_w
-import watertap.property_models.seawater_prop_pack as props_sw
-from watertap.unit_models.steam_heater_0D import SteamHeater0D
+from watertap.property_models import SeawaterParameterBlock, WaterParameterBlock
+from watertap.unit_models import SteamHeater0D
 from watertap.unit_models.mvc.components.lmtd_chen_callback import (
     delta_temperature_chen_callback,
 )
@@ -33,8 +30,8 @@ solver = get_solver()
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.steam_properties = props_w.WaterParameterBlock()
-    m.fs.cold_side_properties = props_sw.SeawaterParameterBlock()
+    m.fs.steam_properties = WaterParameterBlock()
+    m.fs.cold_side_properties = SeawaterParameterBlock()
 
     m.fs.unit = SteamHeater0D(
         hot_side_name="hot",

@@ -20,9 +20,10 @@ from pyomo.network import Port
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from watertap.unit_models.crystallizer import Crystallization
+
+from watertap.unit_models import Crystallization
 from watertap.flowsheets.crystallization.sim_simple_crystallizer import main as cryst_ex
-from watertap.property_models.unit_specific.cryst_prop_pack import NaClParameterBlock
+from watertap.property_models import CrystallizerParameterBlock
 from watertap.costing import CrystallizerCostType
 
 
@@ -40,7 +41,7 @@ class TestCrystallizerBuild:
         # Test basic build
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties, NaClParameterBlock)
+        assert isinstance(m.fs.properties, CrystallizerParameterBlock)
         assert isinstance(m.fs.costing, Block)
         assert isinstance(m.fs.crystallizer, Crystallization)
 
@@ -50,7 +51,7 @@ class TestCrystallizerBuild:
         assert isinstance(m.fs.crystallizer.solids, Port)
         assert isinstance(m.fs.crystallizer.outlet, Port)
 
-        # Test consting
+        # Test costing
         assert isinstance(m.fs.crystallizer.costing, Block)
         assert isinstance(m.fs.crystallizer.costing.capital_cost, Var)
 
@@ -63,7 +64,7 @@ class TestCrystallizerBuild:
             assert isinstance(var, Var)
 
         # Test the crystallizer properties
-        # test configrations
+        # test configurations
         assert len(m.fs.crystallizer.config) == 4
         assert not m.fs.crystallizer.config.dynamic
         assert not m.fs.crystallizer.config.has_holdup

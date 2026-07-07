@@ -14,10 +14,9 @@ This module contains a zero-order representation of a low pressure pump unit
 """
 
 import pyomo.environ as pyo
-from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
-from watertap.core import build_pt, ZeroOrderBaseData
 from idaes.core.util.constants import Constants
+from watertap.core import build_pt, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -38,22 +37,24 @@ class PumpElectricityZOData(ZeroOrderBaseData):
 
         build_pt(self)
 
-        self.lift_height = Var(units=pyunits.m, doc="Lift height for pump")
+        self.lift_height = pyo.Var(units=pyo.units.m, doc="Lift height for pump")
 
-        self.eta_pump = Var(units=pyunits.dimensionless, doc="Efficiency of pump")
+        self.eta_pump = pyo.Var(units=pyo.units.dimensionless, doc="Efficiency of pump")
 
-        self.eta_motor = Var(units=pyunits.dimensionless, doc="Efficiency of motor")
+        self.eta_motor = pyo.Var(
+            units=pyo.units.dimensionless, doc="Efficiency of motor"
+        )
 
-        self.electricity = Var(
+        self.electricity = pyo.Var(
             self.flowsheet().config.time,
-            units=pyunits.kW,
+            units=pyo.units.kW,
             bounds=(0, None),
             doc="Electricity for low pressure pump",
         )
 
-        self.applied_pressure = Var(
+        self.applied_pressure = pyo.Var(
             self.flowsheet().config.time,
-            units=pyunits.bar,
+            units=pyo.units.bar,
             bounds=(0, None),
             doc="Applied pressure",
         )
@@ -67,24 +68,24 @@ class PumpElectricityZOData(ZeroOrderBaseData):
             doc="Constraint for electricity consumption based on " "pump flowrate.",
         )
         def electricity_consumption(b, t):
-            return b.electricity[t] == pyunits.convert(
+            return b.electricity[t] == pyo.units.convert(
                 b.lift_height
                 * b.properties[t].flow_vol
                 * b.properties[t].dens_mass
                 * Constants.acceleration_gravity
                 / (b.eta_pump * b.eta_motor),
-                to_units=pyunits.kW,
+                to_units=pyo.units.kW,
             )
 
         @self.Constraint(
             self.flowsheet().time, doc="Constraint for pump applied pressure"
         )
         def applied_pressure_constraint(b, t):
-            return b.applied_pressure[t] == pyunits.convert(
+            return b.applied_pressure[t] == pyo.units.convert(
                 b.lift_height
                 * b.properties[t].dens_mass
                 * Constants.acceleration_gravity,
-                to_units=pyunits.bar,
+                to_units=pyo.units.bar,
             )
 
         self._perf_var_dict["Electricity (kW)"] = self.electricity

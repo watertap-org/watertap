@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import itertools
+
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -26,36 +27,32 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.network import Arc
-from idaes.core import FlowsheetBlock
-from watertap.core.solvers import get_solver
+
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
     propagate_state as _pro_state,
 )
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 from idaes.core.util.misc import StrEnum
 
-import watertap.property_models.NaCl_prop_pack as props
+from watertap.core import MassTransferCoefficient, PressureChangeType
+from watertap.property_models import NaClParameterBlock
 from watertap.core.util.initialization import (
     assert_degrees_of_freedom,
 )
-from watertap.unit_models.reverse_osmosis_0D import (
-    ReverseOsmosis0D,
-    ConcentrationPolarizationType,
-)
-from watertap.unit_models.reverse_osmosis_1D import (
-    ReverseOsmosis1D,
-)
-from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
+from watertap.unit_models import (
     OsmoticallyAssistedReverseOsmosis0D,
-    MassTransferCoefficient,
-    PressureChangeType,
+    ReverseOsmosis0D,
+    ReverseOsmosis1D,
+    ConcentrationPolarizationType,
+    Pump,
+    EnergyRecoveryDevice,
 )
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.costing import WaterTAPCosting
 from watertap.costing.unit_models.pump import cost_low_pressure_pump
+from watertap.core.solvers import get_solver
 
 
 class ERDtype(StrEnum):
@@ -120,7 +117,8 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine, RO_1D=False):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = NaClParameterBlock()
+    m.fs.costing = WaterTAPCosting()
 
     # stage set up
     m.fs.NumberOfStages = Param(initialize=number_of_stages)

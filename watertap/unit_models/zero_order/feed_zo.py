@@ -25,10 +25,10 @@ from pyomo.environ import (
 from idaes.models.unit_models.feed import FeedData
 from idaes.core import declare_process_block_class
 import idaes.logger as idaeslog
-from watertap.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 
 from watertap.core import InitializationMixin
+from watertap.core.solvers import get_solver
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"

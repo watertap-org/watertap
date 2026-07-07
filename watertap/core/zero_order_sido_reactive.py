@@ -17,11 +17,6 @@ reactions.
 
 from types import MethodType
 
-import idaes.logger as idaeslog
-from watertap.core.solvers import get_solver
-import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import InitializationError
-
 from pyomo.environ import (
     check_optimal_termination,
     NonNegativeReals,
@@ -29,6 +24,12 @@ from pyomo.environ import (
     Var,
     units as pyunits,
 )
+
+import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import InitializationError
+
+from watertap.core.solvers import get_solver
 
 # Some more information about this module
 __author__ = "Andrew Lee"

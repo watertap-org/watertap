@@ -5,7 +5,7 @@ Coagulation-Flocculation
 
 .. code-block:: python
 
-   from watertap.unit_models.coag_floc_model import CoagulationFlocculation
+   from watertap.unit_models import CoagulationFlocculation
 
 Introduction
 ------------
@@ -16,8 +16,8 @@ natural organic matter, into larger 'floccs' (or 'Sludge') that can then be sepa
 sedimentation and/or filtration (or other separation processes) later in the treatment train.
 This is accomplished in a 2-stage process:
 
-Stage 1) Coagulation (where chemical coagulants and other aids are rapidly mixed into solution)
-Stage 2) Flocculation (where the 'floccs' are formed through slow, gentle mixing/agitation)
+#. Coagulation (where chemical coagulants and other aids are rapidly mixed into solution)
+#. Flocculation (where the 'floccs' are formed through slow, gentle mixing/agitation)
 
 In this implementation of the model, the user MUST provide a measured final Turbidity (in NTU) made
 during a Jar Test for the given water source. This measurement is then used to estimate how much
@@ -33,11 +33,11 @@ each basin, mixing paddle sizes, number of mixers, etc.
 
 The main assumptions of the implemented model are as follows:
 
-1) Coagulation-Flocculation can be modeled together in a single combined unit (Figure 1)
-2) Model dimensionality is limited to a 0D control volume
-3) Predicted levels of suspended solid removal can be determined solely by Jar Test measurements
-4) Single liquid phase only
-5) Isothermal operation
+1. Coagulation-Flocculation can be modeled together in a single combined unit (Figure 1)
+2. Model dimensionality is limited to a 0D control volume
+3. Predicted levels of suspended solid removal can be determined solely by Jar Test measurements
+4. Single liquid phase only
+5. Isothermal operation
 
 .. figure:: ../../_static/unit_models/coagulation_flocculation.png
     :width: 600
@@ -119,7 +119,7 @@ To provide this information to the unit model, users must add a 'chemical_additi
 dictionary to the initialization of the unit model. That dictionary must have the
 following format.
 
-.. code-block::
+.. code-block:: python
 
    chem_dict = {'chem_A':
                   {'parameter_data':
@@ -140,7 +140,7 @@ following format.
 For example, this 'chem_dict' would be passed into the model on construction as
 one of the configuration options as shown below.
 
-.. code-block::
+.. code-block:: python
 
     model.fs.unit = CoagulationFlocculation(
         property_package=model.fs.properties,
@@ -175,8 +175,8 @@ Equations and Relationships
 
 References
 ----------
-H. Rugner, M. Schwientek, B. Beckingham, B. Kuch, P. Grathwohl,
-Environ. Earth Sci. 69 (2013) 373-380. DOI:`10.1007/s12665-013-2307-1 <https://doi.org/10.1007/s12665-013-2307-1>`_
+| H. Rugner, M. Schwientek, B. Beckingham, B. Kuch, P. Grathwohl,
+| Environ. Earth Sci. 69 (2013) 373-380. DOI:`10.1007/s12665-013-2307-1 <https://doi.org/10.1007/s12665-013-2307-1>`_
 
-R.O. Mines `Environmental Engineering: Principles and Practice <https://www.biblio.com/9781118801451>`_,
-1st Ed, John Wiley & Sons, 2014. Ch. 6.
+| R.O. Mines `Environmental Engineering: Principles and Practice <https://www.biblio.com/9781118801451>`_,
+| 1st Ed, John Wiley & Sons, 2014. Ch. 6.

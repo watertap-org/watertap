@@ -44,10 +44,11 @@
 # derivative works, incorporate into other computer software, distribute, and sublicense such enhancements
 # or derivative works thereof, in binary and source code form.
 ###############################################################################
-import contextlib
-import os
-from pathlib import Path
 
+import os
+import re
+import contextlib
+from pathlib import Path
 import pytest
 
 from watertap.tools.oli_api.client import OLIApi
@@ -56,7 +57,6 @@ from watertap.tools.oli_api.credentials import (
     CredentialManager,
     cryptography_available,
 )
-import re
 
 
 @pytest.fixture(scope="session")

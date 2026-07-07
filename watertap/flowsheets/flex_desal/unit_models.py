@@ -15,7 +15,6 @@ This module contains unit models needed for flexible desalination
 analysis.
 """
 
-from idaes.apps.grid_integration import OperationModel
 from pyomo.environ import (
     Constraint,
     NonNegativeReals,
@@ -25,6 +24,7 @@ from pyomo.environ import (
     exp,
     units as pyunits,
 )
+from idaes.apps.grid_integration import OperationModel
 from watertap.flowsheets.flex_desal import params as um_params
 
 

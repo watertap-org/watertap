@@ -12,8 +12,8 @@
 
 # input space generation
 
-from idaes.core.surrogate.pysmo.sampling import LatinHypercubeSampling
 import csv
+from idaes.core.surrogate.pysmo.sampling import LatinHypercubeSampling
 
 __author__ = "Marcus Holly"
 

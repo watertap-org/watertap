@@ -2,6 +2,11 @@
 
 Modified ADM1 Property Package
 ==============================
+
+.. code-block:: python
+
+   from watertap.property_models import ModifiedADM1ParameterBlock
+   
 .. raw:: html
 
     <style> .red {color:red} </style>

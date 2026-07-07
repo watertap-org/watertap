@@ -10,8 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-import pytest
 from math import fabs
+import pytest
 
 from pyomo.environ import (
     ConcreteModel,
@@ -23,6 +23,7 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,

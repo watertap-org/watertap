@@ -11,10 +11,8 @@
 #################################################################################
 
 import math
-from pyomo.environ import (
-    value,
-)
 import logging
+from pyomo.environ import value
 
 _logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()

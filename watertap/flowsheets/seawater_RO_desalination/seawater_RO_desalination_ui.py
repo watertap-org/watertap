@@ -9,6 +9,8 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+
+from pyomo.environ import units as pyunits
 from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination import (
     build,
@@ -18,7 +20,6 @@ from watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination impor
     add_costing,
     initialize_costing,
 )
-from pyomo.environ import units as pyunits
 
 
 def export_to_ui():

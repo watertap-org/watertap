@@ -9,6 +9,8 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+
+from pyomo.environ import units as pyunits, assert_optimal_termination, Objective
 from idaes_flowsheet_processor.api import FlowsheetInterface
 from watertap.flowsheets.mvc.mvc_single_stage import (
     build,
@@ -20,7 +22,6 @@ from watertap.flowsheets.mvc.mvc_single_stage import (
     solve,
     set_up_optimization,
 )
-from pyomo.environ import units as pyunits, assert_optimal_termination, Objective
 from watertap.core.solvers import get_solver
 
 

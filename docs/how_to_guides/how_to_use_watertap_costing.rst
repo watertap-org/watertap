@@ -14,7 +14,6 @@ Additional details on the WaterTAP costing package, including equations and defa
 
 
 .. testsetup::
-
     from pyomo.environ import (
         ConcreteModel,
         Constraint,
@@ -25,19 +24,22 @@ Additional details on the WaterTAP costing package, including equations and defa
         TransformationFactory,
         assert_optimal_termination,
         value,
+        units as pyunits,
     )
-    from pyomo.environ import units as pyunits
     from pyomo.network import Arc
 
     from idaes.core import FlowsheetBlock, UnitModelCostingBlock
     import idaes.core.util.scaling as iscale
-    from idaes.core.util.model_statistics import degrees_of_freedom
     from idaes.core.util.initialization import propagate_state
-    from idaes.models.unit_models import Feed, Product, StateJunction
+    from idaes.models.unit_models import Feed, Product
 
-    from watertap.costing import WaterTAPCosting, WaterTAPCostingDetailed
-    from watertap.unit_models.reverse_osmosis_1D import (
+    from watertap.costing import WaterTAPCosting
+    from watertap.unit_models import (
         ReverseOsmosis1D,
+        Pump,
+        EnergyRecoveryDevice,
+    )
+    from watertap.unit_models.reverse_osmosis_1D import (
         ConcentrationPolarizationType,
         MassTransferCoefficient,
         PressureChangeType,
@@ -47,9 +49,8 @@ Additional details on the WaterTAP costing package, including equations and defa
         make_capital_cost_var,
         make_fixed_operating_cost_var,
     )
-    from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
     from watertap.unit_models.zero_order import ChemicalAdditionZO
-    from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
+    from watertap.property_models import SeawaterParameterBlock
 
     from watertap.core.solvers import get_solver
 
@@ -57,9 +58,10 @@ Additional details on the WaterTAP costing package, including equations and defa
 
     # quiet idaes logs
     import idaes.logger as idaeslogger
-    idaeslogger.getLogger('idaes.core').setLevel('CRITICAL')
-    idaeslogger.getLogger('idaes.core.util.scaling').setLevel('CRITICAL')
-    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+
+    idaeslogger.getLogger("idaes.core").setLevel("CRITICAL")
+    idaeslogger.getLogger("idaes.core.util.scaling").setLevel("CRITICAL")
+    idaeslogger.getLogger("idaes.init").setLevel("CRITICAL")
 
 
     def build_chem_addition_cost_param_block(blk):
@@ -351,7 +353,6 @@ Additional details on the WaterTAP costing package, including equations and defa
     results = solver.solve(m)
     assert_optimal_termination(results)
     m.fs.del_component(m.fs.obj)
-
 
 The :ref:`WaterTAP costing package<watertap_costing>` can be added to any WaterTAP flowsheet but is not required to run a WaterTAP model.
 For this guide, we will consider a flowsheet with these units in the following order:

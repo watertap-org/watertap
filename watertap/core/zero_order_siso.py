@@ -17,11 +17,6 @@ outlet where composition changes, such as a generic bioreactor).
 
 from types import MethodType
 
-import idaes.logger as idaeslog
-from watertap.core.solvers import get_solver
-import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import InitializationError
-
 from pyomo.environ import (
     check_optimal_termination,
     NonNegativeReals,
@@ -29,7 +24,12 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-# Some more information about this module
+import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import InitializationError
+
+from watertap.core.solvers import get_solver
+
 __author__ = "Adam Atia"
 
 # Set up logger

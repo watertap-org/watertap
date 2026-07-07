@@ -17,19 +17,18 @@ from pyomo.environ import (
     value,
     units,
 )
-from idaes.core import FlowsheetBlock
-from watertap.unit_models.electroNP_ZO import ElectroNPZO
-from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
-    ModifiedASM2dParameterBlock,
-)
-from watertap.core.solvers import get_solver
+from pyomo.util.check_units import assert_units_consistent
+
+import idaes.core.util.scaling as iscale
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import calculate_scaling_factors
-from pyomo.util.check_units import assert_units_consistent
-from idaes.core import UnitModelCostingBlock
+
+from watertap.unit_models import ElectroNPZO
+from watertap.property_models import ModifiedASM2dParameterBlock
+from watertap.core.solvers import get_solver
 from watertap.costing import WaterTAPCosting
-import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

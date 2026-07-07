@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import pytest
+
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -25,10 +26,10 @@ from idaes.core.util.testing import initialization_tester
 
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
-from watertap.core.solvers import get_solver
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-from watertap.unit_models.ion_exchange_0D import IonExchange0D
+from watertap.property_models import MCASParameterBlock
+from watertap.unit_models import IonExchange0D
 from watertap.unit_models.tests.unit_test_harness import UnitTestHarness
+from watertap.core.solvers import get_solver
 
 __author__ = "Kurban Sitterley"
 

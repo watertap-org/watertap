@@ -13,9 +13,9 @@
 __author__ = "Paul Vecchiarelli, Ben Knueven, Adam Atia"
 
 from collections import UserDict
+from collections.abc import Iterable
 from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import _PyomoUnit
-from collections.abc import Iterable
 
 
 class FixedKeysDict(UserDict):

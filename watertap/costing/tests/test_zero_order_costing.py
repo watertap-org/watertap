@@ -30,7 +30,6 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock, declare_process_block_class
-from watertap.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -43,9 +42,10 @@ from watertap.costing.zero_order_costing import (
     _load_case_study_definition,
 )
 from watertap.core.zero_order_base import ZeroOrderBaseData
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.core.wt_database import Database
 from watertap.unit_models.zero_order import ChemicalAdditionZO, NanofiltrationZO
+from watertap.core.solvers import get_solver
 
 
 @declare_process_block_class("DerivedZOBase")
@@ -67,7 +67,7 @@ class TestGeneralMethods:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
+        m.fs.params = ZOParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.frame = ZeroOrderCosting()
 
@@ -329,7 +329,7 @@ class TestWorkflow:
 
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.costing = ZeroOrderCosting()
         m.fs.costing.base_currency = pyunits.USD_2020

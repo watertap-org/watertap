@@ -17,7 +17,6 @@ for wastewater resource recovery flowsheets.
 import pyomo.environ as pyo
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido_reactive, ZeroOrderBaseData, pump_electricity
-from pyomo.environ import Reference
 
 # Some more information about this module
 __author__ = "Adam Atia"
@@ -46,7 +45,7 @@ class CofermentationZOData(ZeroOrderBaseData):
                 " this unit model converts cod to nonbiodegradable_cod."
             )
         build_sido_reactive(self)
-        self._Q = Reference(self.properties_in[:].flow_vol)
+        self._Q = pyo.Reference(self.properties_in[:].flow_vol)
         pump_electricity(self, self._Q)
 
     @property

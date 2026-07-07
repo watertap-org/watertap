@@ -3,6 +3,10 @@
 Air-Water Equilibrium (AWE) Property Package
 ============================================
 
+.. code-block:: python
+
+   from watertap.property_models import AirWaterEq
+
 This property package implements property relationships for an aqueous liquid phase in equilibrium with air.
 
 The AWE property package:

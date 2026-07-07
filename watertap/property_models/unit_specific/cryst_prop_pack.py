@@ -10,15 +10,11 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Initial crystallization property package for H2O-NaCl system
+Crystallization property package for H2O-NaCl system
 """
-
-# Import Python libraries
-import idaes.logger as idaeslog
 
 from enum import Enum, auto
 
-# Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -30,11 +26,11 @@ from pyomo.environ import (
     log,
     value,
     check_optimal_termination,
+    units as pyunits,
 )
-from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigValue, In
 
-# Import IDAES cores
+import idaes.logger as idaeslog
 from idaes.core import (
     declare_process_block_class,
     MaterialFlowBasis,
@@ -58,7 +54,6 @@ from idaes.core.util.initialization import (
     solve_indexed_blocks,
 )
 from idaes.core.util.misc import extract_data
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -69,6 +64,8 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
+
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -82,8 +79,8 @@ class HeatOfCrystallizationModel(Enum):
     temp_dependent = auto()  # Use temperature-dependent heat of crystallization
 
 
-@declare_process_block_class("NaClParameterBlock")
-class NaClParameterData(PhysicalParameterBlock):
+@declare_process_block_class("CrystallizerParameterBlock")
+class CrystallizerParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare(
@@ -109,7 +106,7 @@ class NaClParameterData(PhysicalParameterBlock):
 
     def build(self):
         super().build()
-        self._state_block_class = NaClStateBlock
+        self._state_block_class = CrystallizerStateBlock
 
         # Component
         self.H2O = Solvent(valid_phase_types=[PT.liquidPhase, PT.vaporPhase])
@@ -912,7 +909,7 @@ class NaClParameterData(PhysicalParameterBlock):
         )
 
 
-class _NaClStateBlock(StateBlock):
+class _CrystallizerStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -1156,11 +1153,13 @@ class _NaClStateBlock(StateBlock):
         return results
 
 
-@declare_process_block_class("NaClStateBlock", block_class=_NaClStateBlock)
-class NaClStateBlockData(StateBlockData):
+@declare_process_block_class(
+    "CrystallizerStateBlock", block_class=_CrystallizerStateBlock
+)
+class CrystallizerStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
-        super(NaClStateBlockData, self).build()
+        super(CrystallizerStateBlockData, self).build()
         self._make_state_vars()
 
     def _make_state_vars(self):

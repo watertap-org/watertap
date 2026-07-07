@@ -13,14 +13,14 @@
 This module contains the base class for all zero order unit models.
 """
 
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+import pyomo.environ as pyo
+
 from idaes.core import UnitModelBlockData, useDefault, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
-
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-import pyomo.environ as pyo
 
 # Some more information about this module
 __author__ = "Andrew Lee, Adam Atia"

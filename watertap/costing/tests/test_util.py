@@ -12,12 +12,13 @@
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
+
 import idaes.core as idc
 import idaes.core.util.model_statistics as istat
 
-from pyomo.util.check_units import assert_units_consistent
 from watertap.core.solvers import get_solver
-from watertap.costing.watertap_costing_package import WaterTAPCosting
+from watertap.costing import WaterTAPCosting
 from watertap.costing.util import (
     cost_rectifier,
     register_costing_parameter_block,

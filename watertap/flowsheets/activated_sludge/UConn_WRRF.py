@@ -33,14 +33,14 @@ Unit operations are modeled as follows:
 
 __author__ = "Adam Atia"
 
-import pandas as pd
 from enum import auto
+import pandas as pd
+
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Feed, Mixer, Separator, Product, MomentumMixingType
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -51,20 +51,14 @@ from idaes.core.util.tables import (
 from idaes.core.util.initialization import propagate_state
 
 from watertap.unit_models import AerationTank, CSTR
-
-from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
+from watertap.property_models import (
     ASM1ParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm3_properties import (
     ASM3ParameterBlock,
-)
-from watertap.property_models.unit_specific.activated_sludge.asm3_reactions import (
     ASM3ReactionParameterBlock,
 )
 from watertap.core.util.initialization import check_solve, interval_initializer
+from watertap.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

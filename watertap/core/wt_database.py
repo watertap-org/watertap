@@ -15,8 +15,8 @@ with zero-order model parameter data.
 """
 
 import os
-import yaml
 from copy import deepcopy
+import yaml
 
 
 class Database:

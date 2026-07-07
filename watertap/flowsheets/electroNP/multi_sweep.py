@@ -13,8 +13,10 @@ from parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )
-import watertap.flowsheets.electroNP.electroNP_flowsheet as electroNP_flowsheet
+
 from pyomo.environ import units as pyunits
+
+import watertap.flowsheets.electroNP.electroNP_flowsheet as electroNP_flowsheet
 
 
 def set_up_sensitivity(m):

@@ -36,19 +36,16 @@ from idaes.core import (
     MaterialFlowBasis,
 )
 from idaes.core.util.initialization import propagate_state
-from idaes.models.unit_models import Separator
-from idaes.models.unit_models.separator import (
-    SplittingType,
-    EnergySplittingType,
-)
-from watertap.core.solvers import get_solver
+from idaes.models.unit_models import Separator, SplittingType, EnergySplittingType
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
 from watertap.costing.unit_models.stoichiometric_reactor import (
     cost_stoichiometric_reactor,
 )
+from watertap.core.solvers import get_solver
 
 __author__ = "Tim Bartholomew, Alexander V. Dudchenko"
 

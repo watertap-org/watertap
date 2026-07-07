@@ -9,15 +9,17 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-from watertap.core.solvers import get_solver
+from pyomo.environ import units as pyunits
+
 from idaes_flowsheet_processor.api import FlowsheetInterface
+
 from watertap.flowsheets.electrodialysis.electrodialysis_1stack_conc_recirc import (
     build,
     _condition_base,
     initialize_system,
     solve,
 )
-from pyomo.environ import units as pyunits
+from watertap.core.solvers import get_solver
 
 
 def export_to_ui():

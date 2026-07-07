@@ -9,21 +9,18 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
-from pyomo.network import Arc
-from idaes.core import (
-    FlowsheetBlock,
-)
-
 from pyomo.environ import (
-    units as pyunits,
+    ConcreteModel,
     Var,
+    TransformationFactory,
     assert_optimal_termination,
     value,
+    units as pyunits,
 )
+from pyomo.network import Arc
 
+from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
-from watertap.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import (
@@ -31,17 +28,14 @@ from idaes.models.unit_models import (
     Separator,
     Product,
     Feed,
+    MomentumMixingType,
+    MixingType,
 )
-from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
 
-from pyomo.environ import ConcreteModel, TransformationFactory
-
-from watertap.property_models.multicomp_aq_sol_prop_pack import (
-    MCASParameterBlock,
-)
+from watertap.property_models import MCASParameterBlock
 from watertap.flowsheets.nf_dspmde import nf
-
 from watertap.costing import WaterTAPCosting
+from watertap.core.solvers import get_solver
 
 __author__ = "Alexander Dudchenko, Adam Atia"
 

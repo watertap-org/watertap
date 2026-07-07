@@ -388,7 +388,7 @@ class MCASParameterData(PhysicalParameterBlock):
         "solute_list",
         ConfigValue(
             domain=list,
-            description="Required argument.List of strings that specify names of solute species.",
+            description="Required argument. List of strings that specify names of solute species.",
         ),
     )
     CONFIG.declare(
@@ -420,7 +420,7 @@ class MCASParameterData(PhysicalParameterBlock):
         ConfigValue(
             default={},
             domain=dict,
-            description="Required argument. Dict of component names (keys)and molecular weight data (values)",
+            description="Required argument. Dict of component names (keys) and molecular weight data (values)",
         ),
     )
     CONFIG.declare(

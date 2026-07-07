@@ -5,7 +5,7 @@ Osmotically Assisted Reverse Osmosis (0D)
 
 .. code-block:: python
 
-   from watertap.unit_models.osomtically_assisted_reverse_osmosis_0D import OsmoticallyAssistedReverseOsmosis0D
+   from watertap.unit_models import OsmoticallyAssistedReverseOsmosis0D
 
 This osmotically assisted reverse osmosis (OARO) unit model
    * is 0-dimensional
