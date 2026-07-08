@@ -641,7 +641,7 @@ def initialize_system(m, bio_P=False, solver=None):
     initializer = BlockTriangularizationInitializer()
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.DEBUG)
+        unit.initialize(outlvl=idaeslog.WARNING)
 
     seq.run(m, function)
 
@@ -650,7 +650,7 @@ def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
         solver.options["max_iter"] = 500
-    results = solver.solve(m, tee=True)
+    results = solver.solve(m, tee=False)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
     return results
@@ -915,7 +915,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=True)
+    m, results = main(bio_P=False)
 
     stream_table = create_stream_table_dataframe(
         {
@@ -937,3 +937,4 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+    m.fs.Treated.display()
