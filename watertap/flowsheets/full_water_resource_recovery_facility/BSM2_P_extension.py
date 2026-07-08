@@ -513,6 +513,7 @@ def set_scaling(m):
 
 
 # TODO: Diagnose why AD initialization fails when bio_P=True
+# There is a TODO note in the AD unit model to improve initialization
 def initialize_system(m, bio_P=False, solver=None):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice

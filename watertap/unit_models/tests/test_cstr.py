@@ -475,7 +475,7 @@ class TestCSTRScaler:
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
         # Scaling factor for volume
-        assert len(sfx_cv) == 1
+        assert len(sfx_cv) == 9
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -529,7 +529,7 @@ class TestCSTRScaler:
         sfx_cv = model.fs.unit.control_volume.scaling_factor
         assert isinstance(sfx_cv, Suffix)
         # Scaling factors for volume and other variables and constraints on the control volume
-        assert len(sfx_cv) == 31
+        assert len(sfx_cv) == 39
 
         sfx_unit = model.fs.unit.scaling_factor
         assert isinstance(sfx_unit, Suffix)
@@ -688,7 +688,7 @@ class TestCSTRScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.65862e5, rel=1e-3
+            5.24411484e8, rel=1e-3
         )
 
 

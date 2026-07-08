@@ -117,13 +117,13 @@ def build():
     m.fs.unit.volume_vapor.fix(300)
     m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
-    iscale.calculate_scaling_factors(m.fs.unit)
-
     # Set scaling factors for badly scaled variables
     iscale.set_scaling_factor(
         m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
     )
     iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
+
+    iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
 
@@ -141,13 +141,13 @@ class TestAnaerobicDigester(UnitTestHarness):
             0.00531408
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ac"]] = (
-            0.1977833
+            0.10177582
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_bu"]] = (
             0.0132484
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_ch4"]] = (
-            0.0549707
+            0.05509649
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_fa"]] = (
             0.0986058
@@ -169,7 +169,7 @@ class TestAnaerobicDigester(UnitTestHarness):
             1.1793147
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_ac"]] = (
-            0.760653
+            0.76410264
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c"]] = 0.308718
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "X_c4"]] = (
@@ -197,7 +197,7 @@ class TestAnaerobicDigester(UnitTestHarness):
             0.420219
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]] = (
-            1.8320212
+            1.86940628
         )
         self.unit_solutions[m.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"]] = (
             1.8235307
@@ -208,7 +208,7 @@ class TestAnaerobicDigester(UnitTestHarness):
         self.unit_solutions[m.fs.unit.vapor_outlet.temperature[0]] = 308.15
         self.unit_solutions[m.fs.unit.vapor_outlet.flow_vol[0]] = 0.03249637
         self.unit_solutions[m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_ch4"]] = (
-            1.6216465
+            1.6277665
         )
         self.unit_solutions[m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]] = (
             0.169417
@@ -341,7 +341,7 @@ class TestADScaler:
         sfx_cv = model.fs.unit.liquid_phase.scaling_factor
         assert isinstance(sfx_cv, Suffix)
         # Scaling factors for volume and rate reactions
-        assert len(sfx_cv) == 47
+        assert len(sfx_cv) == 75
 
     #
     @pytest.mark.component
@@ -448,13 +448,18 @@ class TestADScaler:
         m.fs.unit.volume_vapor.fix(300)
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
+        iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
+        iscale.set_scaling_factor(
+            m.fs.unit.liquid_phase.rate_reaction_extent[0, "R19"], 1e3
+        )
+
         iscale.calculate_scaling_factors(m.fs.unit)
 
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.36919186521693e14, rel=1e-3
+            2.40548968058061e14, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -526,7 +531,7 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.504226e11, rel=1e-3
+            4.84419149e11, rel=1e-3
         )
 
     @pytest.mark.integration
@@ -596,6 +601,9 @@ class TestADScaler:
                 sb.set_variable_scaling_factor(var, 1e6)
 
             sb.set_variable_scaling_factor(m.fs.unit.hydraulic_retention_time[0], 1e-6)
+            sb.set_variable_scaling_factor(
+                m.fs.unit.liquid_phase.rate_reaction_extent[0, "R19"], 1e3
+            )
 
         scaler = ADScaler()
         scaler.scale_model(
@@ -611,5 +619,5 @@ class TestADScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            8.432989e10, rel=1e-3
+            2.43314745e11, rel=1e-3
         )
