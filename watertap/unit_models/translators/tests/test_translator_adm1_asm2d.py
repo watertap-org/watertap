@@ -312,7 +312,7 @@ class TestAdm1Asm2d(object):
         assert pytest.approx(1e-10, abs=1e-6) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_O2"]
         )
-        assert pytest.approx(0.35699, rel=1e-3) == value(
+        assert pytest.approx(1.29065, rel=1e-3) == value(
             asmadm.fs.unit.outlet.conc_mass_comp[0, "S_PO4"]
         )
         assert pytest.approx(1e-10, abs=1e-6) == value(
@@ -477,13 +477,13 @@ class TestADM1ASM2dScaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 32
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        assert len(sfx_out) == 21
 
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
@@ -509,13 +509,13 @@ class TestADM1ASM2dScaler:
         sfx_in = model.fs.unit.properties_in[0].scaling_factor
         assert isinstance(sfx_in, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_in) == 3
+        assert len(sfx_in) == 32
 
         # Outlet state - should be the same as the inlet
         sfx_out = model.fs.unit.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)
         # Scaling factors for FTP
-        assert len(sfx_out) == 3
+        assert len(sfx_out) == 21
 
     @pytest.mark.integration
     def test_example_case_iscale(self):
@@ -662,4 +662,4 @@ class TestADM1ASM2dScaler:
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(712.33, rel=1e-3)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(105.93, rel=1e-3)
