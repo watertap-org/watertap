@@ -14,7 +14,6 @@ GUI configuration for the extended BSM2 flowsheet.
 """
 
 from pyomo.environ import units as pyunits
-from pyomo.environ import TransformationFactory
 
 import idaes.logger as idaeslog
 
