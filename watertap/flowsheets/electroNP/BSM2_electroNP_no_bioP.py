@@ -31,9 +31,9 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import (
     FlowsheetBlock,
+    UnitModelBlockData,
 )
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Separator,
     Product,
@@ -41,14 +41,19 @@ from idaes.models.unit_models import (
     PressureChanger,
 )
 from idaes.models.unit_models.separator import SplittingType
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
+from idaes.models.unit_models.mixer import MomentumMixingType
+
+from watertap.core.solvers import get_solver
 from watertap.unit_models.cstr_injection import CSTR_Injection
 from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
@@ -69,7 +74,6 @@ from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reac
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
 )
-from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
 )
@@ -82,6 +86,7 @@ from watertap.unit_models.thickener import (
     Thickener,
     ActivatedSludgeModelType as thickener_type,
 )
+from watertap.unit_models.cstr import CSTR
 from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 
@@ -92,6 +97,7 @@ _log = idaeslog.getLogger(__name__)
 def main(has_electroNP=False):
     m = build_flowsheet(has_electroNP=has_electroNP)
     set_operating_conditions(m)
+    set_scaling(m)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -360,11 +366,6 @@ def build_flowsheet(has_electroNP=False):
         doc="Dissolved oxygen concentration at equilibrium",
     )
 
-    m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
-    for R in m.fs.aerobic_reactors:
-        iscale.set_scaling_factor(R.KLa, 1e-2)
-        iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-3)
-
     @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):
         return pyo.units.convert(
@@ -524,31 +525,65 @@ def set_operating_conditions(m):
         m.fs.electroNP.N_removal = 0.3 * P_removal
         m.fs.electroNP.frac_mass_H2O_treated[0].fix(0.99)
 
-    def scale_variables(m):
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
-            if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-2)
-            if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-5)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
+    # def scale_variables(m):
+    #     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
+    #         if "flow_vol" in var.name:
+    #             iscale.set_scaling_factor(var, 1e2)
+    #         if "temperature" in var.name:
+    #             iscale.set_scaling_factor(var, 1e-2)
+    #         if "pressure" in var.name:
+    #             iscale.set_scaling_factor(var, 1e-5)
+    #         if "conc_mass_comp" in var.name:
+    #             iscale.set_scaling_factor(var, 1e1)
+    #
+    # for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
+    #     block = getattr(m.fs, unit)
+    #     iscale.set_scaling_factor(
+    #         block.control_volume.reactions[0.0].rate_expression, 1e3
+    #     )
+    #     iscale.set_scaling_factor(block.cstr_performance_eqn, 1e3)
+    #     iscale.set_scaling_factor(
+    #         block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
+    #     )
+    #     iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
+    #
+    # # Apply scaling
+    # scale_variables(m)
+    # iscale.calculate_scaling_factors(m)
 
-    for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
-        block = getattr(m.fs, unit)
-        iscale.set_scaling_factor(
-            block.control_volume.reactions[0.0].rate_expression, 1e3
-        )
-        iscale.set_scaling_factor(block.cstr_performance_eqn, 1e3)
-        iscale.set_scaling_factor(
-            block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
-        )
-        iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
 
-    # Apply scaling
-    scale_variables(m)
-    iscale.calculate_scaling_factors(m)
+def set_scaling(m):
+    asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
+    adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
+    adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
+
+    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e2
+
+    adm1_scaler.default_scaling_factors["flow_vol"] = 1e2
+
+    # adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_h2]"] = 1e-4
+
+    m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
+    m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
+    m.fs.props_vap_ADM1.default_state_scaler_object = adm1_vapor_scaler
+
+    csb = CustomScalerBase()
+
+    for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
+        if isinstance(blk, UnitModelBlockData):
+            if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
+                print(f"Scaling {blk.name}")
+                scaler = blk.default_scaler()
+                scaler.scale_model(blk)
+            else:
+                print(f"No default scaler for unit model {blk.name}")
+        elif "_expanded" in blk.name:
+            print(f"Scaling {blk.name}")
+            # Expanded arc block
+            for con in blk.component_data_objects(pyo.Constraint):
+                csb.scale_constraint_by_nominal_value(
+                    con, scheme=ConstraintScalingScheme.inverseMaximum
+                )
 
 
 def initialize_system(m, has_electroNP=False):

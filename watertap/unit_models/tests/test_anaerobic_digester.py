@@ -118,12 +118,15 @@ def build():
     m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
     # Set scaling factors for badly scaled variables
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.rate_reaction_extent, 1e4)
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.volume[0], 1e-2)
+
+    iscale.calculate_scaling_factors(m.fs.unit)
+
     iscale.set_scaling_factor(
         m.fs.unit.liquid_phase.mass_transfer_term[0, "Liq", "S_h2"], 1e7
     )
-    iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
-
-    iscale.calculate_scaling_factors(m.fs.unit)
 
     return m
 
@@ -211,7 +214,7 @@ class TestAnaerobicDigester(UnitTestHarness):
             1.6277665
         )
         self.unit_solutions[m.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]] = (
-            0.169417
+            0.168261
         )
         self.unit_solutions[m.fs.unit.KH_co2[0]] = 0.02714666
         self.unit_solutions[m.fs.unit.KH_ch4[0]] = 0.001161902
@@ -449,9 +452,8 @@ class TestADScaler:
         m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
         iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
-        iscale.set_scaling_factor(
-            m.fs.unit.liquid_phase.rate_reaction_extent[0, "R19"], 1e3
-        )
+        iscale.set_scaling_factor(m.fs.unit.liquid_phase.rate_reaction_extent, 1e4)
+        iscale.set_scaling_factor(m.fs.unit.liquid_phase.volume[0], 1e-2)
 
         iscale.calculate_scaling_factors(m.fs.unit)
 
@@ -601,9 +603,6 @@ class TestADScaler:
                 sb.set_variable_scaling_factor(var, 1e6)
 
             sb.set_variable_scaling_factor(m.fs.unit.hydraulic_retention_time[0], 1e-6)
-            sb.set_variable_scaling_factor(
-                m.fs.unit.liquid_phase.rate_reaction_extent[0, "R19"], 1e3
-            )
 
         scaler = ADScaler()
         scaler.scale_model(

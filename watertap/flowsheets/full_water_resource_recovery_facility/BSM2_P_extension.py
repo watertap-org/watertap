@@ -495,7 +495,6 @@ def set_scaling(m):
     csb = CustomScalerBase()
 
     for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
-        # if blk.parent_block() is m.fs:
         if isinstance(blk, UnitModelBlockData):
             if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
                 print(f"Scaling {blk.name}")
@@ -938,4 +937,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-    m.fs.Treated.display()
