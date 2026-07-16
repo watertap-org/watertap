@@ -14,6 +14,7 @@ import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.expr.visitor import identify_variables
+from pyomo.util.check_units import check_units_equivalent
 
 from idaes.core.base.costing_base import register_idaes_currency_units
 from idaes.core import declare_process_block_class, UnitModelBlockData
@@ -76,6 +77,26 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             "mass": pyo.units.kg,
             "energy": pyo.units.kW,
         }[flow_basis]
+
+        # Add a check to ensure that the flow_rate has consistent units with the specified flow_basis
+        if flow_basis == "volumetric" and not check_units_equivalent(
+            flow_rate, pyo.units.m**3 / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have volumetric units (e.g., m^3/s) for flow_basis 'volumetric'."
+            )
+        elif flow_basis == "mass" and not check_units_equivalent(
+            flow_rate, pyo.units.kg / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have mass units (e.g., kg/s) for flow_basis 'mass'."
+            )
+        elif flow_basis == "energy" and not check_units_equivalent(
+            flow_rate, pyo.units.kWh / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have energy units (e.g., kWh/s) for flow_basis 'energy'."
+            )
 
         denominator = (
             pyo.units.convert(flow_rate, to_units=flow_units / self.base_period)
@@ -336,6 +357,26 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             "energy": pyo.units.kWh,
         }[flow_basis]
 
+        # Add a check to ensure that the flow_rate has consistent units with the specified flow_basis
+        if flow_basis == "volumetric" and not check_units_equivalent(
+            flow_rate, pyo.units.m**3 / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have volumetric units (e.g., m^3/s) for flow_basis 'volumetric'."
+            )
+        elif flow_basis == "mass" and not check_units_equivalent(
+            flow_rate, pyo.units.kg / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have mass units (e.g., kg/s) for flow_basis 'mass'."
+            )
+        elif flow_basis == "energy" and not check_units_equivalent(
+            flow_rate, pyo.units.kWh / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have energy units (e.g., kWh/s) for flow_basis 'energy'."
+            )
+
         self.add_component(
             name,
             pyo.Expression(
@@ -385,6 +426,26 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             "energy": pyo.units.kWh,
         }[flow_basis]
 
+        # Add a check to ensure that the flow_rate has consistent units with the specified flow_basis
+        if flow_basis == "volumetric" and not check_units_equivalent(
+            flow_rate, pyo.units.m**3 / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have volumetric units (e.g., m^3/s) for flow_basis 'volumetric'."
+            )
+        elif flow_basis == "mass" and not check_units_equivalent(
+            flow_rate, pyo.units.kg / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have mass units (e.g., kg/s) for flow_basis 'mass'."
+            )
+        elif flow_basis == "energy" and not check_units_equivalent(
+            flow_rate, pyo.units.kWh / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have energy units (e.g., kWh/s) for flow_basis 'energy'."
+            )
+
         self.add_component(
             name,
             pyo.Expression(
@@ -433,6 +494,26 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             "mass": pyo.units.kg,
             "energy": pyo.units.kWh,
         }[flow_basis]
+
+        # Add a check to ensure that the flow_rate has consistent units with the specified flow_basis
+        if flow_basis == "volumetric" and not check_units_equivalent(
+            flow_rate, pyo.units.m**3 / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have volumetric units (e.g., m^3/s) for flow_basis 'volumetric'."
+            )
+        elif flow_basis == "mass" and not check_units_equivalent(
+            flow_rate, pyo.units.kg / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have mass units (e.g., kg/s) for flow_basis 'mass'."
+            )
+        elif flow_basis == "energy" and not check_units_equivalent(
+            flow_rate, pyo.units.kWh / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have energy units (e.g., kWh/s) for flow_basis 'energy'."
+            )
 
         self.add_component(
             name,
@@ -489,6 +570,26 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             "mass": pyo.units.kg,
             "energy": pyo.units.kWh,
         }[flow_basis]
+
+        # Add a check to ensure that the flow_rate has consistent units with the specified flow_basis
+        if flow_basis == "volumetric" and not check_units_equivalent(
+            flow_rate, pyo.units.m**3 / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have volumetric units (e.g., m^3/s) for flow_basis 'volumetric'."
+            )
+        elif flow_basis == "mass" and not check_units_equivalent(
+            flow_rate, pyo.units.kg / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have mass units (e.g., kg/s) for flow_basis 'mass'."
+            )
+        elif flow_basis == "energy" and not check_units_equivalent(
+            flow_rate, pyo.units.kWh / pyo.units.s
+        ):
+            raise ValueError(
+                f"Flow rate {flow_rate.name} has units {pyo.units.get_units(flow_rate)} but must have energy units (e.g., kWh/s) for flow_basis 'energy'."
+            )
 
         denominator = (
             pyo.units.convert(flow_rate, to_units=base_flow_units / period)
