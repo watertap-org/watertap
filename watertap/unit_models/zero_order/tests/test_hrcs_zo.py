@@ -41,7 +41,8 @@ solver = get_solver()
 
 class TestHRCSZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -192,7 +193,8 @@ class TestHRCSZO:
 
 class TestHRCSZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

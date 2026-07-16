@@ -21,7 +21,8 @@ from watertap.core.membrane_channel0d import _0DPropertyHelper
 class Test0DPropertyHelper:
 
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = pyo.ConcreteModel()
         m.time_periods = pyo.RangeSet(0, 10)
         m.properties_in = pyo.Var(m.time_periods)

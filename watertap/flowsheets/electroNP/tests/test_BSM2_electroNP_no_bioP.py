@@ -31,7 +31,8 @@ from watertap.flowsheets.electroNP.BSM2_electroNP_no_bioP import (
 @pytest.mark.requires_idaes_solver
 class TestElectroNPFlowsheet:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m, res = m, results = main(has_electroNP=True)
 
         m.results = res

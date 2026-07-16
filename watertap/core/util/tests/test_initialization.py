@@ -35,7 +35,8 @@ solver = get_solver()
 
 class TestCheckDOF:
     @pytest.fixture(scope="class")
-    def m(self):
+    @classmethod
+    def m(cls):
         m = ConcreteModel()
         m.a = Var()
         m.b = Var()
@@ -90,7 +91,8 @@ class TestCheckDOF:
 
 class TestCheckSolve:
     @pytest.fixture(scope="class")
-    def m(self):
+    @classmethod
+    def m(cls):
         m = ConcreteModel()
         m.a = Var()
         m.acon = Constraint(rule=m.a >= 10)
@@ -139,7 +141,8 @@ class TestCheckSolve:
 class TestIntervalImproveInitial:
 
     @pytest.fixture(scope="class")
-    def m(self):
+    @classmethod
+    def m(cls):
 
         # This is the same model used in the pyomo fbbt test at
         # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32
@@ -181,7 +184,8 @@ class TestIntervalImproveInitial:
         assert m.z.ub == None
 
     @pytest.fixture(scope="class")
-    def m_infeas(self):
+    @classmethod
+    def m_infeas(cls):
 
         # This is the same model used in the pyomo fbbt test at
         # https://github.com/Pyomo/pyomo/blob/0e749d0c993df960af6cde0e775bef7cab6e2568/pyomo/contrib/fbbt/tests/test_fbbt.py#L957C9-L966C32

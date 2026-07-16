@@ -33,6 +33,7 @@ from pyomo.environ import (
     Reals,
     NonNegativeReals,
     log,
+    log10,
     Var,
     Param,
     Set,
@@ -83,6 +84,10 @@ from watertap.core.util.scaling import transform_property_constraints
 from watertap.core.util.chemistry import (
     get_charge,
     get_molar_mass_quantity,
+)
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
 )
 
 __author__ = "Adam Atia, Xiangyu Bi, Hunter Barber, Kurban Sitterley"
@@ -775,16 +780,16 @@ class MCASParameterData(PhysicalParameterBlock):
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
-            default=80.4,
-            initialize=80.4,  # todo: make a variable with parameter values for coefficients in the function of temperature
+            default=78.36,
+            initialize=78.36,  # todo: make a variable with parameter values for coefficients in the function of temperature
             units=pyunits.dimensionless,
-            doc="Dielectric constant of water",
+            doc="Dielectric constant of water. Default value for 25C, from Malmberg-Maryott (1956)",
         )
         self.debye_huckel_b = Param(
             mutable=True,
             default=0.3,
             initialize=0.3,
-            units=pyunits.kg / pyunits.mol,
+            units=(pyunits.kg / pyunits.mol) ** 0.5,
             doc="Debye Huckel constant b",
         )
 
@@ -877,6 +882,19 @@ class MCASParameterData(PhysicalParameterBlock):
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
 
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
+
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -908,22 +926,86 @@ class MCASParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "flow_equiv_phase_comp": {"method": "_flow_equiv_phase_comp"},
-                "charge_comp": {"method": "_charge_comp"},
-                "conc_equiv_phase_comp": {"method": "_conc_equiv_phase_comp"},
-                "equiv_conductivity_phase": {"method": "_equiv_conductivity_phase"},
-                "elec_cond_phase": {"method": "_elec_cond_phase"},
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
-                "dielectric_constant": {"method": "_dielectric_constant"},
-                "debye_huckel_constant": {"method": "_debye_huckel_constant"},
-                "enth_flow": {"method": "_enth_flow"},
-                "ionic_strength_molal": {"method": "_ionic_strength_molal"},
-                "molar_volume_phase_comp": {"method": "_molar_volume_phase_comp"},
-                "radius_stokes_comp": {"method": "_radius_stokes_comp"},
-                "elec_mobility_phase_comp": {"method": "_elec_mobility_phase_comp"},
-                "trans_num_phase_comp": {"method": "_trans_num_phase_comp"},
-                "total_hardness": {"method": "_total_hardness"},
-                "total_dissolved_solids": {"method": "_total_dissolved_solids"},
+                "flow_equiv_phase_comp": {
+                    "doc": "Component Equivalent Charge Flowrate",
+                    "units": "mol/s",
+                    "method": "_flow_equiv_phase_comp",
+                },
+                "charge_comp": {
+                    "doc": "Component Charge",
+                    "units": "dimensionless",
+                    "method": "_charge_comp",
+                },
+                "conc_equiv_phase_comp": {
+                    "doc": "Equivalent Charge Concentration",
+                    "units": "mol/m**3",
+                    "method": "_conc_equiv_phase_comp",
+                },
+                "equiv_conductivity_phase": {
+                    "doc": "Equivalent Electrical Conductivity of Liquid Phase",
+                    "units": "meter**2 * ohm**-1 * mol**-1",
+                    "method": "_equiv_conductivity_phase",
+                },
+                "elec_cond_phase": {
+                    "doc": "Electrical Conductivity",
+                    "units": "meter**-1 * ohm**-1",
+                    "method": "_elec_cond_phase",
+                },
+                "dens_mass_solvent": {
+                    "doc": "Density of Solvent",
+                    "units": "kg * meter**-3",
+                    "method": "_dens_mass_solvent",
+                },
+                "dielectric_constant": {
+                    "doc": "Dielectric Constant of Water",
+                    "units": "dimensionless",
+                    "method": "_dielectric_constant",
+                },
+                "debye_huckel_constant": {
+                    "doc": "Debye-Huckel Constant, A, for Activity Coefficient Calculation",
+                    "units": "(kg / mol) ** 0.5",
+                    "method": "_debye_huckel_constant",
+                },
+                "enth_flow": {
+                    "doc": "Enthalpy Flow",
+                    "units": "J / s",
+                    "method": "_enth_flow",
+                },
+                "ionic_strength_molal": {
+                    "doc": "Ionic Strength on Molal Basis",
+                    "units": "mol / kg",
+                    "method": "_ionic_strength_molal",
+                },
+                "molar_volume_phase_comp": {
+                    "doc": "Molar Volume of Solutes",
+                    "units": "m**3 / mol",
+                    "method": "_molar_volume_phase_comp",
+                },
+                "radius_stokes_comp": {
+                    "doc": "Stokes Radius of Solute",
+                    "units": "m",
+                    "method": "_radius_stokes_comp",
+                },
+                "elec_mobility_phase_comp": {
+                    "doc": "Electrical Mobility of Ions",
+                    "units": "m**2 / (V * s)",
+                    "method": "_elec_mobility_phase_comp",
+                },
+                "trans_num_phase_comp": {
+                    "doc": "Ion Transport Number in Liquid Phase",
+                    "units": "dimensionless",
+                    "method": "_trans_num_phase_comp",
+                },
+                "total_hardness": {
+                    "doc": "Total Hardness as Calcium Carbonate",
+                    "units": "mg / L",
+                    "method": "_total_hardness",
+                },
+                "total_dissolved_solids": {
+                    "doc": "Total Dissolved Solids",
+                    "units": "mg / L",
+                    "method": "_total_dissolved_solids",
+                },
             }
         )
 
@@ -1916,10 +1998,10 @@ class MCASStateBlockData(StateBlockData):
                 == ActivityCoefficientModel.davies
             ):
                 I = b.ionic_strength_molal
-                return log(
+                return log10(
                     b.act_coeff_phase_comp[p, j]
                 ) == -b.debye_huckel_constant * b.charge_comp[j] ** 2 * (
-                    I**0.5 / (1 * pyunits.mole**0.5 / pyunits.kg**0.5 + I**0.5)
+                    I**0.5 / (1 + pyunits.kg**0.5 * pyunits.mol**-0.5 * I**0.5)
                     - b.params.debye_huckel_b * I
                 )
 
@@ -1929,8 +2011,6 @@ class MCASStateBlockData(StateBlockData):
             rule=rule_act_coeff_phase_comp,
         )
 
-    # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
-    # the MIT's DSPMDE paper indicates usage of molar concentration
     def _ionic_strength_molal(self):
         self.ionic_strength_molal = Var(
             initialize=1,
@@ -1951,36 +2031,27 @@ class MCASStateBlockData(StateBlockData):
         self.debye_huckel_constant = Var(
             initialize=1,
             domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            # TODO: units are technically (kg/mol)**0.5, but Debye Huckel equation
-            #  is empirical and units don't seem to cancel as typical. leaving as dimensionless for now
+            units=(pyunits.kg / pyunits.mol) ** 0.5,
             doc="Temperature-dependent Debye Huckel constant A",
         )
 
         def rule_debye_huckel_constant(b):
-            return (
-                b.debye_huckel_constant
-                == ((2 * Constants.pi * Constants.avogadro_number) ** 0.5 / log(10))
-                * (
-                    Constants.elemental_charge**2
-                    / (
-                        4
-                        * Constants.pi
-                        * Constants.vacuum_electric_permittivity
-                        * b.params.dielectric_constant
-                        * Constants.boltzmann_constant
-                        * b.temperature
-                    )
+            return b.debye_huckel_constant == (
+                (2 * Constants.pi * Constants.avogadro_number * b.dens_mass_solvent)
+                ** 0.5
+                / log(10)
+            ) * (
+                Constants.elemental_charge**2
+                / (
+                    4
+                    * Constants.pi
+                    * Constants.vacuum_electric_permittivity
+                    * b.params.dielectric_constant
+                    * Constants.boltzmann_constant
+                    * b.temperature
                 )
-                ** (3 / 2)
-                * (
-                    pyunits.coulomb**3
-                    * pyunits.m**1.5
-                    / pyunits.farad**1.5
-                    / pyunits.J**1.5
-                    / pyunits.mol**0.5
-                )
-                ** -1
+            ) ** (
+                1.5
             )
 
         self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)
@@ -2039,7 +2110,7 @@ class MCASStateBlockData(StateBlockData):
                 if (p, j) in self.params.config.trans_num_data.keys():
                     _log.warning(
                         """
-                        The provided trans_num_data of {} will be overritten by the calculated data for {}
+                        The provided trans_num_data of {} will be overwritten by the calculated data for {}
                         because "TransportNumberCalculation" is set as "ElectricalMobility".""".format(
                             j, self.name
                         )
@@ -2066,7 +2137,7 @@ class MCASStateBlockData(StateBlockData):
             self.params.phase_list,
             initialize=0.5,
             units=pyunits.meter**2 * pyunits.ohm**-1 * pyunits.mol**-1,
-            doc="Total equivalent electrical conducitivty of the liquid phase",
+            doc="Total equivalent electrical conductivity of the liquid phase",
         )
 
         def rule_equiv_conductivity_phase(b, p):
@@ -2404,7 +2475,7 @@ class MCASStateBlockData(StateBlockData):
                 * b.enth_mass_phase["Liq"]
             )
 
-        self.enth_flow = Expression(rule=rule_enth_flow)
+        self.enth_flow = Expression(rule=rule_enth_flow, doc="Enthalpy flow [J/s]")
 
     def _pressure_sat(self):
         params = self.params
@@ -2511,10 +2582,14 @@ class MCASStateBlockData(StateBlockData):
         """Create enthalpy flow terms."""
         return self.enth_flow
 
-    # TODO: make property package compatible with dynamics
-    # def get_material_density_terms(self, p, j):
-    #     """Create material density terms."""
+    def get_material_density_terms(self, p, j):
+        """Create material density terms."""
+        if self.params.config.material_flow_basis == MaterialFlowBasis.molar:
+            return self.conc_mol_phase_comp[p, j]
+        elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
+            return self.conc_mass_phase_comp[p, j]
 
+    # TODO: make property package compatible with dynamics when energy balance is included
     # def get_enthalpy_density_terms(self, p):
     #     """Create enthalpy density terms."""
 

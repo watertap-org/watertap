@@ -17,8 +17,6 @@ Implementation
 This flowsheet uses several different modeling features available in WaterTAP, including:
 
 Costing packages:
-    * :doc:`/technical_reference/costing/watertap_costing`
-    * :doc:`/technical_reference/costing/detailed_unit_model_costing`
     * :doc:`/technical_reference/costing/zero_order_costing`
 Property models:
     * :doc:`/technical_reference/core/water_props`
@@ -72,14 +70,12 @@ some helper functions that group these core functions together for convenience. 
         #. translator block from ``desalination`` to ``posttreatment`` (i.e., ``m.fs.tb_desal_psttrt``)
         #. ``posttreatment`` block
 
-4. Add the system- and unit-level costing packages with ``add_costing()`` and initialize with ``initialize_costing()``:
+4. Add the system- and unit-level costing package with ``add_costing()`` and initialize with ``m.fs.costing.initialize()``:
 
-    Because of the nature of the unit models used in this flowsheet (i.e., both zero order and detailed models), two separate system-level costing packages are required. 
-    ``m.fs.zo_costing = ZeroOrderCosting()`` is used to aggregate costs for zero-order models, and ``m.fs.ro_costing = WaterTAPCosting`` is for the more detailed desalination models. 
+    Because of the nature of the unit models used in this flowsheet (i.e., both zero order and detailed models), ``m.fs.costing = ZeroOrderCosting()`` is used to aggregate costs for both zero-order and detailed models.
     The costing block for each unit model is ``UnitModelCostingBlock`` that points to a system-level aggregation costing package via the configuration keyword ``flowsheet_costing_block``.
-    Each system-level costing package has a ``.cost_process()`` method that is called to aggregate unit level costs and calculate overall process costs.
-    To aggregate results from both costing packages, a separate ``Expression`` is created for ``total_capital_cost`` and ``total_operating_cost``, and each of these are used
-    to calculate the ``LCOW``. Finally, like the unit models, the costing packages are initialized.
+    The system-level costing package has a ``cost_process()`` method that is called to aggregate unit level costs and calculate overall process costs.
+    After ``cost_process()`` is called, the ``LCOW`` and ``specific_energy_consumption`` can be calculated. Finally, like the unit models, the costing package is initialized.
 
 5. Solve the entire flowsheet and display final results with ``display_results()``:
 

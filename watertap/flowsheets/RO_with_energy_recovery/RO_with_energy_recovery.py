@@ -23,8 +23,8 @@ from pyomo.environ import (
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from watertap.core.solvers import get_solver
+from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
@@ -39,9 +39,13 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.unit_models.reverse_osmosis_1D import (
+    ReverseOsmosis1D,
+)
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.unit_models import calculate_operating_pressure
 from watertap.costing import WaterTAPCosting
 
 _logger = logging.getLogger(__name__)
@@ -61,12 +65,12 @@ def erd_type_not_found(erd_type):
     )
 
 
-def main(erd_type=ERDtype.pressure_exchanger):
+def main(erd_type=ERDtype.pressure_exchanger, RO_1D=False):
     # set up solver
     solver = get_solver()
     # build, set, and initialize
-    m = build(erd_type=erd_type)
-    set_operating_conditions(m)
+    m = build(erd_type=erd_type, RO_1D=RO_1D)
+    set_operating_conditions(m, RO_1D=RO_1D)
     initialize_system(m, solver=solver)
 
     assert_optimal_termination(solve(m, solver=solver))
@@ -85,13 +89,12 @@ def main(erd_type=ERDtype.pressure_exchanger):
     return m
 
 
-def build(erd_type=ERDtype.pressure_exchanger):
+def build(erd_type=ERDtype.pressure_exchanger, RO_1D=False):
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -100,17 +103,24 @@ def build(erd_type=ERDtype.pressure_exchanger):
 
     # --- Main pump ---
     m.fs.P1 = Pump(property_package=m.fs.properties)
-    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
-    m.fs.RO = ReverseOsmosis0D(
-        property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-    )
-    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    if RO_1D:
+        m.fs.RO = ReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
+    else:
+        m.fs.RO = ReverseOsmosis0D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        )
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pressure_exchanger:
@@ -124,28 +134,16 @@ def build(erd_type=ERDtype.pressure_exchanger):
             inlet_list=["P1", "P2"],
         )
 
-        # add costing for PX and recirculation pump
-        m.fs.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         # mixer and separator have no associated costing
     elif erd_type == ERDtype.pump_as_turbine:
         # add energy recovery turbine block
         m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
-        # add costing for ERD config
-        m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     elif erd_type == ERDtype.no_ERD:
         pass
     else:
         erd_type_not_found(erd_type)
 
-    # process costing and add system level metrics
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_electrical_carbon_intensity(
-        m.fs.product.properties[0].flow_vol
-    )
+    add_costing(m, erd_type=erd_type)
 
     # connections
     if erd_type == ERDtype.pressure_exchanger:
@@ -197,13 +195,36 @@ def build(erd_type=ERDtype.pressure_exchanger):
     return m
 
 
+def add_costing(m, erd_type=ERDtype.pressure_exchanger):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    if erd_type == ERDtype.pressure_exchanger:
+        # add costing for PX and recirculation pump
+        m.fs.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    elif erd_type == ERDtype.pump_as_turbine:
+        # add costing for ERD config
+        m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # process costing and add system level metrics
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
+
+
 def set_operating_conditions(
     m,
     water_recovery=0.5,
-    over_pressure=0.3,
+    over_pressure_factor=1.3,
     flow_vol=1e-3,
     salt_mass_conc=35e-3,
     solver=None,
+    RO_1D=False,
 ):
 
     if solver is None:
@@ -232,10 +253,20 @@ def set_operating_conditions(
         m.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"], 1
     )
     iscale.set_scaling_factor(m.fs.P1.work_fluid[0], 1)
-    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e4)
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4
-    )
+    if RO_1D:
+        iscale.set_scaling_factor(
+            m.fs.RO.mass_transfer_phase_comp[0, 0.1, "Liq", "NaCl"], 1e4
+        )
+        iscale.set_scaling_factor(
+            m.fs.RO.feed_side.mass_transfer_term[0, 0.1, "Liq", "NaCl"], 1e4
+        )
+    else:
+        iscale.set_scaling_factor(
+            m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e4
+        )
+        iscale.set_scaling_factor(
+            m.fs.RO.feed_side.mass_transfer_term[0, "Liq", "NaCl"], 1e4
+        )
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -252,10 +283,10 @@ def set_operating_conditions(
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
     operating_pressure = calculate_operating_pressure(
-        feed_state_block=m.fs.feed.properties[0],
-        over_pressure=over_pressure,
-        water_recovery=water_recovery,
-        NaCl_passage=0.01,
+        state_block=m.fs.feed.properties[0],
+        over_pressure_factor=over_pressure_factor,
+        water_recovery_mass=water_recovery,
+        salt_passage=0.01,
         solver=solver,
     )
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
@@ -268,18 +299,32 @@ def set_operating_conditions(
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
     # initialize RO
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    )
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-    )
-    m.fs.RO.feed_side.properties_in[0].temperature = value(
-        m.fs.feed.properties[0].temperature
-    )
-    m.fs.RO.feed_side.properties_in[0].pressure = value(
-        m.fs.P1.control_volume.properties_out[0].pressure
-    )
+    if RO_1D:
+        m.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "H2O"] = value(
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        )
+        m.fs.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "NaCl"] = value(
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+        )
+        m.fs.RO.feed_side.properties[0, 0].temperature = value(
+            m.fs.feed.properties[0].temperature
+        )
+        m.fs.RO.feed_side.properties[0, 0].pressure = value(
+            m.fs.P1.control_volume.properties_out[0].pressure
+        )
+    else:
+        m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        )
+        m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
+            m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+        )
+        m.fs.RO.feed_side.properties_in[0].temperature = value(
+            m.fs.feed.properties[0].temperature
+        )
+        m.fs.RO.feed_side.properties_in[0].pressure = value(
+            m.fs.P1.control_volume.properties_out[0].pressure
+        )
 
     m.fs.RO.area.fix(50)  # guess area for RO initialization
 
@@ -309,53 +354,6 @@ def set_operating_conditions(
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
-
-
-def calculate_operating_pressure(
-    feed_state_block=None,
-    over_pressure=0.15,
-    water_recovery=0.5,
-    NaCl_passage=0.01,
-    solver=None,
-):
-    """
-    Estimate operating pressure for RO unit model given the following arguments:
-
-    Arguments:
-        feed_state_block:   the state block of the RO feed that has the non-pressure state
-                            variables initialized to their values (default=None)
-        over_pressure:  the amount of operating pressure above the brine osmotic pressure
-                        represented as a fraction (default=0.15)
-        water_recovery: the mass-based fraction of inlet H2O that becomes permeate
-                        (default=0.5)
-        NaCl_passage:   the mass-based fraction of inlet NaCl that becomes permeate
-                        (default=0.01)
-        solver:     solver object to be used (default=None)
-    """
-    t = ConcreteModel()  # create temporary model
-    prop = feed_state_block.config.parameters
-    t.brine = prop.build_state_block([0])
-
-    # specify state block
-    t.brine[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", "H2O"])
-        * (1 - water_recovery)
-    )
-    t.brine[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", "NaCl"]) * (1 - NaCl_passage)
-    )
-    t.brine[0].pressure.fix(
-        101325
-    )  # valid when osmotic pressure is independent of hydraulic pressure
-    t.brine[0].temperature.fix(value(feed_state_block.temperature))
-    # calculate osmotic pressure
-    # since properties are created on demand, we must touch the property to create it
-    t.brine[0].pressure_osm_phase
-    # solve state block
-    results = solve_indexed_blocks(solver, [t.brine])
-    assert_optimal_termination(results)
-
-    return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
@@ -649,4 +647,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(erd_type=ERDtype.pump_as_turbine)
+    m = main(erd_type=ERDtype.pump_as_turbine, RO_1D=False)

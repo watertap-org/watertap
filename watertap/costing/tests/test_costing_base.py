@@ -264,3 +264,15 @@ def test_flow_basis_mismatch():
             flow_basis="energy",
             name="annual_total_mismatch",
         )
+
+    # matching flow_basis and flow_rate should not raise
+    m.fs.costing.add_levelized_cost(
+        m.fs.product.properties[0].flow_vol,
+        flow_basis="volumetric",
+        name="LCOW_ok",
+    )
+    m.fs.costing.add_annual_total(
+        m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp],
+        flow_basis="mass",
+        name="annual_total_ok",
+    )

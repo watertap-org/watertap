@@ -231,6 +231,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     flow_cost * self.utilization_factor
                 ) / denominator
 
+    # Keywords commonly found in IDAES/WaterTAP flow variable names that
+    # indicate the "true" basis of the flow, keyed by the basis they imply.
     _FLOW_BASIS_KEYWORDS = {
         "volumetric": ("flow_vol",),
         "mass": ("flow_mass",),
@@ -239,6 +241,16 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
     @classmethod
     def _check_flow_basis_consistency(cls, flow_rate, flow_basis):
+        """
+        Raise a ValueError if the name of `flow_rate` suggests a basis
+        (volumetric, mass, or energy) that conflicts with the `flow_basis`
+        argument supplied by the user, e.g. passing a `flow_vol` variable
+        with `flow_basis="mass"`.
+
+        This is a name-based heuristic intended to catch user error early
+        with a clear message; it is not a substitute for the unit
+        conversion performed downstream by `pyo.units.convert`.
+        """
         flow_name = flow_rate.name.lower()
         for basis, keywords in cls._FLOW_BASIS_KEYWORDS.items():
             if basis == flow_basis:
