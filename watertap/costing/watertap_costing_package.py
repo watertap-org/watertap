@@ -231,6 +231,27 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     flow_cost * self.utilization_factor
                 ) / denominator
 
+    _FLOW_BASIS_KEYWORDS = {
+        "volumetric": ("flow_vol",),
+        "mass": ("flow_mass",),
+        "energy": ("flow_energy",),
+    }
+
+    @classmethod
+    def _check_flow_basis_consistency(cls, flow_rate, flow_basis):
+        flow_name = flow_rate.name.lower()
+        for basis, keywords in cls._FLOW_BASIS_KEYWORDS.items():
+            if basis == flow_basis:
+                continue
+            for kw in keywords:
+                if kw in flow_name:
+                    raise ValueError(
+                        f"flow_basis was set to '{flow_basis}', but the supplied "
+                        f"flow_rate '{flow_rate.name}' appears to be a '{basis}' "
+                        f"flow (matched on '{kw}'). Please check that flow_basis "
+                        "matches the flow_rate provided."
+                    )
+
     def add_levelized_cost(self, flow_rate, flow_basis="volumetric", name="LCOW"):
         """
         Add Levelized Cost of Water (LCOW) or Product (LCOP) to costing block.
@@ -245,6 +266,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 f"Unrecognized flow_basis {flow_basis}. Valid options are "
                 "'volumetric', 'mass', and 'energy'."
             )
+        self._check_flow_basis_consistency(flow_rate, flow_basis)
 
         flow_units = {
             "volumetric": pyo.units.m**3 / self.base_period,
@@ -337,6 +359,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 f"Unrecognized flow_basis {flow_basis}. Valid options are "
                 "'volumetric', 'mass', and 'energy'."
             )
+        self._check_flow_basis_consistency(flow_rate, flow_basis)
 
         flow_units = {
             "volumetric": pyo.units.m**3 / pyo.units.hr,
@@ -398,6 +421,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 f"Unrecognized flow_basis {flow_basis}. Valid options are "
                 "'volumetric', 'mass', and 'energy'."
             )
+        self._check_flow_basis_consistency(flow_rate, flow_basis)
 
         flow_units = {
             "volumetric": pyo.units.m**3 / self.base_period,

@@ -215,3 +215,52 @@ def test_breakdowns():
         sum(m.fs.costing.specific_electrical_carbon_intensity_component.values())
     )
     assert pytest.approx(seci) == summed_seci
+
+
+@pytest.mark.component
+def test_flow_basis_mismatch():
+    m = lsrro.build()
+
+    comp = next(iter(m.fs.properties.component_list))
+
+    # flow_vol supplied but flow_basis says "mass"
+    with pytest.raises(
+        ValueError,
+        match=r"flow_basis was set to 'mass', but the supplied flow_rate "
+        r".*flow_vol.* appears to be a 'volumetric' flow \(matched on "
+        r"'flow_vol'\)\. Please check that flow_basis matches the flow_rate "
+        r"provided\.",
+    ):
+        m.fs.costing.add_levelized_cost(
+            m.fs.product.properties[0].flow_vol,
+            flow_basis="mass",
+            name="LCOW_mismatch",
+        )
+
+    # flow_mass_phase_comp supplied but flow_basis says "volumetric"
+    with pytest.raises(
+        ValueError,
+        match=r"flow_basis was set to 'volumetric', but the supplied flow_rate "
+        r".*flow_mass_phase_comp.* appears to be a 'mass' flow \(matched on "
+        r"'flow_mass'\)\. Please check that flow_basis matches the flow_rate "
+        r"provided\.",
+    ):
+        m.fs.costing.add_specific_energy_consumption(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp],
+            flow_basis="volumetric",
+            name="specific_energy_consumption_mismatch",
+        )
+
+    # flow_vol supplied but flow_basis says "energy"
+    with pytest.raises(
+        ValueError,
+        match=r"flow_basis was set to 'energy', but the supplied flow_rate "
+        r".*flow_vol.* appears to be a 'volumetric' flow \(matched on "
+        r"'flow_vol'\)\. Please check that flow_basis matches the flow_rate "
+        r"provided\.",
+    ):
+        m.fs.costing.add_annual_total(
+            m.fs.product.properties[0].flow_vol,
+            flow_basis="energy",
+            name="annual_total_mismatch",
+        )
