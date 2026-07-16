@@ -994,7 +994,7 @@ class ModifiedASM2dReactionScaler(CustomScalerBase):
     """
 
     # TODO: Revisit this scaling factor
-    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e5}
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None

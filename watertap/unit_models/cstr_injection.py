@@ -79,6 +79,7 @@ class CSTR_InjectionScaler(CustomScalerBase):
         "KLa": 1e-1,
         "mass_transfer_term": 1e2,
         "rate_reaction_extent": 1e3,
+        "rate_reaction_generation": 1e3,
     }
 
     def variable_scaling_routine(
@@ -133,6 +134,11 @@ class CSTR_InjectionScaler(CustomScalerBase):
         for rxn in model.config.reaction_package.rate_reaction_idx:
             self.scale_variable_by_default(
                 model.control_volume.rate_reaction_extent[0, rxn], overwrite=overwrite
+            )
+        for c in model.config.property_package.component_list:
+            self.scale_variable_by_default(
+                model.control_volume.rate_reaction_generation[0, "Liq", c],
+                overwrite=overwrite,
             )
 
         if model.config.has_aeration:

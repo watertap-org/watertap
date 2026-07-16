@@ -35,7 +35,6 @@ from idaes.core.util.config import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 
 from idaes.core.scaling import CustomScalerBase, ConstraintScalingScheme
 
@@ -77,6 +76,7 @@ class ADM1ASM2dScaler(CustomScalerBase):
         Returns:
             None
         """
+
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
             submodel=model.properties_in,
@@ -619,8 +619,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
                 blk.properties_out[t].conc_mass_comp[i]
                 == 1e-10 * pyunits.kg / pyunits.m**3
             )
-
-        iscale.set_scaling_factor(self.properties_out[0].flow_vol, 1e5)
 
     def initialize_build(
         self,

@@ -12,6 +12,7 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Constraint,
     Var,
     Param,
     Suffix,
@@ -39,7 +40,7 @@ __author__ = "Chenyu Wang"
 _log = idaeslog.getLogger(__name__)
 
 
-class ClarifierScaler(CustomScalerBase):
+class ElectroNPScaler(CustomScalerBase):
     """
     Default modular scaler for the ElectroN-P unit model.
     This Scaler relies on the associated property and reaction packages,
@@ -48,9 +49,11 @@ class ClarifierScaler(CustomScalerBase):
     """
 
     DEFAULT_SCALING_FACTORS = {
-        "magnesium_chloride_dosage": 1e-3,
-        "MgCl2_flowrate": 1e-3,
-        "electricity_consumption": 1,
+        "magnesium_chloride_dosage": 1e1,
+        "MgCl2_flowrate": 1e-2,
+        "electricity": 1e-1,
+        "energy_electric_flow_mass": 1e2,
+        "split_fraction": 1e2,
     }
 
     def variable_scaling_routine(
@@ -73,34 +76,40 @@ class ClarifierScaler(CustomScalerBase):
             overwrite=overwrite,
         )
         self.propagate_state_scaling(
-            target_state=model.underflow_state,
+            target_state=model.treated_state,
             source_state=model.mixed_state,
             overwrite=overwrite,
         )
         self.propagate_state_scaling(
-            target_state=model.effluent_state,
+            target_state=model.byproduct_state,
             source_state=model.mixed_state,
             overwrite=overwrite,
         )
 
         self.call_submodel_scaler_method(
-            submodel=model.underflow_state,
+            submodel=model.treated_state,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
         self.call_submodel_scaler_method(
-            submodel=model.effluent_state,
+            submodel=model.byproduct_state,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
 
         # Scale unit level variables
-        self.scale_variable_by_default(model.surface_area, overwrite=overwrite)
         self.scale_variable_by_default(
-            model.electricity_consumption[0], overwrite=overwrite
+            model.magnesium_chloride_dosage, overwrite=overwrite
         )
+        self.scale_variable_by_default(model.MgCl2_flowrate[0], overwrite=overwrite)
+        self.scale_variable_by_default(model.electricity[0], overwrite=overwrite)
+        self.scale_variable_by_default(
+            model.energy_electric_flow_mass, overwrite=overwrite
+        )
+        for sf in model.split_fraction.values():
+            self.scale_variable_by_default(sf, overwrite=overwrite)
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -124,13 +133,13 @@ class ClarifierScaler(CustomScalerBase):
             overwrite=overwrite,
         )
         self.call_submodel_scaler_method(
-            submodel=model.underflow_state,
+            submodel=model.treated_state,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
         self.call_submodel_scaler_method(
-            submodel=model.effluent_state,
+            submodel=model.byproduct_state,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
@@ -150,6 +159,8 @@ class ElectroNPZOdata(SeparatorData):
     """
     Zero order electrochemical nutrient removal (ElectroNP) model based on specified removal efficiencies for nitrogen and phosphorus.
     """
+
+    default_scaler = ElectroNPScaler
 
     CONFIG = SeparatorData.CONFIG()
     CONFIG.outlet_list = ["treated", "byproduct"]

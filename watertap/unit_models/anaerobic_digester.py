@@ -93,7 +93,6 @@ class ADScaler(CustomScalerBase):
         "electricity_consumption": 1e-1,
         "rate_reaction_generation": 1e3,
         "rate_reaction_extent": 1e3,
-        "reaction_rate": 1e8,
         "mass_transfer_term": 1e4,
     }
 

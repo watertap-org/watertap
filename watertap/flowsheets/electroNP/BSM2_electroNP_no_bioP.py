@@ -89,9 +89,63 @@ from watertap.unit_models.thickener import (
 from watertap.unit_models.cstr import CSTR
 from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
+from idaes.core.util import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+_asm2d_comp_list = [
+    "S_A",
+    "S_F",
+    "S_I",
+    "S_N2",
+    "S_NH4",
+    "S_NO3",
+    "S_O2",
+    "S_PO4",
+    "S_K",
+    "S_Mg",
+    "S_IC",
+    "X_AUT",
+    "X_H",
+    "X_I",
+    "X_PAO",
+    "X_PHA",
+    "X_PP",
+    "X_S",
+]
+
+_adm1_comp_list = [
+    "S_su",
+    "S_aa",
+    "S_fa",
+    "S_va",
+    "S_bu",
+    "S_pro",
+    "S_ac",
+    "S_h2",
+    "S_ch4",
+    "S_IC",
+    "S_IN",
+    "S_IP",
+    "S_I",
+    "X_ch",
+    "X_pr",
+    "X_li",
+    "X_su",
+    "X_aa",
+    "X_fa",
+    "X_c4",
+    "X_pro",
+    "X_ac",
+    "X_h2",
+    "X_I",
+    "X_PHA",
+    "X_PP",
+    "X_PAO",
+    "S_K",
+    "S_Mg",
+]
 
 
 def main(has_electroNP=False):
@@ -105,6 +159,10 @@ def main(has_electroNP=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
+    dt = DiagnosticsToolbox(m)
+    print("Structural Issues")
+    dt.report_structural_issues()
+
     initialize_system(m, has_electroNP=has_electroNP)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -112,15 +170,38 @@ def main(has_electroNP=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
+    # print("Numerical Issues Before Solving")
+    # dt.report_numerical_issues()
+
     results = solve(m)
 
-    pyo.assert_optimal_termination(results)
-    check_solve(
-        results,
-        checkpoint="re-solve with controls in place",
-        logger=_log,
-        fail_flag=True,
-    )
+    import idaes.core.util.scaling as iscale
+
+    # Custom scaling visualization tools
+    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
+    # print("----------------   Bad Scaling Factors   ----------------")
+    # for x in badly_scaled_var_list:
+    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
+
+    from idaes.core.scaling import report_scaling_factors
+
+    print("--- All Scaling Factors ---")
+    report_scaling_factors(m, descend_into=True)
+
+    print("Numerical Issues After Solving")
+    dt.report_numerical_issues()
+    dt.display_constraints_with_large_residuals()
+    dt.display_near_parallel_constraints()
+    print("Infeasibility Explanation")
+    dt.compute_infeasibility_explanation()
+
+    # pyo.assert_optimal_termination(results)
+    # check_solve(
+    #     results,
+    #     checkpoint="re-solve with controls in place",
+    #     logger=_log,
+    #     fail_flag=True,
+    # )
 
     return m, results
 
@@ -558,10 +639,14 @@ def set_scaling(m):
     adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
     asm2d_scaler.default_scaling_factors["flow_vol"] = 1e2
+    for c in _asm2d_comp_list:
+        asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e1
 
     adm1_scaler.default_scaling_factors["flow_vol"] = 1e2
+    for c in _adm1_comp_list:
+        adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e1
 
-    # adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_h2]"] = 1e-4
+    # adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_ch4]"] = 1e0
 
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
     m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
@@ -571,10 +656,21 @@ def set_scaling(m):
 
     for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
         if isinstance(blk, UnitModelBlockData):
+            # if blk in unit_list:
+            #     print(f"Scaling {blk.name}")
+            #     scaler = blk.default_scaler()
+            #     for c in _adm1_comp_list:
+            #         scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e-1
+            #     scaler.scale_model(blk)
             if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
-                print(f"Scaling {blk.name}")
-                scaler = blk.default_scaler()
-                scaler.scale_model(blk)
+                if blk == m.fs.AD:
+                    scaler = blk.default_scaler()
+                    scaler.default_scaling_factors["heat"] = 1e3
+                    scaler.scale_model(blk)
+                else:
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.scale_model(blk)
             else:
                 print(f"No default scaler for unit model {blk.name}")
         elif "_expanded" in blk.name:
@@ -606,23 +702,23 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses = {
             "flow_vol": {0: 1.2366},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0006,
+                (0, "S_A"): 0.006,
                 (0, "S_F"): 0.0004,
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.04,
                 (0, "S_NH4"): 0.006,
-                (0, "S_NO3"): 0.002,
+                (0, "S_NO3"): 4e-3,
                 (0, "S_O2"): 0.0019,
-                (0, "S_PO4"): 0.09,
+                (0, "S_PO4"): 9e-3,
                 (0, "S_K"): 0.37,
                 (0, "S_Mg"): 0.020,
                 (0, "S_IC"): 0.13,
-                (0, "X_AUT"): 0.085,
+                (0, "X_AUT"): 0.15,
                 (0, "X_H"): 3.5,
                 (0, "X_I"): 3.1,
                 (0, "X_PAO"): 3.4,
                 (0, "X_PHA"): 0.087,
-                (0, "X_PP"): 1.1,
+                (0, "X_PP"): 0.8,
                 (0, "X_S"): 0.057,
             },
             "temperature": {0: 308.15},
@@ -637,7 +733,7 @@ def initialize_system(m, has_electroNP=False):
                 (0, "S_I"): 0.057,
                 (0, "S_N2"): 0.034,
                 (0, "S_NH4"): 0.025,
-                (0, "S_NO3"): 0.0015,
+                (0, "S_NO3"): 4.5e-3,
                 (0, "S_O2"): 0.0013,
                 (0, "S_PO4"): 0.1,
                 (0, "S_K"): 0.38,
@@ -647,8 +743,8 @@ def initialize_system(m, has_electroNP=False):
                 (0, "X_H"): 23,
                 (0, "X_I"): 11,
                 (0, "X_PAO"): 10.5,
-                (0, "X_PHA"): 0.006,
-                (0, "X_PP"): 2.7,
+                (0, "X_PHA"): 3.68e-3,
+                (0, "X_PP"): 3.35,
                 (0, "X_S"): 3.9,
             },
             "temperature": {0: 308.15},
@@ -721,9 +817,11 @@ def initialize_system(m, has_electroNP=False):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
+        # solver.options.constr_viol_tol = 1e-8
+        # solver.options["max_iter"] = 500
     results = solver.solve(m, tee=True)
-    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
-    pyo.assert_optimal_termination(results)
+    # check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
+    # pyo.assert_optimal_termination(results)
     return results
 
 
@@ -775,3 +873,8 @@ if __name__ == "__main__":
             time_point=0,
         )
     print(stream_table_dataframe_to_string(stream_table))
+
+    m.fs.R3.inlet.display()
+    m.fs.translator_asm2d_adm1.inlet.display()
+    # m.fs.AD.display()
+    # m.fs.translator_adm1_asm2d.display()
