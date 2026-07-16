@@ -388,7 +388,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             ),
         )
 
-        self._add_flow_component_breakdown(
+        self.add_flow_component_breakdown(
             "electricity",
             name,
             flow_rate,
@@ -482,7 +482,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
-        self._add_flow_component_breakdown(
+        self.add_flow_component_breakdown(
             "electricity",
             name,
             flow_rate,
@@ -491,7 +491,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             multiplier=self.electrical_carbon_intensity,
         )
 
-    def _add_flow_component_breakdown(
+    def add_flow_component_breakdown(
         self,
         flow_name,
         name,
