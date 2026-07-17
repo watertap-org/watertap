@@ -392,7 +392,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             "electricity",
             name,
             flow_rate,
-            flow_basis,
+            flow_basis=flow_basis,
             utilization_factor=1.0,
             period=pyo.units.hr,
         )
@@ -403,7 +403,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating annual water production
-            name (optional) - name for the annual water productionvariable
+            name (optional) - name for the annual water production
                               Expression (default: annual_water_production)
         """
         self.add_component(
