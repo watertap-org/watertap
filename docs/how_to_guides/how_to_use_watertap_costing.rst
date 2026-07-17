@@ -324,10 +324,12 @@ Additional details on the WaterTAP costing package, including equations and defa
         )
         m.fs.costing.add_flow_component_breakdown(
             "bazchem",
+            "bazchem",
             m.fs.product.properties[0].flow_vol_phase["Liq"],
             period=pyunits.hr,
         )
         m.fs.costing.add_flow_component_breakdown(
+            "electricity",
             "electricity",
             m.fs.product.properties[0].flow_vol_phase["Liq"],
             period=pyunits.hr,
@@ -510,10 +512,12 @@ The following snippet shows how to add costing to the unit models on our flowshe
         # Add flow component breakdown for electricity and bazchem
         m.fs.costing.add_flow_component_breakdown(
             "electricity",
+            "electricity",
             flow_rate,
             period=pyunits.hr,
         )
         m.fs.costing.add_flow_component_breakdown(
+            "bazchem",
             "bazchem",
             flow_rate,
             period=pyunits.hr,

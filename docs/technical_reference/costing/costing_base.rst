@@ -509,7 +509,7 @@ an expression ``m.fs.costing.bazchem_flow_component`` indexed to every unit that
 .. code-block:: python
 
     m.fs.costing.add_flow_component_breakdown(
-        "bazchem", flow_rate, name="bazchem_flow", period=pyunits.hour
+        "bazchem", "bazchem_flow", flow_rate, period=pyunits.hour
     )
 
 .. note::

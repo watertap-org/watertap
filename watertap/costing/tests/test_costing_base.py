@@ -148,6 +148,36 @@ def test_breakdowns():
     m.fs.costing.add_specific_electrical_carbon_intensity(
         m.fs.product.properties[0].flow_vol
     )
+    # Tests for performance indices introduced from valorization_costing_block
+    m.fs.costing.add_levelized_cost(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="LCOP",
+    )
+    m.fs.costing.add_levelized_cost(
+        m.fs.product.properties[0].flow_vol,
+        flow_basis="volumetric",
+        name="LCOT",
+    )
+    m.fs.costing.add_specific_energy_consumption(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="specific_energy_consumption_with_product",
+    )
+    m.fs.costing.add_annual_total(
+        sum(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp]
+            for comp in m.fs.properties.component_list
+        ),
+        flow_basis="mass",
+        name="annual_product_generation",
+    )
 
     assert_units_consistent(m)
 
@@ -188,31 +218,61 @@ def test_breakdowns():
 
 
 @pytest.mark.component
-def test_breakdowns_with_no_unit():
+def test_flow_basis_mismatch():
     m = lsrro.build()
 
-    m.fs.BoosterPumps[:].control_volume.work[0.0].value = 42e6
-    m.fs.EnergyRecoveryDevices[:].control_volume.work[0.0].value = -42e6
-    m.fs.electricity_flow_with_no_unit = pyo.Var(units=pyo.units.kW, initialize=1234)
+    comp = next(iter(m.fs.properties.component_list))
 
-    m.fs.costing.cost_flow(m.fs.electricity_flow_with_no_unit, "electricity")
+    # flow_vol supplied but flow_basis says "mass"
+    with pytest.raises(
+        ValueError,
+        match=r"flow_basis was set to 'mass', but the supplied flow_rate "
+        r".*flow_vol.* appears to be a 'volumetric' flow \(matched on "
+        r"'flow_vol'\)\. Please check that flow_basis matches the flow_rate "
+        r"provided\.",
+    ):
+        m.fs.costing.add_levelized_cost(
+            m.fs.product.properties[0].flow_vol,
+            flow_basis="mass",
+            name="LCOW_mismatch",
+        )
 
-    m.fs.costing.add_flow_component_breakdown(
-        "electricity",
+    # flow_mass_phase_comp supplied but flow_basis says "volumetric"
+    with pytest.raises(
+        ValueError,
+        match=r"flow_basis was set to 'volumetric', but the supplied flow_rate "
+        r".*flow_mass_phase_comp.* appears to be a 'mass' flow \(matched on "
+        r"'flow_mass'\)\. Please check that flow_basis matches the flow_rate "
+        r"provided\.",
+    ):
+        m.fs.costing.add_specific_energy_consumption(
+            m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp],
+            flow_basis="volumetric",
+            name="specific_energy_consumption_mismatch",
+        )
+
+    # flow_vol supplied but flow_basis says "energy"
+    with pytest.raises(
+        ValueError,
+        match=r"flow_basis was set to 'energy', but the supplied flow_rate "
+        r".*flow_vol.* appears to be a 'volumetric' flow \(matched on "
+        r"'flow_vol'\)\. Please check that flow_basis matches the flow_rate "
+        r"provided\.",
+    ):
+        m.fs.costing.add_annual_total(
+            m.fs.product.properties[0].flow_vol,
+            flow_basis="energy",
+            name="annual_total_mismatch",
+        )
+
+    # matching flow_basis and flow_rate should not raise
+    m.fs.costing.add_levelized_cost(
         m.fs.product.properties[0].flow_vol,
-        period=pyo.units.year,
+        flow_basis="volumetric",
+        name="LCOW_ok",
     )
-    assert hasattr(m.fs.costing, "electricity_component")
-    assert (
-        "fs.electricity_flow_with_no_unit"
-        in m.fs.costing.electricity_component.index_set()
+    m.fs.costing.add_annual_total(
+        m.fs.product.properties[0].flow_mass_phase_comp["Liq", comp],
+        flow_basis="mass",
+        name="annual_total_ok",
     )
-
-    m.fs.costing.add_flow_component_breakdown(
-        "electricity",
-        m.fs.product.properties[0].flow_vol,
-        name="biff",
-        period=pyo.units.millisecond,
-    )
-    assert hasattr(m.fs.costing, "biff_component")
-    assert "fs.electricity_flow_with_no_unit" in m.fs.costing.biff_component.index_set()
