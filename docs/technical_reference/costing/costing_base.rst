@@ -342,7 +342,7 @@ The total operating cost is the sum of the fixed and variable operating costs:
 
         C_{op,tot} = C_{op,fix} + C_{op,var}
 
-The total fixed operating cost :math:`C_{op,fix}` is the sum of the maintence, labor, and chemical operating costs, :math:`C_{mlc}`, and the total fixed operating costs from the unit models, :math:`C_{fop,u}`:
+The total fixed operating cost :math:`C_{op,fix}` is the sum of the maintenance, labor, and chemical operating costs, :math:`C_{mlc}`, and the total fixed operating costs from the unit models, :math:`C_{fop,u}`:
 
    .. math::
 
@@ -492,7 +492,7 @@ For a given registered flow type :math:`x` the flow component breakdown :math:`\
         \text{FCB}_{u} = \frac{F_{x,u} M_f}{Q_p}
 
 Where :math:`F_{x,u}` is the flow of :math:`x` from source :math:`u`, :math:`M_f` is an optional multiplier, and :math:`Q_p` is a specified volumetric flow rate.
-:math:`M_f` must have units that, when multipled with the units for :math:`F_{x,u}`, result in a rate (i.e., units per time). For example, if the flow rate was electricity (units of kW),
+:math:`M_f` must have units that, when multiplied with the units for :math:`F_{x,u}`, result in a rate (i.e., units per time). For example, if the flow rate was electricity (units of kW),
 the multiplier could be a electrical carbon intensity (units of kg/kWh) and the resulting units would be kg/hr.
 
 The method has two required arguments and three optional arguments:
@@ -509,7 +509,7 @@ an expression ``m.fs.costing.bazchem_flow_component`` indexed to every unit that
 .. code-block:: python
 
     m.fs.costing.add_flow_component_breakdown(
-        "bazchem", flow_rate, name="bazchem_flow", period=pyunits.hour
+        "bazchem", "bazchem_flow", flow_rate, period=pyunits.hour
     )
 
 .. note::
