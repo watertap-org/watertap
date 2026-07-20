@@ -702,8 +702,7 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses = {
             "flow_vol": {0: 1.2366},
             "conc_mass_comp": {
-                # 95, 5.084e13
-                (0, "S_A"): 0.001645,
+                (0, "S_A"): 0.006,
                 (0, "S_F"): 0.00096,
                 (0, "S_I"): 0.05746,
                 (0, "S_N2"): 0.04,
@@ -736,6 +735,7 @@ def initialize_system(m, has_electroNP=False):
                 (0, "S_NH4"): 0.025,
                 (0, "S_NO3"): 4.5e-3,
                 (0, "S_O2"): 0.0013,
+                # 95, 5.084e13
                 (0, "S_PO4"): 0.1,
                 (0, "S_K"): 0.38,
                 (0, "S_Mg"): 0.024,
