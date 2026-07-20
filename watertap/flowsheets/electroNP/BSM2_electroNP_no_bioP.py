@@ -182,16 +182,16 @@ def main(has_electroNP=False):
     # print("----------------   Bad Scaling Factors   ----------------")
     # for x in badly_scaled_var_list:
     #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    from idaes.core.scaling import report_scaling_factors
-
-    print("--- All Scaling Factors ---")
-    report_scaling_factors(m, descend_into=True)
+    #
+    # from idaes.core.scaling import report_scaling_factors
+    #
+    # print("--- All Scaling Factors ---")
+    # report_scaling_factors(m, descend_into=True)
 
     print("Numerical Issues After Solving")
     dt.report_numerical_issues()
     dt.display_constraints_with_large_residuals()
-    dt.display_near_parallel_constraints()
+    # dt.display_near_parallel_constraints()
     print("Infeasibility Explanation")
     dt.compute_infeasibility_explanation()
 
@@ -702,19 +702,20 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses = {
             "flow_vol": {0: 1.2366},
             "conc_mass_comp": {
-                (0, "S_A"): 0.006,
-                (0, "S_F"): 0.0004,
-                (0, "S_I"): 0.057,
+                # 95, 5.084e13
+                (0, "S_A"): 0.001645,
+                (0, "S_F"): 0.00096,
+                (0, "S_I"): 0.05746,
                 (0, "S_N2"): 0.04,
                 (0, "S_NH4"): 0.006,
                 (0, "S_NO3"): 4e-3,
                 (0, "S_O2"): 0.0019,
                 (0, "S_PO4"): 9e-3,
-                (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.020,
-                (0, "S_IC"): 0.13,
-                (0, "X_AUT"): 0.15,
-                (0, "X_H"): 3.5,
+                (0, "S_K"): 0.3778,
+                (0, "S_Mg"): 0.02361,
+                (0, "S_IC"): 0.1856,
+                (0, "X_AUT"): 1e-5,
+                (0, "X_H"): 4.5,
                 (0, "X_I"): 3.1,
                 (0, "X_PAO"): 3.4,
                 (0, "X_PHA"): 0.087,
@@ -728,10 +729,10 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.1,
+                (0, "S_A"): 0.07807,
                 (0, "S_F"): 0.15,
-                (0, "S_I"): 0.057,
-                (0, "S_N2"): 0.034,
+                (0, "S_I"): 0.05746,
+                (0, "S_N2"): 0.02479,
                 (0, "S_NH4"): 0.025,
                 (0, "S_NO3"): 4.5e-3,
                 (0, "S_O2"): 0.0013,
