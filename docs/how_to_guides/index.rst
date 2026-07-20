@@ -15,13 +15,7 @@ How To Guides
    how_to_create_custom_costing_method
    how_to_cost_a_flow
    how_to_access_costing_results
-   how_to_setup_simple_chemistry
-   how_to_use_apparent_and_true_chemical_species
-   how_to_use_inherent_reactions
    how_to_scale_a_model
-   how_to_scale_chemical_reactions
-   how_to_scale_chemical_species
-   how_to_scale_chemical_process_energy_balance
    how_to_use_parameter_sweep
    how_to_use_parameter_sweep_monte_carlo
    how_to_run_differential_parameter_sweep

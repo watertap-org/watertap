@@ -22,9 +22,9 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Constant 1 in electricity intensity equation", "elec_coeff_1", ":math:`kWh/m^3`"
-   "Constant 2 in electricity intensity equation", "elec_coeff_2", ":math:`kWh/m^3/(mg/L)`"
+   "Constant 2 in electricity intensity equation", "elec_coeff_2", ":math:`kWh*l/m^3/mg`"
    "Constant 3 in electricity intensity equation", "elec_coeff_3", ":math:`kWh/m^3`"
-   "Constant 4 in electricity intensity equation", "elec_coeff_4", ":math:`kWh/m^3/(m^3/h)`"
+   "Constant 4 in electricity intensity equation", "elec_coeff_4", ":math:`h*kWh/m^6`"
    "Power consumption of crystallizer", "electricity", ":math:`kW`"
    "Specific energy consumption with respect to feed flowrate", "electricity_intensity", ":math:`kWh/m^3`"
 

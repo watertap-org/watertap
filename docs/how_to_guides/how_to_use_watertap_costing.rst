@@ -642,7 +642,7 @@ Costs for these flows are accessed via the ``aggregate_flow_costs`` indexed vari
     bazchem_cost = m.fs.costing.aggregate_flow_costs["bazchem"]() # $/year
 
 
-LCOW and SEC are further broken down into the contributions from each unit model, unit model class, and flow type in the following expressions.
+:ref:`LCOW<aggregate_metric_LCOW>` and :ref:`SEC<aggregate_metric_SEC>` are further broken down into the contributions from each unit model, unit model class, and flow type in the following expressions.
 
 - Direct capital expenditures by flowsheet component: ``m.fs.costing.LCOW_component_direct_capex``
 - Indirect capital expenditures by flowsheet component: ``m.fs.costing.LCOW_component_indirect_capex``

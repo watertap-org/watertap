@@ -36,13 +36,13 @@ keywords = [
     "desalination",
     "nawi",
 ]
-version = "1.7.dev0"
+version = "1.8.0.dev0"
 
 dependencies = [
     # primary requirements for unit and property models
     # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
     # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
-    "idaes-pse @ git+https://github.com/IDAES/idaes-pse.git@74b9ea61a0b1c79622d61a8f0019c8859282ad60",
+    "idaes-pse>=2.12.0",
     "pyomo>=6.6.1",
     "watertap-solvers",
     "pyyaml",            # watertap.core.wt_database
@@ -58,12 +58,12 @@ Homepage = "https://github.com/watertap-org/watertap"
 
 [project.optional-dependencies]
 testing = [
-    "pytest",
+    "pytest==9.0.3",
     "pandas",
     # treebeardtech/nbmake#121
     "nbmake!=1.5.1",
     "nbconvert",
-    "idaes-flowsheet-processor @ git+https://github.com/prommis/idaes-flowsheet-processor.git@main",
+    "idaes-flowsheet-processor>=0.3.0",
 ]
 notebooks = ["jupyter", "ipykernel"]
 oli_api = [
@@ -72,7 +72,7 @@ oli_api = [
 ]
 
 reaktoro = [
-    "reaktoro-pse>=0.3.0",
+    "reaktoro-pse>=0.4.0",
 ]
 
 exposan = [
@@ -99,7 +99,7 @@ dev = [
     "watertap[testing,notebooks,oli_api,reaktoro]",
 ]
 
-all = ["watertap[testing,notebooks,oli_api,reaktoro]"]
+all = ["watertap[testing,notebooks,oli_api,reaktoro,exposan]"]
 
 [tool.setuptools]
 zip-safe = false

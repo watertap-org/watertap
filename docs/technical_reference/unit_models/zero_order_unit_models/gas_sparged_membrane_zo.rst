@@ -13,7 +13,8 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 
 Costing Method
 --------------
-This unit does not include costing.
+Costing is calculated using the :py:meth:`~watertap.unit_models.zero_order.gas_sparged_membrane_zo.GasSpargedMembraneZOData.default_costing_method.<locals>.<lambda>` method.
+For full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
 --------------------
