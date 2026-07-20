@@ -38,48 +38,48 @@ from watertap.core.solvers import get_solver
 solver = get_solver()
 
 # TODO: See if these can be removed
-is_reference_platform = (
-    platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
-)
-is_linux_platform = (
-    platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
-)
-is_linux_platform_new = (
-    platform.system() == "Linux"
-    and platform.python_version_tuple()[0] in ("3.12", "3.13")
-)
-is_linux_platform_old = (
-    platform.system() == "Linux"
-    and platform.python_version_tuple()[0] in ("3.10", "3.11")
-)
-
-reference_platform_only = pytest.mark.xfail(
-    condition=(not is_reference_platform),
-    run=True,
-    strict=False,
-    reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
-)
-
-linux_platform_only = pytest.mark.xfail(
-    condition=(not is_linux_platform),
-    run=True,
-    strict=False,
-    reason="These tests are expected to pass only on the Linux platform (Python 3)",
-)
-
-linux_platform_new_only = pytest.mark.xfail(
-    condition=(not is_linux_platform_new),
-    run=True,
-    strict=False,
-    reason="These tests are expected to pass only on the Linux platform (Python 3.12, 3.13)",
-)
-
-linux_platform_old_only = pytest.mark.xfail(
-    condition=(not is_linux_platform_old),
-    run=True,
-    strict=False,
-    reason="These tests are expected to pass only on the Linux platform (Python 3.10, 3.11)",
-)
+# is_reference_platform = (
+#     platform.system() == "Windows" and platform.python_version_tuple()[0] == "3"
+# )
+# is_linux_platform = (
+#     platform.system() == "Linux" and platform.python_version_tuple()[0] == "3"
+# )
+# is_linux_platform_new = (
+#     platform.system() == "Linux"
+#     and platform.python_version_tuple()[0] in ("3.12", "3.13")
+# )
+# is_linux_platform_old = (
+#     platform.system() == "Linux"
+#     and platform.python_version_tuple()[0] in ("3.10", "3.11")
+# )
+#
+# reference_platform_only = pytest.mark.xfail(
+#     condition=(not is_reference_platform),
+#     run=True,
+#     strict=False,
+#     reason="These tests are expected to pass only on the reference platform (Python 3 on Windows)",
+# )
+#
+# linux_platform_only = pytest.mark.xfail(
+#     condition=(not is_linux_platform),
+#     run=True,
+#     strict=False,
+#     reason="These tests are expected to pass only on the Linux platform (Python 3)",
+# )
+#
+# linux_platform_new_only = pytest.mark.xfail(
+#     condition=(not is_linux_platform_new),
+#     run=True,
+#     strict=False,
+#     reason="These tests are expected to pass only on the Linux platform (Python 3.12, 3.13)",
+# )
+#
+# linux_platform_old_only = pytest.mark.xfail(
+#     condition=(not is_linux_platform_old),
+#     run=True,
+#     strict=False,
+#     reason="These tests are expected to pass only on the Linux platform (Python 3.10, 3.11)",
+# )
 
 
 @pytest.mark.requires_idaes_solver
@@ -310,7 +310,7 @@ class TestFullFlowsheetBioPTrue:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @reference_platform_only
+    # @reference_platform_only
     def test_condition_number(self, system_frame):
         m = system_frame
 
