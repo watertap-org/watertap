@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -10,11 +10,14 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-This flowsheet is a WWTP model where METAB is integrated with the ASM1 flowsheet
+This flowsheet is a WWTP model where METAB is integrated upstream of the BSM1 flowsheet
 
 """
 
 __author__ = "Marcus Holly"
+
+import pandas as pd
+from pathlib import Path
 
 import pyomo.environ as pyo
 from pyomo.environ import units
@@ -53,7 +56,6 @@ from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions i
 )
 from watertap.unit_models.translators.translator_adm1_asm1 import Translator_ADM1_ASM1
 
-from watertap.flowsheets.METAB import model_connector as metab
 from watertap.core.util.initialization import check_solve
 
 # Set up logger
@@ -80,6 +82,16 @@ def build():
     m.fs.props_adm1 = ADM1ParameterBlock()
     m.fs.asm1_rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props_asm1)
     m.fs.adm1_rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props_adm1)
+
+    # Translate metab effluent from ADM1 to ASM1
+    m.fs.metab_effluent = Translator_ADM1_ASM1(
+        inlet_property_package=m.fs.props_adm1,
+        outlet_property_package=m.fs.props_asm1,
+        reaction_package=m.fs.adm1_rxn_props,
+        has_phase_equilibrium=False,
+        outlet_state_defined=True,
+    )
+
     # Mixer for feed water and recycled sludge
     m.fs.MX1 = Mixer(
         property_package=m.fs.props_asm1,
@@ -209,6 +221,62 @@ def build():
 
 
 def set_operating_conditions(m):
+    # Get the METAB influent data
+    df_metab = _get_influent(m)
+
+    idx = 1
+    comp_list = [
+        "H2O",
+        "S_su",
+        "S_aa",
+        "S_fa",
+        "S_va",
+        "S_bu",
+        "S_pro",
+        "S_ac",
+        "S_h2",
+        "S_ch4",
+        "S_IC",
+        "S_IN",
+        "S_I",
+        "X_c",
+        "X_ch",
+        "X_pr",
+        "X_li",
+        "X_su",
+        "X_aa",
+        "X_fa",
+        "X_c4",
+        "X_pro",
+        "X_ac",
+        "X_h2",
+        "X_I",
+        "S_cat",
+        "S_an",
+    ]
+
+    # Fix the inlet conditions of translator to the outlet of the surrogate
+    m.fs.metab_effluent.inlet.flow_vol.fix(
+        float(_get_outlet(df_metab, idx, "VolumetricFlowrate")) * units.m**3 / units.day
+    )
+    m.fs.metab_effluent.inlet.temperature.fix(308.15 * units.K)
+    m.fs.metab_effluent.inlet.pressure.fix(1 * units.atm)
+
+    for i in comp_list:
+        if i == "S_cat":
+            m.fs.metab_effluent.inlet.cations[0].fix(
+                float(_get_outlet(df_metab, idx, i)) * units.mmol / units.liter
+            )
+
+        elif i == "S_an":
+            m.fs.metab_effluent.inlet.anions[0].fix(
+                float(_get_outlet(df_metab, idx, i)) * units.mmol / units.liter
+            )
+        elif i != "H2O":
+            m.fs.metab_effluent.inlet.conc_mass_comp[0, i].fix(
+                _get_outlet(df_metab, idx, i) * units.mg / units.liter
+            )
+
     # Reactor sizing
     m.fs.R1.volume.fix(1000 * 1e-5 * pyo.units.m**3)
     m.fs.R2.volume.fix(1000 * 1e-5 * pyo.units.m**3)
@@ -288,11 +356,9 @@ def set_operating_conditions(m):
         "S_an",
     ]  # 'S_co2' need to fix
 
-    df_metab = metab.get_influent(m)
+    df_metab = _get_influent(m)
     m.fs.metab_effluent.inlet.flow_vol.fix(
-        float(metab.get_outlet(df_metab, idx, "VolumetricFlowrate"))
-        * units.m**3
-        / units.day
+        float(_get_outlet(df_metab, idx, "VolumetricFlowrate")) * units.m**3 / units.day
     )
     m.fs.metab_effluent.inlet.temperature.fix(308.15 * units.K)
     m.fs.metab_effluent.inlet.pressure.fix(1 * units.atm)
@@ -300,16 +366,16 @@ def set_operating_conditions(m):
     for i in comp_list:
         if i == "S_cat":
             m.fs.metab_effluent.inlet.cations[0].fix(
-                float(metab.get_outlet(df_metab, idx, i)) * units.mmol / units.liter
+                float(_get_outlet(df_metab, idx, i)) * units.mmol / units.liter
             )
 
         elif i == "S_an":
             m.fs.metab_effluent.inlet.anions[0].fix(
-                float(metab.get_outlet(df_metab, idx, i)) * units.mmol / units.liter
+                float(_get_outlet(df_metab, idx, i)) * units.mmol / units.liter
             )
         elif i != "H2O":
             m.fs.metab_effluent.inlet.conc_mass_comp[0, i].fix(
-                metab.get_outlet(df_metab, idx, i) * units.mg / units.liter
+                _get_outlet(df_metab, idx, i) * units.mg / units.liter
             )
 
 
@@ -395,6 +461,23 @@ def solve_system(m):
         fail_flag=True,
     )
     return results
+
+
+def _get_influent(m):
+    csv_path = Path(__file__).parent / "influent_to_wwtp.csv"
+    df = pd.read_csv(csv_path, index_col=0).dropna(axis=1)
+    df.columns = df.columns.str.replace(" ", "")
+
+    print(df)
+
+    return df
+
+
+def _get_outlet(df, idx, component):
+
+    outlet = df.loc[idx, component]
+
+    return float(outlet)
 
 
 def report_st(m):

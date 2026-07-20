@@ -23,7 +23,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.flowsheets.METAB.METAB_ASM1_flowsheet import (
+from watertap.flowsheets.METAB.METAB_BSM1_flowsheet import (
     main,
 )
 
