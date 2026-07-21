@@ -94,6 +94,7 @@ class ADScaler(CustomScalerBase):
         "rate_reaction_generation": 1e3,
         "rate_reaction_extent": 1e3,
         "mass_transfer_term": 1e4,
+        "enthalpy_transfer": 1e-1,
     }
 
     def variable_scaling_routine(
@@ -157,6 +158,10 @@ class ADScaler(CustomScalerBase):
         )
         self.scale_variable_by_default(
             model.electricity_consumption[0], overwrite=overwrite
+        )
+        self.scale_variable_by_default(
+            model.liquid_phase.enthalpy_transfer[0],
+            overwrite=overwrite,
         )
         for c in model.config.liquid_property_package.component_list:
             self.scale_variable_by_default(

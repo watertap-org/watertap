@@ -160,6 +160,7 @@ def main(has_electroNP=False):
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
     dt = DiagnosticsToolbox(m)
+    svd = dt.prepare_svd_toolbox()
     print("Structural Issues")
     dt.report_structural_issues()
 
@@ -182,11 +183,11 @@ def main(has_electroNP=False):
     # print("----------------   Bad Scaling Factors   ----------------")
     # for x in badly_scaled_var_list:
     #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    #
-    # from idaes.core.scaling import report_scaling_factors
-    #
-    # print("--- All Scaling Factors ---")
-    # report_scaling_factors(m, descend_into=True)
+
+    from idaes.core.scaling import report_scaling_factors
+
+    print("--- All Scaling Factors ---")
+    report_scaling_factors(m, descend_into=True)
 
     print("Numerical Issues After Solving")
     dt.report_numerical_issues()
@@ -194,6 +195,9 @@ def main(has_electroNP=False):
     # dt.display_near_parallel_constraints()
     print("Infeasibility Explanation")
     dt.compute_infeasibility_explanation()
+    print("SVD Toolbox")
+    svd.display_rank_of_equality_constraints()
+    svd.display_underdetermined_variables_and_constraints()
 
     # pyo.assert_optimal_termination(results)
     # check_solve(
@@ -663,14 +667,20 @@ def set_scaling(m):
             #         scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e-1
             #     scaler.scale_model(blk)
             if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
-                if blk == m.fs.AD:
-                    scaler = blk.default_scaler()
-                    scaler.default_scaling_factors["heat"] = 1e3
-                    scaler.scale_model(blk)
-                else:
-                    print(f"Scaling {blk.name}")
-                    scaler = blk.default_scaler()
-                    scaler.scale_model(blk)
+                print(f"Scaling {blk.name}")
+                scaler = blk.default_scaler()
+                scaler.scale_model(blk)
+                # if blk == m.fs.AD:
+                #     scaler = blk.default_scaler()
+                #     scaler.default_scaling_factors["heat"] = 1e3
+                #     scaler.default_scaling_factors["mass_transfer_term[0,Liq,S_h2]"] = 1e3
+                # scaler.default_scaling_factors["mass_transfer_term[0,Liq,S_ch4]"] = 1e5
+                # scaler.default_scaling_factors["rate_reaction_generation[0,Liq,S_ch4]"] = 1e5
+                # scaler.scale_model(blk)
+                # else:
+                #     print(f"Scaling {blk.name}")
+                #     scaler = blk.default_scaler()
+                #     scaler.scale_model(blk)
             else:
                 print(f"No default scaler for unit model {blk.name}")
         elif "_expanded" in blk.name:
@@ -875,7 +885,7 @@ if __name__ == "__main__":
         )
     print(stream_table_dataframe_to_string(stream_table))
 
-    m.fs.R3.inlet.display()
-    m.fs.translator_asm2d_adm1.inlet.display()
+    # m.fs.R3.inlet.display()
+    # m.fs.translator_asm2d_adm1.inlet.display()
     # m.fs.AD.display()
     # m.fs.translator_adm1_asm2d.display()
