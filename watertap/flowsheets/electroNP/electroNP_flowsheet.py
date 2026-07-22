@@ -228,21 +228,6 @@ def set_operating_conditions(m):
 
 
 def set_scaling(m):
-    # # Scaling
-    # for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-    #     if "flow_vol" in var.name:
-    #         iscale.set_scaling_factor(var, 1e2)
-    #     if "temperature" in var.name:
-    #         iscale.set_scaling_factor(var, 1e-2)
-    #     if "pressure" in var.name:
-    #         iscale.set_scaling_factor(var, 1e-5)
-    #     if "conc_mass_comp" in var.name:
-    #         iscale.set_scaling_factor(var, 1e3)
-    #
-    # iscale.calculate_scaling_factors(m)
-    #
-    # iscale.set_scaling_factor(m.fs.electroNP.byproduct.flow_vol[0.0], 1e7)
-    # iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].pressure_sat, 1e-3)
     asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
     adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
     adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
@@ -254,8 +239,6 @@ def set_scaling(m):
     adm1_scaler.default_scaling_factors["flow_vol"] = 1e0
     for c in _adm1_comp_list:
         adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e3
-
-    # adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_ch4]"] = 1e0
 
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
     m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
