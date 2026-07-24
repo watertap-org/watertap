@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -2082,8 +2082,7 @@ class ASM2dN2OReactionScaler(CustomScalerBase):
     are scaled using the inverse maximum scheme.
     """
 
-    # TODO: Revisit this scaling routine once we begin to apply the model
-    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e5}
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None

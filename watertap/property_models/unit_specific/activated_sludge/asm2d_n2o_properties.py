@@ -1,5 +1,5 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
 # National Renewable Energy Laboratory, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
@@ -47,6 +47,30 @@ __author__ = "Marcus Holly"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+_comp_list = [
+    "S_O2",
+    "S_F",
+    "S_A" "S_I",
+    "S_NH4",
+    "S_NH2OH",
+    "S_N2O",
+    "S_NO",
+    "S_NO2",
+    "S_NO3",
+    "S_N2",
+    "S_PO4" "S_IC",
+    "S_K",
+    "S_Mg",
+    "X_I",
+    "X_S",
+    "X_H",
+    "X_PAO",
+    "X_PP",
+    "X_PHA",
+    "X_AOB",
+    "X_NOB",
+]
 
 
 @declare_process_block_class("ASM2dN2OParameterBlock")
@@ -357,7 +381,7 @@ class ASM2dN2OPropertiesScaler(CustomScalerBase):
 
     UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyo.units.Pa, 1e-5),
+        "pressure": (pyo.units.Pa, 1e-5),
     }
 
     DEFAULT_SCALING_FACTORS = {
@@ -365,12 +389,17 @@ class ASM2dN2OPropertiesScaler(CustomScalerBase):
         "temperature": 1e-2,
     }
 
+    for c in _comp_list:
+        DEFAULT_SCALING_FACTORS[f"conc_mass_comp[{c}]"] = 1e2
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         self.scale_variable_by_default(model.temperature, overwrite=overwrite)
         self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
         self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for idx, var in model.conc_mass_comp.items():
+            self.scale_variable_by_default(var, overwrite=overwrite)
 
     # There are currently no constraints in this model
     def constraint_scaling_routine(
