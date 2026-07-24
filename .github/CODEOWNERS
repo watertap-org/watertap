@@ -19,20 +19,21 @@ environment*.yml @sufikaur
 
 /watertap/data/ @kurbansitterley @adam-a-a
 
-/watertap/costing/ @bknueven @adam-a-a
+/watertap/costing/ @bknueven @adam-a-a @kurbansitterley
 
-/watertap/flowsheets/activated_sludge/ @agarciadiego @luohezhiming @MarcusHolly @adam-a-a @Morgan88888888
-/watertap/flowsheets/anaerobic_digester/ @agarciadiego @adam-a-a @MarcusHolly @luohezhiming @Morgan88888888
+/watertap/flowsheets/activated_sludge/ @agarciadiego @luohezhiming @MarcusHolly @adam-a-a
+/watertap/flowsheets/anaerobic_digester/ @agarciadiego @adam-a-a @MarcusHolly @luohezhiming
 /watertap/flowsheets/crystallization/ @OOAmusat @avdudchenko @ElmiraShamlou @adam-a-a @kurbansitterley 
 /watertap/flowsheets/dye_desalination/ @MarcusHolly @adam-a-a
 /watertap/flowsheets/electrodialysis/ @lbibl @johnson12742
 /watertap/flowsheets/electroNP/ @luohezhiming @adam-a-a @MarcusHolly
-/watertap/flowsheets/full_water_resource_recovery_facility/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
+/watertap/flowsheets/full_water_resource_recovery_facility/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego
 /watertap/flowsheets/gac/ @adam-a-a @MarcusHolly @kurbansitterley
 /watertap/flowsheets/generic_desalination_train/ @avdudchenko
 /watertap/flowsheets/ion_exchange/ @kurbansitterley
 /watertap/flowsheets/lsrro/ @adam-a-a @bknueven
 /watertap/flowsheets/MD/ @ElmiraShamlou @adam-a-a
+/watertap/flowsheets/MD/ @ElmiraShamlou @MarcusHolly
 /watertap/flowsheets/mvc/ @carson-tucker @ElmiraShamlou @adam-a-a
 /watertap/flowsheets/nf_dspmde/ @avdudchenko @adam-a-a
 /watertap/flowsheets/oaro/ @luohezhiming @adam-a-a
@@ -40,10 +41,10 @@ environment*.yml @sufikaur
 /watertap/flowsheets/seawater_RO_desalination/ @adam-a-a @MarcusHolly @luohezhiming
 
 /watertap/property_models/ @adam-a-a
-/watertap/property_models/unit_specific/activated_sludge/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
-/watertap/property_models/unit_specific/anaerobic_digestion/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego @Morgan88888888
+/watertap/property_models/unit_specific/activated_sludge/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego
+/watertap/property_models/unit_specific/anaerobic_digestion/ @MarcusHolly @luohezhiming @adam-a-a @agarciadiego
 
-/watertap/tools/ @bknueven @adam-a-a @k1nshuk @avdudchenko
+/watertap/tools/ @bknueven @adam-a-a @avdudchenko
 
 /watertap/unit_models/ @adam-a-a
 /watertap/unit_models/MD/ @ElmiraShamlou @adam-a-a
@@ -60,6 +61,7 @@ environment*.yml @sufikaur
 /watertap/unit_models/cstr.py @adam-a-a @MarcusHolly
 /watertap/unit_models/cstr_injection.py @adam-a-a @MarcusHolly
 /watertap/unit_models/dewatering.py @adam-a-a @agarciadiego
+/watertap/unit_models/electrocoagulation.py @kurbansitterley @MuktaHardikar
 /watertap/unit_models/electrodialysis_0D.py @lbibl
 /watertap/unit_models/electrodialysis_1D.py @lbibl
 /watertap/unit_models/electrolyzer.py @adam-a-a @lbibl

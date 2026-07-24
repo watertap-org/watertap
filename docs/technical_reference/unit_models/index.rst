@@ -13,6 +13,7 @@ Unit Models
    cstr
    cstr_injection
    dewatering
+   electrocoagulation
    electrodialysis_0D
    electrodialysis_1D
    electrodialysis_bipolar_1D
@@ -41,3 +42,4 @@ Unit Models
    translators/index
    uv_aop
    zero_order_unit_models/index
+   unit_model_utilities

@@ -45,6 +45,9 @@ from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
 )
+from watertap.unit_models.reverse_osmosis_1D import (
+    ReverseOsmosis1D,
+)
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
     MassTransferCoefficient,
@@ -71,12 +74,15 @@ def propagate_state(arc):
     arc.destination.display()
 
 
-def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
+# TODO: Need to add config option to use 1D OARO unit model
+def main(
+    number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine, RO_1D=False
+):
     # set up solver
     solver = get_solver()
 
     # build, set, and initialize
-    m = build(number_of_stages=number_of_stages, erd_type=erd_type)
+    m = build(number_of_stages=number_of_stages, erd_type=erd_type, RO_1D=RO_1D)
     set_operating_conditions(m)
     initialize_system(
         m,
@@ -84,10 +90,14 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
         solvent_multiplier=0.5,
         solute_multiplier=0.7,
         solver=solver,
+        RO_1D=RO_1D,
     )
 
     optimize_set_up(
-        m, number_of_stages=number_of_stages, water_recovery=system_recovery
+        m,
+        number_of_stages=number_of_stages,
+        water_recovery=system_recovery,
+        RO_1D=RO_1D,
     )
 
     results = solve(m, solver=solver)
@@ -104,14 +114,13 @@ def main(number_of_stages, system_recovery, erd_type=ERDtype.pump_as_turbine):
     return m
 
 
-def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
+def build(number_of_stages, erd_type=ERDtype.pump_as_turbine, RO_1D=False):
 
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
 
     # stage set up
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
@@ -132,17 +141,9 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
 
     # --- Main pump ---
     m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
-    for pump in m.fs.PrimaryPumps.values():
-        pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-        )
 
     # --- Recycle pump ---
     m.fs.RecyclePumps = Pump(m.fs.NonFirstStages, property_package=m.fs.properties)
-    for pump in m.fs.RecyclePumps.values():
-        pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing, costing_method=cost_low_pressure_pump
-        )
 
     m.fs.total_pump_work = Expression(
         expr=sum(
@@ -154,15 +155,24 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     )
 
     # --- Reverse Osmosis Block ---
-    m.fs.RO = ReverseOsmosis0D(
-        property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        has_full_reporting=True,
-    )
-    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    if RO_1D:
+        m.fs.RO = ReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
+    else:
+        m.fs.RO = ReverseOsmosis0D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            pressure_change_type=PressureChangeType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            has_full_reporting=True,
+        )
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OAROUnits = OsmoticallyAssistedReverseOsmosis0D(
@@ -174,11 +184,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    for stage in m.fs.OAROUnits.values():
-        stage.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing,
-            costing_method_arguments={"oaro_type": "high_pressure"},
-        )
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pump_as_turbine:
@@ -186,9 +191,6 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
             m.fs.Stages, property_package=m.fs.properties
         )
-        # add costing for ERD config
-        for erd in m.fs.EnergyRecoveryDevices.values():
-            erd.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
 
@@ -240,27 +242,7 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
         initialize=85e5, units=pyunits.Pa, mutable=True
     )
 
-    # process costing and add system level metrics
-    m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.TIC.fix(2)
-    m.fs.costing.maintenance_labor_chemical_factor.fix(0.03)
-    # unfix wacc since we fix capital_recovery_factor
-    m.fs.costing.wacc.unfix()
-    m.fs.costing.capital_recovery_factor.fix(0.1)
-    m.fs.costing.electricity_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
-    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
-
-    m.fs.costing.cost_process()
-
-    product_flow_vol_total = m.fs.product.properties[0].flow_vol
-    m.fs.costing.add_annual_water_production(product_flow_vol_total)
-    m.fs.costing.add_LCOW(product_flow_vol_total)
-    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
-    m.fs.costing.add_specific_electrical_carbon_intensity(product_flow_vol_total)
+    add_costing(m, erd_type=erd_type)
 
     # Expressions for parameter sweep -----------------------------------------
     # Final permeate concentration as mass fraction
@@ -604,6 +586,50 @@ def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     return m
 
 
+def add_costing(m, erd_type=ERDtype.pump_as_turbine):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    for pump in m.fs.PrimaryPumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+        )
+    for pump in m.fs.RecyclePumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing, costing_method=cost_low_pressure_pump
+        )
+    for stage in m.fs.OAROUnits.values():
+        stage.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"oaro_type": "high_pressure"},
+        )
+    if erd_type == ERDtype.pump_as_turbine:
+        # add costing for ERD config
+        for erd in m.fs.EnergyRecoveryDevices.values():
+            erd.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    # process costing and add system level metrics
+    m.fs.costing.utilization_factor.fix(0.9)
+    m.fs.costing.TIC.fix(2)
+    m.fs.costing.maintenance_labor_chemical_factor.fix(0.03)
+    # unfix wacc since we fix capital_recovery_factor
+    m.fs.costing.wacc.unfix()
+    m.fs.costing.capital_recovery_factor.fix(0.1)
+    m.fs.costing.electricity_cost.set_value(0.07)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.unit_cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.unit_cost.fix(535)
+
+    m.fs.costing.cost_process()
+
+    product_flow_vol_total = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(product_flow_vol_total)
+    m.fs.costing.add_LCOW(product_flow_vol_total)
+    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
+    m.fs.costing.add_specific_electrical_carbon_intensity(product_flow_vol_total)
+
+
 def set_operating_conditions(
     m,
     solver=None,
@@ -816,6 +842,7 @@ def initialize_system(
     solvent_multiplier=None,
     solute_multiplier=None,
     solver=None,
+    RO_1D=False,
 ):
     if solver is None:
         solver = get_solver()
@@ -887,6 +914,7 @@ def optimize_set_up(
     m,
     number_of_stages=None,
     water_recovery=None,
+    RO_1D=False,
 ):
     # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
@@ -1085,17 +1113,50 @@ def optimize_set_up(
         )
     )
 
-    m.fs.RO.ro_feed_water_flux_con = Constraint(
-        expr=(
-            0.4 / 5,
-            pyunits.convert(
-                m.fs.RO.flux_mass_phase_comp[0.0, 0.0, "Liq", "H2O"]
-                / m.fs.RO.dens_solvent,
-                to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
-            ),
-            40 * 1.5,
+    if RO_1D:
+        m.fs.RO.ro_feed_water_flux_con = Constraint(
+            expr=(
+                0.4 / 5,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0.0, 0.1, "Liq", "H2O"]
+                    / m.fs.RO.dens_solvent,
+                    to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+                ),
+                40 * 1.5,
+            )
         )
-    )
+        m.fs.RO.ro_feed_salt_flux_con = Constraint(
+            expr=(
+                0,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0, 0.1, "Liq", "NaCl"],
+                    to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+                ),
+                50,
+            )
+        )
+    else:
+        m.fs.RO.ro_feed_water_flux_con = Constraint(
+            expr=(
+                0.4 / 5,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0.0, 0.0, "Liq", "H2O"]
+                    / m.fs.RO.dens_solvent,
+                    to_units=pyunits.L / pyunits.m**2 / pyunits.hr,
+                ),
+                40 * 1.5,
+            )
+        )
+        m.fs.RO.ro_feed_salt_flux_con = Constraint(
+            expr=(
+                0,
+                pyunits.convert(
+                    m.fs.RO.flux_mass_phase_comp[0, 0, "Liq", "NaCl"],
+                    to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
+                ),
+                50,
+            )
+        )
 
     m.fs.RO.ro_permeate_water_flux_con = Constraint(
         expr=(
@@ -1114,17 +1175,6 @@ def optimize_set_up(
             0,
             pyunits.convert(
                 m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "NaCl"],
-                to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
-            ),
-            50,
-        )
-    )
-
-    m.fs.RO.ro_feed_salt_flux_con = Constraint(
-        expr=(
-            0,
-            pyunits.convert(
-                m.fs.RO.flux_mass_phase_comp[0, 0, "Liq", "NaCl"],
                 to_units=pyunits.g / pyunits.m**2 / pyunits.hr,
             ),
             50,
@@ -1423,4 +1473,9 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(number_of_stages=3, system_recovery=0.5, erd_type=ERDtype.pump_as_turbine)
+    m = main(
+        number_of_stages=3,
+        system_recovery=0.5,
+        erd_type=ERDtype.pump_as_turbine,
+        RO_1D=False,
+    )

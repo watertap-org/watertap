@@ -1,3 +1,5 @@
+.. _detailed_unit_model_costing:
+
 Detailed Unit Model Costing
 ===========================
 Default costing methods are provided for the unit models listed below. However, users should supply their own cost relationship, if possible, instead of relying completely on the defaults.
@@ -13,6 +15,7 @@ Default costing methods are provided for the unit models listed below. However, 
    cstr_injection
    cstr
    dewatering
+   electrocoagulation
    electrodialysis
    electrolyzer
    electroNP
@@ -29,6 +32,7 @@ Default costing methods are provided for the unit models listed below. However, 
    pressure_exchanger
    pump
    reverse_osmosis
+   steam_ejector
    stoichiometric_reactor
    thickener
    uv_aop

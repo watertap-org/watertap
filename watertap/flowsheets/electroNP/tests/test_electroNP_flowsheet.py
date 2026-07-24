@@ -31,7 +31,8 @@ from watertap.flowsheets.electroNP.electroNP_flowsheet import (
 
 class TestElectroNPFlowsheet:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m, res = build_flowsheet()
 
         m.results = res

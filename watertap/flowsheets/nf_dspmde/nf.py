@@ -20,7 +20,6 @@ from pyomo.environ import (
     value,
 )
 
-
 from pyomo.network import Arc
 from idaes.core import (
     FlowsheetBlock,
@@ -164,8 +163,8 @@ def define_feed_comp():
 def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-
     m.fs.costing = WaterTAPCosting()
+
     default = define_feed_comp()
     m.fs.properties = MCASParameterBlock(**default)
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -190,6 +189,14 @@ def build():
         source=m.fs.NF.product.outlet,
         destination=m.fs.product.inlet,
     )
+
+    add_costing(m)
+
+    TransformationFactory("network.expand_arcs").apply_to(m)
+    return m
+
+
+def add_costing(m):
     m.fs.costing.disposal_cost = Var(
         initialize=0.1,
         bounds=(0, None),
@@ -209,9 +216,6 @@ def build():
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-
-    TransformationFactory("network.expand_arcs").apply_to(m)
-    return m
 
 
 def build_nf_block(m, blk):
@@ -257,7 +261,7 @@ def fix_init_vars(m):
     m.fs.NF.nfUnit.mixed_permeate[0].pressure.fix(101325)
     # NF membrane props for NF270
     m.fs.NF.nfUnit.radius_pore.fix(0.5e-9)
-    m.fs.NF.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
+    m.fs.NF.nfUnit.membrane_thickness_effective.fix(8.5989e-07)
     m.fs.NF.nfUnit.membrane_charge_density.fix(-50)
     m.fs.NF.nfUnit.dielectric_constant_pore.fix(41.3)
     iscale.calculate_scaling_factors(m)
@@ -279,6 +283,7 @@ def unfix_opt_vars(m):
     # Touch total_hardness (on-demand property) at feed and disposal for reporting
     m.fs.feed.properties[0].total_hardness
     m.fs.disposal.properties[0].total_hardness
+    iscale.calculate_scaling_factors(m)
 
 
 def add_objective(m):

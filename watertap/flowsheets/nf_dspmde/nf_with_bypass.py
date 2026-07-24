@@ -145,7 +145,6 @@ def build():
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
     iscale.set_scaling_factor(m.fs.costing.aggregate_flow_costs["disposal cost"], 1)
     TransformationFactory("network.expand_arcs").apply_to(m)
     return m
@@ -157,7 +156,7 @@ def fix_init_vars(m):
     # fix initial guess for splitter
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].fix(0.9)
     m.fs.by_pass_splitter.split_fraction[0, "bypass"].setlb(0.05)
-    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(None)
+    m.fs.by_pass_splitter.split_fraction[0, "bypass"].setub(1.001)
 
 
 def initialize(m, solver=None):

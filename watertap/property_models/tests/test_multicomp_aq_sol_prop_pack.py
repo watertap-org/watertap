@@ -67,7 +67,6 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 
 # Import idaes mixer to check compatibility in absence of get_enthalpy_flow_terms()
 from idaes.models.unit_models import Feed, Mixer
-from idaes.models.unit_models.mixer import MixingType
 import idaes.logger as idaeslog
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
@@ -830,8 +829,24 @@ def test_seawater_data():
         0.07820, rel=1e-3
     )
 
-    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        0.753, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        0.753, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        0.322, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        0.322, rel=1e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        0.322, rel=1e-3
+    )
+
     assert value(stream[0].total_hardness) == pytest.approx(
         value(
             (
@@ -1673,6 +1688,37 @@ def test_compatibility_with_feed_mole_basis():
     m.fs.feed = Feed(property_package=m.fs.properties)
 
 
+@pytest.mark.component
+def test_davies_activity_coefficients():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(time_set=[0, 1], dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        mw_data={"Na_+": 23, "Cl_-": 35},
+        charge={"Na_+": 1, "Cl_-": -1},
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+    )
+
+    stream = m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+    stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(55.51)
+    stream[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.1)
+    stream[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(0.1)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    stream[0].act_coeff_phase_comp
+    stream.initialize()
+
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
+    assert value(stream[0].ionic_strength_molal) == pytest.approx(0.1, rel=1e-3)
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        0.781, rel=5e-3
+    )
+    assert value(stream[0].act_coeff_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        0.781, rel=5e-3
+    )
+
+
 @pytest.mark.unit
 def test_compatibility_with_feed_mass_basis():
     m = ConcreteModel()
@@ -1701,17 +1747,7 @@ def test_compatibility_with_mixer():
         charge={"Na_+": 1, "Cl_-": -1},
     )
 
-    m.fs.mixer1 = Mixer(
-        property_package=m.fs.properties, energy_mixing_type=MixingType.none
-    )
-
-    with pytest.raises(
-        NotImplementedError,
-        match="property package has not implemented the get_enthalpy_flow_terms method. Please contact the property package developer.",
-    ):
-        m.fs.mixer2 = Mixer(
-            property_package=m.fs.properties,
-        )
+    m.fs.mixer1 = Mixer(property_package=m.fs.properties)
 
 
 c_list = [10e-10, 10e-9, 10e-8, 10e-7, 10e-6, 10e-5]
@@ -2083,7 +2119,7 @@ def test_seawater_data_with_flow_mass_basis():
         0.07820, rel=1e-3
     )
 
-    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.510, rel=5e-3)
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
     assert value(stream[0].total_hardness) == pytest.approx(
         value(
@@ -2259,7 +2295,7 @@ def test_no_total_hardness(caplog):
     assert value(stream[0].total_hardness) == 0
 
     assert (
-        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        "No multivalent cations in solute_list; total_hardness fixed to 0."
         in caplog.text
     )
 
@@ -2298,21 +2334,16 @@ def test_no_total_hardness_not_TDS_with_apparent_species_only(caplog):
     stream[0].total_hardness
 
     stream[0].total_dissolved_solids
-    # stream[0].total_hardness
 
     assert_units_consistent(m)
 
     check_dof(m, fail_flag=True)
-
-    assert value(stream[0].total_dissolved_solids) == 0
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    assert value(stream[0].total_dissolved_solids) == pytest.approx(31421.999, rel=1e-3)
     assert value(stream[0].total_hardness) == 0
-
     assert (
-        "Since no ions were specified in solute_list, total_dissolved_solids has been fixed to 0. The  total_dissolved_solids calculation does not currently account for apparent species (e.g., NaCl)."
-        in caplog.text
-    )
-    assert (
-        "Since no multivalent cations were specified in solute_list, total_hardness need not be created. total_hardness has been fixed to 0."
+        "No multivalent cations in solute_list; total_hardness fixed to 0."
         in caplog.text
     )
 
@@ -3098,7 +3129,7 @@ class TestMCASScaler:
         ] == pytest.approx(24, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_debye_huckel_constant
-        ] == pytest.approx(12.49, rel=1e-3)
+        ] == pytest.approx(0.38, rel=1e-3)
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_enth_mass_phase["Liq"]
         ] == pytest.approx(8.712e-07, rel=1e-3)
@@ -3204,3 +3235,12 @@ class TestMCASScaler:
         assert m.fs.stream[0].scaling_factor[
             m.fs.stream[0].eq_total_hardness
         ] == pytest.approx(0.0001443, rel=1e-3)
+
+
+@pytest.mark.unit
+def test_list_and_print_properties():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(solute_list=["Na+", "Cl-"])
+    m.fs.properties.list_properties()
+    m.fs.properties.print_properties()
