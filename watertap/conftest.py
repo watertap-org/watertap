@@ -10,13 +10,19 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 import contextlib
+from collections import defaultdict
 import enum
 from pathlib import Path
 from typing import Container, Optional, Callable
 
 import pytest
+from _pytest.config.argparsing import Parser
 from _pytest.nodes import Item
 from _pytest.config import Config
+from _pytest.terminal import TerminalReporter
+
+
+_FILE_DURATIONS = defaultdict(lambda: {"duration": 0.0, "tests": 0})
 
 
 class MarkerSpec(enum.Enum):
@@ -61,6 +67,54 @@ def pytest_configure(config: Config):
     for marker_spec in MarkerSpec:
         config.addinivalue_line(
             "markers", f"{marker_spec.name}: {marker_spec.description}"
+        )
+
+    if config.getoption("--file-durations", default=False):
+        _FILE_DURATIONS.clear()
+
+
+def pytest_addoption(parser: Parser):
+    parser.addoption(
+        "--file-durations",
+        action="store_true",
+        default=False,
+        help="Show elapsed pytest runtime grouped by test file.",
+    )
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item: Item, call):
+    del call
+    outcome = yield
+    report = outcome.get_result()
+    config = item.config
+    if not config.getoption("--file-durations"):
+        return
+
+    filename = report.location[0]
+    _FILE_DURATIONS[filename]["duration"] += report.duration
+    if report.when == "call":
+        _FILE_DURATIONS[filename]["tests"] += 1
+
+
+def pytest_terminal_summary(
+    terminalreporter: TerminalReporter, exitstatus: int, config: Config
+):
+    del exitstatus
+    if not config.getoption("--file-durations"):
+        return
+
+    if not _FILE_DURATIONS:
+        return
+
+    terminalreporter.write_sep("=", "slowest test files")
+    terminalreporter.write_line(f"{'seconds':>10}  {'tests':>5}  file")
+
+    for filename, stats in sorted(
+        _FILE_DURATIONS.items(), key=lambda item: item[1]["duration"], reverse=True
+    ):
+        terminalreporter.write_line(
+            f"{stats['duration']:10.2f}  {stats['tests']:5d}  {filename}"
         )
 
 
