@@ -72,7 +72,7 @@ oli_api = [
 ]
 
 reaktoro = [
-    "reaktoro-pse>=0.4.0",
+    "reaktoro-pse>=0.4.1rc1",
 ]
 
 exposan = [
