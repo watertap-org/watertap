@@ -21,7 +21,6 @@ from _pytest.nodes import Item
 from _pytest.config import Config
 from _pytest.terminal import TerminalReporter
 
-
 _FILE_DURATIONS = defaultdict(lambda: {"duration": 0.0, "tests": 0})
 
 
