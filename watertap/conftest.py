@@ -161,9 +161,7 @@ def _write_duration_reports(config: Config):
         )
         for nodeid, stats in sorted(
             _TEST_DURATIONS.items(),
-            key=lambda item: item[1]["setup"]
-            + item[1]["call"]
-            + item[1]["teardown"],
+            key=lambda item: item[1]["setup"] + item[1]["call"] + item[1]["teardown"],
             reverse=True,
         ):
             total = stats["setup"] + stats["call"] + stats["teardown"]
