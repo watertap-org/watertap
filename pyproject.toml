@@ -36,7 +36,7 @@ keywords = [
     "desalination",
     "nawi",
 ]
-version = "1.7.0"
+version = "1.7.1rc1"
 
 dependencies = [
     # primary requirements for unit and property models
