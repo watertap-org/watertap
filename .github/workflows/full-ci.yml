@@ -1,0 +1,268 @@
+# Full optional and scheduled CI coverage.
+
+name: Full CI
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [labeled, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+env:
+  PYTEST_ADDOPTS: "--color=yes"
+  PIP_PROGRESS_BAR: "off"
+  WATERTAP_KERNEL_NAME: watertap-dev
+
+jobs:
+
+  code-formatting:
+    name: Check code is formatted (Black)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-full-ci')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install Black
+        run: |
+          black_requirement="$(grep -Eo '"black==[^"]+"' pyproject.toml | tr -d '"')"
+          pip --no-cache-dir install "$black_requirement"
+      - name: Run Black to verify that the committed code is formatted
+        run: |
+          black --check .
+
+  pylint:
+    name: Code linting (pylint)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-full-ci')
+    runs-on: ubuntu-latest
+    needs: [code-formatting]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install dev dependencies
+        run: |
+          pip install -e ".[dev]"
+          pip list
+      - name: Environment summary
+        uses: ./.github/actions/environment-summary
+        with:
+          python-version: '3.11'
+          os: ubuntu-latest
+          job-name: pylint
+      - name: Run pylint
+        run: |
+          pylint watertap
+
+  tests:
+    name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-full-ci')
+    runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-22.04
+          - os: win64
+            os-version: windows-2022
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v4
+      with:
+        activate-environment: watertap-dev
+        python-version: ${{ matrix.python-version }}
+        miniforge-version: latest
+        channels: conda-forge
+        conda-remove-defaults: 'true'
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip setuptools wheel pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install -e ".[dev]"
+        echo '::endgroup::'
+        echo '::group::Output of "conda install -c conda-forge reaktoro cyipopt" command'
+        conda install -c conda-forge reaktoro cyipopt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Environment summary
+      uses: ./.github/actions/environment-summary
+      with:
+        python-version: ${{ matrix.python-version }}
+        os: ${{ matrix.os }}
+        job-name: tests
+    - name: Test with pytest
+      run: |
+        pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
+    - name: Upload pytest duration reports as job artifact
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: pytest-duration-reports-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: pytest-duration-reports/*.csv
+        if-no-files-found: warn
+    - name: Test documentation code
+      run: |
+        make -C docs doctest -d
+
+  user-mode-pytest:
+    name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-full-ci')
+    runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-22.04
+          - os: win64
+            os-version: windows-2022
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v4
+      with:
+        activate-environment: watertap
+        python-version: ${{ matrix.python-version }}
+        channels: conda-forge
+        conda-remove-defaults: 'true'
+        auto-activate: false
+    - name: Define install URL (default)
+      env:
+        _repo_full_name: watertap-org/watertap
+        _ref_to_install: main
+      run: |
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Define install URL (for PRs)
+      if: github.event.pull_request
+      env:
+        _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
+        _ref_to_install: ${{ github.event.pull_request.head.sha }}
+      run: |
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Bootstrap packaging tools and verify installation
+      run: |
+        conda install --quiet --yes pip setuptools wheel
+        python -m pip show setuptools wheel
+    - name: Install watertap and testing dependencies
+      run: |
+        echo '::group::Output of "pip install" commands'
+        pip install "watertap @ ${_install_url}" pytest
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Run pytest
+      run: |
+        pytest --pyargs watertap
+
+  notebooks:
+    name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-full-ci')
+    runs-on: ${{ matrix.os-version }}
+    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.11'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-22.04
+          - os: win64
+            os-version: windows-2022
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v4
+      with:
+        activate-environment: watertap-dev
+        python-version: ${{ matrix.python-version }}
+        channels: conda-forge
+        conda-remove-defaults: 'true'
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip setuptools wheel pandoc reaktoro
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install -e ".[dev]"
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Install Jupyter kernel
+      run: |
+        jupyter kernelspec list
+        python -m ipykernel install --user --name "${{ env.WATERTAP_KERNEL_NAME }}"
+        jupyter kernelspec list
+    - name: Environment summary
+      uses: ./.github/actions/environment-summary
+      with:
+        python-version: ${{ matrix.python-version }}
+        os: ${{ matrix.os }}
+        job-name: notebooks
+    - name: Run pytest with nbmake
+      run: |
+        find tutorials -name "*.ipynb" -not -path "*/.ipynb_checkpoints/*" | grep -v "tutorials/flex_ro/mp_model.ipynb" | xargs pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}"
