@@ -115,6 +115,10 @@ _asm2d_comp_list = [
     "X_S",
 ]
 
+_asm2d_comp_list2 = [
+    "X_AUT",
+]
+
 _adm1_comp_list = [
     "S_su",
     "S_aa",
@@ -645,6 +649,8 @@ def set_scaling(m):
     asm2d_scaler.default_scaling_factors["flow_vol"] = 1e2
     for c in _asm2d_comp_list:
         asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e1
+    # for c in _asm2d_comp_list2:
+    #     asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e3
 
     adm1_scaler.default_scaling_factors["flow_vol"] = 1e2
     for c in _adm1_comp_list:
