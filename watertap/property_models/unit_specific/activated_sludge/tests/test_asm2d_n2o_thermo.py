@@ -403,7 +403,7 @@ class TestASM2dN2OPropertiesScaler:
         scaler.variable_scaling_routine(model.props[1])
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 3
+        assert len(sfx) == 26
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-2, rel=1e-8)
@@ -435,7 +435,7 @@ class TestASM2dN2OPropertiesScaler:
         assert isinstance(model.props[1].scaling_factor, Suffix)
 
         sfx = model.props[1].scaling_factor
-        assert len(sfx) == 3
+        assert len(sfx) == 26
         assert sfx[model.props[1].flow_vol] == pytest.approx(1e1, rel=1e-8)
         assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
         assert sfx[model.props[1].temperature] == pytest.approx(1e-2, rel=1e-8)
