@@ -87,11 +87,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.add_component(
             name,
             pyo.Expression(
-                expr=(
-                    self.total_capital_cost * self.capital_recovery_factor
-                    + self.total_operating_cost
-                )
-                / denominator,
+                expr=self.total_annualized_cost / denominator,
                 doc=doc_string,
             ),
         )
