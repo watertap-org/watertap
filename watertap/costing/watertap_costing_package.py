@@ -65,11 +65,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             flow_basis (optional) - basis for the flow rate, either "volumetric", "mass", or "energy" (default is "volumetric")
         """
 
-        if flow_basis not in ("volumetric", "mass", "energy"):
-            raise ValueError(
-                f"Unrecognized flow_basis {flow_basis}. Valid options are "
-                "'volumetric', 'mass', and 'energy'."
-            )
+        self._check_flow_basis_consistency(flow_rate, flow_basis)
 
         flow_units = {
             "volumetric": pyo.units.m**3,
@@ -270,6 +266,12 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         with a clear message; it is not a substitute for the unit
         conversion performed downstream by `pyo.units.convert`.
         """
+        if flow_basis not in cls._FLOW_BASIS_KEYWORDS:
+            raise ValueError(
+                f"Unrecognized flow_basis {flow_basis}. Valid options are "
+                "'volumetric', 'mass', and 'energy'."
+            )
+
         flow_name = flow_rate.name.lower()
         for basis, keywords in cls._FLOW_BASIS_KEYWORDS.items():
             if basis == flow_basis:
@@ -357,11 +359,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             flow_basis: basis for the flow rate, either "volumetric", "mass", or "energy"
             name: name for the specific energy consumption expression
         """
-        if flow_basis not in ("volumetric", "mass", "energy"):
-            raise ValueError(
-                f"Unrecognized flow_basis {flow_basis}. Valid options are "
-                "'volumetric', 'mass', and 'energy'."
-            )
         self._check_flow_basis_consistency(flow_rate, flow_basis)
 
         flow_units = {
@@ -408,11 +405,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             flow_basis: basis for the flow rate, either "volumetric", "mass", or "energy"
             name: name for the annual production expression
         """
-        if flow_basis not in ("volumetric", "mass", "energy"):
-            raise ValueError(
-                f"Unrecognized flow_basis {flow_basis}. Valid options are "
-                "'volumetric', 'mass', and 'energy'."
-            )
         self._check_flow_basis_consistency(flow_rate, flow_basis)
 
         flow_units = {
