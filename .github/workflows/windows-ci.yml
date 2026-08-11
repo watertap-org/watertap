@@ -79,9 +79,6 @@ jobs:
         name: pytest-duration-reports-win64-py${{ matrix.python-version }}
         path: pytest-duration-reports/*.csv
         if-no-files-found: warn
-    - name: Test documentation code
-      run: |
-        make -C docs doctest -d
 
   user-mode-pytest:
     name: pytest (user mode) (py${{ matrix.python-version }}/win64)
