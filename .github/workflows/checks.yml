@@ -98,9 +98,11 @@ jobs:
           conda-remove-defaults: 'true'
       - name: Install dependencies
         run: |
-          conda install --quiet --yes pip setuptools wheel pandoc reaktoro cyipopt
+          conda install --quiet --yes pip setuptools wheel pandoc
           pip install -e ".[dev]"
+          conda install --quiet --yes -c conda-forge reaktoro cyipopt
           idaes get-extensions --extra petsc --verbose
+          "$HOME/.idaes/bin/ipopt" -v
       - name: Test documentation code
         run: |
           make -C docs doctest -d
@@ -131,9 +133,6 @@ jobs:
         include:
           - os: linux
             os-version: ubuntu-22.04
-          - os: linux
-            python-version: '3.12'
-            coverage: true
           - os: win64
             os-version: windows-2022
     steps:
@@ -174,11 +173,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
         os: ${{ matrix.os }}
         job-name: tests
-    - name: Add coverage report pytest options
-      if: matrix.coverage
-      run:
-        |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov=watertap --cov-report=xml" >> $GITHUB_ENV
     - name: Test with pytest
       run: |
         pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
@@ -189,14 +183,6 @@ jobs:
         name: pytest-duration-reports-${{ matrix.os }}-py${{ matrix.python-version }}
         path: pytest-duration-reports/*.csv
         if-no-files-found: warn
-    - name: Upload coverage report as job artifact
-      if: matrix.coverage
-      uses: actions/upload-artifact@v7
-      with:
-        name: coverage-report-${{ matrix.os }}
-        path: coverage.xml
-        if-no-files-found: error
-
   tests-main:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     if: github.event_name == 'push'
@@ -221,10 +207,6 @@ jobs:
             os-version: windows-2022
           # - os: macos
           #   os-version: macos-10.15
-          - os: linux
-            python-version: '3.12'
-            # limit uploading coverage report for a single Python version in the matrix
-            coverage: true
     steps:
     - uses: actions/checkout@v6
       with:
@@ -263,11 +245,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
         os: ${{ matrix.os }}
         job-name: tests
-    - name: Add coverage report pytest options
-      if: matrix.coverage
-      run:
-        |
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov=watertap --cov-report=xml" >> $GITHUB_ENV
     - name: Test with pytest
       run: |
         pytest --pyargs watertap --idaes-flowsheets --entry-points-group watertap.flowsheets --file-durations
@@ -278,37 +255,6 @@ jobs:
         name: pytest-duration-reports-${{ matrix.os }}-py${{ matrix.python-version }}
         path: pytest-duration-reports/*.csv
         if-no-files-found: warn
-    - name: Upload coverage report as job artifact
-      if: matrix.coverage
-      uses: actions/upload-artifact@v7
-      with:
-        name: coverage-report-${{ matrix.os }}
-        path: coverage.xml
-        if-no-files-found: error
-
-  upload-coverage:
-    name: Upload coverage report (Codecov)
-    needs: [tests-pr, tests-main]
-    if: always() && (needs.tests-pr.result == 'success' || needs.tests-main.result == 'success')
-    runs-on: ubuntu-latest
-    steps:
-      # the checkout step is needed to have access to codecov.yml
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: coverage-report-*
-      - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v6
-        with:
-          fail_ci_if_error: true
-          verbose: true
-          # NOTE: secrets are not available for pull_request workflows
-          # However, as of 2024-02-10, Codecov is still allowing tokenless upload from PRs
-          # but does require token for other workflows e.g. merge to `main`
-          # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
-          token: ${{ secrets.CODECOV_TOKEN }}
   user-mode-pytest-pr:
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     if: github.event_name == 'pull_request'

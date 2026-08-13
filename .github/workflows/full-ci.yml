@@ -89,9 +89,11 @@ jobs:
           conda-remove-defaults: 'true'
       - name: Install dependencies
         run: |
-          conda install --quiet --yes pip setuptools wheel pandoc reaktoro cyipopt
+          conda install --quiet --yes pip setuptools wheel pandoc
           pip install -e ".[dev]"
+          conda install --quiet --yes -c conda-forge reaktoro cyipopt
           idaes get-extensions --extra petsc --verbose
+          "$HOME/.idaes/bin/ipopt" -v
       - name: Test documentation code
         run: |
           make -C docs doctest -d
@@ -200,8 +202,8 @@ jobs:
         auto-activate: false
     - name: Define install URL (default)
       env:
-        _repo_full_name: watertap-org/watertap
-        _ref_to_install: main
+        _repo_full_name: ${{ github.repository }}
+        _ref_to_install: ${{ github.sha }}
       run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
     - name: Define install URL (for PRs)
