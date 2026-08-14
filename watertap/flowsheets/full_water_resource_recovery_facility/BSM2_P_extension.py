@@ -944,3 +944,18 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
+
+    # TODO: Verify what the feed conditions should be - asm2dinit_bsm2.m has a different flowrate at least
+    # TODO: Compare the initial values of our AD to the initial values in adm1init_bsm2.m
+    # TODO: Continue verifying operating conditions and varying anything that seems flexible
+    m.fs.AD.display()
+
+    rxn = m.fs.AD.liquid_phase.reactions[0]
+
+    print("R10 total inhibition:", pyo.value(rxn.I["R10"]))
+    print("pH inhibition:", pyo.value(rxn.I_pH_ac))
+    print("IN inhibition:", pyo.value(rxn.I_IN_lim))
+    print("NH3 inhibition:", pyo.value(rxn.I_nh3))
+    print("IP inhibition:", pyo.value(rxn.I_IP_lim))
+
+    m.fs.CL.display()
