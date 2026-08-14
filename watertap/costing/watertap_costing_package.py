@@ -10,6 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+from typing import ClassVar
+
 import pyomo.environ as pyo
 from pyomo.core.base.units_container import InconsistentUnitsError
 
@@ -45,7 +47,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     """
 
     # Define default mapping of costing methods to unit models
-    unit_mapping = {
+    unit_mapping: ClassVar = {
         Mixer: cost_mixer,
         HeatExchanger: cost_heat_exchanger,
         CSTR: cost_cstr,
