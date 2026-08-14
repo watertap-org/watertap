@@ -465,17 +465,17 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         output_units=None,
     ):
         """
-                Add annual process throughput to costing block.
+        Add annual process throughput to costing block.
 
-                The throughput may represent any process stream quantity, including feed streams, treated streams, products, recovered materials, or
+        The throughput may represent any process stream quantity, including feed streams, treated streams, products, recovered materials, or
         energy flows, adjusted by the utilization factor.
 
-                Args:
-                    flow_rate: flow rate to be used in calculating annual input/output
-                    flow_basis (optional): basis for the flow rate, either "volumetric", "mass", or "energy"
-                    name (optional): name for the annual throughput expression
-                    output_units (optional): denominator units (e.g., m**3, kg, kWh);
-                                              when omitted, inferred from flow_rate units unless flow_basis is provided
+        Args:
+            flow_rate: flow rate to be used in calculating annual input/output
+            flow_basis (optional): basis for the flow rate, either "volumetric", "mass", or "energy"
+            name (optional): name for the annual throughput expression
+            output_units (optional): denominator units (e.g., m**3, kg, kWh);
+                                      when omitted, inferred from flow_rate units unless flow_basis is provided
         """
 
         flow_basis, flow_units = self._resolve_flow_basis_and_output_units(
