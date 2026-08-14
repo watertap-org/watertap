@@ -2353,7 +2353,7 @@ class ModifiedADM1ReactionBlockData(ReactionBlockDataBase):
             return 1 / (1 + self.conc_mol_nh3 / self.params.K_I_nh3)
 
         self.I_nh3 = pyo.Expression(
-            rule=rule_I_nh3, doc="ammonia inibition attributed to acetate uptake"
+            rule=rule_I_nh3, doc="ammonia inhibition attributed to acetate uptake"
         )
 
         def rule_I_pH_aa(self):
