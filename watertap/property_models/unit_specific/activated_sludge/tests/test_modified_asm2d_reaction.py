@@ -54,6 +54,105 @@ import idaes.core.util.scaling as iscale
 solver = get_solver()
 
 
+def total_phosphorus_flow(port, rxn_props):
+    """
+    Total phosphorus mass flowrate (kg P/s) through a state block port
+    (e.g. a CSTR's inlet or outlet).
+
+    S_PO4 and X_PP are tracked directly as kg P/m3; the remaining
+    P-bearing components (S_F, X_I, X_S, X_H, X_PAO, X_AUT) are converted
+    using the i_P* content parameters from the reaction parameter block.
+    """
+    conc = port.conc_mass_comp
+    return value(port.flow_vol[0]) * (
+        value(conc[0, "S_PO4"])
+        + value(rxn_props.i_PSF) * value(conc[0, "S_F"])
+        + value(rxn_props.i_PXI) * value(conc[0, "X_I"])
+        + value(rxn_props.i_PXS) * value(conc[0, "X_S"])
+        + value(rxn_props.i_PBM)
+        * (value(conc[0, "X_H"]) + value(conc[0, "X_PAO"]) + value(conc[0, "X_AUT"]))
+        + value(conc[0, "X_PP"])
+    )
+
+
+def total_nitrogen_flow(port, rxn_props):
+    """
+    Total nitrogen mass flowrate (kg N/s) through a state block port
+    (e.g. a CSTR's inlet or outlet).
+
+    S_NH4, S_N2, and S_NO3 are tracked directly as kg N/m3; the remaining
+    N-bearing components (S_F, S_I, X_I, X_S, X_H, X_PAO, X_AUT) are
+    converted using the i_N* content parameters from the reaction
+    parameter block.
+    """
+    conc = port.conc_mass_comp
+    return value(port.flow_vol[0]) * (
+        value(conc[0, "S_NH4"])
+        + value(conc[0, "S_N2"])
+        + value(conc[0, "S_NO3"])
+        + value(rxn_props.i_NSF) * value(conc[0, "S_F"])
+        + value(rxn_props.i_NSI) * value(conc[0, "S_I"])
+        + value(rxn_props.i_NXI) * value(conc[0, "X_I"])
+        + value(rxn_props.i_NXS) * value(conc[0, "X_S"])
+        + value(rxn_props.i_NBM)
+        * (value(conc[0, "X_H"]) + value(conc[0, "X_PAO"]) + value(conc[0, "X_AUT"]))
+    )
+
+
+def total_carbon_flow(port, rxn_props):
+    """
+    Total carbon mass flowrate (kg C/s) through a state block port
+    (e.g. a CSTR's inlet or outlet).
+
+    S_IC is tracked directly as kg C/m3; the remaining C-bearing
+    components (S_F, S_A, S_I, X_I, X_S, X_H, X_PAO, X_AUT, X_PHA) are
+    converted using the i_C* content parameters from the reaction
+    parameter block. X_PHA's C content (0.3 kg C/kg COD) is hardcoded in
+    the reaction stoichiometry rather than exposed as a parameter, so it
+    is hardcoded here too.
+    """
+    conc = port.conc_mass_comp
+    return value(port.flow_vol[0]) * (
+        value(conc[0, "S_IC"])
+        + value(rxn_props.i_CSF) * value(conc[0, "S_F"])
+        + value(rxn_props.i_CSA) * value(conc[0, "S_A"])
+        + value(rxn_props.i_CSI) * value(conc[0, "S_I"])
+        + value(rxn_props.i_CXI) * value(conc[0, "X_I"])
+        + value(rxn_props.i_CXS) * value(conc[0, "X_S"])
+        + value(rxn_props.i_CXB)
+        * (value(conc[0, "X_H"]) + value(conc[0, "X_PAO"]) + value(conc[0, "X_AUT"]))
+        + 0.3 * value(conc[0, "X_PHA"])
+    )
+
+
+def total_COD_flow(port, rxn_props):
+    """
+    Total COD-equivalent mass flowrate (kg COD/s) through a state block
+    port (e.g. a CSTR's inlet or outlet).
+
+    Unlike C/N/P, COD is an electron-equivalent currency, not an element -
+    see the comment in TestParamBlock.test_COD_conservation for the content
+    map derivation. S_O2 has content -1 (consumed as electron acceptor);
+    S_N2 has content -12/7; S_NO3's content is i_COD_NOx directly (already
+    negative); organics and biomass all have content 1.
+    """
+    conc = port.conc_mass_comp
+    return value(port.flow_vol[0]) * (
+        -value(conc[0, "S_O2"])
+        + value(conc[0, "S_F"])
+        + value(conc[0, "S_A"])
+        + value(conc[0, "S_I"])
+        - (12 / 7) * value(conc[0, "S_N2"])
+        + value(rxn_props.i_COD_NOx) * value(conc[0, "S_NO3"])
+        + value(conc[0, "X_I"])
+        + value(conc[0, "X_S"])
+        + value(conc[0, "X_H"])
+        + value(conc[0, "X_PAO"])
+        + value(conc[0, "X_PHA"])
+        + value(conc[0, "X_AUT"])
+    )
+
+
 class TestParamBlock(object):
     @pytest.fixture(scope="class")
     @classmethod
@@ -271,6 +370,172 @@ class TestParamBlock(object):
                 assert pytest.approx(stoic[i], rel=1e-2) == value(v)
             else:
                 assert value(v) == 0
+
+    @pytest.mark.unit
+    def test_phosphorus_conservation(self, model):
+        # Each reaction should conserve total P mass - i.e. it can move P
+        # between species, but cannot create or destroy it. For every
+        # reaction r, sum_j (P_content[j] * stoichiometry[r, "Liq", j]) == 0.
+        #
+        # P content of each component, [kg P/kg COD] (S_PO4 and X_PP are
+        # tracked directly as kg P/m3, so their P content is 1).
+        rparams = model.rparams
+        P_content = {
+            "H2O": 0,
+            "S_O2": 0,
+            "S_F": value(rparams.i_PSF),
+            "S_A": 0,
+            "S_I": 0,
+            "S_NH4": 0,
+            "S_N2": 0,
+            "S_NO3": 0,
+            "S_PO4": 1,
+            "S_IC": 0,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": value(rparams.i_PXI),
+            "X_S": value(rparams.i_PXS),
+            "X_H": value(rparams.i_PBM),
+            "X_PAO": value(rparams.i_PBM),
+            "X_PP": 1,
+            "X_PHA": 0,
+            "X_AUT": value(rparams.i_PBM),
+        }
+
+        for r in rparams.rate_reaction_idx:
+            P_balance = sum(
+                P_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in P_content
+            )
+            assert pytest.approx(0, abs=1e-8) == P_balance
+
+    @pytest.mark.unit
+    def test_nitrogen_conservation(self, model):
+        # Same idea as test_phosphorus_conservation, but for N. S_NH4, S_N2
+        # and S_NO3 are all tracked directly as kg N/m3 (N content = 1); the
+        # remaining N-bearing components are converted via the i_N*
+        # content parameters.
+        rparams = model.rparams
+        N_content = {
+            "H2O": 0,
+            "S_O2": 0,
+            "S_F": value(rparams.i_NSF),
+            "S_A": 0,
+            "S_I": value(rparams.i_NSI),
+            "S_NH4": 1,
+            "S_N2": 1,
+            "S_NO3": 1,
+            "S_PO4": 0,
+            "S_IC": 0,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": value(rparams.i_NXI),
+            "X_S": value(rparams.i_NXS),
+            "X_H": value(rparams.i_NBM),
+            "X_PAO": value(rparams.i_NBM),
+            "X_PP": 0,
+            "X_PHA": 0,
+            "X_AUT": value(rparams.i_NBM),
+        }
+
+        # R12 (Anoxic storage of X_PP) is a good check on i_NOx_N2's
+        # precision: S_NO3 is a fixed literal (-0.07) from the source Gujer
+        # matrix (Flores-Alsina et al. 2016), rather than being derived from
+        # Y_PHA/i_NOx_N2 like S_N2 is, so the two terms only cancel exactly
+        # if i_NOx_N2 closely approximates the true 20/7 conversion factor.
+        for r in rparams.rate_reaction_idx:
+            N_balance = sum(
+                N_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in N_content
+            )
+            assert pytest.approx(0, abs=1e-8) == N_balance
+
+    @pytest.mark.unit
+    def test_carbon_conservation(self, model):
+        # Same idea as test_phosphorus_conservation / test_nitrogen_conservation,
+        # but for C. S_IC is tracked directly as kg C/m3 (C content = 1); the
+        # remaining C-bearing components are converted via the i_C* content
+        # parameters. Note: X_PHA's C content (0.3 kg C/kg COD) is hardcoded
+        # in the reaction stoichiometry rather than exposed as its own
+        # parameter - keep this literal in sync with modified_asm2d_reactions.py
+        # if that ever changes.
+        rparams = model.rparams
+        C_content = {
+            "H2O": 0,
+            "S_O2": 0,
+            "S_F": value(rparams.i_CSF),
+            "S_A": value(rparams.i_CSA),
+            "S_I": value(rparams.i_CSI),
+            "S_NH4": 0,
+            "S_N2": 0,
+            "S_NO3": 0,
+            "S_PO4": 0,
+            "S_IC": 1,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": value(rparams.i_CXI),
+            "X_S": value(rparams.i_CXS),
+            "X_H": value(rparams.i_CXB),
+            "X_PAO": value(rparams.i_CXB),
+            "X_PP": 0,
+            "X_PHA": 0.3,
+            "X_AUT": value(rparams.i_CXB),
+        }
+
+        for r in rparams.rate_reaction_idx:
+            C_balance = sum(
+                C_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in C_content
+            )
+            assert pytest.approx(0, abs=1e-8) == C_balance
+
+    @pytest.mark.unit
+    def test_COD_conservation(self, model):
+        # Unlike C/N/P, COD is an electron-equivalent currency rather than
+        # an element, so the "content" of a component depends on its role
+        # as electron donor/acceptor rather than a fixed elemental mass
+        # fraction. Per the source Gujer matrix (Flores-Alsina et al. 2016,
+        # "CODi" row), a single content map covers every reaction, including
+        # nitrification (R18) - no special-casing needed:
+        #   - organics and biomass (S_F, S_A, S_I, X_I, X_S, X_H, X_PAO,
+        #     X_PHA, X_AUT) all have COD content 1, since they're already
+        #     expressed in COD units
+        #   - S_O2 has content -1 (it's consumed as electron acceptor)
+        #   - S_N2 has content -12/7 and S_NO3 has content i_COD_NOx (already
+        #     negative, -32/7), both relative to the same NH4-as-zero
+        #     reference; note i_COD_NOx - (-12/7) = -20/7, i.e. exactly
+        #     -i_NOx_N2, which is why the denitrification reactions (R6,
+        #     R7, R12, R14) cancel regardless of Y_H/Y_PAO
+        #   - S_NH4, S_PO4, S_IC, S_K, S_Mg, X_PP have no COD content
+        rparams = model.rparams
+        COD_content = {
+            "H2O": 0,
+            "S_O2": -1,
+            "S_F": 1,
+            "S_A": 1,
+            "S_I": 1,
+            "S_NH4": 0,
+            "S_N2": -12 / 7,
+            "S_NO3": value(rparams.i_COD_NOx),
+            "S_PO4": 0,
+            "S_IC": 0,
+            "S_K": 0,
+            "S_Mg": 0,
+            "X_I": 1,
+            "X_S": 1,
+            "X_H": 1,
+            "X_PAO": 1,
+            "X_PP": 0,
+            "X_PHA": 1,
+            "X_AUT": 1,
+        }
+
+        for r in rparams.rate_reaction_idx:
+            COD_balance = sum(
+                COD_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
+                for j in COD_content
+            )
+            assert pytest.approx(0, abs=1e-8) == COD_balance
 
 
 class TestReactionBlock(object):
@@ -635,6 +900,36 @@ class TestAerobic:
             119.415e-3, rel=1e-4
         )
 
+    @pytest.mark.component
+    def test_phosphorus_conservation(self, model):
+        # Note: S_O2 is added at the outlet to represent aeration, but O2
+        # carries no phosphorus so TP should still be conserved.
+        TP_in = total_phosphorus_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TP_out = total_phosphorus_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TP_out == pytest.approx(TP_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_nitrogen_conservation(self, model):
+        TN_in = total_nitrogen_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TN_out = total_nitrogen_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TN_out == pytest.approx(TN_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_carbon_conservation(self, model):
+        TC_in = total_carbon_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TC_out = total_carbon_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TC_out == pytest.approx(TC_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_COD_conservation(self, model):
+        TCOD_in = total_COD_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TCOD_out = total_COD_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-3)
+
 
 class TestAnoxic:
     @pytest.fixture(scope="class")
@@ -765,6 +1060,34 @@ class TestAnoxic:
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
             123.44e-3, rel=1e-4
         )
+
+    @pytest.mark.component
+    def test_phosphorus_conservation(self, model):
+        TP_in = total_phosphorus_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TP_out = total_phosphorus_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TP_out == pytest.approx(TP_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_nitrogen_conservation(self, model):
+        TN_in = total_nitrogen_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TN_out = total_nitrogen_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TN_out == pytest.approx(TN_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_carbon_conservation(self, model):
+        TC_in = total_carbon_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TC_out = total_carbon_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TC_out == pytest.approx(TC_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_COD_conservation(self, model):
+        TCOD_in = total_COD_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TCOD_out = total_COD_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-3)
 
 
 class TestAerobic15C:
@@ -911,6 +1234,34 @@ class TestAerobic15C:
             62.358e-3, rel=1e-4
         )
 
+    @pytest.mark.component
+    def test_phosphorus_conservation(self, model):
+        TP_in = total_phosphorus_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TP_out = total_phosphorus_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TP_out == pytest.approx(TP_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_nitrogen_conservation(self, model):
+        TN_in = total_nitrogen_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TN_out = total_nitrogen_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TN_out == pytest.approx(TN_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_carbon_conservation(self, model):
+        TC_in = total_carbon_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TC_out = total_carbon_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TC_out == pytest.approx(TC_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_COD_conservation(self, model):
+        TCOD_in = total_COD_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TCOD_out = total_COD_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-3)
+
 
 class TestAnoxicPHA:
     @pytest.fixture(scope="class")
@@ -1006,7 +1357,7 @@ class TestAnoxicPHA:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            14.338e-3, rel=1e-4
+            14.3395e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
             9.7237e-4, rel=1e-2
@@ -1063,4 +1414,32 @@ class TestAnoxicPHA:
             1
             - model.fs.R1.control_volume.properties_out[0].TSS
             / model.fs.R1.control_volume.properties_in[0].TSS
-        ) * 100 == pytest.approx(0.20371, rel=1e-4)
+        ) * 100 == pytest.approx(0.20373, rel=1e-4)
+
+    @pytest.mark.component
+    def test_phosphorus_conservation(self, model):
+        TP_in = total_phosphorus_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TP_out = total_phosphorus_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TP_out == pytest.approx(TP_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_nitrogen_conservation(self, model):
+        TN_in = total_nitrogen_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TN_out = total_nitrogen_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TN_out == pytest.approx(TN_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_carbon_conservation(self, model):
+        TC_in = total_carbon_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TC_out = total_carbon_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TC_out == pytest.approx(TC_in, rel=1e-3)
+
+    @pytest.mark.component
+    def test_COD_conservation(self, model):
+        TCOD_in = total_COD_flow(model.fs.R1.inlet, model.fs.rxn_props)
+        TCOD_out = total_COD_flow(model.fs.R1.outlet, model.fs.rxn_props)
+
+        assert TCOD_out == pytest.approx(TCOD_in, rel=1e-3)
