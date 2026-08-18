@@ -57,11 +57,6 @@ solver = get_solver()
 def total_phosphorus_flow(port, rxn_props):
     """
     Total phosphorus mass flowrate (kg P/s) through a state block port
-    (e.g. a CSTR's inlet or outlet).
-
-    S_PO4 and X_PP are tracked directly as kg P/m3; the remaining
-    P-bearing components (S_F, X_I, X_S, X_H, X_PAO, X_AUT) are converted
-    using the i_P* content parameters from the reaction parameter block.
     """
     conc = port.conc_mass_comp
     return value(port.flow_vol[0]) * (
@@ -78,12 +73,6 @@ def total_phosphorus_flow(port, rxn_props):
 def total_nitrogen_flow(port, rxn_props):
     """
     Total nitrogen mass flowrate (kg N/s) through a state block port
-    (e.g. a CSTR's inlet or outlet).
-
-    S_NH4, S_N2, and S_NO3 are tracked directly as kg N/m3; the remaining
-    N-bearing components (S_F, S_I, X_I, X_S, X_H, X_PAO, X_AUT) are
-    converted using the i_N* content parameters from the reaction
-    parameter block.
     """
     conc = port.conc_mass_comp
     return value(port.flow_vol[0]) * (
@@ -102,14 +91,6 @@ def total_nitrogen_flow(port, rxn_props):
 def total_carbon_flow(port, rxn_props):
     """
     Total carbon mass flowrate (kg C/s) through a state block port
-    (e.g. a CSTR's inlet or outlet).
-
-    S_IC is tracked directly as kg C/m3; the remaining C-bearing
-    components (S_F, S_A, S_I, X_I, X_S, X_H, X_PAO, X_AUT, X_PHA) are
-    converted using the i_C* content parameters from the reaction
-    parameter block. X_PHA's C content (0.3 kg C/kg COD) is hardcoded in
-    the reaction stoichiometry rather than exposed as a parameter, so it
-    is hardcoded here too.
     """
     conc = port.conc_mass_comp
     return value(port.flow_vol[0]) * (
@@ -128,13 +109,6 @@ def total_carbon_flow(port, rxn_props):
 def total_COD_flow(port, rxn_props):
     """
     Total COD-equivalent mass flowrate (kg COD/s) through a state block
-    port (e.g. a CSTR's inlet or outlet).
-
-    Unlike C/N/P, COD is an electron-equivalent currency, not an element -
-    see the comment in TestParamBlock.test_COD_conservation for the content
-    map derivation. S_O2 has content -1 (consumed as electron acceptor);
-    S_N2 has content -12/7; S_NO3's content is i_COD_NOx directly (already
-    negative); organics and biomass all have content 1.
     """
     conc = port.conc_mass_comp
     return value(port.flow_vol[0]) * (
@@ -373,12 +347,6 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_phosphorus_conservation(self, model):
-        # Each reaction should conserve total P mass - i.e. it can move P
-        # between species, but cannot create or destroy it. For every
-        # reaction r, sum_j (P_content[j] * stoichiometry[r, "Liq", j]) == 0.
-        #
-        # P content of each component, [kg P/kg COD] (S_PO4 and X_PP are
-        # tracked directly as kg P/m3, so their P content is 1).
         rparams = model.rparams
         P_content = {
             "H2O": 0,
@@ -411,10 +379,6 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_nitrogen_conservation(self, model):
-        # Same idea as test_phosphorus_conservation, but for N. S_NH4, S_N2
-        # and S_NO3 are all tracked directly as kg N/m3 (N content = 1); the
-        # remaining N-bearing components are converted via the i_N*
-        # content parameters.
         rparams = model.rparams
         N_content = {
             "H2O": 0,
@@ -438,11 +402,6 @@ class TestParamBlock(object):
             "X_AUT": value(rparams.i_NBM),
         }
 
-        # R12 (Anoxic storage of X_PP) is a good check on i_NOx_N2's
-        # precision: S_NO3 is a fixed literal (-0.07) from the source Gujer
-        # matrix (Flores-Alsina et al. 2016), rather than being derived from
-        # Y_PHA/i_NOx_N2 like S_N2 is, so the two terms only cancel exactly
-        # if i_NOx_N2 closely approximates the true 20/7 conversion factor.
         for r in rparams.rate_reaction_idx:
             N_balance = sum(
                 N_content[j] * value(rparams.rate_reaction_stoichiometry[r, "Liq", j])
@@ -452,13 +411,6 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_carbon_conservation(self, model):
-        # Same idea as test_phosphorus_conservation / test_nitrogen_conservation,
-        # but for C. S_IC is tracked directly as kg C/m3 (C content = 1); the
-        # remaining C-bearing components are converted via the i_C* content
-        # parameters. Note: X_PHA's C content (0.3 kg C/kg COD) is hardcoded
-        # in the reaction stoichiometry rather than exposed as its own
-        # parameter - keep this literal in sync with modified_asm2d_reactions.py
-        # if that ever changes.
         rparams = model.rparams
         C_content = {
             "H2O": 0,
@@ -491,22 +443,6 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_COD_conservation(self, model):
-        # Unlike C/N/P, COD is an electron-equivalent currency rather than
-        # an element, so the "content" of a component depends on its role
-        # as electron donor/acceptor rather than a fixed elemental mass
-        # fraction. Per the source Gujer matrix (Flores-Alsina et al. 2016,
-        # "CODi" row), a single content map covers every reaction, including
-        # nitrification (R18) - no special-casing needed:
-        #   - organics and biomass (S_F, S_A, S_I, X_I, X_S, X_H, X_PAO,
-        #     X_PHA, X_AUT) all have COD content 1, since they're already
-        #     expressed in COD units
-        #   - S_O2 has content -1 (it's consumed as electron acceptor)
-        #   - S_N2 has content -12/7 and S_NO3 has content i_COD_NOx (already
-        #     negative, -32/7), both relative to the same NH4-as-zero
-        #     reference; note i_COD_NOx - (-12/7) = -20/7, i.e. exactly
-        #     -i_NOx_N2, which is why the denitrification reactions (R6,
-        #     R7, R12, R14) cancel regardless of Y_H/Y_PAO
-        #   - S_NH4, S_PO4, S_IC, S_K, S_Mg, X_PP have no COD content
         rparams = model.rparams
         COD_content = {
             "H2O": 0,
@@ -902,8 +838,6 @@ class TestAerobic:
 
     @pytest.mark.component
     def test_phosphorus_conservation(self, model):
-        # Note: S_O2 is added at the outlet to represent aeration, but O2
-        # carries no phosphorus so TP should still be conserved.
         TP_in = total_phosphorus_flow(model.fs.R1.inlet, model.fs.rxn_props)
         TP_out = total_phosphorus_flow(model.fs.R1.outlet, model.fs.rxn_props)
 
