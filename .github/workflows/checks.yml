@@ -82,7 +82,7 @@ jobs:
 
   documentation-doctest:
     name: Test documentation code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [code-formatting]
     steps:
       - uses: actions/checkout@v6
@@ -292,7 +292,6 @@ jobs:
         channels: conda-forge
         conda-remove-defaults: 'true'
         auto-activate: false
-
     - name: Define install URL (default)
       env:
         _repo_full_name: watertap-org/watertap
@@ -358,7 +357,6 @@ jobs:
         channels: conda-forge
         conda-remove-defaults: 'true'
         auto-activate: false
-
     - name: Define install URL (default)
       env:
         _repo_full_name: watertap-org/watertap

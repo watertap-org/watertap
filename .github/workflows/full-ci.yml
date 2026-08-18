@@ -73,7 +73,7 @@ jobs:
   documentation:
     name: Test documentation
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-full-ci')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [code-formatting]
     steps:
       - uses: actions/checkout@v6
