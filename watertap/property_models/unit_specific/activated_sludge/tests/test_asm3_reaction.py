@@ -60,7 +60,7 @@ class TestParamBlock(object):
 
     @pytest.mark.unit
     def test_config(self, model):
-        assert len(model.rparams.config) == 2
+        assert len(model.rparams.config) == 3
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -443,7 +443,7 @@ class TestReactor:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            5.6216e-7, rel=1e-4
+            5.6163e-7, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -479,5 +479,5 @@ class TestReactor:
             3.04264, rel=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            4.9608e-3, rel=1e-4
+            5.0759e-3, rel=1e-4
         )
