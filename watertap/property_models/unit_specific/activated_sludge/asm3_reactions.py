@@ -357,19 +357,19 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         # Stoichiometric numbers from Table 1
         # obtained by \sum_i^12 νji*ikI
         mw_n = 14.0
-        mw_alk = 64.0
+        mw_alk = 61.0
         x1 = 1.0 - self.f_SI
         x2 = -1.0 + self.Y_STO_O2
-        x3 = (-1.0 + self.Y_STO_NOX) / (64.0 / 14.0 - 24.0 / 14.0)
+        x3 = (-1.0 + self.Y_STO_NOX) / (64.0 / mw_n - 24.0 / mw_n)
         x4 = 1.0 - 1.0 / self.Y_H_O2
-        x5 = (+1.0 - 1.0 / self.Y_H_NOX) / (64.0 / 14.0 - 24.0 / 14.0)
+        x5 = (+1.0 - 1.0 / self.Y_H_NOX) / (64.0 / mw_n - 24.0 / mw_n)
         x6 = -1.0 + self.f_XI
-        x7 = (self.f_XI - 1.0) / (64.0 / 14.0 - 24.0 / 14.0)
+        x7 = (self.f_XI - 1.0) / (64.0 / mw_n - 24.0 / mw_n)
         x8 = -1.0
-        x9 = -1.0 / (64.0 / 14.0 - 24.0 / 14.0)
-        x10 = -(64.0 / 14.0) / self.Y_A + 1.0
+        x9 = -1.0 / (64.0 / mw_n - 24.0 / mw_n)
+        x10 = -(64.0 / mw_n) / self.Y_A + 1.0
         x11 = self.f_XI - 1.0
-        x12 = (self.f_XI - 1.0) / (64.0 / 14.0 - 24.0 / 14.0)
+        x12 = (self.f_XI - 1.0) / (64.0 / mw_n - 24.0 / mw_n)
 
         y1 = -self.f_SI * self.i_NSI - (1.0 - self.f_SI) * self.i_NSS + self.i_NXS
         y2 = self.i_NSS
@@ -382,17 +382,17 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         y11 = -self.f_XI * self.i_NXI + self.i_NBM
         y12 = -self.f_XI * self.i_NXI + self.i_NBM
 
-        z1 = (y1 / 14.0) * 61.0
-        z2 = (y2 / 14.0) * 61.0
-        z3 = (y3 / 14.0 - x3 / 14.0) * 61.0
-        z4 = (y4 / 14.0) * 61.0
-        z5 = (y5 / 14.0 - x5 / 14.0) * 61.0
-        z6 = (y6 / 14.0) * 61.0
-        z7 = (y7 / 14.0 - x7 / 14.0) * 61.0
-        z9 = (-x9 / 14.0) * 61.0
-        z10 = (y10 / 14.0 - 1.0 / (self.Y_A * 14.0)) * 61.0
-        z11 = (y11 / 14.0) * 61.0
-        z12 = (y12 / 14.0 - x12 / 14.0) * 61.0
+        z1 = (y1 / mw_n) * mw_alk
+        z2 = (y2 / mw_n) * mw_alk
+        z3 = (y3 / mw_n - x3 / mw_n) * mw_alk
+        z4 = (y4 / mw_n) * mw_alk
+        z5 = (y5 / mw_n - x5 / mw_n) * mw_alk
+        z6 = (y6 / mw_n) * mw_alk
+        z7 = (y7 / mw_n - x7 / mw_n) * mw_alk
+        z9 = (-x9 / mw_n) * mw_alk
+        z10 = (y10 / mw_n - 1.0 / (self.Y_A * mw_n)) * mw_alk
+        z11 = (y11 / mw_n) * mw_alk
+        z12 = (y12 / mw_n - x12 / mw_n) * mw_alk
 
         t1 = -self.i_SSXS
         t2 = self.Y_STO_O2 * self.i_SSSTO
@@ -408,8 +408,8 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         t12 = self.f_XI * self.i_SSXI - self.i_SSBM
 
         # Reaction Stoichiometry
-        mw_alk = 61 * pyo.units.kg / pyo.units.kmol
-        mw_n = 14 * pyo.units.kg / pyo.units.kmol
+        # mw_alk = 61 * pyo.units.kg / pyo.units.kmol
+        # mw_n = 14 * pyo.units.kg / pyo.units.kmol
         self.rate_reaction_stoichiometry = {
             # R1: Hydrolysis
             ("R1", "Liq", "H2O"): 0,
