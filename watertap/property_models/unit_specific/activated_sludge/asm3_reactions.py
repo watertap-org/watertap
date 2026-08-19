@@ -356,6 +356,8 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
 
         # Stoichiometric numbers from Table 1
         # obtained by \sum_i^12 νji*ikI
+        mw_n = 14.0
+        mw_alk = 64.0
         x1 = 1.0 - self.f_SI
         x2 = -1.0 + self.Y_STO_O2
         x3 = (-1.0 + self.Y_STO_NOX) / (64.0 / 14.0 - 24.0 / 14.0)
