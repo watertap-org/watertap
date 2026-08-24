@@ -361,8 +361,7 @@ def build(bio_P=False):
 
 
 def set_operating_conditions(m, bio_P=False):
-    # Feed Water Conditions
-    print(f"DOF before feed: {degrees_of_freedom(m)}")
+    # Feed Water Conditions - https://app.box.com/file/1382757507815?s=57odttsb1hsqfcx218hzwg7emwjp79sb
     m.fs.FeedWater.flow_vol.fix(20935.15 * pyo.units.m**3 / pyo.units.day)
     m.fs.FeedWater.temperature.fix(308.15 * pyo.units.K)
     m.fs.FeedWater.pressure.fix(1 * pyo.units.atm)
@@ -409,7 +408,7 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.CL.split_fraction[0, "effluent", "X_PP"].fix(0.5192)
     m.fs.CL.split_fraction[0, "effluent", "X_S"].fix(0.5192)
 
-    # Reactor sizing
+    # Reactor sizing - asm2dinit_bsm2.m
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
     m.fs.R2.volume.fix(1000 * pyo.units.m**3)
     m.fs.R3.volume.fix(1500 * pyo.units.m**3)
@@ -459,6 +458,7 @@ def set_operating_conditions(m, bio_P=False):
     m.fs.CL2.split_fraction[0, "effluent", "X_PP"].fix(0.00187)
     m.fs.CL2.split_fraction[0, "effluent", "X_S"].fix(0.00187)
 
+    # [1]
     m.fs.CL2.surface_area.fix(1500 * pyo.units.m**2)
 
     # Sludge purge separator
@@ -467,7 +467,7 @@ def set_operating_conditions(m, bio_P=False):
     # Outlet pressure from recycle pump
     m.fs.P1.outlet.pressure.fix(101325)
 
-    # AD
+    # AD - adm1init_bsm2.m
     m.fs.AD.volume_liquid.fix(3400)
     m.fs.AD.volume_vapor.fix(300)
     m.fs.AD.liquid_outlet.temperature.fix(308.15)
@@ -944,18 +944,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-
-    # TODO: Verify what the feed conditions should be - asm2dinit_bsm2.m has a different flowrate at least
-    # TODO: Compare the initial values of our AD to the initial values in adm1init_bsm2.m
-    # TODO: Continue verifying operating conditions and varying anything that seems flexible
-    m.fs.AD.display()
-
-    rxn = m.fs.AD.liquid_phase.reactions[0]
-
-    print("R10 total inhibition:", pyo.value(rxn.I["R10"]))
-    print("pH inhibition:", pyo.value(rxn.I_pH_ac))
-    print("IN inhibition:", pyo.value(rxn.I_IN_lim))
-    print("NH3 inhibition:", pyo.value(rxn.I_nh3))
-    print("IP inhibition:", pyo.value(rxn.I_IP_lim))
-
-    m.fs.CL.display()

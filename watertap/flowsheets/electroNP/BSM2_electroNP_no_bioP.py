@@ -26,8 +26,13 @@ J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 # Some more information about this module
 __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
+import itertools
+import time
+import traceback
+
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
+from pyomo.opt import TerminationCondition
 
 from idaes.core import (
     FlowsheetBlock,
@@ -115,10 +120,6 @@ _asm2d_comp_list = [
     "X_S",
 ]
 
-_asm2d_comp_list2 = [
-    "X_AUT",
-]
-
 _adm1_comp_list = [
     "S_su",
     "S_aa",
@@ -163,11 +164,6 @@ def main(has_electroNP=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF before initialization: {degrees_of_freedom(m)}")
 
-    dt = DiagnosticsToolbox(m)
-    svd = dt.prepare_svd_toolbox()
-    print("Structural Issues")
-    dt.report_structural_issues()
-
     initialize_system(m, has_electroNP=has_electroNP)
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -175,41 +171,15 @@ def main(has_electroNP=False):
     m.fs.MX3.pressure_equality_constraints[0.0, 3].deactivate()
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    # print("Numerical Issues Before Solving")
-    # dt.report_numerical_issues()
-
     results = solve(m)
 
-    import idaes.core.util.scaling as iscale
-
-    # Custom scaling visualization tools
-    # badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    # print("----------------   Bad Scaling Factors   ----------------")
-    # for x in badly_scaled_var_list:
-    #     print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
-    from idaes.core.scaling import report_scaling_factors
-
-    print("--- All Scaling Factors ---")
-    report_scaling_factors(m, descend_into=True)
-
-    print("Numerical Issues After Solving")
-    dt.report_numerical_issues()
-    dt.display_constraints_with_large_residuals()
-    # dt.display_near_parallel_constraints()
-    print("Infeasibility Explanation")
-    dt.compute_infeasibility_explanation()
-    print("SVD Toolbox")
-    svd.display_rank_of_equality_constraints()
-    svd.display_underdetermined_variables_and_constraints()
-
-    # pyo.assert_optimal_termination(results)
-    # check_solve(
-    #     results,
-    #     checkpoint="re-solve with controls in place",
-    #     logger=_log,
-    #     fail_flag=True,
-    # )
+    pyo.assert_optimal_termination(results)
+    check_solve(
+        results,
+        checkpoint="re-solve with controls in place",
+        logger=_log,
+        fail_flag=True,
+    )
 
     return m, results
 
@@ -499,16 +469,18 @@ def set_operating_conditions(m):
     m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(26.6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(15 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(57.45 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(25.19 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(84 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(94.1 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(370 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
-        51.5262 * pyo.units.g / pyo.units.m**3
-    )
-    m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(500 * pyo.units.g / pyo.units.m**3)
+    # m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
+    #     51.5262 * pyo.units.g / pyo.units.m**3
+    # )
+    m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(10 * pyo.units.g / pyo.units.m**3)
+    # m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(5.652 * pyo.units.g / pyo.units.m**3)
@@ -646,17 +618,13 @@ def set_scaling(m):
     adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
     adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
-    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e2
+    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e3
     for c in _asm2d_comp_list:
-        asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e1
-    # for c in _asm2d_comp_list2:
-    #     asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e3
+        asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
 
-    adm1_scaler.default_scaling_factors["flow_vol"] = 1e2
+    adm1_scaler.default_scaling_factors["flow_vol"] = 1e3
     for c in _adm1_comp_list:
-        adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e1
-
-    # adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_ch4]"] = 1e0
+        adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
 
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
     m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
@@ -666,27 +634,10 @@ def set_scaling(m):
 
     for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
         if isinstance(blk, UnitModelBlockData):
-            # if blk in unit_list:
-            #     print(f"Scaling {blk.name}")
-            #     scaler = blk.default_scaler()
-            #     for c in _adm1_comp_list:
-            #         scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e-1
-            #     scaler.scale_model(blk)
             if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
                 print(f"Scaling {blk.name}")
                 scaler = blk.default_scaler()
                 scaler.scale_model(blk)
-                # if blk == m.fs.AD:
-                #     scaler = blk.default_scaler()
-                #     scaler.default_scaling_factors["heat"] = 1e3
-                #     scaler.default_scaling_factors["mass_transfer_term[0,Liq,S_h2]"] = 1e3
-                # scaler.default_scaling_factors["mass_transfer_term[0,Liq,S_ch4]"] = 1e5
-                # scaler.default_scaling_factors["rate_reaction_generation[0,Liq,S_ch4]"] = 1e5
-                # scaler.scale_model(blk)
-                # else:
-                #     print(f"Scaling {blk.name}")
-                #     scaler = blk.default_scaler()
-                #     scaler.scale_model(blk)
             else:
                 print(f"No default scaler for unit model {blk.name}")
         elif "_expanded" in blk.name:
@@ -834,16 +785,13 @@ def initialize_system(m, has_electroNP=False):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
-        # solver.options.constr_viol_tol = 1e-8
-        # solver.options["max_iter"] = 500
     results = solver.solve(m, tee=True)
-    # check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
-    # pyo.assert_optimal_termination(results)
+    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
+    pyo.assert_optimal_termination(results)
     return results
 
 
 if __name__ == "__main__":
-    # This method builds and runs a steady state activated sludge flowsheet.
     m, results = main(has_electroNP=True)
     if m.fs.has_electroNP is False:
         stream_table = create_stream_table_dataframe(
@@ -890,8 +838,3 @@ if __name__ == "__main__":
             time_point=0,
         )
     print(stream_table_dataframe_to_string(stream_table))
-
-    # m.fs.R3.inlet.display()
-    # m.fs.translator_asm2d_adm1.inlet.display()
-    # m.fs.AD.display()
-    # m.fs.translator_adm1_asm2d.display()
