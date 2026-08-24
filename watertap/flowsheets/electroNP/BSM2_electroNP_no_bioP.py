@@ -586,32 +586,6 @@ def set_operating_conditions(m):
         m.fs.electroNP.N_removal = 0.3 * P_removal
         m.fs.electroNP.frac_mass_H2O_treated[0].fix(0.99)
 
-    # def scale_variables(m):
-    #     for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-    #         if "flow_vol" in var.name:
-    #             iscale.set_scaling_factor(var, 1e2)
-    #         if "temperature" in var.name:
-    #             iscale.set_scaling_factor(var, 1e-2)
-    #         if "pressure" in var.name:
-    #             iscale.set_scaling_factor(var, 1e-5)
-    #         if "conc_mass_comp" in var.name:
-    #             iscale.set_scaling_factor(var, 1e1)
-    #
-    # for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
-    #     block = getattr(m.fs, unit)
-    #     iscale.set_scaling_factor(
-    #         block.control_volume.reactions[0.0].rate_expression, 1e3
-    #     )
-    #     iscale.set_scaling_factor(block.cstr_performance_eqn, 1e3)
-    #     iscale.set_scaling_factor(
-    #         block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
-    #     )
-    #     iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
-    #
-    # # Apply scaling
-    # scale_variables(m)
-    # iscale.calculate_scaling_factors(m)
-
 
 def set_scaling(m):
     asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
@@ -792,6 +766,7 @@ def solve(m, solver=None):
 
 
 if __name__ == "__main__":
+    # This method builds and runs a steady state activated sludge flowsheet.
     m, results = main(has_electroNP=True)
     if m.fs.has_electroNP is False:
         stream_table = create_stream_table_dataframe(

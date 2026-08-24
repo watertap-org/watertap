@@ -116,13 +116,6 @@ def main(bio_P=False):
     initialize_system(m, bio_P=bio_P)
     print(f"DOF after initialization: {degrees_of_freedom(m)}")
 
-    import idaes.core.util.scaling as iscale
-
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   Scaling Factors   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-
     add_costing(m)
     m.fs.costing.initialize()
 
@@ -518,8 +511,6 @@ def set_scaling(m):
                 )
 
 
-# TODO: Diagnose why AD initialization fails when bio_P=True
-# There is a TODO note in the AD unit model to improve initialization
 def initialize_system(m, bio_P=False, solver=None):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
@@ -656,7 +647,6 @@ def initialize_system(m, bio_P=False, solver=None):
 def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
-        solver.options["max_iter"] = 500
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
@@ -922,7 +912,7 @@ def display_performance_metrics(m):
 
 
 if __name__ == "__main__":
-    m, results = main(bio_P=False)
+    m, results = main(bio_P=True)
 
     stream_table = create_stream_table_dataframe(
         {
