@@ -14,7 +14,7 @@ Tests for ADM1 reaction package.
 
 Verified against results from:
 
-X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
+[1] X. Flores-Alsina, K. Solon, C.K. Mbamba, S. Tait, K.V. Gernaey, U. Jeppsson, D.J. Batstone,
 Modelling phosphorus (P), sulfur (S) and iron (Fe) interactions for dynamic simulations of anaerobic digestion processes,
 Water Research. 95 (2016) 370-382. https://www.sciencedirect.com/science/article/pii/S0043135416301397
 
@@ -109,7 +109,7 @@ class TestParamBlock(object):
             ]
 
         # Expected non-zero stoichiometries
-        # Values from Gujer matrix in reference
+        # Values from Gujer matrix in [1]: https://app.box.com/file/1220462875801?s=xu1j32kfnb5m5xodatkvi61mvy6f9h6c&sb=/activity
 
         mw_n = 14
         mw_c = 12
