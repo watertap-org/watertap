@@ -109,7 +109,8 @@ class TestParamBlock(object):
             ]
 
         # Expected non-zero stoichiometries
-        # Values from Gujer matrix in [1]: https://app.box.com/file/1220462875801?s=xu1j32kfnb5m5xodatkvi61mvy6f9h6c&sb=/activity
+        # Values from Gujer matrix in the supplementary material of [1]:
+        # Box Link: https://app.box.com/file/1220462875801?s=xu1j32kfnb5m5xodatkvi61mvy6f9h6c&sb=/activity
 
         mw_n = 14
         mw_c = 12
