@@ -131,7 +131,6 @@ def main(bio_P=False):
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     results = solve(m)
-    pyo.assert_optimal_termination(results)
 
     display_costing(m)
     display_performance_metrics(m)
@@ -636,8 +635,6 @@ def initialize_system(m, bio_P=False, solver=None):
     seq.set_guesses_for(m.fs.R3.inlet, tear_guesses)
     seq.set_guesses_for(m.fs.translator_asm2d_adm1.inlet, tear_guesses2)
 
-    initializer = BlockTriangularizationInitializer()
-
     def function(unit):
         unit.initialize(outlvl=idaeslog.WARNING)
 
@@ -648,7 +645,6 @@ def solve(m, solver=None):
     if solver is None:
         solver = get_solver()
     results = solver.solve(m, tee=True)
-    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
     pyo.assert_optimal_termination(results)
     return results
 
