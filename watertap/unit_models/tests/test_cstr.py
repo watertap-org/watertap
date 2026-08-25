@@ -40,11 +40,9 @@ from watertap.costing import WaterTAPCosting
 
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
-    ASM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
-    ASM1ReactionScaler,
 )
 
 from idaes.models.properties.examples.saponification_thermo import (

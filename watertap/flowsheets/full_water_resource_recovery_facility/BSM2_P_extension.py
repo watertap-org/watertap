@@ -43,7 +43,6 @@ from idaes.models.unit_models import (
 )
 from idaes.models.unit_models.separator import SplittingType
 from watertap.core.solvers import get_solver
-from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.scaling import set_scaling_factor
 import idaes.logger as idaeslog
@@ -91,10 +90,6 @@ from watertap.unit_models.dewatering import (
 from watertap.unit_models.thickener import (
     Thickener,
     ActivatedSludgeModelType as thickener_type,
-)
-
-from watertap.core.util.initialization import (
-    check_solve,
 )
 
 from watertap.costing import WaterTAPCosting

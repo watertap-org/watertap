@@ -26,13 +26,8 @@ J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 # Some more information about this module
 __author__ = "Chenyu Wang, Adam Atia, Alejandro Garciadiego, Marcus Holly"
 
-import itertools
-import time
-import traceback
-
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
-from pyomo.opt import TerminationCondition
 
 from idaes.core import (
     FlowsheetBlock,
@@ -94,7 +89,6 @@ from watertap.unit_models.thickener import (
 from watertap.unit_models.cstr import CSTR
 from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
-from idaes.core.util import DiagnosticsToolbox
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

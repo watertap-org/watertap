@@ -21,7 +21,6 @@ from pyomo.environ import (
     value,
     Objective,
     Suffix,
-    TransformationFactory,
 )
 from idaes.core import (
     FlowsheetBlock,
@@ -52,11 +51,9 @@ from idaes.core import UnitModelCostingBlock
 from watertap.costing import WaterTAPCosting
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
-    ASM1PropertiesScaler,
 )
 from watertap.property_models.unit_specific.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
-    ASM1ReactionScaler,
 )
 from watertap.property_models.unit_specific.activated_sludge.asm2d_properties import (
     ASM2dParameterBlock,

@@ -19,7 +19,6 @@ from pyomo.environ import (
     ConcreteModel,
     units,
     Suffix,
-    TransformationFactory,
 )
 
 from idaes.core import (
@@ -39,7 +38,6 @@ from idaes.models.unit_models.separator import SplittingType
 
 from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
-    ASM1PropertiesScaler,
 )
 
 from idaes.core import UnitModelCostingBlock

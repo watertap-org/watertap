@@ -30,7 +30,6 @@ from idaes.core.scaling.custom_scaler_base import (
 )
 from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 from watertap.unit_models.anaerobic_digester import AD
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
