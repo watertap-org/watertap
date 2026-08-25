@@ -118,7 +118,7 @@ def build():
     m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
     # Set scaling factors for badly scaled variables
-    iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e3)
+    iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0], 1e1)
     iscale.set_scaling_factor(m.fs.unit.liquid_phase.rate_reaction_extent, 1e4)
     iscale.set_scaling_factor(m.fs.unit.liquid_phase.volume[0], 1e-2)
 

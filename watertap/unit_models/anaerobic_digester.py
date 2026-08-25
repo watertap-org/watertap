@@ -88,7 +88,7 @@ class ADScaler(CustomScalerBase):
         "KH_h2": 1e4,
         "KH_co2": 1e2,
         "KH_ch4": 1e2,
-        "heat": 1e3,
+        "heat": 1e1,
         "hydraulic_retention_time": 1e-6,
         "electricity_consumption": 1e-1,
         "rate_reaction_generation": 1e3,
@@ -1255,7 +1255,7 @@ see reaction package for documentation.}""",
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
                 results = solverobj.solve(
-                    self, tee=False, options={"ma27_pivtol": 1e-2}
+                    self, tee=slc.tee, options={"ma27_pivtol": 1e-2}
                 )
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(results))
