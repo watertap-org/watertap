@@ -184,6 +184,128 @@ class TestParamBlock(object):
         assert value(model.rparams.b_A_NOX["ref_temp_2"]) == 0.05
 
 
+class TestParamBlock_CalibratedStructure(object):
+    ALL_KINETIC_PARAMS = [
+        "k_H",
+        "k_STO",
+        "mu_H",
+        "mu_A",
+        "b_H_O2",
+        "b_H_NOX",
+        "b_STO_O2",
+        "b_STO_NOX",
+        "b_A_O2",
+        "b_A_NOX",
+    ]
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def uncalibrated_model(cls):
+        model = ConcreteModel()
+        model.pparams = ASM3ParameterBlock()
+        model.rparams = ASM3ReactionParameterBlock(property_package=model.pparams)
+        return model
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def all_calibrated_model(cls):
+        calibrated_params = {
+            "k_H": 4,
+            "k_STO": 6,
+            "mu_H": 2,
+            "mu_A": 1,
+            "b_H_O2": 0.3,
+            "b_H_NOX": 0.15,
+            "b_STO_O2": 0.4,
+            "b_STO_NOX": 0.2,
+            "b_A_O2": 0.1,
+            "b_A_NOX": 0.05,
+        }
+        model = ConcreteModel()
+        model.pparams = ASM3ParameterBlock()
+        model.rparams = ASM3ReactionParameterBlock(
+            property_package=model.pparams, calibrated_params=calibrated_params
+        )
+        model.calibrated_params = calibrated_params
+        return model
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def partially_calibrated_model(cls):
+        calibrated_params = {"k_H": 4, "b_A_NOX": 0.05}
+        model = ConcreteModel()
+        model.pparams = ASM3ParameterBlock()
+        model.rparams = ASM3ReactionParameterBlock(
+            property_package=model.pparams, calibrated_params=calibrated_params
+        )
+        model.calibrated_params = calibrated_params
+        return model
+
+    @pytest.mark.unit
+    def test_uncalibrated_params_are_indexed(self, uncalibrated_model):
+        for name in self.ALL_KINETIC_PARAMS:
+            var = getattr(uncalibrated_model.rparams, name)
+            assert isinstance(var, Var)
+            assert var.is_indexed()
+            assert set(var.keys()) == {"ref_temp_1", "ref_temp_2"}
+
+    @pytest.mark.unit
+    def test_all_calibrated_params_are_scalar(self, all_calibrated_model):
+        for name in self.ALL_KINETIC_PARAMS:
+            var = getattr(all_calibrated_model.rparams, name)
+            assert isinstance(var, Var)
+            assert not var.is_indexed()
+
+    @pytest.mark.unit
+    def test_all_calibrated_params_have_expected_value(self, all_calibrated_model):
+        for name, calibrated_value in all_calibrated_model.calibrated_params.items():
+            var = getattr(all_calibrated_model.rparams, name)
+            assert value(var) == pytest.approx(calibrated_value)
+
+    @pytest.mark.unit
+    def test_partial_calibration_leaves_others_indexed(
+        self, partially_calibrated_model
+    ):
+        model = partially_calibrated_model
+
+        assert not model.rparams.k_H.is_indexed()
+        assert value(model.rparams.k_H) == 4
+        assert not model.rparams.b_A_NOX.is_indexed()
+        assert value(model.rparams.b_A_NOX) == 0.05
+
+        still_indexed = {
+            "k_STO": (2.5, 5),
+            "mu_H": (1, 2),
+            "mu_A": (0.35, 1),
+            "b_H_O2": (0.1, 0.2),
+            "b_H_NOX": (0.05, 0.1),
+            "b_STO_O2": (0.1, 0.2),
+            "b_STO_NOX": (0.05, 0.1),
+            "b_A_O2": (0.05, 0.15),
+        }
+        for name, (ref1, ref2) in still_indexed.items():
+            var = getattr(model.rparams, name)
+            assert var.is_indexed()
+            assert set(var.keys()) == {"ref_temp_1", "ref_temp_2"}
+            assert value(var["ref_temp_1"]) == ref1
+            assert value(var["ref_temp_2"]) == ref2
+
+    @pytest.mark.unit
+    def test_reaction_block_expressions_match_calibrated_values(
+        self, all_calibrated_model
+    ):
+        model = all_calibrated_model
+        model.props = model.pparams.build_state_block([1])
+        model.props[1].temperature.fix(298.15 * units.K)
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        model.rxns[1].reaction_rate
+
+        for name, calibrated_value in model.calibrated_params.items():
+            expr = getattr(model.rxns[1], name)
+            assert value(expr) == pytest.approx(calibrated_value, rel=1e-8)
+
+
 class TestReactionBlock(object):
     @pytest.fixture(scope="class")
     @classmethod
