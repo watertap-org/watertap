@@ -376,8 +376,6 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         t12 = self.f_XI * self.i_SSXI - self.i_SSBM
 
         # Reaction Stoichiometry
-        # mw_alk = 61 * pyo.units.kg / pyo.units.kmol
-        # mw_n = 14 * pyo.units.kg / pyo.units.kmol
         self.rate_reaction_stoichiometry = {
             # R1: Hydrolysis
             ("R1", "Liq", "H2O"): 0,
