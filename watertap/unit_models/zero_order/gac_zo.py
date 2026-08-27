@@ -20,7 +20,6 @@ from idaes.core import declare_process_block_class
 from idaes.core.util.math import smooth_min
 from watertap.core import build_sido, ZeroOrderBaseData
 
-# Some more information about this module
 __author__ = "Adam Atia"
 
 
@@ -68,9 +67,9 @@ class GACZOData(ZeroOrderBaseData):
 
         @self.Constraint(doc="Electricity intensity based on empty bed contact time.")
         def electricity_intensity_constraint(b):
-            return (
-                b.energy_electric_flow_vol_inlet
-                == b.electricity_intensity_parameter * b.empty_bed_contact_time
+            return b.energy_electric_flow_vol_inlet == pyo.units.convert(
+                b.electricity_intensity_parameter * b.empty_bed_contact_time,
+                to_units=pyunits.kWh / pyunits.m**3,
             )
 
         @self.Constraint(
@@ -129,6 +128,20 @@ class GACZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Activated Carbon Demand"] = self.activated_carbon_demand
 
+        @self.Expression(doc="Total volume of activated carbon bed")
+        def total_bed_volume(b):
+            return pyo.units.convert(
+                b.properties_in[0].flow_vol * b.empty_bed_contact_time,
+                to_units=pyunits.m**3,
+            )
+
+        @self.Expression(doc="Total mass of activated carbon bed")
+        def total_bed_mass(b):
+            return pyo.units.convert(
+                b.total_bed_volume * b.activated_carbon_bulk_density,
+                to_units=pyunits.kg,
+            )
+
     @property
     def default_costing_method(self):
         return self.cost_gac
@@ -149,20 +162,6 @@ class GACZOData(ZeroOrderBaseData):
                         number_of_parallel_units parallel units in operation (default: 5)
         """
         t0 = blk.flowsheet().time.first()
-
-        Q = blk.unit_model.properties_in[t0].flow_vol
-        T = blk.unit_model.empty_bed_contact_time
-        gac_dens = blk.unit_model.activated_carbon_bulk_density
-
-        # total bed volume
-        V = pyo.units.convert(
-            Q, to_units=pyo.units.m**3 / pyo.units.seconds
-        ) * pyo.units.convert(T, to_units=pyo.units.seconds)
-
-        # mass of gac in bed
-        bed_mass_gac = pyo.units.convert(
-            V, to_units=pyo.units.m**3
-        ) * pyo.units.convert(gac_dens, to_units=pyo.units.kg / pyo.units.m**3)
 
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
@@ -197,35 +196,49 @@ class GACZOData(ZeroOrderBaseData):
             ],
         )
 
-        contactor_cost = number_of_parallel_units * pyo.units.convert(
-            (
-                A3 * (V / number_of_parallel_units) ** 3
-                + A2 * (V / number_of_parallel_units) ** 2
-                + A1 * (V / number_of_parallel_units) ** 1
-                + A0
-            ),
-            to_units=blk.config.flowsheet_costing_block.base_currency,
-        )
-
-        bed_mass_gac_ref = (
-            smooth_min(
-                bed_mass_max_ref / pyo.units.kg,
-                pyo.units.convert(bed_mass_gac, to_units=pyo.units.kg) / pyo.units.kg,
+        blk.contactor_cost = pyo.Expression(
+            expr=number_of_parallel_units
+            * pyo.units.convert(
+                (
+                    A3 * (blk.unit_model.total_bed_volume) ** 3
+                    + A2 * (blk.unit_model.total_bed_volume) ** 2
+                    + A1 * (blk.unit_model.total_bed_volume) ** 1
+                    + A0
+                ),
+                to_units=blk.config.flowsheet_costing_block.base_currency,
             )
-            * pyo.units.kg
         )
 
-        adsorbent_unit_cost = pyo.units.convert(
-            B0 * pyo.exp(bed_mass_gac_ref * B1),
-            to_units=blk.config.flowsheet_costing_block.base_currency
-            * pyo.units.kg**-1,
+        blk.bed_mass_gac_ref = pyo.Expression(
+            expr=(
+                smooth_min(
+                    bed_mass_max_ref / pyo.units.kg,
+                    pyo.units.convert(
+                        blk.unit_model.total_bed_mass, to_units=pyo.units.kg
+                    )
+                    / pyo.units.kg,
+                )
+                * pyo.units.kg
+            )
         )
 
-        adsorbent_cost = adsorbent_unit_cost * bed_mass_gac
+        blk.adsorbent_unit_cost = pyo.Expression(
+            expr=pyo.units.convert(
+                B0 * pyo.exp(blk.bed_mass_gac_ref * B1),
+                to_units=blk.config.flowsheet_costing_block.base_currency
+                * pyo.units.kg**-1,
+            )
+        )
 
-        other_process_cost = pyo.units.convert(
-            (C0 * ((pyo.units.m**3) ** -C1) * V**C1),
-            to_units=blk.config.flowsheet_costing_block.base_currency,
+        blk.adsorbent_cost = pyo.Expression(
+            expr=blk.adsorbent_unit_cost * blk.unit_model.total_bed_mass
+        )
+
+        blk.other_process_cost = pyo.Expression(
+            expr=pyo.units.convert(
+                (C0 * ((pyo.units.m**3) ** -C1) * blk.unit_model.total_bed_volume**C1),
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
         )
 
         blk.capital_cost = pyo.Var(
@@ -235,7 +248,7 @@ class GACZOData(ZeroOrderBaseData):
             doc="Capital cost of unit operation",
         )
 
-        expr = contactor_cost + adsorbent_cost + other_process_cost
+        expr = blk.contactor_cost + blk.adsorbent_cost + blk.other_process_cost
 
         blk.costing_package.add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
