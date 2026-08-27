@@ -130,6 +130,7 @@ ED_conc_recirc = "watertap.flowsheets.electrodialysis.electrodialysis_1stack_con
 LSRRO = "watertap.flowsheets.lsrro.lsrro_ui"
 "generic desal train" = "watertap.flowsheets.generic_desalination_train.generic_train_ui"
 SWRO = "watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination_ui"
+multistage_RO = "watertap.flowsheets.multistage_RO.multistage_RO_ui"
 
 
 [tool.pylint."messages control"]
