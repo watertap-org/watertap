@@ -32,6 +32,7 @@ from idaes.core import (
     ReactionBlockDataBase,
     ReactionBlockBase,
 )
+from pyomo.common.config import ConfigValue
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
@@ -49,6 +50,46 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
     """
     Reaction Parameter Block Class
     """
+
+    CONFIG = ReactionParameterBlock.CONFIG()
+    CONFIG.declare(
+        "calibrated_params",
+        ConfigValue(
+            default=None,
+            description="Optional dict of directly specified values for "
+            "ASM3's temperature-dependent kinetic parameters",
+            doc="""Optional dict for directly specifying  ASM3's
+            temperature-dependent kinetic parameters (k_H, k_STO, mu_H, mu_A,
+            b_H_O2, b_H_NOX, b_STO_O2, b_STO_NOX, b_A_O2, b_A_NOX).
+            **default** - None.
+            **Valid values:** {
+            **None** - all parameters are temperature-indexed Vars computed via Arrhenius interpolation,
+            **dict** - parameters whose name is a key are declared as unindexed Vars fixed to the given value,""",
+        ),
+    )
+
+    def _kinetic_param(self, name, ref_temp_1_value, ref_temp_2_value, doc):
+        """
+        Declare a temperature-dependent ASM3 kinetic parameter.
+        """
+        calibrated = self.config.calibrated_params
+        if calibrated and name in calibrated:
+            var = pyo.Var(
+                initialize=calibrated[name],
+                domain=pyo.PositiveReals,
+                units=pyo.units.day**-1,
+                doc=doc,
+            )
+        else:
+            ref_dict = {"ref_temp_1": ref_temp_1_value, "ref_temp_2": ref_temp_2_value}
+            var = pyo.Var(
+                ref_dict.keys(),
+                domain=pyo.PositiveReals,
+                initialize=ref_dict,
+                units=pyo.units.day**-1,
+                doc=doc,
+            )
+        self.add_component(name, var)
 
     def build(self):
         """
@@ -141,14 +182,8 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         add_object_reference(self, "i_SSSTO", self.config.property_package.i_SSSTO)
 
         # Kinetic Parameters
-        # Note: ref_temp_1 is 10 Celsius degree, ref_temp_2 is 20 Celsius degree
-        k_H_dict = {"ref_temp_1": 2, "ref_temp_2": 3}
-        self.k_H = pyo.Var(
-            k_H_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=k_H_dict,
-            units=pyo.units.day**-1,
-            doc="Hydrolysis rate constant (g-COD-X_S / g-COD-X_H / day)",
+        self._kinetic_param(
+            "k_H", 2, 3, "Hydrolysis rate constant (g-COD-X_S / g-COD-X_H / day)"
         )
         self.K_X = pyo.Var(
             initialize=1,
@@ -158,13 +193,8 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         )
 
         # Heterotrophic organisms X_H, aerobic and denitrifying activity
-        k_STO_dict = {"ref_temp_1": 2.5, "ref_temp_2": 5}
-        self.k_STO = pyo.Var(
-            k_STO_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=k_STO_dict,
-            units=pyo.units.day**-1,
-            doc="Storage rate constant (g-COD-S_S / g-COD-X_H / day)",
+        self._kinetic_param(
+            "k_STO", 2.5, 5, "Storage rate constant (g-COD-S_S / g-COD-X_H / day)"
         )
         self.eta_NOX = pyo.Var(
             initialize=0.6,
@@ -196,13 +226,8 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Saturation constant for for X_STO (g-COD-X_STO / g-COD-X_H)",
         )
-        mu_H_dict = {"ref_temp_1": 1, "ref_temp_2": 2}
-        self.mu_H = pyo.Var(
-            mu_H_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=mu_H_dict,
-            units=pyo.units.day**-1,
-            doc="Heterotrophic max. growth rate of X_H (day^-1)",
+        self._kinetic_param(
+            "mu_H", 1, 2, "Heterotrophic max. growth rate of X_H (day^-1)"
         )
         self.K_NH4 = pyo.Var(
             initialize=0.01e-3,
@@ -216,47 +241,22 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Saturation constant for alkalinity for X_H (kmol-HCO3- / m3)",
         )
-        b_H_O2_dict = {"ref_temp_1": 0.1, "ref_temp_2": 0.2}
-        self.b_H_O2 = pyo.Var(
-            b_H_O2_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=b_H_O2_dict,
-            units=pyo.units.day**-1,
-            doc="Aerobic endogenous respiration rate of X_H (day^-1)",
+        self._kinetic_param(
+            "b_H_O2", 0.1, 0.2, "Aerobic endogenous respiration rate of X_H (day^-1)"
         )
-        b_H_NOX_dict = {"ref_temp_1": 0.05, "ref_temp_2": 0.1}
-        self.b_H_NOX = pyo.Var(
-            b_H_NOX_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=b_H_NOX_dict,
-            units=pyo.units.day**-1,
-            doc="Anoxic endogenous respiration rate of X_H (day^-1)",
+        self._kinetic_param(
+            "b_H_NOX", 0.05, 0.1, "Anoxic endogenous respiration rate of X_H (day^-1)"
         )
-        b_STO_O2_dict = {"ref_temp_1": 0.1, "ref_temp_2": 0.2}
-        self.b_STO_O2 = pyo.Var(
-            b_STO_O2_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=b_STO_O2_dict,
-            units=pyo.units.day**-1,
-            doc="Aerobic respiration rate for X_STO (day^-1)",
+        self._kinetic_param(
+            "b_STO_O2", 0.1, 0.2, "Aerobic respiration rate for X_STO (day^-1)"
         )
-        b_STO_NOX_dict = {"ref_temp_1": 0.05, "ref_temp_2": 0.1}
-        self.b_STO_NOX = pyo.Var(
-            b_STO_NOX_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=b_STO_NOX_dict,
-            units=pyo.units.day**-1,
-            doc="Anoxic respiration rate for X_STO (day^-1)",
+        self._kinetic_param(
+            "b_STO_NOX", 0.05, 0.1, "Anoxic respiration rate for X_STO (day^-1)"
         )
 
         # Autotrophic organisms X_A, nitrifying activity
-        mu_A_dict = {"ref_temp_1": 0.35, "ref_temp_2": 1}
-        self.mu_A = pyo.Var(
-            mu_A_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=mu_A_dict,
-            units=pyo.units.day**-1,
-            doc="Autotrophic max. growth rate of X_A (day^-1)",
+        self._kinetic_param(
+            "mu_A", 0.35, 1, "Autotrophic max. growth rate of X_A (day^-1)"
         )
         self.K_A_NH4 = pyo.Var(
             initialize=1e-3,
@@ -276,21 +276,26 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Bicarbonate saturation for nitrifiers (kmol-HCO3- / m3)",
         )
-        b_A_O2_dict = {"ref_temp_1": 0.05, "ref_temp_2": 0.15}
-        self.b_A_O2 = pyo.Var(
-            b_A_O2_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=b_A_O2_dict,
-            units=pyo.units.day**-1,
-            doc="Aerobic endogenous respiration rate of X_A (day^-1)",
+        self._kinetic_param(
+            "b_A_O2", 0.05, 0.15, "Aerobic endogenous respiration rate of X_A (day^-1)"
         )
-        b_A_NOX_dict = {"ref_temp_1": 0.02, "ref_temp_2": 0.05}
-        self.b_A_NOX = pyo.Var(
-            b_A_NOX_dict.keys(),
-            domain=pyo.PositiveReals,
-            initialize=b_A_NOX_dict,
-            units=pyo.units.day**-1,
-            doc="Anoxic endogenous respiration rate of X_A (day^-1)",
+        self._kinetic_param(
+            "b_A_NOX", 0.02, 0.05, "Anoxic endogenous respiration rate of X_A (day^-1)"
+        )
+
+        # Reference temperature parameters
+        self.ref_temp_1 = pyo.Param(
+            domain=pyo.Reals,
+            initialize=10,
+            units=pyo.units.dimensionless,
+            doc="Dimensionless reference temperature (10 Celsius degree) for kinetic parameters",
+        )
+
+        self.ref_temp_2 = pyo.Param(
+            domain=pyo.Reals,
+            initialize=20,
+            units=pyo.units.dimensionless,
+            doc="Dimensionless reference temperature (20 Celsius degree) for kinetic parameters",
         )
 
         # Reference temperature parameters
@@ -310,18 +315,29 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
 
         # Stoichiometric numbers from Table 1
         # obtained by \sum_i^12 νji*ikI
+        mw_n = 14.0
+        mw_alk = 61.0
+        mw_o = 8.0
+
+        # 8*mw_o/mw_n = 64/14 = 4.57 g COD/g N for S_NOX, and
+        # 3*mw_o/mw_n = 24/14 = 1.71 g COD/g N for S_N2.
+        cod_nox_per_mol_n = 8 * mw_o  # = 64.0
+        cod_n2_per_mol_n = 3 * mw_o  # = 24.0
+
         x1 = 1.0 - self.f_SI
         x2 = -1.0 + self.Y_STO_O2
-        x3 = (-1.0 + self.Y_STO_NOX) / (64.0 / 14.0 - 24.0 / 14.0)
+        x3 = (-1.0 + self.Y_STO_NOX) / ((cod_nox_per_mol_n - cod_n2_per_mol_n) / mw_n)
         x4 = 1.0 - 1.0 / self.Y_H_O2
-        x5 = (+1.0 - 1.0 / self.Y_H_NOX) / (64.0 / 14.0 - 24.0 / 14.0)
+        x5 = (+1.0 - 1.0 / self.Y_H_NOX) / (
+            (cod_nox_per_mol_n - cod_n2_per_mol_n) / mw_n
+        )
         x6 = -1.0 + self.f_XI
-        x7 = (self.f_XI - 1.0) / (64.0 / 14.0 - 24.0 / 14.0)
+        x7 = (self.f_XI - 1.0) / ((cod_nox_per_mol_n - cod_n2_per_mol_n) / mw_n)
         x8 = -1.0
-        x9 = -1.0 / (64.0 / 14.0 - 24.0 / 14.0)
-        x10 = -(64.0 / 14.0) / self.Y_A + 1.0
+        x9 = -1.0 / ((cod_nox_per_mol_n - cod_n2_per_mol_n) / mw_n)
+        x10 = -(cod_nox_per_mol_n / mw_n) / self.Y_A + 1.0
         x11 = self.f_XI - 1.0
-        x12 = (self.f_XI - 1.0) / (64.0 / 14.0 - 24.0 / 14.0)
+        x12 = (self.f_XI - 1.0) / ((cod_nox_per_mol_n - cod_n2_per_mol_n) / mw_n)
 
         y1 = -self.f_SI * self.i_NSI - (1.0 - self.f_SI) * self.i_NSS + self.i_NXS
         y2 = self.i_NSS
@@ -334,17 +350,17 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         y11 = -self.f_XI * self.i_NXI + self.i_NBM
         y12 = -self.f_XI * self.i_NXI + self.i_NBM
 
-        z1 = y1 / 14.0
-        z2 = y2 / 14.0
-        z3 = y3 / 14.0 - x3 / 14.0
-        z4 = y4 / 14.0
-        z5 = y5 / 14.0 - x5 / 14.0
-        z6 = y6 / 14.0
-        z7 = y7 / 14.0 - x7 / 14.0
-        z9 = -x9 / 14.0
-        z10 = y10 / 14.0 - 1.0 / (self.Y_A * 14.0)
-        z11 = y11 / 14.0
-        z12 = y12 / 14.0 - x12 / 14.0
+        z1 = (y1 / mw_n) * mw_alk
+        z2 = (y2 / mw_n) * mw_alk
+        z3 = (y3 / mw_n - x3 / mw_n) * mw_alk
+        z4 = (y4 / mw_n) * mw_alk
+        z5 = (y5 / mw_n - x5 / mw_n) * mw_alk
+        z6 = (y6 / mw_n) * mw_alk
+        z7 = (y7 / mw_n - x7 / mw_n) * mw_alk
+        z9 = (-x9 / mw_n) * mw_alk
+        z10 = (y10 / mw_n - 1.0 / (self.Y_A * mw_n)) * mw_alk
+        z11 = (y11 / mw_n) * mw_alk
+        z12 = (y12 / mw_n - x12 / mw_n) * mw_alk
 
         t1 = -self.i_SSXS
         t2 = self.Y_STO_O2 * self.i_SSSTO
@@ -360,12 +376,6 @@ class ASM3ReactionParameterData(ReactionParameterBlock):
         t12 = self.f_XI * self.i_SSXI - self.i_SSBM
 
         # Reaction Stoichiometry
-        # This is the stoichiometric part the Peterson matrix in dict form
-        # Note that reaction stoichiometry is on a mass basis.
-        # For alkalinity, this requires converting the mass of nitrogen species
-        # reacted to mass of alkalinity converted using a charge balance (effectively MW_C/MW_N)
-        mw_alk = 12 * pyo.units.kg / pyo.units.kmol
-        mw_n = 14 * pyo.units.kg / pyo.units.kmol
         self.rate_reaction_stoichiometry = {
             # R1: Hydrolysis
             ("R1", "Liq", "H2O"): 0,
@@ -649,191 +659,53 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
         self.reaction_rate = pyo.Var(
             self.params.rate_reaction_idx,
             initialize=0,
+            domain=pyo.NonNegativeReals,
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
 
-        @self.Expression(
-            doc="k_H, Hydrolysis rate constant (g-COD-X_S / g-COD-X_H / day)"
-        )
-        def k_H(blk):
-            theta_T_k_H = pyo.log(
-                blk.params.k_H["ref_temp_1"] / blk.params.k_H["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            k_H = blk.params.k_H["ref_temp_2"] * pyo.exp(
-                theta_T_k_H
+        def _arrhenius(param_var):
+            theta = pyo.log(param_var["ref_temp_1"] / param_var["ref_temp_2"]) / (
+                self.params.ref_temp_1 - self.params.ref_temp_2
+            )
+            return param_var["ref_temp_2"] * pyo.exp(
+                theta
                 * (
                     pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
+                        self.state_ref.temperature / pyo.units.K,
                         to_units=pyo.units.dimensionless,
                     )
-                    - (blk.params.ref_temp_2 + 273.15)
+                    - (self.params.ref_temp_2 + 273.15)
                 )
             )
-            return k_H
 
-        @self.Expression(
-            doc="k_STO, Storage rate constant (g-COD-S_S / g-COD-X_H / day)"
-        )
-        def k_STO(blk):
-            theta_T_k_STO = pyo.log(
-                blk.params.k_STO["ref_temp_1"] / blk.params.k_STO["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            k_STO = blk.params.k_STO["ref_temp_2"] * pyo.exp(
-                theta_T_k_STO
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return k_STO
+        def _kinetic_expr(name):
+            calibrated = self.params.config.calibrated_params
+            param_var = getattr(self.params, name)
+            if calibrated and name in calibrated:
+                return param_var
+            return _arrhenius(param_var)
 
-        @self.Expression(doc="mu_H, Heterotrophic max. growth rate of X_H (day^-1)")
-        def mu_H(blk):
-            theta_T_mu_H = pyo.log(
-                blk.params.mu_H["ref_temp_1"] / blk.params.mu_H["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            mu_H = blk.params.mu_H["ref_temp_2"] * pyo.exp(
-                theta_T_mu_H
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return mu_H
-
-        @self.Expression(
-            doc="b_H_O2, Aerobic endogenous respiration rate of X_H (day^-1)"
-        )
-        def b_H_O2(blk):
-            theta_T_b_H_O2 = pyo.log(
-                blk.params.b_H_O2["ref_temp_1"] / blk.params.b_H_O2["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            b_H_O2 = blk.params.b_H_O2["ref_temp_2"] * pyo.exp(
-                theta_T_b_H_O2
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return b_H_O2
-
-        @self.Expression(
-            doc="b_H_NOX, Anoxic endogenous respiration rate of X_H (day^-1)"
-        )
-        def b_H_NOX(blk):
-            theta_T_b_H_NOX = pyo.log(
-                blk.params.b_H_NOX["ref_temp_1"] / blk.params.b_H_NOX["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            b_H_NOX = blk.params.b_H_NOX["ref_temp_2"] * pyo.exp(
-                theta_T_b_H_NOX
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return b_H_NOX
-
-        @self.Expression(doc="b_STO_O2, Aerobic respiration rate for X_STO (day^-1)")
-        def b_STO_O2(blk):
-            theta_T_b_STO_O2 = pyo.log(
-                blk.params.b_STO_O2["ref_temp_1"] / blk.params.b_STO_O2["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            b_STO_O2 = blk.params.b_STO_O2["ref_temp_2"] * pyo.exp(
-                theta_T_b_STO_O2
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return b_STO_O2
-
-        @self.Expression(doc="b_STO_NOX, Anoxic respiration rate for X_STO (day^-1)")
-        def b_STO_NOX(blk):
-            theta_T_b_STO_NOX = pyo.log(
-                blk.params.b_STO_NOX["ref_temp_1"] / blk.params.b_STO_NOX["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            b_STO_NOX = blk.params.b_STO_NOX["ref_temp_2"] * pyo.exp(
-                theta_T_b_STO_NOX
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return b_STO_NOX
-
-        @self.Expression(doc="mu_A, Autotrophic max. growth rate of X_A (day^-1)")
-        def mu_A(blk):
-            theta_T_mu_A = pyo.log(
-                blk.params.mu_A["ref_temp_1"] / blk.params.mu_A["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            mu_A = blk.params.mu_A["ref_temp_2"] * pyo.exp(
-                theta_T_mu_A
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return mu_A
-
-        @self.Expression(
-            doc="b_A_O2, Aerobic endogenous respiration rate of X_A (day^-1)"
-        )
-        def b_A_O2(blk):
-            theta_T_b_A_O2 = pyo.log(
-                blk.params.b_A_O2["ref_temp_1"] / blk.params.b_A_O2["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            b_A_O2 = blk.params.b_A_O2["ref_temp_2"] * pyo.exp(
-                theta_T_b_A_O2
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return b_A_O2
-
-        @self.Expression(
-            doc="b_A_NOX, Anoxic endogenous respiration rate of X_A (day^-1)"
-        )
-        def b_A_NOX(blk):
-            theta_T_b_A_NOX = pyo.log(
-                blk.params.b_A_NOX["ref_temp_1"] / blk.params.b_A_NOX["ref_temp_2"]
-            ) / (blk.params.ref_temp_1 - blk.params.ref_temp_2)
-            b_A_NOX = blk.params.b_A_NOX["ref_temp_2"] * pyo.exp(
-                theta_T_b_A_NOX
-                * (
-                    pyo.units.convert(
-                        blk.state_ref.temperature / pyo.units.K,
-                        to_units=pyo.units.dimensionless,
-                    )
-                    - (blk.params.ref_temp_2 + 273.15)
-                )
-            )
-            return b_A_NOX
+        # Attach these as named Expressions
+        kinetic_param_docs = {
+            "k_H": "k_H, Hydrolysis rate constant (g-COD-X_S/g-COD-X_H/day)",
+            "k_STO": "k_STO, Storage rate constant",
+            "mu_H": "mu_H, max heterotrophic growth rate",
+            "mu_A": "mu_A, max autotrophic growth rate",
+            "b_H_O2": "b_H_O2, aerobic decay of X_H",
+            "b_H_NOX": "b_H_NOX, anoxic decay of X_H",
+            "b_STO_O2": "b_STO_O2, aerobic decay of X_STO",
+            "b_STO_NOX": "b_STO_NOX, anoxic decay of X_STO",
+            "b_A_O2": "b_A_O2, aerobic decay of X_A",
+            "b_A_NOX": "b_A_NOX, anoxic decay of X_A",
+        }
+        params_calibrated = self.params.config.calibrated_params
+        for name, doc in kinetic_param_docs.items():
+            if params_calibrated and name in params_calibrated:
+                doc = doc + " (calibrated)"
+            else:
+                doc = doc + " (Arrhenius-derived)"
+            self.add_component(name, pyo.Expression(expr=_kinetic_expr(name), doc=doc))
 
         try:
 
@@ -1059,6 +931,3 @@ class ASM3ReactionBlockData(ReactionBlockDataBase):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        # iscale.constraint_scaling_transform(self.rate_expression["R5"], 1e3)
-        # iscale.constraint_scaling_transform(self.rate_expression["R3"], 1e3)
-        # iscale.constraint_scaling_transform(self.rate_expression["R4"], 1e3)
