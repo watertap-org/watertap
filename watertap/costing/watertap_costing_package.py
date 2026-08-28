@@ -306,7 +306,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self, flow_rate, flow_basis=None, output_units=None, period=None
     ):
         """Resolves the flow basis and output units for a given flow rate.
-        If flow_basis is provided, it will be used to determine the output_units. If output_units is provided, it will be used to determine the flow_basis. If neither is provided, the flow_basis will be inferred from the flow_rate units and the output_units will be set accordingly.
+        If flow_basis is provided, it will be used to determine the output_units. 
+        If output_units is provided, it will be used to determine the flow_basis. 
+        If neither is provided, the flow_basis will be inferred from the flow_rate units and the output_units will be set accordingly.
         """
         if period is None:
             period = self.base_period
