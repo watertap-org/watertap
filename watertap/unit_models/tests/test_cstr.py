@@ -446,6 +446,8 @@ class TestCSTRScaler:
     @pytest.mark.component
     def test_variable_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
 
         assert isinstance(scaler, CSTRScaler)
 
@@ -478,6 +480,8 @@ class TestCSTRScaler:
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
 
         assert isinstance(scaler, CSTRScaler)
 
@@ -500,6 +504,8 @@ class TestCSTRScaler:
     @pytest.mark.component
     def test_scale_model(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
 
         assert isinstance(scaler, CSTRScaler)
 
@@ -673,6 +679,8 @@ class TestCSTRScaler:
         m.fs.unit.volume[0].fix(1000 * units.m**3)
 
         scaler = CSTRScaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
         scaler.scale_model(m.fs.unit)
 
         # Check condition number to confirm scaling

@@ -521,6 +521,8 @@ class TestCSTR_InjectionScaler:
     @pytest.mark.component
     def test_variable_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
 
         assert isinstance(scaler, CSTR_InjectionScaler)
 
@@ -553,6 +555,8 @@ class TestCSTR_InjectionScaler:
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
 
         assert isinstance(scaler, CSTR_InjectionScaler)
 
@@ -575,6 +579,8 @@ class TestCSTR_InjectionScaler:
     @pytest.mark.component
     def test_scale_model(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
 
         assert isinstance(scaler, CSTR_InjectionScaler)
 
@@ -758,6 +764,8 @@ class TestCSTR_InjectionScaler:
         sb.set_variable_scaling_factor(m.fs.unit.hydraulic_retention_time[0], 1e-3)
 
         scaler = CSTR_InjectionScaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
         scaler.scale_model(m.fs.unit)
 
         # Check condition number to confirm scaling

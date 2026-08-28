@@ -329,6 +329,7 @@ class TestASM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
+        scaler.default_scaling_factors["reaction_rate"] = 1e5
         assert isinstance(scaler, ModifiedASM2dReactionScaler)
 
         scaler.variable_scaling_routine(model.rxns[1])
@@ -372,6 +373,7 @@ class TestASM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
+        scaler.default_scaling_factors["reaction_rate"] = 1e5
         assert isinstance(scaler, ModifiedASM2dReactionScaler)
 
         scaler.constraint_scaling_routine(model.rxns[1])
@@ -449,6 +451,7 @@ class TestASM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
+        scaler.default_scaling_factors["reaction_rate"] = 1e5
         assert isinstance(scaler, ModifiedASM2dReactionScaler)
 
         scaler.scale_model(model.rxns[1])

@@ -500,10 +500,16 @@ def set_scaling(m):
     for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
         if isinstance(blk, UnitModelBlockData):
             if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
-                if blk == m.fs.R5 or m.fs.R6 or m.fs.R7:
+                if blk in (m.fs.R5, m.fs.R6, m.fs.R7):
                     print(f"Scaling {blk.name}")
                     scaler = blk.default_scaler()
                     scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+                    scaler.scale_model(blk)
+                elif blk in (m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4):
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+                    scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
                     scaler.scale_model(blk)
                 else:
                     print(f"Scaling {blk.name}")

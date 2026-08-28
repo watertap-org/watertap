@@ -502,6 +502,8 @@ def scale_system(m):
     cstr_list = [m.fs.R1, m.fs.R2]
     cstr_scaler = CSTRScaler()
     for unit in cstr_list:
+        cstr_scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        cstr_scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
         cstr_scaler.scale_model(unit)
 
     aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]

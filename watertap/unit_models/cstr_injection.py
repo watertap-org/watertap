@@ -78,8 +78,8 @@ class CSTR_InjectionScaler(CustomScalerBase):
         "hydraulic_retention_time": 1e-3,
         "KLa": 1e-2,
         "mass_transfer_term": 1e2,
-        "rate_reaction_extent": 1e3,
-        "rate_reaction_generation": 1e3,
+        "rate_reaction_extent": None,
+        "rate_reaction_generation": None,
     }
 
     def variable_scaling_routine(
