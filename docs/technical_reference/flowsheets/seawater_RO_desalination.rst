@@ -19,15 +19,11 @@ This flowsheet uses several different modeling features available in WaterTAP, i
 Costing packages:
     * :doc:`/technical_reference/costing/zero_order_costing`
 Property models:
-    * :doc:`/technical_reference/core/water_props`
-    * :doc:`/technical_reference/property_models/seawater`
+    * :doc:`/technical_reference/property_models/mc_aq_sol`
 Unit models:
     * :doc:`/technical_reference/unit_models/zero_order_unit_models/index`
     * :doc:`/technical_reference/unit_models/reverse_osmosis_0D`
     * :doc:`/technical_reference/unit_models/pressure_exchanger`
-    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/product`
-    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/separator`
-    * :doc:`idaes:reference_guides/model_libraries/generic/unit_models/mixer`
     
 The demonstration file itself contains several core functions that are used to build, specify, initialize, and solve the model, as well as
 some helper functions that group these core functions together for convenience. Building and solving the flowsheet proceeds in six steps:
@@ -45,8 +41,7 @@ some helper functions that group these core functions together for convenience. 
         * Desalination (``m.fs.desalination``): contains all the unit models needed to represent the pumping, reverse osmosis (RO), and energy recovery device (ERD) processes.
         * Post-treatment (``m.fs.posttreatment``): includes post desalination disinfection, remineralization, and storage unit models.
 
-    Outside of these, there is a feed, distribution, landfill, and disposal block that are placed directly on the flowsheet.
-    ``Translator`` blocks are added with appropriate constraints and ``Arc`` are used to connect the unit processes in the proper order.
+    Outside of these, there is a feed, distribution, landfill, and disposal block that are placed directly on the flowsheet. ``Arc`` are used to connect the unit processes in the proper order.
     Finally, default scaling factors are set and scaling factors are calculated for all variables.
 
 2. Specify the operating conditions with ``set_operating_conditions()``:
@@ -57,7 +52,7 @@ some helper functions that group these core functions together for convenience. 
 3. Initialize the unit and costing models with ``initialize_system()``:
 
     Starting with the ``Feed`` block and continuing sequentially through each part of the treatment train, this function sets the initial condition
-    for all the unit models on the flowsheet and propagates ``Arcs`` that connect each block either to ``Translator`` blocks or treatment blocks. 
+    for all the unit models on the flowsheet and propagates ``Arcs`` that connect each block. 
     Each block is initialized and solved by using the local ``solve()`` function to ensure each block solves optimally before trying to solve the next.
     Note that the order in which blocks/unit models are solved/initialized in WaterTAP is important because the initial conditions are *only* set 
     for the ``Feed`` block. For these conditions to cascade to downstream unit models, and for the downstream unit models to include the impacts of upstream 
@@ -65,9 +60,7 @@ some helper functions that group these core functions together for convenience. 
 
         #. ``Feed`` block where initial flow rates and solute concentrations are set.
         #. ``pretreatment`` block 
-        #. translator block from ``pretreatment`` to ``desalination`` (i.e., ``m.fs.tb_prtrt_desal``)
         #. ``desalination`` block
-        #. translator block from ``desalination`` to ``posttreatment`` (i.e., ``m.fs.tb_desal_psttrt``)
         #. ``posttreatment`` block
 
 4. Add the system- and unit-level costing package with ``add_costing()`` and initialize with ``m.fs.costing.initialize()``:
@@ -84,13 +77,6 @@ some helper functions that group these core functions together for convenience. 
 
 The local function ``build_flowsheet()`` combines steps 1 and 2. The local function ``solve_flowsheet()`` combines 3, 4, and 5.
 
-.. note::
-
-    ``Translator`` blocks are used in flowsheets when more than one property package is used in different parts of the flowsheet.
-    In this example, the zero order property package contains state variables that are only indexed by component (e.g., ``conc_mass_comp['TDS']``)
-    while the seawater property package contains state variables indexed by both phase and component (e.g., ``conc_mass_phase_comp['Liq', 'TDS']``).
-    The translator blocks in this flowsheet are used to communicate properties between unit models that use these two property packages and simply
-    say, e.g., ``conc_mass_comp['TDS'] = conc_mass_phase_comp['Liq', 'TDS']``.
 
 Pre-Treatment
 ^^^^^^^^^^^^^
@@ -109,7 +95,6 @@ Desalination
 
 Figure 2 presents the process flow diagram for ``m.fs.desalination`` if ``erd_type == "pressure_exchanger"``.
 Figure 3 presents the process flow diagram for ``m.fs.desalination`` if ``erd_type == "pump_as_turbine"``.
-In either case, the first unit model on this block is connected to the flowsheet level translator block ``tb_prtrt_desal``.
 
 .. figure:: ../../_static/flowsheets/SW_RO_fs_desal_PXR.png
     :width: 800
@@ -126,8 +111,7 @@ In either case, the first unit model on this block is connected to the flowsheet
 Post-Treatment
 ^^^^^^^^^^^^^^
 
-Figure 4 presents the process flow diagram for ``m.fs.posttreatment``. The first unit model on this block is connected to the
-flowsheet level translator block ``tb_desal_psttrt``.
+Figure 4 presents the process flow diagram for ``m.fs.posttreatment``.
 
 .. figure:: ../../_static/flowsheets/SW_RO_fs_posttreat.png
     :width: 800
@@ -225,7 +209,7 @@ including the different build options for ``erd_type``:
 Code Documentation
 ------------------
 
-* :mod:`watertap.examples.flowsheets.case_studies.seawater_RO_desalination`
+* :mod:`watertap.flowsheets.seawater_RO_desalination`
 
 References
 ----------
