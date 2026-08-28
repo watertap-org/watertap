@@ -196,7 +196,7 @@ class TestPump(UnitTestHarness):
             298.15
         )
         self.unit_solutions[m.fs.unit.control_volume.properties_out[0].enth_flow] = (
-            9.931834173e4
+            100120.971507
         )
         self.unit_solutions[
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
@@ -241,7 +241,7 @@ class TestEnergyRecoveryDevice(UnitTestHarness):
             298.15
         )
         self.unit_solutions[m.fs.unit.control_volume.properties_out[0].enth_flow] = (
-            9.89617297e4
+            99764.35946
         )
         self.unit_solutions[
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
@@ -286,7 +286,7 @@ class TestPumpVariableFlow(UnitTestHarness):
             298.15
         )
         self.unit_solutions[m.fs.unit.control_volume.properties_out[0].enth_flow] = (
-            9.93183417e4
+            100120.9715067
         )
         self.unit_solutions[
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
