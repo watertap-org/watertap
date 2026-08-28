@@ -127,11 +127,6 @@ def main(bio_P=False):
 
     results = solve(m)
 
-    from idaes.core.scaling import report_scaling_factors
-
-    print("--- Scaling Factors ---")
-    report_scaling_factors(m, descend_into=True)  # m could be m.fs.unit
-
     display_costing(m)
     display_performance_metrics(m)
 
@@ -510,6 +505,14 @@ def set_scaling(m):
                     scaler = blk.default_scaler()
                     scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
                     scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
+                    scaler.scale_model(blk)
+                elif blk == m.fs.AD:
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.default_scaling_factors["volume"] = 1e-3
+                    scaler.default_scaling_factors["KH_h2"] = 1e4
+                    scaler.default_scaling_factors["KH_co2"] = 1e2
+                    scaler.default_scaling_factors["KH_ch4"] = 1e2
                     scaler.scale_model(blk)
                 else:
                     print(f"Scaling {blk.name}")

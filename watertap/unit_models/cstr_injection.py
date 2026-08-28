@@ -76,7 +76,7 @@ class CSTR_InjectionScaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "volume": 1e-3,
         "hydraulic_retention_time": 1e-3,
-        "KLa": 1e-2,
+        "KLa": 1e-1,
         "mass_transfer_term": 1e2,
         "rate_reaction_extent": None,
         "rate_reaction_generation": None,

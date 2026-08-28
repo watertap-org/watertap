@@ -119,6 +119,11 @@ def main(reactor_volume_equalities=True):
     display_costing(m)
     display_performance_metrics(m)
 
+    from idaes.core.scaling import report_scaling_factors
+
+    print("--- Scaling Factors ---")
+    report_scaling_factors(m, descend_into=True)  # m could be m.fs.unit
+
     return m, results, rescaled_model
 
 
@@ -409,12 +414,13 @@ def scale_system(m):
     csb = CustomScalerBase()
 
     ad_scaler = ADScaler()
+    ad_scaler.default_scaling_factors["KH_h2"] = 1e4
+    ad_scaler.default_scaling_factors["KH_ch4"] = 1e3
+    ad_scaler.default_scaling_factors["KH_co2"] = 1
+    ad_scaler.default_scaling_factors["heat"] = 1e-3
+    ad_scaler.default_scaling_factors["enthalpy_transfer"] = 1e-2
     ad_scaler.scale_model(m.fs.RADM)
     # Poorly scaled Jacobians
-    set_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e-3, overwrite=True)
-    set_scaling_factor(
-        m.fs.RADM.liquid_phase.enthalpy_transfer[0], 1e-2, overwrite=True
-    )
     set_scaling_factor(m.fs.RADM.liquid_phase.reactions[0].S_H, 1e7)
 
     for c in m.fs.props_vap.solute_set:
