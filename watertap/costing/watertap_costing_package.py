@@ -68,7 +68,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self, flow_rate, name="LCOW", flow_basis=None, output_units=None
     ):
         """
-        Add Levelized Cost of Water (LCOW) or Product (LCOP) to costing block.
+        Add a levelized cost to costing block.
         Args:
             flow_rate - flow rate to be used in calculating the levelized cost
             name (optional) - name for the levelized cost expression (default: LCOW)
