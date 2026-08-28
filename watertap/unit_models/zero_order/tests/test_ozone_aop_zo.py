@@ -35,7 +35,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import OzoneAOPZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -49,7 +49,7 @@ class TestOzoneAOPZO_with_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "cryptosporidium",
                 "toc",
@@ -81,7 +81,7 @@ class TestOzoneAOPZO_with_default_removal:
         model.db = Database()
 
         model.fs = FlowsheetBlock(dynamic=False)
-        model.fs.params = WaterParameterBlock(
+        model.fs.params = ZOParameterBlock(
             solute_list=["cryptosporidium", "giardia_lamblia", "eeq"]
         )
         with pytest.raises(
@@ -206,7 +206,7 @@ class TestOzoneAOPZO_w_o_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=[
                 "cryptosporidium",
                 "toc",
@@ -235,7 +235,7 @@ class TestOzoneAOPZO_w_o_default_removal:
         model.db = Database()
 
         model.fs = FlowsheetBlock(dynamic=False)
-        model.fs.params = WaterParameterBlock(
+        model.fs.params = ZOParameterBlock(
             solute_list=["cryptosporidium", "viruses_enteric"]
         )
         with pytest.raises(
@@ -364,7 +364,7 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = WaterParameterBlock(
+    m.fs.properties = ZOParameterBlock(
         solute_list=["viruses_enteric", "toc", "cryptosporidium"]
     )
 

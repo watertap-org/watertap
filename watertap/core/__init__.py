@@ -23,10 +23,25 @@ from .membrane_channel0d import MembraneChannel0DBlock
 from .membrane_channel1d import MembraneChannel1DBlock
 from .wt_database import Database
 from .zero_order_base import ZeroOrderBaseData
-from .zero_order_properties import WaterParameterBlock, WaterStateBlock
 from .zero_order_electricity import constant_intensity, pump_electricity
 from .zero_order_pt import build_pt
 from .zero_order_sido import build_sido
 from .zero_order_sido_reactive import build_sido_reactive
 from .zero_order_siso import build_siso
 from .zero_order_diso import build_diso
+
+
+from pyomo.common.deprecation import relocated_module_attribute
+
+relocated_module_attribute(
+    "WaterParameterBlock",
+    "watertap.property_models.zero_order_prop_pack.ZOParameterBlock",
+    msg="The zero-order WaterParameterBlock has been renamed to ZOParameterBlock and moved to watertap.property_models.zero_order_prop_pack.",
+    version="1.9.0",
+)
+relocated_module_attribute(
+    "WaterStateBlock",
+    "watertap.property_models.zero_order_prop_pack.ZOStateBlock",
+    msg="The zero-order WaterStateBlock has been renamed to ZOStateBlock and moved to watertap.property_models.zero_order_prop_pack.",
+    version="1.9.0",
+)
