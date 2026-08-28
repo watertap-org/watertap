@@ -127,6 +127,11 @@ def main(bio_P=False):
 
     results = solve(m)
 
+    from idaes.core.scaling import report_scaling_factors
+
+    print("--- Scaling Factors ---")
+    report_scaling_factors(m, descend_into=True)  # m could be m.fs.unit
+
     display_costing(m)
     display_performance_metrics(m)
 
@@ -473,16 +478,20 @@ def set_operating_conditions(m, bio_P=False):
 
 def set_scaling(m):
     asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
+    asm2d_rxn_scaler = m.fs.rxn_props_ASM2D.default_reaction_scaler_class()
     adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
     adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
     asm2d_scaler.default_scaling_factors["flow_vol"] = 1e1
+
+    asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
 
     adm1_scaler.default_scaling_factors["flow_vol"] = 1e1
 
     adm1_vapor_scaler.default_scaling_factors["pressure_sat[S_h2]"] = 1e-4
 
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
+    m.fs.rxn_props_ASM2D.default_reaction_scaler_object = asm2d_rxn_scaler
     m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
     m.fs.props_vap_ADM1.default_state_scaler_object = adm1_vapor_scaler
 
@@ -491,9 +500,15 @@ def set_scaling(m):
     for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
         if isinstance(blk, UnitModelBlockData):
             if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
-                print(f"Scaling {blk.name}")
-                scaler = blk.default_scaler()
-                scaler.scale_model(blk)
+                if blk == m.fs.R5 or m.fs.R6 or m.fs.R7:
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+                    scaler.scale_model(blk)
+                else:
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.scale_model(blk)
             else:
                 print(f"No default scaler for unit model {blk.name}")
         elif "_expanded" in blk.name:

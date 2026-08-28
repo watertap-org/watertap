@@ -46,7 +46,7 @@ class AerationTankScaler(CustomScalerBase):
         "hydraulic_retention_time": 1e-3,
         "KLa": 1e-1,
         "mass_transfer_term": 1e2,
-        "rate_reaction_extent": 1e3,
+        "rate_reaction_extent": None,
     }
 
     def variable_scaling_routine(

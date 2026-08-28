@@ -391,6 +391,7 @@ class TestAerationTankScaler:
     @pytest.mark.component
     def test_variable_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
 
         assert isinstance(scaler, AerationTankScaler)
 
@@ -423,6 +424,7 @@ class TestAerationTankScaler:
     @pytest.mark.component
     def test_constraint_scaling_routine(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
 
         assert isinstance(scaler, AerationTankScaler)
 
@@ -445,6 +447,7 @@ class TestAerationTankScaler:
     @pytest.mark.component
     def test_scale_model(self, model):
         scaler = model.fs.unit.default_scaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
 
         assert isinstance(scaler, AerationTankScaler)
 
@@ -627,6 +630,7 @@ class TestAerationTankScaler:
         sb.set_variable_scaling_factor(m.fs.unit.hydraulic_retention_time[0], 1e-3)
 
         scaler = AerationTankScaler()
+        scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
         scaler.scale_model(
             m.fs.unit,
             submodel_scalers={

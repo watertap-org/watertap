@@ -507,6 +507,7 @@ def scale_system(m):
     aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]
     aeration_scaler = AerationTankScaler()
     for unit in aeration_list:
+        aeration_scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
         aeration_scaler.scale_model(unit)
     set_scaling_factor(m.fs.R3.outlet.conc_mass_comp[0, "S_O"], 1e3)
     set_scaling_factor(m.fs.R4.outlet.conc_mass_comp[0, "S_O"], 1e3)

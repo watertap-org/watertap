@@ -1156,7 +1156,7 @@ see reaction package for documentation.}""",
         self,
         liquid_state_args=None,
         vapor_state_args=None,
-        outlvl=idaeslog.WARNING,
+        outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
     ):
