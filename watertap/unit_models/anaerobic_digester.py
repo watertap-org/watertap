@@ -84,7 +84,6 @@ class ADScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "volume": 1e-2,
-        # "volume_AD": 1e-3,
         "KH_h2": 1e4,
         "KH_co2": 1e2,
         "KH_ch4": 1e2,
@@ -150,7 +149,6 @@ class ADScaler(CustomScalerBase):
             model.liquid_phase.volume[0], overwrite=overwrite
         )
         self.scale_variable_by_default(model.liquid_phase.heat[0], overwrite=overwrite)
-        # self.scale_variable_by_default(model.volume_AD[0], overwrite=overwrite)
         self.scale_variable_by_default(model.KH_h2[0], overwrite=overwrite)
         self.scale_variable_by_default(model.KH_co2[0], overwrite=overwrite)
         self.scale_variable_by_default(model.KH_ch4[0], overwrite=overwrite)
