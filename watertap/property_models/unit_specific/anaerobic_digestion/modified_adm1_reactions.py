@@ -1762,32 +1762,15 @@ class ModifiedADM1ReactionScaler(CustomScalerBase):
     are scaled using the inverse maximum scheme.
     """
 
-    # TODO: Revisit this scaling factor
     DEFAULT_SCALING_FACTORS = {
-        "reaction_rate": 1e3,
+        "reaction_rate": None,
         "I": 1e2,
-        "conc_mol_Mg": 1e5,
-        "conc_mol_K": 1e2,
-        "conc_mol_nh3": 1e3,
-        "conc_mol_co2": 1e3,
-        "conc_mass_va": 1e4,
-        "conc_mass_bu": 1e4,
-        "conc_mass_pro": 1e3,
-        "conc_mass_ac": 1e3,
         "S_H": 1e8,
     }
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
-        self.scale_variable_by_default(model.conc_mol_Mg, overwrite=overwrite)
-        self.scale_variable_by_default(model.conc_mol_K, overwrite=overwrite)
-        self.scale_variable_by_default(model.conc_mol_nh3, overwrite=overwrite)
-        self.scale_variable_by_default(model.conc_mol_co2, overwrite=overwrite)
-        self.scale_variable_by_default(model.conc_mass_va, overwrite=overwrite)
-        self.scale_variable_by_default(model.conc_mass_bu, overwrite=overwrite)
-        self.scale_variable_by_default(model.conc_mass_pro, overwrite=overwrite)
-        self.scale_variable_by_default(model.conc_mass_ac, overwrite=overwrite)
         self.scale_variable_by_default(model.S_H, overwrite=overwrite)
         for r in model.params.rate_reaction_idx:
             self.scale_variable_by_default(model.I[r], overwrite=overwrite)

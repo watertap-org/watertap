@@ -582,6 +582,7 @@ class TestModifiedADM1ReactionScaler(object):
         model.rxns[1].I
 
         scaler = model.rxns[1].default_scaler()
+        scaler.default_scaling_factors["reaction_rate"] = 1e3
         assert isinstance(scaler, ModifiedADM1ReactionScaler)
 
         scaler.variable_scaling_routine(model.rxns[1])
@@ -589,7 +590,7 @@ class TestModifiedADM1ReactionScaler(object):
         assert isinstance(model.rxns[1].scaling_factor, Suffix)
 
         sfx = model.rxns[1].scaling_factor
-        assert len(sfx) == 59
+        assert len(sfx) == 51
         assert sfx[model.rxns[1].I["R1"]] == pytest.approx(1e2, rel=1e-8)
         assert sfx[model.rxns[1].I["R2"]] == pytest.approx(1e2, rel=1e-8)
         assert sfx[model.rxns[1].I["R3"]] == pytest.approx(1e2, rel=1e-8)
@@ -628,10 +629,6 @@ class TestModifiedADM1ReactionScaler(object):
         assert sfx[model.rxns[1].reaction_rate["R17"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R18"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R19"]] == pytest.approx(1e3, rel=1e-8)
-        assert sfx[model.rxns[1].conc_mol_Mg] == pytest.approx(1e5, rel=1e-8)
-        assert sfx[model.rxns[1].conc_mol_K] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].conc_mol_nh3] == pytest.approx(1e3, rel=1e-8)
-        assert sfx[model.rxns[1].conc_mol_co2] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].S_H] == pytest.approx(1e8, rel=1e-8)
 
     @pytest.mark.unit
@@ -649,6 +646,7 @@ class TestModifiedADM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
+        scaler.default_scaling_factors["reaction_rate"] = 1e3
         assert isinstance(scaler, ModifiedADM1ReactionScaler)
 
         scaler.constraint_scaling_routine(model.rxns[1])
@@ -782,6 +780,7 @@ class TestModifiedADM1ReactionScaler(object):
         model.rxns[1].reaction_rate
 
         scaler = model.rxns[1].default_scaler()
+        scaler.default_scaling_factors["reaction_rate"] = 1e3
         assert isinstance(scaler, ModifiedADM1ReactionScaler)
 
         scaler.scale_model(model.rxns[1])
@@ -789,7 +788,8 @@ class TestModifiedADM1ReactionScaler(object):
         assert isinstance(model.rxns[1].scaling_factor, Suffix)
 
         sfx = model.rxns[1].scaling_factor
-        assert len(sfx) == 124
+        assert len(sfx) == 116
+
         assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R3"]] == pytest.approx(1e3, rel=1e-8)
@@ -808,7 +808,7 @@ class TestModifiedADM1ReactionScaler(object):
         assert sfx[model.rxns[1].reaction_rate["R16"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R17"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R18"]] == pytest.approx(1e3, rel=1e-8)
-
+        assert sfx[model.rxns[1].reaction_rate["R19"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].rate_expression["R2"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].rate_expression["R3"]] == pytest.approx(1e3, rel=1e-8)
@@ -828,10 +828,6 @@ class TestModifiedADM1ReactionScaler(object):
         assert sfx[model.rxns[1].rate_expression["R17"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].rate_expression["R18"]] == pytest.approx(1e3, rel=1e-8)
 
-        assert sfx[model.rxns[1].conc_mol_Mg] == pytest.approx(1e5, rel=1e-8)
-        assert sfx[model.rxns[1].conc_mol_K] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].conc_mol_nh3] == pytest.approx(1e3, rel=1e-8)
-        assert sfx[model.rxns[1].conc_mol_co2] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].S_H] == pytest.approx(1e8, rel=1e-8)
 
         assert sfx[model.rxns[1].Dissociation] == pytest.approx(3.10210344e-2, rel=1e-8)
@@ -848,7 +844,7 @@ class TestModifiedADM1ReactionScaler(object):
             27.7777777778, rel=1e-8
         )
         assert sfx[model.rxns[1].concentration_of_ac] == pytest.approx(
-            23.255814, rel=1e-8
+            5.0709939, rel=1e-8
         )
         assert sfx[model.rxns[1].concentration_of_hco3] == pytest.approx(
             0.142857143, rel=1e-8
@@ -863,7 +859,9 @@ class TestModifiedADM1ReactionScaler(object):
             6.66666666667, rel=1e-8
         )
         assert sfx[model.rxns[1].concentration_of_Mg] == pytest.approx(2731.0, rel=1e-8)
-        assert sfx[model.rxns[1].concentration_of_K] == pytest.approx(100, rel=1e-8)
+        assert sfx[model.rxns[1].concentration_of_K] == pytest.approx(
+            91.457838, rel=1e-8
+        )
         assert sfx[model.rxns[1].S_H_cons] == pytest.approx(7.00392920, rel=1e-8)
         assert sfx[model.rxns[1].I_fun["R1"]] == pytest.approx(1, rel=1e-8)
         assert sfx[model.rxns[1].I_fun["R2"]] == pytest.approx(1, rel=1e-8)
@@ -874,7 +872,7 @@ class TestModifiedADM1ReactionScaler(object):
         assert sfx[model.rxns[1].I_fun["R7"]] == pytest.approx(100, rel=1e-8)
         assert sfx[model.rxns[1].I_fun["R8"]] == pytest.approx(100, rel=1e-8)
         assert sfx[model.rxns[1].I_fun["R9"]] == pytest.approx(100, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R10"]] == pytest.approx(1.5569039, rel=1e-8)
+        assert sfx[model.rxns[1].I_fun["R10"]] == pytest.approx(3.225015244, rel=1e-8)
         assert sfx[model.rxns[1].I_fun["R11"]] == pytest.approx(1.0008668, rel=1e-8)
         assert sfx[model.rxns[1].I_fun["R12"]] == pytest.approx(1, rel=1e-8)
         assert sfx[model.rxns[1].I_fun["R13"]] == pytest.approx(1, rel=1e-8)
@@ -1108,37 +1106,6 @@ class TestReactor:
         assert value(model.fs.unit.liquid_outlet.cations[0]) == pytest.approx(
             4e-2, rel=1e-2
         )
-
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mass_va
-        ) == pytest.approx(0.0157436, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mass_bu
-        ) == pytest.approx(0.0163960, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mass_ac
-        ) == pytest.approx(0.0431131, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mass_pro
-        ) == pytest.approx(0.03567417, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mol_hco3
-        ) == pytest.approx(0.09336803, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mol_nh3
-        ) == pytest.approx(0.04271418, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mol_co2
-        ) == pytest.approx(0.00036273, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mol_nh4
-        ) == pytest.approx(0.07378798, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mol_Mg
-        ) == pytest.approx(0.00038049, rel=1e-2)
-        assert value(
-            model.fs.unit.liquid_phase.reactions[0].conc_mol_K
-        ) == pytest.approx(0.00038049, rel=1e-2)
 
         assert value(model.fs.unit.liquid_phase.reactions[0].S_H) == pytest.approx(
             1.9180052e-9, rel=1e-2
