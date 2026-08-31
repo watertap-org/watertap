@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
-
+from math import isclose
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -329,6 +329,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 doc=f"Annual water production based on flow {flow_rate.name}",
             ),
         )
+
+    def add_SEC(self, flow_rate):
+        self.add_specific_energy_consumption(flow_rate, name="SEC")
 
     def add_electricity_intensity(self, flow_rate, name="electricity_intensity"):
         """
@@ -694,6 +697,406 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         else:
             # all other cases are handled in the base class
             super().register_flow_type(flow_type, cost)
+
+    def plot_LCOW_breakdown(
+        self,
+        lcow_name="LCOW",
+        fs_name="fs",
+        by="component",
+        separate_flows=False,
+        relative=False,
+        colormap="tab20",
+        save_as=None,
+        close_fig=False,
+        component_labels={},
+        tol=1e-5,
+        dx=0,
+        **kwargs,
+    ):
+        """
+        This method creates a bar chart showing the breakdown of the LCOW calculation
+        into its contributing components. The breakdown can be done by individual unit
+        models or by unit model type, and flows can be shown separately or included as
+        part of variable OPEX.
+
+        Args:
+            lcow_name: name of the LCOW Expression to plot (default: "LCOW")
+            fs_name: name of the flowsheet (default: "fs")
+            by: breakdown by individual "component" unit or "aggregate" unit class (default: "component")
+            separate_flows: whether to separate material/energy flows from OPEX portion (default: False)
+            relative: whether to plot as fraction of total LCOW (default: False)
+            colormap: colormap to use for the plot (default: "tab20")
+            save_as: filename to save the plot (default: None)
+            close_fig: whether to close the figure after creation (default: False)
+            component_labels: dictionary mapping flowsheet unit names to custom unit names (default: {})
+            tol: tolerance for LCOW calculation check (default: 1e-5)
+
+        Returns:
+            fig, ax: matplotlib figure and axis objects for the plot
+        """
+
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Patch
+
+        hatch_dict = {
+            "CAPEX": "",
+            "OPEX": "\\\\",
+        }
+
+        if self.find_component(lcow_name) is None:
+            msg = f"{self.name} does not have a component named {lcow_name}."
+            msg += " Use the add_LCOW method to add an LCOW Expression to the costing"
+            msg += " block before calling plot_LCOW_breakdown."
+            raise RuntimeError(msg)
+
+        if by not in ("component", "aggregate"):
+            raise ValueError("'by' argument must be either 'component' or 'aggregate'.")
+
+        if relative:
+            d = pyo.value(self.find_component(lcow_name)) * 1e-2
+        else:
+            d = 1
+
+        capex_comp_exprs = [
+            f"{lcow_name}_{by}_direct_capex",
+            f"{lcow_name}_{by}_indirect_capex",
+        ]
+
+        # CAPEX portion of LCOW
+        capex = dict(
+            zip(
+                [
+                    k.replace(f"{fs_name}.", "")
+                    for k in self.find_component(
+                        f"{lcow_name}_{by}_direct_capex"
+                    ).keys()
+                ],
+                [0] * len(self.find_component(f"{lcow_name}_{by}_direct_capex")),
+            )
+        )
+
+        # CAPEX = direct + indirect
+        for ce in capex_comp_exprs:
+            expr = self.find_component(ce)
+            for k, v in expr.items():
+                capex[k.replace(f"{fs_name}.", "")] += pyo.value(v)
+
+        # OPEX portion of LCOW
+        opex = dict(
+            zip(
+                [
+                    k.replace(f"{fs_name}.", "")
+                    for k in self.find_component(f"{lcow_name}_{by}_fixed_opex").keys()
+                ],
+                [0] * len(self.find_component(f"{lcow_name}_{by}_fixed_opex")),
+            )
+        )
+        # OPEX will always include fixed OPEX,
+        # but may or may not include variable OPEX depending on `separate_flows`
+        for k, v in self.find_component(f"{lcow_name}_{by}_fixed_opex").items():
+            opex[k.replace(f"{fs_name}.", "")] += pyo.value(v)
+
+        # Sort OPEX by value with lowest values first.
+        # This is necessary visualize negative contributions (e.g., ERDs)
+        opex = dict(sorted(opex.items(), key=lambda item: item[1], reverse=False))
+
+        # Unique units contributing to LCOW as they appear on flowsheet
+        fs_units = set(
+            list(k.replace(f"{fs_name}.", "") for k in capex.keys())
+            + list(k.replace(f"{fs_name}.", "") for k in opex.keys())
+        )
+
+        # We want this list to start with units that have negative OPEX values
+        sorted_units = list(opex.keys()) + [
+            u for u in capex.keys() if u not in opex.keys()
+        ]
+        if separate_flows:
+            # Aggregate flows are plotted separately from variable OPEX
+            flows = dict(zip(self.used_flows, [0] * len(self.used_flows)))
+
+            for k, v in self.find_component(
+                f"{lcow_name}_aggregate_variable_opex"
+            ).items():
+                if k not in self.used_flows:
+                    continue
+                flows[k] += pyo.value(v)
+
+            hatch_dict["Flows"] = ".."
+        else:
+            # Aggregate flows are included as part of variable OPEX
+            flows = {}
+            for k, v in self.find_component(f"{lcow_name}_{by}_variable_opex").items():
+                if k.replace(f"{fs_name}.", "") in fs_units:
+                    opex[k.replace(f"{fs_name}.", "")] += pyo.value(v)
+
+        # Unique components contributing to LCOW
+        unique_components = list(flows.keys()) + list(sorted_units)
+
+        cmap = plt.get_cmap(colormap)
+        colors = [
+            cmap(i / len(unique_components)) for i in range(len(unique_components))
+        ]
+        color_dict = dict(zip(unique_components, colors))
+
+        # Start plotting
+        fig, ax = plt.subplots()
+        x = -1  # location of bar
+
+        bottom = (
+            0
+            if all(v / d >= 0 for v in opex.values())
+            else sum(v / d for v in opex.values() if v < 0) * 2
+        )
+        # Tracking minimum and maximum y-values
+        bottoms = [bottom]
+
+        # Create legend
+        handles = list()
+        labels = list()
+
+        # For checking LCOW calculation
+        lcow_check = 0
+
+        # Starting from the bottom: add flows, then opex, then capex
+        for f in flows.keys():
+            v = flows[f] / d
+            if f in component_labels.keys():
+                label = component_labels[f]
+            else:
+                label = f
+            ax.bar(
+                [x],
+                [v],
+                bottom=bottom,
+                hatch=hatch_dict["Flows"],
+                color=color_dict[f],
+                width=0.5,
+                edgecolor="black",
+            )
+            bottom += v
+            bottoms.append(bottom)
+
+            ax.hlines(bottom, x - dx, x + dx, color="k", lw=2)
+            x += dx
+
+            lcow_check += v
+
+            handles.append(Patch(facecolor=color_dict[f], edgecolor="k"))
+            labels.append(label)
+
+        for u in sorted_units:
+
+            o = opex.get(u, 0) / d
+            c = capex.get(u, 0) / d
+
+            if u in component_labels.keys():
+                label = component_labels[u]
+            else:
+                label = u
+
+            ax.bar(
+                [x],
+                [abs(o)],
+                bottom=bottom,
+                hatch=hatch_dict["OPEX"],
+                color=color_dict[u],
+                edgecolor="black",
+                width=0.5,
+            )
+            bottom += abs(o)
+
+            ax.hlines(bottom, x - dx, x + dx, color="k", lw=2)
+            x += dx
+
+            ax.bar(
+                [x],
+                [c],
+                bottom=bottom,
+                hatch=hatch_dict["CAPEX"],
+                color=color_dict[u],
+                edgecolor="black",
+                width=0.5,
+            )
+            bottom += abs(c)
+            bottoms.append(bottom)
+
+            ax.hlines(bottom, x - dx, x + dx, color="k", lw=2)
+            x += dx
+
+            lcow_check += c + o
+
+            handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
+            labels.append(label)
+
+        # Reverse order to align with plot order (bottom to top)
+        handles = handles[::-1]
+        labels = labels[::-1]
+
+        # Add hatch legends
+        handles[0:0] = [
+            Patch(facecolor="white", edgecolor="k", label=k, hatch=v)
+            for k, v in hatch_dict.items()
+        ]
+        labels[0:0] = list(hatch_dict.keys())
+
+        ax.set_axisbelow(True)
+        ax.grid(visible=True)
+        ax.legend(handles=handles, labels=labels)
+
+        if dx == 0:
+            ax.set_xlim(-1.5, 0.5)
+
+        ax.set_xticks([])
+
+        if bottoms[0] < 0:
+            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=-100)
+            ax.set_ylim(bottoms[0] * 1.1, ax.get_ylim()[1])
+
+        ax.set_ylabel(
+            f"{lcow_name} (\\$/m$^3$)" if not relative else f"Relative {lcow_name} (%)"
+        )
+        fig.tight_layout()
+
+        if save_as is not None:
+            fig.savefig(f"{save_as}.png", dpi=300, bbox_inches="tight")
+
+        if not isclose(lcow_check, pyo.value(self.LCOW / d), rel_tol=tol):
+            print(f"Calculated LCOW: {lcow_check}")
+            print(f"Actual LCOW: {pyo.value(self.LCOW / d)}")
+            raise ValueError(
+                f"Calculated LCOW and actual LCOW differ by more than tolerance ({tol})"
+            )
+
+        if close_fig:
+            plt.close(fig)
+
+        return fig, ax, capex, opex
+
+    def plot_SEC_breakdown(
+        self,
+        sec_name="specific_energy_consumption",
+        fs_name="fs",
+        relative=False,
+        colormap="tab20",
+        save_as=None,
+        close_fig=False,
+        tol=1e-5,
+        component_labels={},
+        **kwargs,
+    ):
+        """
+        This method creates a bar chart showing the breakdown of the specific energy consumption calculation
+        into its contributing components. The breakdown can be done by individual unit
+        models or by unit model type.
+
+        Args:
+            sec_name: name of the specific energy consumption Expression to plot (default: "specific_energy_consumption")
+            fs_name: name of the flowsheet (default: "fs")
+            relative: whether to plot as fraction of total SEC (default: False)
+            colormap: colormap to use for the plot (default: "tab20")
+            save_as: filename to save the plot (default: None)
+            close_fig: whether to close the figure after creation (default: False)
+            component_labels: dictionary mapping flowsheet unit names to custom unit names (default: {})
+            tol: tolerance for LCOW calculation check (default: 1e-5)
+        """
+
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Patch
+
+        if self.find_component(sec_name) is None:
+            msg = f"{self.name} does not have a component named {sec_name}."
+            msg += " Use the add_specific_energy_consumption method to add a specific energy consumption Expression to the costing"
+            msg += " block before calling plot_SEC_breakdown."
+            raise RuntimeError(msg)
+
+        if relative:
+            d = pyo.value(self.find_component(sec_name)) * 1e-2
+        else:
+            d = 1
+
+        sec_expr = self.find_component(f"{sec_name}_component")
+        sec_comp = {
+            k.replace(f"{fs_name}.", ""): pyo.value(v) for k, v in sec_expr.items()
+        }
+        # Sort so plotting starts with negative contributions
+        sec_comp = dict(sorted(sec_comp.items(), key=lambda i: i[1], reverse=False))
+
+        sorted_units = list(sec_comp.keys())
+
+        cmap = plt.get_cmap(colormap)
+        colors = [cmap(i / len(sorted_units)) for i in range(len(sorted_units))]
+        color_dict = dict(zip(sorted_units, colors))
+
+        # Start plotting
+        fig, ax = plt.subplots()
+        x = -1  # location of bar
+
+        # Create legend
+        handles = []
+        labels = []
+
+        sec_check = 0
+
+        # Need to start at lowest point
+        bottom = sum(ec for ec in sec_comp.values() if ec < 0) / d * 2
+        bottoms = [bottom]
+
+        for u in sorted_units:
+            ec = sec_comp.get(u, 0) / d
+
+            if u in component_labels.keys():
+                label = component_labels[u]
+            else:
+                label = u
+
+            ax.bar(
+                [x],
+                [abs(ec)],
+                bottom=bottom,
+                color=color_dict[u],
+                edgecolor="black",
+                width=0.5,
+            )
+            bottom += abs(ec)
+            bottoms.append(bottom)
+            sec_check += ec
+
+            handles.append(Patch(facecolor=color_dict[u], edgecolor="k"))
+            labels.append(label)
+
+        # Reverse order to align with plot order (bottom to top)
+        handles = handles[::-1]
+        labels = labels[::-1]
+
+        if bottoms[0] < 0:
+            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=-1)
+            ax.set_ylim(bottoms[0] * 1.1, ax.get_ylim()[1])
+
+        ax.set_axisbelow(True)
+        ax.grid(visible=True)
+        ax.legend(handles=handles, labels=labels)
+        ax.set_xlim(-1.5, 0.5)
+        ax.set_xticks([])
+        ax.set_ylabel(f"SEC (kWh/m$^3$)" if not relative else f"Relative SEC (%)")
+
+        fig.tight_layout()
+
+        if save_as is not None:
+            fig.savefig(f"{save_as}.png", dpi=300, bbox_inches="tight")
+
+        if not isclose(
+            sec_check, pyo.value(self.find_component(sec_name) / d), rel_tol=tol
+        ):
+            print(f"Calculated SEC: {sec_check}")
+            print(f"Actual SEC: {pyo.value(self.find_component(sec_name) / d)}")
+            raise ValueError(
+                f"Calculated SEC and actual SEC differ by more than tolerance ({tol})"
+            )
+
+        if close_fig:
+            plt.close(fig)
+
+        return fig, ax
 
 
 @declare_process_block_class("WaterTAPCosting")

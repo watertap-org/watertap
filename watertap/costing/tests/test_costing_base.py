@@ -10,7 +10,11 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import os
+
 import pytest
+
+import matplotlib.pyplot as plt
 
 from pyomo.util.check_units import assert_units_consistent
 import pyomo.environ as pyo
@@ -185,6 +189,45 @@ def test_breakdowns():
         sum(m.fs.costing.specific_electrical_carbon_intensity_component.values())
     )
     assert pytest.approx(seci) == summed_seci
+
+
+@pytest.mark.component
+def test_plot_LCOW_and_SEC_breakdowns():
+
+    m, _ = lsrro.main()
+
+    here = os.path.dirname(__file__)
+
+    for rel in [False, True]:
+
+        m.fs.costing.plot_SEC_breakdown(relative=rel)
+        assert not os.path.isfile(f"{here}/test_sec_breakdown.png")
+        plt.close()
+        m.fs.costing.plot_SEC_breakdown(
+            relative=rel, save_as=f"{here}/test_sec_breakdown"
+        )
+        assert os.path.isfile(f"{here}/test_sec_breakdown.png")
+        os.remove(f"{here}/test_sec_breakdown.png")
+        plt.close()
+
+        for by in ["aggregate", "component"]:
+            for separate_flows in [True, False]:
+
+                m.fs.costing.plot_LCOW_breakdown(
+                    relative=rel, by=by, separate_flows=separate_flows
+                )
+                assert not os.path.isfile(f"{here}/test_breakdown.png")
+                plt.close()
+
+                m.fs.costing.plot_LCOW_breakdown(
+                    relative=rel,
+                    by=by,
+                    separate_flows=separate_flows,
+                    save_as=f"{here}/test_breakdown",
+                )
+                assert os.path.isfile(f"{here}/test_breakdown.png")
+                os.remove(f"{here}/test_breakdown.png")
+                plt.close()
 
 
 @pytest.mark.component
