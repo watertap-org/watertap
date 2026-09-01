@@ -44,39 +44,6 @@ __author__ = "Chenyu Wang, Marcus Holly, Adam Atia, Xinhong Liu"
 _log = idaeslog.getLogger(__name__)
 
 
-_comp_list = [
-    "S_su",
-    "S_aa",
-    "S_fa",
-    "S_va",
-    "S_bu",
-    "S_pro",
-    "S_ac",
-    "S_h2",
-    "S_ch4",
-    "S_IC",
-    "S_IN",
-    "S_IP",
-    "S_I",
-    "X_ch",
-    "X_pr",
-    "X_li",
-    "X_su",
-    "X_aa",
-    "X_fa",
-    "X_c4",
-    "X_pro",
-    "X_ac",
-    "X_h2",
-    "X_I",
-    "X_PHA",
-    "X_PP",
-    "X_PAO",
-    "S_K",
-    "S_Mg",
-]
-
-
 @declare_process_block_class("ModifiedADM1ParameterBlock")
 class ModifiedADM1ParameterData(PhysicalParameterBlock):
     """
@@ -264,10 +231,8 @@ class ModifiedADM1PropertiesScaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "flow_vol": 1e5,
         "temperature": 1e-2,
+        "conc_mass_comp": 1e1,
     }
-
-    for c in _comp_list:
-        DEFAULT_SCALING_FACTORS[f"conc_mass_comp[{c}]"] = 1e1
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None

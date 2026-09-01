@@ -205,7 +205,6 @@ class TranslatorDataADM1ASM2D(TranslatorData):
         mw_p = 31 * pyunits.kg / pyunits.kmol
         mw_n = 14 * pyunits.kg / pyunits.kmol
         mw_c = 12 * pyunits.kg / pyunits.kmol
-        mw_XPP = 300.41 * pyunits.kg / pyunits.kmol
         mw_k = 39.1 * pyunits.kg / pyunits.kmol
         mw_mg = 24.3 * pyunits.kg / pyunits.kmol
 

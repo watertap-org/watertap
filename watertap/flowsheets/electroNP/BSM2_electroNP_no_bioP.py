@@ -585,21 +585,24 @@ def set_scaling(m):
     asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
     asm2d_rxn_scaler = m.fs.rxn_props_ASM2D.default_reaction_scaler_class()
     adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
+    adm1_rxn_scaler = m.fs.rxn_props_ADM1.default_reaction_scaler_class()
     adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
     asm2d_scaler.default_scaling_factors["flow_vol"] = 1e3
-    for c in _asm2d_comp_list:
+    for c in m.fs.props_ASM2D.component_list:
         asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
 
     asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
 
     adm1_scaler.default_scaling_factors["flow_vol"] = 1e3
-    for c in _adm1_comp_list:
+    for c in m.fs.props_ADM1.component_list:
         adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
+    adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
 
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
     m.fs.rxn_props_ASM2D.default_reaction_scaler_object = asm2d_rxn_scaler
     m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
+    m.fs.rxn_props_ADM1.default_reaction_scaler_object = adm1_rxn_scaler
     m.fs.props_vap_ADM1.default_state_scaler_object = adm1_vapor_scaler
 
     csb = CustomScalerBase()

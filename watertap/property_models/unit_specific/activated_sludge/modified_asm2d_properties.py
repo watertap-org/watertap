@@ -52,27 +52,6 @@ __author__ = "Marcus Holly, Adam Atia, Xinhong Liu"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-_comp_list = [
-    "S_A",
-    "S_F",
-    "S_I",
-    "S_N2",
-    "S_NH4",
-    "S_NO3",
-    "S_O2",
-    "S_PO4",
-    "S_K",
-    "S_Mg",
-    "S_IC",
-    "X_AUT",
-    "X_H",
-    "X_I",
-    "X_PAO",
-    "X_PHA",
-    "X_PP",
-    "X_S",
-]
-
 
 @declare_process_block_class("ModifiedASM2dParameterBlock")
 class ModifiedASM2dParameterData(PhysicalParameterBlock):
@@ -384,10 +363,8 @@ class ModifiedASM2dPropertiesScaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "flow_vol": 1e1,
         "temperature": 1e-2,
+        "conc_mass_comp": 1e2,
     }
-
-    for c in _comp_list:
-        DEFAULT_SCALING_FACTORS[f"conc_mass_comp[{c}]"] = 1e2
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None

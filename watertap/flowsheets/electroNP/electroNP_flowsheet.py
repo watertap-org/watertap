@@ -62,60 +62,6 @@ from watertap.costing import WaterTAPCosting
 _log = idaeslog.getLogger(__name__)
 
 
-_asm2d_comp_list = [
-    "S_A",
-    "S_F",
-    "S_I",
-    "S_N2",
-    "S_NH4",
-    "S_NO3",
-    "S_O2",
-    "S_PO4",
-    "S_K",
-    "S_Mg",
-    "S_IC",
-    "X_AUT",
-    "X_H",
-    "X_I",
-    "X_PAO",
-    "X_PHA",
-    "X_PP",
-    "X_S",
-]
-
-_adm1_comp_list = [
-    "S_su",
-    "S_aa",
-    "S_fa",
-    "S_va",
-    "S_bu",
-    "S_pro",
-    "S_ac",
-    "S_h2",
-    "S_ch4",
-    "S_IC",
-    "S_IN",
-    "S_IP",
-    "S_I",
-    "X_ch",
-    "X_pr",
-    "X_li",
-    "X_su",
-    "X_aa",
-    "X_fa",
-    "X_c4",
-    "X_pro",
-    "X_ac",
-    "X_h2",
-    "X_I",
-    "X_PHA",
-    "X_PP",
-    "X_PAO",
-    "S_K",
-    "S_Mg",
-]
-
-
 def main():
     m = build_flowsheet()
     set_operating_conditions(m)
@@ -228,19 +174,25 @@ def set_operating_conditions(m):
 
 def set_scaling(m):
     asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
+    asm2d_rxn_scaler = m.fs.rxn_props_ASM2D.default_reaction_scaler_class()
     adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
+    adm1_rxn_scaler = m.fs.rxn_props_ADM1.default_reaction_scaler_class()
     adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
     asm2d_scaler.default_scaling_factors["flow_vol"] = 1e1
-    for c in _asm2d_comp_list:
+    for c in m.fs.props_ASM2D.component_list:
         asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e3
+    asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
 
     adm1_scaler.default_scaling_factors["flow_vol"] = 1e0
-    for c in _adm1_comp_list:
+    for c in m.fs.props_ADM1.component_list:
         adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e3
+    adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
 
     m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
+    m.fs.rxn_props_ASM2D.default_reaction_scaler_object = asm2d_rxn_scaler
     m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
+    m.fs.rxn_props_ADM1.default_reaction_scaler_object = adm1_rxn_scaler
     m.fs.props_vap_ADM1.default_state_scaler_object = adm1_vapor_scaler
 
     csb = CustomScalerBase()

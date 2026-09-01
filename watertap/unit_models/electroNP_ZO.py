@@ -53,7 +53,7 @@ class ElectroNPScaler(CustomScalerBase):
         "MgCl2_flowrate": 1e-2,
         "electricity": 1e-1,
         "energy_electric_flow_mass": 1e2,
-        "split_fraction": 1e2,
+        "split_fraction": 1e1,
     }
 
     def variable_scaling_routine(
