@@ -96,6 +96,7 @@ def main(reactor_volume_equalities=True):
     add_costing(m)
     m.fs.costing.initialize()
 
+    # TODO: Update scaling routine
     scale_system(m)
     scaling = pyo.TransformationFactory("core.scale_model")
     scaled_model = scaling.create_using(m, rename=False)
@@ -118,11 +119,6 @@ def main(reactor_volume_equalities=True):
     # display_results(m)
     display_costing(m)
     display_performance_metrics(m)
-
-    from idaes.core.scaling import report_scaling_factors
-
-    print("--- Scaling Factors ---")
-    report_scaling_factors(m, descend_into=True)  # m could be m.fs.unit
 
     return m, results, rescaled_model
 

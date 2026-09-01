@@ -49,10 +49,7 @@ class ElectroNPScaler(CustomScalerBase):
     """
 
     DEFAULT_SCALING_FACTORS = {
-        "magnesium_chloride_dosage": 1e1,
-        "MgCl2_flowrate": 1e-2,
         "electricity": 1e-1,
-        "energy_electric_flow_mass": 1e2,
         "split_fraction": 1e1,
     }
 
@@ -100,14 +97,7 @@ class ElectroNPScaler(CustomScalerBase):
         )
 
         # Scale unit level variables
-        self.scale_variable_by_default(
-            model.magnesium_chloride_dosage, overwrite=overwrite
-        )
-        self.scale_variable_by_default(model.MgCl2_flowrate[0], overwrite=overwrite)
         self.scale_variable_by_default(model.electricity[0], overwrite=overwrite)
-        self.scale_variable_by_default(
-            model.energy_electric_flow_mass, overwrite=overwrite
-        )
         for sf in model.split_fraction.values():
             self.scale_variable_by_default(sf, overwrite=overwrite)
 

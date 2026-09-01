@@ -93,59 +93,6 @@ from watertap.unit_models.electroNP_ZO import ElectroNPZO
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-_asm2d_comp_list = [
-    "S_A",
-    "S_F",
-    "S_I",
-    "S_N2",
-    "S_NH4",
-    "S_NO3",
-    "S_O2",
-    "S_PO4",
-    "S_K",
-    "S_Mg",
-    "S_IC",
-    "X_AUT",
-    "X_H",
-    "X_I",
-    "X_PAO",
-    "X_PHA",
-    "X_PP",
-    "X_S",
-]
-
-_adm1_comp_list = [
-    "S_su",
-    "S_aa",
-    "S_fa",
-    "S_va",
-    "S_bu",
-    "S_pro",
-    "S_ac",
-    "S_h2",
-    "S_ch4",
-    "S_IC",
-    "S_IN",
-    "S_IP",
-    "S_I",
-    "X_ch",
-    "X_pr",
-    "X_li",
-    "X_su",
-    "X_aa",
-    "X_fa",
-    "X_c4",
-    "X_pro",
-    "X_ac",
-    "X_h2",
-    "X_I",
-    "X_PHA",
-    "X_PP",
-    "X_PAO",
-    "S_K",
-    "S_Mg",
-]
-
 
 def main(has_electroNP=False):
     m = build_flowsheet(has_electroNP=has_electroNP)
