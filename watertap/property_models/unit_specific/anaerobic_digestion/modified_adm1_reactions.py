@@ -1764,6 +1764,7 @@ class ModifiedADM1ReactionScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "reaction_rate": None,
+        "I": 1e2,
         "S_H": 1e8,
     }
 
@@ -1771,6 +1772,8 @@ class ModifiedADM1ReactionScaler(CustomScalerBase):
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         self.scale_variable_by_default(model.S_H, overwrite=overwrite)
+        for r in model.params.rate_reaction_idx:
+            self.scale_variable_by_default(model.I[r], overwrite=overwrite)
         if model.is_property_constructed("reaction_rate"):
             for j in model.reaction_rate.values():
                 self.scale_variable_by_default(j, overwrite=overwrite)
