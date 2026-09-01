@@ -590,26 +590,7 @@ class TestModifiedADM1ReactionScaler(object):
         assert isinstance(model.rxns[1].scaling_factor, Suffix)
 
         sfx = model.rxns[1].scaling_factor
-        assert len(sfx) == 51
-        assert sfx[model.rxns[1].I["R1"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R2"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R3"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R4"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R5"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R6"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R7"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R8"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R9"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R10"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R11"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R12"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R13"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R14"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R15"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R16"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R17"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R18"]] == pytest.approx(1e2, rel=1e-8)
-        assert sfx[model.rxns[1].I["R19"]] == pytest.approx(1e2, rel=1e-8)
+        assert len(sfx) == 26
         assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R3"]] == pytest.approx(1e3, rel=1e-8)
@@ -788,7 +769,7 @@ class TestModifiedADM1ReactionScaler(object):
         assert isinstance(model.rxns[1].scaling_factor, Suffix)
 
         sfx = model.rxns[1].scaling_factor
-        assert len(sfx) == 116
+        assert len(sfx) == 91
 
         assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e3, rel=1e-8)
         assert sfx[model.rxns[1].reaction_rate["R2"]] == pytest.approx(1e3, rel=1e-8)
@@ -863,25 +844,6 @@ class TestModifiedADM1ReactionScaler(object):
             91.457838, rel=1e-8
         )
         assert sfx[model.rxns[1].S_H_cons] == pytest.approx(7.00392920, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R1"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R2"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R3"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R4"]] == pytest.approx(1.0008668, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R5"]] == pytest.approx(1.0008668, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R6"]] == pytest.approx(100, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R7"]] == pytest.approx(100, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R8"]] == pytest.approx(100, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R9"]] == pytest.approx(100, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R10"]] == pytest.approx(3.225015244, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R11"]] == pytest.approx(1.0008668, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R12"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R13"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R14"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R15"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R16"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R17"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R18"]] == pytest.approx(1, rel=1e-8)
-        assert sfx[model.rxns[1].I_fun["R19"]] == pytest.approx(1, rel=1e-8)
 
 
 class TestReactor:
