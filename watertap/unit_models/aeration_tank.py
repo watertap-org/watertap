@@ -46,6 +46,7 @@ class AerationTankScaler(CustomScalerBase):
         "hydraulic_retention_time": 1e-3,
         "KLa": 1e-1,
         "mass_transfer_term": 1e2,
+        "rate_reaction_extent": None,
     }
 
     def variable_scaling_routine(
@@ -96,6 +97,12 @@ class AerationTankScaler(CustomScalerBase):
             model.hydraulic_retention_time[0], overwrite=overwrite
         )
         self.scale_variable_by_default(model.KLa, overwrite=overwrite)
+
+        for rxn in model.config.reaction_package.rate_reaction_idx:
+            self.scale_variable_by_default(
+                model.control_volume.rate_reaction_extent[0, rxn], overwrite=overwrite
+            )
+
         if model.config.has_aeration:
             if "S_O" in model.config.property_package.component_list:
                 self.scale_variable_by_default(

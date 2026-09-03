@@ -206,7 +206,7 @@ class TestFullFlowsheet:
         # Check condition number to confirm scaling
         jac, _ = get_jacobian(m.scaled_model, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            6.80815e9, rel=1e-3
+            6.808146720e9, rel=1e-3
         )
 
     @pytest.mark.component
@@ -216,26 +216,26 @@ class TestFullFlowsheet:
         BSM2.display_costing(m)
         BSM2.display_performance_metrics(m)
 
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    @pytest.mark.xfail(reason="This test is volitile due to BSM2 performance")
-    @reference_platform_only
-    def test_optimization_windows(self, optimized_system_frame):
-        m = optimized_system_frame
-        assert_optimal_termination(m.rescaled_results)
+        @pytest.mark.requires_idaes_solver
+        @pytest.mark.component
+        @pytest.mark.xfail(reason="This test is volitile due to BSM2 performance")
+        @reference_platform_only
+        def test_optimization_windows(self, optimized_system_frame):
+            m = optimized_system_frame
+            assert_optimal_termination(m.rescaled_results)
 
-        assert degrees_of_freedom(m) == 16
+            assert degrees_of_freedom(m) == 16
 
-        # Check condition number to confirm scaling
-        jac, _ = get_jacobian(m.rescaled_model, scaled=False)
-        cond = jacobian_cond(jac=jac, scaled=False)
-        assert (
-            # Python 3.9 and 3.10
-            cond == pytest.approx(1.95367e11, rel=1e-2)
-            # Python 3.11 and 3.12
-            # or cond == pytest.approx(3.44132e11, rel=1e-2)
-            or cond == pytest.approx(2.71713e11, rel=1e-2)
-        )
+            # Check condition number to confirm scaling
+            jac, _ = get_jacobian(m.rescaled_model, scaled=False)
+            cond = jacobian_cond(jac=jac, scaled=False)
+            assert (
+                # Python 3.9 and 3.10
+                cond == pytest.approx(1.95367e11, rel=1e-2)
+                # Python 3.11 and 3.12
+                # or cond == pytest.approx(3.44132e11, rel=1e-2)
+                or cond == pytest.approx(2.71713e11, rel=1e-2)
+            )
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component

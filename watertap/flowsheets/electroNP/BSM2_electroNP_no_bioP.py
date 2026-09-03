@@ -31,9 +31,9 @@ from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import (
     FlowsheetBlock,
+    UnitModelBlockData,
 )
 from idaes.models.unit_models import (
-    CSTR,
     Feed,
     Separator,
     Product,
@@ -41,14 +41,19 @@ from idaes.models.unit_models import (
     PressureChanger,
 )
 from idaes.models.unit_models.separator import SplittingType
-from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
+from idaes.models.unit_models.mixer import MomentumMixingType
+
+from watertap.core.solvers import get_solver
 from watertap.unit_models.cstr_injection import CSTR_Injection
 from watertap.unit_models.clarifier import Clarifier
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
@@ -69,7 +74,6 @@ from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_reac
 from watertap.unit_models.translators.translator_adm1_asm2d import (
     Translator_ADM1_ASM2D,
 )
-from idaes.models.unit_models.mixer import MomentumMixingType
 from watertap.unit_models.translators.translator_asm2d_adm1 import (
     Translator_ASM2d_ADM1,
 )
@@ -82,6 +86,7 @@ from watertap.unit_models.thickener import (
     Thickener,
     ActivatedSludgeModelType as thickener_type,
 )
+from watertap.unit_models.cstr import CSTR
 from watertap.core.util.initialization import check_solve
 from watertap.unit_models.electroNP_ZO import ElectroNPZO
 
@@ -92,6 +97,7 @@ _log = idaeslog.getLogger(__name__)
 def main(has_electroNP=False):
     m = build_flowsheet(has_electroNP=has_electroNP)
     set_operating_conditions(m)
+    set_scaling(m)
 
     for mx in m.fs.mixers:
         mx.pressure_equality_constraints[0.0, 2].deactivate()
@@ -360,11 +366,6 @@ def build_flowsheet(has_electroNP=False):
         doc="Dissolved oxygen concentration at equilibrium",
     )
 
-    m.fs.aerobic_reactors = (m.fs.R5, m.fs.R6, m.fs.R7)
-    for R in m.fs.aerobic_reactors:
-        iscale.set_scaling_factor(R.KLa, 1e-2)
-        iscale.set_scaling_factor(R.hydraulic_retention_time[0], 1e-3)
-
     @m.fs.R5.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
     def mass_transfer_R5(self, t):
         return pyo.units.convert(
@@ -409,16 +410,18 @@ def set_operating_conditions(m):
     m.fs.FeedWater.conc_mass_comp[0, "S_A"].fix(70 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NH4"].fix(26.6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_NO3"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "S_PO4"].fix(15 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_I"].fix(57.45 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_N2"].fix(25.19 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_I"].fix(84 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_S"].fix(94.1 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_H"].fix(370 * pyo.units.g / pyo.units.m**3)
+    # m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(500 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PAO"].fix(
         51.5262 * pyo.units.g / pyo.units.m**3
     )
-    m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(10 * pyo.units.g / pyo.units.m**3)
+    # m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "S_IC"].fix(5.652 * pyo.units.g / pyo.units.m**3)
@@ -524,31 +527,70 @@ def set_operating_conditions(m):
         m.fs.electroNP.N_removal = 0.3 * P_removal
         m.fs.electroNP.frac_mass_H2O_treated[0].fix(0.99)
 
-    def scale_variables(m):
-        for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if "flow_vol" in var.name:
-                iscale.set_scaling_factor(var, 1e2)
-            if "temperature" in var.name:
-                iscale.set_scaling_factor(var, 1e-2)
-            if "pressure" in var.name:
-                iscale.set_scaling_factor(var, 1e-5)
-            if "conc_mass_comp" in var.name:
-                iscale.set_scaling_factor(var, 1e1)
 
-    for unit in ("R1", "R2", "R3", "R4", "R5", "R6", "R7"):
-        block = getattr(m.fs, unit)
-        iscale.set_scaling_factor(
-            block.control_volume.reactions[0.0].rate_expression, 1e3
-        )
-        iscale.set_scaling_factor(block.cstr_performance_eqn, 1e3)
-        iscale.set_scaling_factor(
-            block.control_volume.rate_reaction_stoichiometry_constraint, 1e3
-        )
-        iscale.set_scaling_factor(block.control_volume.material_balances, 1e3)
+def set_scaling(m):
+    asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
+    asm2d_rxn_scaler = m.fs.rxn_props_ASM2D.default_reaction_scaler_class()
+    adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
+    adm1_rxn_scaler = m.fs.rxn_props_ADM1.default_reaction_scaler_class()
+    adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
-    # Apply scaling
-    scale_variables(m)
-    iscale.calculate_scaling_factors(m)
+    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e3
+    for c in m.fs.props_ASM2D.component_list:
+        asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
+
+    asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
+
+    adm1_scaler.default_scaling_factors["flow_vol"] = 1e3
+    for c in m.fs.props_ADM1.component_list:
+        adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e2
+    adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
+
+    m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
+    m.fs.rxn_props_ASM2D.default_reaction_scaler_object = asm2d_rxn_scaler
+    m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
+    m.fs.rxn_props_ADM1.default_reaction_scaler_object = adm1_rxn_scaler
+    m.fs.props_vap_ADM1.default_state_scaler_object = adm1_vapor_scaler
+
+    csb = CustomScalerBase()
+
+    for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
+        if isinstance(blk, UnitModelBlockData):
+            if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
+                if blk in (m.fs.R5, m.fs.R6, m.fs.R7):
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+                    scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
+                    scaler.default_scaling_factors["KLa"] = 1e-2
+                    scaler.scale_model(blk)
+                elif blk in (m.fs.R1, m.fs.R2, m.fs.R3, m.fs.R4):
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+                    scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
+                    scaler.scale_model(blk)
+                elif blk == m.fs.AD:
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.default_scaling_factors["volume"] = 1e-3
+                    scaler.default_scaling_factors["KH_h2"] = 1e4
+                    scaler.default_scaling_factors["KH_co2"] = 1e2
+                    scaler.default_scaling_factors["KH_ch4"] = 1e2
+                    scaler.scale_model(blk)
+                else:
+                    print(f"Scaling {blk.name}")
+                    scaler = blk.default_scaler()
+                    scaler.scale_model(blk)
+            else:
+                print(f"No default scaler for unit model {blk.name}")
+        elif "_expanded" in blk.name:
+            print(f"Scaling {blk.name}")
+            # Expanded arc block
+            for con in blk.component_data_objects(pyo.Constraint):
+                csb.scale_constraint_by_nominal_value(
+                    con, scheme=ConstraintScalingScheme.inverseMaximum
+                )
 
 
 def initialize_system(m, has_electroNP=False):
@@ -571,23 +613,23 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses = {
             "flow_vol": {0: 1.2366},
             "conc_mass_comp": {
-                (0, "S_A"): 0.0006,
-                (0, "S_F"): 0.0004,
-                (0, "S_I"): 0.057,
+                (0, "S_A"): 0.006,
+                (0, "S_F"): 0.00096,
+                (0, "S_I"): 0.05746,
                 (0, "S_N2"): 0.04,
                 (0, "S_NH4"): 0.006,
-                (0, "S_NO3"): 0.002,
+                (0, "S_NO3"): 4e-3,
                 (0, "S_O2"): 0.0019,
-                (0, "S_PO4"): 0.09,
-                (0, "S_K"): 0.37,
-                (0, "S_Mg"): 0.020,
-                (0, "S_IC"): 0.13,
-                (0, "X_AUT"): 0.085,
-                (0, "X_H"): 3.5,
+                (0, "S_PO4"): 9e-3,
+                (0, "S_K"): 0.3778,
+                (0, "S_Mg"): 0.02361,
+                (0, "S_IC"): 0.1856,
+                (0, "X_AUT"): 1e-5,
+                (0, "X_H"): 4.5,
                 (0, "X_I"): 3.1,
                 (0, "X_PAO"): 3.4,
                 (0, "X_PHA"): 0.087,
-                (0, "X_PP"): 1.1,
+                (0, "X_PP"): 0.8,
                 (0, "X_S"): 0.057,
             },
             "temperature": {0: 308.15},
@@ -597,13 +639,14 @@ def initialize_system(m, has_electroNP=False):
         tear_guesses2 = {
             "flow_vol": {0: 0.003},
             "conc_mass_comp": {
-                (0, "S_A"): 0.1,
+                (0, "S_A"): 0.07807,
                 (0, "S_F"): 0.15,
-                (0, "S_I"): 0.057,
-                (0, "S_N2"): 0.034,
+                (0, "S_I"): 0.05746,
+                (0, "S_N2"): 0.02479,
                 (0, "S_NH4"): 0.025,
-                (0, "S_NO3"): 0.0015,
+                (0, "S_NO3"): 4.5e-3,
                 (0, "S_O2"): 0.0013,
+                # 95, 5.084e13
                 (0, "S_PO4"): 0.1,
                 (0, "S_K"): 0.38,
                 (0, "S_Mg"): 0.024,
@@ -612,8 +655,8 @@ def initialize_system(m, has_electroNP=False):
                 (0, "X_H"): 23,
                 (0, "X_I"): 11,
                 (0, "X_PAO"): 10.5,
-                (0, "X_PHA"): 0.006,
-                (0, "X_PP"): 2.7,
+                (0, "X_PHA"): 3.68e-3,
+                (0, "X_PP"): 3.35,
                 (0, "X_S"): 3.9,
             },
             "temperature": {0: 308.15},

@@ -214,11 +214,48 @@ class ModifiedADM1ParameterData(PhysicalParameterBlock):
         )
 
 
+class ModifiedADM1PropertiesScaler(CustomScalerBase):
+    """
+    Scaler for the Modified Anaerobic Digestion Model No.1 property package.
+    Flow and temperature are scaled by the default value (if no user input provided), and
+    pressure is scaled assuming an order of magnitude of 1e5 Pa.
+    """
+
+    CONFIG = CustomScalerBase.CONFIG
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "pressure": (pyo.units.Pa, 1e-5),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e5,
+        "temperature": 1e-2,
+        "conc_mass_comp": 1e1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for idx, var in model.conc_mass_comp.items():
+            self.scale_variable_by_default(var, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        pass
+
+
 class _ModifiedADM1StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_scaler = ModifiedADM1PropertiesScaler
 
     def initialize(
         self,
@@ -308,36 +345,6 @@ class _ModifiedADM1StateBlock(StateBlock):
         # Unfix state variables
         revert_state_vars(self, flags)
         init_log.info("State Released.")
-
-
-class ModifiedADM1PropertiesScaler(CustomScalerBase):
-    """
-    Scaler for the Modified Anaerobic Digestion Model No.1 property package.
-    Flow and temperature are scaled by the default value (if no user input provided), and
-    pressure is scaled assuming an order of magnitude of 1e5 Pa.
-    """
-
-    UNIT_SCALING_FACTORS = {
-        # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyo.units.Pa, 1e-6),
-    }
-
-    DEFAULT_SCALING_FACTORS = {
-        "flow_vol": 1e5,
-        "temperature": 1e-1,
-    }
-
-    def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        self.scale_variable_by_default(model.temperature, overwrite=overwrite)
-        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
-        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
-
-    def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
-    ):
-        pass
 
 
 @declare_process_block_class(

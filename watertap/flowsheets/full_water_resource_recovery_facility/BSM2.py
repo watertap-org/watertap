@@ -96,6 +96,7 @@ def main(reactor_volume_equalities=True):
     add_costing(m)
     m.fs.costing.initialize()
 
+    # TODO: Update scaling routine
     scale_system(m)
     scaling = pyo.TransformationFactory("core.scale_model")
     scaled_model = scaling.create_using(m, rename=False)
@@ -409,12 +410,13 @@ def scale_system(m):
     csb = CustomScalerBase()
 
     ad_scaler = ADScaler()
+    ad_scaler.default_scaling_factors["KH_h2"] = 1e4
+    ad_scaler.default_scaling_factors["KH_ch4"] = 1e3
+    ad_scaler.default_scaling_factors["KH_co2"] = 1
+    ad_scaler.default_scaling_factors["heat"] = 1e-3
+    ad_scaler.default_scaling_factors["enthalpy_transfer"] = 1e-2
     ad_scaler.scale_model(m.fs.RADM)
     # Poorly scaled Jacobians
-    set_scaling_factor(m.fs.RADM.liquid_phase.heat[0], 1e-3, overwrite=True)
-    set_scaling_factor(
-        m.fs.RADM.liquid_phase.enthalpy_transfer[0], 1e-2, overwrite=True
-    )
     set_scaling_factor(m.fs.RADM.liquid_phase.reactions[0].S_H, 1e7)
 
     for c in m.fs.props_vap.solute_set:
@@ -502,11 +504,14 @@ def scale_system(m):
     cstr_list = [m.fs.R1, m.fs.R2]
     cstr_scaler = CSTRScaler()
     for unit in cstr_list:
+        cstr_scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
+        cstr_scaler.default_scaling_factors["rate_reaction_generation"] = 1e3
         cstr_scaler.scale_model(unit)
 
     aeration_list = [m.fs.R3, m.fs.R4, m.fs.R5]
     aeration_scaler = AerationTankScaler()
     for unit in aeration_list:
+        aeration_scaler.default_scaling_factors["rate_reaction_extent"] = 1e3
         aeration_scaler.scale_model(unit)
     set_scaling_factor(m.fs.R3.outlet.conc_mass_comp[0, "S_O"], 1e3)
     set_scaling_factor(m.fs.R4.outlet.conc_mass_comp[0, "S_O"], 1e3)
