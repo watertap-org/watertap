@@ -56,7 +56,8 @@ solver = get_solver()
 
 class TestParamBlock(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         model = ConcreteModel()
         model.pparams = ModifiedASM2dParameterBlock()
         model.rparams = ModifiedASM2dReactionParameterBlock(
@@ -274,7 +275,8 @@ class TestParamBlock(object):
 
 class TestReactionBlock(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         model = ConcreteModel()
         model.pparams = ModifiedASM2dParameterBlock()
         model.rparams = ModifiedASM2dReactionParameterBlock(
@@ -498,7 +500,8 @@ class TestASM1ReactionScaler(object):
 
 class TestAerobic:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -635,7 +638,8 @@ class TestAerobic:
 
 class TestAnoxic:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -765,7 +769,8 @@ class TestAnoxic:
 
 class TestAerobic15C:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -909,7 +914,8 @@ class TestAerobic15C:
 
 class TestAnoxicPHA:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

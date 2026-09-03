@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestFeedWaterTankZO:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 

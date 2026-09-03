@@ -42,3 +42,4 @@ Unit Models
    translators/index
    uv_aop
    zero_order_unit_models/index
+   unit_model_utilities

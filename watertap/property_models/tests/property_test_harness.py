@@ -93,8 +93,10 @@ class PropertyTestHarness:
         """
 
     @pytest.fixture(scope="class")
-    def frame_stateblock(self):
+    @classmethod
+    def frame_stateblock(cls):
         m = ConcreteModel()
+        self = cls()
         self.configure_class(m)
 
         m.fs = FlowsheetBlock(dynamic=False)
@@ -379,9 +381,17 @@ class PropertyTestHarness:
                     )
                 )
 
+    @pytest.mark.unit
+    def test_list_and_print_properties(self, frame_stateblock):
+        m = frame_stateblock
+        m.fs.properties.list_properties()
+        m.fs.properties.print_properties()
+
     @pytest.fixture(scope="class")
-    def frame_control_volume(self):
+    @classmethod
+    def frame_control_volume(cls):
         m = ConcreteModel()
+        self = cls()
         self.configure_class(m)
 
         m.fs = FlowsheetBlock(dynamic=False)
