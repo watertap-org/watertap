@@ -15,7 +15,13 @@ concurrency:
   # github.head_ref is only defined for pull request events
   # so, if it's not present (i.e. event was triggered by push)
   # we use github.ref instead
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  # Isolates concurrency keys for pull requests, merge queues, and trunk branch pushes
+  group: >-
+    ${{ github.workflow }}-${{
+      github.event.pull_request.number || 
+      github.event.merge_group.head_ref || 
+      github.ref 
+    }}
   cancel-in-progress: true
 
 defaults:
@@ -212,6 +218,11 @@ jobs:
           - os: win64
             os-version: windows-2022
     steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v4
       with:
@@ -221,24 +232,31 @@ jobs:
         conda-remove-defaults: 'true'
         auto-activate: false
 
-    - name: Define install URL (default)
+    - name: Define install URL (for Main Branch)
+      if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref && !github.event.pull_request && !github.event.merge_group
       env:
         _repo_full_name: watertap-org/watertap
         _ref_to_install: main
       run: |
-        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
-    - name: Define install URL (for PRs)
-      if: github.event.pull_request
+       _install_url="https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip"
+        echo "_install_url=${_install_url}" >> $GITHUB_ENV
+        echo "Install URL: ${_install_url}"
+
+    - name: Define install URL (for PRs and Merge Groups)
+      if: github.event.pull_request || github.event.merge_group
       env:
-        _repo_full_name: ${{ github.event.pull_request.head.repo.full_name }}
-        _ref_to_install: ${{ github.event.pull_request.head.sha }}
+        _repo_full_name: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+        _ref_to_install: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
       run: |
-        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+        _install_url="https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip"
+        echo "_install_url=${_install_url}" >> $GITHUB_ENV
+        echo "Install URL: ${_install_url}"
 
     - name: Bootstrap packaging tools and verify installation
       run: |
         conda install --quiet --yes pip setuptools wheel
         python -m pip show setuptools wheel
+        pip install -e .
     - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
