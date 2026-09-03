@@ -69,5 +69,8 @@ def test_lists_match():
     # remove the AOPMixin
     py_list.remove("aop_addition_zo")
 
+    # remove the zo_costing_functions since it is not a unit model
+    rst_list.remove("zo_costing_functions")
+
     # Run pytest -vv to see how the lists are different
     assert sorted(py_list) == sorted(rst_list)

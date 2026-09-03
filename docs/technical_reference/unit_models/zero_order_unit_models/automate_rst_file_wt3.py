@@ -329,6 +329,10 @@ if __name__ == "__main__":
         with open("index.rst", "a") as f:
             f.write(f"   {zo_name_list[i]}\n")
 
+        # append the zo_function to index
+        with open("index.rst", "a") as f:
+            f.write(f"   zo_costing_function\n")
+
         with open(f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
             # write doc title based on unit name
             if zo_name_list[i] in title_exceptions:
