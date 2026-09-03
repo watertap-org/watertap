@@ -267,6 +267,32 @@ costing_exceptions = {}
 p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
+additional_costing_details = ["ozone_zo"]
+
+
+def extract_costing_details(cost_func):
+    with open("zo_costing_functions.rst", "r") as f:
+        # Read lines
+        lines = f.read()
+
+        # Start and end indices for the costing details section
+        start_index = lines.find(f".. start_{cost_func}_costing")
+        end_index = lines.find(f".. end_{cost_func}_costing")
+
+        costing_details = "".join(lines[start_index:end_index])
+
+    return costing_details
+
+
+def create_costing_rst_section(cost_func):
+    section = extract_costing_details(cost_func)
+
+    output = f"""
+        {section}
+        """
+
+    return output
+
 
 if __name__ == "__main__":
 
@@ -302,6 +328,10 @@ if __name__ == "__main__":
         # append unit doc to index
         with open("index.rst", "a") as f:
             f.write(f"   {zo_name_list[i]}\n")
+
+        # append the zo_function to index
+        with open("index.rst", "a") as f:
+            f.write(f"   zo_costing_function\n")
 
         with open(f"{zo_name_list[i]}.rst", "w", encoding="utf-8") as f:
             # write doc title based on unit name
@@ -385,6 +415,12 @@ if __name__ == "__main__":
                     f.write(
                         f"\nFor full details on costing, see documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
                     )
+
+                    # Check is a costing description exists in zo_costing_functions.rst
+                    if zo_name_list[i] in additional_costing_details:
+                        print(f"Using custom costing details for {zo_name_list[i]}")
+                        output = create_costing_rst_section(zo_name_list[i])
+                        f.write(output)
 
             # write Additional Variables section if unit is non-basic
             # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
