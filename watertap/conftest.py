@@ -27,12 +27,21 @@ _TEST_DURATIONS = defaultdict(
     lambda: {
         "file": "",
         "test": "",
+        "markers": "",
         "setup": 0.0,
         "call": 0.0,
         "teardown": 0.0,
         "outcome": "passed",
     }
 )
+
+
+def _normalized_test_path(nodeid: str) -> str:
+    return nodeid.partition("::")[0].replace("\\", "/")
+
+
+def _item_markers(item: Item) -> str:
+    return ",".join(sorted({marker.name for marker in item.iter_markers()}))
 
 
 class MarkerSpec(enum.Enum):
@@ -111,7 +120,7 @@ def pytest_runtest_makereport(item: Item, call):
     if not config.getoption("--file-durations"):
         return
 
-    filename = report.location[0]
+    filename = _normalized_test_path(report.nodeid)
     _FILE_DURATIONS[filename]["duration"] += report.duration
     if report.when == "setup":
         _FILE_DURATIONS[filename]["tests"] += 1
@@ -119,6 +128,7 @@ def pytest_runtest_makereport(item: Item, call):
     test_duration = _TEST_DURATIONS[report.nodeid]
     test_duration["file"] = filename
     test_duration["test"] = report.location[2]
+    test_duration["markers"] = _item_markers(item)
     test_duration[report.when] += report.duration
 
     if report.failed:
@@ -152,6 +162,7 @@ def _write_duration_reports(config: Config):
                 "nodeid",
                 "file",
                 "test",
+                "markers",
                 "setup_seconds",
                 "call_seconds",
                 "teardown_seconds",
@@ -170,6 +181,7 @@ def _write_duration_reports(config: Config):
                     nodeid,
                     stats["file"],
                     stats["test"],
+                    stats["markers"],
                     f"{stats['setup']:.6f}",
                     f"{stats['call']:.6f}",
                     f"{stats['teardown']:.6f}",
