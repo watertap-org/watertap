@@ -149,9 +149,7 @@ def test_rectifier_costing():
     # build generic models
     m = pyo.ConcreteModel()
     m.fs = idc.FlowsheetBlock(dynamic=False)
-    m.fs.costing = WaterTAPCosting()
-    # change base units for value assertions
-    m.fs.costing.base_currency = pyo.units.USD_2021
+    m.fs.costing = WaterTAPCosting(base_currency_year=2018)
     m.fs.unit = idc.UnitModelBlock()
 
     # build power variable required for cost_rectifier
@@ -178,12 +176,12 @@ def test_rectifier_costing():
     assert pyo.check_optimal_termination(results)
 
     # check values
-    assert pytest.approx(59320, rel=1e-3) == pyo.value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(50531, rel=1e-3) == pyo.value(m.fs.unit.costing.capital_cost)
     assert pytest.approx(111.1, rel=1e-3) == pyo.value(m.fs.unit.costing.ac_power)
     assert pytest.approx(111.1, rel=1e-3) == pyo.value(
         m.fs.costing.aggregate_flow_electricity
     )
-    assert pytest.approx(80040, rel=1e-3) == pyo.value(
+    assert pytest.approx(68180, rel=1e-3) == pyo.value(
         m.fs.costing.aggregate_flow_costs["electricity"]
     )
 

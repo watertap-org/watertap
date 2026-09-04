@@ -638,10 +638,8 @@ def add_costing(m, dye_revenue=False, brine_revenue=False):
     )
 
     m.fs.zo_costing = ZeroOrderCosting(case_study_definition=source_file)
-    m.fs.zo_costing.base_currency = pyunits.USD_2023
-    m.fs.ro_costing = WaterTAPCosting()
+    m.fs.ro_costing = WaterTAPCosting(base_currency_year=2023)
     m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
-    m.fs.ro_costing.base_currency = pyunits.USD_2023
     m.fs.ro_costing.utilization_factor.fix(0.85)
     # Assume the same capital recovery factor as zo_costing
     zo_crf = m.fs.zo_costing.capital_recovery_factor

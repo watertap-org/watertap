@@ -11,6 +11,7 @@
 #################################################################################
 
 import pyomo.environ as pyo
+from pyomo.common.config import ConfigValue
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.expr.visitor import identify_variables
@@ -19,6 +20,7 @@ from idaes.core.base.costing_base import register_idaes_currency_units
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.base.costing_base import FlowsheetCostingBlockData
 from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
+from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
 
@@ -38,6 +40,23 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
     and for anonymous expressions in flow costs.
     """
 
+    CONFIG = FlowsheetCostingBlockData.CONFIG()
+    CONFIG.declare(
+        "base_currency_year",
+        ConfigValue(
+            default=2018,
+            domain=int,
+            doc="Base year for currency units. If not provided, default is 2018.",
+        ),
+    )
+    CONFIG.declare(
+        "base_period",
+        ConfigValue(
+            default="year",
+            doc="Base period for operating costs. If not provided, default is year.",
+        ),
+    )
+
     # Define default mapping of costing methods to unit models
     unit_mapping = {
         Mixer: cost_mixer,
@@ -50,11 +69,47 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         # Register currency and conversion rates based on CE Index
         register_idaes_currency_units()
 
-    def set_base_currency_base_period(self):
-        # Set the base year for all costs
-        self.base_currency = pyo.units.USD_2018
-        # Set a base period for all operating costs
-        self.base_period = pyo.units.year
+    def validate_watertap_costing_config(self):
+        """
+        Validate the configuration of a WaterTAP costing block.
+        and set the base_currency and base_period attributes.
+        """
+
+        self.base_currency = None
+        self.base_period = None
+
+        if "case_study_definition" in self.config:
+            # it is a ZeroOrderCosting block, so we preferentially
+            # use the values from the _cs_def if available
+            if "base_currency" in self._cs_def:
+                self.base_currency = getattr(pyo.units, self._cs_def["base_currency"])
+            if "base_period" in self._cs_def:
+                self.base_period = getattr(pyo.units, self._cs_def["base_period"])
+
+        if self.base_currency is None:
+            if not 1990 <= self.config.base_currency_year <= 2023:
+                raise ConfigurationError(
+                    f"Base currency year must be between 1990 and 2023, but got {self.config.base_currency_year}"
+                )
+
+            self.base_currency = getattr(
+                pyo.units, f"USD_{self.config.base_currency_year}"
+            )
+
+        if self.base_period is None:
+            try:
+                self.base_period = getattr(pyo.units, self.config.base_period)
+            except AttributeError:
+                raise ConfigurationError(
+                    f"{self.config.base_period} is not a valid unit."
+                )
+
+            self.base_period = getattr(pyo.units, self.config.base_period)
+
+            if not self.base_period._pint_unit.dimensionality == "[time]":
+                msg = f"base_period configuration must be a unit of time "
+                msg += f"but got {self.config.base_period} {self.base_period._pint_unit.dimensionality}."
+                raise ConfigurationError(msg)
 
     def add_LCOW(self, flow_rate, name="LCOW"):
         """
@@ -500,7 +555,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         """
 
         self.register_currency_definitions()
-        self.set_base_currency_base_period()
+        self.validate_watertap_costing_config()
 
         self.utilization_factor = pyo.Var(
             initialize=0.9,

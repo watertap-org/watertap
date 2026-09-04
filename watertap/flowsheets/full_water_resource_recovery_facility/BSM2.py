@@ -1057,8 +1057,7 @@ def initialize_system(m):
 
 
 def add_costing(m):
-    m.fs.costing = WaterTAPCosting()
-    m.fs.costing.base_currency = pyo.units.USD_2020
+    m.fs.costing = WaterTAPCosting(base_currency_year=2020)
 
     # Costing Blocks
     m.fs.R1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)

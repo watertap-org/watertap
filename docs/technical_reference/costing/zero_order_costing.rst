@@ -14,7 +14,7 @@ parameter values.
 Usage
 -----
 
-The ZeroOrderCosting class contains all the variables and constraints needed to cost a unit model derived from the :ref:`ZeroOrderBaseData`. It also inherits the functionality of the :ref:`WaterTAPCostingBlockData`.
+The ZeroOrderCosting class inherits the functionality of the :ref:`WaterTAPCostingBlockData` and contains all the variables and constraints needed to cost a unit model derived from the :ref:`ZeroOrderBaseData`.
 
 The code below shows an outline of how the ZeroOrderCostingData class is intended to be used to cost zero-order type models.
 
@@ -64,6 +64,8 @@ Total annualized cost                           :math:`C_{annual}`    ``total_an
 
 Calculations for each of these costs are presented below.
 
+.. _zero_order_costing_tea_factors:
+
 Costing Index and Technoeconomic Factors
 ----------------------------------------
 
@@ -76,9 +78,17 @@ Costs from year A to year B are adjusted according to:
 
 WaterTAP uses the `Chemical Engineering Plant Cost Index <https://www.toweringskills.com/financial-analysis/cost-indices/>`_ (CEPCI) 
 to account for the time-value of investments. Aggregated capital and operating costs are 
-adjusted to the desired year for the model, accessible on the costing block as ``base_currency``. 
-The default costing year is 2018, but the user can directly set the ``base_currency`` at 
-the flowsheet level (e.g., ``m.fs.costing.base_currency = pyo.units.USD_2023``) or via a provided case study ``.yaml``.
+adjusted to the desired year for the model, accessible on the costing block as ``base_currency``.
+For the zero order costing package, this is set preferentially by a ``base_currency`` entry in 
+the case study yaml file. If the case study yaml file does not contain a ``base_currency`` entry, 
+it is defined via the ``base_currency_year`` configuration argument  (e.g., ``m.fs.costing = ZeroOrderCosting(base_currency_year=2022)``).
+In either case, the default costing year is 2018, but users can specify a different year between 1990 and 2023.
+
+.. important:: 
+    Though users **could** directly set the ``base_currency`` on the flowsheet costing block (e.g., ``m.fs.costing.base_currency = pyunits.USD_2023``), this is discouraged. 
+    It is recommended to specify the base currency via the case study yaml or the ``base_currency_year`` configuration argument when instantiating the zero order costing package to ensure consistency 
+    across all costing calculations and parameters. 
+
 
 Other technoeconomic factors used to calculate various system metrics, capital, and operating costs are presented in the table below:
 
