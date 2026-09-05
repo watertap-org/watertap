@@ -12,7 +12,7 @@
 
 import pandas as pd
 from pyomo.network import Arc, Port
-from pyomo.environ import Block
+from pyomo.environ import Var, Param, Expression, Block, value, units as pyunits
 from idaes.core import UnitModelBlockData, FlowsheetBlockData
 
 import idaes.logger as idaeslog
@@ -99,5 +99,35 @@ def list_ports(block, descend_into=False):
     # Display table
     df = pd.DataFrame(rows)
     print(df.to_string(index=False))
+
+    return df
+
+
+def export_results_to_csv(
+    blk,
+    components=[Var, Param, Expression],
+    descend_into=True,
+    save_as="watertap_model_results",
+    **kwargs,
+):
+    from pandas import DataFrame, Series
+
+    save_as = save_as.replace(".csv", "")
+
+    rd = {"model_component": list(), "value": list(), "units": list()}
+    # pass
+    for c in blk.component_objects(components, descend_into=descend_into):
+        if c.is_indexed():
+            for ci in c.values():
+                rd["model_component"].append(ci.name)
+                rd["value"].append(value(ci))
+                rd["units"].append(pyunits.get_units(ci))
+        else:
+            rd["model_component"].append(c.name)
+            rd["value"].append(value(c))
+            rd["units"].append(pyunits.get_units(c))
+
+    df = DataFrame({k: Series(v) for k, v in rd.items()})
+    df.to_csv(f"{save_as}.csv", index=False)
 
     return df
