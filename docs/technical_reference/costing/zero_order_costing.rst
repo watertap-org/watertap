@@ -128,8 +128,7 @@ In general, unit process capital costs :math:`C_{ZO,u}` for zero order unit mode
 
 :math:`Q_{basis}`, :math:`A`, and :math:`B` are specific to the unit model and can be found in the unit model ``.yaml`` file.
 The :math:`A` value has units of USD for the costing reference year of the unit. For example, if the unit costing model
-is from a reference that used 2015 USD, the units for :math:`A` are ``USD_2015``. After calculating the costs in 2015 USD, WaterTAP
-adjusts the cost to the user-specified year via the Consumer Price Index.
+is from a reference that used 2015 USD, the units for :math:`A` are ``USD_2015``.
 
 The total capital cost of a zero order model :math:`C_{ZO,tot}` includes the land cost :math:`C_{land}` and working
 capital costs :math:`C_{work}`:
