@@ -22,6 +22,7 @@ from idaes.models.unit_models import Mixer, HeatExchanger, Heater, CSTR
 
 import idaes.logger as idaeslog
 
+from watertap.core.util import export_results_to_csv
 from watertap.core.util.misc import is_constant_up_to_units
 from watertap.costing.unit_models.mixer import cost_mixer
 from watertap.costing.unit_models.heat_exchanger import cost_heat_exchanger
@@ -55,6 +56,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.base_currency = pyo.units.USD_2018
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
+
+    def export_results_to_csv(self, **kwargs):
+        return export_results_to_csv(self, **kwargs)
 
     def add_LCOW(self, flow_rate, name="LCOW"):
         """
