@@ -1,0 +1,24 @@
+name: (util) Cleanup
+  on:
+    pull_request_target:
+      types: [labeled]
+  permissions:
+    issues: write
+  jobs:
+    clean-labels:
+      name: (util) Remove workflow trigger label
+      if: |
+        github.event.label.name == 'run-coverage' ||
+        github.event.label.name == 'run-full-ci' ||
+        github.event.label.name == 'run-windows-ci'
+      runs-on: ubuntu-latest
+      steps:
+        - name: Remove workflow trigger label
+          env:
+            GH_TOKEN: ${{ github.token }}
+            GH_REPO: ${{ github.repository }}
+            PR_NUMBER: ${{ github.event.pull_request.number }}
+            LABEL_NAME: ${{ github.event.label.name }}
+          run: |
+            gh api --method DELETE \
+              "repos/${GH_REPO}/issues/${PR_NUMBER}/labels/${LABEL_NAME}"
