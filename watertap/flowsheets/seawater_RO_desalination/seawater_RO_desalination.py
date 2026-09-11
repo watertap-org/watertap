@@ -605,7 +605,6 @@ def add_costing(m):
 
     # Add costing package
     m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2023
     # Add costing to zero order units
     # Pre-treatment units
     # Intake unit really looks like it should be a feed block in its own right
