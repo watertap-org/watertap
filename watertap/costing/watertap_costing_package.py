@@ -618,7 +618,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         self.capital_recovery_factor = pyo.Var(
             initialize=0.1,
-            units=pyo.units.year**-1,
+            units=self.base_period**-1,
             doc="Capital annualization factor [fraction of investment cost/year]",
         )
 
@@ -632,8 +632,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.capital_recovery_factor_constraint = pyo.Constraint(
             expr=self.capital_recovery_factor
             == (
-                (self.wacc / pyo.units.year)
-                / (1 - 1 / ((1 + self.wacc) ** (self.plant_lifetime / pyo.units.year)))
+                (self.wacc / self.base_period)
+                / (
+                    1
+                    - 1 / ((1 + self.wacc) ** (self.plant_lifetime / self.base_period))
+                )
             )
         )
 
