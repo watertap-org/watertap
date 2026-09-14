@@ -554,6 +554,7 @@ def test_watertap_costing_config_zo():
         m.fs.costing = ZeroOrderCosting(
             case_study_definition=temp_path, base_currency_year=1492
         )
+
     # base_period must be a valid pyunit
     with pytest.raises(
         ConfigurationError,
@@ -577,5 +578,18 @@ def test_watertap_costing_config_zo():
         m.fs.costing = ZeroOrderCosting(
             case_study_definition=temp_path, base_period="kilogram"
         )
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path, base_currency_year=2000, base_period="year"
+    )
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_currency and base_period are already set: base_currency = USD_2000, base_period = a"
+        ),
+    ):
+        m.fs.costing.validate_watertap_costing_config()
 
     os.remove(temp_path)

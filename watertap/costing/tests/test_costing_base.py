@@ -62,6 +62,17 @@ def test_watertap_costing_config():
 
     m = pyo.ConcreteModel()
     m.fs = idc.FlowsheetBlock(dynamic=False)
+    m.fs.costing = WaterTAPCosting(base_currency_year=2000, base_period="year")
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_currency and base_period are already set: base_currency = USD_2000, base_period = a"
+        ),
+    ):
+        m.fs.costing.validate_watertap_costing_config()
+
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(dynamic=False)
     m.fs.costing = WaterTAPCosting(base_currency_year=2009, base_period="month")
     m.fs.costing.cost_process()
 

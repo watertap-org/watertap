@@ -71,9 +71,18 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
     def validate_watertap_costing_config(self):
         """
-        Validate the configuration of a WaterTAP costing block.
+        Validate the configuration of a WaterTAP costing block
         and set the base_currency and base_period attributes.
         """
+
+        if (
+            getattr(self, "base_currency", None) is not None
+            and getattr(self, "base_period", None) is not None
+        ):
+            # Users cannot manually re-set base_currency and base_period
+            msg = "base_currency and base_period are already set:"
+            msg += f" base_currency = {self.base_currency}, base_period = {self.base_period}"
+            raise ConfigurationError(msg)
 
         self.base_currency = None
         self.base_period = None
@@ -103,8 +112,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 raise ConfigurationError(
                     f"{self.config.base_period} is not a valid unit."
                 )
-
-            self.base_period = getattr(pyo.units, self.config.base_period)
 
             if not self.base_period._pint_unit.dimensionality == "[time]":
                 msg = f"base_period configuration must be a unit of time "
