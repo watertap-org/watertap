@@ -92,8 +92,14 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             # use the values from the _cs_def if available
             if "base_currency" in self._cs_def:
                 self.base_currency = getattr(pyo.units, self._cs_def["base_currency"])
+                _log.debug(
+                    f"Setting base_currency from case study yaml: {self.base_currency}"
+                )
             if "base_period" in self._cs_def:
                 self.base_period = getattr(pyo.units, self._cs_def["base_period"])
+                _log.debug(
+                    f"Setting base_period from case study yaml: {self.base_period}"
+                )
 
         if self.base_currency is None:
             if not 1990 <= self.config.base_currency_year <= 2023:
@@ -104,6 +110,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             self.base_currency = getattr(
                 pyo.units, f"USD_{self.config.base_currency_year}"
             )
+            _log.debug(f"Setting base_currency from config: {self.base_currency}")
 
         if self.base_period is None:
             try:
@@ -117,6 +124,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 msg = f"base_period configuration must be a unit of time "
                 msg += f"but got {self.config.base_period} {self.base_period._pint_unit.dimensionality}."
                 raise ConfigurationError(msg)
+            _log.debug(f"Setting base_period from config: {self.config.base_period}")
 
     def add_LCOW(self, flow_rate, name="LCOW"):
         """
