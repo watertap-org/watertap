@@ -17,7 +17,6 @@ import os
 import re
 import yaml
 import pytest
-from copy import deepcopy
 
 from pyomo.environ import (
     Block,
@@ -517,15 +516,13 @@ def test_watertap_costing_config_zo():
     assert m.fs.costing.config.base_currency_year == 2001
     assert m.fs.costing.base_currency == pyunits.MUSD_2018
 
-    data0 = _load_case_study_definition(m.fs.costing)
-    data1 = deepcopy(data0)
-    data1.pop("base_currency", None)
-    data1.pop("base_period", None)
+    cs = _load_case_study_definition(m.fs.costing)
 
-    # Create a temporary case study yaml without base_currency and base_period
+    # Create a temporary case study yaml without base_currency and/or base_period
+    cs.pop("base_currency", None)
     temp_path1 = f"{here}/no_base_currency_base_period.yaml"
     with open(temp_path1, "w", encoding="utf-8") as tf:
-        yaml.safe_dump(data1, tf, sort_keys=False)
+        yaml.safe_dump(cs, tf, sort_keys=False)
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -534,6 +531,52 @@ def test_watertap_costing_config_zo():
     )
     m.fs.costing.cost_process()
 
+    # Check that the base_currency_year from the config is used
+    assert m.fs.costing.config.base_currency_year == 2000
+    assert m.fs.costing.base_currency == pyunits.USD_2000
+    # Check that base_period will be used from yaml despite being in config
+    assert m.fs.costing.config.base_period == "day"
+    assert m.fs.costing.base_period == pyunits.year
+    assert pyunits.get_units(m.fs.costing.total_capital_cost) == pyunits.get_units(
+        pyunits.USD_2000
+    )
+    assert pyunits.get_units(m.fs.costing.total_operating_cost) == pyunits.get_units(
+        pyunits.USD_2000 / pyunits.year
+    )
+    assert pyunits.get_units(m.fs.costing.electricity_cost) == pyunits.get_units(
+        pyunits.USD_2000 / pyunits.kWh
+    )
+    assert pyunits.get_units(m.fs.costing.plant_lifetime) == pyunits.get_units(
+        pyunits.year
+    )
+    assert pyunits.get_units(m.fs.costing.capital_recovery_factor) == pyunits.get_units(
+        pyunits.year**-1
+    )
+    assert pyunits.get_units(m.fs.costing.salaries_percent_FCI) == pyunits.get_units(
+        pyunits.year**-1
+    )
+    assert pyunits.get_units(
+        m.fs.costing.maintenance_costs_percent_FCI
+    ) == pyunits.get_units(pyunits.year**-1)
+    assert pyunits.get_units(
+        m.fs.costing.laboratory_fees_percent_FCI
+    ) == pyunits.get_units(pyunits.year**-1)
+    assert pyunits.get_units(
+        m.fs.costing.insurance_and_taxes_percent_FCI
+    ) == pyunits.get_units(pyunits.year**-1)
+
+    cs.pop("base_period", None)
+    with open(temp_path1, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path1, base_currency_year=2000, base_period="day"
+    )
+    m.fs.costing.cost_process()
+
+    # Check that the base_currency_year and base_period from the config is used
     assert m.fs.costing.config.base_currency_year == 2000
     assert m.fs.costing.base_currency == pyunits.USD_2000
     assert m.fs.costing.config.base_period == "day"
@@ -543,6 +586,15 @@ def test_watertap_costing_config_zo():
     )
     assert pyunits.get_units(m.fs.costing.total_operating_cost) == pyunits.get_units(
         pyunits.USD_2000 / pyunits.day
+    )
+    assert pyunits.get_units(m.fs.costing.electricity_cost) == pyunits.get_units(
+        pyunits.USD_2000 / pyunits.kWh
+    )
+    assert pyunits.get_units(m.fs.costing.plant_lifetime) == pyunits.get_units(
+        pyunits.day
+    )
+    assert pyunits.get_units(m.fs.costing.capital_recovery_factor) == pyunits.get_units(
+        pyunits.day**-1
     )
     assert pyunits.get_units(m.fs.costing.salaries_percent_FCI) == pyunits.get_units(
         pyunits.day**-1
@@ -608,15 +660,14 @@ def test_watertap_costing_config_zo():
 
     os.remove(temp_path1)
 
-    data2 = deepcopy(data0)
-    data2.pop("base_currency", None)
+    # cs.pop("base_currency", None)
 
     # Test invalid base currency year as string
-    data2["base_currency"] = "FOO_42"
-    temp_path2 = f"{here}/temp_invalid_base_currency_year.yaml"
+    cs["base_currency"] = "FOO_42"
+    temp_path2 = f"{here}/invalid_base_currency_year.yaml"
 
     with open(temp_path2, "w", encoding="utf-8") as tf:
-        yaml.safe_dump(data2, tf, sort_keys=False)
+        yaml.safe_dump(cs, tf, sort_keys=False)
 
     with pytest.raises(
         ConfigurationError,
@@ -631,9 +682,9 @@ def test_watertap_costing_config_zo():
         )
 
     # Test invalid base currency year as int
-    data2["base_currency"] = 4200
+    cs["base_currency"] = 4200
     with open(temp_path2, "w", encoding="utf-8") as tf:
-        yaml.safe_dump(data2, tf, sort_keys=False)
+        yaml.safe_dump(cs, tf, sort_keys=False)
 
     with pytest.raises(
         ConfigurationError,
@@ -648,16 +699,31 @@ def test_watertap_costing_config_zo():
             base_currency_year=2000,
             base_period="decade",
         )
+
+    # Test *valid* base_currency entry as int
+    cs["base_currency"] = 2022
+    with open(temp_path2, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(cs, tf, sort_keys=False)
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = ZeroOrderCosting(
+        case_study_definition=temp_path2,
+        base_currency_year=2000,
+    )
+    # Check that base_currency gets set via the int provided in the case study yaml
+    assert m.fs.costing.config.base_currency_year == 2000
+    assert m.fs.costing.base_currency == pyunits.USD_2022
+
     os.remove(temp_path2)
 
-    # Test valid base currency but invalid base period unit
-    data3 = deepcopy(data0)
-    data3["base_currency"] = "USD_2020"
-    data3["base_period"] = "sandwich"
-    temp_path3 = f"{here}/temp_invalid_base_period.yaml"
+    # Test valid base_currency but invalid base_period unit
+    cs["base_currency"] = "USD_2020"
+    cs["base_period"] = "sandwich"
+    temp_path3 = f"{here}/invalid_base_period.yaml"
 
     with open(temp_path3, "w", encoding="utf-8") as tf:
-        yaml.safe_dump(data3, tf, sort_keys=False)
+        yaml.safe_dump(cs, tf, sort_keys=False)
 
     with pytest.raises(
         ConfigurationError,
@@ -667,10 +733,10 @@ def test_watertap_costing_config_zo():
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path3)
 
-    data3["base_period"] = "kilogram"
+    cs["base_period"] = "kilogram"
 
     with open(temp_path3, "w", encoding="utf-8") as tf:
-        yaml.safe_dump(data3, tf, sort_keys=False)
+        yaml.safe_dump(cs, tf, sort_keys=False)
 
     with pytest.raises(
         ConfigurationError,
@@ -683,3 +749,6 @@ def test_watertap_costing_config_zo():
         m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path3)
 
     os.remove(temp_path3)
+
+
+# test_watertap_costing_config_zo()
