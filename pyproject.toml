@@ -63,7 +63,7 @@ testing = [
     # treebeardtech/nbmake#121
     "nbmake!=1.5.1",
     "nbconvert",
-    "idaes-flowsheet-processor>=0.3.0",
+    "idaes-flowsheet-processor>=0.3.2",
 ]
 notebooks = ["jupyter", "ipykernel"]
 oli_api = [
@@ -72,7 +72,7 @@ oli_api = [
 ]
 
 reaktoro = [
-    "reaktoro-pse>=0.4.0",
+    "reaktoro-pse>=0.4.1",
 ]
 
 exposan = [

@@ -41,6 +41,7 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
+    degrees_of_freedom,
 )
 from idaes.core.util.scaling import (
     unscaled_variables_generator,
@@ -857,8 +858,8 @@ def test_seawater_data():
         )
     )
     assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42, rel=1e-3)
-    assert value(stream[0].enth_mass_phase["Liq"]) == pytest.approx(98938.56, rel=1e-3)
-    assert value(stream[0].enth_flow) == pytest.approx(98918.931, rel=1e-3)
+    assert value(stream[0].enth_mass_phase["Liq"]) == pytest.approx(99744.185, rel=1e-3)
+    assert value(stream[0].enth_flow) == pytest.approx(99724.40, rel=1e-3)
     assert value(stream[0].pressure_sat) == pytest.approx(3110.73, rel=1e-3)
 
 
@@ -2610,6 +2611,244 @@ def test_automatic_charge_mw_population():
     for comp, val in test_vals.items():
         assert value(m.fs.stream2[0].mw_comp[comp]) == val[0]
         assert value(m.fs.stream2[0].charge_comp[comp]) == val[1]
+
+
+# Enthalpy (kJ/kg), density (g/L), and vapor pressure (kPa) data from
+# https://web.mit.edu/seawater/2017_MIT_Seawater_Property_Tables_r2b_2023c.pdf
+enth_dens_pres_sat_data = {
+    (10, 10): {
+        "dens_mass_phase": 1007.4,
+        "enth_mass_phase": 41.6,
+        "pressure_sat": 1.222,
+    },
+    (10, 30): {
+        "dens_mass_phase": 1023.0,
+        "enth_mass_phase": 40.4,
+        "pressure_sat": 1.209,
+    },
+    (10, 50): {
+        "dens_mass_phase": 1038.7,
+        "enth_mass_phase": 39.0,
+        "pressure_sat": 1.194,
+    },
+    (10, 70): {
+        "dens_mass_phase": 1054.4,
+        "enth_mass_phase": 37.2,
+        "pressure_sat": 1.177,
+    },
+    (10, 90): {
+        "dens_mass_phase": 1070.1,
+        "enth_mass_phase": 35.2,
+        "pressure_sat": 1.159,
+    },
+    (10, 120): {
+        "dens_mass_phase": 1093.6,
+        "enth_mass_phase": 31.9,
+        "pressure_sat": 1.129,
+    },
+    (30, 10): {
+        "dens_mass_phase": 1003.1,
+        "enth_mass_phase": 124.1,
+        "pressure_sat": 4.226,
+    },
+    (30, 30): {
+        "dens_mass_phase": 1018.2,
+        "enth_mass_phase": 120.6,
+        "pressure_sat": 4.18,
+    },
+    (30, 50): {
+        "dens_mass_phase": 1033.4,
+        "enth_mass_phase": 117.1,
+        "pressure_sat": 4.129,
+    },
+    (30, 70): {
+        "dens_mass_phase": 1048.5,
+        "enth_mass_phase": 113.5,
+        "pressure_sat": 4.071,
+    },
+    (30, 90): {
+        "dens_mass_phase": 1063.6,
+        "enth_mass_phase": 109.7,
+        "pressure_sat": 4.008,
+    },
+    (30, 120): {
+        "dens_mass_phase": 1086.3,
+        "enth_mass_phase": 104.1,
+        "pressure_sat": 3.902,
+    },
+    (50, 10): {
+        "dens_mass_phase": 995.5,
+        "enth_mass_phase": 206.6,
+        "pressure_sat": 12.291,
+    },
+    (50, 30): {
+        "dens_mass_phase": 1010.3,
+        "enth_mass_phase": 201.2,
+        "pressure_sat": 12.159,
+    },
+    (50, 50): {
+        "dens_mass_phase": 1025.1,
+        "enth_mass_phase": 195.9,
+        "pressure_sat": 12.009,
+    },
+    (50, 70): {
+        "dens_mass_phase": 1039.9,
+        "enth_mass_phase": 190.6,
+        "pressure_sat": 11.841,
+    },
+    (50, 90): {
+        "dens_mass_phase": 1054.7,
+        "enth_mass_phase": 185.3,
+        "pressure_sat": 11.656,
+    },
+    (50, 120): {
+        "dens_mass_phase": 1076.9,
+        "enth_mass_phase": 177.4,
+        "pressure_sat": 11.35,
+    },
+    (70, 10): {
+        "dens_mass_phase": 985.1,
+        "enth_mass_phase": 289.3,
+        "pressure_sat": 31.049,
+    },
+    (70, 30): {
+        "dens_mass_phase": 999.8,
+        "enth_mass_phase": 282.0,
+        "pressure_sat": 30.715,
+    },
+    (70, 50): {
+        "dens_mass_phase": 1014.5,
+        "enth_mass_phase": 275.0,
+        "pressure_sat": 30.336,
+    },
+    (70, 70): {
+        "dens_mass_phase": 1029.1,
+        "enth_mass_phase": 268.0,
+        "pressure_sat": 29.912,
+    },
+    (70, 90): {
+        "dens_mass_phase": 1043.8,
+        "enth_mass_phase": 261.1,
+        "pressure_sat": 29.446,
+    },
+    (70, 120): {
+        "dens_mass_phase": 1065.8,
+        "enth_mass_phase": 250.7,
+        "pressure_sat": 28.672,
+    },
+    (90, 10): {
+        "dens_mass_phase": 972.6,
+        "enth_mass_phase": 372.2,
+        "pressure_sat": 69.845,
+    },
+    (90, 30): {
+        "dens_mass_phase": 987.3,
+        "enth_mass_phase": 363.0,
+        "pressure_sat": 69.095,
+    },
+    (90, 50): {
+        "dens_mass_phase": 1002.0,
+        "enth_mass_phase": 354.1,
+        "pressure_sat": 68.241,
+    },
+    (90, 70): {
+        "dens_mass_phase": 1016.8,
+        "enth_mass_phase": 345.3,
+        "pressure_sat": 67.287,
+    },
+    (90, 90): {
+        "dens_mass_phase": 1031.5,
+        "enth_mass_phase": 336.5,
+        "pressure_sat": 66.239,
+    },
+    (90, 120): {
+        "dens_mass_phase": 1053.5,
+        "enth_mass_phase": 323.2,
+        "pressure_sat": 64.499,
+    },
+    (120, 10): {
+        "dens_mass_phase": 950.6,
+        "enth_mass_phase": 497.2,
+        "pressure_sat": 197.736,
+    },
+    (120, 30): {
+        "dens_mass_phase": 965.6,
+        "enth_mass_phase": 484.6,
+        "pressure_sat": 195.613,
+    },
+    (120, 50): {
+        "dens_mass_phase": 980.6,
+        "enth_mass_phase": 472.1,
+        "pressure_sat": 193.195,
+    },
+    (120, 70): {
+        "dens_mass_phase": 995.6,
+        "enth_mass_phase": 459.7,
+        "pressure_sat": 190.496,
+    },
+    (120, 90): {
+        "dens_mass_phase": 1010.6,
+        "enth_mass_phase": 447.1,
+        "pressure_sat": 187.528,
+    },
+    (120, 120): {
+        "dens_mass_phase": 1033.1,
+        "enth_mass_phase": 427.8,
+        "pressure_sat": 182.601,
+    },
+}
+
+temps = [10, 30, 50, 70, 90, 120]
+mass_fracs = [10, 30, 50, 70, 90, 120]
+
+
+@pytest.mark.parametrize("temperature", temps)
+@pytest.mark.parametrize("mass_frac", mass_fracs)
+@pytest.mark.component
+def test_enthalpy_density_pressure_sat_against_sw_data(temperature, mass_frac):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["TDS"],
+        mw_data={"H2O": 0.018, "TDS": 0.01},
+        charge={"TDS": 0},
+        ignore_neutral_charge=True,
+        material_flow_basis=MaterialFlowBasis.mass,
+        density_calculation=DensityCalculation.seawater,
+    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 10, index=("Liq", "TDS")
+    )
+
+    m.fs.stream[0].flow_vol_phase
+    m.fs.stream[0].dens_mass_phase
+    m.fs.stream[0].enth_mass_phase
+    m.fs.stream[0].pressure_sat
+
+    calculate_scaling_factors(m)
+    var_args = {
+        ("flow_vol_phase", "Liq"): 1 * pyunits.liter / pyunits.second,
+        ("mass_frac_phase_comp", ("Liq", "TDS")): mass_frac / 1000,
+        ("temperature", None): 273.15 + temperature,
+        ("pressure", None): 1 * pyunits.bar,
+    }
+    m.fs.stream.calculate_state(var_args, hold_state=True)
+    assert degrees_of_freedom(m) == 0
+    results = solver.solve(m, tee=False)
+    assert_optimal_termination(results)
+
+    assert value(m.fs.stream[0].dens_mass_phase["Liq"]) == pytest.approx(
+        enth_dens_pres_sat_data[(temperature, mass_frac)]["dens_mass_phase"], rel=1e-3
+    )
+    assert value(m.fs.stream[0].enth_mass_phase["Liq"]) * 1e-3 == pytest.approx(
+        enth_dens_pres_sat_data[(temperature, mass_frac)]["enth_mass_phase"], rel=5e-3
+    )
+    assert value(m.fs.stream[0].pressure_sat) * 1e-3 == pytest.approx(
+        enth_dens_pres_sat_data[(temperature, mass_frac)]["pressure_sat"], rel=1e-3
+    )
 
 
 class TestMCASInitializer:
