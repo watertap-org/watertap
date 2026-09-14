@@ -710,8 +710,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         close_fig=False,
         component_labels={},
         tol=1e-5,
-        dx=0,
-        **kwargs,
     ):
         """
         This method creates a bar chart showing the breakdown of the LCOW calculation
@@ -842,6 +840,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         fig, ax = plt.subplots()
         x = -1  # location of bar
 
+        # Starting bottom needs to be at lowest position
         bottom = (
             0
             if all(v / d >= 0 for v in opex.values())
@@ -872,23 +871,18 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 color=color_dict[f],
                 width=0.5,
                 edgecolor="black",
+                zorder=3,
             )
             bottom += v
             bottoms.append(bottom)
-
-            ax.hlines(bottom, x - dx, x + dx, color="k", lw=2)
-            x += dx
-
             lcow_check += v
 
             handles.append(Patch(facecolor=color_dict[f], edgecolor="k"))
             labels.append(label)
 
         for u in sorted_units:
-
             o = opex.get(u, 0) / d
             c = capex.get(u, 0) / d
-
             if u in component_labels.keys():
                 label = component_labels[u]
             else:
@@ -902,11 +896,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 color=color_dict[u],
                 edgecolor="black",
                 width=0.5,
+                zorder=3,
             )
             bottom += abs(o)
-
-            ax.hlines(bottom, x - dx, x + dx, color="k", lw=2)
-            x += dx
 
             ax.bar(
                 [x],
@@ -916,12 +908,10 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 color=color_dict[u],
                 edgecolor="black",
                 width=0.5,
+                zorder=3,
             )
             bottom += abs(c)
             bottoms.append(bottom)
-
-            ax.hlines(bottom, x - dx, x + dx, color="k", lw=2)
-            x += dx
 
             lcow_check += c + o
 
@@ -939,22 +929,19 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         ]
         labels[0:0] = list(hatch_dict.keys())
 
-        ax.set_axisbelow(True)
-        ax.grid(visible=True)
-        ax.legend(handles=handles, labels=labels)
-
-        if dx == 0:
-            ax.set_xlim(-1.5, 0.5)
-
-        ax.set_xticks([])
-
         if bottoms[0] < 0:
-            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=-100)
+            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=1)
             ax.set_ylim(bottoms[0] * 1.1, ax.get_ylim()[1])
 
+        ax.set_axisbelow(True)
+        ax.grid(visible=True, zorder=0)
+        ax.legend(handles=handles, labels=labels)
+        ax.set_xticks([])
+        ax.set_xlim(-1.5, 0.5)
         ax.set_ylabel(
             f"{lcow_name} (\\$/m$^3$)" if not relative else f"Relative {lcow_name} (%)"
         )
+
         fig.tight_layout()
 
         if save_as is not None:
@@ -982,7 +969,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         close_fig=False,
         tol=1e-5,
         component_labels={},
-        **kwargs,
     ):
         """
         This method creates a bar chart showing the breakdown of the specific energy consumption calculation
@@ -1035,6 +1021,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         handles = []
         labels = []
 
+        # For checking SEC calculation
         sec_check = 0
 
         # Need to start at lowest point
@@ -1056,6 +1043,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 color=color_dict[u],
                 edgecolor="black",
                 width=0.5,
+                zorder=3,
             )
             bottom += abs(ec)
             bottoms.append(bottom)
@@ -1069,11 +1057,11 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         labels = labels[::-1]
 
         if bottoms[0] < 0:
-            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=-1)
+            ax.hlines(0, -1.5, 0.5, color="k", lw=2, zorder=1)
             ax.set_ylim(bottoms[0] * 1.1, ax.get_ylim()[1])
 
         ax.set_axisbelow(True)
-        ax.grid(visible=True)
+        ax.grid(visible=True, zorder=0)
         ax.legend(handles=handles, labels=labels)
         ax.set_xlim(-1.5, 0.5)
         ax.set_xticks([])
