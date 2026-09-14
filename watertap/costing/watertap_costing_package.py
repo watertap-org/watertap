@@ -807,6 +807,7 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
         Unit-specific parameters will be added as sub-Blocks on a case-by-case
         basis as a unit of that type is costed.
         """
+        super().build_global_params()
 
         # Costing factors
         self.land_cost_percent_FCI = pyo.Var(
@@ -858,8 +859,6 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
             + self.insurance_and_taxes_percent_FCI,
             doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
         )
-
-        super().build_global_params()
 
     def build_process_costs(self):
         """
