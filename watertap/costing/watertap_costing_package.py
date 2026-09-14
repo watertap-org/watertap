@@ -786,6 +786,8 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 class WaterTAPCostingData(WaterTAPCostingBlockData):
     def build_global_params(self):
 
+        super().build_global_params()
+
         # Build flowsheet level costing components
         # These are the global parameters
         self.total_investment_factor = pyo.Var(
@@ -795,11 +797,9 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
         )
         self.maintenance_labor_chemical_factor = pyo.Var(
             initialize=0.03,
-            doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
-            units=pyo.units.year**-1,
+            doc="Maintenance-labor-chemical factor [fraction of equipment cost/base period]",
+            units=self.base_period**-1,
         )
-
-        super().build_global_params()
 
 
 @declare_process_block_class("WaterTAPCostingDetailed")
