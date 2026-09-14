@@ -84,6 +84,9 @@ the case study yaml file. If the case study yaml file does not contain a ``base_
 it is defined via the ``base_currency_year`` configuration argument  (e.g., ``m.fs.costing = ZeroOrderCosting(base_currency_year=2022)``).
 In either case, the default costing year is 2018, but users can specify a different year between 1990 and 2023.
 
+.. note::
+    Users can specify the ``base_currency`` in the case study yaml either as a string (e.g., ``"USD_2022"``) or as an integer representing the year (e.g., ``2022``).
+
 .. important:: 
     Though users **could** directly set the ``base_currency`` on the flowsheet costing block (e.g., ``m.fs.costing.base_currency = pyunits.USD_2023``), this is discouraged. 
     It is recommended to specify the base currency via the case study yaml or the ``base_currency_year`` configuration argument when instantiating the zero order costing package to ensure consistency 
