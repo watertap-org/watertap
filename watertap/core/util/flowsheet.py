@@ -12,7 +12,15 @@
 
 import pandas as pd
 from pyomo.network import Arc, Port
-from pyomo.environ import Var, Param, Expression, Block, value, units as pyunits
+from pyomo.environ import (
+    Var,
+    Param,
+    Expression,
+    Objective,
+    Block,
+    value,
+    units as pyunits,
+)
 from idaes.core import UnitModelBlockData, FlowsheetBlockData
 
 import idaes.logger as idaeslog
@@ -114,20 +122,38 @@ def export_results_to_csv(
 
     save_as = save_as.replace(".csv", "")
 
-    rd = {"model_component": list(), "value": list(), "units": list()}
-    # pass
+    rd = {
+        "model_component": list(),
+        "value": list(),
+        "units": list(),
+        "component_type": list(),
+    }
+
+    if not all(c in [Var, Param, Expression, Objective] for c in components):
+        raise ValueError(
+            "The only accepted components for component_list are Var, Param, Expression, and Objective"
+        )
+
     for c in blk.component_objects(components, descend_into=descend_into):
         if c.is_indexed():
             for ci in c.values():
                 rd["model_component"].append(ci.name)
+                rd["component_type"].append(
+                    type(ci).__name__.removeprefix("Scalar").removesuffix("Data")
+                )
                 rd["value"].append(value(ci))
                 rd["units"].append(pyunits.get_units(ci))
         else:
             rd["model_component"].append(c.name)
+            rd["component_type"].append(
+                type(c).__name__.removeprefix("Scalar").removesuffix("Data")
+            )
             rd["value"].append(value(c))
             rd["units"].append(pyunits.get_units(c))
 
     df = DataFrame({k: Series(v) for k, v in rd.items()})
+    if df.empty:
+        raise ValueError("Model export failed: no data to export.")
     df.to_csv(f"{save_as}.csv", index=False)
 
     return df
