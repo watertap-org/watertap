@@ -17,6 +17,7 @@ import os
 import re
 import yaml
 import pytest
+from copy import deepcopy
 
 from pyomo.environ import (
     Block,
@@ -512,24 +513,24 @@ def test_watertap_costing_config_zo():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(base_currency_year=2001)
     # check that passing base_currency_year when it is also defined in
-    # yaml will use the base_currency_year from yaml
+    # yaml will use the base_currency from yaml
     assert m.fs.costing.config.base_currency_year == 2001
     assert m.fs.costing.base_currency == pyunits.MUSD_2018
 
-    data = _load_case_study_definition(m.fs.costing)
-    data.pop("base_currency", None)
-    data.pop("base_period", None)
+    data0 = _load_case_study_definition(m.fs.costing)
+    data1 = deepcopy(data0)
+    data1.pop("base_currency", None)
+    data1.pop("base_period", None)
 
-    # Create a temporary case study file without base_currency and base_period
-    temp_path = f"{here}/temp.yaml"
-    with open(temp_path, "w", encoding="utf-8") as tf:
-        yaml.safe_dump(data, tf, sort_keys=False)
-        temp_path = tf.name
+    # Create a temporary case study yaml without base_currency and base_period
+    temp_path1 = f"{here}/no_base_currency_base_period.yaml"
+    with open(temp_path1, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(data1, tf, sort_keys=False)
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(
-        case_study_definition=temp_path, base_currency_year=2000, base_period="day"
+        case_study_definition=temp_path1, base_currency_year=2000, base_period="day"
     )
     m.fs.costing.cost_process()
 
@@ -552,7 +553,7 @@ def test_watertap_costing_config_zo():
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = ZeroOrderCosting(
-            case_study_definition=temp_path, base_currency_year=1492
+            case_study_definition=temp_path1, base_currency_year=1492
         )
 
     # base_period must be a valid pyunit
@@ -563,7 +564,7 @@ def test_watertap_costing_config_zo():
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = ZeroOrderCosting(
-            case_study_definition=temp_path, base_period="cheese"
+            case_study_definition=temp_path1, base_period="cheese"
         )
 
     # if base_period is a valid pyunit, it must be a unit of time
@@ -576,20 +577,97 @@ def test_watertap_costing_config_zo():
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = ZeroOrderCosting(
-            case_study_definition=temp_path, base_period="kilogram"
+            case_study_definition=temp_path1, base_period="kilogram"
         )
 
+    # Check that you can't re-set base_currency or base_period
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = ZeroOrderCosting(
-        case_study_definition=temp_path, base_currency_year=2000, base_period="year"
+        case_study_definition=temp_path1, base_currency_year=2000, base_period="month"
     )
     with pytest.raises(
         ConfigurationError,
         match=re.escape(
-            "base_currency and base_period are already set: base_currency = USD_2000, base_period = a"
+            "base_currency and base_period are already set: base_currency = USD_2000, base_period = month"
         ),
     ):
         m.fs.costing.validate_watertap_costing_config()
 
-    os.remove(temp_path)
+    os.remove(temp_path1)
+
+    data2 = deepcopy(data0)
+    data2.pop("base_currency", None)
+
+    # Test invalid base currency year as string
+    data2["base_currency"] = "FOO_42"
+    temp_path2 = f"{here}/temp_invalid_base_currency_year.yaml"
+
+    with open(temp_path2, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(data2, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape("Base currency year must be between 1990 and 2023, but got 42"),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path2,
+            base_currency_year=2000,
+            base_period="year",
+        )
+
+    # Test invalid base currency year as int
+    data2["base_currency"] = 4200
+    with open(temp_path2, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(data2, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "Base currency year must be between 1990 and 2023, but got 4200"
+        ),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(
+            case_study_definition=temp_path2,
+            base_currency_year=2000,
+            base_period="decade",
+        )
+    os.remove(temp_path2)
+
+    # Test valid base currency but invalid base period unit
+    data3 = deepcopy(data0)
+    data3["base_currency"] = "USD_2020"
+    data3["base_period"] = "sandwich"
+    temp_path3 = f"{here}/temp_invalid_base_period.yaml"
+
+    with open(temp_path3, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(data3, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape("sandwich is not a valid unit."),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path3)
+
+    data3["base_period"] = "kilogram"
+
+    with open(temp_path3, "w", encoding="utf-8") as tf:
+        yaml.safe_dump(data3, tf, sort_keys=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "base_period configuration must be a unit of time but got kilogram [mass]."
+        ),
+    ):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = ZeroOrderCosting(case_study_definition=temp_path3)
+
+    os.remove(temp_path3)
