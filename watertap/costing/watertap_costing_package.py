@@ -619,7 +619,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         self.capital_recovery_factor = pyo.Var(
             initialize=0.1,
             units=self.base_period**-1,
-            doc="Capital annualization factor [fraction of investment cost/year]",
+            doc="Capital annualization factor [fraction of investment cost/base period]",
         )
 
         # used in initialize_build to check for fixed variable consistency

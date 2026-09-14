@@ -547,6 +547,15 @@ def test_watertap_costing_config_zo():
     assert pyunits.get_units(m.fs.costing.salaries_percent_FCI) == pyunits.get_units(
         pyunits.day**-1
     )
+    assert pyunits.get_units(
+        m.fs.costing.maintenance_costs_percent_FCI
+    ) == pyunits.get_units(pyunits.day**-1)
+    assert pyunits.get_units(
+        m.fs.costing.laboratory_fees_percent_FCI
+    ) == pyunits.get_units(pyunits.day**-1)
+    assert pyunits.get_units(
+        m.fs.costing.insurance_and_taxes_percent_FCI
+    ) == pyunits.get_units(pyunits.day**-1)
 
     # Check invalid base_currency_year and base_period configurations
     with pytest.raises(
