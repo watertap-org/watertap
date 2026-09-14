@@ -801,6 +801,9 @@ class WaterTAPCostingData(WaterTAPCostingBlockData):
             units=self.base_period**-1,
         )
 
+        self.fix_all_vars()
+        self.capital_recovery_factor.unfix()
+
 
 @declare_process_block_class("WaterTAPCostingDetailed")
 class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
@@ -862,6 +865,9 @@ class WaterTAPCostingDetailedData(WaterTAPCostingBlockData):
             + self.insurance_and_taxes_percent_FCI,
             doc="Maintenance-labor-chemical factor [fraction of equipment cost/year]",
         )
+
+        self.fix_all_vars()
+        self.capital_recovery_factor.unfix()
 
     def build_process_costs(self):
         """
