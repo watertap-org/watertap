@@ -91,21 +91,22 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             # it is a ZeroOrderCosting block, so we preferentially
             # use the values from the _cs_def if available
             if "base_currency" in self._cs_def:
+                # assume it is in the format "USD_XXXX"
+                base_currency_year = int(str(self._cs_def["base_currency"]).split("_")[-1])
+                self._check_base_currency_year(base_currency_year)
                 self.base_currency = getattr(pyo.units, self._cs_def["base_currency"])
                 _log.debug(
                     f"Setting base_currency from case study yaml: {self.base_currency}"
                 )
             if "base_period" in self._cs_def:
+                self._check_base_period(self._cs_def["base_period"])
                 self.base_period = getattr(pyo.units, self._cs_def["base_period"])
                 _log.debug(
                     f"Setting base_period from case study yaml: {self.base_period}"
                 )
 
         if self.base_currency is None:
-            if not 1990 <= self.config.base_currency_year <= 2023:
-                raise ConfigurationError(
-                    f"Base currency year must be between 1990 and 2023, but got {self.config.base_currency_year}"
-                )
+            self._check_base_currency_year(self.config.base_currency_year)
 
             self.base_currency = getattr(
                 pyo.units, f"USD_{self.config.base_currency_year}"
@@ -113,18 +114,28 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             _log.debug(f"Setting base_currency from config: {self.base_currency}")
 
         if self.base_period is None:
-            try:
-                self.base_period = getattr(pyo.units, self.config.base_period)
-            except AttributeError:
-                raise ConfigurationError(
-                    f"{self.config.base_period} is not a valid unit."
-                )
-
-            if not self.base_period._pint_unit.dimensionality == "[time]":
-                msg = f"base_period configuration must be a unit of time "
-                msg += f"but got {self.config.base_period} {self.base_period._pint_unit.dimensionality}."
-                raise ConfigurationError(msg)
+            self._check_base_period(self.config.base_period)
+            self.base_period = getattr(pyo.units, self.config.base_period)
             _log.debug(f"Setting base_period from config: {self.config.base_period}")
+
+    @staticmethod
+    def _check_base_currency_year(base_currency_year):
+        if not 1990 <= base_currency_year <= 2023:
+            raise ConfigurationError(
+                f"Base currency year must be between 1990 and 2023, but got {base_currency_year}"
+            )
+
+    @staticmethod
+    def _check_base_period(base_period):
+        try:
+            bp = getattr(pyo.units, base_period)
+        except AttributeError:
+            raise ConfigurationError(f"{base_period} is not a valid unit.")
+
+        if not bp._pint_unit.dimensionality == "[time]":
+            msg = f"base_period configuration must be a unit of time "
+            msg += f"but got {base_period} {bp._pint_unit.dimensionality}."
+            raise ConfigurationError(msg)
 
     def add_LCOW(self, flow_rate, name="LCOW"):
         """
