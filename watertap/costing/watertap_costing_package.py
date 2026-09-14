@@ -92,7 +92,9 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             # use the values from the _cs_def if available
             if "base_currency" in self._cs_def:
                 # assume it is in the format "USD_XXXX"
-                base_currency_year = int(str(self._cs_def["base_currency"]).split("_")[-1])
+                base_currency_year = int(
+                    str(self._cs_def["base_currency"]).split("_")[-1]
+                )
                 self._check_base_currency_year(base_currency_year)
                 self.base_currency = getattr(pyo.units, self._cs_def["base_currency"])
                 _log.debug(
