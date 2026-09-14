@@ -91,12 +91,19 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             # it is a ZeroOrderCosting block, so we preferentially
             # use the values from the _cs_def if available
             if "base_currency" in self._cs_def:
-                # assume it is in the format "USD_XXXX"
                 base_currency_year = int(
                     str(self._cs_def["base_currency"]).split("_")[-1]
                 )
                 self._check_base_currency_year(base_currency_year)
-                self.base_currency = getattr(pyo.units, self._cs_def["base_currency"])
+                if isinstance(self._cs_def["base_currency"], int):
+                    # Allow users to pass only the year for the base currency via yaml
+                    self.base_currency = getattr(
+                        pyo.units, f"USD_{self._cs_def['base_currency']}"
+                    )
+                else:
+                    self.base_currency = getattr(
+                        pyo.units, self._cs_def["base_currency"]
+                    )
                 _log.debug(
                     f"Setting base_currency from case study yaml: {self.base_currency}"
                 )
@@ -109,7 +116,6 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         if self.base_currency is None:
             self._check_base_currency_year(self.config.base_currency_year)
-
             self.base_currency = getattr(
                 pyo.units, f"USD_{self.config.base_currency_year}"
             )
