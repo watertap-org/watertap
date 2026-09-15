@@ -12,7 +12,6 @@ jobs:
     name: (util) Remove workflow trigger label
     if: |
       github.event.label.name == 'run-coverage' ||
-      github.event.label.name == 'run-full-ci' ||
       github.event.label.name == 'run-windows-ci'
     runs-on: ubuntu-latest
     steps:
