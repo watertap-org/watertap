@@ -66,6 +66,7 @@ some helper functions that group these core functions together for convenience. 
 4. Add the system- and unit-level costing package with ``add_costing()`` and initialize with ``m.fs.costing.initialize()``:
 
     Because of the nature of the unit models used in this flowsheet (i.e., both zero order and detailed models), ``m.fs.costing = ZeroOrderCosting()`` is used to aggregate costs for both zero-order and detailed models.
+    Costing parameter values are defined in the ``seawater_RO_desalination_global_costing.yaml`` file which is passed to the ``case_study_definition`` argument in the ``ZeroOrderCosting()`` costing package. 
     The costing block for each unit model is ``UnitModelCostingBlock`` that points to a system-level aggregation costing package via the configuration keyword ``flowsheet_costing_block``.
     The system-level costing package has a ``cost_process()`` method that is called to aggregate unit level costs and calculate overall process costs.
     After ``cost_process()`` is called, the ``LCOW`` and ``specific_energy_consumption`` can be calculated. Finally, like the unit models, the costing package is initialized.
