@@ -1,7 +1,7 @@
 .. _steam_heater_0D:
 
-Steam Heater 0D
-===============
+Steam Heater (0D)
+=================
 
 .. code-block:: python
 
@@ -84,12 +84,11 @@ defined by the selected property packages. Common variables of interest include:
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Phase-component mass flow", ":math:`M_{p,j}`", "``flow_mass_phase_comp``", "[p, j]", "\*"
-   "Temperature", ":math:`T`", "``temperature``", "[t]", "\*"
-   "Pressure", ":math:`P`", "``pressure``", "[t]", "\*"
-   "Saturation pressure", ":math:`P_{sat}`", "``pressure_sat``", "[t]", "\*"
+   "Phase-component mass flow", ":math:`M_{p,j}`", "``flow_mass_phase_comp``", "[p, j]", ":math:`\text{kg/s}`"
+   "Temperature", ":math:`T`", "``temperature``", "[t]", ":math:`\text{K}`"
+   "Pressure", ":math:`P`", "``pressure``", "[t]", ":math:`\text{Pa}`"
+   "Saturation pressure", ":math:`P_{sat}`", "``pressure_sat``", "[t]", ":math:`\text{Pa}`"
 
-\*Units depend on the imported property packages.
 
 Equations and Relationships
 ---------------------------
