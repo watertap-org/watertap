@@ -104,27 +104,29 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                     self.base_currency = getattr(
                         pyo.units, self._cs_def["base_currency"]
                     )
-                _log.debug(
+                _log.info(
                     f"Setting base_currency from case study yaml: {self.base_currency}"
                 )
             if "base_period" in self._cs_def:
                 self._check_base_period(self._cs_def["base_period"])
                 self.base_period = getattr(pyo.units, self._cs_def["base_period"])
-                _log.debug(
-                    f"Setting base_period from case study yaml: {self.base_period}"
+                # str representation of year is "a"
+                bs_str = (
+                    "year" if self.base_period == pyo.units.year else self.base_period
                 )
+                _log.info(f"Setting base_period from case study yaml: {bs_str}")
 
         if self.base_currency is None:
             self._check_base_currency_year(self.config.base_currency_year)
             self.base_currency = getattr(
                 pyo.units, f"USD_{self.config.base_currency_year}"
             )
-            _log.debug(f"Setting base_currency from config: {self.base_currency}")
+            _log.info(f"Setting base_currency from config: {self.base_currency}")
 
         if self.base_period is None:
             self._check_base_period(self.config.base_period)
             self.base_period = getattr(pyo.units, self.config.base_period)
-            _log.debug(f"Setting base_period from config: {self.config.base_period}")
+            _log.info(f"Setting base_period from config: {self.config.base_period}")
 
     @staticmethod
     def _check_base_currency_year(base_currency_year):
