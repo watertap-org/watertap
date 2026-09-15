@@ -957,7 +957,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         if close_fig:
             plt.close(fig)
 
-        return fig, ax, capex, opex
+        return fig, ax
 
     def plot_SEC_breakdown(
         self,
