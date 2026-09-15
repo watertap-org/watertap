@@ -1,4 +1,4 @@
-# Optional Windows coverage omitted from normal pull request checks.
+# Additional Windows test jobs omitted from normal pull request checks.
 
 name: Windows CI
 
