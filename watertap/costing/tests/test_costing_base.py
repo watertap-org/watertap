@@ -200,34 +200,32 @@ def test_plot_LCOW_and_SEC_breakdowns():
 
     for rel in [False, True]:
 
-        m.fs.costing.plot_SEC_breakdown(relative=rel)
+        _, _ = m.fs.costing.plot_SEC_breakdown(relative=rel, close_fig=True)
         assert not os.path.isfile(f"{here}/test_sec_breakdown.png")
-        plt.close()
-        m.fs.costing.plot_SEC_breakdown(
-            relative=rel, save_as=f"{here}/test_sec_breakdown"
+
+        _, _ = m.fs.costing.plot_SEC_breakdown(
+            relative=rel, save_as=f"{here}/test_sec_breakdown", close_fig=True
         )
         assert os.path.isfile(f"{here}/test_sec_breakdown.png")
         os.remove(f"{here}/test_sec_breakdown.png")
-        plt.close()
 
         for by in ["aggregate", "component"]:
             for separate_flows in [True, False]:
 
-                m.fs.costing.plot_LCOW_breakdown(
-                    relative=rel, by=by, separate_flows=separate_flows
+                _, _ = m.fs.costing.plot_LCOW_breakdown(
+                    relative=rel, by=by, separate_flows=separate_flows, close_fig=True
                 )
                 assert not os.path.isfile(f"{here}/test_breakdown.png")
-                plt.close()
 
-                m.fs.costing.plot_LCOW_breakdown(
+                _, _ = m.fs.costing.plot_LCOW_breakdown(
                     relative=rel,
                     by=by,
                     separate_flows=separate_flows,
                     save_as=f"{here}/test_breakdown",
+                    close_fig=True,
                 )
                 assert os.path.isfile(f"{here}/test_breakdown.png")
                 os.remove(f"{here}/test_breakdown.png")
-                plt.close()
 
 
 @pytest.mark.component
