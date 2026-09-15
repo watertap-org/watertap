@@ -109,8 +109,8 @@ def test_seawater_RO_desalination_pressure_exchanger():
         muni.outlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
 
-    assert m.fs.costing.base_currency == pyunits.MUSD_2018
-    assert value(m.fs.costing.LCOW) == pytest.approx(8.601e-7, rel=1e-3)
+    assert m.fs.costing.base_currency == pyunits.USD_2018
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.8601, rel=1e-3)
 
 
 @pytest.mark.component
@@ -199,8 +199,8 @@ def test_seawater_RO_desalination_pump_as_turbine():
         muni.outlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
 
-    assert m.fs.costing.base_currency == pyunits.MUSD_2018
-    assert value(m.fs.costing.LCOW) == pytest.approx(9.797e-7, rel=1e-3)
+    assert m.fs.costing.base_currency == pyunits.USD_2018
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.9797, rel=1e-3)
 
 
 @pytest.mark.component
