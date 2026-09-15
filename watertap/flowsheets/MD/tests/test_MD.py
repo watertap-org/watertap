@@ -131,9 +131,9 @@ class TestMDContinuousRecirculation:
             m.fs.permeate.flow_mass_phase_comp[0, "Liq", "TDS"]
         )
         assert pytest.approx(0.5, rel=1e-5) == value(m.fs.overall_recovery)
-        assert pytest.approx(6.169, rel=1e-3) == value(m.fs.recycle_ratio[0])
-        assert pytest.approx(15.44, rel=1e-3) == value(m.fs.costing.LCOW)
-        assert pytest.approx(182.9, rel=1e-3) == value(
+        assert pytest.approx(5.289, rel=1e-3) == value(m.fs.recycle_ratio[0])
+        assert pytest.approx(12.79, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(142.66, rel=1e-3) == value(
             m.fs.costing.specific_energy_consumption
         )
 

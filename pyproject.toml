@@ -42,7 +42,7 @@ dependencies = [
     # primary requirements for unit and property models
     # allow X.Y.Z stable release(s) and X.Y+1.dev0 (i.e. the main branch after X.Y.Z)
     # disallow X.Y+1.0rc0 (i.e. forcing a manual update to this requirement)
-    "idaes-pse>=2.12.0",
+    "idaes-pse>=2.13.0rc0",
     "pyomo>=6.6.1",
     "watertap-solvers",
     "pyyaml",            # watertap.core.wt_database
@@ -63,7 +63,7 @@ testing = [
     # treebeardtech/nbmake#121
     "nbmake!=1.5.1",
     "nbconvert",
-    "idaes-flowsheet-processor>=0.3.0",
+    "idaes-flowsheet-processor>=0.3.2",
 ]
 notebooks = ["jupyter", "ipykernel"]
 oli_api = [
@@ -72,7 +72,7 @@ oli_api = [
 ]
 
 reaktoro = [
-    "reaktoro-pse>=0.4.0",
+    "reaktoro-pse>=0.4.1",
 ]
 
 exposan = [
