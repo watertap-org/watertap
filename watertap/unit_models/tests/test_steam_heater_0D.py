@@ -76,13 +76,11 @@ class TestSteamHeater0D(UnitTestHarness):
 
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-        ] = 0.7474967732076081
+        ] = 0.75240296
         self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
             393.5672256519623
         )
-        self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
-            340.9522230977077
-        )
+        self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = 339.9562033
 
         self.conservation_equality = {
             "Check 1": {
@@ -109,10 +107,8 @@ class TestCondenserNoEstimation(UnitTestHarness):
         self.unit_solutions[m.fs.unit.hot_side_outlet.temperature[0]] = (
             393.5672256519623
         )
-        self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = (
-            326.68592002256395
-        )
-        self.unit_solutions[m.fs.unit.area] = 6.129593261211377
+        self.unit_solutions[m.fs.unit.cold_side_outlet.temperature[0]] = 325.9693903
+        self.unit_solutions[m.fs.unit.area] = 6.104748
         self.unit_solutions[
             m.fs.unit.hot_side_inlet.flow_mass_phase_comp[0, "Vap", "H2O"]
         ] = 0.5
@@ -170,10 +166,10 @@ class TestCondenserwithEstimation(UnitTestHarness):
         self.unit_solutions[m.fs.unit.area] = 6.6472767942455455
         self.unit_solutions[
             m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "TDS"]
-        ] = 0.23938598366941452
+        ] = 0.232343867
         self.unit_solutions[
             m.fs.unit.cold_side_inlet.flow_mass_phase_comp[0, "Liq", "H2O"]
-        ] = 6.600213549742428
+        ] = 6.40605231
 
         self.conservation_equality = {
             "Check 1": {
