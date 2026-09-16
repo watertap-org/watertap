@@ -228,6 +228,9 @@ def test_export_to_csv():
 
     m = swro.main()
 
+    # Test display results
+    m.fs.costing.display_results()
+
     # Test default save location in cwd
     _ = m.fs.costing.export_results_to_csv()
     assert os.path.exists(f"{cwd}/watertap_model_results.csv")
@@ -251,6 +254,6 @@ def test_export_to_csv():
 
     with pytest.raises(
         ValueError,
-        match="The only accepted components for export are Var, Param, Expression, and Objective.",
+        match="The only accepted components for export are Var, Expression, Param, and Objective.",
     ):
         m.fs.costing.export_results_to_csv(components=[pyo.Constraint])
