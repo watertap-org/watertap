@@ -13,6 +13,7 @@
 Tests for general zero-order costing methods
 """
 
+import os
 import pytest
 
 from pyomo.environ import (
@@ -25,6 +26,7 @@ from pyomo.environ import (
     units as pyunits,
     value,
     Var,
+    Constraint,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigValue
@@ -495,3 +497,39 @@ class TestWorkflow:
         assert pytest.approx(0.231345, rel=1e-5) == value(
             model.fs.costing.electricity_intensity
         )
+
+    @pytest.mark.component
+    def test_display_results(self, model):
+        model.fs.costing.display_results()
+
+    @pytest.mark.component
+    def test_export_to_csv(self, model):
+
+        here = os.path.dirname(__file__)
+        cwd = os.getcwd()
+        # Test default save location in cwd
+        _ = model.fs.costing.export_results_to_csv()
+        assert os.path.exists(f"{cwd}/watertap_model_results.csv")
+        os.remove(f"{cwd}/watertap_model_results.csv")
+
+        # Test user-defined save location
+        save_as = f"{here}/test-export.csv"
+        _ = model.fs.costing.export_results_to_csv(save_as=save_as)
+        assert os.path.exists(save_as)
+        os.remove(save_as)
+
+        # Test export with only Vars
+        components = [Var]
+        save_as = f"{here}/test-only-vars.csv"
+        df_only_vars = model.fs.costing.export_results_to_csv(
+            save_as=save_as, components=components
+        )
+        assert df_only_vars["component_type"].eq("Var").all()
+        assert os.path.exists(save_as)
+        os.remove(save_as)
+
+        with pytest.raises(
+            ValueError,
+            match="The only accepted components for export are Var, Expression, Param, and Objective.",
+        ):
+            model.fs.costing.export_results_to_csv(components=[Constraint])
