@@ -37,6 +37,7 @@ Unit Models
    reverse_osmosis_0D
    reverse_osmosis_1D
    steam_ejector
+   steam_heater_0D
    stoichiometric_reactor
    thickener
    translators/index
