@@ -189,6 +189,8 @@ def block_data_to_df(blk_data):
     df = pd.DataFrame(blk_data).T
     df["model_component"] = df.index
     df.reset_index(inplace=True, drop=True)
+    if df.empty:
+        raise ValueError("Model export failed: no data to export.")
     df = df[["model_component", "value", "units", "component_type"]]
 
     return df
@@ -221,9 +223,6 @@ def export_block_data_to_csv(
 
     blk_data = get_block_data(blk, components=components, descend_into=descend_into)
     blk_df = block_data_to_df(blk_data)
-
-    if blk_df.empty:
-        raise ValueError("Model export failed: no data to export.")
 
     blk_df.to_csv(f"{save_as}.csv", index=False)
     _log.info(f"{blk.name} data exported to {save_as}.csv")
