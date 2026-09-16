@@ -92,7 +92,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         metric_label = {
             "LCOW": "Levelized Cost of Water",
             "LCOP": "Levelized Cost of Product",
-        }.get(name, f"Levelized Cost ({name})")
+        }.get(name, f"{name}")
         doc_string = f"{metric_label} based on flow {flow_rate.name}"
 
         self.add_component(
