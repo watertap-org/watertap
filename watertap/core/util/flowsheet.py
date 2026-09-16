@@ -10,7 +10,10 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import os
+from collections import defaultdict
 import pandas as pd
+
 from pyomo.network import Arc, Port
 from pyomo.environ import (
     Var,
@@ -111,49 +114,118 @@ def list_ports(block, descend_into=False):
     return df
 
 
-def export_results_to_csv(
+def get_block_data(
     blk,
-    components=[Var, Param, Expression],
     descend_into=True,
-    save_as="watertap_model_results",
-    **kwargs,
+    components=[Var, Expression, Param],
+    sweep_mode=False,
+    sweep_cols=dict(),
 ):
-    from pandas import DataFrame, Series
+    """
+    Get the data from a block for export and reporting.
 
-    save_as = save_as.replace(".csv", "")
+    Args:
+        blk: The block to extract data from.
+        descend_into (bool): Whether to descend into sub-blocks. Default is True.
+        components (list): List of component types to extract. Default is [Var, Expression, Param].
+        sweep_mode (bool): Whether to return only the "value" entry. Default is False.
+        sweep_cols (dict): Optional user-provided sweep column names and corresponding Pyomo components.
 
-    rd = {
-        "model_component": list(),
-        "value": list(),
-        "units": list(),
-        "component_type": list(),
-    }
+    Returns:
+        dict: A dictionary containing the extracted data where keys are model
+            component names and values are the component values
+    """
 
-    if not all(c in [Var, Param, Expression, Objective] for c in components):
+    if not all(c in [Var, Expression, Param, Objective] for c in components):
         raise ValueError(
-            "The only accepted components for component_list are Var, Param, Expression, and Objective"
+            "The only accepted components for export are Var, Expression, Param, and Objective."
         )
+
+    data = defaultdict(dict)
 
     for c in blk.component_objects(components, descend_into=descend_into):
         if c.is_indexed():
             for ci in c.values():
-                rd["model_component"].append(ci.name)
-                rd["component_type"].append(
+                data[ci.name]["component_type"] = (
                     type(ci).__name__.removeprefix("Scalar").removesuffix("Data")
                 )
-                rd["value"].append(value(ci))
-                rd["units"].append(pyunits.get_units(ci))
+                data[ci.name]["value"] = value(ci)
+                data[ci.name]["units"] = "/".join(
+                    "year" if x == "a" else x
+                    for x in pyunits.get_units(ci).getname().split("/")
+                )
         else:
-            rd["model_component"].append(c.name)
-            rd["component_type"].append(
+            data[c.name]["component_type"] = (
                 type(c).__name__.removeprefix("Scalar").removesuffix("Data")
             )
-            rd["value"].append(value(c))
-            rd["units"].append(pyunits.get_units(c))
+            data[c.name]["value"] = value(c)
+            data[c.name]["units"] = "/".join(
+                "year" if x == "a" else x
+                for x in pyunits.get_units(c).getname().split("/")
+            )
 
-    df = DataFrame({k: Series(v) for k, v in rd.items()})
-    if df.empty:
-        raise ValueError("Model export failed: no data to export.")
-    df.to_csv(f"{save_as}.csv", index=False)
+    if sweep_mode:
+        # Only return "value" entry
+        data = {k: v["value"] for k, v in data.items()}
+        # Add user-provided sweep column names for convenience
+        for k, v in sweep_cols.items():
+            data[k] = value(v)
+
+    return data
+
+
+def block_data_to_df(blk_data):
+    """
+    Convert block data dictionary to a pandas DataFrame.
+
+    Args:
+        blk_data (dict): The block data dictionary obtained from `get_block_data`.
+
+    Returns:
+        df: A DataFrame containing the block data with columns
+            for model component, value, units, and component type.
+    """
+
+    df = pd.DataFrame(blk_data).T
+    df["model_component"] = df.index
+    df.reset_index(inplace=True, drop=True)
+    df = df[["model_component", "value", "units", "component_type"]]
 
     return df
+
+
+def export_block_data_to_csv(
+    blk,
+    save_as=None,
+    **kwargs,
+):
+    """
+    Export block data to a CSV file.
+
+    Args:
+        blk: The Pyomo block containing the model components.
+        save_as (str, optional): The file path to save the csv file.
+            Defaults to "cwd/watertap_model_results.csv".
+        **kwargs: Additional keyword arguments passed to `get_block_data`.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the exported block data.
+    """
+
+    if save_as is None:
+        save_as = f"{os.getcwd()}/watertap_model_results"
+    save_as = save_as.replace(".csv", "")
+
+    components = kwargs.get("components", [Var, Expression, Param])
+    descend_into = kwargs.get("descend_into", True)
+
+    blk_data = get_block_data(blk, components=components, descend_into=descend_into)
+    blk_df = block_data_to_df(blk_data)
+
+    if blk_df.empty:
+        raise ValueError("Model export failed: no data to export.")
+
+    blk_df.to_csv(f"{save_as}.csv", index=False)
+    _log.info(f"{blk.name} data exported to {save_as}.csv")
+
+    return blk_df

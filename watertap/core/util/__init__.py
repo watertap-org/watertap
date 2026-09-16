@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
-from .flowsheet import export_results_to_csv
+from .flowsheet import export_block_data_to_csv, block_data_to_df, get_block_data
 from .initialization import (
     check_solve,
     assert_no_degrees_of_freedom,
