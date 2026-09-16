@@ -77,7 +77,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                                       when omitted, inferred from flow_rate units unless flow_basis is provided
         """
 
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
+        flow_basis, flow_units = self._resolve_flow_basis_and_flow_basis_units(
             flow_rate=flow_rate,
             flow_basis=flow_basis,
             flow_basis_units=flow_basis_units,
@@ -85,7 +85,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         denominator = (
-            pyo.units.convert(flow_rate, to_units=flow_basis_units / self.base_period)
+            pyo.units.convert(flow_rate, to_units=flow_units / self.base_period)
             * self.utilization_factor
         )
 
@@ -105,7 +105,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
 
         c_units = self.base_currency
         t_units = self.base_period
-        levelized_units = c_units / flow_basis_units
+        levelized_units = c_units / flow_units
         direct_capex_lcows = pyo.Expression(
             pyo.Any,
             doc=f"{doc_string} direct capital expenditure by component",
@@ -427,13 +427,13 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             period=pyo.units.hr,
         )
 
-        flow_basis_units = flow_basis_units / pyo.units.hr
+        flow_units = flow_basis_units / pyo.units.hr
 
         self.add_component(
             name,
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
-                / pyo.units.convert(flow_rate, to_units=flow_basis_units),
+                / pyo.units.convert(flow_rate, to_units=flow_units),
                 doc=f"Specific energy consumption based on flow {flow_rate.name}",
             ),
         )
@@ -488,7 +488,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                 (e.g., year, month, day). Defaults to year.
         """
 
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
+        flow_basis, flow_units = self._resolve_flow_basis_and_flow_basis_units(
             flow_rate=flow_rate,
             flow_basis=flow_basis,
             flow_basis_units=flow_basis_units,
@@ -500,7 +500,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             pyo.Expression(
                 expr=pyo.units.convert(
                     flow_rate,
-                    to_units=flow_basis_units / period,
+                    to_units=flow_units / period,
                 )
                 * self.utilization_factor,
                 doc=f"Process throughput based on flow {flow_rate.name} over period {period}",
@@ -536,7 +536,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                                       when omitted, inferred from flow_rate units unless flow_basis is provided
         """
 
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
+        flow_basis, flow_units = self._resolve_flow_basis_and_flow_basis_units(
             flow_rate=flow_rate,
             flow_basis=flow_basis,
             flow_basis_units=flow_basis_units,
@@ -548,9 +548,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
                 * self.electrical_carbon_intensity
-                / pyo.units.convert(
-                    flow_rate, to_units=flow_basis_units / pyo.units.hr
-                ),
+                / pyo.units.convert(flow_rate, to_units=flow_units / pyo.units.hr),
                 doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
@@ -559,7 +557,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
             name,
             flow_rate,
             flow_basis=flow_basis,
-            flow_basis_units=flow_basis_units,
+            flow_basis_units=flow_units,
             period=pyo.units.hr,
             utilization_factor=1.0,
             multiplier=self.electrical_carbon_intensity,
@@ -587,7 +585,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         if period is None:
             period = self.base_period
 
-        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
+        flow_basis, base_flow_units = self._resolve_flow_basis_and_flow_basis_units(
             flow_rate=flow_rate,
             flow_basis=flow_basis,
             flow_basis_units=flow_basis_units,
@@ -595,7 +593,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         )
 
         denominator = (
-            pyo.units.convert(flow_rate, to_units=flow_basis_units / period)
+            pyo.units.convert(flow_rate, to_units=base_flow_units / period)
             * utilization_factor
         )
         f_units = pyo.units.get_units(getattr(self, f"aggregate_flow_{flow_name}"))
@@ -609,7 +607,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         specific_flow_consumption = pyo.Expression(
             pyo.Any,
             doc=f"Specific {flow_name} consumption by component",
-            initialize=0.0 * period * c_units / flow_basis_units,
+            initialize=0.0 * period * c_units / base_flow_units,
         )
         self.add_component(name + "_component", specific_flow_consumption)
 
