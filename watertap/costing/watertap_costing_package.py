@@ -77,7 +77,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
                                       when omitted, inferred from flow_rate units unless flow_basis is provided
         """
 
-        flow_basis, flow_units = self._resolve_flow_basis_and_flow_basis_units(
+        flow_basis, flow_basis_units = self._resolve_flow_basis_and_flow_basis_units(
             flow_rate=flow_rate,
             flow_basis=flow_basis,
             flow_basis_units=flow_basis_units,
