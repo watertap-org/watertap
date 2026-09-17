@@ -100,7 +100,7 @@ class TestFullFlowsheetBioPFalse:
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
         assert len(warnings) == 1
-        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -219,7 +219,7 @@ class TestFullFlowsheetBioPTrue:
         dt = DiagnosticsToolbox(system_frame)
         warnings, _ = dt._collect_numerical_warnings()
         assert len(warnings) == 1
-        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 50 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -251,7 +251,7 @@ class TestFullFlowsheetBioPTrue:
         ) == pytest.approx(0.0011696, rel=1e-3)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(0.002821278, rel=1e-3)
+        ) == pytest.approx(0.002818401, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
             0.37, rel=1e-3
         )
@@ -339,7 +339,7 @@ class TestScaledBioPFalse:
         dt = DiagnosticsToolbox(system_frame)
         warnings, next_steps = dt._collect_numerical_warnings()
         assert len(warnings) == 1
-        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.solver
     @pytest.mark.component
@@ -403,7 +403,7 @@ class TestScaledBioPTrue:
         warnings, next_steps = dt._collect_numerical_warnings()
 
         assert len(warnings) == 1
-        assert "WARNING: 3 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 50 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.solver
     @pytest.mark.component

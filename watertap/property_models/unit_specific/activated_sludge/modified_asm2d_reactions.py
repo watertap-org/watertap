@@ -122,102 +122,6 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         # Stoichiometric Parameters
-        self.i_CSI = pyo.Var(
-            initialize=0.36178,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD S_I, [kg C/kg COD]",
-        )
-        self.i_CSF = pyo.Var(
-            initialize=0.31843,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD S_F, [kg C/kg COD]",
-        )
-        self.i_CSA = pyo.Var(
-            initialize=0.37500,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD S_A, [kg C/kg COD]",
-        )
-        self.i_CXI = pyo.Var(
-            initialize=0.36178,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD X_I, [kg C/kg COD]",
-        )
-        self.i_CXS = pyo.Var(
-            initialize=0.31843,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD X_S, [kg C/kg COD]",
-        )
-        self.i_CXB = pyo.Var(
-            initialize=0.36612,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="C content of inert soluble COD X_B, [kg C/kg COD]",
-        )
-        self.i_NSI = pyo.Var(
-            initialize=0.06003,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="N content of inert soluble COD S_I, [kg N/kg COD]",
-        )
-        self.i_NSF = pyo.Var(
-            initialize=0.03352,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="N content of fermentable substrate, S_F, [kg N/kg COD]",
-        )
-        self.i_NXI = pyo.Var(
-            initialize=0.06003,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="N content of inert particulate COD X_I, [kg N/kg COD]",
-        )
-        self.i_NXS = pyo.Var(
-            initialize=0.03352,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="N content of slowly biodegradable substrate X_S, [kg N/kg COD]",
-        )
-        self.i_NBM = pyo.Var(
-            initialize=0.08615,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="N content of biomass, X_H, X_PAO, X_AUT, [kg N/kg COD]",
-        )
-        self.i_PSF = pyo.Var(
-            initialize=0.00559,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="P content of fermentable substrate, S_F, [kg P/kg COD]",
-        )
-        self.i_PXI = pyo.Var(
-            initialize=0.00649,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="P content of inert particulate COD X_I, [kg P/kg COD]",
-        )
-        self.i_PXS = pyo.Var(
-            initialize=0.00559,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="P content of slowly biodegradable substrate X_S, [kg P/kg COD]",
-        )
-        self.i_PBM = pyo.Var(
-            initialize=0.02154,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="P content of biomass, X_H, X_PAO, X_AUT, [kg P/kg COD]",
-        )
-        self.f_SI = pyo.Var(
-            initialize=0.00,
-            units=pyo.units.dimensionless,
-            domain=pyo.NonNegativeReals,
-            doc="Production of S_I in hydrolysis, [kg COD/kg COD]",
-        )
         self.Y_H = pyo.Var(
             initialize=0.625,
             units=pyo.units.dimensionless,
@@ -272,12 +176,12 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Nitrogen oxide coefficient for N2",
         )
-        self.i_COD_NOx = pyo.Var(
-            initialize=-32 / 7,
-            units=pyo.units.dimensionless,
-            domain=pyo.NegativeReals,
-            doc="COD equivalent of NOx-N reduced (nitrification O2 demand coefficient)",
-        )
+        # self.i_COD_NOx = pyo.Var(
+        #     initialize=-32 / 7,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.NegativeReals,
+        #     doc="COD equivalent of NOx-N reduced (nitrification O2 demand coefficient)",
+        # )
 
         # Kinetic Parameters
         self.K_H = pyo.Var(
@@ -558,21 +462,23 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
         # This is the stoichiometric part the Peterson matrix in dict form
         # Note that reaction stoichiometry is on a mass basis.
 
+        prop = self.config.property_package
+
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic hydrolysis
             ("R1", "Liq", "H2O"): 0,
             ("R1", "Liq", "S_O2"): 0,
-            ("R1", "Liq", "S_F"): 1 - self.f_SI,
+            ("R1", "Liq", "S_F"): 1 - prop.f_SI,
             ("R1", "Liq", "S_A"): 0,
-            ("R1", "Liq", "S_I"): self.f_SI,
+            ("R1", "Liq", "S_I"): prop.f_SI,
             ("R1", "Liq", "S_NH4"): -(
-                (1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS
+                (1 - prop.f_SI) * prop.i_NSF + prop.f_SI * prop.i_NSI - prop.i_NXS
             ),
             ("R1", "Liq", "S_N2"): 0,
             ("R1", "Liq", "S_NO3"): 0,
-            ("R1", "Liq", "S_PO4"): -((1 - self.f_SI) * self.i_PSF - self.i_PXS),
+            ("R1", "Liq", "S_PO4"): -((1 - prop.f_SI) * prop.i_PSF - prop.i_PXS),
             ("R1", "Liq", "S_IC"): -(
-                (1 - self.f_SI) * self.i_CSF + self.f_SI * self.i_CSI - self.i_CXS
+                (1 - prop.f_SI) * prop.i_CSF + prop.f_SI * prop.i_CSI - prop.i_CXS
             ),
             ("R1", "Liq", "X_I"): 0,
             ("R1", "Liq", "X_S"): -1,
@@ -586,17 +492,17 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             # R2: Anoxic hydrolysis
             ("R2", "Liq", "H2O"): 0,
             ("R2", "Liq", "S_O2"): 0,
-            ("R2", "Liq", "S_F"): 1 - self.f_SI,
+            ("R2", "Liq", "S_F"): 1 - prop.f_SI,
             ("R2", "Liq", "S_A"): 0,
-            ("R2", "Liq", "S_I"): self.f_SI,
+            ("R2", "Liq", "S_I"): prop.f_SI,
             ("R2", "Liq", "S_NH4"): -(
-                (1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS
+                (1 - prop.f_SI) * prop.i_NSF + prop.f_SI * prop.i_NSI - prop.i_NXS
             ),
             ("R2", "Liq", "S_N2"): 0,
             ("R2", "Liq", "S_NO3"): 0,
-            ("R2", "Liq", "S_PO4"): -((1 - self.f_SI) * self.i_PSF - self.i_PXS),
+            ("R2", "Liq", "S_PO4"): -((1 - prop.f_SI) * prop.i_PSF - prop.i_PXS),
             ("R2", "Liq", "S_IC"): -(
-                (1 - self.f_SI) * self.i_CSF + self.f_SI * self.i_CSI - self.i_CXS
+                (1 - prop.f_SI) * prop.i_CSF + prop.f_SI * prop.i_CSI - prop.i_CXS
             ),
             ("R2", "Liq", "X_I"): 0,
             ("R2", "Liq", "X_S"): -1,
@@ -610,17 +516,17 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             # R3: Anaerobic hydrolysis
             ("R3", "Liq", "H2O"): 0,
             ("R3", "Liq", "S_O2"): 0,
-            ("R3", "Liq", "S_F"): 1 - self.f_SI,
+            ("R3", "Liq", "S_F"): 1 - prop.f_SI,
             ("R3", "Liq", "S_A"): 0,
-            ("R3", "Liq", "S_I"): self.f_SI,
+            ("R3", "Liq", "S_I"): prop.f_SI,
             ("R3", "Liq", "S_NH4"): -(
-                (1 - self.f_SI) * self.i_NSF + self.f_SI * self.i_NSI - self.i_NXS
+                (1 - prop.f_SI) * prop.i_NSF + prop.f_SI * prop.i_NSI - prop.i_NXS
             ),
             ("R3", "Liq", "S_N2"): 0,
             ("R3", "Liq", "S_NO3"): 0,
-            ("R3", "Liq", "S_PO4"): -((1 - self.f_SI) * self.i_PSF - self.i_PXS),
+            ("R3", "Liq", "S_PO4"): -((1 - prop.f_SI) * prop.i_PSF - prop.i_PXS),
             ("R3", "Liq", "S_IC"): -(
-                (1 - self.f_SI) * self.i_CSF + self.f_SI * self.i_CSI - self.i_CXS
+                (1 - prop.f_SI) * prop.i_CSF + prop.f_SI * prop.i_CSI - prop.i_CXS
             ),
             ("R3", "Liq", "X_I"): 0,
             ("R3", "Liq", "X_S"): -1,
@@ -637,11 +543,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R4", "Liq", "S_F"): -1 / self.Y_H,
             ("R4", "Liq", "S_A"): 0,
             ("R4", "Liq", "S_I"): 0,
-            ("R4", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H),
+            ("R4", "Liq", "S_NH4"): -(prop.i_NBM - prop.i_NSF / self.Y_H),
             ("R4", "Liq", "S_N2"): 0,
             ("R4", "Liq", "S_NO3"): 0,
-            ("R4", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H),
-            ("R4", "Liq", "S_IC"): -(self.i_CXB - self.i_CSF / self.Y_H),
+            ("R4", "Liq", "S_PO4"): -(prop.i_PBM - prop.i_PSF / self.Y_H),
+            ("R4", "Liq", "S_IC"): -(prop.i_CXB - prop.i_CSF / self.Y_H),
             ("R4", "Liq", "X_I"): 0,
             ("R4", "Liq", "X_S"): 0,
             ("R4", "Liq", "X_H"): 1,
@@ -657,11 +563,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R5", "Liq", "S_F"): 0,
             ("R5", "Liq", "S_A"): -1 / self.Y_H,
             ("R5", "Liq", "S_I"): 0,
-            ("R5", "Liq", "S_NH4"): -self.i_NBM,
+            ("R5", "Liq", "S_NH4"): -prop.i_NBM,
             ("R5", "Liq", "S_N2"): 0,
             ("R5", "Liq", "S_NO3"): 0,
-            ("R5", "Liq", "S_PO4"): -self.i_PBM,
-            ("R5", "Liq", "S_IC"): -(self.i_CXB - self.i_CSA / self.Y_H),
+            ("R5", "Liq", "S_PO4"): -prop.i_PBM,
+            ("R5", "Liq", "S_IC"): -(prop.i_CXB - prop.i_CSA / self.Y_H),
             ("R5", "Liq", "X_I"): 0,
             ("R5", "Liq", "X_S"): 0,
             ("R5", "Liq", "X_H"): 1,
@@ -677,11 +583,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R6", "Liq", "S_F"): -1 / self.Y_H,
             ("R6", "Liq", "S_A"): 0,
             ("R6", "Liq", "S_I"): 0,
-            ("R6", "Liq", "S_NH4"): -(self.i_NBM - self.i_NSF / self.Y_H),
+            ("R6", "Liq", "S_NH4"): -(prop.i_NBM - prop.i_NSF / self.Y_H),
             ("R6", "Liq", "S_N2"): (1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
             ("R6", "Liq", "S_NO3"): -(1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
-            ("R6", "Liq", "S_PO4"): -(self.i_PBM - self.i_PSF / self.Y_H),
-            ("R6", "Liq", "S_IC"): -(self.i_CXB - self.i_CSF / self.Y_H),
+            ("R6", "Liq", "S_PO4"): -(prop.i_PBM - prop.i_PSF / self.Y_H),
+            ("R6", "Liq", "S_IC"): -(prop.i_CXB - prop.i_CSF / self.Y_H),
             ("R6", "Liq", "X_I"): 0,
             ("R6", "Liq", "X_S"): 0,
             ("R6", "Liq", "X_H"): 1,
@@ -697,11 +603,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R7", "Liq", "S_F"): 0,
             ("R7", "Liq", "S_A"): -1 / self.Y_H,
             ("R7", "Liq", "S_I"): 0,
-            ("R7", "Liq", "S_NH4"): -self.i_NBM,
+            ("R7", "Liq", "S_NH4"): -prop.i_NBM,
             ("R7", "Liq", "S_N2"): (1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
             ("R7", "Liq", "S_NO3"): -(1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
-            ("R7", "Liq", "S_PO4"): -self.i_PBM,
-            ("R7", "Liq", "S_IC"): -(self.i_CXB - self.i_CSA / self.Y_H),
+            ("R7", "Liq", "S_PO4"): -prop.i_PBM,
+            ("R7", "Liq", "S_IC"): -(prop.i_CXB - prop.i_CSA / self.Y_H),
             ("R7", "Liq", "X_I"): 0,
             ("R7", "Liq", "X_S"): 0,
             ("R7", "Liq", "X_H"): 1,
@@ -717,11 +623,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R8", "Liq", "S_F"): -1,
             ("R8", "Liq", "S_A"): 1,
             ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_NH4"): self.i_NSF,
+            ("R8", "Liq", "S_NH4"): prop.i_NSF,
             ("R8", "Liq", "S_N2"): 0,
             ("R8", "Liq", "S_NO3"): 0,
-            ("R8", "Liq", "S_PO4"): -(-self.i_PSF),
-            ("R8", "Liq", "S_IC"): -(self.i_CSA - self.i_CSF),
+            ("R8", "Liq", "S_PO4"): -(-prop.i_PSF),
+            ("R8", "Liq", "S_IC"): -(prop.i_CSA - prop.i_CSF),
             ("R8", "Liq", "X_I"): 0,
             ("R8", "Liq", "X_S"): 0,
             ("R8", "Liq", "X_H"): 0,
@@ -737,16 +643,16 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R9", "Liq", "S_F"): 0,
             ("R9", "Liq", "S_A"): 0,
             ("R9", "Liq", "S_I"): 0,
-            ("R9", "Liq", "S_NH4"): self.i_NBM
-            - self.f_XI * self.i_NXI
-            - (1 - self.f_XI) * self.i_NXS,
+            ("R9", "Liq", "S_NH4"): prop.i_NBM
+            - self.f_XI * prop.i_NXI
+            - (1 - self.f_XI) * prop.i_NXS,
             ("R9", "Liq", "S_N2"): 0,
             ("R9", "Liq", "S_NO3"): 0,
             ("R9", "Liq", "S_PO4"): -(
-                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
+                self.f_XI * prop.i_PXI + (1 - self.f_XI) * prop.i_PXS - prop.i_PBM
             ),
             ("R9", "Liq", "S_IC"): -(
-                self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CXB
+                self.f_XI * prop.i_CXI + (1 - self.f_XI) * prop.i_CXS - prop.i_CXB
             ),
             ("R9", "Liq", "X_I"): self.f_XI,
             ("R9", "Liq", "X_S"): 1 - self.f_XI,
@@ -767,7 +673,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "S_N2"): 0,
             ("R10", "Liq", "S_NO3"): 0,
             ("R10", "Liq", "S_PO4"): -(-self.Y_PO4),
-            ("R10", "Liq", "S_IC"): -(0.3 - self.i_CSA),
+            ("R10", "Liq", "S_IC"): -(0.3 - prop.i_CSA),
             ("R10", "Liq", "X_I"): 0,
             ("R10", "Liq", "X_S"): 0,
             ("R10", "Liq", "X_H"): 0,
@@ -823,11 +729,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "S_F"): 0,
             ("R13", "Liq", "S_A"): 0,
             ("R13", "Liq", "S_I"): 0,
-            ("R13", "Liq", "S_NH4"): -self.i_NBM,
+            ("R13", "Liq", "S_NH4"): -prop.i_NBM,
             ("R13", "Liq", "S_N2"): 0,
             ("R13", "Liq", "S_NO3"): 0,
-            ("R13", "Liq", "S_PO4"): -self.i_PBM,
-            ("R13", "Liq", "S_IC"): -(self.i_CXB - 0.3 / self.Y_PAO),
+            ("R13", "Liq", "S_PO4"): -prop.i_PBM,
+            ("R13", "Liq", "S_IC"): -(prop.i_CXB - 0.3 / self.Y_PAO),
             ("R13", "Liq", "X_I"): 0,
             ("R13", "Liq", "X_S"): 0,
             ("R13", "Liq", "X_H"): 0,
@@ -843,11 +749,11 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "S_F"): 0,
             ("R14", "Liq", "S_A"): 0,
             ("R14", "Liq", "S_I"): 0,
-            ("R14", "Liq", "S_NH4"): -self.i_NBM,
+            ("R14", "Liq", "S_NH4"): -prop.i_NBM,
             ("R14", "Liq", "S_N2"): (1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
             ("R14", "Liq", "S_NO3"): -(1 - self.Y_H) / (self.i_NOx_N2 * self.Y_H),
-            ("R14", "Liq", "S_PO4"): -self.i_PBM,
-            ("R14", "Liq", "S_IC"): -(self.i_CXB - 0.3 / self.Y_PAO),
+            ("R14", "Liq", "S_PO4"): -prop.i_PBM,
+            ("R14", "Liq", "S_IC"): -(prop.i_CXB - 0.3 / self.Y_PAO),
             ("R14", "Liq", "X_I"): 0,
             ("R14", "Liq", "X_S"): 0,
             ("R14", "Liq", "X_H"): 0,
@@ -863,16 +769,16 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R15", "Liq", "S_F"): 0,
             ("R15", "Liq", "S_A"): 0,
             ("R15", "Liq", "S_I"): 0,
-            ("R15", "Liq", "S_NH4"): self.i_NBM
-            - self.f_XI * self.i_NXI
-            - (1 - self.f_XI) * self.i_NXS,
+            ("R15", "Liq", "S_NH4"): prop.i_NBM
+            - self.f_XI * prop.i_NXI
+            - (1 - self.f_XI) * prop.i_NXS,
             ("R15", "Liq", "S_N2"): 0,
             ("R15", "Liq", "S_NO3"): 0,
             ("R15", "Liq", "S_PO4"): -(
-                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
+                self.f_XI * prop.i_PXI + (1 - self.f_XI) * prop.i_PXS - prop.i_PBM
             ),
             ("R15", "Liq", "S_IC"): -(
-                self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CXB
+                self.f_XI * prop.i_CXI + (1 - self.f_XI) * prop.i_CXS - prop.i_CXB
             ),
             ("R15", "Liq", "X_I"): self.f_XI,
             ("R15", "Liq", "X_S"): 1 - self.f_XI,
@@ -913,7 +819,7 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "S_N2"): 0,
             ("R17", "Liq", "S_NO3"): 0,
             ("R17", "Liq", "S_PO4"): 0,
-            ("R17", "Liq", "S_IC"): -(self.i_CSA - 0.3),
+            ("R17", "Liq", "S_IC"): -(prop.i_CSA - 0.3),
             ("R17", "Liq", "X_I"): 0,
             ("R17", "Liq", "X_S"): 0,
             ("R17", "Liq", "X_H"): 0,
@@ -925,15 +831,15 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "S_Mg"): 0,
             # R18: Aerobic growth of X_AUT
             ("R18", "Liq", "H2O"): 0,
-            ("R18", "Liq", "S_O2"): -(-self.i_COD_NOx - self.Y_A) / self.Y_A,
+            ("R18", "Liq", "S_O2"): -(-prop.i_COD_NOx - self.Y_A) / self.Y_A,
             ("R18", "Liq", "S_F"): 0,
             ("R18", "Liq", "S_A"): 0,
             ("R18", "Liq", "S_I"): 0,
-            ("R18", "Liq", "S_NH4"): -1 / self.Y_A - self.i_NBM,
+            ("R18", "Liq", "S_NH4"): -1 / self.Y_A - prop.i_NBM,
             ("R18", "Liq", "S_N2"): 0,
             ("R18", "Liq", "S_NO3"): 1 / self.Y_A,
-            ("R18", "Liq", "S_PO4"): -self.i_PBM,
-            ("R18", "Liq", "S_IC"): -self.i_CXB,
+            ("R18", "Liq", "S_PO4"): -prop.i_PBM,
+            ("R18", "Liq", "S_IC"): -prop.i_CXB,
             ("R18", "Liq", "X_I"): 0,
             ("R18", "Liq", "X_S"): 0,
             ("R18", "Liq", "X_H"): 0,
@@ -949,16 +855,16 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             ("R19", "Liq", "S_F"): 0,
             ("R19", "Liq", "S_A"): 0,
             ("R19", "Liq", "S_I"): 0,
-            ("R19", "Liq", "S_NH4"): self.i_NBM
-            - self.f_XI * self.i_NXI
-            - (1 - self.f_XI) * self.i_NXS,
+            ("R19", "Liq", "S_NH4"): prop.i_NBM
+            - self.f_XI * prop.i_NXI
+            - (1 - self.f_XI) * prop.i_NXS,
             ("R19", "Liq", "S_N2"): 0,
             ("R19", "Liq", "S_NO3"): 0,
             ("R19", "Liq", "S_PO4"): -(
-                self.f_XI * self.i_PXI + (1 - self.f_XI) * self.i_PXS - self.i_PBM
+                self.f_XI * prop.i_PXI + (1 - self.f_XI) * prop.i_PXS - prop.i_PBM
             ),
             ("R19", "Liq", "S_IC"): -(
-                self.f_XI * self.i_CXI + (1 - self.f_XI) * self.i_CXS - self.i_CXB
+                self.f_XI * prop.i_CXI + (1 - self.f_XI) * prop.i_CXS - prop.i_CXB
             ),
             ("R19", "Liq", "X_I"): self.f_XI,
             ("R19", "Liq", "X_S"): 1 - self.f_XI,

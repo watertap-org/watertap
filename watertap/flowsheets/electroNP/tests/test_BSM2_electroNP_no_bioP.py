@@ -80,16 +80,16 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_PO4"]
-        ) == pytest.approx(2.99805, rel=1e-4)
+        ) == pytest.approx(2.998796, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_K"]
-        ) == pytest.approx(1.01762, rel=1e-4)
+        ) == pytest.approx(1.0177868, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_Mg"]
-        ) == pytest.approx(0.66145, rel=1e-4)
+        ) == pytest.approx(0.6616075, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "S_IC"]
-        ) == pytest.approx(1.22312, rel=1e-4)
+        ) == pytest.approx(1.223134, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_AUT"]
         ) == pytest.approx(0, abs=1e-4)
@@ -98,7 +98,7 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_I"]
-        ) == pytest.approx(0.321096, rel=1e-4)
+        ) == pytest.approx(0.321073, rel=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_PAO"]
         ) == pytest.approx(0, abs=1e-4)
@@ -110,4 +110,4 @@ class TestElectroNPFlowsheet:
         ) == pytest.approx(0, abs=1e-4)
         assert value(
             model.fs.electroNP.treated.conc_mass_comp[0, "X_S"]
-        ) == pytest.approx(0.065604, rel=1e-4)
+        ) == pytest.approx(0.065616, rel=1e-4)
