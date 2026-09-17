@@ -704,8 +704,7 @@ class WaterTAPCostingBlockData(FlowsheetCostingBlockData):
         """
         Export the contents of the costing block to a csv.
         Args:
-            save_as (str, optional): The file path to save the csv file.
-                Defaults to "cwd/watertap_model_results.csv".
+            save_as (str, optional): The file path to save the csv file. Default is "cwd/watertap_model_results.csv".
             **kwargs: Additional keyword arguments passed to `export_block_data_to_csv`.
         Returns:
             pd.DataFrame: A DataFrame containing the exported costing data.
