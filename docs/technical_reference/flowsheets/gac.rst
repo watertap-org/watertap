@@ -89,10 +89,6 @@ The following modifications to the GAC flowsheet are planned for development:
     * Add surrogate models to lessen the need for numerous empirical parameters
     * Improve auto-scaling of model for ease of use
 
-Code Documentation
-------------------
-
-* :mod:`watertap.examples.flowsheets.gac`
 
 References
 ----------

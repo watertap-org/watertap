@@ -131,10 +131,6 @@ The following modifications to the IX flowsheet are planned for development:
     * Add examples of the Freundlich (Clark) ion exchange model.
     * Improve auto-scaling of model for ease of use
 
-Code Documentation
-------------------
-
-* :mod:`watertap.examples.flowsheets.ion_exchange`
 
 References
 ----------

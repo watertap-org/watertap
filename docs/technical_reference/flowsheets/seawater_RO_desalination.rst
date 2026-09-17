@@ -222,11 +222,6 @@ including the different build options for ``erd_type``:
    |
    :sup:`3`  UV = Ultraviolet; AOP = Advanced oxidation process
 
-Code Documentation
-------------------
-
-* :mod:`watertap.examples.flowsheets.case_studies.seawater_RO_desalination`
-
 References
 ----------
 
