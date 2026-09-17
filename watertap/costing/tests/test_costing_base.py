@@ -11,10 +11,7 @@
 #################################################################################
 
 import os
-
 import pytest
-
-import matplotlib.pyplot as plt
 
 from pyomo.util.check_units import assert_units_consistent
 import pyomo.environ as pyo
