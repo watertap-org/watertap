@@ -326,14 +326,14 @@ class TestMVC:
             32448.24, rel=1e-2
         )
         assert value(m.fs.hx_brine.area) == pytest.approx(173.99, rel=1e-2)
-        assert value(m.fs.hx_distillate.area) == pytest.approx(206.31, rel=1e-2)
+        assert value(m.fs.hx_distillate.area) == pytest.approx(199.229, rel=1e-2)
         assert value(m.fs.compressor.pressure_ratio) == pytest.approx(1.61, rel=1e-2)
-        assert value(m.fs.evaporator.area) == pytest.approx(777.37, rel=1e-2)
-        assert value(m.fs.evaporator.lmtd) == pytest.approx(22.59, rel=1e-2)
+        assert value(m.fs.evaporator.area) == pytest.approx(789.135, rel=1e-2)
+        assert value(m.fs.evaporator.lmtd) == pytest.approx(22.247, rel=1e-2)
 
         # Check system metrics
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            22.36, rel=1e-2
+            22.12, rel=1e-2
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(4.52, rel=1e-2)
 

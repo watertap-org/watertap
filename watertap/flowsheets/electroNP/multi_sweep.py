@@ -41,7 +41,7 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, output_filenam
     if output_filename is None:
         output_filename = "sensitivity_" + str(case_num) + ".csv"
 
-    m = electroNP_flowsheet.build_flowsheet()[0]
+    m = electroNP_flowsheet.main()[0]
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
 

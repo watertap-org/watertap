@@ -66,7 +66,6 @@ from watertap.unit_models.zero_order import (
     LandfillZO,
 )
 from watertap.costing.zero_order_costing import ZeroOrderCosting
-from watertap.costing import WaterTAPCosting
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -85,7 +84,7 @@ def main(erd_type="pressure_exchanger", RO_1D=False):
     display_results(m)
 
     add_costing(m)
-    initialize_costing(m)
+    m.fs.costing.initialize()
     assert_degrees_of_freedom(m, 0)
 
     solve(m, tee=True, checkpoint=f" solve {erd_type} flowsheet with costing")
@@ -597,79 +596,61 @@ def add_costing(m):
     desal = m.fs.desalination
     psttrt = m.fs.posttreatment
 
-    # Add costing package for zero-order units
-    m.fs.zo_costing = ZeroOrderCosting()
-    m.fs.ro_costing = WaterTAPCosting()
-
+    # Add costing package
+    m.fs.costing = ZeroOrderCosting()
+    m.fs.costing.base_currency = pyunits.USD_2023
     # Add costing to zero order units
     # Pre-treatment units
     # This really looks like it should be a feed block in its own right
-    # prtrt.intake.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
+    # prtrt.intake.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     prtrt.ferric_chloride_addition.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     prtrt.chlorination.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     prtrt.static_mixer.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     prtrt.storage_tank_1.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     prtrt.media_filtration.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     prtrt.backwash_handling.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     prtrt.anti_scalant_addition.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     prtrt.cartridge_filtration.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
 
     # RO Train
     # RO equipment is costed using more detailed costing package
     desal.P1.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.ro_costing,
-        costing_method_arguments={"cost_electricity_flow": False},
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"cost_electricity_flow": True},
     )
-    desal.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
+    desal.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     if m.erd_type == "pressure_exchanger":
-        # desal.S1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
-        desal.M1.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.ro_costing
-        )
-        desal.PXR.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.ro_costing
-        )
+        # NOTE: Costing for the S1 splitter is neglected. Keeping the commented line below for awareness.
+        # desal.S1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        desal.M1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        desal.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         desal.P2.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.ro_costing,
-            costing_method_arguments={"cost_electricity_flow": False},
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"cost_electricity_flow": True},
         )
     elif m.erd_type == "pump_as_turbine":
         pass
-        # desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
-    else:
-        raise ConfigurationError(
-            f"erd_type was {m.erd_type}, costing only implemented "
-            "for pressure_exchanger or pump_as_turbine"
-        )
-
-    # For non-zero order unit operations, we need to register costed flows
-    # separately.
-    # However, to keep costs consistent, we will register these with the ZO
-    # Costing package
-    m.fs.zo_costing.cost_flow(desal.P1.work_mechanical[0], "electricity")
-    if m.erd_type == "pressure_exchanger":
-        m.fs.zo_costing.cost_flow(desal.P2.work_mechanical[0], "electricity")
-    elif m.erd_type == "pump_as_turbine":
-        pass
-        # m.fs.zo_costing.cost_flow(
-        #     desal.ERD.work_mechanical[0], "electricity")
+        # NOTE: Costing for the ERD is neglected. Keeping the commented line below for awareness.
+        # This change was applied here: https://github.com/watertap-org/watertap/commit/7180306a61755e6bc640f6b18f03a572f6de3850
+        # TODO: There is a need to verify if the costing for the ERD should be reincorporated with the line below, or if it is somehow accounted for already and uncommenting the line below would lead to double counting.
+        # desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         raise ConfigurationError(
             f"erd_type was {m.erd_type}, costing only implemented "
@@ -678,123 +659,57 @@ def add_costing(m):
 
     # Post-treatment units
     psttrt.storage_tank_2.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
-    psttrt.uv_aop.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
-    )
+    psttrt.uv_aop.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     psttrt.co2_addition.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     psttrt.lime_addition.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
     psttrt.storage_tank_3.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
+        flowsheet_costing_block=m.fs.costing
     )
 
     # Product and disposal
-    m.fs.municipal.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
-    )
-    m.fs.landfill.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.zo_costing
-    )
+    m.fs.municipal.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.landfill.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Aggregate unit level costs and calculate overall process costs
-    m.fs.zo_costing.cost_process()
-    m.fs.ro_costing.cost_process()
-
-    # Combine results from costing packages and calculate overall metrics
-    @m.Expression()
-    def total_capital_cost(b):
-        return (
-            pyunits.convert(
-                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018
-            )
-            + m.fs.ro_costing.total_capital_cost
-        )
-
-    @m.Expression()
-    def total_operating_cost(b):
-        return (
-            pyunits.convert(
-                m.fs.zo_costing.total_fixed_operating_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
-            )
-            + pyunits.convert(
-                m.fs.zo_costing.total_variable_operating_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
-            )
-            + m.fs.ro_costing.total_operating_cost
-        )
-
-    @m.Expression()
-    def LCOW(b):
-        return (
-            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
-            + b.total_operating_cost
-        ) / (
-            pyunits.convert(
-                b.fs.municipal.properties[0].flow_vol,
-                to_units=pyunits.m**3 / pyunits.year,
-            )
-            * b.fs.zo_costing.utilization_factor
-        )
-
-    @m.Expression()
-    def SEC(b):
-        # Note: there is no electricity flow in ro_costing
-        return pyunits.convert(
-            b.fs.zo_costing.aggregate_flow_electricity
-            / b.fs.municipal.properties[0].flow_vol,
-            to_units=pyunits.kWh / pyunits.m**3,
-        )
-
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.municipal.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.municipal.properties[0].flow_vol)
     assert_units_consistent(m)
 
 
-def initialize_costing(m):
-    m.fs.zo_costing.initialize()
-    m.fs.ro_costing.initialize()
-
-
 def display_costing(m):
-    # m.fs.zo_costing.display()
-    # m.fs.ro_costing.display()
-
-    m.total_capital_cost.display()
-    m.total_operating_cost.display()
-    m.LCOW.display()
-    m.SEC.display()
+    m.fs.costing.total_capital_cost.display()
+    m.fs.costing.total_operating_cost.display()
+    m.fs.costing.LCOW.display()
+    m.fs.costing.specific_energy_consumption.display()
 
     print("\nUnit Capital Costs\n")
-    for u in m.fs.zo_costing._registered_unit_costing:
+    for u in m.fs.costing._registered_unit_costing:
         print(
             u.name,
             " :   ",
-            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
-        )
-    for u in m.fs.ro_costing._registered_unit_costing:
-        print(
-            u.name,
-            " :   ",
-            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
+            value(pyunits.convert(u.capital_cost, to_units=m.fs.costing.base_currency)),
         )
 
     print("\nUtility Costs\n")
-    for f in m.fs.zo_costing.used_flows:
+    for f in m.fs.costing.used_flows:
         print(
             f,
             " :   ",
             value(
                 pyunits.convert(
-                    m.fs.zo_costing.aggregate_flow_costs[f],
-                    to_units=pyunits.USD_2018 / pyunits.year,
+                    m.fs.costing.aggregate_flow_costs[f],
+                    to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
                 )
             ),
         )
 
 
 if __name__ == "__main__":
-    m = main(erd_type="pressure_exchanger", RO_1D=False)
+    m = main(erd_type="pump_as_turbine", RO_1D=False)

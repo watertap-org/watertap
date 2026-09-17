@@ -116,13 +116,13 @@ def initialize(m, solver=None):
 
     # initialize evaporator
     m.fs.evaporator.initialize(
-        delta_temperature_in=30, delta_temperature_out=5, outlvl=idaeslog.INFO_HIGH
+        delta_temperature_in=30, delta_temperature_out=5, outlvl=idaeslog.WARNING
     )
 
     # initialize compressor
     propagate_state(m.fs.s01)
 
-    m.fs.compressor.initialize(outlvl=idaeslog.DEBUG)
+    m.fs.compressor.initialize(outlvl=idaeslog.WARNING)
 
     # initialize condenser
     propagate_state(m.fs.s02)
@@ -148,22 +148,18 @@ def test_mvc():
     assert_optimal_termination(results)
     brine_blk = m.fs.evaporator.properties_brine[0]
 
-    m.fs.compressor.report()
-    m.fs.condenser.report()
-    m.fs.evaporator.display()
-
     # evaporator values
     assert brine_blk.pressure.value == pytest.approx(1.9849e4, rel=1e-3)
-    assert m.fs.evaporator.lmtd.value == pytest.approx(26.1769036038, rel=1e-3)
+    assert m.fs.evaporator.lmtd.value == pytest.approx(26.73304769687, rel=1e-3)
     assert m.fs.evaporator.heat_transfer.value == pytest.approx(
-        10470761.441558, rel=1e-3
+        10693219.0787489, rel=1e-3
     )
 
     # compressor values
     compressed_blk = m.fs.compressor.control_volume.properties_out[0]
 
     assert m.fs.compressor.control_volume.work[0].value == pytest.approx(
-        500376.0409289, rel=1e-3
+        511322.1880571, rel=1e-3
     )
 
     assert compressed_blk.pressure.value == pytest.approx(39723.543091, rel=1e-3)
@@ -172,6 +168,6 @@ def test_mvc():
     # condenser values
     condensed_blk = m.fs.condenser.control_volume.properties_out[0]
     assert m.fs.condenser.control_volume.heat[0].value == pytest.approx(
-        -10470761.441558, rel=1e-3
+        -10693219.0787489, rel=1e-3
     )
-    assert condensed_blk.temperature.value == pytest.approx(339.13470452, rel=1e-3)
+    assert condensed_blk.temperature.value == pytest.approx(339.49583456, rel=1e-3)

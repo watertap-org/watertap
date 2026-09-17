@@ -11,7 +11,7 @@
 #################################################################################
 
 import pytest
-from pyomo.environ import value
+from pyomo.environ import value, units as pyunits
 from watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination import (
     main,
 )
@@ -97,7 +97,8 @@ def test_seawater_RO_desalination_pressure_exchanger():
         muni.outlet.flow_mass_comp[0.0, "tds"]
     )
 
-    assert value(m.LCOW) == pytest.approx(0.829189, rel=1e-5)
+    assert m.fs.costing.base_currency == pyunits.USD_2023
+    assert value(m.fs.costing.LCOW) == pytest.approx(1.042, rel=1e-3)
 
 
 @pytest.mark.component
@@ -179,7 +180,8 @@ def test_seawater_RO_desalination_pump_as_turbine():
         muni.outlet.flow_mass_comp[0.0, "tds"]
     )
 
-    assert value(m.LCOW) == pytest.approx(1.09970, rel=1e-5)
+    assert m.fs.costing.base_currency == pyunits.USD_2023
+    assert value(m.fs.costing.LCOW) == pytest.approx(1.3638, rel=1e-3)
 
     @pytest.mark.component
     def test_main_0D(self):

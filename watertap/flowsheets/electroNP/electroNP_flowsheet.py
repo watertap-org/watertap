@@ -22,10 +22,14 @@ from pyomo.network import Arc
 from idaes.core import (
     FlowsheetBlock,
     UnitModelCostingBlock,
+    UnitModelBlockData,
+)
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
 )
 from watertap.core.solvers import get_solver
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 from watertap.unit_models.anaerobic_digester import AD
 from watertap.property_models.unit_specific.anaerobic_digestion.modified_adm1_properties import (
     ModifiedADM1ParameterBlock,
@@ -56,6 +60,16 @@ from watertap.costing import WaterTAPCosting
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+def main():
+    m = build_flowsheet()
+    set_operating_conditions(m)
+    set_scaling(m)
+    initialize_system(m)
+    results = solve(m)
+
+    return m, results
 
 
 def build_flowsheet():
@@ -104,6 +118,10 @@ def build_flowsheet():
     )
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
+    return m
+
+
+def set_operating_conditions(m):
     # Feed conditions based on mass balance in Flores-Alsina, where 0 terms are expressed as 1e-9
     m.fs.AD.inlet.flow_vol[0].fix(
         170 * units.m**3 / units.day
@@ -153,31 +171,56 @@ def build_flowsheet():
     m.fs.electroNP.energy_electric_flow_mass.fix(0.044 * units.kWh / units.kg)
     m.fs.electroNP.magnesium_chloride_dosage.fix(0.388)
 
-    # Scaling
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-        if "flow_vol" in var.name:
-            iscale.set_scaling_factor(var, 1e2)
-        if "temperature" in var.name:
-            iscale.set_scaling_factor(var, 1e-2)
-        if "pressure" in var.name:
-            iscale.set_scaling_factor(var, 1e-5)
-        if "conc_mass_comp" in var.name:
-            iscale.set_scaling_factor(var, 1e3)
 
-    iscale.calculate_scaling_factors(m)
+def set_scaling(m):
+    asm2d_scaler = m.fs.props_ASM2D.default_state_scaler_class()
+    asm2d_rxn_scaler = m.fs.rxn_props_ASM2D.default_reaction_scaler_class()
+    adm1_scaler = m.fs.props_ADM1.default_state_scaler_class()
+    adm1_rxn_scaler = m.fs.rxn_props_ADM1.default_reaction_scaler_class()
+    adm1_vapor_scaler = m.fs.props_vap_ADM1.default_state_scaler_class()
 
-    iscale.set_scaling_factor(m.fs.electroNP.byproduct.flow_vol[0.0], 1e7)
-    iscale.set_scaling_factor(m.fs.AD.vapor_phase[0].pressure_sat, 1e-3)
+    asm2d_scaler.default_scaling_factors["flow_vol"] = 1e1
+    for c in m.fs.props_ASM2D.component_list:
+        asm2d_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e3
+    asm2d_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e5
 
+    adm1_scaler.default_scaling_factors["flow_vol"] = 1e0
+    for c in m.fs.props_ADM1.component_list:
+        adm1_scaler.default_scaling_factors[f"conc_mass_comp[{c}]"] = 1e3
+    adm1_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e3
+
+    m.fs.props_ASM2D.default_state_scaler_object = asm2d_scaler
+    m.fs.rxn_props_ASM2D.default_reaction_scaler_object = asm2d_rxn_scaler
+    m.fs.props_ADM1.default_state_scaler_object = adm1_scaler
+    m.fs.rxn_props_ADM1.default_reaction_scaler_object = adm1_rxn_scaler
+    m.fs.props_vap_ADM1.default_state_scaler_object = adm1_vapor_scaler
+
+    csb = CustomScalerBase()
+
+    for blk in m.fs.component_data_objects(ctype=pyo.Block, descend_into=False):
+        if isinstance(blk, UnitModelBlockData):
+            if hasattr(blk, "default_scaler") and blk.default_scaler is not None:
+                print(f"Scaling {blk.name}")
+                scaler = blk.default_scaler()
+                scaler.scale_model(blk)
+            else:
+                print(f"No default scaler for unit model {blk.name}")
+        elif "_expanded" in blk.name:
+            print(f"Scaling {blk.name}")
+            # Expanded arc block
+            for con in blk.component_data_objects(pyo.Constraint):
+                csb.scale_constraint_by_nominal_value(
+                    con, scheme=ConstraintScalingScheme.inverseMaximum
+                )
+
+
+def initialize_system(m):
     m.fs.AD.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_adm1_translator)
     m.fs.translator_adm1_asm2d.initialize(outlvl=idaeslog.INFO_HIGH)
     propagate_state(m.fs.stream_translator_electroNP)
     m.fs.electroNP.initialize(outlvl=idaeslog.INFO_HIGH)
     m.fs.costing.initialize()
-
-    results = solve(m, tee=True)
-    return m, results
 
 
 def add_costing(m):
@@ -273,7 +316,7 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m, results = build_flowsheet()
+    m, results = main()
     assert_optimal_termination(results)
     stream_table = create_stream_table_dataframe(
         {

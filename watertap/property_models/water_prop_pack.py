@@ -63,6 +63,10 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
 from watertap.custom_exceptions import FrozenPipes
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -508,6 +512,19 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("specific_vol_sat_phase", 1, index="Vap")
         self.set_default_scaling("specific_vol_phase", 1, index="Vap")
 
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
+
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -531,11 +548,31 @@ class WaterParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "dh_vap_mass": {"method": "_dh_vap_mass"},
-                "enth_flow_phase": {"method": "_enth_flow_phase"},
-                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
-                "specific_vol_sat_phase": {"method": "_specific_vol_sat_phase"},
-                "specific_vol_phase": {"method": "_specific_vol_phase"},
+                "dh_vap_mass": {
+                    "doc": "Latent Heat of Vaporization",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_dh_vap_mass",
+                },
+                "enth_flow_phase": {
+                    "doc": "Enthalpy Flow",
+                    "units": pyunits.J / pyunits.s,
+                    "method": "_enth_flow_phase",
+                },
+                "temperature_sat_solvent": {
+                    "doc": "Saturation Temperature of Solvent",
+                    "units": pyunits.K,
+                    "method": "_temperature_sat_solvent",
+                },
+                "specific_vol_sat_phase": {
+                    "doc": "Specific Volume of Saturated Steam",
+                    "units": pyunits.m**3 / pyunits.kg,
+                    "method": "_specific_vol_sat_phase",
+                },
+                "specific_vol_phase": {
+                    "doc": "Specific Volume of Steam",
+                    "units": pyunits.m**3 / pyunits.kg,
+                    "method": "_specific_vol_phase",
+                },
             }
         )
 

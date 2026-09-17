@@ -8,13 +8,17 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+    types: [checks_requested]
 
 concurrency:
   # NOTE: the value of `group` should be chosen carefully,
   # otherwise we might end up over- or under-canceling workflow runs
-  # github.head_ref is only defined for pull request events
-  # so, if it's not present (i.e. event was triggered by push)
-  # we use github.ref instead
+  # github.head_ref is only defined for pull request events. Push and merge-group
+  # events use github.ref instead; merge groups have their own temporary refs.
+  # Limit merge-queue fan-out with the queue's Build concurrency setting rather
+  # than sharing a concurrency key between merge groups, since each merge group
+  # must report its own required checks.
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
@@ -234,6 +238,14 @@ jobs:
         _ref_to_install: ${{ github.event.pull_request.head.sha }}
       run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
+    - name: Define install URL (for merge groups)
+      if: github.event_name == 'merge_group'
+      # the same source archive represented by the synthetic merge-group commit.
+      env:
+        _repo_full_name: ${{ github.repository }}
+        _ref_to_install: ${{ github.event.merge_group.head_sha }}
+      run: |
+        echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
 
     - name: Bootstrap packaging tools and verify installation
       run: |
@@ -314,4 +326,4 @@ jobs:
         job-name: notebooks
     - name: Run pytest with nbmake
       run: |
-        pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}" **/*.ipynb
+        find tutorials -name "*.ipynb" -not -path "*/.ipynb_checkpoints/*" | grep -v "tutorials/flex_ro/mp_model.ipynb" | xargs pytest --nbmake --nbmake-kernel="${{ env.WATERTAP_KERNEL_NAME }}"

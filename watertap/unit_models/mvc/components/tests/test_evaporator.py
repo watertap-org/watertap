@@ -114,7 +114,7 @@ def test_evaporator(evap_condense_model):
     # check values, TODO: make a report for the evaporator
     vapor_blk = m.fs.evaporator.properties_vapor[0]
     assert vapor_blk.flow_mass_phase_comp["Vap", "H2O"].value == pytest.approx(
-        0.4183, rel=1e-3
+        0.4174, rel=1e-3
     )
     assert m.fs.evaporator.lmtd.value == pytest.approx(13.79, rel=1e-3)
     assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.379e6, rel=1e-3)
@@ -203,7 +203,7 @@ def test_evaporator_with_MCAS_mass_flow():
     # check values, TODO: make a report for the evaporator
     vapor_blk = m.fs.evaporator.properties_vapor[0]
     assert vapor_blk.flow_mass_phase_comp["Vap", "H2O"].value == pytest.approx(
-        0.4198, rel=1e-3
+        0.4176, rel=1e-3
     )
     assert m.fs.evaporator.lmtd.value == pytest.approx(13.79, rel=1e-3)
     assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.379e6, rel=1e-3)
@@ -291,7 +291,7 @@ def test_evaporator_with_MCAS_mole_flow():
     # check values, TODO: make a report for the evaporator
     vapor_blk = m.fs.evaporator.properties_vapor[0]
     assert vapor_blk.flow_mass_phase_comp["Vap", "H2O"].value == pytest.approx(
-        0.4198, rel=1e-3
+        0.4176, rel=1e-3
     )
     assert m.fs.evaporator.lmtd.value == pytest.approx(13.79, rel=1e-3)
     assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.379e6, rel=1e-3)

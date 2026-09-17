@@ -1,0 +1,91 @@
+﻿Name,zo_unit,class_name,class,type,energy_helper_func,energy,Cost function,model type long,model type doc ref
+aeration basin,aeration_basin_zo,AerationBasinZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+anaerobic digestion,anaerobic_digestion_oxidation_zo,AnaerobicDigestionOxidationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+anaerobic digestion reactive,anaerobic_digestion_reactive_zo,AnaerobicDigestionReactiveZO,non-basic,SIDO reactive,TRUE,constant_intensity,cost_power_law_flow,"reactive single-inlet, double-outlet",sidor_methods
+anaerobic mbr mec,anaerobic_mbr_mec_zo,AnaerobicMBRMECZO,non-basic,SIDO reactive,TRUE,pump_electricity,cost_anaerobic_mbr_mec,"reactive single-inlet, double-outlet",sidor_methods
+autothermal hydrothermal liquefaction,autothermal_hydrothermal_liquefaction_zo,ATHTLZO,non-basic,SIDO reactive,FALSE,f(x),cost_autothermal_hydrothermal_liquefaction,"reactive single-inlet, double-outlet",sidor_methods
+backwash solids handling,backwash_solids_handling_zo,BackwashSolidsHandlingZO,basic,SIDO,TRUE,pump_electricity,cost_power_law_flow,"single-input, double-output",sido_methods
+bio active filtration,bio_active_filtration_zo,BioActiveFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+bioreactor ,bioreactor_zo,BioreactorZO,basic,SISO,TRUE,constant_intensity,cost_power_law_flow,"single-input, single-output",siso_methods
+blending reservoir,blending_reservoir_zo,BlendingReservoirZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+brine concentrator,brine_concentrator_zo,BrineConcentratorZO,non-basic,SIDO,FALSE,f(x),cost_brine_concentrator,"single-input, double-output",sido_methods
+buffer tank,buffer_tank_zo,BufferTankZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+CANDOP ,CANDOP_zo,CANDOPZO,non-basic,SIDO reactive,FALSE,f(x),cost_CANDOP,"reactive single-inlet, double-outlet",sidor_methods
+cartridge filtration,cartridge_filtration_zo,CartridgeFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+centrifuge,centrifuge_zo,CentrifugeZO,non-basic,SIDO,TRUE,constant_intensity,cost_centrifuge,"single-input, double-output",sido_methods
+chemical addition,chemical_addition_zo,ChemicalAdditionZO,non-basic,PT,FALSE,f(x),cost_chemical_addition,pass-through,pt_methods
+chlorination ,chlorination_zo,ChlorinationZO,non-basic,SISO,TRUE,constant_intensity,cost_chlorination,"single-input, single-output",siso_methods
+clarifier ,clarifier_zo,ClarifierZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+cloth media filtration,cloth_media_filtration_zo,ClothMediaFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+co2 addition,co2_addition_zo,CO2AdditionZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+coagulation flocculation,coag_and_floc_zo,CoagulationFlocculationZO,non-basic,PT,FALSE,f(x),cost_coag_and_floc,pass-through,pt_methods
+cofermentation  ,cofermentation_zo,CofermentationZO,non-basic,SIDO reactive,TRUE,pump_electricity,cost_cofermentation,"reactive single-inlet, double-outlet",sidor_methods
+constructed wetlands ,constructed_wetlands_zo,ConstructedWetlandsZO,non-basic,SISO,FALSE,--,cost_constructed_wetlands,"single-input, single-output",siso_methods
+conventional activated sludge,conventional_activated_sludge_zo,CASZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+cooling supply ,cooling_supply_zo,CoolingSupplyZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+cooling tower ,cooling_tower_zo,CoolingTowerZO,non-basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+crystallizer,crystallizer_zo,CrystallizerZO,non-basic,SIDO,FALSE,f(x),cost_crystallizer,"single-input, double-output",sido_methods
+decarbonator ,decarbonator_zo,DecarbonatorZO,basic,SISO,TRUE,constant_intensity,cost_power_law_flow,"single-input, single-output",siso_methods
+deep well injection,deep_well_injection_zo,DeepWellInjectionZO,non-basic,PT,TRUE,pump_electricity,cost_deep_well_injection,pass-through,pt_methods
+dissolved air flotation,dissolved_air_flotation_zo,DissolvedAirFlotationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+dmbr ,dmbr_zo,DMBRZO,basic/AMO,SIDO reactive,TRUE,constant_intensity,cost_dmbr,"reactive single-inlet, double-outlet",sidor_methods
+dual media filtration,dual_media_filtration_zo,DualMediaFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+electrochemical nutrient removal,electrochemical_nutrient_removal_zo,ElectroNPZO,non-basic,SIDO reactive,FALSE,f(x),cost_electrochemical_nutrient_removal,"reactive single-inlet, double-outlet",sidor_methods
+electrocoagulation,electrocoagulation_zo,ElectrocoagulationZO,non-basic,SIDO,FALSE,f(x),cost_electrocoagulation,"single-input, double-output",sido_methods
+electrodialysis reversal,electrodialysis_reversal_zo,ElectrodialysisReversalZO,non-basic,SIDO,FALSE,f(x),cost_power_law_flow,"single-input, double-output",sido_methods
+energy recovery,energy_recovery_zo,EnergyRecoveryZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+evaporation pond,evaporation_pond_zo,EvaporationPondZO,non-basic,SIDO,TRUE,constant_intensity,cost_evaporation_pond,"single-input, double-output",sido_methods
+feed water tank,feed_water_tank_zo,FeedWaterTankZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+feed ,feed_zo,FeedZO,Feed Block,--,FALSE,--,FALSE,None,None
+filter press,filter_press_zo,FilterPressZO,non-basic,SIDO,FALSE,f(x),cost_filter_press,"single-input, double-output",sido_methods
+fixed bed,fixed_bed_zo,FixedBedZO,non-basic,SISO,TRUE,constant_intensity,cost_fixed_bed,"single-input, single-output",siso_methods
+gac ,gac_zo,GACZO,non-basic,SIDO,FALSE,f(x),cost_gac,"single-input, double-output",sido_methods
+gas sparged membrane,gas_sparged_membrane_zo,GasSpargedMembraneZO,non-basic,SIDO,TRUE,pump_electricity,FALSE,"single-input, double-output",sido_methods
+hrcs,hrcs_zo,HRCSZO,basic,SIDO reactive,TRUE,constant_intensity,cost_hrcs,"reactive single-inlet, double-outlet",sidor_methods
+hydrothermal gasification,hydrothermal_gasification_zo,HTGZO,non-basic,SIDO reactive,TRUE,f(x),cost_hydrothermal_gasification,"reactive single-inlet, double-outlet",sidor_methods
+injection well disposal,injection_well_disposal_zo,InjectionWellDisposalZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+intrusion mitigation,intrusion_mitigation_zo,IntrusionMitigationZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+ion exchange,ion_exchange_zo,IonExchangeZO,non-basic,SIDO,TRUE,pump_electricity,cost_ion_exchange,"single-input, double-output",sido_methods
+iron and manganese removal,iron_and_manganese_removal_zo,IronManganeseRemovalZO,non-basic,SIDO,FALSE,f(x),cost_iron_and_manganese_removal,"single-input, double-output",sido_methods
+landfill ,landfill_zo,LandfillZO,basic,PT,TRUE,constant_intensity,cost_landfill,pass-through,pt_methods
+mabr ,mabr_zo,MABRZO,non-basic,SIDO reactive,TRUE,constant_intensity,cost_mabr,"reactive single-inlet, double-outlet",sidor_methods
+magprex,magprex_zo,MagprexZO,non-basic,SIDO reactive,TRUE,constant_intensity,cost_magprex,"reactive single-inlet, double-outlet",sidor_methods
+mbr ,mbr_zo,MBRZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+media filtration,media_filtration_zo,MediaFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+membrane evaporator,membrane_evaporator_zo,MembraneEvaporatorZO,non-basic,SIDO,TRUE,constant_intensity,cost_membrane_evaporator,"single-input, double-output",sido_methods
+metab ,metab_zo,MetabZO,non-basic,SIDO reactive,FALSE,f(x),cost_metab,"reactive single-inlet, double-outlet",sidor_methods
+microbial battery,microbial_battery_zo,MicrobialBatteryZO,non-basic,SIDO reactive,TRUE,constant_intensity,cost_microbial_battery,"reactive single-inlet, double-outlet",sidor_methods
+microfiltration ,microfiltration_zo,MicroFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+municipal drinking,municipal_drinking_zo,MunicipalDrinkingZO,basic,PT,TRUE,pump_electricity,cost_power_law_flow,pass-through,pt_methods
+municipal wwtp,municipal_wwtp_zo,MunicipalWWTPZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+nanofiltration ,nanofiltration_zo,NanofiltrationZO,non-basic,SIDO,FALSE,f(x),cost_nanofiltration,"single-input, double-output",sido_methods
+ozone aop ,ozone_aop_zo,OzoneAOPZO,non-basic,SISO,FALSE,f(x),cost_ozonation_aop,"single-input, single-output",siso_methods
+ozone ,ozone_zo,OzoneZO,non-basic,SISO,FALSE,f(x),cost_ozonation,"single-input, single-output",siso_methods
+peracetic acid disinfection,peracetic_acid_disinfection_zo,PeraceticAcidDisinfectionZO,non-basic,SIDO reactive,TRUE,constant_intensity,cost_peracetic_acid,"reactive single-inlet, double-outlet",sidor_methods
+photothermal membrane,photothermal_membrane_zo,PhotothermalMembraneZO,non-basic,SIDO,FALSE,f(x),cost_photothermal_membrane,"single-input, double-output",sido_methods
+primary separator,primary_separator_zo,PrimarySeparatorZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+pump electricity,pump_electricity_zo,PumpElectricityZO,non-basic,PT,FALSE,f(x),cost_pump_electricity,pass-through,pt_methods
+pump ,pump_zo,PumpZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+screen ,screen_zo,ScreenZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+secondary treatment wwtp,secondary_treatment_wwtp_zo,SecondaryTreatmentWWTPZO,basic/AMO,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+sedimentation ,sedimentation_zo,SedimentationZO,non-basic,SIDO,TRUE,constant_intensity,cost_sedimentation,"single-input, double-output",sido_methods
+settling pond,settling_pond_zo,SettlingPondZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+sludge tank,sludge_tank_zo,SludgeTankZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+smp ,smp_zo,SMPZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+static mixer,static_mixer_zo,StaticMixerZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+storage tank,storage_tank_zo,StorageTankZO,non-basic,PT,TRUE,constant_intensity,cost_storage_tank,pass-through,pt_methods
+struvite classifier,struvite_classifier_zo,StruviteClassifierZO,basic,PT,TRUE,constant_intensity,cost_struvite_classifier,pass-through,pt_methods
+suboxic activated sludge process,suboxic_activated_sludge_process_zo,SuboxicASMZO,basic,SIDO,TRUE,constant_intensity,cost_suboxic_asm,"single-input, double-output",sido_methods
+supercritical salt precipitation,supercritical_salt_precipitation_zo,SaltPrecipitationZO,non-basic,SIDO,FALSE,f(x),cost_supercritical_salt_precipitation,"single-input, double-output",sido_methods
+surface discharge,surface_discharge_zo,SurfaceDischargeZO,non-basic,PT,TRUE,pump_electricity,cost_surface_discharge,pass-through,pt_methods
+sw onshore intake,sw_onshore_intake_zo,SWOnshoreIntakeZO,basic,PT,TRUE,pump_electricity,cost_power_law_flow,pass-through,pt_methods
+tramp oil tank,tramp_oil_tank_zo,TrampOilTankZO,basic,PT,TRUE,constant_intensity,cost_power_law_flow,pass-through,pt_methods
+tri media filtration,tri_media_filtration_zo,TriMediaFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+ultra filtration,ultra_filtration_zo,UltraFiltrationZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+uv aop,uv_aop_zo,UVAOPZO,non-basic,SISO,TRUE,constant_intensity,cost_uv_aop,"single-input, single-output",siso_methods
+uv ,uv_zo,UVZO,non-basic,SISO,TRUE,constant_intensity,cost_uv,"single-input, single-output",siso_methods
+vfa recovery,vfa_recovery_zo,VFARecoveryZO,basic/AMO,SIDO,TRUE,constant_intensity,cost_vfa_recovery,"single-input, double-output",sido_methods
+waiv ,waiv_zo,WAIVZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+walnut shell filter,walnut_shell_filter_zo,WalnutShellFilterZO,basic,SIDO,TRUE,constant_intensity,cost_power_law_flow,"single-input, double-output",sido_methods
+water pumping station,water_pumping_station_zo,WaterPumpingStationZO,non-basic,PT,FALSE,f(x),cost_power_law_flow,pass-through,pt_methods
+well field,well_field_zo,WellFieldZO,non-basic,PT,TRUE,pump_electricity,cost_well_field,pass-through,pt_methods
