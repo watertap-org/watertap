@@ -159,6 +159,7 @@ def get_block_data(
                     "year" if x == "a" else x
                     for x in pyunits.get_units(ci).getname().split("/")
                 )
+                data[ci.name]["doc"] = ci.parent_component().doc
         else:
             data[c.name]["component_type"] = (
                 type(c).__name__.removeprefix("Scalar").removesuffix("Data")
@@ -168,6 +169,7 @@ def get_block_data(
                 "year" if x == "a" else x
                 for x in pyunits.get_units(c).getname().split("/")
             )
+            data[c.name]["doc"] = c.doc
 
     if sweep_mode:
         # Only return "value" entry
@@ -188,7 +190,7 @@ def block_data_to_df(blk_data):
 
     Returns:
         df: A DataFrame containing the block data with columns
-            for model component, value, units, and component type.
+            for model component, value, units, doc, and component type.
     """
 
     df = pd.DataFrame(blk_data).T
@@ -196,7 +198,7 @@ def block_data_to_df(blk_data):
     df.reset_index(inplace=True, drop=True)
     if df.empty:
         raise ValueError("Model export failed: no data to export.")
-    df = df[["model_component", "value", "units", "component_type"]]
+    df = df[["model_component", "value", "units", "component_type", "doc"]]
 
     return df
 

@@ -405,10 +405,10 @@ def test_flowsheet_export_functions():
     blk_df1 = block_data_to_df(blk_data1)
     assert not blk_df1.empty
     assert len(blk_df1) == len(blk_data1)
-    assert len(blk_df1.columns) == 4
+    assert len(blk_df1.columns) == 5
     assert all(
         col in blk_df1.columns
-        for col in ["model_component", "value", "units", "component_type"]
+        for col in ["model_component", "value", "units", "doc", "component_type"]
     )
 
     blk_data2 = get_block_data(m.fs.blk, components=[pyo.Param])
