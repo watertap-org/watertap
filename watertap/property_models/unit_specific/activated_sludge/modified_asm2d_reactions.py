@@ -176,12 +176,6 @@ class ModifiedASM2dReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Nitrogen oxide coefficient for N2",
         )
-        # self.i_COD_NOx = pyo.Var(
-        #     initialize=-32 / 7,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.NegativeReals,
-        #     doc="COD equivalent of NOx-N reduced (nitrification O2 demand coefficient)",
-        # )
 
         # Kinetic Parameters
         self.K_H = pyo.Var(
