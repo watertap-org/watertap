@@ -17,6 +17,7 @@ In some Python module, define the function ``export_to_ui``, which will look
 similar to this::
 
     from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetCategory
+    
     def export_to_ui():
         return FlowsheetInterface(
             name="NF-DSPM-DE",
@@ -109,45 +110,46 @@ The raw text version is::
 
 2. ``do_build`` - This function defines the build function for a flowsheet. See example below::
 
-    from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
+.. testcode::
+
+    from watertap.flowsheets.full_water_resource_recovery_facility.BSM2 import (
         build,
         set_operating_conditions,
         initialize_system,
         solve,
         add_costing,
-        adjust_default_parameters,
     )
+
     def build_flowsheet():
-        # build and solve initial flowsheet
+        """
+        Build and solve the initial flowsheet.
+        """
         m = build()
 
         set_operating_conditions(m)
-        assert_degrees_of_freedom(m, 0)
-        assert_units_consistent(m)
-
         initialize_system(m)
 
         results = solve(m)
-        assert_optimal_termination(results)
 
         add_costing(m)
-        assert_degrees_of_freedom(m, 0)
         m.fs.costing.initialize()
 
-        adjust_default_parameters(m)
-
         results = solve(m)
-        assert_optimal_termination(results)
         return m
 
 
 3. ``do_solve`` - This function defines the solve function for a flowsheet. See example below::
 
-    from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import solve
+.. testcode::
+
     def solve_flowsheet(flowsheet=None):
+        """
+        Solve the flowsheet.
+        """
         fs = flowsheet
         results = solve(fs)
         return results
+
 
 Additionally, there are optional parameters to assign a category, provide build options,
 and provide a diagram function among others. See additional examples below.
@@ -189,8 +191,8 @@ entrypoint must be defined in setup.py with the path to the export file. For exa
 
     entry_points={
         "watertap.flowsheets": [
-            "nf = watertap.examples.flowsheets.nf_dspmde.nf_ui",
-            "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
+            "nf = watertap.flowsheets.nf_dspmde.nf_ui",
+            "metab = watertap.flowsheets.full_water_resource_recovery_facility.BSM2_ui",
         ]
 
 
