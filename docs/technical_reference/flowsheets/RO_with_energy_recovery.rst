@@ -151,3 +151,9 @@ including the different build options for ``erd_type``:
    *if* ``erd_type == "pump_as_turbine"``
    "Energy recovery device pump efficiency", "0.95", ":math:`\text{dimensionless}`"
    "Energy recovery device permeate side pressure", "101325", ":math:`\text{Pa}`"
+   
+
+Code Documentation
+------------------
+
+* :mod:`watertap.flowsheets.RO_with_energy_recovery`
