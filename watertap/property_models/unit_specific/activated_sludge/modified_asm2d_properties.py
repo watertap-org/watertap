@@ -353,14 +353,17 @@ class ModifiedASM2dPropertiesScaler(CustomScalerBase):
     pressure is scaled assuming an order of magnitude of 1e5 Pa.
     """
 
+    CONFIG = CustomScalerBase.CONFIG
+
     UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyo.units.Pa, 1e-5),
+        "pressure": (pyo.units.Pa, 1e-5),
     }
 
     DEFAULT_SCALING_FACTORS = {
         "flow_vol": 1e1,
         "temperature": 1e-2,
+        "conc_mass_comp": 1e2,
     }
 
     def variable_scaling_routine(
@@ -369,6 +372,8 @@ class ModifiedASM2dPropertiesScaler(CustomScalerBase):
         self.scale_variable_by_default(model.temperature, overwrite=overwrite)
         self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
         self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        for idx, var in model.conc_mass_comp.items():
+            self.scale_variable_by_default(var, overwrite=overwrite)
 
     # There are currently no constraints in this model
     def constraint_scaling_routine(
@@ -484,6 +489,8 @@ class ModifiedASM2dStateBlockData(StateBlockData):
     StateBlock for calculating thermophysical proeprties associated with the ASM2d
     reaction system.
     """
+
+    default_scaler = ModifiedASM2dPropertiesScaler
 
     def build(self):
         """
