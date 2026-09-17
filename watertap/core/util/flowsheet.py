@@ -144,6 +144,11 @@ def get_block_data(
     data = defaultdict(dict)
 
     for c in blk.component_objects(components, descend_into=descend_into):
+        if c.is_reference():
+            # The object is a Reference and we will get to the referenced
+            # object eventually. Notably, if the Reference referent is
+            # on a sub-block we will still descend_into it even if descend_into=False.
+            continue
         if c.is_indexed():
             for ci in c.values():
                 data[ci.name]["component_type"] = (

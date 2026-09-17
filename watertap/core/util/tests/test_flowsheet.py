@@ -526,6 +526,16 @@ def test_flowsheet_export_functions():
     m.fs.blk.v3 = pyo.Var(initialize=10, units=pyo.units.year)
     m.fs.blk.c1 = pyo.Constraint(expr=m.fs.blk.v3 == m.fs.blk.v1 + m.fs.blk.v2)
 
+    # Test how References are handled
+    m.fs.blk.r1 = pyo.Reference(m.fs.blk.b2.sb1.v1)
+    blk_data10 = get_block_data(m.fs.blk, descend_into=False)
+    assert "fs.blk.r1" not in blk_data10
+    assert "fs.blk.b2.sb1.v1[0]" not in blk_data10
+
+    blk_data11 = get_block_data(m.fs.blk, descend_into=True)
+    assert "fs.blk.r1" not in blk_data11
+    assert "fs.blk.b2.sb1.v1[0]" in blk_data11
+
     with pytest.raises(
         ValueError,
         match="The only accepted components for export are Var, Expression, Param, and Objective.",
@@ -536,18 +546,20 @@ def test_flowsheet_export_functions():
     for c in m.fs.component_objects(
         [pyo.Var, pyo.Param, pyo.Expression, pyo.Objective], descend_into=True
     ):
+        if c.is_reference():
+            continue
         if c.is_indexed():
             for _ in c.values():
                 n_comps += 1
         else:
             n_comps += 1
 
-    blk_data10 = get_block_data(
+    blk_data12 = get_block_data(
         m.fs, components=[pyo.Var, pyo.Param, pyo.Expression, pyo.Objective]
     )
-    assert len(blk_data10) == n_comps
-    blk_df10 = block_data_to_df(blk_data10)
-    assert len(blk_df10) == n_comps
+    assert len(blk_data12) == n_comps
+    blk_df12 = block_data_to_df(blk_data12)
+    assert len(blk_df12) == n_comps
 
     here = os.path.dirname(__file__)
     cwd = os.getcwd()
