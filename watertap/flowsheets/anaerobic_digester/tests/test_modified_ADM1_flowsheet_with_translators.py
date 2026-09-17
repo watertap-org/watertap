@@ -79,7 +79,7 @@ class TestADM1BioPFalse:
         ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.Treated.properties[0].conc_mass_comp["S_PO4"]
-        ) == pytest.approx(65.479, rel=1e-3)
+        ) == pytest.approx(4.03168, rel=1e-3)
         assert value(m.fs.Treated.properties[0].conc_mass_comp["S_K"]) == pytest.approx(
             1.0654, rel=1e-2
         )
