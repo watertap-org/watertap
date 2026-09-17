@@ -108,7 +108,7 @@ The raw text version is::
     "fs.NF.pump.outlet.pressure[0]","NF pump pressure","Nanofiltration pump outlet pressure","units.bar","bar",true,"NF design",true,"NF design"
     "fs.NF.product.properties[0].flow_vol_phase['Liq']","NF product volume flow rate","Nanofiltration product volume flow rate","units.L / units.hr","L/h",2,false,"",true,"NF design"
 
-2. ``do_build`` - This function defines the build function for a flowsheet. See example below::
+2. ``do_build`` - This function defines the build function for a flowsheet. See example below:
 
 .. testcode::
 
@@ -138,7 +138,7 @@ The raw text version is::
         return m
 
 
-3. ``do_solve`` - This function defines the solve function for a flowsheet. See example below::
+3. ``do_solve`` - This function defines the solve function for a flowsheet. See example below:
 
 .. testcode::
 
@@ -192,7 +192,7 @@ entrypoint must be defined in setup.py with the path to the export file. For exa
     entry_points={
         "watertap.flowsheets": [
             "nf = watertap.flowsheets.nf_dspmde.nf_ui",
-            "metab = watertap.flowsheets.full_water_resource_recovery_facility.BSM2_ui",
+            "BSM2 = watertap.flowsheets.full_water_resource_recovery_facility.BSM2_ui",
         ]
 
 
