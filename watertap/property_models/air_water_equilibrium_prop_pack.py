@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2025, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -68,6 +68,10 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 boltzmann = pyunits.convert(
     Constants.boltzmann_constant,
@@ -1061,6 +1065,19 @@ class AirWaterEqData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e6, index="Vap")
         self.set_default_scaling("pressure_vap_sat", 1e4, index="H2O")
         self.set_default_scaling("pressure_vap", 1e4, index="H2O")
+
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
 
     @classmethod
     def define_metadata(cls, obj):
