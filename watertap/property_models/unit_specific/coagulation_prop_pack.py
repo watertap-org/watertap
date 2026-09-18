@@ -56,8 +56,13 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
 from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 __author__ = "Austin Ladshaw"
 
@@ -187,6 +192,19 @@ class CoagulationParameterData(PhysicalParameterBlock):
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
 
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
+
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -205,7 +223,11 @@ class CoagulationParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "enth_flow": {"method": "_enth_flow"},
+                "enth_flow": {
+                    "method": "_enth_flow",
+                    "doc": "Enthalpy flow rate",
+                    "units": pyunits.J / pyunits.s,
+                },
             }
         )
 
