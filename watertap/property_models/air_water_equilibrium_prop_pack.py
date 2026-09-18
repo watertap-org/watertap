@@ -1114,37 +1114,101 @@ class AirWaterEqData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
-                "henry_comp": {"method": "_henry_comp"},
-                "molar_volume_comp": {"method": "_molar_volume_comp"},
-                "pressure_vap": {"method": "_pressure_vap"},
-                "pressure_vap_sat": {"method": "_pressure_vap_sat"},
-                "relative_humidity": {"method": "_relative_humidity"},
-                "molar_volume_comp_crit": {"method": "_molar_volume_comp_crit"},
+                "dens_mass_solvent": {
+                    "doc": "Mass density of pure water and air",
+                    "units": pyunits.kg / pyunits.m**3,
+                    "method": "_dens_mass_solvent",
+                },
+                "henry_comp": {
+                    "doc": "Temperature adjusted Henry's constant",
+                    "units": pyunits.dimensionless,
+                    "method": "_henry_comp",
+                },
+                "molar_volume_comp": {
+                    "doc": "Molar volume of solutes",
+                    "units": pyunits.m**3 / pyunits.mol,
+                    "method": "_molar_volume_comp",
+                },
+                "pressure_vap": {
+                    "doc": "Vapor pressure of water",
+                    "units": pyunits.Pa,
+                    "method": "_pressure_vap",
+                },
+                "pressure_vap_sat": {
+                    "doc": "Saturation vapor pressure of water",
+                    "units": pyunits.Pa,
+                    "method": "_pressure_vap_sat",
+                },
+                "relative_humidity": {
+                    "doc": "Relative humidity of the air-water system",
+                    "units": pyunits.dimensionless,
+                    "method": "_relative_humidity",
+                },
+                "molar_volume_comp_crit": {
+                    "doc": "Critical molar volume of solutes",
+                    "units": pyunits.m**3 / pyunits.mol,
+                    "method": "_molar_volume_comp_crit",
+                },
                 "enth_change_dissolution_comp": {
-                    "method": "_enth_change_dissolution_comp"
+                    "doc": "Standard enthalpy change of dissolution",
+                    "units": pyunits.J / pyunits.mol,
+                    "method": "_enth_change_dissolution_comp",
                 },
                 "energy_molecular_attraction_comp": {
-                    "method": "_energy_molecular_attraction_comp"
+                    "doc": "Energy of molecular attraction of volatile components",
+                    "units": pyunits.erg,
+                    "method": "_energy_molecular_attraction_comp",
                 },
                 "energy_molecular_attraction": {
-                    "method": "_energy_molecular_attraction"
+                    "doc": "Energy of molecular attraction",
+                    "units": pyunits.erg,
+                    "method": "_energy_molecular_attraction",
                 },
                 "collision_molecular_separation_comp": {
-                    "method": "_collision_molecular_separation_comp"
+                    "doc": "Molecular separation at collision of volatile components",
+                    "units": pyunits.nm,
+                    "method": "_collision_molecular_separation_comp",
                 },
                 "collision_molecular_separation": {
-                    "method": "_collision_molecular_separation"
+                    "doc": "Molecular separation at collision",
+                    "units": pyunits.nm,
+                    "method": "_collision_molecular_separation",
                 },
-                "collision_function_comp": {"method": "_collision_function_comp"},
+                "collision_function_comp": {
+                    "doc": "Collision function",
+                    "units": pyunits.dimensionless,
+                    "method": "_collision_function_comp",
+                },
                 "collision_function_zeta_comp": {
-                    "method": "_collision_function_zeta_comp"
+                    "doc": "Collision function zeta",
+                    "units": pyunits.dimensionless,
+                    "method": "_collision_function_zeta_comp",
                 },
-                "collision_function_ee_comp": {"method": "_collision_function_ee_comp"},
-                "temperature_boiling_comp": {"method": "_temperature_boiling_comp"},
-                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
-                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
-                "cp_air": {"method": "_cp_air"},
+                "collision_function_ee_comp": {
+                    "doc": "Collision function ee",
+                    "units": pyunits.dimensionless,
+                    "method": "_collision_function_ee_comp",
+                },
+                "temperature_boiling_comp": {
+                    "doc": "Boiling point temperature of volatile components",
+                    "units": pyunits.K,
+                    "method": "_temperature_boiling_comp",
+                },
+                "dh_vap_mass_solvent": {
+                    "doc": "Latent heat of vaporization of pure water",
+                    "units": pyunits.kJ / pyunits.kg,
+                    "method": "_dh_vap_mass_solvent",
+                },
+                "cp_mass_solvent": {
+                    "doc": "Specific heat capacity of water",
+                    "units": pyunits.J / pyunits.kg / pyunits.K,
+                    "method": "_cp_mass_solvent",
+                },
+                "cp_air": {
+                    "doc": "Specific heat capacity of dry air",
+                    "units": pyunits.J / pyunits.kg / pyunits.K,
+                    "method": "_cp_air",
+                },
             }
         )
 
@@ -1960,6 +2024,7 @@ class AirWaterEqStateBlockData(StateBlockData):
             rule=rule_diffus_phase_comp,
         )
 
+    # Custom Properties
     def _energy_molecular_attraction_comp(self):
 
         self.energy_molecular_attraction_comp_param = Param(
@@ -2402,7 +2467,7 @@ class AirWaterEqStateBlockData(StateBlockData):
                 initialize=4e3,
                 bounds=(1e-5, 1e5),
                 units=pyunits.J / pyunits.kg / pyunits.K,
-                doc="Specific heat capacity of pure solvent",
+                doc="Specific heat capacity of pure water",
             )
 
             def rule_cp_mass_solvent(b, p):
