@@ -1,3 +1,5 @@
+.. _gac_zo:
+
 Granular Activated Carbon (ZO)
 ==============================
 

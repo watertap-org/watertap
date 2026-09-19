@@ -1,3 +1,5 @@
+.. _anaerobic_mbr_mec_zo:
+
 Integrated Anaerobic Membrane Bioreactor/Microbial Electrolysis Cell (ZO)
 =========================================================================
 

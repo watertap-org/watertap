@@ -1,3 +1,5 @@
+.. _brine_concentrator_zo:
+
 Brine Concentrator (ZO)
 =======================
 

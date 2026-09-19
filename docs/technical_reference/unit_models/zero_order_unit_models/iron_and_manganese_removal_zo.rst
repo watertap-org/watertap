@@ -1,3 +1,5 @@
+.. _iron_and_manganese_removal_zo:
+
 Iron And Manganese Removal (ZO)
 ===============================
 

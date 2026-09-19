@@ -1,3 +1,5 @@
+.. _fixed_bed_zo:
+
 Fixed Bed (ZO)
 ==============
 

@@ -1,3 +1,5 @@
+.. _water_pumping_station_zo:
+
 Water Pumping Station (ZO)
 ==========================
 

@@ -1,3 +1,5 @@
+.. _vfa_recovery_zo:
+
 Volatile Fatty Acid (VFA) Recovery Unit (ZO)
 ============================================
 

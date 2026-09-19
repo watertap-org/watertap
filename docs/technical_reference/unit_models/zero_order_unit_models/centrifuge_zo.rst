@@ -1,3 +1,5 @@
+.. _centrifuge_zo:
+
 Centrifuge (ZO)
 ===============
 
