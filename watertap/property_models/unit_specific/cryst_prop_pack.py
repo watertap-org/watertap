@@ -909,23 +909,71 @@ class NaClParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "dens_mass_solvent": {"method": "_dens_mass_solvent"},
-                "dens_mass_solute": {"method": "_dens_mass_solute"},
-                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
+                "dens_mass_solvent": {
+                    "doc": "Mass density of pure water",
+                    "units": pyunits.kg / pyunits.m**3,
+                    "method": "_dens_mass_solvent",
+                },
+                "dens_mass_solute": {
+                    "doc": "Mass density of solid NaCl crystals",
+                    "units": pyunits.kg / pyunits.m**3,
+                    "method": "_dens_mass_solute",
+                },
+                "dh_vap_mass_solvent": {
+                    "doc": "Latent heat of vaporization of pure water",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_dh_vap_mass_solvent",
+                },
                 "dh_crystallization_mass_comp": {
-                    "method": "_dh_crystallization_mass_comp"
+                    "doc": "NaCl heat of crystallization",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_dh_crystallization_mass_comp",
                 },
-                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
-                "cp_mass_solute": {"method": "_cp_mass_solute"},
-                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
-                "enth_mass_solvent": {"method": "_enth_mass_solvent"},
-                "enth_mass_solute": {"method": "_enth_mass_solute"},
-                "enth_flow": {"method": "_enth_flow"},
-                "solubility_mass_phase_comp": {"method": "_solubility_mass_phase_comp"},
+                "cp_mass_solvent": {
+                    "doc": "Specific heat capacity of pure solvent",
+                    "units": pyunits.J / pyunits.kg / pyunits.K,
+                    "method": "_cp_mass_solvent",
+                },
+                "cp_mass_solute": {
+                    "doc": "Specific heat capacity of solid NaCl crystals",
+                    "units": pyunits.J / pyunits.kg / pyunits.K,
+                    "method": "_cp_mass_solute",
+                },
+                "temperature_sat_solvent": {
+                    "doc": "Vapour saturation temperature of pure solvent at crystallization pressure",
+                    "units": pyunits.K,
+                    "method": "_temperature_sat_solvent",
+                },
+                "enth_mass_solvent": {
+                    "doc": "Specific saturated enthalpy of pure solvent",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_enth_mass_solvent",
+                },
+                "enth_mass_solute": {
+                    "doc": "Specific enthalpy of solid NaCl crystals",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_enth_mass_solute",
+                },
+                "enth_flow": {
+                    "doc": "Total enthalpy flow",
+                    "units": pyunits.J / pyunits.s,
+                    "method": "_enth_flow",
+                },
+                "solubility_mass_phase_comp": {
+                    "doc": "Solubility of NaCl in water",
+                    "units": pyunits.g / pyunits.L,
+                    "method": "_solubility_mass_phase_comp",
+                },
                 "solubility_mass_frac_phase_comp": {
-                    "method": "_solubility_mass_frac_phase_comp"
+                    "doc": "Solubility of NaCl in water as a mass fraction",
+                    "units": pyunits.dimensionless,
+                    "method": "_solubility_mass_frac_phase_comp",
                 },
-                "specific_vol_sat_phase": {"method": "_specific_vol_sat_phase"},
+                "specific_vol_sat_phase": {
+                    "doc": "Specific volume of steam",
+                    "units": pyunits.m**3 / pyunits.kg,
+                    "method": "_specific_vol_sat_phase",
+                },
             }
         )
 
