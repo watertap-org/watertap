@@ -130,3 +130,37 @@ def calculate_operating_pressure(
     op_pressure = value(tmp.feed[0].pressure_osm_phase["Liq"]) * over_pressure_factor
 
     return op_pressure
+
+
+def list_vars_to_fix(blk, var_names):
+    """
+    List variables for a unit model that should be fixed for simulation.
+
+    Args:
+        blk: Pyomo block
+
+    Returns:
+        list of Pyomo variables to fix
+    """
+    name_width = max(
+        len("Name"), max((len(str(name)) for name in var_names), default=0)
+    )
+    var_width = max(
+        len("Variable in Unit"),
+        max((len(str(var)) for var in var_names.values()), default=0),
+    )
+    fixed_width = len("Currently Fixed")
+
+    print(
+        f"{'Name':<{name_width}} {'Variable in Unit':<{var_width}} {'Currently Fixed':<{fixed_width}}"
+    )
+    print(
+        f"{'-' * name_width:<{name_width}} {'-' * var_width:<{var_width}} {'-' * fixed_width:<{fixed_width}}"
+    )
+
+    for name, var in var_names.items():
+        fixed_flag = blk.find_component(var).fixed
+        print(
+            f"{name:<{name_width}} {str(var):<{var_width}} {str(fixed_flag):<{fixed_width}}"
+        )
+    print("\n")

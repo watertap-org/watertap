@@ -27,10 +27,12 @@ from watertap.core import (  # noqa # pylint: disable=unused-import
     PressureChangeType,
 )
 from watertap.core.membrane_channel0d import CONFIG_Template
+from watertap.core.membrane_channel_base import TransportModel
 from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
 )
+from watertap.core.util.unit_models import list_vars_to_fix
 
 __author__ = "Tim Bartholomew, Adam Atia, Bernard Knueven"
 
@@ -207,3 +209,70 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
                 self.mixed_permeate[t].get_material_flow_terms(p, j), default=1
             )
             iscale.constraint_scaling_transform(condata, sf)
+
+    def list_vars_to_fix(self):
+        # Thie index on the permeabilities would be a function of the property package, I think?
+        var_names = {
+            "membrane area": "area",
+            "permeate pressure": "permeate.pressure[0]",
+        }
+
+        if self.config.transport_model == TransportModel.SD:
+            var_names.update(
+                {
+                    "water permeability": 'A_comp[0,"H2O"]',
+                    "salt permeability": 'B_comp[0,"NaCl"]',
+                }
+            )
+        elif self.config.transport_model == TransportModel.SKK:
+            var_names.update(
+                {"reflection coefficient": "reflect_coeff", "alpha": "alpha"}
+            )
+
+        if (
+            self.config.has_pressure_change == True
+            and self.config.pressure_change_type == PressureChangeType.fixed_per_stage
+        ):
+            var_names.update({"pressure drop": "feed_side.deltaP[0]"})
+        elif (
+            self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
+        ):
+            var_names.update({"pressure drop per unit length": "feed_side.dP_dx[0]"})
+
+        if (
+            self.config.concentration_polarization_type
+            == ConcentrationPolarizationType.fixed
+        ):
+            var_names.update(
+                {
+                    "conc. pol. mod. inlet": 'feed_side.cp_modulus[0,0,"NaCl"]',
+                    "conc. pol. mod. outlet": 'feed_side.cp_modulus[0,1,"NaCl"]',
+                }
+            )
+
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.fixed:
+            var_names.update(
+                {
+                    "mass transfer coeff inlet": 'feed_side.K[0,0,"NaCl"]',
+                    "mass transfer coeff outlet": 'feed_side.K[0,1,"NaCl"]',
+                }
+            )
+
+        if (
+            self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+            or self.config.pressure_change_type == PressureChangeType.calculated
+        ):
+            var_names.update(
+                {
+                    "feed-spacer porosity": "feed_side.spacer_porosity",
+                    "feed-channel height": "feed_side.channel_height",
+                }
+            )
+
+        if (
+            self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+            or self.config.pressure_change_type != PressureChangeType.fixed_per_stage
+        ):
+            var_names.update({"length": "length"})
+
+        return list_vars_to_fix(self, var_names)
