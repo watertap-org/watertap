@@ -73,7 +73,7 @@ Unit Models
    ":ref:`0D Membrane Distillation <MD_0D>`", "Any", "`MembraneDistillation0D <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/membrane_distillation_0D.py>`_"
    ":ref:`1D Membrane Distillation <MD_1D>`", "Any", "`MembraneDistillation1D <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/membrane_distillation_1D.py>`_"
    ":ref:`MVC <MVC>`", "Any", "`MVC <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/mvc.py>`_"
-   ":ref:`ZO Nanofiltration <nanofiltration_ZO>`", ":ref:`MCAS <mcas_tech_ref>`", "`NanofiltrationZO <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/nanofiltration_ZO.py>`_"
+   ":ref:`ZO Nanofiltration <NF_ZO>`", ":ref:`MCAS <mcas_tech_ref>`", "`NanofiltrationZO <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/nanofiltration_ZO.py>`_"
    ":ref:`0D Nanofiltration <nanofiltration_0D>`", ":ref:`MCAS <mcas_tech_ref>`", "`Nanofiltration0D <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/nanofiltration_0D.py>`_"
    ":ref:`0D DSPM-DE Nanofiltration <nanofiltration_DSPMDE>`", ":ref:`MCAS <mcas_tech_ref>`", "`NanofiltrationDSPMDE0D <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/nanofiltration_dspmde_0D.py>`_"
    ":ref:`0D Osmotically Assisted Reverse Osmosis <OARO_0D>`", "Any", "`OsmoticallyAssistedReverseOsmosis0D <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/osmotically_assisted_reverse_osmosis_0D.py>`_"
