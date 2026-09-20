@@ -53,7 +53,7 @@ Unit Models
    ":ref:`Aeration Tank <aeration_tank>`", ":ref:`ASM1 <ASM1>`, :ref:`ASM2d <ASM2d>`, :ref:`Modified ASM2d <modified_ASM2d>`", "`AerationTank <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/aeration_tank.py>`_"
    ":ref:`Anaerobic Digester <anaerobic_digester>`", ":ref:`ADM1 <ADM1>`, :ref:`Modified ADM1 <modified_ADM1>`", "`AD <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/anaerobic_digester.py>`_"
    ":ref:`Boron Removal <boron_removal>`", ":ref:`MCAS <mcas_tech_ref>`", "`BoronRemoval <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/boron_removal.py>`_"
-   ":ref:`Clarifier <clarifier>`", "Any", "`Clarifier <https://github.com/watertap-org/watertap/unit_models/clarifier.py>`_"
+   ":ref:`Clarifier <clarifier>`", "Any", "`Clarifier <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/clarifier.py>`_"
    ":ref:`Coagulation/Flocculation Model <coagulation_flocculation>`", ":ref:`Coagulation <coagulation>`", "`CoagulationFlocculation <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/coag_floc_model.py>`_"
    ":ref:`0D Crystallizer <crystallizer_0D>`", "Crystallization (TBD)", "`Crystallization <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/crystallizer.py>`_"
    ":ref:`CSTR <CSTR>`", "Any", "`CSTR <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/cstr.py>`_"
