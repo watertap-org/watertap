@@ -679,7 +679,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         obj=fs.costing.LCOW,
         name="Levelized cost of water",
         ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units=f"${base_currency_str}/m3 of product water",
+        display_units=f"{base_currency_str}/m3 of product water",
         rounding=3,
         description="Levelized cost of water (LCOW)",
         is_input=False,

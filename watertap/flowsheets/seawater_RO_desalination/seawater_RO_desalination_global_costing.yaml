@@ -1,0 +1,144 @@
+base_currency: USD_2018
+base_period: year
+defined_flows:
+  electricity:
+    value: 0.0595
+    units: USD_2019/kWh
+  heat:
+    value: 0.0000061
+    units: USD_2020/kJ
+  acetic_acid:
+    value: 1.1
+    units: USD_2020/kg
+    purity: 1
+  activated_carbon:
+    value: 3.63759
+    units: USD_2020/kg
+    purity: 1
+  alum:
+    value: 0.67
+    units: USD_2023/kg
+    purity: 0.17
+    reference: Aluminum sulphate, 5-lb. bgs., c.l., works, frt. equald., 17% Al203, W. Coast; CatCost v 1.1.1
+  anhydrous_ammonia:
+    value: 1.0
+    units: USD_2023/kg
+    purity: 1
+    reference: Ammonia, US Gulf, spot f.o.b New Orleans; CatCost v 1.1.1
+  ammonia:
+    value: 1.0
+    units: USD_2023/kg
+    purity: 1
+    reference: Ammonia, US Gulf, spot f.o.b New Orleans; CatCost v 1.1.1
+  anthracite:
+    value: 1.124346
+    units: USD_2020/kg
+    purity: 1
+  anti-scalant:
+    # Hydrazine
+    value: 3.49
+    units: USD_2020/kg
+    purity: 0.85
+  polymer:
+    # Flocculant aid
+    value: 0.79
+    units: USD_2017/kg
+    purity: 1
+  cationic_polymer:
+    value: 0.79
+    units: USD_2017/kg
+    purity: 1
+  caustic_soda:
+    value: 1.02
+    units: USD_2023/kg
+    purity: 1
+    reference: Caustic soda (sodium hydroxide), liq., spot export f.o.b. USG; CatCost v 1.1.1
+  chlorine:
+    value: 0.44
+    units: USD_2023/kg
+    purity: 1
+    reference: Chlorine, US Gulf, domestic, quarter contract; CatCost v 1.1.1
+  ferric_chloride:
+    value: 0.88
+    units: USD_2020/kg
+    purity: 1
+  hydrochloric_acid:
+    value: 0.15
+    units: USD_2023/kg
+    purity: 0.35
+    reference: Hydrochloric acid, 22 deg. Be, US Gulf dom. ex-works US NE; CatCost v 1.1.1
+  hydrogen_peroxide:
+    value: 1.53
+    units: USD_2020/kg
+    purity: 1
+  ion_exchange_resin:
+    value: 7.072
+    units: USD_2019/kg
+    purity: 1
+  lime:
+    value: 0.12
+    units: USD_2023/kg
+    purity: 1
+    reference: Lime, chemical, pebble (quicklime) bulk, f.o.b. plants; CatCost v 1.1.1
+  phosphoric_acid:
+    value: 0.97
+    units: USD_2020/kg
+    purity: 1
+  sand:
+    value: 0.510219804
+    units: USD_2020/kg
+    purity: 1
+  sodium_bisulfite:
+    value: 1.3
+    units: USD_2023/kg
+    purity: 1
+    reference: Sodium bisulfite, anhyd., bgs., c.l., t.l., works, East; CatCost v 1.1.1
+  sodium_chloride:
+    value: 0.08
+    units: USD_2020/kg
+    purity: 1
+  sulfuric_acid:
+    value: 0.14
+    units: USD_2023/kg
+    purity: 0.93
+    reference: Sulphuric acid, virgin 100%, tanks, works, Southwest; CatCost v 1.1.1
+global_parameters:
+  plant_lifetime:
+    value: 30
+    units: year
+  utilization_factor:
+    value: 1
+    units: dimensionless
+  land_cost_percent_FCI:
+    value: 0.0015
+    units: dimensionless
+  working_capital_percent_FCI:
+    value: 0.05
+    units: dimensionless
+  salaries_percent_FCI:
+    value: 0.001
+    units: 1/year
+  benefit_percent_of_salary:
+    value: 0.9
+    units: dimensionless
+  maintenance_costs_percent_FCI:
+    value: 0.008
+    units: 1/year
+  laboratory_fees_percent_FCI:
+    value: 0.003
+    units: 1/year
+  insurance_and_taxes_percent_FCI:
+    value: 0.002
+    units: 1/year
+  wacc:
+    # Weighted Average Cost of Capital (WACC)
+    value: 0.05
+    units: dimensionless
+  TPEC:
+    # Total Purchased Equipment Cost
+    value: 3.4
+    units: dimensionless
+  TIC:
+    # Total Installed Cost
+    value: 1.65
+    units: dimensionless

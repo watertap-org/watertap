@@ -84,11 +84,17 @@ class ADScaler(CustomScalerBase):
 
     DEFAULT_SCALING_FACTORS = {
         "volume": 1e-2,
+        "KH_h2": 1e4,
+        "KH_co2": 1e2,
+        "KH_ch4": 1e2,
+        # TODO: Revisit the heat scaling factor
+        "heat": 1e1,
         "hydraulic_retention_time": 1e-6,
         "electricity_consumption": 1e-1,
         "rate_reaction_generation": 1e3,
         "rate_reaction_extent": 1e3,
-        "reaction_rate": 1e8,
+        "mass_transfer_term": 1e4,
+        "enthalpy_transfer": 1e-1,
     }
 
     def variable_scaling_routine(
@@ -138,19 +144,31 @@ class ADScaler(CustomScalerBase):
             overwrite=overwrite,
         )
 
-        # Scaling control volume variables
+        # Scaling variables
         self.scale_variable_by_default(
             model.liquid_phase.volume[0], overwrite=overwrite
         )
+        self.scale_variable_by_default(model.liquid_phase.heat[0], overwrite=overwrite)
+        self.scale_variable_by_default(model.KH_h2[0], overwrite=overwrite)
+        self.scale_variable_by_default(model.KH_co2[0], overwrite=overwrite)
+        self.scale_variable_by_default(model.KH_ch4[0], overwrite=overwrite)
         self.scale_variable_by_default(
             model.hydraulic_retention_time[0], overwrite=overwrite
         )
         self.scale_variable_by_default(
             model.electricity_consumption[0], overwrite=overwrite
         )
+        self.scale_variable_by_default(
+            model.liquid_phase.enthalpy_transfer[0],
+            overwrite=overwrite,
+        )
         for c in model.config.liquid_property_package.component_list:
             self.scale_variable_by_default(
                 model.liquid_phase.rate_reaction_generation[0, "Liq", c],
+                overwrite=overwrite,
+            )
+            self.scale_variable_by_default(
+                model.liquid_phase.mass_transfer_term[0, "Liq", c],
                 overwrite=overwrite,
             )
         for rxn in model.config.reaction_package.rate_reaction_idx:

@@ -9,6 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+import os
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -603,9 +604,14 @@ def add_costing(m):
     desal = m.fs.desalination
     psttrt = m.fs.posttreatment
 
+    # Zero order costing
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "seawater_RO_desalination_global_costing.yaml",
+    )
+
     # Add costing package
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.costing.base_currency = pyunits.USD_2023
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # Add costing to zero order units
     # Pre-treatment units
     # Intake unit really looks like it should be a feed block in its own right
