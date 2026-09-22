@@ -37,6 +37,7 @@ from watertap.core import (
     FrictionFactor,
     ModuleType,
 )
+from watertap.core.util.unit_models import list_fs_vars_to_fix
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
 )
@@ -78,7 +79,7 @@ def main_NaCl():
         transport_model=TransportModel.SKK,
     )
 
-    m.fs.unit.list_vars_to_fix()
+    # m.fs.unit.list_vars_to_fix()
 
     # fully specify system
     feed_flow_mass = 1
@@ -127,7 +128,7 @@ def main_NaCl():
     )
     iscale.calculate_scaling_factors(m.fs.unit)
 
-    m.fs.unit.list_vars_to_fix()
+    list_fs_vars_to_fix(m.fs)
     return m
 
 
@@ -211,7 +212,7 @@ def main_MCAS():
 
 
 if __name__ == "__main__":
-    m = main_MCAS()
+    m = main_NaCl()
     print(value(m.fs.unit.length))
     print(value(m.fs.unit.width))
     # print(value(m.fs.unit.feed_side.K[0, 0, "Na_+"]))  # 2.6259644014323275e-05

@@ -32,7 +32,7 @@ from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
 )
-from watertap.core.util.unit_models import list_vars_to_fix
+from watertap.core.util.unit_models import _list_um_vars_to_fix
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
@@ -294,4 +294,4 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
 
     def list_vars_to_fix(self):
         vars = self.get_vars_to_fix()
-        list_vars_to_fix(vars)
+        _list_um_vars_to_fix(vars)

@@ -18,6 +18,7 @@ from pyomo.environ import (
     check_optimal_termination,
     value,
 )
+from idaes.core import FlowsheetBlockData, UnitModelBlockData
 from idaes.core.util.initialization import solve_indexed_blocks
 
 from watertap.property_models.seawater_prop_pack import SeawaterStateBlockData
@@ -132,7 +133,7 @@ def calculate_operating_pressure(
     return op_pressure
 
 
-def list_vars_to_fix(vars):
+def _list_um_vars_to_fix(vars):
     """
     List variables for a unit model that should be fixed for simulation.
 
@@ -157,7 +158,7 @@ def list_vars_to_fix(vars):
         max((len(str(var.get_units())) for var in vars.values()), default=0),
     )
 
-    print("\n", "Suggested variables to fix for simulation of unit model:")
+    print("\n", "Suggested variables to fix for simulation:")
     print(
         f"{'Name':<{name_width}} {'Variable in Unit':<{var_width}} {'Currently Fixed':<{fixed_width}} {'Bounds':<{bounds_width}} {'Units':<{units_width}}"
     )
@@ -173,3 +174,37 @@ def list_vars_to_fix(vars):
             f"{name:<{name_width}} {str(var):<{var_width}} {str(fixed_flag):<{fixed_width}} {str(bounds):<{bounds_width}} {str(units):<{units_width}}"
         )
     print("\n")
+
+
+def list_fs_vars_to_fix(fs):
+    """
+    List variables for unit models on a flowsheet that should be fixed for
+    simulation.
+
+    Args:
+        fs: flowsheet object or unit model object
+
+    Returns:
+        list of unit model names for which list_vars_to_fix was called
+    """
+    if isinstance(fs, FlowsheetBlockData):
+        units = [u for u in fs.component_objects() if isinstance(u, UnitModelBlockData)]
+    elif isinstance(fs, UnitModelBlockData):
+        units = [fs]
+    else:
+        raise TypeError(
+            f"Expected a FlowsheetBlockData or UnitModelBlockData instance, but got {type(fs).__name__!r}."
+        )
+
+    units_with_method = []
+    for unit in units:
+        list_method = getattr(unit, "list_vars_to_fix", None)
+        if callable(list_method):
+            print(f"\nUnit model: {unit.name}")
+            list_method()
+            units_with_method.append(unit.name)
+
+    if not units_with_method:
+        print("No unit models on the provided object define a list_vars_to_fix method.")
+
+    return units_with_method
