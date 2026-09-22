@@ -89,4 +89,4 @@ Unit Models
    ":doc:`Translators <translators/index>`", "See :ref:`Translator Index <translator_index>`", "`Translators <https://github.com/watertap-org/watertap/tree/main/watertap/unit_models/translators>`_"
    ":ref:`UV AOP <UV_AOP>`", ":ref:`MCAS <mcas_tech_ref>`, NDMA (TBD)", "`Ultraviolet0D <https://github.com/watertap-org/watertap/blob/main/watertap/unit_models/uv_aop.py>`_"
    ":doc:`Zero-Order Unit Models <zero_order_unit_models/index>`", "See :ref:`Zero-Order Unit Model Index <0D_index>`", "`0D Unit Models <https://github.com/watertap-org/watertap/tree/main/watertap/unit_models/zero_order>`_"
-   ":doc:`Unit Model Utility Functions <unit_model_utilities>`", "`-`", "`Unit Model Utilities <https://github.com/watertap-org/watertap/blob/main/watertap/core/util/unit_models.py>`_"
+   ":doc:`Unit Model Utility Functions <unit_model_utilities>`", ":ref:`Water <water>`, :ref:`Seawater <seawater>`", "`Unit Model Utilities <https://github.com/watertap-org/watertap/blob/main/watertap/core/util/unit_models.py>`_"
