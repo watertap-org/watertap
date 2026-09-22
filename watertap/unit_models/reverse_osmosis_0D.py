@@ -216,12 +216,22 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             "membrane area": "area",
             "permeate pressure": "permeate.pressure[0]",
         }
+        # List the components in the property package
+        comps = self.config.property_package.component_list
+        if comps.value_list == ["H2O", "NaCl"]:
+            solute_name = "NaCl"
+        elif comps.value_list == ["H2O", "Na_+", "Cl_-"]:
+            solute_name = "Na_+"
+        else:
+            raise NotImplementedError(
+                "list_vars_to_fix is only implemented for H2O/NaCl systems"
+            )
 
         if self.config.transport_model == TransportModel.SD:
             var_names.update(
                 {
                     "water permeability": 'A_comp[0,"H2O"]',
-                    "salt permeability": 'B_comp[0,"NaCl"]',
+                    "salt permeability": f'B_comp[0,"{solute_name}"]',
                 }
             )
         elif self.config.transport_model == TransportModel.SKK:
@@ -245,16 +255,16 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         ):
             var_names.update(
                 {
-                    "conc. pol. mod. inlet": 'feed_side.cp_modulus[0,0,"NaCl"]',
-                    "conc. pol. mod. outlet": 'feed_side.cp_modulus[0,1,"NaCl"]',
+                    "conc. pol. mod. inlet": f'feed_side.cp_modulus[0,0,"{solute_name}"]',
+                    "conc. pol. mod. outlet": f'feed_side.cp_modulus[0,1,"{solute_name}"]',
                 }
             )
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.fixed:
             var_names.update(
                 {
-                    "mass transfer coeff inlet": 'feed_side.K[0,0,"NaCl"]',
-                    "mass transfer coeff outlet": 'feed_side.K[0,1,"NaCl"]',
+                    "mass transfer coeff inlet": f'feed_side.K[0,0,"{solute_name}"]',
+                    "mass transfer coeff outlet": f'feed_side.K[0,1,"{solute_name}"]',
                 }
             )
 
