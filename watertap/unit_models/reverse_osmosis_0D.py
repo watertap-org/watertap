@@ -33,6 +33,8 @@ from watertap.unit_models.reverse_osmosis_base import (
     _add_has_full_reporting,
 )
 from watertap.core.util.unit_models import list_vars_to_fix
+from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 __author__ = "Tim Bartholomew, Adam Atia, Bernard Knueven"
 
@@ -212,59 +214,62 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
 
     def list_vars_to_fix(self):
         # Thie index on the permeabilities would be a function of the property package, I think?
-        var_names = {
-            "membrane area": "area",
-            "permeate pressure": "permeate.pressure[0]",
+        vars = {
+            "membrane area": self.area,
+            "permeate pressure": self.permeate.pressure[0],
         }
-        # List the components in the property package
-        comps = self.config.property_package.component_list
-        if comps.value_list == ["H2O", "NaCl"]:
+        # Check the property package type to determine the solute name
+        if isinstance(self.config.property_package, NaClParameterBlock):
             solute_name = "NaCl"
-        elif comps.value_list == ["H2O", "Na_+", "Cl_-"]:
+        elif isinstance(self.config.property_package, MCASParameterBlock):
             solute_name = "Na_+"
         else:
             raise NotImplementedError(
-                "list_vars_to_fix is only implemented for H2O/NaCl systems"
+                "list_vars_to_fix is only implemented for NaCl property package and H2O/MCAS with NaCl only systems"
             )
 
         if self.config.transport_model == TransportModel.SD:
-            var_names.update(
+            vars.update(
                 {
-                    "water permeability": 'A_comp[0,"H2O"]',
-                    "salt permeability": f'B_comp[0,"{solute_name}"]',
+                    "water permeability": self.A_comp[0, "H2O"],
+                    "salt permeability": self.B_comp[0, solute_name],
                 }
             )
         elif self.config.transport_model == TransportModel.SKK:
-            var_names.update(
-                {"reflection coefficient": "reflect_coeff", "alpha": "alpha"}
+            vars.update(
+                {"reflection coefficient": self.reflect_coeff, "alpha": self.alpha}
             )
 
         if (
             self.config.has_pressure_change == True
             and self.config.pressure_change_type == PressureChangeType.fixed_per_stage
         ):
-            var_names.update({"pressure drop": "feed_side.deltaP[0]"})
+            vars.update({"pressure drop": self.feed_side.deltaP[0]})
         elif (
             self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
         ):
-            var_names.update({"pressure drop per unit length": "feed_side.dP_dx[0]"})
+            vars.update({"pressure drop per unit length": self.feed_side.dP_dx[0]})
 
         if (
             self.config.concentration_polarization_type
             == ConcentrationPolarizationType.fixed
         ):
-            var_names.update(
+            vars.update(
                 {
-                    "conc. pol. mod. inlet": f'feed_side.cp_modulus[0,0,"{solute_name}"]',
-                    "conc. pol. mod. outlet": f'feed_side.cp_modulus[0,1,"{solute_name}"]',
+                    "concentration polarization modulus inlet": self.feed_side.cp_modulus[
+                        0, 0, solute_name
+                    ],
+                    "concentration polarization modulus outlet": self.feed_side.cp_modulus[
+                        0, 1, solute_name
+                    ],
                 }
             )
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.fixed:
-            var_names.update(
+            vars.update(
                 {
-                    "mass transfer coeff inlet": f'feed_side.K[0,0,"{solute_name}"]',
-                    "mass transfer coeff outlet": f'feed_side.K[0,1,"{solute_name}"]',
+                    "mass transfer coeff inlet": self.feed_side.K[0, 0, solute_name],
+                    "mass transfer coeff outlet": self.feed_side.K[0, 1, solute_name],
                 }
             )
 
@@ -272,10 +277,10 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
             or self.config.pressure_change_type == PressureChangeType.calculated
         ):
-            var_names.update(
+            vars.update(
                 {
-                    "feed-spacer porosity": "feed_side.spacer_porosity",
-                    "feed-channel height": "feed_side.channel_height",
+                    "feed-spacer porosity": self.feed_side.spacer_porosity,
+                    "feed-channel height": self.feed_side.channel_height,
                 }
             )
 
@@ -283,6 +288,6 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
             or self.config.pressure_change_type != PressureChangeType.fixed_per_stage
         ):
-            var_names.update({"length": "length"})
+            vars.update({"length": self.length})
 
-        return list_vars_to_fix(self, var_names)
+        return list_vars_to_fix(vars)

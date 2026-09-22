@@ -63,7 +63,7 @@ import numpy as np
 
 
 ## NaCl RO TEST ##
-def main():
+def main_NaCl():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
@@ -132,85 +132,86 @@ def main():
 
 
 ### MCAS RO TEST ###
-# def main():
-#     m = ConcreteModel()
-#     m.fs = FlowsheetBlock(dynamic=False)
-#     m.fs.props = MCASParameterBlock(
-#         solute_list=["Na_+", "Cl_-"],
-#         diffusivity_data={("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
-#         material_flow_basis="mass",
-#     )
+def main_MCAS():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.props = MCASParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        diffusivity_data={("Liq", "Na_+"): 1.33e-9, ("Liq", "Cl_-"): 2.03e-9},
+        material_flow_basis="mass",
+    )
 
-#     m.fs.unit = ReverseOsmosis0D(
-#         property_package=m.fs.props,
-#         has_pressure_change=True,
-#         concentration_polarization_type=ConcentrationPolarizationType.calculated,
-#         mass_transfer_coefficient=MassTransferCoefficient.calculated,
-#         pressure_change_type=PressureChangeType.calculated,
-#         module_type=ModuleType.spiral_wound,
-#     )
+    m.fs.unit = ReverseOsmosis0D(
+        property_package=m.fs.props,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        pressure_change_type=PressureChangeType.calculated,
+        module_type=ModuleType.spiral_wound,
+    )
 
-#     # fully specify system
-#     feed_flow_mass = 1 / 3.6
-#     feed_mass_frac_NaCl = 0.03
-#     nacl_mw = 58.44
-#     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-#     feed_pressure = 50e5
-#     feed_temperature = 273.15 + 25
-#     membrane_area = 37
-#     A = 4.2e-12
-#     B = 3.5e-8
-#     pressure_atmospheric = 101325
+    # fully specify system
+    feed_flow_mass = 1 / 3.6
+    feed_mass_frac_NaCl = 0.03
+    nacl_mw = 58.44
+    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    feed_pressure = 50e5
+    feed_temperature = 273.15 + 25
+    membrane_area = 37
+    A = 4.2e-12
+    B = 3.5e-8
+    pressure_atmospheric = 101325
 
-#     m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Na_+"].fix(
-#         feed_flow_mass * feed_mass_frac_NaCl / nacl_mw * 23
-#     )
-#     m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Cl_-"].fix(
-#         feed_flow_mass * feed_mass_frac_NaCl / nacl_mw * 35
-#     )
-#     m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-#         feed_flow_mass * feed_mass_frac_H2O
-#     )
-#     m.fs.unit.feed_side.properties[0, 0].assert_electroneutrality(
-#         defined_state=True, adjust_by_ion="Cl_-"
-#     )
-#     m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-#     m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-#     m.fs.unit.area.fix(membrane_area)
-#     m.fs.unit.A_comp.fix(A)
-#     m.fs.unit.B_comp[0, "Na_+"].fix(B)
-#     m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-#     m.fs.unit.feed_side.channel_height.fix(0.001)
-#     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
-#     m.fs.unit.length.fix(16)
-#     m.fs.unit.list_vars_to_fix()
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Na_+"].fix(
+        feed_flow_mass * feed_mass_frac_NaCl / nacl_mw * 23
+    )
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Cl_-"].fix(
+        feed_flow_mass * feed_mass_frac_NaCl / nacl_mw * 35
+    )
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        feed_flow_mass * feed_mass_frac_H2O
+    )
+    m.fs.unit.feed_side.properties[0, 0].assert_electroneutrality(
+        defined_state=True, adjust_by_ion="Cl_-"
+    )
+    m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+    m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+    m.fs.unit.area.fix(membrane_area)
+    m.fs.unit.A_comp.fix(A)
+    m.fs.unit.B_comp[0, "Na_+"].fix(B)
+    m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+    m.fs.unit.feed_side.channel_height.fix(0.001)
+    m.fs.unit.feed_side.spacer_porosity.fix(0.97)
+    m.fs.unit.length.fix(16)
+    m.fs.unit.list_vars_to_fix()
 
-#     # Set scaling factors for badly scaled variables
-#     m.fs.props.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-#     m.fs.props.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "Na_+"))
-#     m.fs.props.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "Cl_-"))
+    # Set scaling factors for badly scaled variables
+    m.fs.props.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.props.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "Na_+"))
+    m.fs.props.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "Cl_-"))
 
-#     iscale.calculate_scaling_factors(m.fs.unit)
+    iscale.calculate_scaling_factors(m.fs.unit)
 
-#     m.fs.unit.initialize()
-#     solver = get_solver()
+    m.fs.unit.initialize()
+    solver = get_solver()
 
-#     results = solver.solve(m, tee=True)
-#     assert_optimal_termination(results)
+    results = solver.solve(m, tee=True)
+    assert_optimal_termination(results)
 
-#     m.fs.unit.B_comp.unfix()
-#     m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(0.9)
+    m.fs.unit.B_comp.unfix()
+    m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(0.9)
 
-#     for r in np.linspace(0.9, 0.99, 10):
-#         m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(r)
-#         results = solver.solve(m, tee=True)
-#         assert_optimal_termination(results)
+    # for r in np.linspace(0.9, 0.99, 10):
+    #     m.fs.unit.rejection_phase_comp[0, "Liq", "Na_+"].fix(r)
+    #     results = solver.solve(m, tee=True)
+    #     assert_optimal_termination(results)
 
-#     return m
+    m.fs.unit.list_vars_to_fix()
+    return m
 
 
 if __name__ == "__main__":
-    m = main()
+    m = main_MCAS()
     print(value(m.fs.unit.length))
     print(value(m.fs.unit.width))
     # print(value(m.fs.unit.feed_side.K[0, 0, "Na_+"]))  # 2.6259644014323275e-05

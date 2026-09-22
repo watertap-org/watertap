@@ -132,35 +132,44 @@ def calculate_operating_pressure(
     return op_pressure
 
 
-def list_vars_to_fix(blk, var_names):
+def list_vars_to_fix(vars):
     """
     List variables for a unit model that should be fixed for simulation.
 
     Args:
-        blk: Pyomo block
+        vars: dict of variable names and Pyomo variables
 
     Returns:
-        list of Pyomo variables to fix
+        list of Pyomo variables to fix to define the unit model for simulation
     """
-    name_width = max(
-        len("Name"), max((len(str(name)) for name in var_names), default=0)
-    )
+    name_width = max(len("Name"), max((len(str(name)) for name in vars), default=0))
     var_width = max(
         len("Variable in Unit"),
-        max((len(str(var)) for var in var_names.values()), default=0),
+        max((len(str(var)) for var in vars.values()), default=0),
     )
     fixed_width = len("Currently Fixed")
+    bounds_width = max(
+        len("Bounds"),
+        max((len(str(var.bounds)) for var in vars.values()), default=0),
+    )
+    units_width = max(
+        len("Units"),
+        max((len(str(var.get_units())) for var in vars.values()), default=0),
+    )
 
+    print("\n", "Suggested variables to fix for simulation of unit model:")
     print(
-        f"{'Name':<{name_width}} {'Variable in Unit':<{var_width}} {'Currently Fixed':<{fixed_width}}"
+        f"{'Name':<{name_width}} {'Variable in Unit':<{var_width}} {'Currently Fixed':<{fixed_width}} {'Bounds':<{bounds_width}} {'Units':<{units_width}}"
     )
     print(
-        f"{'-' * name_width:<{name_width}} {'-' * var_width:<{var_width}} {'-' * fixed_width:<{fixed_width}}"
+        f"{'-' * name_width:<{name_width}} {'-' * var_width:<{var_width}} {'-' * fixed_width:<{fixed_width}} {'-' * bounds_width:<{bounds_width}} {'-' * units_width:<{units_width}}"
     )
 
-    for name, var in var_names.items():
-        fixed_flag = blk.find_component(var).fixed
+    for name, var in vars.items():
+        fixed_flag = var.fixed
+        bounds = var.bounds
+        units = var.get_units()
         print(
-            f"{name:<{name_width}} {str(var):<{var_width}} {str(fixed_flag):<{fixed_width}}"
+            f"{name:<{name_width}} {str(var):<{var_width}} {str(fixed_flag):<{fixed_width}} {str(bounds):<{bounds_width}} {str(units):<{units_width}}"
         )
     print("\n")
