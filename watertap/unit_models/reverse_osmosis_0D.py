@@ -212,7 +212,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             )
             iscale.constraint_scaling_transform(condata, sf)
 
-    def list_vars_to_fix(self):
+    def get_vars_to_fix(self):
         # Thie index on the permeabilities would be a function of the property package, I think?
         vars = {
             "membrane area": self.area,
@@ -290,4 +290,8 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         ):
             vars.update({"length": self.length})
 
-        return list_vars_to_fix(vars)
+        return vars
+
+    def list_vars_to_fix(self):
+        vars = self.get_vars_to_fix()
+        list_vars_to_fix(vars)
