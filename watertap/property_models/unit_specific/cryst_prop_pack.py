@@ -74,7 +74,6 @@ from watertap.core.util.property_helpers import (
     print_property_metadata,
 )
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
