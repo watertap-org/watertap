@@ -35,6 +35,7 @@ from watertap.unit_models.reverse_osmosis_base import (
 from watertap.core.util.unit_models import _list_um_vars_to_fix
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 
 __author__ = "Tim Bartholomew, Adam Atia, Bernard Knueven"
 
@@ -223,6 +224,8 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             solute_name = "NaCl"
         elif isinstance(self.config.property_package, MCASParameterBlock):
             solute_name = "Na_+"
+        elif isinstance(self.config.property_package, SeawaterParameterBlock):
+            solute_name = "TDS"
         else:
             raise NotImplementedError(
                 "list_vars_to_fix is only implemented for NaCl property package and H2O/MCAS with NaCl only systems"
