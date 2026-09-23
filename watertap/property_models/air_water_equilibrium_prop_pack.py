@@ -2467,7 +2467,7 @@ class AirWaterEqStateBlockData(StateBlockData):
                 initialize=4e3,
                 bounds=(1e-5, 1e5),
                 units=pyunits.J / pyunits.kg / pyunits.K,
-                doc="Specific heat capacity of pure water",
+                doc="Specific heat capacity of solvent",
             )
 
             def rule_cp_mass_solvent(b, p):
