@@ -21,10 +21,6 @@ from watertap.property_models.tests.property_test_harness import (
     PropertyRegressionTest,
     PropertyCalculateStateTest,
 )
-from watertap.core.util.property_helpers import (
-    get_property_metadata,
-    print_property_metadata,
-)
 
 # -----------------------------------------------------------------------------
 
