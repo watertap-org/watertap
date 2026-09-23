@@ -133,6 +133,12 @@ class TestCoagulationPropPack:
         #       all will now be built
 
     @pytest.mark.unit
+    def test_list_and_print_properties(self, coag_obj):
+        model = coag_obj
+        model.fs.properties.list_properties()
+        model.fs.properties.print_properties()
+
+    @pytest.mark.unit
     def test_stats(self, coag_obj):
         model = coag_obj
 
