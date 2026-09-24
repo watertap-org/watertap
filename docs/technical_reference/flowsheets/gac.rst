@@ -92,7 +92,7 @@ The following modifications to the GAC flowsheet are planned for development:
 Code Documentation
 ------------------
 
-* :mod:`watertap.examples.flowsheets.gac`
+* :mod:`watertap.flowsheets.gac`
 
 References
 ----------
