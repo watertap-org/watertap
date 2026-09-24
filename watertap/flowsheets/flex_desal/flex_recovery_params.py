@@ -91,7 +91,6 @@ class IntakeParams(UnitParams):
     nominal_flowrate: float = 1063.5
     maximum_flowrate: float = 1063.5
     feed_cost: float = None  # in $/m3
-    chemical_cost: float = None  # in $/m3
 
 
 @dataclass
@@ -103,6 +102,7 @@ class PretreatmentParams(UnitParams):
     leakage_fraction: float = 0
     minimum_downtime: int = 0
     startup_delay: int = 0
+    chemical_cost: float = None  # in $/m3
 
 
 @dataclass

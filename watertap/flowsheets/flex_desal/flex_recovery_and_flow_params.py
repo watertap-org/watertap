@@ -89,7 +89,6 @@ class IntakeParams(UnitParams):
     nominal_flowrate: float = 1063.5
     maximum_flowrate: float = 1063.5
     feed_cost: float = None  # in $/m3
-    chemical_cost: float = None  # in $/m3
 
 
 @dataclass
@@ -107,6 +106,7 @@ class UFParams(UnitParams):
     minimum_downtime: int = 2
     startup_delay: int = 1
     allow_variable_recovery: bool = False
+    chemical_cost: float = None  # in $/m3
 
     def __post_init__(self):
         # self._surrogate = # load the surrogate model here.

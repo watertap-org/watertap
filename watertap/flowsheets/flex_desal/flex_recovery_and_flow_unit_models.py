@@ -88,14 +88,6 @@ def intake_operation_model(blk, params: um_params.IntakeParams):
             expr=blk.feed_cost == params.feed_cost * blk.feed_flowrate,
             doc="Calculates the feed cost based on flowrate and unit cost ($/hr)",
         )
-    if params.chemical_cost is not None:
-        blk.chemical_cost = Var(
-            within=NonNegativeReals, doc="Cost of chemicals per m^3"
-        )
-        blk.calculate_chemical_cost = Constraint(
-            expr=blk.chemical_cost == params.chemical_cost * blk.feed_flowrate,
-            doc="Calculates the chemical cost based on flowrate and unit cost ($/hr)",
-        )
 
 
 def uf_pump_operation_model(blk, params: um_params.UFParams):
@@ -236,6 +228,16 @@ def uf_operation_model(blk, params: um_params.UFParams):
     # Set a maximum flowrate to reduce search space
     for pump in blk.set_uf_pumps:
         blk.uf_pumps[pump].feed_flowrate.setub(params.maximum_flowrate)
+
+    # Add pretreatment chemical cost
+    if params.chemical_cost is not None:
+        blk.chemical_cost = Var(
+            within=NonNegativeReals, doc="Cost of chemicals per m^3"
+        )
+        blk.calculate_chemical_cost = Constraint(
+            expr=blk.chemical_cost == params.chemical_cost * blk.feed_flowrate,
+            doc="Calculates the chemical cost based on flowrate and unit cost ($/hr)",
+        )
 
 
 def ro_skid_operation_model(blk, params: um_params.ROParams):

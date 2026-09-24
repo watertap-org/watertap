@@ -354,7 +354,7 @@ def add_flow_costs(m):
     m.total_chemical_cost = Expression(
         expr=m.params.timestep_hours
         * (
-            sum(m.period[:, :].intake.chemical_cost)
+            sum(m.period[:, :].pretreatment.chemical_cost)
             + sum(m.period[:, :].posttreatment.chemical_cost)
         ),
         doc="Total cost of chemicals over the time horizon ($)",

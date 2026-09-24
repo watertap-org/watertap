@@ -85,14 +85,6 @@ def intake_operation_model(blk, params: um_params.IntakeParams):
             expr=blk.feed_cost == params.feed_cost * blk.feed_flowrate,
             doc="Calculates the feed cost based on flowrate and unit cost ($/hr)",
         )
-    if params.chemical_cost is not None:
-        blk.chemical_cost = Var(
-            within=NonNegativeReals, doc="Cost of chemicals per m^3"
-        )
-        blk.calculate_chemical_cost = Constraint(
-            expr=blk.chemical_cost == params.chemical_cost * blk.feed_flowrate,
-            doc="Calculates the chemical cost based on flowrate and unit cost ($/hr)",
-        )
 
 
 def pretreatment_operation_model(blk, params: um_params.PretreatmentParams):
@@ -110,6 +102,15 @@ def pretreatment_operation_model(blk, params: um_params.PretreatmentParams):
     _add_required_variables(blk)
     blk.recovery.fix(params.get_recovery)
     blk.energy_intensity.fix(params.energy_intensity)
+
+    if params.chemical_cost is not None:
+        blk.chemical_cost = Var(
+            within=NonNegativeReals, doc="Cost of chemicals per m^3"
+        )
+        blk.calculate_chemical_cost = Constraint(
+            expr=blk.chemical_cost == params.chemical_cost * blk.feed_flowrate,
+            doc="Calculates the chemical cost based on flowrate and unit cost ($/hr)",
+        )
 
 
 def ro_skid_operation_model(blk, params: um_params.ROParams):

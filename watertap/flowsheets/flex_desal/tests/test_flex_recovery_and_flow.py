@@ -76,7 +76,6 @@ class TestPriceTakerWorkflow:
                 "energy_intensity": 0,
                 "nominal_flowrate": 2500,  # m3/hr
                 "feed_cost": 0.16,
-                "chemical_cost": 0.0332,
             }
         )
 
@@ -93,6 +92,7 @@ class TestPriceTakerWorkflow:
                 "surrogate_c": 2.39e-7,
                 "nominal_recovery": 0.96,
                 "num_uf_pumps": 3,
+                "chemical_cost": 0.0332,
             }
         )
 
@@ -166,6 +166,7 @@ class TestPriceTakerWorkflow:
         assert "Demand_Response_Price" in price_data.columns
 
         # Check params added
+        assert hasattr(m.params.intake, "feed_cost")
         assert hasattr(m.params.ro, "surrogate_file")
         assert hasattr(m.params.ro, "replacement_types")
         assert hasattr(m.params.ro, "replacement_costs")
@@ -175,10 +176,9 @@ class TestPriceTakerWorkflow:
         assert hasattr(m.params.uf, "surrogate_b")
         assert hasattr(m.params.uf, "surrogate_c")
         assert hasattr(m.params.uf, "num_uf_pumps")
+        assert hasattr(m.params.uf, "chemical_cost")
         assert hasattr(m.params.posttreatment, "chemical_cost")
         assert hasattr(m.params.brinedischarge, "brine_cost")
-        assert hasattr(m.params.intake, "chemical_cost")
-        assert hasattr(m.params.intake, "feed_cost")
 
         for blk in m.period.values():
             # Check PV is added
