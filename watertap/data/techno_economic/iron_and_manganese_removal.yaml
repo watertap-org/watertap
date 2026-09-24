@@ -27,29 +27,62 @@ default:
     value: 580
     units: m^2
   num_filter_units:
-    value: 6
+    value: 1
     units: dimensionless
   capital_cost:
     basis: flow_vol
-    cost_factor: TPEC
+    cost_factor: None
     reference_state:
       value: 1
       units: m^3/hr
-    capital_blower_a_parameter:
-      value: 1.0e5
-      units: USD_2014
+    capital_blower:
+      value: 1.0e5 # TODO: regress data from source to get relationship
+      units: USD_1998
+      reference: Process Equipment Cost Estimation Final Report (2002) "Centrifugal Fan". https://www.osti.gov/servlets/purl/797810/
     capital_backwash_a_parameter:
       value: 92947
-      units: USD_2014
+      units: USD_2007
+      reference: McGivney & Kawamura Figure 5.5.29
+      validity_range:
+        lower_bound:
+          value: 90
+          units: ft^2
+        upper_bound:
+          value: 1500
+          units: ft^2
     capital_backwash_b_parameter:
       value: 292.44
-      units: USD_2014/ft^2
+      units: USD_2007/ft^2
+      reference: McGivney & Kawamura Figure 5.5.29
+      validity_range:
+        lower_bound:
+          value: 90
+          units: ft^2
+        upper_bound:
+          value: 1500
+          units: ft^2
     capital_filter_a_parameter:
       value: 21377
-      units: USD_2014
+      units: USD_2007
+      reference: McGivney & Kawamura Figure 5.5.27
+      validity_range:
+        lower_bound:
+          value: 140
+          units: ft^2
+        upper_bound:
+          value: 28000
+          units: ft^2
     capital_filter_b_parameter:
       value: 38.319
-      units: USD_2014/ft^2
+      units: USD_2007/ft^2
+      reference: McGivney & Kawamura Figure 5.5.27
+      validity_range:
+        lower_bound:
+          value: 140
+          units: ft^2
+        upper_bound:
+          value: 28000
+          units: ft^2
     flow_exponent:
       value: 0.7
       units: dimensionless
