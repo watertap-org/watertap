@@ -17,9 +17,9 @@ import pandas as pd
 
 from idaes.apps.grid_integration import PriceTakerModel
 
-from watertap.flowsheets.flex_desal import wrd_ro_flowsheet as fs
-from watertap.flowsheets.flex_desal import utils
-from watertap.flowsheets.flex_desal.params import FlexDesalParams
+from watertap.flowsheets.flex_desal import flex_recovery_and_flow_flowsheet as fs
+from watertap.flowsheets.flex_desal import flex_recovery_and_flow_utils
+from watertap.flowsheets.flex_desal.flex_recovery_and_flow_params import FlexDesalParams
 from idaes.core.solvers import get_solver
 
 
@@ -30,8 +30,7 @@ class TestPriceTakerWorkflow:
     def system_frame(cls):
         price_data_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "..",
-            "wrd_pricesignal_summer_week_DR.csv",
+            "flex_recovery_and_flow_pricesignal_summer_week_DR.csv",
         )
         price_data = pd.read_csv(price_data_path)
         price_data["Energy Rate"] = (
@@ -67,7 +66,7 @@ class TestPriceTakerWorkflow:
             + list(
                 range(18, 24)
             ),  # 6pm-8am are nonworking hours (assuming time index starts at 0 for 12am-1am)
-            CAPEX_yr=6498300,  # For WRD, this assumes a 30 yr lifetime
+            CAPEX_yr=6498300,  # Assumes a 30 yr lifetime for Water Replenishment District Case
             include_demand_response=True,
             max_daily_shutdowns=1,
         )
@@ -81,7 +80,7 @@ class TestPriceTakerWorkflow:
             }
         )
 
-        m.params.wrd_uf.update(
+        m.params.uf.update(
             {
                 "minimum_downtime": 2,
                 "startup_delay": 2,
@@ -97,7 +96,7 @@ class TestPriceTakerWorkflow:
             }
         )
 
-        m.params.wrd_ro.update(
+        m.params.ro.update(
             {
                 "startup_delay": 2,  # hours
                 "minimum_downtime": 2,
@@ -139,7 +138,7 @@ class TestPriceTakerWorkflow:
         m.append_lmp_data(lmp_data=price_data["Energy Rate"])
 
         m.build_multiperiod_model(
-            flowsheet_func=fs.build_wrd_desal_flowsheet,
+            flowsheet_func=fs.build_desal_flowsheet,
             flowsheet_options={"params": m.params},
         )
 
@@ -167,15 +166,15 @@ class TestPriceTakerWorkflow:
         assert "Demand_Response_Price" in price_data.columns
 
         # Check params added
-        assert hasattr(m.params.wrd_ro, "surrogate_file")
-        assert hasattr(m.params.wrd_ro, "replacement_types")
-        assert hasattr(m.params.wrd_ro, "replacement_costs")
-        assert hasattr(m.params.wrd_ro, "replacement_lifetimes")
-        assert hasattr(m.params.wrd_ro, "replacement_max_flex_penalty")
-        assert hasattr(m.params.wrd_uf, "surrogate_a")
-        assert hasattr(m.params.wrd_uf, "surrogate_b")
-        assert hasattr(m.params.wrd_uf, "surrogate_c")
-        assert hasattr(m.params.wrd_uf, "num_uf_pumps")
+        assert hasattr(m.params.ro, "surrogate_file")
+        assert hasattr(m.params.ro, "replacement_types")
+        assert hasattr(m.params.ro, "replacement_costs")
+        assert hasattr(m.params.ro, "replacement_lifetimes")
+        assert hasattr(m.params.ro, "replacement_max_flex_penalty")
+        assert hasattr(m.params.uf, "surrogate_a")
+        assert hasattr(m.params.uf, "surrogate_b")
+        assert hasattr(m.params.uf, "surrogate_c")
+        assert hasattr(m.params.uf, "num_uf_pumps")
         assert hasattr(m.params.posttreatment, "chemical_cost")
         assert hasattr(m.params.brinedischarge, "brine_cost")
         assert hasattr(m.params.intake, "chemical_cost")
@@ -283,14 +282,14 @@ class TestPriceTakerWorkflow:
         m, price_data, peak_hours = system_frame
         fs.fix_operations_for_first_four_days(m, peak_hours=peak_hours)
 
-        utils.wrd_fix_ro_recovery(
+        flex_recovery_and_flow_utils.fix_ro_recovery(
             m,
-            ro_recovery=m.params.wrd_ro.nominal_recovery,
+            ro_recovery=m.params.ro.nominal_recovery,
         )
 
-        utils.wrd_fix_uf_recovery(
+        flex_recovery_and_flow_utils.fix_uf_recovery(
             m,
-            uf_recovery=m.params.wrd_uf.nominal_recovery,
+            uf_recovery=m.params.uf.nominal_recovery,
         )
 
         # Set the water production target over the entire time period
@@ -340,21 +339,7 @@ class TestPriceTakerWorkflow:
 
         pyo.assert_optimal_termination(results)
 
-    @pytest.mark.component
-    @pytest.mark.xfail
-    # This test will fail if the user does not have a Gurobi license
-    def test_gurobi_solve(self, system_frame):
-        m, price_data, peak_hours = system_frame
-
-        solver = pyo.SolverFactory("gurobi_direct_minlp")
-        solver.options["MIPGap"] = 0.03
-        results = solver.solve(m)
-
-        pyo.assert_optimal_termination(results)
-
     @pytest.mark.unit
-    @pytest.mark.xfail
-    # This test will fail if the model is not solved aready
     def test_post_solve_calculations(self, system_frame):
         m, price_data, peak_hours = system_frame
 
@@ -384,3 +369,15 @@ class TestPriceTakerWorkflow:
         }
 
         assert filtered_design_var_values
+
+    @pytest.mark.component
+    @pytest.mark.xfail
+    # This test will fail if the user does not have a Gurobi license
+    def test_gurobi_solve(self, system_frame):
+        m, price_data, peak_hours = system_frame
+
+        solver = pyo.SolverFactory("gurobi_direct_minlp")
+        solver.options["MIPGap"] = 0.03
+        results = solver.solve(m)
+
+        pyo.assert_optimal_termination(results)

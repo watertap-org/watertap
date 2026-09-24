@@ -26,11 +26,11 @@ from pyomo.environ import (
     value,
 )
 
-from watertap.flowsheets.flex_desal import params as um_params
-from watertap.flowsheets.flex_desal import unit_models as um
-from watertap.flowsheets.flex_desal.wrd_unit_models import (
-    wrd_reverse_osmosis_operation_model,
-    wrd_uf_operation_model,
+from watertap.flowsheets.flex_desal import flex_recovery_and_flow_params as um_params
+from watertap.flowsheets.flex_desal import flex_recovery_and_flow_unit_models as um
+from watertap.flowsheets.flex_desal.flex_recovery_and_flow_unit_models import (
+    reverse_osmosis_operation_model,
+    uf_operation_model,
 )
 
 
@@ -109,7 +109,7 @@ def add_operational_cost_expressions(blk, params: um_params.FlexDesalParams):
     )
 
 
-def build_wrd_desal_flowsheet(blk, params: um_params.FlexDesalParams):
+def build_desal_flowsheet(blk, params: um_params.FlexDesalParams):
     """
     Builds a flowsheet instance of the entire desalination process
 
@@ -133,12 +133,12 @@ def build_wrd_desal_flowsheet(blk, params: um_params.FlexDesalParams):
     )
     # pretreatment in this case refers to the UF
     blk.pretreatment = OperationModel(
-        model_func=wrd_uf_operation_model,
-        model_args={"params": params.wrd_uf},
+        model_func=uf_operation_model,
+        model_args={"params": params.uf},
     )
     blk.reverse_osmosis = OperationModel(
-        model_func=wrd_reverse_osmosis_operation_model,
-        model_args={"params": params.wrd_ro},
+        model_func=reverse_osmosis_operation_model,
+        model_args={"params": params.ro},
     )
     blk.posttreatment = OperationModel(
         model_func=um.posttreatment_operation_model,
@@ -235,7 +235,7 @@ def add_delayed_startup_constraints(m):
     # "Shutdown" post-treatment unit if RO startup is initiated
     @m.Constraint(m.period.index_set())
     def posttreatment_unit_commitment(blk, d, t):
-        indices = [(d, t - i) for i in range(params.wrd_ro.startup_delay) if t - i > 0]
+        indices = [(d, t - i) for i in range(params.ro.startup_delay) if t - i > 0]
         return (1 - blk.period[d, t].posttreatment.op_mode) == sum(
             blk.period[p].reverse_osmosis.ro_skid[1].startup for p in indices
         )
@@ -243,7 +243,7 @@ def add_delayed_startup_constraints(m):
     # Brine pump must operate if RO startup is initiated
     @m.Constraint(m.period.index_set())
     def brine_pump_unit_commitment(blk, d, t):
-        indices = [(d, t - i) for i in range(params.wrd_ro.startup_delay) if t - i > 0]
+        indices = [(d, t - i) for i in range(params.ro.startup_delay) if t - i > 0]
         return blk.period[d, t].brine_discharge.op_mode == sum(
             blk.period[p].reverse_osmosis.ro_skid[1].startup for p in indices
         )
@@ -366,7 +366,7 @@ def add_flow_changes_penalty(m):
     m.flow_changed = Var(
         m.set_days,
         m.set_time,
-        range(1, m.params.wrd_ro.num_ro_skids + 1),
+        range(1, m.params.ro.num_ro_skids + 1),
         within=Binary,
         doc="Binary variable: 1 if RO skid flowrate changes from previous time step, 0 otherwise",
     )
@@ -375,17 +375,17 @@ def add_flow_changes_penalty(m):
     m.uf_flow_changed = Var(
         m.set_days,
         m.set_time,
-        range(1, m.params.wrd_uf.num_uf_pumps + 1),
+        range(1, m.params.uf.num_uf_pumps + 1),
         within=Binary,
         doc="Binary variable: 1 if UF pump flowrate changes from previous time step, 0 otherwise",
     )
 
     # Add constraints to detect flowrate changes
     # Big-M value used for the constraint, based on max flowrate
-    big_M = 2 * m.params.wrd_ro.maximum_flowrate
-    big_M_uf = 2 * m.params.wrd_uf.maximum_flowrate
+    big_M = 2 * m.params.ro.maximum_flowrate
+    big_M_uf = 2 * m.params.uf.maximum_flowrate
 
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.wrd_ro.num_ro_skids + 1))
+    @m.Constraint(m.set_days, m.set_time, range(1, m.params.ro.num_ro_skids + 1))
     def track_flow_changes(m_blk, d, t, i):
         # Skip first time step (no previous time step to compare)
         if t == 1:
@@ -399,7 +399,7 @@ def add_flow_changes_penalty(m):
 
         return m_blk.flow_changed[d, t, i] * big_M >= flow_diff
 
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.wrd_ro.num_ro_skids + 1))
+    @m.Constraint(m.set_days, m.set_time, range(1, m.params.ro.num_ro_skids + 1))
     def track_flow_changes_neg(m_blk, d, t, i):
         # Skip first time step
         if t == 1:
@@ -414,7 +414,7 @@ def add_flow_changes_penalty(m):
         return m_blk.flow_changed[d, t, i] * big_M >= flow_diff
 
     # Track UF pump flowrate changes
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.wrd_uf.num_uf_pumps + 1))
+    @m.Constraint(m.set_days, m.set_time, range(1, m.params.uf.num_uf_pumps + 1))
     def track_uf_flow_changes(m_blk, d, t, i):
         # Skip first time period of first day (no previous period to compare)
         if t == 1:
@@ -429,7 +429,7 @@ def add_flow_changes_penalty(m):
 
         return m_blk.uf_flow_changed[d, t, i] * big_M_uf >= flow_diff
 
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.wrd_uf.num_uf_pumps + 1))
+    @m.Constraint(m.set_days, m.set_time, range(1, m.params.uf.num_uf_pumps + 1))
     def track_uf_flow_changes_neg(m_blk, d, t, i):
         # Skip first time period of first day
         if t == 1:
@@ -451,14 +451,14 @@ def add_flow_changes_penalty(m):
                 sum(
                     sum(m.flow_changed[d, t, i] for t in m.set_time) for d in m.set_days
                 )
-                for i in range(1, m.params.wrd_ro.num_ro_skids + 1)
+                for i in range(1, m.params.ro.num_ro_skids + 1)
             )
             + sum(
                 sum(
                     sum(m.uf_flow_changed[d, t, i] for t in m.set_time)
                     for d in m.set_days
                 )
-                for i in range(1, m.params.wrd_uf.num_uf_pumps + 1)
+                for i in range(1, m.params.uf.num_uf_pumps + 1)
             )
         )
     )
@@ -466,7 +466,7 @@ def add_flow_changes_penalty(m):
 
 def calculate_replacement_costs(m):
     """Adds expression for the replacement cost"""
-    params: um_params.WRD_ROParams = m.params.wrd_ro
+    params: um_params.ROParams = m.params.ro
 
     m.degree_of_flex = Expression(
         expr=sum(
@@ -619,7 +619,7 @@ def begin_and_end_constraint(m):
         )
 
 
-### NOT USED IN THE TUTORIAL EXAMPLE - That might mean they aren't being tested? ###
+### NOT USED IN THE TUTORIAL EXAMPLE - Which might mean they aren't being tested? ###
 def fix_operations_for_first_four_days(m, peak_hours=None):
     """Fix all RO trains to expected behavior for first four days. This could be some part of an initialization that improve solve times."""
     for d, p in m.period:
@@ -643,7 +643,7 @@ def add_delayed_shutdown_constraints(m):
     """Adds the delayed shutdown constraints to the model"""
     params: um_params.FlexDesalParams = m.params
 
-    """Specific to WRD where the planned shutdowns seem to occur over a period 60-100 minutes, meaning it's 
+    """Specific to Water Replenishment District case study where the planned shutdowns seem to occur over a period 60-100 minutes, meaning it's 
     not realistic to have all trains go from on to off in same hour. This says 30 mins per train about right"""
 
     @m.Constraint(m.period.index_set())
@@ -651,7 +651,7 @@ def add_delayed_shutdown_constraints(m):
         return (
             sum(
                 blk.period[d, t].reverse_osmosis.ro_skid[i].shutdown
-                for i in range(1, params.wrd_ro.num_ro_skids + 1)
+                for i in range(1, params.ro.num_ro_skids + 1)
             )
             <= 2
         )
@@ -668,7 +668,7 @@ def add_working_hours_constraint(m):
             return (
                 sum(
                     blk.period[d, t].reverse_osmosis.ro_skid[i].shutdown
-                    for i in range(1, blk.params.wrd_ro.num_ro_skids + 1)
+                    for i in range(1, blk.params.ro.num_ro_skids + 1)
                 )
                 == 0
             )
@@ -683,7 +683,7 @@ def add_working_hours_constraint(m):
             return (
                 sum(
                     blk.period[d, t].reverse_osmosis.ro_skid[i].startup
-                    for i in range(1, blk.params.wrd_ro.num_ro_skids + 1)
+                    for i in range(1, blk.params.ro.num_ro_skids + 1)
                 )
                 == 0
             )
@@ -737,7 +737,7 @@ def repeat_weekdays(m):
         24 / m.params.timestep_hours
     )  # Assuming time index is in hours and starts at 1
 
-    @m.Constraint(m.set_time, range(1, m.params.wrd_ro.num_ro_skids + 1))
+    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
     def repeat_weekday_flowrates(blk, t, i):
         if t >= detla_time + 1 and t <= 4 * detla_time:  # Compare day 2-4 to day 1
             return (
@@ -747,7 +747,7 @@ def repeat_weekdays(m):
         else:
             return Constraint.Skip
 
-    @m.Constraint(m.set_time, range(1, m.params.wrd_ro.num_ro_skids + 1))
+    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
     def repeat_weekday_recovery(blk, t, i):
         if t >= detla_time + 1 and t <= 4 * detla_time:  # Compare day 2-4 to day 1
             return (
@@ -757,7 +757,7 @@ def repeat_weekdays(m):
         else:
             return Constraint.Skip
 
-    @m.Constraint(m.set_time, range(1, m.params.wrd_ro.num_ro_skids + 1))
+    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
     def repeat_weekend_flowrate(blk, t, i):
         if t >= 5 * detla_time + 1 and t <= 6 * detla_time:  # Compare day 6 to day 7
             return (
@@ -767,7 +767,7 @@ def repeat_weekdays(m):
         else:
             return Constraint.Skip
 
-    @m.Constraint(m.set_time, range(1, m.params.wrd_ro.num_ro_skids + 1))
+    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
     def repeat_weekend_recovery(blk, t, i):
         if t >= 5 * detla_time + 1 and t <= 6 * detla_time:  # Compare day 6 to day 7
             return (
@@ -780,7 +780,7 @@ def repeat_weekdays(m):
 
 def prevent_consecutive_flow_changes(m):
     # Prevent back-to-back flow-change events unless shutdown is occurring.
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.wrd_ro.num_ro_skids + 1))
+    @m.Constraint(m.set_days, m.set_time, range(1, m.params.ro.num_ro_skids + 1))
     def no_consecutive_ro_flow_changes(m_blk, d, t, i):
         if d == 1 and t <= 2:
             return Constraint.Skip
@@ -793,7 +793,7 @@ def prevent_consecutive_flow_changes(m):
             <= 1 + shutdown_now + shutdown_prev
         )
 
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.wrd_uf.num_uf_pumps + 1))
+    @m.Constraint(m.set_days, m.set_time, range(1, m.params.uf.num_uf_pumps + 1))
     def no_consecutive_uf_flow_changes(m_blk, d, t, i):
         if d == 1 and t <= 2:
             return Constraint.Skip

@@ -27,7 +27,7 @@ from pyomo.environ import (
 
 from idaes.apps.grid_integration import OperationModel
 
-from watertap.flowsheets.flex_desal import params as um_params
+from watertap.flowsheets.flex_desal import flex_recovery_params as um_params
 
 # NOTE: OperationModel class automatically adds startup, shutdown,
 # and op_mode binary variables. So, no need to define these variables
