@@ -19,7 +19,7 @@ This flowsheet uses several different modeling features available in WaterTAP, i
 Costing packages:
     * :doc:`/technical_reference/costing/zero_order_costing`
 Property models:
-    * :doc:`/technical_reference/core/water_props`
+    * :doc:`/technical_reference/property_models/zo`
     * :doc:`/technical_reference/property_models/seawater`
 Unit models:
     * :doc:`/technical_reference/unit_models/zero_order_unit_models/index`

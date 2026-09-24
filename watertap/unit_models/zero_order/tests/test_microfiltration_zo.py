@@ -35,7 +35,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MicroFiltrationZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     MaterialFlowBasis,
@@ -54,7 +54,7 @@ class TestMicroFiltrationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=["eeq", "toc", "tss", "cryptosporidium"]
         )
 
@@ -197,7 +197,7 @@ class TestMicroFiltrationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
+        m.fs.params = ZOParameterBlock(
             solute_list=["eeq", "toc", "tss", "cryptosporidium", "foo"]
         )
 
@@ -339,7 +339,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["tss"])
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.costing.base_currency = pyunits.USD_2014

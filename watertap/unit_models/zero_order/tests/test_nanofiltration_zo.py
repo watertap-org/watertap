@@ -34,7 +34,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import NanofiltrationZO
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.property_models import ZOParameterBlock
 from watertap.costing.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
@@ -48,7 +48,7 @@ class TestNFZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.unit = NanofiltrationZO(property_package=m.fs.params, database=m.db)
 
@@ -165,7 +165,7 @@ class TestNFZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss", "foo"])
+        m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss", "foo"])
 
         m.fs.unit = NanofiltrationZO(property_package=m.fs.params, database=m.db)
 
@@ -297,7 +297,7 @@ class TestNFZO_non_default_subtype:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(solute_list=["tds", "dye"])
+        m.fs.params = ZOParameterBlock(solute_list=["tds", "dye"])
 
         m.fs.unit = NanofiltrationZO(
             property_package=m.fs.params,
@@ -430,7 +430,7 @@ def test_costing():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
+    m.fs.params = ZOParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
@@ -465,7 +465,7 @@ def test_costing_non_default_subtype():
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list=["tds", "dye"])
+    m.fs.params = ZOParameterBlock(solute_list=["tds", "dye"])
 
     m.fs.costing = ZeroOrderCosting()
 

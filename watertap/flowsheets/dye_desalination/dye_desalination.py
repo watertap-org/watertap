@@ -81,7 +81,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
 )
 from watertap.costing import MultiUnitModelCostingBlock
 from watertap.core.wt_database import Database
-import watertap.core.zero_order_properties as prop_ZO
+import watertap.property_models.zero_order_prop_pack as prop_ZO
 from watertap.unit_models.zero_order import (
     FeedZO,
     PumpElectricityZO,
@@ -155,7 +155,7 @@ def build(
     m.fs = FlowsheetBlock(dynamic=False)
 
     # define property packages
-    m.fs.prop_nf = prop_ZO.WaterParameterBlock(solute_list=["tds", "dye"])
+    m.fs.prop_nf = prop_ZO.ZOParameterBlock(solute_list=["tds", "dye"])
     m.fs.prop_ro = prop_SW.SeawaterParameterBlock()
 
     # define blocks
