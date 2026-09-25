@@ -1,3 +1,5 @@
+.. _waiv_zo:
+
 Wind-Aided Intensified Evaporation Unit (ZO)
 ============================================
 

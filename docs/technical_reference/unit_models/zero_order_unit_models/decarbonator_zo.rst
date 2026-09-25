@@ -1,3 +1,5 @@
+.. _decarbonator_zo:
+
 Decarbonator  (ZO)
 ==================
 

@@ -1,3 +1,5 @@
+.. _hrcs_zo:
+
 High-Rate Contact Stabilization (ZO)
 ====================================
 

@@ -1,3 +1,5 @@
+.. _static_mixer_zo:
+
 Static Mixer (ZO)
 =================
 

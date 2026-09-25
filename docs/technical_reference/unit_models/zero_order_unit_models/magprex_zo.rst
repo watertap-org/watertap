@@ -1,3 +1,5 @@
+.. _magprex_zo:
+
 Magprex (ZO)
 ============
 

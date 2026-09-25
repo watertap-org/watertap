@@ -1,3 +1,5 @@
+.. _screen_zo:
+
 Screen  (ZO)
 ============
 

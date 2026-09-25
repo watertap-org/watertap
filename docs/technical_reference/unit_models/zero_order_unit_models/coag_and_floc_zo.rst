@@ -1,3 +1,5 @@
+.. _coag_and_floc_zo:
+
 Coagulation Flocculation (ZO)
 =============================
 
