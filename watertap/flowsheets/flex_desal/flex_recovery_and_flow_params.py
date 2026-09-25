@@ -219,7 +219,7 @@ class FlexDesalParams:
     onsite_capacity: float = 0
     # Other parameters not used in tutorial, but have related functions in flex_recovery_and_flow_flowsheet.py
     nonworking_hours: list[int] = field(default_factory=list)
-    rainy_days: int = None
+    shutdown_days: int = None
     CAPEX_yr: float = None
     max_daily_shutdowns: Optional[int] = None
 

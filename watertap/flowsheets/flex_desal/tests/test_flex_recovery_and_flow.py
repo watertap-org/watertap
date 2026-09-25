@@ -209,10 +209,6 @@ class TestPriceTakerWorkflow:
         fs.begin_and_end_constraint(m)
         assert isinstance(m.match_train_1_at_start_and_end, pyo.Constraint)
 
-        # Limit the number of shutdowns per day
-        fs.add_maximum_shutdowns(m)
-        assert hasattr(m, "max_shutdowns_per_24h_window")
-
         # Add the slow shutdown constraint
         fs.add_delayed_shutdown_constraints(m)
         assert hasattr(m, "posttreatment_unit_commitment_shutdown")

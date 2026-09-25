@@ -619,7 +619,6 @@ def begin_and_end_constraint(m):
         )
 
 
-### NOT USED IN THE TUTORIAL EXAMPLE - Which might mean they aren't being tested? ###
 def fix_operations_for_first_four_days(m, peak_hours=None):
     """Fix all RO trains to expected behavior for first four days. This could be some part of an initialization that improve solve times."""
     for d, p in m.period:
@@ -691,25 +690,6 @@ def add_working_hours_constraint(m):
             return Constraint.Skip
 
 
-def add_maximum_shutdowns(m):
-    """Adds rolling 24-hour shutdown limits over the full period index."""
-    params: um_params.FlexDesalParams = m.params
-
-    window_steps = max(1, int(round(24 / params.timestep_hours)))
-    period_points = list(m.period.index_set())
-    num_windows = max(0, len(period_points) - window_steps + 1)
-
-    @m.Constraint(range(num_windows))
-    def max_shutdowns_per_24h_window(blk, w):
-        return (
-            sum(
-                blk.period[period_points[k]].reverse_osmosis.ro_skid[1].shutdown
-                for k in range(w, w + window_steps)
-            )
-            <= params.max_daily_shutdowns
-        )
-
-
 def restrict_flexible_trains(m, num_flexible_trains):
     ro_skids = sorted(list(m.period[1, 1].reverse_osmosis.set_ro_skids))
     n_ro_skids = len(ro_skids)
@@ -727,81 +707,3 @@ def restrict_flexible_trains(m, num_flexible_trains):
             ro_skid = m.period[p].reverse_osmosis.ro_skid[skid]
             ro_skid.startup.fix(0)
             ro_skid.shutdown.fix(0)
-
-
-# These ones might not need to be included at all
-def repeat_weekdays(m):
-    """Ensures operations during first four days are repeated"""
-
-    detla_time = (
-        24 / m.params.timestep_hours
-    )  # Assuming time index is in hours and starts at 1
-
-    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
-    def repeat_weekday_flowrates(blk, t, i):
-        if t >= detla_time + 1 and t <= 4 * detla_time:  # Compare day 2-4 to day 1
-            return (
-                blk.period[1, t].reverse_osmosis.ro_skid[i].feed_flowrate
-                == blk.period[1, t].reverse_osmosis.ro_skid[i].feed_flowrate
-            )
-        else:
-            return Constraint.Skip
-
-    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
-    def repeat_weekday_recovery(blk, t, i):
-        if t >= detla_time + 1 and t <= 4 * detla_time:  # Compare day 2-4 to day 1
-            return (
-                blk.period[1, t].reverse_osmosis.ro_skid[i].recovery
-                == blk.period[1, t].reverse_osmosis.ro_skid[i].recovery
-            )
-        else:
-            return Constraint.Skip
-
-    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
-    def repeat_weekend_flowrate(blk, t, i):
-        if t >= 5 * detla_time + 1 and t <= 6 * detla_time:  # Compare day 6 to day 7
-            return (
-                blk.period[1, t].reverse_osmosis.ro_skid[i].feed_flowrate
-                == blk.period[1, t].reverse_osmosis.ro_skid[i].feed_flowrate
-            )
-        else:
-            return Constraint.Skip
-
-    @m.Constraint(m.set_time, range(1, m.params.ro.num_ro_skids + 1))
-    def repeat_weekend_recovery(blk, t, i):
-        if t >= 5 * detla_time + 1 and t <= 6 * detla_time:  # Compare day 6 to day 7
-            return (
-                blk.period[1, t].reverse_osmosis.ro_skid[i].recovery
-                == blk.period[1, t].reverse_osmosis.ro_skid[i].recovery
-            )
-        else:
-            return Constraint.Skip
-
-
-def prevent_consecutive_flow_changes(m):
-    # Prevent back-to-back flow-change events unless shutdown is occurring.
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.ro.num_ro_skids + 1))
-    def no_consecutive_ro_flow_changes(m_blk, d, t, i):
-        if d == 1 and t <= 2:
-            return Constraint.Skip
-
-        shutdown_now = m_blk.period[d, t].reverse_osmosis.ro_skid[i].shutdown
-        shutdown_prev = m_blk.period[d, t - 1].reverse_osmosis.ro_skid[i].shutdown
-
-        return (
-            m_blk.flow_changed[d, t, i] + m_blk.flow_changed[d, t - 1, i]
-            <= 1 + shutdown_now + shutdown_prev
-        )
-
-    @m.Constraint(m.set_days, m.set_time, range(1, m.params.uf.num_uf_pumps + 1))
-    def no_consecutive_uf_flow_changes(m_blk, d, t, i):
-        if d == 1 and t <= 2:
-            return Constraint.Skip
-
-        shutdown_now = m_blk.period[d, t].pretreatment.uf_pumps[i].shutdown
-        shutdown_prev = m_blk.period[d, t - 1].pretreatment.uf_pumps[i].shutdown
-
-        return (
-            m_blk.uf_flow_changed[d, t, i] + m_blk.uf_flow_changed[d, t - 1, i]
-            <= 1 + shutdown_now + shutdown_prev
-        )
