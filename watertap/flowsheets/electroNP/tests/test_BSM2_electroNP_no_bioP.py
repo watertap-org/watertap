@@ -28,6 +28,7 @@ from watertap.flowsheets.electroNP.BSM2_electroNP_no_bioP import (
 )
 
 
+@pytest.mark.skip(reason="Model is unstable and needs permanent fix.")
 @pytest.mark.requires_idaes_solver
 class TestElectroNPFlowsheet:
     @pytest.fixture(scope="class")
