@@ -642,8 +642,8 @@ def add_delayed_shutdown_constraints(m):
     """Adds the delayed shutdown constraints to the model"""
     params: um_params.FlexDesalParams = m.params
 
-    """Specific to Water Replenishment District case study where the planned shutdowns seem to occur over a period 60-100 minutes, meaning it's 
-    not realistic to have all trains go from on to off in same hour. This says 30 mins per train about right"""
+    """Specific to Water Replenishment District case study where the planned shutdowns to occur over a period 60-100 minutes, with one train shutting down at a time. It's 
+    not realistic to have all trains go from on to off in same hour."""
 
     @m.Constraint(m.period.index_set())
     def posttreatment_unit_commitment_shutdown(blk, d, t):
