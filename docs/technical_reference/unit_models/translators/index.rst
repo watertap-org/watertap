@@ -3,6 +3,10 @@
 Translators
 ===========
 
+Translator blocks connects two unit models that use different property or
+reaction packages by translating the upstream stream variables (e.g., component flows/concentrations)
+into the corresponding variables expected by the downstream property package.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
