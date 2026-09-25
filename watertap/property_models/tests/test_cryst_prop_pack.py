@@ -810,3 +810,14 @@ class TestNaClCalculateState_6(PropertyCalculateStateTest):
             ("flow_mass_phase_comp", ("Vap", "H2O")): 3.632
             * 2e-4,  # Density from ideal gas law * vol. flow
         }
+
+
+@pytest.mark.unit
+def test_list_and_print_properties():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = props.NaClParameterBlock(
+        heat_of_crystallization_model=props.HeatOfCrystallizationModel.constant
+    )
+    m.fs.properties.list_properties()
+    m.fs.properties.print_properties()
