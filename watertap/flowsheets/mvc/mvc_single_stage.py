@@ -746,4 +746,4 @@ def display_design(m):
 
 
 if __name__ == "__main__":
-    m = main()
+    m, _ = main()
