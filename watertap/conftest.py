@@ -45,12 +45,16 @@ class MarkerSpec(enum.Enum):
 def _handle_requires_idaes_solver(
     solver: Optional = None, action: Optional[Callable[[str], None]] = pytest.xfail
 ) -> None:
+    from pyomo.contrib.solver.common.base import SolverBase
     from watertap.core.solvers import get_solver
     from idaes.config import bin_directory
 
     solver = solver or get_solver()
     idaes_bin_dir = Path(bin_directory).resolve()
-    solver_bin_path = Path(solver.executable()).resolve()
+    if isinstance(solver, SolverBase):
+        solver_bin_path = Path(str(solver.config.executable)).resolve()
+    else:
+        solver_bin_path = Path(solver.executable()).resolve()
 
     if not idaes_bin_dir in solver_bin_path.parents:
         action(f"This test is known to be failing with {solver_bin_path}")
