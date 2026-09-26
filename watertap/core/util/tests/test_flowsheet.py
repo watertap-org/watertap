@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 
+import os
 import pytest
 import pandas as pd
 
@@ -21,8 +22,15 @@ from idaes.models.unit_models import (
     Separator,
     Product,
 )
+import idaes.logger as idaeslog
 
-from watertap.core.util.flowsheet import list_ports
+from watertap.core.util import (
+    list_ports,
+    export_block_data_to_csv,
+    block_data_to_df,
+    get_block_data,
+)
+from watertap.core.solvers import get_solver
 from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
@@ -30,7 +38,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.property_models.unit_specific.activated_sludge.modified_asm2d_properties import (
     ModifiedASM2dParameterBlock,
 )
-import idaes.logger as idaeslog
 
 
 @pytest.fixture
@@ -370,3 +377,230 @@ def test_deactivated_arc(flowsheet_deactivated_arc):
         }
     )
     pd.testing.assert_frame_equal(results.astype(str), expected.astype(str))
+
+
+@pytest.mark.component
+def test_flowsheet_export_functions():
+
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.blk = pyo.Block()
+
+    with pytest.raises(ValueError, match="Model export failed: no data to export."):
+        export_block_data_to_csv(m.fs.blk, descend_into=True)
+
+    m.fs.blk.v1 = pyo.Var(initialize=1, units=pyo.units.year)
+    m.fs.blk.v2 = pyo.Var(initialize=2, units=pyo.units.year / pyo.units.meter)
+    m.fs.blk.v1.fix()
+    m.fs.blk.v2.fix()
+
+    blk_data1 = get_block_data(m.fs.blk)
+    assert len(blk_data1) == 2
+    assert blk_data1["fs.blk.v1"]["value"] == 1
+    assert blk_data1["fs.blk.v1"]["units"] == "year"
+    assert blk_data1["fs.blk.v1"]["component_type"] == "Var"
+    assert blk_data1["fs.blk.v2"]["value"] == 2
+    assert blk_data1["fs.blk.v2"]["units"] == "year/m"
+    assert blk_data1["fs.blk.v2"]["component_type"] == "Var"
+    blk_df1 = block_data_to_df(blk_data1)
+    assert not blk_df1.empty
+    assert len(blk_df1) == len(blk_data1)
+    assert len(blk_df1.columns) == 5
+    assert all(
+        col in blk_df1.columns
+        for col in ["model_component", "value", "units", "doc", "component_type"]
+    )
+
+    blk_data2 = get_block_data(m.fs.blk, components=[pyo.Param])
+    assert len(blk_data2) == 0  # there are no Params
+    with pytest.raises(ValueError, match="Model export failed: no data to export."):
+        block_data_to_df(blk_data2)
+
+    m.fs.blk.p1 = pyo.Param(initialize=3, units=pyo.units.year)
+    m.fs.blk.p2 = pyo.Param(initialize=4, units=pyo.units.meter)
+
+    blk_data3 = get_block_data(m.fs.blk, components=[pyo.Param])
+    assert len(blk_data3) == 2
+    assert blk_data3["fs.blk.p1"]["value"] == 3
+    assert blk_data3["fs.blk.p1"]["units"] == "year"
+    assert blk_data3["fs.blk.p1"]["component_type"] == "Param"
+    assert blk_data3["fs.blk.p2"]["value"] == 4
+    assert blk_data3["fs.blk.p2"]["units"] == "m"
+    assert blk_data3["fs.blk.p2"]["component_type"] == "Param"
+
+    m.fs.blk.e1 = pyo.Expression(
+        expr=pyo.units.convert(
+            m.fs.blk.v1 + m.fs.blk.v2 * m.fs.blk.p2, to_units=pyo.units.year
+        )
+    )
+    m.fs.blk.e2 = pyo.Expression(expr=m.fs.blk.p1 + m.fs.blk.e1)
+
+    blk_data4 = get_block_data(m.fs.blk, components=[pyo.Expression])
+    assert len(blk_data4) == 2
+    assert blk_data4["fs.blk.e1"]["value"] == 9
+    assert blk_data4["fs.blk.e1"]["units"] == "year"
+    assert blk_data4["fs.blk.e1"]["component_type"] == "Expression"
+    assert blk_data4["fs.blk.e2"]["value"] == 12
+    assert blk_data4["fs.blk.e2"]["units"] == "year"
+    assert blk_data4["fs.blk.e2"]["component_type"] == "Expression"
+
+    blk_data5 = get_block_data(m.fs.blk)
+    assert len(blk_data5) == 6
+    assert blk_data5["fs.blk.v1"]["value"] == 1
+    assert blk_data5["fs.blk.v1"]["units"] == "year"
+    assert blk_data5["fs.blk.v1"]["component_type"] == "Var"
+    assert blk_data5["fs.blk.v2"]["value"] == 2
+    assert blk_data5["fs.blk.v2"]["units"] == "year/m"
+    assert blk_data5["fs.blk.v2"]["component_type"] == "Var"
+    assert blk_data5["fs.blk.p1"]["value"] == 3
+    assert blk_data5["fs.blk.p1"]["units"] == "year"
+    assert blk_data5["fs.blk.p1"]["component_type"] == "Param"
+    assert blk_data5["fs.blk.p2"]["value"] == 4
+    assert blk_data5["fs.blk.p2"]["units"] == "m"
+    assert blk_data5["fs.blk.p2"]["component_type"] == "Param"
+    assert blk_data5["fs.blk.e1"]["value"] == 9
+    assert blk_data5["fs.blk.e1"]["units"] == "year"
+    assert blk_data5["fs.blk.e1"]["component_type"] == "Expression"
+    assert blk_data5["fs.blk.e2"]["value"] == 12
+    assert blk_data5["fs.blk.e2"]["units"] == "year"
+    assert blk_data5["fs.blk.e2"]["component_type"] == "Expression"
+
+    m.fs.blk.b1 = pyo.Block()
+    m.fs.blk.b1.v1 = pyo.Var(initialize=5, units=pyo.units.dimensionless)
+    m.fs.blk.b1.v1.fix()
+    m.fs.blk.b1.p1 = pyo.Param(initialize=6, units=pyo.units.dimensionless)
+    m.fs.blk.b1.e1 = pyo.Expression(expr=m.fs.blk.b1.v1 + m.fs.blk.b1.p1)
+
+    blk_data6 = get_block_data(m.fs.blk, descend_into=False)
+    assert blk_data6 == blk_data5
+
+    blk_data7 = get_block_data(m.fs.blk, descend_into=True)
+    assert len(blk_data7) == 9
+    assert blk_data7["fs.blk.b1.v1"]["value"] == 5
+    assert blk_data7["fs.blk.b1.v1"]["units"] == "dimensionless"
+    assert blk_data7["fs.blk.b1.v1"]["component_type"] == "Var"
+    assert blk_data7["fs.blk.b1.p1"]["value"] == 6
+    assert blk_data7["fs.blk.b1.p1"]["units"] == "dimensionless"
+    assert blk_data7["fs.blk.b1.p1"]["component_type"] == "Param"
+    assert blk_data7["fs.blk.b1.e1"]["value"] == 11
+    assert blk_data7["fs.blk.b1.e1"]["units"] == "dimensionless"
+    assert blk_data7["fs.blk.b1.e1"]["component_type"] == "Expression"
+
+    m.fs.blk.b2 = pyo.Block()
+    m.fs.blk.b2.sb1 = pyo.Block()
+    m.fs.blk.b2.sb1.v1 = pyo.Var([0], initialize=7, units=pyo.units.dimensionless)
+    m.fs.blk.b2.sb1.v1.fix()
+    m.fs.blk.b2.sb1.p1 = pyo.Param(
+        ["foo", "bar"], initialize=8, units=pyo.units.dimensionless
+    )
+    m.fs.blk.b2.sb1.e1 = pyo.Expression(
+        expr=m.fs.blk.b2.sb1.v1[0] + m.fs.blk.b2.sb1.p1["foo"]
+    )
+
+    with pytest.raises(ValueError, match="Model export failed: no data to export."):
+        export_block_data_to_csv(m.fs.blk.b2, descend_into=False)
+
+    blk_data8 = get_block_data(m.fs.blk, descend_into=True, components=[pyo.Var])
+    assert len(blk_data8) == 4
+    assert blk_data8["fs.blk.v1"]["value"] == 1
+    assert blk_data8["fs.blk.v1"]["units"] == "year"
+    assert blk_data8["fs.blk.v1"]["component_type"] == "Var"
+    assert blk_data8["fs.blk.v2"]["value"] == 2
+    assert blk_data8["fs.blk.v2"]["units"] == "year/m"
+    assert blk_data8["fs.blk.v2"]["component_type"] == "Var"
+    assert blk_data8["fs.blk.b1.v1"]["value"] == 5
+    assert blk_data8["fs.blk.b1.v1"]["units"] == "dimensionless"
+    assert blk_data8["fs.blk.b1.v1"]["component_type"] == "Var"
+    assert blk_data8["fs.blk.b2.sb1.v1[0]"]["value"] == 7
+    assert blk_data8["fs.blk.b2.sb1.v1[0]"]["units"] == "dimensionless"
+    assert blk_data8["fs.blk.b2.sb1.v1[0]"]["component_type"] == "Var"
+
+    m.fs.blk.o1 = pyo.Objective(expr=m.fs.blk.e1)
+
+    blk_data9 = get_block_data(m.fs.blk, components=[pyo.Objective])
+    assert len(blk_data9) == 1
+    assert blk_data9["fs.blk.o1"]["component_type"] == "Objective"
+    assert blk_data9["fs.blk.o1"]["value"] == 9
+    assert blk_data9["fs.blk.o1"]["units"] == "year"
+
+    m.fs.blk.v3 = pyo.Var(initialize=10, units=pyo.units.year)
+    m.fs.blk.c1 = pyo.Constraint(expr=m.fs.blk.v3 == m.fs.blk.v1 + m.fs.blk.v2)
+
+    # Test how References are handled
+    m.fs.blk.r1 = pyo.Reference(m.fs.blk.b2.sb1.v1)
+    blk_data10 = get_block_data(m.fs.blk, descend_into=False)
+    assert "fs.blk.r1" not in blk_data10
+    assert "fs.blk.b2.sb1.v1[0]" not in blk_data10
+
+    blk_data11 = get_block_data(m.fs.blk, descend_into=True)
+    assert "fs.blk.r1" not in blk_data11
+    assert "fs.blk.b2.sb1.v1[0]" in blk_data11
+
+    with pytest.raises(
+        ValueError,
+        match="The only accepted components for export are Var, Expression, Param, and Objective.",
+    ):
+        _ = get_block_data(m.fs.blk, components=[pyo.Constraint])
+
+    n_comps = 0
+    for c in m.fs.component_objects(
+        [pyo.Var, pyo.Param, pyo.Expression, pyo.Objective], descend_into=True
+    ):
+        if c.is_reference():
+            continue
+        if c.is_indexed():
+            for _ in c.values():
+                n_comps += 1
+        else:
+            n_comps += 1
+
+    blk_data12 = get_block_data(
+        m.fs, components=[pyo.Var, pyo.Param, pyo.Expression, pyo.Objective]
+    )
+    assert len(blk_data12) == n_comps
+    blk_df12 = block_data_to_df(blk_data12)
+    assert len(blk_df12) == n_comps
+
+    here = os.path.dirname(__file__)
+    cwd = os.getcwd()
+
+    _ = export_block_data_to_csv(m.fs)
+    assert os.path.exists(f"{cwd}/watertap_model_results.csv")
+    os.remove(f"{cwd}/watertap_model_results.csv")
+
+    # Test user-defined save location
+    save_as = f"{here}/test-export.csv"
+    _ = export_block_data_to_csv(m.fs, save_as=save_as)
+    assert os.path.exists(save_as)
+    os.remove(save_as)
+
+    # Test export with only Vars
+    components = [pyo.Var]
+    save_as = f"{here}/test-only-vars.csv"
+    df_only_vars = export_block_data_to_csv(
+        m.fs, save_as=save_as, components=components
+    )
+    assert df_only_vars["component_type"].eq("Var").all()
+    assert os.path.exists(save_as)
+    os.remove(save_as)
+
+    solver = get_solver()
+
+    rows = list()
+    xs = [1, 2, 3]
+    ys = [9, 10, 11]
+    for x in xs:
+        for y in ys:
+            m.fs.blk.v1.fix(x)
+            m.fs.blk.v2.fix(y)
+            _ = solver.solve(m)
+            row = get_block_data(
+                m.fs,
+                sweep_mode=True,
+                sweep_cols={"var1": m.fs.blk.v1, "var2": m.fs.blk.v2},
+            )
+            rows.append(row)
+
+    df_sweep = pd.DataFrame(rows)
+    assert len(df_sweep) == len(xs) * len(ys)
+    assert "var1" in df_sweep.columns and "var2" in df_sweep.columns
