@@ -12,6 +12,7 @@
 
 import pytest
 from math import fabs
+import copy
 
 from pyomo.environ import (
     ConcreteModel,
@@ -23,7 +24,7 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core import FlowsheetBlock, ControlVolume0DBlock
+from idaes.core import FlowsheetBlock, ControlVolume0DBlock, MaterialBalanceType
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -36,7 +37,7 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
-from idaes.core.util.initialization import fix_state_vars
+from idaes.core.util.testing import assert_solution_equivalent
 from watertap.core.solvers import get_solver
 
 
@@ -59,8 +60,39 @@ class PropertyRuntimeError(RuntimeError):
     """
 
 
+def _legacy_testing_translator(blk, default_solution, check_property_constructed=False):
+    """
+    Translates tests written using WaterTAP's test harness and the new standard
+    testing function assert_solution_equivalent.
+
+    Args:
+        blk: Block with variables whose values are being tested
+        default_solution: Dictionary of cached values being tested
+        check_property_constructed: Whether to check if a property is
+            constructed before adding it to be tested.
+
+    Returns:
+        None
+    """
+    expected_results = {}
+    for (v_name, ind), val in default_solution.items():
+        if check_property_constructed and not blk.is_property_constructed(v_name):
+            continue
+        if v_name not in expected_results:
+            expected_results[v_name] = {}
+        # TODO revise behavior for near-zero but not exactly zero values
+        if val == 0:
+            expected_results[v_name][ind] = (val, None, 1e-8)
+        else:
+            expected_results[v_name][ind] = (val, 1e-3, None)
+
+    assert_solution_equivalent(blk, expected_results)
+
+
 class PropertyTestHarness:
+
     def configure_class(self, m):
+        self.expected_on_demand = set()
         self.configure()
 
         # attaching objects to model to carry through in pytest frame
@@ -68,6 +100,7 @@ class PropertyTestHarness:
         m._test_objs = Block()
         m._test_objs.stateblock_statistics = self.stateblock_statistics
         m._test_objs.default_solution = self.default_solution
+        m._test_objs.expected_on_demand = self.expected_on_demand
 
     def configure(self):
         """
@@ -172,6 +205,8 @@ class PropertyTestHarness:
         # check that properties are not built if not demanded
         for v in metadata.list_supported_properties():
             if metadata[v.name].method is not None:
+                if v.name in m._test_objs.expected_on_demand:
+                    continue
                 if m.fs.stream[0].is_property_constructed(v.name):
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was found "
@@ -227,6 +262,7 @@ class PropertyTestHarness:
     @pytest.mark.unit
     def test_units_consistent(self, frame_stateblock):
         m = frame_stateblock
+        # TODO replace with structural issues
         assert_units_consistent(m)
 
     @pytest.mark.unit
@@ -256,6 +292,7 @@ class PropertyTestHarness:
 
     @staticmethod
     def check_constraint_status(blk, tol=1e-8):
+        # TODO replace with assert_no_numerical_issues()
         c_violated_lst = []
 
         # implementation modified from Pyomo 5.7.3, pyomo.utils.infeasible.log_infeasible_constraints
@@ -308,26 +345,7 @@ class PropertyTestHarness:
         self.check_constraint_status(m.fs.stream[0])
 
         # check results
-        for (v_name, ind), val in m._test_objs.default_solution.items():
-            var = getattr(m.fs.stream[0], v_name)[ind]
-            # relative tolerance doesn't mean anything for 0-valued things
-            if val == 0:
-                if not pytest.approx(val, abs=1.0e-08) == value(var):
-                    raise PropertyValueError(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
-                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                        "configure function that sets up the PropertyTestHarness".format(
-                            v_name=v_name, ind=ind, val=val, val_t=value(var)
-                        )
-                    )
-            elif not pytest.approx(val, rel=1e-3) == value(var):
-                raise PropertyValueError(
-                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
-                    "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                    "configure function that sets up the PropertyTestHarness".format(
-                        v_name=v_name, ind=ind, val=val, val_t=value(var)
-                    )
-                )
+        _legacy_testing_translator(m.fs.stream[0], m._test_objs.default_solution)
 
     @pytest.mark.component
     def test_badly_scaled(self, frame_stateblock):
@@ -347,8 +365,7 @@ class PropertyTestHarness:
     def test_default_solve(self, frame_stateblock):
         m = frame_stateblock
 
-        # fix state variables
-        fix_state_vars(m.fs.stream)
+        m.fs.stream.fix_initialization_states()
 
         # solve model
         opt = get_solver()
@@ -360,26 +377,7 @@ class PropertyTestHarness:
         self.check_constraint_status(m.fs.stream[0])
 
         # check results
-        for (v_name, ind), val in m._test_objs.default_solution.items():
-            var = getattr(m.fs.stream[0], v_name)[ind]
-            # relative tolerance doesn't mean anything for 0-valued things
-            if val == 0:
-                if not pytest.approx(val, abs=1.0e-08) == value(var):
-                    raise PropertyValueError(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
-                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                        "configure function that sets up the PropertyTestHarness".format(
-                            v_name=v_name, ind=ind, val=val, val_t=value(var)
-                        )
-                    )
-            elif not pytest.approx(val, rel=1e-3) == value(var):
-                raise PropertyValueError(
-                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
-                    "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                    "configure function that sets up the PropertyTestHarness".format(
-                        v_name=v_name, ind=ind, val=val, val_t=value(var)
-                    )
-                )
+        _legacy_testing_translator(m.fs.stream[0], m._test_objs.default_solution)
 
     @pytest.mark.unit
     def test_list_and_print_properties(self, frame_stateblock):
@@ -397,6 +395,11 @@ class PropertyTestHarness:
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = self.prop_pack()
 
+        param_args = copy.copy(self.param_args)
+        # Defined state is set by the control volume
+        # so we can ignore it here.
+        param_args.pop("defined_state", None)
+
         m.fs.cv = ControlVolume0DBlock(
             dynamic=False,
             has_holdup=False,
@@ -404,7 +407,9 @@ class PropertyTestHarness:
             property_package_args=self.param_args,
         )
         m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-        m.fs.cv.add_material_balances()
+        # Since we have no VLE, we need phase-component balances
+        # to have a square problem
+        m.fs.cv.add_material_balances(balance_type=MaterialBalanceType.componentPhase)
         m.fs.cv.add_energy_balances()
         m.fs.cv.add_momentum_balances()
 
@@ -421,37 +426,30 @@ class PropertyTestHarness:
         calculate_scaling_factors(m)
 
         # initialize control volume
-        m.fs.cv.initialize()
+        flags = m.fs.cv.initialize(hold_state=True)
+        # Control volume is not solved by the initialization
+        solver_obj = get_solver()
+        results = solver_obj.solve(m.fs.cv)
+        assert_optimal_termination(results)
+
+        # Unfix inlet state vars
+        m.fs.cv.release_state(flags)
 
         # check convergence
         # TODO: update this when IDAES API is updated to return solver status for initialize()
         self.check_constraint_status(m.fs.cv)
 
-        # check results, properties_in and properties_out should be the same as default initialize
-        for (v_name, ind), val in m._test_objs.default_solution.items():
-            for sb in [m.fs.cv.properties_in[0], m.fs.cv.properties_out[0]]:
-                if sb.is_property_constructed(v_name):
-                    var = getattr(sb, v_name)[ind]  # get property if it was created
-                else:
-                    continue
-                # relative tolerance doesn't mean anything for 0-valued things
-                if val == 0:
-                    if not pytest.approx(val, abs=1.0e-08) == value(var):
-                        raise PropertyValueError(
-                            "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
-                            "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                            "configure function that sets up the PropertyTestHarness".format(
-                                v_name=v_name, ind=ind, val=val, val_t=value(var)
-                            )
-                        )
-                elif not pytest.approx(val, rel=1e-3) == value(var):
-                    raise PropertyValueError(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
-                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                        "configure function that sets up the PropertyTestHarness".format(
-                            v_name=v_name, ind=ind, val=val, val_t=value(var)
-                        )
-                    )
+        for blk in [m.fs.cv.properties_in[0], m.fs.cv.properties_out[0]]:
+            try:
+                _legacy_testing_translator(
+                    blk,
+                    m._test_objs.default_solution,
+                    check_property_constructed=True,
+                )
+            except AssertionError as err:
+                raise AssertionError(
+                    f"Values in {blk.name} do not match expected values."
+                ) from err
 
 
 class PropertyRegressionTest:
@@ -517,26 +515,9 @@ class PropertyRegressionTest:
         assert_optimal_termination(results)
 
         # check results
-        for (v_name, ind), val in self.regression_solution.items():
-            var = getattr(m.fs.stream[0], v_name)[ind]
-            # relative tolerance doesn't mean anything for 0-valued things
-            if val == 0:
-                if not pytest.approx(val, abs=1.0e-08) == value(var):
-                    raise PropertyValueError(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, but it "
-                        "has a value of {val_t}. \nUpdate regression_solution in the configure function "
-                        "that sets up the PropertyRegressionTest".format(
-                            v_name=v_name, ind=ind, val=val, val_t=value(var)
-                        )
-                    )
-            elif not pytest.approx(val, rel=1e-3) == value(var):
-                raise PropertyValueError(
-                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
-                    "has a value of {val_t}. \nUpdate regression_solution in the configure function "
-                    "that sets up the PropertyRegressionTest".format(
-                        v_name=v_name, ind=ind, val=val, val_t=value(var)
-                    )
-                )
+        _legacy_testing_translator(
+            m.fs.stream[0], default_solution=self.regression_solution
+        )
 
         # check if any variables are badly scaled
         lst = []
@@ -588,9 +569,19 @@ class PropertyCalculateStateTest:
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = self.prop_pack()
         m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
-
         # set default scaling
         for (v_str, ind), sf in self.scaling_args.items():
+            if not isinstance(ind, str):
+                try:
+                    l = len(ind)
+                except TypeError:
+                    # Not a tuple
+                    l = None
+                if l is not None and l == 1:
+                    # Tuple of length 1, set_default_scaling
+                    # expects a string/number, not a tuple
+                    # with one element
+                    ind = ind[0]
             m.fs.properties.set_default_scaling(v_str, sf, index=ind)
 
         # touch all properties in scaling
@@ -611,26 +602,7 @@ class PropertyCalculateStateTest:
         assert_optimal_termination(results)
 
         # check results
-        for (v_name, ind), val in self.state_solution.items():
-            var = getattr(m.fs.stream[0], v_name)[ind]
-            # relative tolerance doesn't mean anything for 0-valued things
-            if val == 0:
-                if not pytest.approx(val, abs=1.0e-08) == value(var):
-                    raise PropertyValueError(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, but it "
-                        "has a value of {val_t}. \nUpdate state_solution in the configure function "
-                        "that sets up the PropertyCalculateStateTest".format(
-                            v_name=v_name, ind=ind, val=val, val_t=value(var)
-                        )
-                    )
-            elif not pytest.approx(val, rel=1e-3) == value(var):
-                raise PropertyValueError(
-                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
-                    "has a value of {val_t}. \nUpdate state_solution in the configure function "
-                    "that sets up the PropertyCalculateStateTest".format(
-                        v_name=v_name, ind=ind, val=val, val_t=value(var)
-                    )
-                )
+        _legacy_testing_translator(m.fs.stream[0], default_solution=self.state_solution)
 
         # check if any variables are badly scaled
         lst = []
