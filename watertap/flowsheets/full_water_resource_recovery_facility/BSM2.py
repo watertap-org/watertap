@@ -46,6 +46,7 @@ from idaes.core.scaling.custom_scaler_base import (
     ConstraintScalingScheme,
 )
 from idaes.core.util.exceptions import InitializationError
+from idaes.core.initialization.initializer_base import InitializerBase
 from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
@@ -986,6 +987,124 @@ def scale_system(m):
         )
 
 
+def _methanogen_reaction_keys(reaction_package):
+    """Return the acetoclastic and hydrogenotrophic methanogenesis reaction keys
+    for an ADM1-family reaction package, detected from the rate-reaction
+    stoichiometry (S_ac -> CH4 and S_h2 -> CH4). Package-agnostic: works for both
+    standard ADM1 (R11/R12) and modified ADM1 (R10/R11) so the same initializer
+    serves BSM2 and the P-extension without hard-coded keys.
+    """
+    st = reaction_package.rate_reaction_stoichiometry
+    keys = []
+    for target, coeff_ok in (("S_ac", lambda v: v == -1), ("S_h2", lambda v: v < 0)):
+        keys.extend(
+            sorted(
+                {
+                    r
+                    for (r, ph, c) in st
+                    if ph == "Liq"
+                    and c == target
+                    and coeff_ok(pyo.value(st[(r, ph, c)]))
+                    and (r, "Liq", "S_ch4") in st
+                    and pyo.value(st[(r, "Liq", "S_ch4")]) > 0
+                }
+            )
+        )
+    return keys
+
+
+class ADHealthyRootInitializer(InitializerBase):
+    """Initialize an anaerobic digester onto its methanogenically-active
+    ("healthy") steady state instead of the trivial washout root.
+
+    The ADM1 digester is bistable on a typical sludge feed: a washout root
+    (pH ~4.6, zero methanogen biomass, no CH4) and a healthy root (pH ~7,
+    methane-producing) both satisfy the steady-state equations, and a cold solve
+    converges to washout because X_ac = X_h2 = 0 are exact fixed points. This
+    initializer instead solves the (inlet-fixed) unit in two stages: relax the
+    methanogen pH-inhibition so seeded biomass establishes, then restore the true
+    inhibition, at which point the healthy root holds. It is self-scaling (uses
+    the unit's ADScaler on a scaled clone) so it is valid during flowsheet
+    initialization, before global scaling is applied.
+    """
+
+    CONFIG = InitializerBase.CONFIG()
+
+    # Healthy-root seed for the digester liquid outlet (kg/m3). Only components
+    # present in the property package are applied, so this serves ADM1 variants.
+    _HEALTHY_SEED = {
+        "S_su": 0.012,
+        "S_aa": 0.005,
+        "S_fa": 0.10,
+        "S_va": 0.012,
+        "S_bu": 0.013,
+        "S_pro": 0.017,
+        "S_ac": 0.20,
+        "S_h2": 2e-7,
+        "S_ch4": 0.055,
+        "X_ch": 0.03,
+        "X_pr": 0.10,
+        "X_li": 0.03,
+        "X_su": 0.5,
+        "X_aa": 1.0,
+        "X_fa": 0.3,
+        "X_c4": 0.4,
+        "X_pro": 0.15,
+        "X_ac": 0.8,
+        "X_h2": 0.35,
+        "X_c": 3.0,
+    }
+
+    # This routine manages its own state fixing/restoration.
+    def fix_initialization_states(self, model):
+        return
+
+    def restore_model_state(self, model):
+        return
+
+    def initialization_routine(self, model, **kwargs):
+        solver = get_solver(options={"max_iter": 3000, "bound_push": 1e-8})
+        rblk = model.liquid_phase.reactions[0]
+        keys = _methanogen_reaction_keys(model.config.reaction_package)
+
+        # Fix the inlet so the unit is a square, standalone system.
+        fixed = []
+        for var in model.inlet.vars.values():
+            for idx in var:
+                if not var[idx].fixed:
+                    var[idx].fix()
+                    fixed.append(var[idx])
+        props_in = model.liquid_phase.properties_in[0]
+        for nm in ("anions", "cations"):
+            v = getattr(props_in, nm, None)
+            if v is not None and not v.fixed:
+                v.fix()
+                fixed.append(v)
+
+        # Seed the healthy root (biomass + near-neutral pH).
+        props_out = model.liquid_phase.properties_out[0]
+        complist = {c for (_, c) in model.inlet.conc_mass_comp.keys()}
+        for c, val in self._HEALTHY_SEED.items():
+            if c in complist:
+                props_out.conc_mass_comp[c].set_value(val)
+        rblk.S_H.set_value(6e-8)
+
+        # Stage 1: relax methanogen pH inhibition -> seeded biomass grows in.
+        for r in keys:
+            rblk.I_fun[r].deactivate()
+            rblk.I[r].fix(1.0)
+        solver.solve(model)
+        # Stage 2: restore true inhibition -> healthy root holds.
+        for r in keys:
+            rblk.I[r].unfix()
+            rblk.I_fun[r].activate()
+        results = solver.solve(model)
+
+        for v in fixed:
+            v.unfix()
+        return results
+
+
 def initialize_system(m):
     # Initialize flowsheet
     # Apply sequential decomposition - 1 iteration should suffice
@@ -1052,11 +1171,13 @@ def initialize_system(m):
         calculate_variable_options={"eps": 2e-8}, skip_final_solve=True
     )
 
+    ad_initializer = ADHealthyRootInitializer()
+
     def function(unit):
-        try:
+        if unit is m.fs.RADM:
+            ad_initializer.initialize(unit, output_level=_log.debug)
+        else:
             initializer.initialize(unit, output_level=_log.debug)
-        except InitializationError:
-            pass
 
     seq.run(m, function)
 
